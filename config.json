@@ -1,0 +1,78 @@
+{
+    "keybindings": {
+      "take_screenshot": "alt+print_screen",
+      "paste": "ctrl+v",
+      "cycle_window": "alt+tab",
+      "open_run": "win+r",
+      "start_typing": "ctrl+shift+;",
+      "stop_typing": "ctrl+shift+;",
+      "submit": "enter"
+    },
+    "commands": {
+      "take_screenshot": {
+        "action": "keypress",
+        "keys": "take_screenshot"
+      },
+      "paste": {
+        "action": "keypress",
+        "keys": "paste"
+      },
+      "submit": {
+        "action": "keypress",
+        "keys": "submit"
+      },
+      "cycle_window": {
+        "action": "keypress",
+        "keys": "cycle_window"
+      },
+      "okay_send": {
+        "action": "keypress",
+        "keys": "submit"
+      },
+      "okay_stop": {
+        "action": "keypress",
+        "keys": "stop_typing"
+      },
+      "oh_kay_screenshot": {
+        "action": "keypress",
+        "keys": "take_screenshot"
+      },
+      "thanks_chat_tee": {
+        "action": "custom_message",
+        "message": "That'll do, bro"
+      },
+      "that_ill_do": {
+        "action": "custom_message",
+        "message": "Thanks chatty, dude"
+      },
+      "lights_on": {
+        "action": "url",
+        "url": "{home_assistant}/lights_on"
+      },
+      "lights_off": {
+        "action": "url",
+        "url": "{home_assistant}/lights_off"
+      },
+      "wax_poetic": {
+        "action": "url",
+        "url": "{chatbot_endpoint}"
+      }
+    },
+    "command_sequences": {
+      "screenshot_paste_submit": [
+        {
+          "command": "take_screenshot",
+          "delay_after_ms": 3000
+        },
+        {
+          "command": "paste",
+          "delay_after_ms": 1000
+        },
+        {
+          "command": "submit",
+          "delay_after_ms": 0
+        }
+      ]
+    }
+  }
+  
