@@ -1,33 +1,54 @@
-# Chatty Commander Project
+# Welcome to ChattyCommander
 
-This project sets up various scripts and configurations to automate the launch of multiple applications and perform network traffic capture for troubleshooting. It also includes a Python application for command extraction and execution using wake word models.
+## Introduction
 
-## Components
+Hello and welcome to ChattyCommander! If you're new here or revisiting after some time, this README will guide you through what the app does, its benefits, and how to get started. ChattyCommander is a voice-activated command processing system that uses machine learning models to detect wake words and execute predefined actions, making hands-free computing a reality.
 
-### 1. keybindings_demo.sh
-This script demonstrates various keybindings and performs a mouse click to verify their functionality.
+## What It Does
 
-### 2. startup_apps.sh
-This startup script launches the following applications:
-- nvtop
-- htop
-- pavucontrol
-- alsamixer
-- Epiphany browser
+ChattyCommander listens continuously for voice commands using ONNX-based models. It supports different states (idle, computer, chatty) and transitions between them based on detected wake words like "hey chat tee" or "hey khum puter". Once in a specific state, it can execute actions such as keypresses, API calls to home assistants, or interactions with chatbots.
 
-Additionally, it runs tcpdump to capture network traffic for 5 minutes and then executes the keybindings demo script.
+## Benefits
 
-### 3. Tcpdump Capture
-The tcpdump command is used to capture network traffic for 5 minutes after startup. The captured data is saved in the `tcpdump` folder with a timestamped filename for troubleshooting purposes.
+- **Hands-Free Operation**: Control your computer or smart home devices using voice commands without touching the keyboard or mouse.
+- **Customizable**: Easily configure models, states, and actions via `config.py` to fit your needs.
+- **Integration**: Seamlessly integrates with external services like Home Assistant for smart home control or chatbots for interactive responses.
+- **Efficient**: Uses efficient ML models for low-latency detection, suitable for real-time applications.
 
-### 4. Python Application
-The Python components include scripts for model management, command extraction, and execution. Recent improvements:
-- Switched to using `uv` for faster dependency management.
-- Adjusted Python version requirements for better compatibility.
-- Fixed model loading issues with `openwakeword` and updated tests accordingly.
+## Installation
 
-To install dependencies, use `uv sync`.
+1. **Prerequisites**: Ensure you have Python 3.11+ and `uv` installed for dependency management.
+2. **Clone the Repository**: `git clone https://github.com/your-repo/chatty-commander.git`
+3. **Navigate to Directory**: `cd chatty-commander`
+4. **Install Dependencies**: Run `uv sync` to install all required packages.
+5. **Model Setup**: Place your ONNX models in the appropriate directories: `models-idle`, `models-computer`, `models-chatty`.
 
-### 5. README.md
-This file provides an overview of the project and its components.
+## Usage
+
+To start the application:
+
+```bash
+uv run python main.py
+```
+
+- The app will load models based on the initial 'idle' state and begin listening for voice input.
+- Speak a wake word (e.g., "hey khum puter") to transition states and trigger actions.
+- Logs are saved in `logs/chattycommander.log` for debugging.
+
+For testing in environments without a display, use `xvfb-run uv run python main.py`.
+
+## Configuration
+
+Edit `config.py` to customize:
+- Model paths and state associations.
+- Actions for commands (e.g., keypresses or URLs).
+- Audio settings like sample rate.
+
+## Troubleshooting
+
+- If models fail to load, check paths in `config.py`.
+- For audio issues, verify microphone settings.
+- Refer to logs for detailed error messages.
+
+Enjoy using ChattyCommander! If you have questions, feel free to open an issue.
 
