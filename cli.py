@@ -1,30 +1,31 @@
-import argparse
 import sys
+import argparse
 from config_cli import ConfigCLI
-from main import main as run_application
+from main import main as run_app
 
-def main():
+def cli_main():
     parser = argparse.ArgumentParser(description='ChattyCommander CLI')
-    subparsers = parser.add_subparsers(dest='command', required=True)
+    subparsers = parser.add_subparsers(dest='command', required=False)
 
     # Run subcommand
     run_parser = subparsers.add_parser('run', help='Run the ChattyCommander application')
+    run_parser.set_defaults(func=run_app)
 
     # Config subcommand
     config_parser = subparsers.add_parser('config', help='Configure the application')
-    config_parser.add_argument('--model-action', nargs=2, metavar=('MODEL', 'ACTION'), help='Set a model action non-interactively')
+    config_parser.add_argument('--model', help='Set the model')
+    config_parser.add_argument('--interactive', action='store_true', help='Run in interactive mode')
+    config_parser.set_defaults(func=lambda args: ConfigCLI().run(args.interactive, args.model))
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
 
     args = parser.parse_args()
-
-    if args.command == 'run':
-        run_application()
-    elif args.command == 'config':
-        cli = ConfigCLI()
-        if args.model_action:
-            model, action = args.model_action
-            cli.set_model_action(model, action)
-        else:
-            cli.interactive_mode()
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
+    args.func(args)
 
 if __name__ == '__main__':
-    main()
+    cli_main()
