@@ -1,6 +1,10 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 from model_manager import ModelManager
 from config import Config
+from openwakeword.model import Model
 
 class TestModelLoading(unittest.TestCase):
     def setUp(self):
@@ -10,7 +14,7 @@ class TestModelLoading(unittest.TestCase):
 
     def test_model_load(self):
         """Test if models are loaded correctly from all directories."""
-        self.model_manager.load_models()
+        self.model_manager.reload_models()
         # Test general models loaded correctly
         self.assertGreater(len(self.model_manager.models['general']), 0, "General models should be loaded.")
         # Test system models loaded correctly

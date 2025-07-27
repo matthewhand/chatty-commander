@@ -32,9 +32,6 @@ class ModelManager:
         self.models['chat'] = self.load_model_set(self.config.chat_models_path)
 
     def load_model_set(self, path):
-        """
-        Loads models from a specified directory, logging all actions and handling any exceptions that occur during model loading.
-        """
         model_set = {}
         if not os.path.exists(path):
             logging.error(f"Model directory {path} does not exist.")
@@ -45,7 +42,7 @@ class ModelManager:
                 model_path = os.path.join(path, model_file)
                 model_name = os.path.splitext(model_file)[0]
                 try:
-                    model_instance = Model(inference_framework=self.config.inference_framework, wakeword_models=[model_path])
+                    model_instance = Model(wakeword_model_paths=[model_path])
                     model_set[model_name] = model_instance
                     logging.info(f"Loaded model '{model_name}' from '{model_path}'.")
                 except Exception as e:

@@ -1,42 +1,43 @@
-"""
-config.py
+class Config:
+    def __init__(self):
+        # Path configurations for model directories
+        self.general_models_path = "models-idle"
+        self.system_models_path = "models-computer"
+        self.chat_models_path = "models-chatty"
 
-Configuration settings for the ChattyCommander application. This file contains constants and settings
-used throughout the application to manage different modes and operational settings.
-"""
+        # API Endpoints and external command URLs (Example setup)
+        self.api_endpoints = {
+            "home_assistant": "http://homeassistant.domain.home:8123/api",
+            "chatbot_endpoint": "https://ubuntu-gtx.domain.home/"
+        }
 
-# Path configurations for model directories
-GENERAL_MODELS_PATH = "models/general"
-SYSTEM_MODELS_PATH = "models/system"
-CHAT_MODELS_PATH = "models/chat"
+        # Configuration for model actions
+        self.model_actions = {
+            "okay_stop": {"keypress": "ctrl+shift+;"},
+            "hey_khum_puter": {"keypress": "ctrl+shift+;"},
+            "oh_kay_screenshot": {"keypress": "alt+print_screen"},
+            "lights_on": {"url": f"{self.api_endpoints['home_assistant']}/lights_on"},
+            "lights_off": {"url": f"{self.api_endpoints['home_assistant']}/lights_off"},
+            "wax_poetic": {"url": self.api_endpoints['chatbot_endpoint']}
+        }
 
-# API Endpoints and external command URLs (Example setup)
-API_ENDPOINTS = {
-    "home_assistant": "http://homeassistant.domain.home:8123/api",
-    "chatbot_endpoint": "https://ubuntu-gtx.domain.home/"
-}
+        # Configuration for different states and their associated models
+        self.state_models = {
+            "idle": ["hey_chat_tee", "hey_khum_puter"],
+            "computer": self.system_models_path,
+            "chatty": self.chat_models_path
+        }
 
-# Configuration for model actions
-MODEL_ACTIONS = {
-    "okay_stop": {"keypress": "ctrl+shift+;"},
-    "hey_khum_puter": {"keypress": "ctrl+shift+;"},
-    "oh_kay_screenshot": {"keypress": "alt+print_screen"},
-    "lights_on": {"url": f"{API_ENDPOINTS['home_assistant']}/lights_on"},
-    "lights_off": {"url": f"{API_ENDPOINTS['home_assistant']}/lights_off"},
-    "wax_poetic": {"url": API_ENDPOINTS['chatbot_endpoint']}
-}
+        # Audio settings
+        self.mic_chunk_size = 1024
+        self.sample_rate = 16000
+        self.audio_format = "int16"
 
-# Configuration for different states and their associated models
-STATE_MODELS = {
-    "idle": ["hey_chat_tee", "hey_khum_puter"],
-    "computer": SYSTEM_MODELS_PATH,
-    "chatty": CHAT_MODELS_PATH
-}
+        # Debug settings
+        self.debug_mode = True
 
-# Audio settings
-MIC_CHUNK_SIZE = 1024
-SAMPLE_RATE = 16000
-AUDIO_FORMAT = "int16"
+        # Default state
+        self.default_state = "idle"
 
-# Debug settings
-DEBUG_MODE = True
+        # Inference framework (assuming from context)
+        self.inference_framework = "onnx"  # Add if needed based on usage

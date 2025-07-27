@@ -9,30 +9,18 @@ import pyautogui
 import requests
 import subprocess
 import logging
-from config import MODEL_ACTIONS  # Central place for all command mappings
+from config import Config
 
 class CommandExecutor:
-    """
-    Executes the appropriate actions based on the command type and specification.
-    """
-
     def __init__(self):
-        """
-        Initializes the CommandExecutor.
-        """
+        self.config = Config()
         logging.info("Command Executor initialized.")
 
     def execute_command(self, command_name):
-        """
-        Executes the command based on its name.
-
-        Args:
-            command_name (str): The name of the command to execute.
-        """
         if not self.validate_command(command_name):
             return
         self.pre_execute_hook(command_name)
-        command_action = MODEL_ACTIONS.get(command_name)
+        command_action = self.config.model_actions.get(command_name)
 
         if 'keypress' in command_action:
             self._execute_keybinding(command_name, command_action['keypress'])
@@ -42,13 +30,10 @@ class CommandExecutor:
         self.post_execute_hook(command_name)
 
     def validate_command(self, command_name):
-        """
-        Validates if the command is correctly configured and can be executed.
-        """
-        command_action = MODEL_ACTIONS.get(command_name)
+        command_action = self.config.model_actions.get(command_name)
         if not command_action:
             logging.error(f"No configuration found for command: {command_name}")
-            return False
+            raise ValueError(f"Invalid command: {command_name}")
         return True
 
     def pre_execute_hook(self, command_name):
