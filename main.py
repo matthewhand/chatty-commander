@@ -21,7 +21,7 @@ from state_manager import StateManager
 from utils.logger import setup_logger
 
 def main():
-    logger = setup_logger(__name__)
+    logger = setup_logger(__name__, 'logs/chattycommander.log')
     logger.info("Starting ChattyCommander application")
 
     # Load configuration settings
@@ -31,7 +31,7 @@ def main():
     command_executor = CommandExecutor(config, model_manager, state_manager)
 
     # Load models based on the initial idle state
-    model_manager.load_models(state_manager.current_state)
+    model_manager.reload_models(state_manager.current_state)
 
     try:
         while True:
@@ -44,10 +44,11 @@ def main():
                 new_state = state_manager.update_state(command)
                 if new_state:
                     logger.info(f"Transitioning to new state: {new_state}")
-                    model_manager.load_models(new_state)
+                    model_manager.reload_models(new_state)
                 
-                # Execute the detected command
-                command_executor.execute_command(command)
+                # Execute the detected command if it's actionable
+                if command in config.model_actions:
+                    command_executor.execute_command(command)
     
     except KeyboardInterrupt:
         logger.info("Shutting down the ChattyCommander application")

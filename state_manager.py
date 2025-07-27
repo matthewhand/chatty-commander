@@ -19,6 +19,24 @@ class StateManager:
         self.active_models = self.config.state_models.get(self.current_state, [])
         self.logger.info(f"StateManager initialized with state: {self.current_state}")
 
+    def update_state(self, command):
+        """
+        Updates the state based on the detected command.
+        Returns the new state if a transition occurred, otherwise None.
+        """
+        new_state = None
+        if command == 'hey_chat_tee':
+            new_state = 'chatty'
+        elif command == 'hey_khum_puter':
+            new_state = 'computer'
+        elif command in ['okay_stop', 'thanks_chat_tee', 'that_ill_do']:
+            new_state = 'idle'
+        
+        if new_state and new_state != self.current_state:
+            self.change_state(new_state)
+            return new_state
+        return None
+
     def change_state(self, new_state, callback=None):
         if new_state in self.config.state_models:
             self.current_state = new_state

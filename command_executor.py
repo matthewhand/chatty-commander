@@ -12,8 +12,10 @@ import logging
 from config import Config
 
 class CommandExecutor:
-    def __init__(self):
-        self.config = Config()
+    def __init__(self, config, model_manager, state_manager):
+        self.config = config
+        self.model_manager = model_manager
+        self.state_manager = state_manager
         logging.info("Command Executor initialized.")
 
     def execute_command(self, command_name):
