@@ -17,3 +17,6 @@ chatty = "cli:main"
 
 [dependency-groups]
 dev = []
+
+[tool.setuptools.packages.find]
+exclude = ["archive", "logs", "models-chatty", "models-computer", "models-idle", "tests"]
