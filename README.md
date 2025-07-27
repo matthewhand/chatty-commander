@@ -20,7 +20,7 @@ ChattyCommander listens continuously for voice commands using ONNX-based models.
 1. **Prerequisites**: Ensure you have Python 3.11+ and `uv` installed for dependency management.
 2. **Clone the Repository**: `git clone https://github.com/your-repo/chatty-commander.git`
 3. **Navigate to Directory**: `cd chatty-commander`
-4. **Install Dependencies**: Run `uv sync` to install all required packages.
+4. **Install Dependencies**: Run `uv sync` to install all required packages. This will also make the `chatty` command available in `.venv/bin/`.
 5. **Model Setup**: Place your ONNX models in the appropriate directories: `models-idle`, `models-computer`, `models-chatty`.
 
 ## Usage
@@ -28,18 +28,34 @@ ChattyCommander listens continuously for voice commands using ONNX-based models.
 To start the application:
 
 ```bash
-uv run python main.py
+uv run chatty run
 ```
 
 - The app will load models based on the initial 'idle' state and begin listening for voice input.
 - Speak a wake word (e.g., "hey khum puter") to transition states and trigger actions.
 - Logs are saved in `logs/chattycommander.log` for debugging.
 
-For testing in environments without a display, use `xvfb-run uv run python main.py`.
+For testing in environments without a display, use `xvfb-run uv run chatty run`.
 
 ## Configuration
 
-Edit `config.py` to customize:
+ChattyCommander can be configured dynamically using the CLI tool via the `chatty` command. This allows you to update `config.json` interactively or non-interactively.
+
+### Interactive Mode
+Run:
+```bash
+uv run chatty config
+```
+Follow the prompts to set model-action mappings, state-model associations, and other settings.
+
+### Non-Interactive Mode
+Update specific settings directly:
+```bash
+uv run chatty config --model-action "okay_stop" "ctrl+shift+;"
+```
+Use `uv run chatty config --help` for more options.
+
+Alternatively, edit `config.py` manually for static changes.
 - Model paths and state associations.
 - Actions for commands (e.g., keypresses or URLs).
 - Audio settings like sample rate.
