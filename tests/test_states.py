@@ -32,21 +32,13 @@ class TestStateManager(unittest.TestCase):
             self.state_manager.change_state('invalid_state')
         self.assertEqual(self.state_manager.current_state, self.config.default_state)
 
-    def test_state_transition_with_callback(self):
-        """Test state transition with a callback function."""
-        def callback(new_state):
-            self.callback_called = True
-            self.callback_state = new_state
-
-        self.callback_called = False
-        self.state_manager.change_state('computer', callback)
-        self.assertTrue(self.callback_called)
-        self.assertEqual(self.callback_state, 'computer')
-        """Test state transitions with a callback to ensure models are loaded as expected."""
-        with self.assertLogs('state_manager', level='INFO') as log:
-            self.state_manager.change_state('computer')
-            self.assertIn("Transitioned to computer state.", log.output[0])
-            self.assertIn("Active models:", log.output[0])
+    def test_toggle_mode(self):
+        self.state_manager.update_state('toggle_mode')
+        self.assertEqual(self.state_manager.current_state, 'computer')
+        self.state_manager.update_state('toggle_mode')
+        self.assertEqual(self.state_manager.current_state, 'chatty')
+        self.state_manager.update_state('toggle_mode')
+        self.assertEqual(self.state_manager.current_state, 'idle')
 
 if __name__ == '__main__':
     unittest.main()

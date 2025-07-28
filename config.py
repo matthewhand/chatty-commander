@@ -41,3 +41,15 @@ class Config:
 
         # Inference framework (assuming from context)
         self.inference_framework = "onnx"  # Add if needed based on usage
+
+    def validate(self):
+        import logging
+        import os
+        if not self.model_actions:
+            raise ValueError("Model actions configuration is empty.")
+        paths = [self.general_models_path, self.system_models_path, self.chat_models_path]
+        for path in paths:
+            if not os.path.exists(path):
+                logging.warning(f"Model directory {path} does not exist.")
+            elif not os.listdir(path):
+                logging.warning(f"Model directory {path} is empty.")

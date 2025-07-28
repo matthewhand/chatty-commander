@@ -7,10 +7,18 @@ def config_func(args):
     cli = ConfigCLI()
     if args.interactive:
         cli.interactive_mode()
-    elif args.model and args.action:
-        cli.set_model_action(args.model, args.action)
+    elif args.list:
+        cli.list_config()
+    elif args.set_model_action:
+        cli.set_model_action(args.set_model_action[0], args.set_model_action[1])
+    elif args.set_state_model:
+        cli.set_state_model(args.set_state_model[0], args.set_state_model[1])
+    elif args.set_listen_for:
+        cli.set_listen_for(args.set_listen_for[0], args.set_listen_for[1])
+    elif args.set_mode:
+        cli.set_mode(args.set_mode[0], args.set_mode[1])
     else:
-        print('For config, use --interactive or provide --model and --action.')
+        print('Invalid config command. Use --help for options.')
         sys.exit(1)
 
 def cli_main():
@@ -23,8 +31,11 @@ def cli_main():
 
     # Config subcommand
     config_parser = subparsers.add_parser('config', help='Configure the application')
-    config_parser.add_argument('--model', help='Set the model name')
-    config_parser.add_argument('--action', help='Set the action for the model')
+    config_parser.add_argument('--list', action='store_true', help='List current configuration')
+    config_parser.add_argument('--set-model-action', nargs=2, metavar=('MODEL', 'ACTION'), help='Set action for a model')
+    config_parser.add_argument('--set-state-model', nargs=2, metavar=('STATE', 'MODELS'), help='Set models for a state (comma-separated)')
+    config_parser.add_argument('--set-listen-for', nargs=2, metavar=('KEY', 'VALUE'), help='Set what to listen for')
+    config_parser.add_argument('--set-mode', nargs=2, metavar=('MODE', 'VALUE'), help='Set mode options')
     config_parser.add_argument('--interactive', action='store_true', help='Run in interactive mode')
     config_parser.set_defaults(func=config_func)
 

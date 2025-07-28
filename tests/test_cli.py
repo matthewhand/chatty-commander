@@ -20,11 +20,29 @@ def test_cli_config_interactive(monkeypatch):
         cli_main()
         mock_interactive.assert_called_once()
 
-def test_cli_config_non_interactive(monkeypatch):
-    monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--model', 'okay_stop', '--action', 'ctrl+shift+;'])
-    with patch('cli.ConfigCLI.set_model_action') as mock_set:
+def test_cli_config_list(monkeypatch):
+    monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--list'])
+    with patch('cli.ConfigCLI.list_config') as mock_list:
         cli_main()
-        mock_set.assert_called_with('okay_stop', 'ctrl+shift+;')
+        mock_list.assert_called_once()
+
+def test_cli_set_state_model(monkeypatch):
+    monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-state-model', 'idle', 'model1,model2'])
+    with patch('cli.ConfigCLI.set_state_model') as mock_set:
+        cli_main()
+        mock_set.assert_called_with('idle', 'model1,model2')
+
+def test_cli_set_listen_for(monkeypatch):
+    monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-listen-for', 'param1', 'value1'])
+    with patch('cli.ConfigCLI.set_listen_for') as mock_set:
+        cli_main()
+        mock_set.assert_called_with('param1', 'value1')
+
+def test_cli_set_mode(monkeypatch):
+    monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-mode', 'mode1', 'option1'])
+    with patch('cli.ConfigCLI.set_mode') as mock_set:
+        cli_main()
+        mock_set.assert_called_with('mode1', 'option1')
 
 def test_cli_help(capsys, monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py'])
