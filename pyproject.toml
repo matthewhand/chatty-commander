@@ -13,10 +13,11 @@ dependencies = [
 ]
 
 [project.scripts]
-chatty = "cli:main"
+chatty = "cli:cli_main"
 
 [dependency-groups]
 dev = []
 
-[tool.setuptools.packages.find]
-exclude = ["archive", "logs", "models-chatty", "models-computer", "models-idle", "tests"]
+[tool.setuptools]
+py-modules = ["cli", "command_executor", "command_extractor", "config", "config_cli", "helpers", "main", "model_manager", "state_manager"]
+packages = ["utils"]

@@ -14,12 +14,11 @@ class TestModelLoading(unittest.TestCase):
 
     def test_model_load(self):
         """Test if models are loaded correctly from all directories."""
-        self.model_manager.reload_models()
-        # Test general models loaded correctly
+        self.model_manager.reload_models('idle')
         self.assertGreater(len(self.model_manager.models['general']), 0, "General models should be loaded.")
-        # Test system models loaded correctly
+        self.model_manager.reload_models('computer')
         self.assertGreater(len(self.model_manager.models['system']), 0, "System models should be loaded.")
-        # Test chat models loaded correctly
+        self.model_manager.reload_models('chatty')
         self.assertGreater(len(self.model_manager.models['chat']), 0, "Chat models should be loaded.")
 
     def test_model_types(self):

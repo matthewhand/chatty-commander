@@ -4,11 +4,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 from unittest.mock import patch, MagicMock
 from command_executor import CommandExecutor
+from config import Config
+from model_manager import ModelManager
+from state_manager import StateManager
 
 class TestCommandExecution(unittest.TestCase):
     def setUp(self):
         """Setup the CommandExecutor with a mock configuration for testing."""
-        self.command_executor = CommandExecutor()
+        self.config = Config()
+        self.model_manager = ModelManager(self.config)
+        self.state_manager = StateManager()
+        self.command_executor = CommandExecutor(self.config, self.model_manager, self.state_manager)
 
     @patch('command_executor.requests')
     def test_url_command_execution(self, mock_requests):
