@@ -8,6 +8,12 @@ This includes executing system commands, sending HTTP requests, and emulating ke
 import requests
 import subprocess
 import logging
+import os
+try:
+    import pyautogui
+except ImportError:
+    pyautogui = None
+    logging.warning("pyautogui not available. Keybinding commands will be skipped.")
 from config import Config
 
 class CommandExecutor:
@@ -23,16 +29,13 @@ class CommandExecutor:
         self.pre_execute_hook(command_name)
         command_action = self.config.model_actions.get(command_name)
 
-        # Move pyautogui import here
-        try:
-            import pyautogui
-        except ImportError:
-            pyautogui = None
-            logging.warning("pyautogui not available. Keybinding commands will be skipped.")
+        # Set default DISPLAY if not set
+        if 'DISPLAY' not in os.environ:
+            os.environ['DISPLAY'] = ':0'
 
         if 'keypress' in command_action:
             if pyautogui: # Only attempt if pyautogui is available
-                self._execute_keybinding(command_name, command_action['keypress'], pyautogui)
+                self._execute_keybinding(command_name, command_action['keypress'])
             else:
                 logging.error(f"Cannot execute keypress command '{command_name}': pyautogui is not installed or available.")
                 self.report_error(command_name, "pyautogui not available")
@@ -60,15 +63,17 @@ class CommandExecutor:
         """
         logging.info(f"Completed execution of command: {command_name}")
 
-    def _execute_keybinding(self, command_name, keys, pyautogui_instance): # Added pyautogui_instance
+    def _execute_keybinding(self, command_name, keys):
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
         """
         try:
-            if '+' in keys:
-                pyautogui_instance.hotkey(*keys.split('+')) # Use pyautogui_instance
+            if isinstance(keys, list):
+                pyautogui.hotkey(*keys)
+            elif '+' in keys:
+                pyautogui.hotkey(*keys.split('+'))
             else:
-                pyautogui_instance.press(keys) # Use pyautogui_instance
+                pyautogui.press(keys)
             logging.info(f"Executed keybinding for {command_name}: {keys}")
         except Exception as e:
             logging.error(f"Failed to execute keybinding for {command_name}: {e}")

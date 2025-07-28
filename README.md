@@ -15,6 +15,33 @@ ChattyCommander listens continuously for voice commands using ONNX-based models.
 - **Integration**: Seamlessly integrates with external services like Home Assistant for smart home control or chatbots for interactive responses.
 - **Efficient**: Uses efficient ML models for low-latency detection, suitable for real-time applications.
 
+## Core Concepts
+
+### Modes (States)
+ChattyCommander operates in distinct "modes" or "states," each designed to activate a specific set of voice models and functionalities. This allows the application to respond differently based on the context you've set. The primary states are:
+
+-   **Idle**: The default state. In this mode, ChattyCommander primarily listens for wake words that transition it to other states (e.g., "hey chat tee", "hey khum puter").
+-   **Computer**: Once in this state, ChattyCommander activates models specifically designed for system-level commands, allowing you to control your computer through voice.
+-   **Chatty**: In this mode, the application is configured to interact with chatbot models, enabling conversational commands and responses.
+
+Transitions between these states are triggered by specific wake words defined in your configuration, ensuring that only relevant models are active at any given time.
+
+### Actions and Keybindings
+Actions are the core functionalities ChattyCommander performs in response to recognized commands. These can include:
+
+-   **Keypresses**: Emulating keyboard shortcuts (e.g., `ctrl+shift+;` for `okay_stop`). These are handled by the `pyautogui` library.
+-   **URL Calls**: Sending HTTP requests to specified URLs, often used for integrating with smart home systems like Home Assistant.
+-   **System Commands**: Executing shell commands directly on your operating system.
+
+Each recognized voice command is mapped to a specific action within the `config.py` file, allowing for flexible and customizable responses.
+
+### Voice Files (ONNX Models)
+ChattyCommander utilizes ONNX (Open Neural Network Exchange) models for efficient and accurate voice command recognition. These models are pre-trained neural networks that convert spoken words into actionable commands.
+
+-   **Model Placement**: ONNX models are organized into specific directories (`models-idle`, `models-computer`, `models-chatty`) corresponding to the application's states.
+-   **Efficiency**: ONNX models are chosen for their optimized performance, enabling real-time voice processing with minimal latency.
+-   **Customization**: Users can train and integrate their own ONNX models to extend ChattyCommander's vocabulary and command recognition capabilities.
+
 ## Installation
 
 1. **Prerequisites**: Ensure you have Python 3.11+ and `uv` installed for dependency management.

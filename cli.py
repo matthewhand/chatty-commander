@@ -27,6 +27,7 @@ def cli_main():
 
     # Run subcommand
     run_parser = subparsers.add_parser('run', help='Run the ChattyCommander application')
+    run_parser.add_argument('--display', type=str, default=None, help='Override DISPLAY environment variable (e.g., :0)')
     run_parser.set_defaults(func=run_app)
 
     # Config subcommand
@@ -47,7 +48,13 @@ def cli_main():
     if args.command is None:
         parser.print_help()
         sys.exit(1)
-    args.func(args)
+    if args.command == 'run':
+        if args.display is not None:
+            import os
+            os.environ['DISPLAY'] = args.display
+        args.func()
+    else:
+        args.func(args)
 
 if __name__ == '__main__':
     cli_main()
