@@ -16,13 +16,22 @@ Example:
 import sys
 from config import Config
 from model_manager import ModelManager
-from command_executor import CommandExecutor
 from state_manager import StateManager
+from command_executor import CommandExecutor
 from utils.logger import setup_logger
+try:
+    from default_config import generate_default_config_if_needed
+except ImportError:
+    def generate_default_config_if_needed():
+        return False
 
 def main():
     logger = setup_logger(__name__, 'logs/chattycommander.log')
     logger.info("Starting ChattyCommander application")
+
+    # Generate default configuration if needed
+    if generate_default_config_if_needed():
+        logger.info("Default configuration generated")
 
     # Load configuration settings
     config = Config()

@@ -52,6 +52,8 @@ ChattyCommander utilizes ONNX (Open Neural Network Exchange) models for efficien
 
 ## Usage
 
+### Command Line Interface
+
 To start the application:
 
 ```bash
@@ -64,7 +66,52 @@ uv run chatty run
 
 For testing in environments without a display, use `xvfb-run uv run chatty run`.
 
+### Desktop GUI Application
+
+ChattyCommander now includes a comprehensive desktop GUI for easy configuration and management:
+
+```bash
+uv run chatty gui
+```
+
+The GUI provides:
+
+- **Visual Configuration**: Easy-to-use interface for setting up commands, states, and models
+- **Command Management**: Add, edit, and delete URL commands, keypress commands, and system commands
+- **State Configuration**: Configure model associations for different states (idle, chatty, computer)
+- **Model Settings**: Set model paths and inference framework preferences
+- **Audio Configuration**: Adjust recording settings like sample rate and channels
+- **Service Control**: Start/stop the ChattyCommander service directly from the GUI
+- **Real-time Monitoring**: View service logs and status in real-time
+- **Configuration Testing**: Validate your configuration before running
+
+#### GUI Features
+
+- **Tabbed Interface**: Organized sections for Commands, States, Models, Audio, and Service control
+- **Command Types**: Support for URL commands (HTTP requests), keypress commands (keyboard shortcuts), and system commands (shell execution)
+- **Live Service Management**: Start and stop the voice recognition service with real-time log monitoring
+- **Configuration Import/Export**: Load and save configuration files
+- **Validation**: Built-in configuration validation to catch errors before running
+
+The GUI is optional - you can continue using the CLI-only approach if preferred. Both interfaces work with the same configuration files and provide the same functionality.
+
 ## Configuration
+
+The application uses a JSON-based configuration system with automatic default generation.
+
+### Default Configuration
+
+When no configuration is detected, the system automatically generates:
+- A comprehensive `config.json` with sample commands and settings
+- A `wakewords/` directory containing placeholder ONNX files
+- Model directories (`models-idle`, `models-computer`, `models-chatty`) with symlinks to wakeword files
+- Sample actions for various modes (idle, computer, chatty)
+
+### Configuration Files
+
+- `config.json` - Main configuration file containing commands, keybindings, and settings
+- `wakewords/` - Central directory for wakeword ONNX model files
+- Model directories (`models-idle`, `models-computer`, `models-chatty`) - Contains symlinks to wakeword files for different states
 
 ChattyCommander can be configured dynamically using the CLI tool via the `chatty` command. This allows you to update `config.json` interactively or non-interactively.
 

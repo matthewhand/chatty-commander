@@ -1,78 +1,115 @@
 {
-    "keybindings": {
-      "take_screenshot": "alt+print_screen",
-      "paste": "ctrl+v",
-      "cycle_window": "alt+tab",
-      "open_run": "win+r",
-      "start_typing": "ctrl+shift+;",
-      "stop_typing": "ctrl+shift+;",
-      "submit": "enter"
+  "keybindings": {
+    "take_screenshot": "alt+print_screen",
+    "paste": "ctrl+v",
+    "cycle_window": "alt+tab",
+    "open_run": "win+r",
+    "start_typing": "ctrl+shift+;",
+    "stop_typing": "ctrl+shift+;",
+    "submit": "enter"
+  },
+  "commands": {
+    "take_screenshot": {
+      "action": "keypress",
+      "keys": "take_screenshot"
     },
-    "commands": {
-      "take_screenshot": {
-        "action": "keypress",
-        "keys": "take_screenshot"
-      },
-      "paste": {
-        "action": "keypress",
-        "keys": "paste"
-      },
-      "submit": {
-        "action": "keypress",
-        "keys": "submit"
-      },
-      "cycle_window": {
-        "action": "keypress",
-        "keys": "cycle_window"
-      },
-      "okay_send": {
-        "action": "keypress",
-        "keys": "submit"
-      },
-      "okay_stop": {
-        "action": "keypress",
-        "keys": "stop_typing"
-      },
-      "oh_kay_screenshot": {
-        "action": "keypress",
-        "keys": "take_screenshot"
-      },
-      "thanks_chat_tee": {
-        "action": "custom_message",
-        "message": "That'll do, bro"
-      },
-      "that_ill_do": {
-        "action": "custom_message",
-        "message": "Thanks chatty, dude"
-      },
-      "lights_on": {
-        "action": "url",
-        "url": "{home_assistant}/lights_on"
-      },
-      "lights_off": {
-        "action": "url",
-        "url": "{home_assistant}/lights_off"
-      },
-      "wax_poetic": {
-        "action": "url",
-        "url": "{chatbot_endpoint}"
-      }
+    "paste": {
+      "action": "keypress",
+      "keys": "paste"
     },
-    "command_sequences": {
-      "screenshot_paste_submit": [
-        {
-          "command": "take_screenshot",
-          "delay_after_ms": 3000
-        },
-        {
-          "command": "paste",
-          "delay_after_ms": 1000
-        },
-        {
-          "command": "submit",
-          "delay_after_ms": 0
-        }
-      ]
+    "submit": {
+      "action": "keypress",
+      "keys": "submit"
+    },
+    "cycle_window": {
+      "action": "keypress",
+      "keys": "cycle_window"
+    },
+    "okay_send": {
+      "action": "keypress",
+      "keys": "submit"
+    },
+    "okay_stop": {
+      "action": "keypress",
+      "keys": "stop_typing"
+    },
+    "oh_kay_screenshot": {
+      "action": "keypress",
+      "keys": "take_screenshot"
+    },
+    "thanks_chat_tee": {
+      "action": "custom_message",
+      "message": "That'll do, bro"
+    },
+    "that_ill_do": {
+      "action": "custom_message",
+      "message": "Thanks chatty, dude"
+    },
+    "lights_on": {
+      "action": "url",
+      "url": "{home_assistant}/lights_on"
+    },
+    "lights_off": {
+      "action": "url",
+      "url": "{home_assistant}/lights_off"
+    },
+    "wax_poetic": {
+      "action": "url",
+      "url": "{chatbot_endpoint}"
     }
+  },
+  "command_sequences": {
+    "screenshot_paste_submit": [
+      {
+        "command": "take_screenshot",
+        "delay_after_ms": 3000
+      },
+      {
+        "command": "paste",
+        "delay_after_ms": 1000
+      },
+      {
+        "command": "submit",
+        "delay_after_ms": 0
+      }
+    ]
+  },
+  "api_endpoints": {
+    "home_assistant": "http://homeassistant.domain.home:8123/api",
+    "chatbot_endpoint": "http://localhost:3000/"
+  },
+  "state_models": {
+    "idle": [
+      "hey_chat_tee",
+      "hey_khum_puter",
+      "okay_stop",
+      "lights_on",
+      "lights_off"
+    ],
+    "computer": [
+      "oh_kay_screenshot",
+      "okay_stop"
+    ],
+    "chatty": [
+      "wax_poetic",
+      "thanks_chat_tee",
+      "that_ill_do",
+      "okay_stop"
+    ]
+  },
+  "model_paths": {
+    "idle": "models-idle",
+    "computer": "models-computer",
+    "chatty": "models-chatty"
+  },
+  "audio_settings": {
+    "mic_chunk_size": 1024,
+    "sample_rate": 16000,
+    "audio_format": "int16"
+  },
+  "general_settings": {
+    "debug_mode": true,
+    "default_state": "idle",
+    "inference_framework": "onnx"
   }
-  
+}

@@ -1,5 +1,13 @@
+#!/usr/bin/env python3
+
 import sys
 import argparse
+import os
+
+# Set DISPLAY environment variable if not set (for GUI applications)
+if 'DISPLAY' not in os.environ:
+    os.environ['DISPLAY'] = ':0'
+
 from config_cli import ConfigCLI
 from main import main as run_app
 
@@ -21,6 +29,22 @@ def config_func(args):
         print('Invalid config command. Use --help for options.')
         sys.exit(1)
 
+def gui_command():
+    """Launch the desktop GUI application."""
+    try:
+        # Import and run the GUI module
+        import subprocess
+        import sys
+        result = subprocess.run([sys.executable, 'gui.py'], cwd=os.getcwd())
+        return result.returncode
+    except ImportError as e:
+        print(f"Error: GUI dependencies not available: {e}")
+        print("Please ensure tkinter is installed.")
+        return 1
+    except Exception as e:
+        print(f"Error launching GUI: {e}")
+        return 1
+
 def cli_main():
     parser = argparse.ArgumentParser(description='ChattyCommander CLI')
     subparsers = parser.add_subparsers(dest='command', required=False)
@@ -29,6 +53,10 @@ def cli_main():
     run_parser = subparsers.add_parser('run', help='Run the ChattyCommander application')
     run_parser.add_argument('--display', type=str, default=None, help='Override DISPLAY environment variable (e.g., :0)')
     run_parser.set_defaults(func=run_app)
+
+    # GUI subcommand
+    gui_parser = subparsers.add_parser('gui', help='Launch the desktop GUI application')
+    gui_parser.set_defaults(func=lambda args: gui_command())
 
     # Config subcommand
     config_parser = subparsers.add_parser('config', help='Configure the application')
@@ -53,6 +81,8 @@ def cli_main():
             import os
             os.environ['DISPLAY'] = args.display
         args.func()
+    elif args.command == 'gui':
+        args.func(args)
     else:
         args.func(args)
 
