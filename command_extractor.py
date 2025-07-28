@@ -5,7 +5,6 @@ This module executes the actions associated with voice commands detected by the 
 It interacts with system utilities, web requests, and simulates keyboard inputs based on command specifications.
 """
 
-import pyautogui
 import requests
 import subprocess
 import logging
@@ -33,27 +32,36 @@ class CommandExecutor:
     def execute_keypress(self, command):
         """Simulate keypresses associated with the command."""
         keys = self.config.keypress_commands[command]
-        if isinstance(keys, list):
-            pyautogui.hotkey(*keys)
-        else:
-            pyautogui.press(keys)
+        try:
+            import pyautogui
+            if isinstance(keys, list):
+                pyautogui.hotkey(*keys)
+            else:
+                pyautogui.press(keys)
+        except Exception as e:
+            logging.error(f"Could not execute keypress: {e}")
         logging.info(f"Executed keypress for {command}: {'+'.join(keys) if isinstance(keys, list) else keys}")
 
     def execute_system_command(self, command):
         """Execute system-specific commands like taking screenshots or running shell commands."""
-        if command == 'take_screenshot':
-            pyautogui.screenshot().save(self.config.screenshot_save_path)
-            logging.info("Screenshot taken and saved.")
-        elif command == 'start_run':
-            subprocess.run(['start', 'run'], shell=True)
-            logging.info("Run dialog opened.")
-        elif command == 'cycle_window':
-            pyautogui.hotkey('alt', 'tab')
-            logging.info("Window cycled.")
-        elif command == 'send_newline':
-            pyautogui.press('enter')
-            logging.info("Newline sent.")
-        elif command == 'wax_poetic':
+        try:
+            import pyautogui
+            if command == 'take_screenshot':
+                pyautogui.screenshot().save(self.config.screenshot_save_path)
+                logging.info("Screenshot taken and saved.")
+            elif command == 'start_run':
+                subprocess.run(['start', 'run'], shell=True)
+                logging.info("Run dialog opened.")
+            elif command == 'cycle_window':
+                pyautogui.hotkey('alt', 'tab')
+                logging.info("Window cycled.")
+            elif command == 'send_newline':
+                pyautogui.press('enter')
+                logging.info("Newline sent.")
+        except Exception as e:
+            logging.error(f"Could not execute system command: {e}")
+        
+        if command == 'wax_poetic':
             # Placeholder for a chatbot endpoint call
             logging.info("Wax poetic command triggered.")
 

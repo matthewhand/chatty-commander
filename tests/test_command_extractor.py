@@ -22,26 +22,26 @@ class TestCommandExecutor(unittest.TestCase):
         self.executor.execute_url('test_command')
         mock_get.assert_called_once_with('http://test.url', headers={'Authorization': 'Bearer test_token'})
 
-    @patch('command_extractor.pyautogui.hotkey')
-    @patch('command_extractor.pyautogui.press')
+    @patch('pyautogui.hotkey')
+    @patch('pyautogui.press')
     def test_execute_keypress_list(self, mock_press, mock_hotkey):
         self.config.keypress_commands = {'test_command': ['ctrl', 'shift', 'a']}
         self.executor.execute_keypress('test_command')
         mock_hotkey.assert_called_once_with('ctrl', 'shift', 'a')
         mock_press.assert_not_called()
 
-    @patch('command_extractor.pyautogui.hotkey')
-    @patch('command_extractor.pyautogui.press')
+    @patch('pyautogui.hotkey')
+    @patch('pyautogui.press')
     def test_execute_keypress_single(self, mock_press, mock_hotkey):
         self.config.keypress_commands = {'test_command': 'enter'}
         self.executor.execute_keypress('test_command')
         mock_press.assert_called_once_with('enter')
         mock_hotkey.assert_not_called()
 
-    @patch('command_extractor.pyautogui.screenshot')
-    @patch('command_extractor.subprocess.run')
-    @patch('command_extractor.pyautogui.hotkey')
-    @patch('command_extractor.pyautogui.press')
+    @patch('pyautogui.screenshot')
+    @patch('subprocess.run')
+    @patch('pyautogui.hotkey')
+    @patch('pyautogui.press')
     def test_execute_system_command(self, mock_press, mock_hotkey, mock_run, mock_screenshot):
         mock_save = MagicMock()
         mock_screenshot.return_value = MagicMock(save=mock_save)

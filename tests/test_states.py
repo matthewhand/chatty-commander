@@ -43,7 +43,9 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(self.state_manager.update_state('okay_stop'), 'idle')
         self.assertEqual(self.state_manager.current_state, 'idle')
 
+        self.state_manager.change_state('chatty')  # Set to non-idle state first
         self.assertEqual(self.state_manager.update_state('thanks_chat_tee'), 'idle')
+        self.state_manager.change_state('computer')  # Set to non-idle state first
         self.assertEqual(self.state_manager.update_state('that_ill_do'), 'idle')
 
     def test_update_state_no_change(self):

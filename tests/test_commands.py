@@ -23,10 +23,11 @@ class TestCommandExecution(unittest.TestCase):
         self.command_executor.execute_command('lights_on')
         mock_requests.get.assert_called_once_with('http://homeassistant.domain.home:8123/api/lights_on')
 
-    @patch('command_executor.pyautogui')
-    def test_keypress_command_execution(self, mock_pyautogui):
+    @patch('builtins.__import__')
+    def test_keypress_command_execution(self, mock_import):
         """Test executing a keypress command."""
-        mock_pyautogui.hotkey.return_value = None
+        mock_pyautogui = MagicMock()
+        mock_import.side_effect = lambda name, *args: mock_pyautogui if name == 'pyautogui' else __import__(name, *args)
         self.command_executor.execute_command('okay_stop')
         mock_pyautogui.hotkey.assert_called_once_with('ctrl', 'shift', ';')
 

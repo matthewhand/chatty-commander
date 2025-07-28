@@ -5,7 +5,6 @@ Handles the execution of commands in response to recognized voice commands from 
 This includes executing system commands, sending HTTP requests, and emulating keystrokes.
 """
 
-import pyautogui
 import requests
 import subprocess
 import logging
@@ -24,8 +23,19 @@ class CommandExecutor:
         self.pre_execute_hook(command_name)
         command_action = self.config.model_actions.get(command_name)
 
+        # Move pyautogui import here
+        try:
+            import pyautogui
+        except ImportError:
+            pyautogui = None
+            logging.warning("pyautogui not available. Keybinding commands will be skipped.")
+
         if 'keypress' in command_action:
-            self._execute_keybinding(command_name, command_action['keypress'])
+            if pyautogui: # Only attempt if pyautogui is available
+                self._execute_keybinding(command_name, command_action['keypress'], pyautogui)
+            else:
+                logging.error(f"Cannot execute keypress command '{command_name}': pyautogui is not installed or available.")
+                self.report_error(command_name, "pyautogui not available")
         elif 'url' in command_action:
             self._execute_url(command_name, command_action['url'])
 
@@ -50,15 +60,15 @@ class CommandExecutor:
         """
         logging.info(f"Completed execution of command: {command_name}")
 
-    def _execute_keybinding(self, command_name, keys):
+    def _execute_keybinding(self, command_name, keys, pyautogui_instance): # Added pyautogui_instance
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
         """
         try:
             if '+' in keys:
-                pyautogui.hotkey(*keys.split('+'))
+                pyautogui_instance.hotkey(*keys.split('+')) # Use pyautogui_instance
             else:
-                pyautogui.press(keys)
+                pyautogui_instance.press(keys) # Use pyautogui_instance
             logging.info(f"Executed keybinding for {command_name}: {keys}")
         except Exception as e:
             logging.error(f"Failed to execute keybinding for {command_name}: {e}")
