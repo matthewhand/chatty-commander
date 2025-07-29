@@ -62,6 +62,7 @@ def run_web_mode(config, model_manager, state_manager, command_executor, logger,
         from fastapi.staticfiles import StaticFiles
         from fastapi.responses import FileResponse
         import os
+        import asyncio
     except ImportError:
         logger.error("FastAPI and uvicorn are required for web mode. Install with: uv add fastapi uvicorn")
         sys.exit(1)
@@ -78,6 +79,23 @@ def run_web_mode(config, model_manager, state_manager, command_executor, logger,
             "current_state": state_manager.current_state,
             "auth_enabled": not no_auth
         }
+
+    @app.get("/api/v1/config")
+    async def get_config():
+        return config.__dict__
+
+    @app.post("/api/v1/state")
+    async def update_state(new_state: str):
+        state_manager.change_state(new_state)
+        await broadcast_state()
+        return {"message": "State updated", "new_state": new_state}
+
+    @app.post("/api/v1/command")
+    async def execute_command_api(command: str):
+        if command in config.model_actions:
+            command_executor.execute_command(command)
+            return {"message": "Command executed", "command": command}
+        return {"error": "Invalid command"}
     
     # Serve React frontend static files
     frontend_build_path = "webui/frontend/build"
@@ -105,16 +123,42 @@ def run_web_mode(config, model_manager, state_manager, command_executor, logger,
             }
     
     # WebSocket endpoint for real-time communication
+    connections = []
+
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
         await websocket.accept()
+        connections.append(websocket)
         try:
             while True:
                 data = await websocket.receive_text()
-                # Echo the received message back to the client
+                # Process incoming messages if needed
+                if data == "get_state":
+                    await websocket.send_text(state_manager.current_state)
+                # For now, echo
                 await websocket.send_text(f"Echo: {data}")
         except Exception:
+            connections.remove(websocket)
             await websocket.close()
+
+    async def broadcast_state():
+        for conn in connections:
+            await conn.send_text(state_manager.current_state)
+
+    async def listening_loop():
+        while True:
+            command = await model_manager.async_listen_for_commands()
+            if command:
+                logger.info(f"Command detected: {command}")
+                new_state = state_manager.update_state(command)
+                if new_state:
+                    logger.info(f"Transitioning to new state: {new_state}")
+                    model_manager.reload_models(new_state)
+                    await broadcast_state()
+
+    @app.on_event("startup")
+    async def startup_event():
+        asyncio.create_task(listening_loop())
 
     # Start the server
     uvicorn.run(app, host="0.0.0.0", port=8100, log_level="info")

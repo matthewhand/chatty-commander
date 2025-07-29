@@ -8,6 +8,7 @@ It dynamically loads models based on the application's current state, handles er
 import os
 import logging
 import time
+import asyncio
 import random  # For simulating command detection in demo mode
 from openwakeword.model import Model
 
@@ -59,22 +60,20 @@ class ModelManager:
                     logging.error(f"Error loading model '{model_name}' from '{model_path}': {e}")
         return model_set
 
-    def listen_for_commands(self):
+    async def async_listen_for_commands(self):
         """
-        Simulates listening for voice commands using the loaded models.
-        In a real implementation, this would process audio input and detect wake words.
-        
-        Returns:
-            str or None: The detected command name if a command is recognized, None otherwise.
+        Asynchronous version for listening for voice commands.
         """
-        # This is a simplified simulation for demonstration purposes
-        # In a real implementation, this would process audio and use the models to detect commands
-        time.sleep(1)  # Simulate processing time
-        
-        # Demo mode: randomly return a command from active models occasionally
-        if self.active_models and random.random() < 0.05:  # 5% chance of detecting a command
+        await asyncio.sleep(1)  # Simulate processing time
+        if self.active_models and random.random() < 0.05:
             return random.choice(list(self.active_models.keys()))
         return None
+
+    def listen_for_commands(self):
+        """
+        Synchronous wrapper for async_listen_for_commands.
+        """
+        return asyncio.run(self.async_listen_for_commands())
 
     def get_models(self, state):
         """
