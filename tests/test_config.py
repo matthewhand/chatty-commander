@@ -75,3 +75,90 @@ def test_custom_paths(config, logger):
     with patch('os.path.exists', return_value=True), patch('os.listdir', return_value=['model.onnx']):
         config.validate()
     logger.debug("Custom paths validated")
+
+# Update checking tests
+def test_set_check_for_updates(config):
+    """Test setting check_for_updates flag."""
+    # Test enabling update checks
+    with patch.object(config, '_update_general_setting') as mock_update:
+        config.set_check_for_updates(True)
+        assert config._check_for_updates_enabled is True
+        mock_update.assert_called_with("check_for_updates", True)
+    
+    # Test disabling update checks
+    with patch.object(config, '_update_general_setting') as mock_update:
+        config.set_check_for_updates(False)
+        assert config._check_for_updates_enabled is False
+        mock_update.assert_called_with("check_for_updates", False)
+
+from unittest.mock import patch
+
+def test_check_for_updates_disabled(config):
+    """Test check_for_updates when disabled."""
+    # Set the check_for_updates property to False
+    config._check_for_updates_enabled = False
+    result = config.check_for_updates()
+    assert result is None
+
+def test_check_for_updates_with_updates(config):
+    """Test check_for_updates when updates are available."""
+    config._check_for_updates_enabled = True
+    with patch('subprocess.run') as mock_run:
+            # Mock git commands to simulate updates available
+            mock_rev_parse = MagicMock()
+            mock_rev_parse.stdout = b'/path/to/git/dir'
+            mock_rev_parse.returncode = 0
+
+            mock_fetch = MagicMock()
+            mock_fetch.stdout = b''
+            mock_fetch.returncode = 0
+
+            mock_rev_list = MagicMock()
+            mock_rev_list.stdout = b'3'
+            mock_rev_list.returncode = 0
+
+            mock_log = MagicMock()
+            mock_log.stdout = b'Test commit message'
+            mock_log.returncode = 0
+
+            mock_run.side_effect = [mock_rev_parse, mock_fetch, mock_rev_list, mock_log]
+
+            result = config.check_for_updates()
+            assert result is not None
+            assert result['updates_available'] is True
+            assert result['update_count'] == 3
+            assert 'latest_commit' in result
+
+def test_check_for_updates_no_updates(config):
+    """Test check_for_updates when no updates are available."""
+    # Ensure the check_for_updates property is True
+    config._check_for_updates_enabled = True
+    
+    with patch('subprocess.run') as mock_run:
+        # Mock git commands to simulate no updates available
+        mock_rev_parse = MagicMock()
+        mock_rev_parse.stdout = b'/path/to/git/dir'
+        mock_rev_parse.returncode = 0
+        
+        mock_fetch = MagicMock()
+        mock_fetch.stdout = b''
+        mock_fetch.returncode = 0
+        
+        mock_rev_list = MagicMock()
+        mock_rev_list.stdout = b'0'
+        mock_rev_list.returncode = 0
+        
+        mock_run.side_effect = [mock_rev_parse, mock_fetch, mock_rev_list]
+        
+        result = config.check_for_updates()
+        assert result is not None
+        assert result['updates_available'] is False
+
+def test_check_for_updates_git_error(config):
+    """Test check_for_updates when git commands fail."""
+    # Ensure the check_for_updates property is True
+    config._check_for_updates_enabled = True
+    
+    with patch('subprocess.run', side_effect=Exception("Git command failed")):
+        result = config.check_for_updates()
+        assert result is None

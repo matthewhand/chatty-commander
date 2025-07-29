@@ -69,8 +69,11 @@ class ConfigCLI:
         print("Current Configuration:")
         print("\nModel Actions:")
         for model, action in self.config.get('model_actions', {}).items():
-            keybinding = action.get('keypress', 'N/A')
-            print(f"- {model}: Action={action}, Keybinding={keybinding}")
+            if isinstance(action, dict):
+                keybinding = action.get('keypress', 'N/A')
+                print(f"- {model}: Action={action}, Keybinding={keybinding}")
+            else:
+                print(f"- {model}: Action={action}, Keybinding=N/A")
         print("\nState Models:")
         for state, models in self.config.get('state_models', {}).items():
             print(f"- {state}: Models={', '.join(models)}")

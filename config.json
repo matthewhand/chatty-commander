@@ -110,6 +110,8 @@
   "general_settings": {
     "debug_mode": true,
     "default_state": "idle",
-    "inference_framework": "onnx"
+    "inference_framework": "onnx",
+    "start_on_boot": false,
+    "check_for_updates": true
   }
 }

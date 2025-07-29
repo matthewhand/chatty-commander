@@ -351,11 +351,33 @@ class ChattyCommanderGUI:
         
         ttk.Button(controls_frame, text="Test Configuration", command=self.test_config).pack(side=tk.LEFT, padx=5)
         
+        # System settings
+        system_frame = ttk.LabelFrame(self.service_frame, text="System Settings")
+        system_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Start on boot setting
+        boot_frame = ttk.Frame(system_frame)
+        boot_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        self.start_on_boot_var = tk.BooleanVar(value=getattr(self.config, 'start_on_boot', False))
+        ttk.Checkbutton(boot_frame, text="Start on boot", variable=self.start_on_boot_var, 
+                       command=self.toggle_start_on_boot).pack(side=tk.LEFT)
+        
+        # Update checking setting
+        update_frame = ttk.Frame(system_frame)
+        update_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        self.check_updates_var = tk.BooleanVar(value=getattr(self.config, 'check_for_updates', True))
+        ttk.Checkbutton(update_frame, text="Check for updates automatically", variable=self.check_updates_var,
+                       command=self.toggle_update_checking).pack(side=tk.LEFT)
+        
+        ttk.Button(update_frame, text="Check Now", command=self.check_updates_now).pack(side=tk.RIGHT, padx=5)
+        
         # Log output
         log_frame = ttk.LabelFrame(self.service_frame, text="Service Log")
         log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        self.log_text = tk.Text(log_frame, height=10, wrap=tk.WORD)
+        self.log_text = tk.Text(log_frame, height=8, wrap=tk.WORD)
         log_scroll = ttk.Scrollbar(log_frame, orient=tk.VERTICAL, command=self.log_text.yview)
         self.log_text.configure(yscrollcommand=log_scroll.set)
         
@@ -584,6 +606,12 @@ class ChattyCommanderGUI:
         self.sample_rate_var.set(str(self.config.audio_settings.get('sample_rate', 16000)))
         self.channels_var.set(str(self.config.audio_settings.get('channels', 1)))
         self.chunk_size_var.set(str(self.config.audio_settings.get('chunk_size', 1024)))
+        
+        # Update system settings
+        if hasattr(self, 'start_on_boot_var'):
+            self.start_on_boot_var.set(getattr(self.config, 'start_on_boot', False))
+        if hasattr(self, 'check_updates_var'):
+            self.check_updates_var.set(getattr(self.config, 'check_for_updates', True))
     
     def update_config_from_gui(self):
         """Update config object from GUI values."""
@@ -676,6 +704,59 @@ class ChattyCommanderGUI:
             messagebox.showinfo("Success", "Configuration is valid!")
         except Exception as e:
             messagebox.showerror("Configuration Error", f"Configuration validation failed: {e}")
+    
+    def toggle_start_on_boot(self):
+        """Toggle start on boot setting."""
+        try:
+            enabled = self.start_on_boot_var.get()
+            self.config.set_start_on_boot(enabled)
+            status = "enabled" if enabled else "disabled"
+            self.log_text.insert(tk.END, f"Start on boot {status}\n")
+            self.log_text.see(tk.END)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to toggle start on boot: {str(e)}")
+            # Revert the checkbox state
+            self.start_on_boot_var.set(not self.start_on_boot_var.get())
+    
+    def toggle_update_checking(self):
+        """Toggle automatic update checking."""
+        try:
+            enabled = self.check_updates_var.get()
+            self.config.set_check_for_updates(enabled)
+            status = "enabled" if enabled else "disabled"
+            self.log_text.insert(tk.END, f"Automatic update checking {status}\n")
+            self.log_text.see(tk.END)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to toggle update checking: {str(e)}")
+            # Revert the checkbox state
+            self.check_updates_var.set(not self.check_updates_var.get())
+    
+    def check_updates_now(self):
+        """Check for updates immediately."""
+        try:
+            self.log_text.insert(tk.END, "Checking for updates...\n")
+            self.log_text.see(tk.END)
+            self.root.update()  # Update GUI to show the message
+            
+            update_info = self.config.check_for_updates()
+            if update_info is None:
+                self.log_text.insert(tk.END, "Could not check for updates.\n")
+            elif update_info['updates_available']:
+                self.log_text.insert(tk.END, f"Updates available: {update_info['update_count']} commits\n")
+                self.log_text.insert(tk.END, f"Latest: {update_info['latest_commit']}\n")
+                messagebox.showinfo("Updates Available", 
+                                   f"Updates available: {update_info['update_count']} commits\n"
+                                   f"Latest: {update_info['latest_commit']}")
+            else:
+                self.log_text.insert(tk.END, "No updates available.\n")
+                messagebox.showinfo("Updates", "No updates available.")
+            
+            self.log_text.see(tk.END)
+        except Exception as e:
+            error_msg = f"Error checking for updates: {str(e)}\n"
+            self.log_text.insert(tk.END, error_msg)
+            self.log_text.see(tk.END)
+            messagebox.showerror("Error", f"Failed to check for updates: {str(e)}")
 
 
 class CommandDialog:

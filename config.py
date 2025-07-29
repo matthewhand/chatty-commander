@@ -49,6 +49,8 @@ class Config:
         self.debug_mode = general_settings.get("debug_mode", True)
         self.default_state = general_settings.get("default_state", "idle")
         self.inference_framework = general_settings.get("inference_framework", "onnx")
+        self.start_on_boot = general_settings.get("start_on_boot", False)
+        self._check_for_updates_enabled = general_settings.get("check_for_updates", True)
         
         # Keybindings
         self.keybindings = self.config_data.get("keybindings", {})
@@ -111,3 +113,152 @@ class Config:
                 logging.warning(f"Model directory {path} does not exist.")
             elif not os.listdir(path):
                 logging.warning(f"Model directory {path} is empty.")
+    
+    def set_start_on_boot(self, enabled):
+        """Enable or disable start on boot."""
+        self.start_on_boot = enabled
+        self._update_general_setting("start_on_boot", enabled)
+        
+        if enabled:
+            self._enable_start_on_boot()
+        else:
+            self._disable_start_on_boot()
+    
+    def set_check_for_updates(self, enabled):
+        """Enable or disable automatic update checking."""
+        self._check_for_updates_enabled = enabled
+        self._update_general_setting("check_for_updates", enabled)
+    
+    def _update_general_setting(self, key, value):
+        """Update a general setting in the config data and save to file."""
+        import json
+        import os
+        
+        if "general_settings" not in self.config_data:
+            self.config_data["general_settings"] = {}
+        
+        self.config_data["general_settings"][key] = value
+        
+        # Save to file
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump(self.config_data, f, indent=2)
+        except (IOError, json.JSONEncodeError) as e:
+            import logging
+            logging.error(f"Could not save config file {self.config_file}: {e}")
+    
+    def _enable_start_on_boot(self):
+        """Enable start on boot using systemd user service."""
+        import os
+        import subprocess
+        import logging
+        
+        try:
+            # Create systemd user directory if it doesn't exist
+            systemd_dir = os.path.expanduser("~/.config/systemd/user")
+            os.makedirs(systemd_dir, exist_ok=True)
+            
+            # Get current working directory and python executable
+            cwd = os.getcwd()
+            python_exec = subprocess.check_output(["which", "python3"]).decode().strip()
+            
+            # Create systemd service file
+            service_content = f"""[Unit]
+Description=ChattyCommander Voice Control Service
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart={python_exec} {cwd}/cli.py run
+WorkingDirectory={cwd}
+Restart=always
+RestartSec=5
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=default.target
+"""
+            
+            service_file = os.path.join(systemd_dir, "chatty-commander.service")
+            with open(service_file, 'w') as f:
+                f.write(service_content)
+            
+            # Enable and start the service
+            subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
+            subprocess.run(["systemctl", "--user", "enable", "chatty-commander.service"], check=True)
+            
+            logging.info("Start on boot enabled successfully")
+            
+        except Exception as e:
+            logging.error(f"Failed to enable start on boot: {e}")
+            raise
+    
+    def _disable_start_on_boot(self):
+        """Disable start on boot by removing systemd user service."""
+        import os
+        import subprocess
+        import logging
+        
+        try:
+            # Stop and disable the service
+            subprocess.run(["systemctl", "--user", "stop", "chatty-commander.service"], check=False)
+            subprocess.run(["systemctl", "--user", "disable", "chatty-commander.service"], check=False)
+            
+            # Remove service file
+            service_file = os.path.expanduser("~/.config/systemd/user/chatty-commander.service")
+            if os.path.exists(service_file):
+                os.remove(service_file)
+            
+            subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
+            
+            logging.info("Start on boot disabled successfully")
+            
+        except Exception as e:
+            logging.error(f"Failed to disable start on boot: {e}")
+            raise
+    
+    def check_for_updates(self):
+        """Check for updates from the repository."""
+        import subprocess
+        import logging
+        
+        if not self._check_for_updates_enabled:
+            return None
+        
+        try:
+            # Check if we're in a git repository
+            result = subprocess.run(["git", "rev-parse", "--git-dir"], 
+                                  capture_output=True, text=True, check=False)
+            if result.returncode != 0:
+                logging.warning("Not in a git repository, cannot check for updates")
+                return None
+            
+            # Fetch latest changes
+            subprocess.run(["git", "fetch", "origin"], capture_output=True, check=True)
+            
+            # Check if there are updates available
+            result = subprocess.run(["git", "rev-list", "HEAD..origin/main", "--count"], 
+                                  capture_output=True, text=True, check=True)
+            
+            update_count = int(result.stdout.strip())
+            
+            if update_count > 0:
+                # Get the latest commit message
+                result = subprocess.run(["git", "log", "origin/main", "-1", "--pretty=format:%s"], 
+                                      capture_output=True, text=True, check=True)
+                latest_commit = result.stdout.strip()
+                
+                return {
+                    "updates_available": True,
+                    "update_count": update_count,
+                    "latest_commit": latest_commit
+                }
+            else:
+                return {
+                    "updates_available": False,
+                    "update_count": 0
+                }
+                
+        except Exception as e:
+            logging.error(f"Failed to check for updates: {e}")
+            return None

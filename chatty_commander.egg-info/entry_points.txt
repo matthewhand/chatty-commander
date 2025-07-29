@@ -1,0 +1,2 @@
+[console_scripts]
+chatty = cli:cli_main

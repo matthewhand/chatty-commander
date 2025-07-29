@@ -190,7 +190,9 @@ class DefaultConfigGenerator:
             "general_settings": {
                 "debug_mode": True,
                 "default_state": "idle",
-                "inference_framework": "onnx"
+                "inference_framework": "onnx",
+                "start_on_boot": false,
+                "check_for_updates": true
             }
         }
         
