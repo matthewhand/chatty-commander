@@ -16,7 +16,7 @@ class Config:
         # API Endpoints and external command URLs
         api_endpoints = self.config_data.get("api_endpoints", {
             "home_assistant": "http://homeassistant.domain.home:8123/api",
-            "chatbot_endpoint": "http://localhost:3000/"
+            "chatbot_endpoint": "http://localhost:3100/"
         })
         
         # Override endpoints from environment variables if available
@@ -50,7 +50,8 @@ class Config:
         self.default_state = general_settings.get("default_state", "idle")
         self.inference_framework = general_settings.get("inference_framework", "onnx")
         self.start_on_boot = general_settings.get("start_on_boot", False)
-        self._check_for_updates_enabled = general_settings.get("check_for_updates", True)
+        # Ensure we're using ONNX runtime for ONNX models
+        self.check_for_updates = general_settings.get("check_for_updates", True)
         
         # Keybindings
         self.keybindings = self.config_data.get("keybindings", {})
@@ -126,7 +127,7 @@ class Config:
     
     def set_check_for_updates(self, enabled):
         """Enable or disable automatic update checking."""
-        self._check_for_updates_enabled = enabled
+        self.check_for_updates = enabled
         self._update_general_setting("check_for_updates", enabled)
     
     def _update_general_setting(self, key, value):
@@ -217,12 +218,12 @@ WantedBy=default.target
             logging.error(f"Failed to disable start on boot: {e}")
             raise
     
-    def check_for_updates(self):
+    def perform_update_check(self):
         """Check for updates from the repository."""
         import subprocess
         import logging
         
-        if not self._check_for_updates_enabled:
+        if not self.check_for_updates:
             return None
         
         try:
