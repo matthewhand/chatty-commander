@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
+from unittest.mock import MagicMock
 from state_manager import StateManager
 from config import Config
 import logging
@@ -143,6 +144,36 @@ class TestStateManager(unittest.TestCase):
         self.state_manager.change_state('idle')
         self.logger.debug(f"Active models in idle: {self.state_manager.get_active_models()}")
         self.assertEqual(self.state_manager.get_active_models(), self.config.state_models['idle'])
+
+    def test_post_state_change_hook(self):
+        """Test post_state_change_hook is called on state change."""
+        with self.assertLogs(level='DEBUG') as log:
+            self.state_manager.change_state('chatty')
+        self.assertTrue(
+            any('Post state change actions for chatty' in msg for msg in log.output),
+            "Expected log message about post state change actions for chatty not found."
+        )
+
+    def test_change_state_with_callback(self):
+        """Test change_state with callback."""
+        callback = MagicMock()
+        self.state_manager.change_state('computer', callback)
+        callback.assert_called_once_with('computer')
+        self.assertEqual(self.state_manager.current_state, 'computer')
+
+    def test_update_state_invalid_command(self):
+        """Test update_state with invalid command returns None and doesn't change state."""
+        current = self.state_manager.current_state
+        result = self.state_manager.update_state('invalid')
+        self.assertIsNone(result)
+        self.assertEqual(self.state_manager.current_state, current)
+
+    def test_repr_with_different_models(self):
+        """Test __repr__ with varying active models."""
+        self.state_manager.active_models = []
+        self.assertEqual(repr(self.state_manager), '<StateManager(current_state=idle, active_models=0)>')
+        self.state_manager.active_models = ['one']
+        self.assertEqual(repr(self.state_manager), '<StateManager(current_state=idle, active_models=1)>')
 
 if __name__ == '__main__':
     unittest.main()

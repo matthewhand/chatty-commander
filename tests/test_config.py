@@ -82,31 +82,31 @@ def test_set_check_for_updates(config):
     # Test enabling update checks
     with patch.object(config, '_update_general_setting') as mock_update:
         config.set_check_for_updates(True)
-        assert config._check_for_updates_enabled is True
+        assert config.check_for_updates is True
         mock_update.assert_called_with("check_for_updates", True)
     
     # Test disabling update checks
     with patch.object(config, '_update_general_setting') as mock_update:
         config.set_check_for_updates(False)
-        assert config._check_for_updates_enabled is False
+        assert config.check_for_updates is False
         mock_update.assert_called_with("check_for_updates", False)
 
 from unittest.mock import patch
 
 def test_check_for_updates_disabled(config):
-    """Test check_for_updates when disabled."""
+    """Test perform_update_check when disabled."""
     # Set the check_for_updates property to False
-    config._check_for_updates_enabled = False
-    result = config.check_for_updates()
+    config.check_for_updates = False
+    result = config.perform_update_check()
     assert result is None
 
 def test_check_for_updates_with_updates(config):
-    """Test check_for_updates when updates are available."""
-    config._check_for_updates_enabled = True
+    """Test perform_update_check when updates are available."""
+    config.check_for_updates = True
     with patch('subprocess.run') as mock_run:
             # Mock git commands to simulate updates available
             mock_rev_parse = MagicMock()
-            mock_rev_parse.stdout = b'/path/to/git/dir'
+            mock_rev_parse.stdout = '/path/to/git/dir'
             mock_rev_parse.returncode = 0
 
             mock_fetch = MagicMock()
@@ -122,43 +122,105 @@ def test_check_for_updates_with_updates(config):
             mock_log.returncode = 0
 
             mock_run.side_effect = [mock_rev_parse, mock_fetch, mock_rev_list, mock_log]
-
-            result = config.check_for_updates()
+    
+            result = config.perform_update_check()
             assert result is not None
             assert result['updates_available'] is True
             assert result['update_count'] == 3
             assert 'latest_commit' in result
 
 def test_check_for_updates_no_updates(config):
-    """Test check_for_updates when no updates are available."""
+    """Test perform_update_check when no updates are available."""
     # Ensure the check_for_updates property is True
-    config._check_for_updates_enabled = True
+    config.check_for_updates = True
     
     with patch('subprocess.run') as mock_run:
         # Mock git commands to simulate no updates available
         mock_rev_parse = MagicMock()
-        mock_rev_parse.stdout = b'/path/to/git/dir'
+        mock_rev_parse.stdout = '/path/to/git/dir'
         mock_rev_parse.returncode = 0
         
         mock_fetch = MagicMock()
-        mock_fetch.stdout = b''
+        mock_fetch.stdout = ''
         mock_fetch.returncode = 0
         
         mock_rev_list = MagicMock()
-        mock_rev_list.stdout = b'0'
+        mock_rev_list.stdout = '0'
         mock_rev_list.returncode = 0
         
         mock_run.side_effect = [mock_rev_parse, mock_fetch, mock_rev_list]
         
-        result = config.check_for_updates()
+        result = config.perform_update_check()
         assert result is not None
         assert result['updates_available'] is False
 
 def test_check_for_updates_git_error(config):
-    """Test check_for_updates when git commands fail."""
+    """Test perform_update_check when git commands fail."""
     # Ensure the check_for_updates property is True
-    config._check_for_updates_enabled = True
+    config.check_for_updates = True
     
     with patch('subprocess.run', side_effect=Exception("Git command failed")):
-        result = config.check_for_updates()
+        result = config.perform_update_check()
         assert result is None
+
+
+def test_init_default_values(config):
+    """Test initialization with default values."""
+    assert config.general_models_path == "models-idle"
+    assert config.system_models_path == "models-computer"
+    assert config.chat_models_path == "models-chatty"
+    assert config.mic_chunk_size == 1024
+    assert config.sample_rate == 16000
+    assert config.audio_format == "int16"
+    assert config.debug_mode is True
+    assert config.default_state == "idle"
+    assert config.inference_framework == "onnx"
+    assert config.start_on_boot is False
+    assert config.check_for_updates is True
+
+def test_load_config_file_not_exist(config, monkeypatch):
+    """Test loading config when file does not exist."""
+    monkeypatch.setattr('os.path.exists', lambda x: False)
+    config.config_data = config._load_config()
+    assert config.config_data == {}
+
+def test_build_model_actions_keypress(config):
+    """Test building model actions for keypress type."""
+    config.config_data['commands'] = {'test_command': {'action': 'keypress', 'keys': 'ctrl+alt+t'}}
+    actions = config._build_model_actions()
+    assert actions['test_command'] == {'keypress': 'ctrl+alt+t'}
+
+def test_build_model_actions_url(config):
+    """Test building model actions for url type with placeholder replacement."""
+    config.config_data['commands'] = {'test_url': {'action': 'url', 'url': '{home_assistant}/test'}}
+    actions = config._build_model_actions()
+    assert actions['test_url'] == {'url': 'http://homeassistant.domain.home:8123/api/test'}
+
+def test_build_model_actions_custom_message(config):
+    """Test building model actions for custom message."""
+    config.config_data['commands'] = {'test_msg': {'action': 'custom_message', 'message': 'Hello'}}
+    actions = config._build_model_actions()
+    assert actions['test_msg'] == {'message': 'Hello'}
+
+def test_set_start_on_boot_enable(config, monkeypatch):
+    """Test enabling start on boot."""
+    monkeypatch.setattr(config, '_enable_start_on_boot', MagicMock())
+    monkeypatch.setattr(config, '_update_general_setting', MagicMock())
+    config.set_start_on_boot(True)
+    assert config.start_on_boot is True
+    config._enable_start_on_boot.assert_called_once()
+
+def test_set_start_on_boot_disable(config, monkeypatch):
+    """Test disabling start on boot."""
+    monkeypatch.setattr(config, '_disable_start_on_boot', MagicMock())
+    monkeypatch.setattr(config, '_update_general_setting', MagicMock())
+    config.set_start_on_boot(False)
+    assert config.start_on_boot is False
+    config._disable_start_on_boot.assert_called_once()
+
+def test_check_for_updates_error(config, monkeypatch):
+    """Test perform_update_check when git error occurs."""
+    config.check_for_updates = True
+    monkeypatch.setattr('subprocess.run', MagicMock(side_effect=Exception("Git error")))
+    result = config.perform_update_check()
+    assert result is None

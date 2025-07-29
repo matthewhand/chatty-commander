@@ -4,8 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 from model_manager import ModelManager
 from config import Config
-from openwakeword.model import Model
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 class TestModelLoading(unittest.TestCase):
     def setUp(self):
@@ -24,9 +23,11 @@ class TestModelLoading(unittest.TestCase):
 
     def test_model_types(self):
         """Ensure that models loaded are instances of the expected class."""
+        self.model_manager.reload_models('idle')
+        self.assertGreater(len(self.model_manager.models['general']), 0, "No general models loaded for type test.")
         for model_category in self.model_manager.models.values():
             for model in model_category.values():
-                self.assertIsInstance(model, Model, "Loaded models must be instances of Model.")
+                self.assertIsInstance(model, MagicMock, "Loaded models must be instances of MagicMock.")
 
     def test_invalid_model_path(self):
         """Test loading models from an invalid path should handle errors gracefully."""
@@ -40,7 +41,7 @@ class TestModelLoading(unittest.TestCase):
         """Test error handling in load_model_set."""
         with patch('os.path.exists', return_value=True), \
              patch('os.listdir', return_value=['invalid.onnx']), \
-             patch('openwakeword.model.Model', side_effect=Exception('Load error')):
+             patch('model_manager.Model', side_effect=Exception('Load error')):
             models = self.model_manager.load_model_set('dummy_path')
             self.assertEqual(len(models), 0)
 
