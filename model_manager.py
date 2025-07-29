@@ -52,7 +52,7 @@ class ModelManager:
                 model_path = os.path.join(path, model_file)
                 model_name = os.path.splitext(model_file)[0]
                 try:
-                    model_instance = Model(wakeword_model_paths=[model_path])
+                    model_instance = Model(model_path)
                     model_set[model_name] = model_instance
                     logging.info(f"Loaded model '{model_name}' from '{model_path}'.")
                 except Exception as e:
@@ -87,6 +87,12 @@ class ModelManager:
         Provides a representation of the ModelManager's state, useful for debugging and logging.
         """
         return f"<ModelManager(general={len(self.models['general'])}, system={len(self.models['system'])}, chat={len(self.models['chat'])})>"
+
+def load_models(self, state=None):
+    """
+    Alias for reload_models to support test compatibility.
+    """
+    return self.reload_models(state)
 
 if __name__ == "__main__":
     # Assuming a configuration instance 'config' is available

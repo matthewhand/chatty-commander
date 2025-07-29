@@ -14,7 +14,7 @@ class StateManager:
     def __init__(self):
         self.config = Config()
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
         self.current_state = self.config.default_state
         self.active_models = self.config.state_models.get(self.current_state, [])
         self.logger.info(f"StateManager initialized with state: {self.current_state}")

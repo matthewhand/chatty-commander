@@ -170,7 +170,7 @@ class DefaultConfigGenerator:
             },
             "api_endpoints": {
                 "home_assistant": "http://homeassistant.domain.home:8123/api",
-                "chatbot_endpoint": "http://localhost:3000/"
+                "chatbot_endpoint": "http://localhost:3100/"
             },
             "state_models": {
                 "idle": ["hey_chat_tee", "hey_khum_puter", "okay_stop", "lights_on", "lights_off"],
