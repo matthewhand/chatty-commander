@@ -48,6 +48,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+.pytest_cache/
 *.cover
 *.py,cover
 .hypothesis/
@@ -169,4 +170,4 @@ archive/*
 logs/*
 webui/frontend/node_modules/*
 .pytest_cache/*
-__pycache__/*
+*.pyc
