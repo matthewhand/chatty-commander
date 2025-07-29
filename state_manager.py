@@ -8,23 +8,24 @@ and more complex state dependencies.
 """
 
 import logging
+from typing import List, Optional, Callable
 from config import Config
 
 class StateManager:
-    def __init__(self):
-        self.config = Config()
-        self.logger = logging.getLogger(__name__)
+    def __init__(self) -> None:
+        self.config: Config = Config()
+        self.logger: logging.Logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
-        self.current_state = self.config.default_state
-        self.active_models = self.config.state_models.get(self.current_state, [])
+        self.current_state: str = self.config.default_state
+        self.active_models: List[str] = self.config.state_models.get(self.current_state, [])
         self.logger.info(f"StateManager initialized with state: {self.current_state}")
 
-    def update_state(self, command):
+    def update_state(self, command: str) -> Optional[str]:
         """
         Updates the state based on the detected command.
         Returns the new state if a transition occurred, otherwise None.
         """
-        new_state = None
+        new_state: Optional[str] = None
         if command == 'hey_chat_tee':
             new_state = 'chatty'
         elif command == 'hey_khum_puter':
@@ -41,7 +42,7 @@ class StateManager:
             return new_state
         return None
 
-    def change_state(self, new_state, callback=None):
+    def change_state(self, new_state: str, callback: Optional[Callable[[str], None]] = None) -> None:
         if new_state in self.config.state_models:
             self.current_state = new_state
             self.active_models = self.config.state_models[new_state]
@@ -52,13 +53,13 @@ class StateManager:
         else:
             raise ValueError(f"Invalid state: {new_state}")
 
-    def get_active_models(self):
+    def get_active_models(self) -> List[str]:
         return self.active_models
 
-    def post_state_change_hook(self, new_state):
+    def post_state_change_hook(self, new_state: str) -> None:
         self.logger.debug(f"Post state change actions for {new_state} executed.")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<StateManager(current_state={self.current_state}, active_models={len(self.active_models)})>"
 
 # Example usage:

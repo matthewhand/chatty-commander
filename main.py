@@ -54,117 +54,47 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
         logger.info("Shutting down the ChattyCommander application")
         sys.exit()
 
-def run_web_mode(config, model_manager, state_manager, command_executor, logger, no_auth=False):
+def run_web_mode(config, model_manager, state_manager, command_executor, logger, no_auth=False, port=8100):
     """Run the web UI mode with FastAPI server."""
     try:
-        import uvicorn
-        from fastapi import FastAPI, WebSocket
-        from fastapi.staticfiles import StaticFiles
-        from fastapi.responses import FileResponse
-        import os
-        import asyncio
+        from web_mode import create_web_server
     except ImportError:
-        logger.error("FastAPI and uvicorn are required for web mode. Install with: uv add fastapi uvicorn")
+        logger.error("Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets")
         sys.exit(1)
     
-    logger.info(f"Starting web mode (auth={'disabled' if no_auth else 'enabled'})")
+    logger.info(f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on port {port}")
     
-    app = FastAPI(title="ChattyCommander WebUI", version="1.0.0")
+    # Create web server instance
+    web_server = create_web_server(
+        config_manager=config,
+        state_manager=state_manager,
+        model_manager=model_manager,
+        command_executor=command_executor,
+        no_auth=no_auth
+    )
     
-    # Add API routes here (will be implemented)
-    @app.get("/api/v1/status")
-    async def get_status():
-        return {
-            "status": "running",
-            "current_state": state_manager.current_state,
-            "auth_enabled": not no_auth
-        }
-
-    @app.get("/api/v1/config")
-    async def get_config():
-        return config.__dict__
-
-    @app.post("/api/v1/state")
-    async def update_state(new_state: str):
-        state_manager.change_state(new_state)
-        await broadcast_state()
-        return {"message": "State updated", "new_state": new_state}
-
-    @app.post("/api/v1/command")
-    async def execute_command_api(command: str):
-        if command in config.model_actions:
-            command_executor.execute_command(command)
-            return {"message": "Command executed", "command": command}
-        return {"error": "Invalid command"}
+    # Setup callbacks for voice command integration
+    def on_command_detected(command):
+        web_server.on_command_detected(command)
     
-    # Serve React frontend static files
-    frontend_build_path = "webui/frontend/build"
-    frontend_static_path = f"{frontend_build_path}/static"
+    def on_state_change(old_state, new_state):
+        web_server._on_state_change(old_state, new_state)
     
-    if os.path.exists(frontend_build_path) and os.path.exists(frontend_static_path):
-        app.mount("/static", StaticFiles(directory=frontend_static_path), name="static")
-        
-        @app.get("/{full_path:path}")
-        async def serve_frontend(full_path: str):
-            if full_path.startswith("api/"):
-                return {"error": "API endpoint not found"}
-            return FileResponse(f"{frontend_build_path}/index.html")
-        
-        logger.info(f"Serving React frontend from {frontend_build_path}")
-    else:
-        logger.warning(f"Frontend build not found at {frontend_build_path}. Run 'npm run build' in webui/frontend/")
-        
-        @app.get("/")
-        async def root():
-            return {
-                "message": "ChattyCommander WebUI",
-                "status": "Frontend build not available",
-                "instructions": "Run 'npm run build' in webui/frontend/ to build the React frontend"
-            }
+    # Register callbacks
+    if hasattr(model_manager, 'add_command_callback'):
+        model_manager.add_command_callback(on_command_detected)
+    if hasattr(state_manager, 'add_state_change_callback'):
+        state_manager.add_state_change_callback(on_state_change)
     
-    # WebSocket endpoint for real-time communication
-    connections = []
-
-    @app.websocket("/ws")
-    async def websocket_endpoint(websocket: WebSocket):
-        await websocket.accept()
-        connections.append(websocket)
-        try:
-            while True:
-                data = await websocket.receive_text()
-                # Process incoming messages if needed
-                if data == "get_state":
-                    await websocket.send_text(state_manager.current_state)
-                # For now, echo
-                await websocket.send_text(f"Echo: {data}")
-        except Exception:
-            connections.remove(websocket)
-            await websocket.close()
-
-    async def broadcast_state():
-        for conn in connections:
-            await conn.send_text(state_manager.current_state)
-
-    async def listening_loop():
-        while True:
-            command = await model_manager.async_listen_for_commands()
-            if command:
-                logger.info(f"Command detected: {command}")
-                new_state = state_manager.update_state(command)
-                if new_state:
-                    logger.info(f"Transitioning to new state: {new_state}")
-                    model_manager.reload_models(new_state)
-                    await broadcast_state()
-
-    @app.on_event("startup")
-    async def startup_event():
-        asyncio.create_task(listening_loop())
-
     # Start the server
-    uvicorn.run(app, host="0.0.0.0", port=8100, log_level="info")
+    web_server.run(host="0.0.0.0", port=port, log_level="info")
 
 def run_gui_mode(config, model_manager, state_manager, command_executor, logger):
     """Run the GUI mode."""
+    import os
+    if 'DISPLAY' not in os.environ:
+        logger.error("No DISPLAY environment variable set. GUI mode requires a graphical environment.")
+        sys.exit(1)
     try:
         from gui import main as gui_main
         logger.info("Starting GUI mode")
@@ -176,17 +106,29 @@ def run_gui_mode(config, model_manager, state_manager, command_executor, logger)
 def create_parser():
     """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(
-        description="ChattyCommander - Voice-activated command processing system",
+        description="ChattyCommander - Advanced voice-activated command processing system.\n"
+                    "This application allows users to control their computer using voice commands, "
+                    "with support for multiple modes including CLI, web UI, GUI, and configuration wizard.\n"
+                    "It integrates machine learning models for command detection and state management.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s                    # Start in CLI voice command mode
-  %(prog)s --web              # Start web UI server
-  %(prog)s --web --no-auth    # Start web UI without authentication (local dev)
-  %(prog)s --gui              # Start graphical interface
-  %(prog)s --config           # Interactive configuration wizard
+  %(prog)s --shell            # Start interactive text shell mode
+  %(prog)s --web              # Start web UI server on default port 8100
+  %(prog)s --web --port 8080 --no-auth  # Start web server on port 8080 without auth
+  %(prog)s --gui              # Launch graphical user interface
+  %(prog)s --config           # Run interactive configuration wizard
+  %(prog)s --log-level DEBUG  # Start with debug logging
 
-For more information, visit: https://github.com/your-repo/chatty-commander
+Available modes:
+- CLI: Voice-activated command processing
+- Shell: Interactive text-based command input
+- Web: Browser-based interface with real-time updates
+- GUI: Desktop application interface
+- Config: Setup and configuration tool
+
+For detailed documentation and source code, visit: https://github.com/your-repo/chatty-commander
         """
     )
     
@@ -194,46 +136,120 @@ For more information, visit: https://github.com/your-repo/chatty-commander
     mode_group.add_argument(
         "--web", 
         action="store_true",
-        help="Start web UI server with FastAPI backend (default port: 8001)"
+        help="Start the web UI server using FastAPI backend. Requires FastAPI and Uvicorn. "
+             "Serves a React-based frontend if built."
     )
     mode_group.add_argument(
         "--gui", 
         action="store_true",
-        help="Start graphical user interface (requires GUI dependencies)"
+        help="Start the graphical user interface. Requires Tkinter and a DISPLAY environment."
     )
     mode_group.add_argument(
         "--config", 
         action="store_true",
-        help="Launch interactive configuration wizard"
+        help="Launch the interactive configuration wizard to set up models, commands, and settings."
+    )
+    mode_group.add_argument(
+        "--shell",
+        action="store_true",
+        help="Start interactive shell mode for text-based command input and execution."
     )
     
     parser.add_argument(
         "--no-auth", 
         action="store_true",
-        help="Disable authentication (INSECURE - only for local development)"
+        help="Disable authentication for web mode (INSECURE - use only for local development)."
     )
     
     parser.add_argument(
         "--port", 
         type=int, 
         default=8100,
-        help="Port for web server (default: 8100)"
+        help="Specify the port for the web server (default: 8100). Only used in web mode."
     )
     
     parser.add_argument(
         "--log-level", 
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Set logging level (default: INFO)"
+        help="Set the logging level for the application (default: INFO)."
     )
     
     return parser
+
+def run_interactive_shell(config, model_manager, state_manager, command_executor, logger):
+    """Run interactive text-based shell mode with tab completion."""
+    import readline
+    logger.info("Starting interactive shell mode")
+    print("ChattyCommander Interactive Shell")
+    print("Type 'help' for commands, 'exit' to quit")
+    
+    commands = ['help', 'exit', 'state', 'models', 'execute']
+    model_actions = list(config.model_actions.keys())
+    
+    def completer(text, state):
+        options = [cmd for cmd in commands if cmd.startswith(text)]
+        if text.startswith('execute '):
+            subtext = text[8:]
+            suboptions = [f'execute {act}' for act in model_actions if act.startswith(subtext)]
+            try:
+                return suboptions[state]
+            except IndexError:
+                return None
+        try:
+            return options[state]
+        except IndexError:
+            return None
+    
+    readline.set_completer(completer)
+    readline.parse_and_bind('tab: complete')
+    
+    while True:
+        try:
+            input_str = input("> ").strip()
+            if not input_str:
+                continue
+            if input_str.lower() == 'exit':
+                break
+            if input_str.lower() == 'help':
+                print("Available commands: help, exit, state, models, execute <command>")
+                continue
+            if input_str.lower() == 'state':
+                print(f"Current state: {state_manager.current_state}")
+                continue
+            if input_str.lower() == 'models':
+                print("Loaded models: " + ", ".join(model_manager.get_models()))
+                continue
+            if input_str.startswith('execute '):
+                command = input_str[8:].strip()
+                if command in config.model_actions:
+                    command_executor.execute_command(command)
+                    print(f"Executed: {command}")
+                else:
+                    print(f"Unknown command: {command}")
+                continue
+            
+            # Treat as voice command simulation
+            new_state = state_manager.update_state(input_str)
+            if new_state:
+                logger.info(f"Transitioning to new state: {new_state}")
+                model_manager.reload_models(new_state)
+            if input_str in config.model_actions:
+                command_executor.execute_command(input_str)
+        except EOFError:
+            break
+    logger.info("Exiting interactive shell")
 
 def main():
     parser = create_parser()
     args = parser.parse_args()
     
-    # If no arguments provided, could implement interactive shell here
+    # Argument validation
+    if args.web and args.port < 1024:
+        parser.error("Port must be 1024 or higher for non-root users")
+    if args.no_auth and not args.web:
+        parser.error("--no-auth only applicable in web mode")
+    
     if len(sys.argv) == 1:
         print("ChattyCommander - Voice Command System")
         print("Use --help for available options")
@@ -254,13 +270,15 @@ def main():
     
     # Route to appropriate mode
     if args.config:
-        # TODO: Implement interactive configuration wizard
-        print("Interactive configuration wizard not yet implemented")
-        sys.exit(1)
+        from config_cli import ConfigCLI
+        config_cli = ConfigCLI()
+        config_cli.run_wizard()
     elif args.web:
-        run_web_mode(config, model_manager, state_manager, command_executor, logger, args.no_auth)
+        run_web_mode(config, model_manager, state_manager, command_executor, logger, args.no_auth, args.port)
     elif args.gui:
         run_gui_mode(config, model_manager, state_manager, command_executor, logger)
+    elif args.shell:
+        run_interactive_shell(config, model_manager, state_manager, command_executor, logger)
     else:
         run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 

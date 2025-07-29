@@ -9,6 +9,7 @@ dependencies = [
     "pyautogui>=0.9.54",
     "pytest>=8.4.1",
     "pytest-mock>=3.12.0",
+    "pytest-cov>=4.1.0",
     "requests>=2.32.4",
     "argparse>=1.4.0", # Ensure argparse is available, though standard library
     "psutil>=7.0.0",
@@ -19,6 +20,8 @@ dependencies = [
     "python-multipart>=0.0.20",
     "pyjwt>=2.10.1",
     "bcrypt==4.0.1",
+    "websockets>=15.0.1",
+    "httpx>=0.28.1",
 ]
 
 [project.scripts]
@@ -26,6 +29,25 @@ chatty = "cli:cli_main"
 
 [dependency-groups]
 dev = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "--cov=. --cov-report=term --cov-report=html --cache-clear"
+
+[tool.coverage.run]
+source = [
+    ".",
+]
+omit = [
+    "tests/*",
+    "archive/*",
+    "webui/frontend/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
 
 [tool.setuptools]
 py-modules = ["cli", "command_executor", "command_extractor", "config", "config_cli", "helpers", "main", "model_manager", "state_manager"]

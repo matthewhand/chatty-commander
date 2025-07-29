@@ -10,24 +10,25 @@ import logging
 import time
 import asyncio
 import random  # For simulating command detection in demo mode
+from typing import Dict, Optional, Any
 from openwakeword.model import Model
 
 class ModelManager:
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         """
         Initializes the ModelManager with configuration settings and an empty model cache.
         """
         logging.basicConfig(level=logging.INFO)  # Setup logging configuration
-        self.config = config
-        self.models = {
+        self.config: Any = config
+        self.models: Dict[str, Dict[str, Model]] = {
             'general': {},
             'system': {},
             'chat': {}
         }
-        self.active_models = {}
+        self.active_models: Dict[str, Model] = {}
         self.reload_models()
 
-    def reload_models(self, state=None):
+    def reload_models(self, state: Optional[str] = None) -> None:
         """
         Reloads all models from the specified directories, enabling dynamic updates to model configurations.
         If state is provided, only loads models for that state.
@@ -42,8 +43,8 @@ class ModelManager:
             self.models['chat'] = self.load_model_set(self.config.chat_models_path)
             self.active_models = self.models['chat']
 
-    def load_model_set(self, path):
-        model_set = {}
+    def load_model_set(self, path: str) -> Dict[str, Model]:
+        model_set: Dict[str, Model] = {}
         if not os.path.exists(path):
             logging.error(f"Model directory {path} does not exist.")
             return model_set
@@ -52,6 +53,9 @@ class ModelManager:
             if model_file.endswith('.onnx'):
                 model_path = os.path.join(path, model_file)
                 model_name = os.path.splitext(model_file)[0]
+                if not os.path.exists(model_path):
+                    logging.warning(f"Model file '{model_path}' does not exist. Skipping.")
+                    continue
                 try:
                     model_instance = Model(model_path)
                     model_set[model_name] = model_instance
@@ -60,7 +64,7 @@ class ModelManager:
                     logging.error(f"Error loading model '{model_name}' from '{model_path}': {e}")
         return model_set
 
-    async def async_listen_for_commands(self):
+    async def async_listen_for_commands(self) -> Optional[str]:
         """
         Asynchronous version for listening for voice commands.
         """
@@ -69,19 +73,19 @@ class ModelManager:
             return random.choice(list(self.active_models.keys()))
         return None
 
-    def listen_for_commands(self):
+    def listen_for_commands(self) -> Optional[str]:
         """
         Synchronous wrapper for async_listen_for_commands.
         """
         return asyncio.run(self.async_listen_for_commands())
 
-    def get_models(self, state):
+    def get_models(self, state: str) -> Dict[str, Model]:
         """
         Retrieves models relevant to the current application state, allowing the system to adapt dynamically to state changes.
         """
         return self.models.get(state, {})
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Provides a representation of the ModelManager's state, useful for debugging and logging.
         """

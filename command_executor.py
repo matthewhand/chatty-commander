@@ -10,6 +10,7 @@ import subprocess
 import logging
 import os
 import platform
+from typing import Any, Dict, List, Union, Optional
 
 try:
     import pyautogui
@@ -17,19 +18,19 @@ except (ImportError, OSError, KeyError):
     pyautogui = None
 
 class CommandExecutor:
-    def __init__(self, config, model_manager, state_manager):
-        self.config = config
-        self.model_manager = model_manager
-        self.state_manager = state_manager
+    def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
+        self.config: Any = config
+        self.model_manager: Any = model_manager
+        self.state_manager: Any = state_manager
         logging.info("Command Executor initialized.")
 
-    def _execute_keypress(self, *args, **kwargs):
+    def _execute_keypress(self, *args: Any, **kwargs: Any) -> None:
         """
         Stub for _execute_keypress to satisfy tests.
         """
         pass
 
-    def execute_command(self, command_name):
+    def execute_command(self, command_name: str) -> None:
         if not self.validate_command(command_name):
             return
         self.pre_execute_hook(command_name)
@@ -54,26 +55,26 @@ class CommandExecutor:
 
         self.post_execute_hook(command_name)
 
-    def validate_command(self, command_name):
+    def validate_command(self, command_name: str) -> bool:
         command_action = self.config.model_actions.get(command_name)
         if not command_action:
             logging.error(f"No configuration found for command: {command_name}")
             raise ValueError(f"Invalid command: {command_name}")
         return True
 
-    def pre_execute_hook(self, command_name):
+    def pre_execute_hook(self, command_name: str) -> None:
         """
         Hook before executing a command.
         """
         logging.info(f"Preparing to execute command: {command_name}")
 
-    def post_execute_hook(self, command_name):
+    def post_execute_hook(self, command_name: str) -> None:
         """
         Hook after executing a command.
         """
         logging.info(f"Completed execution of command: {command_name}")
 
-    def _execute_keybinding(self, command_name, keys):
+    def _execute_keybinding(self, command_name: str, keys: Union[str, List[str]]) -> None:
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
         """
@@ -89,7 +90,7 @@ class CommandExecutor:
             logging.error(f"Failed to execute keybinding for {command_name}: {e}")
             self.report_error(command_name, str(e))
 
-    def _execute_url(self, command_name, url):
+    def _execute_url(self, command_name: str, url: str) -> None:
         """
         Sends an HTTP request based on the URL mapped to the command.
         """
@@ -99,7 +100,7 @@ class CommandExecutor:
         except Exception as e:
             logging.error(f"Failed to execute URL request for {command_name}: {e}")
 
-    def report_error(self, command_name, error_message):
+    def report_error(self, command_name: str, error_message: str) -> None:
         """
         Reports an error to the logging system or an external monitoring service.
         """
