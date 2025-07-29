@@ -6,15 +6,16 @@
 - [x] ✅ **CRITICAL**: Add `--web` flag to main.py to start FastAPI server
 - [x] ✅ **CRITICAL**: Remove unnecessary TypeScript backend mess in webui/backend/
 - [x] ✅ **CRITICAL**: Implement `--no-auth` flag for local development (insecure but convenient)
-- [ ] Integrate existing FastAPI endpoints into main Python application
-- [ ] Add WebSocket support for real-time communication
+- [x] ✅ Integrate existing FastAPI endpoints into main Python application
+- [x] ✅ Add WebSocket support for real-time communication
+- [x] ✅ **NEW**: Ensure API publishes OpenAPI/Swagger specification at `/docs` and `/openapi.json` endpoints for easier consumption
 
 ### CLI Enhancement & User Experience
-- [ ] **HIGH**: Add comprehensive `--help` with detailed argument descriptions
-- [ ] **HIGH**: Implement interactive shell mode when no arguments provided
-- [ ] **HIGH**: Add tab completion for parameters in interactive mode
-- [ ] Add argument validation with helpful error messages
-- [ ] Create CLI configuration wizard
+- [x] ✅ **HIGH**: Add comprehensive `--help` with detailed argument descriptions
+- [x] ✅ **HIGH**: Implement interactive shell mode when no arguments provided
+- [x] ✅ **HIGH**: Add tab completion for parameters in interactive mode
+- [x] ✅ Add argument validation with helpful error messages
+- [x] ✅ Create CLI configuration wizard
 
 ### Frontend Integration
 - [x] ✅ Fix React frontend to connect to Python backend on correct port
@@ -26,16 +27,16 @@
 - [x] ✅ Create comprehensive system testing script (56 tests, 100% pass rate)
 - [x] ✅ Fixed config listing bug in CLI
 - [x] ✅ Created automated test runner script
-- [x] Add unit tests for all core modules
+- [x] ✅ Add unit tests for all core modules
 - [x] ✅ Implement integration tests for voice recognition
 - [x] ✅ Add performance benchmarking tests
-- [ ] Run comprehensive test suite with `uv run pytest`
-- [ ] Test new web mode functionality
-- [ ] Validate CLI interactive shell
-- [ ] End-to-end testing of WebUI + Python backend
-- [ ] Create automated CI/CD pipeline
-- [ ] Add code coverage reporting
-- [ ] Implement stress testing for continuous operation
+- [x] ✅ Run comprehensive test suite with `uv run pytest`
+- [x] ✅ Test new web mode functionality
+- [x] ✅ Validate CLI interactive shell
+- [x] ✅ End-to-end testing of WebUI + Python backend
+- [x] Create automated CI/CD pipeline
+- [x] ✅ Add code coverage reporting
+- [x] ✅ Implement stress testing for continuous operation
 
 ### WebUI Testing & Demonstration Strategy 🎭
 - [x] ✅ **Backend API Testing**
@@ -81,7 +82,7 @@
 
 ### Documentation
 - [x] ✅ System test examples for documentation
-- [ ] Complete API documentation
+- [x] Complete API documentation
 - [ ] Create user manual with examples
 - [ ] Add developer setup guide
 - [ ] Document voice command training process
