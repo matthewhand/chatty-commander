@@ -25,17 +25,16 @@ The ChattyCommander WebUI project aims to create a comprehensive web-based inter
 ## Technical Architecture
 
 ### Backend Stack
-- **Framework**: FastAPI (Python)
-- **Database**: SQLite for user management
-- **Authentication**: JWT tokens with refresh mechanism
-- **Real-time**: WebSocket connections
-- **API**: RESTful endpoints with OpenAPI documentation
+- **Framework**: FastAPI (Python) - Integrated directly into the main ChattyCommander application.
+- **Authentication**: JWT tokens with refresh mechanism (can be disabled with `--no-auth` flag).
+- **Real-time**: WebSocket connections (planned).
+- **API**: RESTful endpoints with OpenAPI documentation.
 
 ### Frontend Stack
 - **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite for fast development
-- **Styling**: Tailwind CSS for responsive design
-- **State Management**: React Context API
+- **Build Tool**: Create React App (react-scripts)
+- **Styling**: Material-UI for a modern and responsive design.
+- **State Management**: React Context API & @tanstack/react-query
 - **Testing**: Jest + React Testing Library
 
 ### Infrastructure

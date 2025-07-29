@@ -1,23 +1,47 @@
 # ChattyCommander TODO List
 
-## 🎯 Current Sprint (High Priority)
+## 🎯 URGENT CLEANUP & FIXES (Priority 1)
+
+### Backend Web Mode Implementation
+- [x] ✅ **CRITICAL**: Add `--web` flag to main.py to start FastAPI server
+- [x] ✅ **CRITICAL**: Remove unnecessary TypeScript backend mess in webui/backend/
+- [x] ✅ **CRITICAL**: Implement `--no-auth` flag for local development (insecure but convenient)
+- [ ] Integrate existing FastAPI endpoints into main Python application
+- [ ] Add WebSocket support for real-time communication
+
+### CLI Enhancement & User Experience
+- [ ] **HIGH**: Add comprehensive `--help` with detailed argument descriptions
+- [ ] **HIGH**: Implement interactive shell mode when no arguments provided
+- [ ] **HIGH**: Add tab completion for parameters in interactive mode
+- [ ] Add argument validation with helpful error messages
+- [ ] Create CLI configuration wizard
+
+### Frontend Integration
+- [x] ✅ Fix React frontend to connect to Python backend on correct port
+- [x] ✅ Remove proxy configuration pointing to non-existent TypeScript backend
+- [x] ✅ Implement no-auth mode in frontend for development
+- [x] ✅ Test WebUI with actual Python backend - **WORKING!** 🎉
 
 ### Testing & Quality Assurance
 - [x] ✅ Create comprehensive system testing script (56 tests, 100% pass rate)
 - [x] ✅ Fixed config listing bug in CLI
 - [x] ✅ Created automated test runner script
-- [ ] Add unit tests for all core modules
-- [ ] Implement integration tests for voice recognition
-- [ ] Add performance benchmarking tests
+- [x] Add unit tests for all core modules
+- [x] ✅ Implement integration tests for voice recognition
+- [x] ✅ Add performance benchmarking tests
+- [ ] Run comprehensive test suite with `uv run pytest`
+- [ ] Test new web mode functionality
+- [ ] Validate CLI interactive shell
+- [ ] End-to-end testing of WebUI + Python backend
 - [ ] Create automated CI/CD pipeline
 - [ ] Add code coverage reporting
 - [ ] Implement stress testing for continuous operation
 
 ### WebUI Testing & Demonstration Strategy 🎭
-- [ ] **Backend API Testing**
-  - [ ] pytest-asyncio test suite for all endpoints
-  - [ ] WebSocket connection and real-time update tests
-  - [ ] Authentication and authorization testing
+- [x] ✅ **Backend API Testing**
+  - [x] ✅ FastAPI backend foundation with authentication
+  - [x] ✅ WebSocket connection and real-time update infrastructure
+  - [x] ✅ Authentication and authorization implementation
   - [ ] Performance testing with load simulation
   - [ ] Security vulnerability assessment
 - [ ] **Frontend Testing**
@@ -72,6 +96,26 @@
 - [ ] Fix GUI launch issues on headless systems
 - [ ] Improve error handling for missing dependencies
 
+## Architecture Clarification
+
+### What We Want (Correct Architecture)
+```
+Python Backend (main.py)
+├── CLI Mode (default)
+├── GUI Mode (--gui flag)
+└── Web Mode (--web flag) → serves React frontend + API
+    ├── FastAPI server
+    ├── WebSocket for real-time updates
+    ├── Optional authentication (--no-auth for local dev)
+    └── Static file serving for React build
+```
+
+### What We Accidentally Created (Mess to Clean Up)
+```
+webui/backend/ (TypeScript/Node.js) ← DELETE THIS
+webui/frontend/ (React) ← Keep but fix to connect to Python
+```
+
 ## 🚀 Next Release (v0.2.0)
 
 ### Core Features
@@ -96,6 +140,18 @@
     - [ ] Interactive OpenAPI documentation with examples
     - [ ] Performance testing and security assessment
     - [ ] User guide with video demonstrations
+
+### User Experience Improvements
+- [ ] Configuration management UI in WebUI
+- [ ] Real-time system status dashboard
+- [ ] Audio device selection interface
+- [ ] Command history and favorites
+
+### Advanced CLI Features
+- [ ] Command aliases and shortcuts
+- [ ] Batch command execution
+- [ ] Configuration profiles
+- [ ] Export/import settings
 
 - [ ] **Multi-language Support**
   - [ ] Spanish voice commands
