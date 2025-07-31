@@ -4,6 +4,9 @@ Unit tests for web_mode.py module.
 Tests FastAPI endpoints, WebSocket functionality, and server configuration.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock, patch
@@ -283,6 +286,55 @@ class TestPydanticModels:
         assert response.message == "Command executed successfully"
         assert response.execution_time == 123.45
 
+
+if __name__ == "__main__":
+    import pytest
+    pytest.main([__file__, "-v"])
+    """Test update config endpoint failure when config saving fails."""
+    config, _, _, _ = mock_managers
+    config.save_config = Mock(side_effect=Exception("Save failed"))
+    new_config = {"new_key": "new_value"}
+    response = test_client.put("/api/v1/config", json=new_config)
+    assert response.status_code == 500
+    data = response.json()
+    assert "error" in data
+class TestWebModeAdditional:
+    @pytest.fixture
+    def mock_managers(self):
+        config = Mock(spec=Config)
+        config.config = {"test": "value"}
+        state_manager = Mock(spec=StateManager)
+        state_manager.current_state = "idle"
+        state_manager.get_active_models.return_value = ["test_model"]
+        state_manager.add_state_change_callback = Mock()
+        state_manager.change_state = Mock()
+        model_manager = Mock(spec=ModelManager)
+        command_executor = Mock(spec=CommandExecutor)
+        return config, state_manager, model_manager, command_executor
+
+    @pytest.fixture
+    def web_server(self, mock_managers):
+        config, state_manager, model_manager, command_executor = mock_managers
+        return WebModeServer(config, state_manager, model_manager, command_executor)
+
+    @pytest.fixture
+    def test_client(self, web_server):
+        return TestClient(web_server.app)
+
+    def test_update_config_failure(self, test_client, mock_managers):
+        """Test update config endpoint failure when config saving fails."""
+        config, _, _, _ = mock_managers
+        config.save_config = Mock(side_effect=Exception("Save failed"))
+        new_config = {"new_key": "new_value"}
+        response = test_client.put("/api/v1/config", json=new_config)
+        assert response.status_code == 500
+        data = response.json()
+        assert "detail" in data
+
+    def test_non_existent_endpoint(self, test_client):
+        """Test accessing a non-existent endpoint returns a 404 error."""
+        response = test_client.get("/api/v1/non_existent")
+        assert response.status_code == 404
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

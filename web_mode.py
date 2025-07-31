@@ -166,7 +166,7 @@ class WebModeServer:
                 return {"message": "Configuration updated successfully"}
             except Exception as e:
                 logger.error(f"Failed to update configuration: {e}")
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
         
         @app.get("/api/v1/state", response_model=StateInfo)
         async def get_state():
