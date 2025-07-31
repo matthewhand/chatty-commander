@@ -31,7 +31,8 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
     "test:ci": "npm run jest:ci",
-    "jest:ci": "jest --ci --runInBand --watch=false"
+    "jest:ci": "jest --ci --runInBand --watch=false",
+    "test:ci:coverage": "jest --ci --runInBand --watch=false --coverage"
   },
   "eslintConfig": {
     "extends": [
