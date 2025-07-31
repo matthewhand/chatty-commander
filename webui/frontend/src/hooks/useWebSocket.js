@@ -60,7 +60,7 @@ export const useWebSocket = (url, options = {}) => {
       };
 
       ws.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
+        console.log('WebSocket disconnected:', event?.code ?? 1000, event?.reason ?? '');
         setIsConnected(false);
         setConnectionStatus('disconnected');
         

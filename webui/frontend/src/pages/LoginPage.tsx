@@ -7,12 +7,15 @@ const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     const success = await login(username, password);
+    setLoading(false);
     if (!success) {
       setError('Invalid username or password');
     }
@@ -71,8 +74,9 @@ const LoginPage: React.FC = () => {
               variant="contained"
               fullWidth
               sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
             >
-              Login
+              {loading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
           <Alert severity="info" sx={{ width: '100%', mt: 2 }}>

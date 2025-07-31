@@ -15,6 +15,12 @@ class ApiService {
    * Make HTTP request with error handling
    */
   async request(endpoint, options = {}) {
+    // Inject Authorization header if auth_token exists and not already set
+    const token = localStorage.getItem('auth_token');
+    if (token && !(options.headers && options.headers.Authorization)) {
+        if (!options.headers) options.headers = {};
+        options.headers.Authorization = 'Bearer ' + token;
+    }
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: { ...this.defaultHeaders, ...options.headers },

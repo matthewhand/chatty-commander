@@ -28,6 +28,9 @@ def setup_logger(name, log_file, level=logging.INFO):
 
     return logger
 
+def report_error(e):
+    logging.error(f"Error reported: {e}")
+
 # Example usage within the application
 # logger = setup_logger('main', 'logs/chattycommander.log')
 # logger.info('Logger setup complete')

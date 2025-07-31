@@ -121,7 +121,7 @@ class TestPerformanceBenchmarks:
         mock_listdir.return_value = ['model1.onnx', 'model2.onnx', 'model3.onnx']
         
         # Mock model loading to avoid actual file I/O
-        with patch('openwakeword.model.Model', return_value=MagicMock()) as mock_model:
+        with patch('model_manager.Model', return_value=MagicMock()) as mock_model:
             # Benchmark model loading
             _, execution_time = self.measure_execution_time(
                 model_manager.reload_models, 'idle'

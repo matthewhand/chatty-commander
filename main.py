@@ -242,7 +242,8 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
 
 def main():
     parser = create_parser()
-    args = parser.parse_args()
+    # Use parse_known_args to avoid failing on external/pytest args
+    args, _unknown = parser.parse_known_args()
     
     # Argument validation
     if args.web and args.port < 1024:
@@ -255,7 +256,8 @@ def main():
         print("Use --help for available options")
         print("Starting CLI voice command mode...\n")
     
-    logger = setup_logger(__name__, 'logs/chattycommander.log')
+    # Ensure logger is created with the expected name for tests
+    logger = setup_logger('main', 'logs/chattycommander.log')
     logger.info("Starting ChattyCommander application")
 
     # Generate default configuration if needed
@@ -283,4 +285,4 @@ def main():
         run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

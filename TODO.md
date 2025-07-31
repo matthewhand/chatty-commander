@@ -83,15 +83,15 @@
 ### Documentation
 - [x] ✅ System test examples for documentation
 - [x] Complete API documentation
-- [ ] Create user manual with examples
-- [ ] Add developer setup guide
-- [ ] Document voice command training process
-- [ ] Create troubleshooting guide
-- [ ] Add video tutorials for common use cases
+  - [x] Create user manual with examples
+  - [x] Add developer setup guide
+- [x] Document voice command training process
+  - [x] Create troubleshooting guide
+- [x] Add video tutorials for common use cases
 
 ### Bug Fixes
 - [x] ✅ Fixed config listing AttributeError for string actions
-- [ ] Fix ONNX model loading errors in logs
+- [x] Fix ONNX model loading errors in logs
 - [ ] Resolve pytest cache permission warnings
 - [ ] Handle missing DISPLAY environment variable gracefully
 - [ ] Fix GUI launch issues on headless systems

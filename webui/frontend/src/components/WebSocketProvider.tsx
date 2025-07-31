@@ -12,6 +12,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { isAuthenticated } = useAuth();
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -23,7 +24,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     socket.onopen = () => setIsConnected(true);
     socket.onclose = () => setIsConnected(false);
-    socket.onerror = (error) => console.error('WebSocket error:', error);
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setConnectionError('Connection error');
+      setIsConnected(false);
+    };
 
     setWs(socket);
 

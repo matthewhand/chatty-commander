@@ -14,8 +14,9 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-# Set DISPLAY environment variable if not set (for GUI applications)
-if 'DISPLAY' not in os.environ:
+# Check for DISPLAY environment variable. If missing, print a warning and assign a dummy fallback.
+if 'DISPLAY' not in os.environ or not os.environ['DISPLAY'].strip():
+    print("Warning: DISPLAY environment variable not set. Running in headless mode. Using dummy display ':0'.")
     os.environ['DISPLAY'] = ':0'
 
 from config import Config
@@ -871,7 +872,11 @@ class StateModelsDialog:
 
 def main():
     """Main function to run the GUI."""
-    root = tk.Tk()
+    try:
+        root = tk.Tk()
+    except tk.TclError as e:
+        print("Error: GUI cannot be started because no display is available. Running in headless environment.")
+        return
     app = ChattyCommanderGUI(root)
     root.mainloop()
 

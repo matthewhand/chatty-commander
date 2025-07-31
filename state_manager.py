@@ -18,6 +18,7 @@ class StateManager:
         self.logger.setLevel(logging.DEBUG)
         self.current_state: str = self.config.default_state
         self.active_models: List[str] = self.config.state_models.get(self.current_state, [])
+        self.callbacks: List[Callable[[str, str], None]] = []
         self.logger.info(f"StateManager initialized with state: {self.current_state}")
 
     def update_state(self, command: str) -> Optional[str]:
@@ -42,12 +43,18 @@ class StateManager:
             return new_state
         return None
 
+    def add_state_change_callback(self, callback: Callable[[str, str], None]) -> None:
+        self.callbacks.append(callback)
+
     def change_state(self, new_state: str, callback: Optional[Callable[[str], None]] = None) -> None:
         if new_state in self.config.state_models:
+            old_state = self.current_state
             self.current_state = new_state
             self.active_models = self.config.state_models[new_state]
             self.logger.info(f"Transitioned to {new_state} state. Active models: {self.active_models}")
             self.post_state_change_hook(new_state)
+            for cb in self.callbacks:
+                cb(old_state, new_state)
             if callback:
                 callback(new_state)
         else:

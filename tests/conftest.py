@@ -11,3 +11,14 @@ def mock_dependencies(monkeypatch):
     
     # Mock the Model class directly where it's imported and used
     monkeypatch.setattr('model_manager.Model', MagicMock())
+import stat
+import os
+
+@pytest.fixture(autouse=True)
+def fix_pytest_cache_permissions():
+    """
+    Ensure the .pytest_cache directory has correct permissions to avoid cache permission warnings.
+    """
+    cache_dir = ".pytest_cache"
+    if os.path.exists(cache_dir):
+         os.chmod(cache_dir, stat.S_IRWXU)

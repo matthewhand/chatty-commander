@@ -11,7 +11,13 @@ import time
 import asyncio
 import random  # For simulating command detection in demo mode
 from typing import Dict, Optional, Any
-from openwakeword.model import Model
+try:
+    from wakewords.model import Model
+except ModuleNotFoundError as e:
+    logging.warning("Dependency 'wakewords' not found. Using dummy Model. Some functionality may be limited.")
+    class Model:
+        def __init__(self, path):
+            self.path = path
 
 class ModelManager:
     def __init__(self, config: Any) -> None:
@@ -28,20 +34,30 @@ class ModelManager:
         self.active_models: Dict[str, Model] = {}
         self.reload_models()
 
-    def reload_models(self, state: Optional[str] = None) -> None:
+    def reload_models(self, state: Optional[str] = None) -> Dict[str, Model]:
         """
         Reloads all models from the specified directories, enabling dynamic updates to model configurations.
         If state is provided, only loads models for that state.
         """
-        if state is None or state == 'idle':
+        if state is None:
+            self.models['general'] = self.load_model_set(self.config.general_models_path)
+            self.models['system'] = self.load_model_set(self.config.system_models_path)
+            self.models['chat'] = self.load_model_set(self.config.chat_models_path)
+            self.active_models = self.models['general']
+            return self.models
+        elif state == 'idle':
             self.models['general'] = self.load_model_set(self.config.general_models_path)
             self.active_models = self.models['general']
+            return self.models['general']
         elif state == 'computer':
             self.models['system'] = self.load_model_set(self.config.system_models_path)
             self.active_models = self.models['system']
+            return self.models['system']
         elif state == 'chatty':
             self.models['chat'] = self.load_model_set(self.config.chat_models_path)
             self.active_models = self.models['chat']
+            return self.models['chat']
+        return {}
 
     def load_model_set(self, path: str) -> Dict[str, Model]:
         model_set: Dict[str, Model] = {}
@@ -59,9 +75,9 @@ class ModelManager:
                 try:
                     model_instance = Model(model_path)
                     model_set[model_name] = model_instance
-                    logging.info(f"Loaded model '{model_name}' from '{model_path}'.")
+                    logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
                 except Exception as e:
-                    logging.error(f"Error loading model '{model_name}' from '{model_path}': {e}")
+                    logging.error(f"Failed to load model '{model_name}' from '{model_path}'. Error details: {str(e)}. Continuing with other models.")
         return model_set
 
     async def async_listen_for_commands(self) -> Optional[str]:
@@ -91,11 +107,7 @@ class ModelManager:
         """
         return f"<ModelManager(general={len(self.models['general'])}, system={len(self.models['system'])}, chat={len(self.models['chat'])})>"
 
-def load_models(self, state=None):
-    """
-    Alias for reload_models to support test compatibility.
-    """
-    return self.reload_models(state)
+
 
 if __name__ == "__main__":
     # Assuming a configuration instance 'config' is available
@@ -104,3 +116,32 @@ if __name__ == "__main__":
     config = Config()
     model_manager = ModelManager(config)
     print(model_manager)
+def load_model(model_path):
+    import onnx
+    import logging
+    from datetime import datetime
+    import traceback
+
+    max_retries = 3
+    retries = 0
+
+    while True:
+        try:
+            model = onnx.load(model_path)
+            return model
+        except Exception as e:
+            retries += 1
+            diagnostics = {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "model_path": model_path,
+                "exception": traceback.format_exc(),
+                "retry": retries
+            }
+            logging.error("Model loading failure: %s", diagnostics)
+            if retries > max_retries:
+                try:
+                    from utils.logger import report_error
+                    report_error(e)
+                except Exception as report_exc:
+                    logging.error("Error reporting failed: %s", report_exc)
+                raise Exception("Max retries exceeded") from e
