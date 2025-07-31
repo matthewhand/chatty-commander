@@ -290,14 +290,6 @@ class TestPydanticModels:
 if __name__ == "__main__":
     import pytest
     pytest.main([__file__, "-v"])
-    """Test update config endpoint failure when config saving fails."""
-    config, _, _, _ = mock_managers
-    config.save_config = Mock(side_effect=Exception("Save failed"))
-    new_config = {"new_key": "new_value"}
-    response = test_client.put("/api/v1/config", json=new_config)
-    assert response.status_code == 500
-    data = response.json()
-    assert "error" in data
 class TestWebModeAdditional:
     @pytest.fixture
     def mock_managers(self):
@@ -336,5 +328,4 @@ class TestWebModeAdditional:
         response = test_client.get("/api/v1/non_existent")
         assert response.status_code == 404
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    # ...existing code...
