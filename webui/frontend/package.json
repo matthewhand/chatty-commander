@@ -29,7 +29,9 @@
     "eject": "react-scripts eject",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:ci": "npm run jest:ci",
+    "jest:ci": "jest --ci --runInBand --watch=false"
   },
   "eslintConfig": {
     "extends": [
