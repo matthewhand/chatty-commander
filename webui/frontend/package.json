@@ -34,7 +34,8 @@
     "jest:ci": "jest --ci --runInBand --watch=false",
     "test:ci:coverage": "jest --ci --runInBand --watch=false --coverage",
     "test:changed": "jest --ci --runInBand --watch=false --onlyChanged",
-    "test:watch:ci": "npm run test:ci"
+    "test:watch:ci": "npm run test:ci",
+    "lint:ci": "eslint src --ext .ts,.tsx --max-warnings=0"
   },
   "eslintConfig": {
     "extends": [
