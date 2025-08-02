@@ -87,3 +87,7 @@ quote-style = "preserve"
 indent-style = "space"
 docstring-code-format = true
 skip-magic-trailing-comma = false
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["chatty_commander"]
