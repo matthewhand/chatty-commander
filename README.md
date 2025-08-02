@@ -142,3 +142,4 @@ Alternatively, edit `config.py` manually for static changes.
 
 Enjoy using ChattyCommander! If you have questions, feel free to open an issue.
 
+
