@@ -7,8 +7,9 @@ logging practices and easy maintenance.
 """
 
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
+
 
 def setup_logger(name, log_file, level=logging.INFO):
     """Set up a logger with a rotating file handler."""
@@ -28,8 +29,10 @@ def setup_logger(name, log_file, level=logging.INFO):
 
     return logger
 
+
 def report_error(e):
     logging.error(f"Error reported: {e}")
+
 
 # Example usage within the application
 # logger = setup_logger('main', 'logs/chattycommander.log')

@@ -13,103 +13,190 @@ Example:
     python main.py
 """
 
-import sys
 import argparse
+import signal
+import sys
+import threading
+
+from command_executor import CommandExecutor
 from config import Config
 from model_manager import ModelManager
 from state_manager import StateManager
-from command_executor import CommandExecutor
 from utils.logger import setup_logger
+
 try:
     from default_config import generate_default_config_if_needed
 except ImportError:
-    def generate_default_config_if_needed():
+
+    def generate_default_config_if_needed() -> bool:
         return False
 
+
 def run_cli_mode(config, model_manager, state_manager, command_executor, logger):
-    """Run the traditional CLI voice command mode."""
+    """Run the traditional CLI voice command mode with graceful shutdown."""
     logger.info("Starting CLI voice command mode")
-    
+
     # Load models based on the initial idle state
     model_manager.reload_models(state_manager.current_state)
 
+    shutdown_flag = {"stop": False}
+
+    def handle_signal(signum, frame):
+        logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+        shutdown_flag["stop"] = True
+
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+
     try:
-        while True:
+        while not shutdown_flag["stop"]:
             # Listen for voice input
             command = model_manager.listen_for_commands()
-            if command:
-                logger.info(f"Command detected: {command}")
-                
-                # Update system state based on command
-                new_state = state_manager.update_state(command)
-                if new_state:
-                    logger.info(f"Transitioning to new state: {new_state}")
-                    model_manager.reload_models(new_state)
-                
-                # Execute the detected command if it's actionable
-                if command in config.model_actions:
-                    command_executor.execute_command(command)
-    
-    except KeyboardInterrupt:
-        logger.info("Shutting down the ChattyCommander application")
-        sys.exit()
+            if not command:
+                continue
 
-def run_web_mode(config, model_manager, state_manager, command_executor, logger, no_auth=False, port=8100):
-    """Run the web UI mode with FastAPI server."""
+            logger.info(f"Command detected: {command}")
+
+            # Update system state based on command
+            new_state = state_manager.update_state(command)
+            if new_state:
+                logger.info(f"Transitioning to new state: {new_state}")
+                model_manager.reload_models(new_state)
+
+            # Execute the detected command if it's actionable
+            if command in config.model_actions:
+                command_executor.execute_command(command)
+
+    except KeyboardInterrupt:
+        logger.info("KeyboardInterrupt received; shutting down")
+    finally:
+        # Perform any resource cleanup if needed
+        try:
+            if hasattr(model_manager, "shutdown"):
+                model_manager.shutdown()
+            if hasattr(state_manager, "shutdown"):
+                state_manager.shutdown()
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}")
+        logger.info("ChattyCommander CLI shutdown complete")
+        sys.exit(0)
+
+
+def run_web_mode(
+    config, model_manager, state_manager, command_executor, logger, no_auth=False, port=8100
+):
+    """Run the web UI mode with FastAPI server and graceful shutdown."""
     try:
         from web_mode import create_web_server
     except ImportError:
-        logger.error("Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets")
+        logger.error(
+            "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
+        )
         sys.exit(1)
-    
+
     logger.info(f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on port {port}")
-    
+
     # Create web server instance
     web_server = create_web_server(
         config_manager=config,
         state_manager=state_manager,
         model_manager=model_manager,
         command_executor=command_executor,
-        no_auth=no_auth
+        no_auth=no_auth,
     )
-    
+
     # Setup callbacks for voice command integration
     def on_command_detected(command):
         web_server.on_command_detected(command)
-    
+
     def on_state_change(old_state, new_state):
         web_server._on_state_change(old_state, new_state)
-    
+
     # Register callbacks
     if hasattr(model_manager, 'add_command_callback'):
         model_manager.add_command_callback(on_command_detected)
     if hasattr(state_manager, 'add_state_change_callback'):
         state_manager.add_state_change_callback(on_state_change)
-    
-    # Start the server
-    web_server.run(host="0.0.0.0", port=port, log_level="info")
 
-def run_gui_mode(config, model_manager, state_manager, command_executor, logger):
-    """Run the GUI mode."""
+    stop_event = threading.Event()
+
+    def handle_signal(signum, frame):
+        logger.info(f"Received signal {signum}, stopping web server...")
+        stop_event.set()
+        try:
+            stopper = getattr(web_server, "stop", None)
+            if callable(stopper):
+                stopper()
+        except Exception as e:
+            logger.error(f"Error stopping web server: {e}")
+
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+
+    # Start the server
+    try:
+        web_server.run(host="0.0.0.0", port=port, log_level="info")
+    finally:
+        try:
+            if hasattr(model_manager, "shutdown"):
+                model_manager.shutdown()
+            if hasattr(state_manager, "shutdown"):
+                state_manager.shutdown()
+        except Exception as e:
+            logger.error(f"Error during web mode shutdown: {e}")
+        logger.info("Web mode shutdown complete")
+
+
+def run_gui_mode(
+    config,
+    model_manager,
+    state_manager,
+    command_executor,
+    logger,
+    display_override: str | None = None,
+    no_gui: bool = False,
+):
+    """Run the GUI mode with graceful handling in headless environments.
+
+    Returns:
+        int: 0 if skipped or exited cleanly; non-zero if GUI could not start due to missing deps.
+    """
     import os
-    if 'DISPLAY' not in os.environ:
-        logger.error("No DISPLAY environment variable set. GUI mode requires a graphical environment.")
-        sys.exit(1)
+
+    if no_gui:
+        logger.info("--no-gui specified; skipping GUI launch")
+        return 0
+
+    # Apply DISPLAY override if provided (POSIX only)
+    if display_override and os.name != "nt":
+        os.environ["DISPLAY"] = display_override
+
+    # Graceful handling when DISPLAY is not present (headless/CI on POSIX)
+    if os.name != "nt" and not os.environ.get("DISPLAY"):
+        logger.warning(
+            "No DISPLAY environment variable set. Skipping GUI mode in headless environment."
+        )
+        return 0
     try:
         from gui import main as gui_main
+
         logger.info("Starting GUI mode")
-        gui_main()
+        # Let underlying GUI implementation handle potential TclError gracefully.
+        rc = gui_main()
+        return 0 if rc is None else int(rc)
     except ImportError:
         logger.error("GUI dependencies not available. Install with: uv add tkinter")
-        sys.exit(1)
+        return 2
+
 
 def create_parser():
     """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(
         description="ChattyCommander - Advanced voice-activated command processing system.\n"
-                    "This application allows users to control their computer using voice commands, "
-                    "with support for multiple modes including CLI, web UI, GUI, and configuration wizard.\n"
-                    "It integrates machine learning models for command detection and state management.",
+        "This application allows users to control their computer using voice commands, "
+        "with support for multiple modes including CLI, web UI, GUI, and configuration wizard.\n"
+        "It integrates machine learning models for command detection and state management.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -129,64 +216,76 @@ Available modes:
 - Config: Setup and configuration tool
 
 For detailed documentation and source code, visit: https://github.com/your-repo/chatty-commander
-        """
+        """,
     )
-    
+
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument(
-        "--web", 
+        "--web",
         action="store_true",
         help="Start the web UI server using FastAPI backend. Requires FastAPI and Uvicorn. "
-             "Serves a React-based frontend if built."
+        "Serves a React-based frontend if built.",
     )
     mode_group.add_argument(
-        "--gui", 
+        "--gui",
         action="store_true",
-        help="Start the graphical user interface. Requires Tkinter and a DISPLAY environment."
+        help="Start the graphical user interface. Requires Tkinter and a DISPLAY environment.",
     )
     mode_group.add_argument(
-        "--config", 
+        "--config",
         action="store_true",
-        help="Launch the interactive configuration wizard to set up models, commands, and settings."
+        help="Launch the interactive configuration wizard to set up models, commands, and settings.",
     )
     mode_group.add_argument(
         "--shell",
         action="store_true",
-        help="Start interactive shell mode for text-based command input and execution."
+        help="Start interactive shell mode for text-based command input and execution.",
     )
-    
+
     parser.add_argument(
-        "--no-auth", 
+        "--no-auth",
         action="store_true",
-        help="Disable authentication for web mode (INSECURE - use only for local development)."
+        help="Disable authentication for web mode (INSECURE - use only for local development).",
     )
-    
+
     parser.add_argument(
-        "--port", 
-        type=int, 
+        "--port",
+        type=int,
         default=8100,
-        help="Specify the port for the web server (default: 8100). Only used in web mode."
+        help="Specify the port for the web server (default: 8100). Only used in web mode.",
     )
-    
+
     parser.add_argument(
-        "--log-level", 
+        "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Set the logging level for the application (default: INFO)."
+        help="Set the logging level for the application (default: INFO).",
     )
-    
+
+    # Headless-friendly switches
+    parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        help="Avoid launching the GUI even if --gui is provided; useful in CI/headless.",
+    )
+    parser.add_argument(
+        "--display", type=str, default=None, help="Override DISPLAY value for GUI mode (e.g., :0)."
+    )
+
     return parser
+
 
 def run_interactive_shell(config, model_manager, state_manager, command_executor, logger):
     """Run interactive text-based shell mode with tab completion."""
     import readline
+
     logger.info("Starting interactive shell mode")
     print("ChattyCommander Interactive Shell")
     print("Type 'help' for commands, 'exit' to quit")
-    
+
     commands = ['help', 'exit', 'state', 'models', 'execute']
     model_actions = list(config.model_actions.keys())
-    
+
     def completer(text, state):
         options = [cmd for cmd in commands if cmd.startswith(text)]
         if text.startswith('execute '):
@@ -200,10 +299,10 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
             return options[state]
         except IndexError:
             return None
-    
+
     readline.set_completer(completer)
     readline.parse_and_bind('tab: complete')
-    
+
     while True:
         try:
             input_str = input("> ").strip()
@@ -228,7 +327,7 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
                 else:
                     print(f"Unknown command: {command}")
                 continue
-            
+
             # Treat as voice command simulation
             new_state = state_manager.update_state(input_str)
             if new_state:
@@ -240,22 +339,23 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
             break
     logger.info("Exiting interactive shell")
 
+
 def main():
     parser = create_parser()
     # Use parse_known_args to avoid failing on external/pytest args
     args, _unknown = parser.parse_known_args()
-    
+
     # Argument validation
     if args.web and args.port < 1024:
         parser.error("Port must be 1024 or higher for non-root users")
     if args.no_auth and not args.web:
         parser.error("--no-auth only applicable in web mode")
-    
+
     if len(sys.argv) == 1:
         print("ChattyCommander - Voice Command System")
         print("Use --help for available options")
         print("Starting CLI voice command mode...\n")
-    
+
     # Ensure logger is created with the expected name for tests
     logger = setup_logger('main', 'logs/chattycommander.log')
     logger.info("Starting ChattyCommander application")
@@ -269,20 +369,36 @@ def main():
     model_manager = ModelManager(config)
     state_manager = StateManager()
     command_executor = CommandExecutor(config, model_manager, state_manager)
-    
+
     # Route to appropriate mode
     if args.config:
         from config_cli import ConfigCLI
+
         config_cli = ConfigCLI()
         config_cli.run_wizard()
     elif args.web:
-        run_web_mode(config, model_manager, state_manager, command_executor, logger, args.no_auth, args.port)
+        run_web_mode(
+            config, model_manager, state_manager, command_executor, logger, args.no_auth, args.port
+        )
     elif args.gui:
-        run_gui_mode(config, model_manager, state_manager, command_executor, logger)
+        # Respect return codes from GUI runner (0=headless skipped, 2=deps missing)
+        rc = run_gui_mode(
+            config,
+            model_manager,
+            state_manager,
+            command_executor,
+            logger,
+            display_override=args.display,
+            no_gui=args.no_gui,
+        )
+        if isinstance(rc, int) and rc != 0:
+            # Non-zero means GUI could not start; exit without stack trace
+            sys.exit(rc)
     elif args.shell:
         run_interactive_shell(config, model_manager, state_manager, command_executor, logger)
     else:
         run_cli_mode(config, model_manager, state_manager, command_executor, logger)
+
 
 if __name__ == "__main__":
     sys.exit(main())

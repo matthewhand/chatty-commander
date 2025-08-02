@@ -1,8 +1,10 @@
-import unittest
 import logging
-from unittest.mock import patch, MagicMock
 import os
+import unittest
+from unittest.mock import MagicMock, patch
+
 from utils.logger import setup_logger
+
 
 class TestLogger(unittest.TestCase):
     @patch('utils.logger.os.makedirs')
@@ -27,9 +29,12 @@ class TestLogger(unittest.TestCase):
             with patch('utils.logger.os.makedirs') as mock_makedirs:
                 logger = setup_logger('test', 'existing/dir/log.log')
                 mock_makedirs.assert_not_called()
-                mock_handler.assert_called_once_with('existing/dir/log.log', maxBytes=1000000, backupCount=5)
+                mock_handler.assert_called_once_with(
+                    'existing/dir/log.log', maxBytes=1000000, backupCount=5
+                )
                 mock_logger.addHandler.assert_called_once()
                 self.assertEqual(logger, mock_logger)
+
 
 if __name__ == '__main__':
     unittest.main()

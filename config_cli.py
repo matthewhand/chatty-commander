@@ -6,6 +6,7 @@ XDG_CONFIG_HOME = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.confi
 APP_CONFIG_DIR = os.path.join(XDG_CONFIG_HOME, 'chatty-commander')
 DEFAULT_CONFIG_PATH = os.path.join(APP_CONFIG_DIR, 'config.json')
 
+
 class ConfigCLI:
     def __init__(self, config_path=DEFAULT_CONFIG_PATH):
         os.makedirs(APP_CONFIG_DIR, exist_ok=True)
@@ -19,7 +20,9 @@ class ConfigCLI:
         """
         print("=== ChattyCommander Configuration Wizard ===")
         print("You will be guided through the most important configuration options.")
-        print("Press Enter to accept the default or current value shown in [brackets]. Type 'skip' to leave unchanged.\n")
+        print(
+            "Press Enter to accept the default or current value shown in [brackets]. Type 'skip' to leave unchanged.\n"
+        )
 
         # Helper for prompting
         def prompt_option(prompt, default=None, explanation=None, validator=None, cast=None):
@@ -51,109 +54,113 @@ class ConfigCLI:
 
         # --- Model Paths ---
         print("\n--- Model Paths ---")
-        model_paths = self.config.get("model_paths", {
-            "idle": "models-idle",
-            "computer": "models-computer",
-            "chatty": "models-chatty"
-        })
+        model_paths = self.config.get(
+            "model_paths",
+            {"idle": "models-idle", "computer": "models-computer", "chatty": "models-chatty"},
+        )
         for key in ["idle", "computer", "chatty"]:
             explanation = f"Directory path for {key} mode models."
             default = model_paths.get(key, f"models-{key}")
-            val = prompt_option(
-                f"Path for {key} models", default=default, explanation=explanation
-            )
+            val = prompt_option(f"Path for {key} models", default=default, explanation=explanation)
             model_paths[key] = val
         self.config["model_paths"] = model_paths
 
         # --- API Endpoints ---
         print("\n--- API Endpoints ---")
-        api_endpoints = self.config.get("api_endpoints", {
-            "home_assistant": "http://homeassistant.domain.home:8123/api",
-            "chatbot_endpoint": "http://localhost:3100/"
-        })
+        api_endpoints = self.config.get(
+            "api_endpoints",
+            {
+                "home_assistant": "http://homeassistant.domain.home:8123/api",
+                "chatbot_endpoint": "http://localhost:3100/",
+            },
+        )
         for key, default_url in [
             ("home_assistant", "http://homeassistant.domain.home:8123/api"),
-            ("chatbot_endpoint", "http://localhost:3100/")
+            ("chatbot_endpoint", "http://localhost:3100/"),
         ]:
             explanation = f"URL for {key.replace('_', ' ').title()} API endpoint."
             default = api_endpoints.get(key, default_url)
             val = prompt_option(
-                f"API endpoint for {key}", default=default, explanation=explanation,
-                validator=lambda v: v.startswith("http://") or v.startswith("https://")
+                f"API endpoint for {key}",
+                default=default,
+                explanation=explanation,
+                validator=lambda v: v.startswith("http://") or v.startswith("https://"),
             )
             api_endpoints[key] = val
         self.config["api_endpoints"] = api_endpoints
 
         # --- Audio Settings ---
         print("\n--- Audio Settings ---")
-        audio_settings = self.config.get("audio_settings", {
-            "mic_chunk_size": 1024,
-            "sample_rate": 16000,
-            "audio_format": "int16"
-        })
+        audio_settings = self.config.get(
+            "audio_settings",
+            {"mic_chunk_size": 1024, "sample_rate": 16000, "audio_format": "int16"},
+        )
         audio_settings["mic_chunk_size"] = prompt_option(
             "Microphone chunk size",
             default=audio_settings.get("mic_chunk_size", 1024),
             explanation="Number of audio samples per chunk (affects latency and performance).",
             cast=int,
-            validator=lambda v: isinstance(v, int) and v > 0
+            validator=lambda v: isinstance(v, int) and v > 0,
         )
         audio_settings["sample_rate"] = prompt_option(
             "Audio sample rate (Hz)",
             default=audio_settings.get("sample_rate", 16000),
             explanation="Sample rate for audio input (e.g., 16000 for most speech models).",
             cast=int,
-            validator=lambda v: isinstance(v, int) and v > 0
+            validator=lambda v: isinstance(v, int) and v > 0,
         )
         audio_settings["audio_format"] = prompt_option(
             "Audio format",
             default=audio_settings.get("audio_format", "int16"),
             explanation="Audio format (e.g., int16, float32).",
-            validator=lambda v: v in ["int16", "float32"]
+            validator=lambda v: v in ["int16", "float32"],
         )
         self.config["audio_settings"] = audio_settings
 
         # --- General Settings ---
         print("\n--- General Settings ---")
-        general_settings = self.config.get("general_settings", {
-            "debug_mode": True,
-            "default_state": "idle",
-            "inference_framework": "onnx",
-            "start_on_boot": False,
-            "check_for_updates": True
-        })
+        general_settings = self.config.get(
+            "general_settings",
+            {
+                "debug_mode": True,
+                "default_state": "idle",
+                "inference_framework": "onnx",
+                "start_on_boot": False,
+                "check_for_updates": True,
+            },
+        )
         general_settings["debug_mode"] = prompt_option(
             "Enable debug mode? (True/False)",
             default=general_settings.get("debug_mode", True),
             explanation="Enable verbose debug output for troubleshooting.",
             validator=lambda v: str(v).lower() in ["true", "false"],
-            cast=lambda v: str(v).lower() == "true"
+            cast=lambda v: str(v).lower() == "true",
         )
         general_settings["default_state"] = prompt_option(
             "Default state",
             default=general_settings.get("default_state", "idle"),
             explanation="Initial state when the application starts (idle, computer, chatty).",
-            validator=lambda v: v in ["idle", "computer", "chatty"]
+            validator=lambda v: v in ["idle", "computer", "chatty"],
         )
         general_settings["inference_framework"] = prompt_option(
             "Inference framework",
             default=general_settings.get("inference_framework", "onnx"),
             explanation="Framework for running models (onnx, pytorch, etc).",
-            validator=lambda v: v in ["onnx", "pytorch"]
+            validator=lambda v: v in ["onnx", "pytorch"],
         )
         general_settings["start_on_boot"] = prompt_option(
             "Start on boot? (True/False)",
             default=general_settings.get("start_on_boot", False),
             explanation="Should ChattyCommander start automatically on system boot?",
             validator=lambda v: str(v).lower() in ["true", "false"],
-            cast=lambda v: str(v).lower() == "true"
+            cast=lambda v: str(v).lower() == "true",
         )
         general_settings["check_for_updates"] = prompt_option(
             "Enable automatic update checks? (True/False)",
             default=general_settings.get("check_for_updates", True),
             explanation="Check for updates to ChattyCommander automatically at startup.",
             validator=lambda v: str(v).lower() in ["true", "false"],
-            cast=lambda v: str(v).lower() == "true"
+            cast=lambda v: str(v).lower() == "true",
         )
         self.config["general_settings"] = general_settings
 
@@ -167,7 +174,7 @@ class ConfigCLI:
     def load_config(self):
         try:
             if os.path.exists(self.config_path):
-                with open(self.config_path, 'r') as f:
+                with open(self.config_path) as f:
                     return json.load(f)
         except json.JSONDecodeError:
             print(f"Error: Invalid JSON in {self.config_path}", file=sys.stderr)

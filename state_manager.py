@@ -8,8 +8,10 @@ and more complex state dependencies.
 """
 
 import logging
-from typing import List, Optional, Callable
+from collections.abc import Callable
+
 from config import Config
+
 
 class StateManager:
     def __init__(self) -> None:
@@ -17,16 +19,16 @@ class StateManager:
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         self.current_state: str = self.config.default_state
-        self.active_models: List[str] = self.config.state_models.get(self.current_state, [])
-        self.callbacks: List[Callable[[str, str], None]] = []
+        self.active_models: list[str] = self.config.state_models.get(self.current_state, [])
+        self.callbacks: list[Callable[[str, str], None]] = []
         self.logger.info(f"StateManager initialized with state: {self.current_state}")
 
-    def update_state(self, command: str) -> Optional[str]:
+    def update_state(self, command: str) -> str | None:
         """
         Updates the state based on the detected command.
         Returns the new state if a transition occurred, otherwise None.
         """
-        new_state: Optional[str] = None
+        new_state: str | None = None
         if command == 'hey_chat_tee':
             new_state = 'chatty'
         elif command == 'hey_khum_puter':
@@ -37,7 +39,7 @@ class StateManager:
             states = ['idle', 'computer', 'chatty']
             current_index = states.index(self.current_state)
             new_state = states[(current_index + 1) % len(states)]
-        
+
         if new_state and new_state != self.current_state:
             self.change_state(new_state)
             return new_state
@@ -46,12 +48,14 @@ class StateManager:
     def add_state_change_callback(self, callback: Callable[[str, str], None]) -> None:
         self.callbacks.append(callback)
 
-    def change_state(self, new_state: str, callback: Optional[Callable[[str], None]] = None) -> None:
+    def change_state(self, new_state: str, callback: Callable[[str], None] | None = None) -> None:
         if new_state in self.config.state_models:
             old_state = self.current_state
             self.current_state = new_state
             self.active_models = self.config.state_models[new_state]
-            self.logger.info(f"Transitioned to {new_state} state. Active models: {self.active_models}")
+            self.logger.info(
+                f"Transitioned to {new_state} state. Active models: {self.active_models}"
+            )
             self.post_state_change_hook(new_state)
             for cb in self.callbacks:
                 cb(old_state, new_state)
@@ -60,7 +64,7 @@ class StateManager:
         else:
             raise ValueError(f"Invalid state: {new_state}")
 
-    def get_active_models(self) -> List[str]:
+    def get_active_models(self) -> list[str]:
         return self.active_models
 
     def post_state_change_hook(self, new_state: str) -> None:
@@ -68,6 +72,7 @@ class StateManager:
 
     def __repr__(self) -> str:
         return f"<StateManager(current_state={self.current_state}, active_models={len(self.active_models)})>"
+
 
 # Example usage:
 if __name__ == "__main__":

@@ -68,7 +68,7 @@ describe('ApiService', () => {
       headers: { get: () => 'application/json' }
     });
 
-    await expect(apiService.get('/error')).rejects.toThrow('HTTP error! status: 500');
+    await expect(apiService.get('/error')).rejects.toThrow(/HTTP 500/);
   });
 
   test('handles network errors', async () => {

@@ -1,11 +1,14 @@
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import logging
 import unittest
 from unittest.mock import MagicMock
-from state_manager import StateManager
+
 from config import Config
-import logging
+from state_manager import StateManager
+
 
 class TestStateManager(unittest.TestCase):
     def setUp(self):
@@ -26,7 +29,9 @@ class TestStateManager(unittest.TestCase):
         self.state_manager.change_state('computer')
         self.logger.debug(f"State after changing to computer: {self.state_manager.current_state}")
         self.assertEqual(self.state_manager.current_state, 'computer')
-        self.assertEqual(self.state_manager.get_active_models(), self.config.state_models['computer'])
+        self.assertEqual(
+            self.state_manager.get_active_models(), self.config.state_models['computer']
+        )
 
         self.state_manager.change_state('chatty')
         self.logger.debug(f"State after changing to chatty: {self.state_manager.current_state}")
@@ -37,7 +42,9 @@ class TestStateManager(unittest.TestCase):
         """Test that an invalid state transition raises a ValueError."""
         with self.assertRaises(ValueError):
             self.state_manager.change_state('invalid_state')
-        self.logger.debug(f"State after invalid transition attempt: {self.state_manager.current_state}")
+        self.logger.debug(
+            f"State after invalid transition attempt: {self.state_manager.current_state}"
+        )
         self.assertEqual(self.state_manager.current_state, self.config.default_state)
 
     def test_update_state_specific_commands(self):
@@ -56,21 +63,29 @@ class TestStateManager(unittest.TestCase):
 
         self.state_manager.change_state('chatty')  # Set to non-idle state first
         self.assertEqual(self.state_manager.update_state('thanks_chat_tee'), 'idle')
-        self.logger.debug(f"State after 'thanks_chat_tee' from chatty: {self.state_manager.current_state}")
+        self.logger.debug(
+            f"State after 'thanks_chat_tee' from chatty: {self.state_manager.current_state}"
+        )
         self.state_manager.change_state('computer')  # Set to non-idle state first
         self.assertEqual(self.state_manager.update_state('that_ill_do'), 'idle')
-        self.logger.debug(f"State after 'that_ill_do' from computer: {self.state_manager.current_state}")
+        self.logger.debug(
+            f"State after 'that_ill_do' from computer: {self.state_manager.current_state}"
+        )
 
     def test_update_state_no_change(self):
         """Test update_state when no transition occurs."""
         self.state_manager.current_state = 'idle'
         self.assertIsNone(self.state_manager.update_state('unknown_command'))
-        self.logger.debug(f"State after unknown command in idle: {self.state_manager.current_state}")
+        self.logger.debug(
+            f"State after unknown command in idle: {self.state_manager.current_state}"
+        )
         self.assertEqual(self.state_manager.current_state, 'idle')
 
         self.state_manager.current_state = 'chatty'
         self.assertIsNone(self.state_manager.update_state('hey_chat_tee'))
-        self.logger.debug(f"State after 'hey_chat_tee' in chatty: {self.state_manager.current_state}")
+        self.logger.debug(
+            f"State after 'hey_chat_tee' in chatty: {self.state_manager.current_state}"
+        )
         self.assertEqual(self.state_manager.current_state, 'chatty')
 
     def test_toggle_mode(self):
@@ -87,16 +102,32 @@ class TestStateManager(unittest.TestCase):
     def test_repr(self):
         """Test __repr__ method."""
         self.state_manager.active_models = ['model1', 'model2']
-        self.assertEqual(repr(self.state_manager), '<StateManager(current_state=idle, active_models=2)>')
+        self.assertEqual(
+            repr(self.state_manager), '<StateManager(current_state=idle, active_models=2)>'
+        )
         self.logger.debug(f"Repr: {repr(self.state_manager)}")
 
     # Expanded tests
     def test_all_state_transitions(self):
         """Test all possible state transitions."""
         transitions = {
-            'idle': {'hey_chat_tee': 'chatty', 'hey_khum_puter': 'computer', 'toggle_mode': 'computer'},
-            'chatty': {'hey_khum_puter': 'computer', 'okay_stop': 'idle', 'thanks_chat_tee': 'idle', 'toggle_mode': 'idle'},
-            'computer': {'hey_chat_tee': 'chatty', 'okay_stop': 'idle', 'that_ill_do': 'idle', 'toggle_mode': 'chatty'}
+            'idle': {
+                'hey_chat_tee': 'chatty',
+                'hey_khum_puter': 'computer',
+                'toggle_mode': 'computer',
+            },
+            'chatty': {
+                'hey_khum_puter': 'computer',
+                'okay_stop': 'idle',
+                'thanks_chat_tee': 'idle',
+                'toggle_mode': 'idle',
+            },
+            'computer': {
+                'hey_chat_tee': 'chatty',
+                'okay_stop': 'idle',
+                'that_ill_do': 'idle',
+                'toggle_mode': 'chatty',
+            },
         }
         for start_state, cmds in transitions.items():
             for cmd, end_state in cmds.items():
@@ -139,7 +170,9 @@ class TestStateManager(unittest.TestCase):
         """Test active models update on state change."""
         self.state_manager.change_state('computer')
         self.logger.debug(f"Active models in computer: {self.state_manager.get_active_models()}")
-        self.assertEqual(self.state_manager.get_active_models(), self.config.state_models['computer'])
+        self.assertEqual(
+            self.state_manager.get_active_models(), self.config.state_models['computer']
+        )
 
         self.state_manager.change_state('idle')
         self.logger.debug(f"Active models in idle: {self.state_manager.get_active_models()}")
@@ -151,7 +184,7 @@ class TestStateManager(unittest.TestCase):
             self.state_manager.change_state('chatty')
         self.assertTrue(
             any('Post state change actions for chatty' in msg for msg in log.output),
-            "Expected log message about post state change actions for chatty not found."
+            "Expected log message about post state change actions for chatty not found.",
         )
 
     def test_change_state_with_callback(self):
@@ -171,9 +204,14 @@ class TestStateManager(unittest.TestCase):
     def test_repr_with_different_models(self):
         """Test __repr__ with varying active models."""
         self.state_manager.active_models = []
-        self.assertEqual(repr(self.state_manager), '<StateManager(current_state=idle, active_models=0)>')
+        self.assertEqual(
+            repr(self.state_manager), '<StateManager(current_state=idle, active_models=0)>'
+        )
         self.state_manager.active_models = ['one']
-        self.assertEqual(repr(self.state_manager), '<StateManager(current_state=idle, active_models=1)>')
+        self.assertEqual(
+            repr(self.state_manager), '<StateManager(current_state=idle, active_models=1)>'
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

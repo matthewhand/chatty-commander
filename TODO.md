@@ -3,46 +3,57 @@
 ## 🎯 URGENT CLEANUP & FIXES (Priority 1)
 
 ### Backend Web Mode Implementation
-- [x] ✅ **CRITICAL**: Add `--web` flag to main.py to start FastAPI server
-- [x] ✅ **CRITICAL**: Remove unnecessary TypeScript backend mess in webui/backend/
-- [x] ✅ **CRITICAL**: Implement `--no-auth` flag for local development (insecure but convenient)
-- [x] ✅ Integrate existing FastAPI endpoints into main Python application
-- [x] ✅ Add WebSocket support for real-time communication
-- [x] ✅ **NEW**: Ensure API publishes OpenAPI/Swagger specification at `/docs` and `/openapi.json` endpoints for easier consumption
+- [x] **CRITICAL**: Add `--web` flag to main.py to start FastAPI server
+- [x] **CRITICAL**: Remove unnecessary TypeScript backend mess in webui/backend/
+- [x] **CRITICAL**: Implement `--no-auth` flag for local development (insecure but convenient)
+- [x] Integrate existing FastAPI endpoints into main Python application
+- [x] Add WebSocket support for real-time communication
+- [ ] **NEW**: Ensure API publishes OpenAPI/Swagger specification at `/docs` and `/openapi.json` endpoints for easier consumption
+  - Issue: Expose and validate OpenAPI/Swagger
+    - Acceptance criteria:
+      - Running `python main.py --web` serves Swagger UI at GET /docs (200 OK)
+      - GET /openapi.json returns JSON schema with at least core endpoints defined (200 OK; content-type application/json)
+      - CORS allows GET from http://localhost:3000 during dev (no-auth mode)
+      - Add pytest that asserts both endpoints respond 200 and schema has "paths"
+    - Tasks:
+      - Verify FastAPI app includes `get_openapi` or FastAPI default docs enabled
+      - Ensure docs/openapi.json matches served schema or update generation process
+      - Add tests: tests/test_web_mode_unit.py or new tests/test_openapi_endpoints.py
+      - Update README.md with "API docs available at /docs and /openapi.json"
 
 ### CLI Enhancement & User Experience
-- [x] ✅ **HIGH**: Add comprehensive `--help` with detailed argument descriptions
-- [x] ✅ **HIGH**: Implement interactive shell mode when no arguments provided
-- [x] ✅ **HIGH**: Add tab completion for parameters in interactive mode
-- [x] ✅ Add argument validation with helpful error messages
-- [x] ✅ Create CLI configuration wizard
+- [ ] **HIGH**: Add comprehensive `--help` with detailed argument descriptions
+- [ ] **HIGH**: Implement interactive shell mode when no arguments provided
+- [ ] **HIGH**: Add tab completion for parameters in interactive mode
+- [x] Add argument validation with helpful error messages
+- [x] Create CLI configuration wizard
 
 ### Frontend Integration
-- [x] ✅ Fix React frontend to connect to Python backend on correct port
-- [x] ✅ Remove proxy configuration pointing to non-existent TypeScript backend
-- [x] ✅ Implement no-auth mode in frontend for development
-- [x] ✅ Test WebUI with actual Python backend - **WORKING!** 🎉
+- [ ] Fix React frontend to connect to Python backend on correct port
+- [ ] Remove proxy configuration pointing to non-existent TypeScript backend
+- [ ] Implement no-auth mode in frontend for development
+- [ ] Test WebUI with actual Python backend - **WORKING!** 🎉
 
 ### Testing & Quality Assurance
-- [x] ✅ Create comprehensive system testing script (56 tests, 100% pass rate)
-- [x] ✅ Fixed config listing bug in CLI
-- [x] ✅ Created automated test runner script
-- [x] ✅ Add unit tests for all core modules
-- [x] ✅ Implement integration tests for voice recognition
-- [x] ✅ Add performance benchmarking tests
-- [x] ✅ Run comprehensive test suite with `uv run pytest`
-- [x] ✅ Test new web mode functionality
-- [x] ✅ Validate CLI interactive shell
-- [x] ✅ End-to-end testing of WebUI + Python backend
-- [x] Create automated CI/CD pipeline
-- [x] ✅ Add code coverage reporting
-- [x] ✅ Implement stress testing for continuous operation
+- [ ] Create comprehensive system testing script (56 tests, 100% pass rate)
+- [ ] Fixed config listing bug in CLI
+- [ ] Created automated test runner script
+- [ ] Add unit tests for all core modules
+- [ ] Implement integration tests for voice recognition
+- [ ] Add performance benchmarking tests
+- [ ] Run comprehensive test suite with `uv run pytest`
+- [ ] Test new web mode functionality
+- [ ] Validate CLI interactive shell
+- [ ] End-to-end testing of WebUI + Python backend
+- [ ] Create automated CI/CD pipeline
+- [ ] Add code coverage reporting
+- [ ] Implement stress testing for continuous operation
 
 ### WebUI Testing & Demonstration Strategy 🎭
-- [x] ✅ **Backend API Testing**
-  - [x] ✅ FastAPI backend foundation with authentication
-  - [x] ✅ WebSocket connection and real-time update infrastructure
-  - [x] ✅ Authentication and authorization implementation
+- [ ] ✅ **Backend API Testing**
+  - [ ] ✅ FastAPI backend foundation with authentication
+  - [ ] ✅ WebSocket connection and real-time update infrastructure
+  - [ ] ✅ Authentication and authorization implementation
   - [ ] Performance testing with load simulation
   - [ ] Security vulnerability assessment
 - [ ] **Frontend Testing**
@@ -81,17 +92,18 @@
     - [ ] Use case scenarios and recommendations
 
 ### Documentation
-- [x] ✅ System test examples for documentation
-- [x] Complete API documentation
-  - [x] Create user manual with examples
-  - [x] Add developer setup guide
-- [x] Document voice command training process
-  - [x] Create troubleshooting guide
-- [x] Add video tutorials for common use cases
+- [ ] ✅ System test examples for documentation
+- [ ] Complete API documentation
+  - [ ] Create user manual with examples
+  - [ ] Add developer setup guide
+- [ ] Document voice command training process
+  - [ ] Create troubleshooting guide
+- [ ] Add video tutorials for common use cases
+- [ ] Implement code style enforcement (black + ruff) and add configs
 
 ### Bug Fixes
-- [x] ✅ Fixed config listing AttributeError for string actions
-- [x] Fix ONNX model loading errors in logs
+- [ ] ✅ Fixed config listing AttributeError for string actions
+- [ ] Fix ONNX model loading errors in logs
 - [ ] Resolve pytest cache permission warnings
 - [ ] Handle missing DISPLAY environment variable gracefully
 - [ ] Fix GUI launch issues on headless systems

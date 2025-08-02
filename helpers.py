@@ -7,14 +7,17 @@ across different components of the application to perform common tasks.
 
 import os
 
+
 def ensure_directory_exists(path):
     """Ensure that a directory exists, and if not, create it."""
     if not os.path.exists(path):
         os.makedirs(path)
 
+
 def format_command_output(cmd_output):
     """Format the output of a command for better readability."""
     return cmd_output.strip().replace('\n', ' | ')
+
 
 def parse_model_keybindings(keybindings_str):
     """Parse a string of keybindings into a dictionary."""
@@ -25,6 +28,7 @@ def parse_model_keybindings(keybindings_str):
             model, keys = pair.split('=')
             keybindings[model.strip()] = keys.strip()
     return keybindings
+
 
 # Example usage of helper functions:
 # directory = 'path/to/directory'

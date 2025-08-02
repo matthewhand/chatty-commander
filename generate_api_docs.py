@@ -7,25 +7,26 @@ Creates both markdown documentation and OpenAPI specification.
 """
 
 import json
-import sys
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 import logging
+import sys
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class APIDocumentationGenerator:
     """Generates comprehensive API documentation."""
-    
-    def __init__(self, project_root: Optional[str] = None) -> None:
+
+    def __init__(self, project_root: str | None = None) -> None:
         self.project_root = Path(project_root) if project_root else Path.cwd()
         self.docs_dir = self.project_root / "docs"
         self.docs_dir.mkdir(exist_ok=True)
-        
-    def generate_openapi_spec(self) -> Dict[str, Any]:
+
+    def generate_openapi_spec(self) -> dict[str, Any]:
         """Generate OpenAPI 3.0 specification for the API."""
         spec = {
             "openapi": "3.0.3",
@@ -35,18 +36,12 @@ class APIDocumentationGenerator:
                 "version": "0.2.0",
                 "contact": {
                     "name": "ChattyCommander",
-                    "url": "https://github.com/your-repo/chatty-commander"
+                    "url": "https://github.com/your-repo/chatty-commander",
                 },
-                "license": {
-                    "name": "MIT",
-                    "url": "https://opensource.org/licenses/MIT"
-                }
+                "license": {"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
             },
             "servers": [
-                {
-                    "url": "http://localhost:8100",
-                    "description": "Local development server"
-                }
+                {"url": "http://localhost:8100", "description": "Local development server"}
             ],
             "paths": {
                 "/api/v1/status": {
@@ -59,20 +54,18 @@ class APIDocumentationGenerator:
                                 "description": "System status retrieved successfully",
                                 "content": {
                                     "application/json": {
-                                        "schema": {
-                                            "$ref": "#/components/schemas/SystemStatus"
-                                        },
+                                        "schema": {"$ref": "#/components/schemas/SystemStatus"},
                                         "example": {
                                             "status": "running",
                                             "current_state": "idle",
                                             "active_models": ["hey_chat_tee", "hey_khum_puter"],
                                             "uptime": "2h 15m 30s",
-                                            "version": "0.2.0"
-                                        }
+                                            "version": "0.2.0",
+                                        },
                                     }
-                                }
+                                },
                             }
-                        }
+                        },
                     }
                 },
                 "/api/v1/config": {
@@ -85,13 +78,11 @@ class APIDocumentationGenerator:
                                 "description": "Configuration retrieved successfully",
                                 "content": {
                                     "application/json": {
-                                        "schema": {
-                                            "$ref": "#/components/schemas/Configuration"
-                                        }
+                                        "schema": {"$ref": "#/components/schemas/Configuration"}
                                     }
-                                }
+                                },
                             }
-                        }
+                        },
                     },
                     "put": {
                         "summary": "Update configuration",
@@ -101,21 +92,15 @@ class APIDocumentationGenerator:
                             "required": True,
                             "content": {
                                 "application/json": {
-                                    "schema": {
-                                        "$ref": "#/components/schemas/Configuration"
-                                    }
+                                    "schema": {"$ref": "#/components/schemas/Configuration"}
                                 }
-                            }
+                            },
                         },
                         "responses": {
-                            "200": {
-                                "description": "Configuration updated successfully"
-                            },
-                            "400": {
-                                "description": "Invalid configuration data"
-                            }
-                        }
-                    }
+                            "200": {"description": "Configuration updated successfully"},
+                            "400": {"description": "Invalid configuration data"},
+                        },
+                    },
                 },
                 "/api/v1/state": {
                     "get": {
@@ -127,19 +112,17 @@ class APIDocumentationGenerator:
                                 "description": "Current state retrieved successfully",
                                 "content": {
                                     "application/json": {
-                                        "schema": {
-                                            "$ref": "#/components/schemas/StateInfo"
-                                        },
+                                        "schema": {"$ref": "#/components/schemas/StateInfo"},
                                         "example": {
                                             "current_state": "idle",
                                             "active_models": ["hey_chat_tee", "hey_khum_puter"],
                                             "last_command": "hey_chat_tee",
-                                            "timestamp": "2024-01-15T10:30:00Z"
-                                        }
+                                            "timestamp": "2024-01-15T10:30:00Z",
+                                        },
                                     }
-                                }
+                                },
                             }
-                        }
+                        },
                     },
                     "post": {
                         "summary": "Change state",
@@ -155,23 +138,19 @@ class APIDocumentationGenerator:
                                             "state": {
                                                 "type": "string",
                                                 "enum": ["idle", "computer", "chatty"],
-                                                "description": "Target state to transition to"
+                                                "description": "Target state to transition to",
                                             }
                                         },
-                                        "required": ["state"]
+                                        "required": ["state"],
                                     }
                                 }
-                            }
+                            },
                         },
                         "responses": {
-                            "200": {
-                                "description": "State changed successfully"
-                            },
-                            "400": {
-                                "description": "Invalid state specified"
-                            }
-                        }
-                    }
+                            "200": {"description": "State changed successfully"},
+                            "400": {"description": "Invalid state specified"},
+                        },
+                    },
                 },
                 "/api/v1/command": {
                     "post": {
@@ -188,18 +167,18 @@ class APIDocumentationGenerator:
                                             "command": {
                                                 "type": "string",
                                                 "description": "Command name to execute",
-                                                "example": "lights_on"
+                                                "example": "lights_on",
                                             },
                                             "parameters": {
                                                 "type": "object",
                                                 "description": "Optional command parameters",
-                                                "additionalProperties": True
-                                            }
+                                                "additionalProperties": True,
+                                            },
                                         },
-                                        "required": ["command"]
+                                        "required": ["command"],
                                     }
                                 }
-                            }
+                            },
                         },
                         "responses": {
                             "200": {
@@ -209,28 +188,20 @@ class APIDocumentationGenerator:
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "success": {
-                                                    "type": "boolean"
-                                                },
-                                                "message": {
-                                                    "type": "string"
-                                                },
+                                                "success": {"type": "boolean"},
+                                                "message": {"type": "string"},
                                                 "execution_time": {
                                                     "type": "number",
-                                                    "description": "Execution time in milliseconds"
-                                                }
-                                            }
+                                                    "description": "Execution time in milliseconds",
+                                                },
+                                            },
                                         }
                                     }
-                                }
+                                },
                             },
-                            "400": {
-                                "description": "Invalid command or parameters"
-                            },
-                            "404": {
-                                "description": "Command not found"
-                            }
-                        }
+                            "400": {"description": "Invalid command or parameters"},
+                            "404": {"description": "Command not found"},
+                        },
                     }
                 },
                 "/api/v1/health": {
@@ -247,19 +218,22 @@ class APIDocumentationGenerator:
                                             "type": "object",
                                             "properties": {
                                                 "status": {"type": "string"},
-                                                "timestamp": {"type": "string", "format": "date-time"},
-                                                "uptime": {"type": "string"}
-                                            }
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                },
+                                                "uptime": {"type": "string"},
+                                            },
                                         },
                                         "example": {
                                             "status": "healthy",
                                             "timestamp": "2024-01-15T10:30:00Z",
-                                            "uptime": "2h 15m 30s"
-                                        }
+                                            "uptime": "2h 15m 30s",
+                                        },
                                     }
-                                }
+                                },
                             }
-                        }
+                        },
                     }
                 },
                 "/ws": {
@@ -267,13 +241,9 @@ class APIDocumentationGenerator:
                         "summary": "WebSocket connection",
                         "description": "Establishes a WebSocket connection for real-time updates including state changes, command detections, and system events.",
                         "tags": ["WebSocket"],
-                        "responses": {
-                            "101": {
-                                "description": "WebSocket connection established"
-                            }
-                        }
+                        "responses": {"101": {"description": "WebSocket connection established"}},
                     }
-                }
+                },
             },
             "components": {
                 "schemas": {
@@ -283,45 +253,40 @@ class APIDocumentationGenerator:
                             "status": {
                                 "type": "string",
                                 "enum": ["running", "stopped", "error"],
-                                "description": "Overall system status"
+                                "description": "Overall system status",
                             },
                             "current_state": {
                                 "type": "string",
                                 "enum": ["idle", "computer", "chatty"],
-                                "description": "Current operational state"
+                                "description": "Current operational state",
                             },
                             "active_models": {
                                 "type": "array",
-                                "items": {
-                                    "type": "string"
-                                },
-                                "description": "List of currently loaded voice models"
+                                "items": {"type": "string"},
+                                "description": "List of currently loaded voice models",
                             },
                             "uptime": {
                                 "type": "string",
-                                "description": "System uptime in human-readable format"
+                                "description": "System uptime in human-readable format",
                             },
-                            "version": {
-                                "type": "string",
-                                "description": "Application version"
-                            }
+                            "version": {"type": "string", "description": "Application version"},
                         },
-                        "required": ["status", "current_state", "active_models"]
+                        "required": ["status", "current_state", "active_models"],
                     },
                     "Configuration": {
                         "type": "object",
                         "properties": {
                             "general_models_path": {
                                 "type": "string",
-                                "description": "Path to general voice models"
+                                "description": "Path to general voice models",
                             },
                             "system_models_path": {
                                 "type": "string",
-                                "description": "Path to system command models"
+                                "description": "Path to system command models",
                             },
                             "chat_models_path": {
                                 "type": "string",
-                                "description": "Path to chat interaction models"
+                                "description": "Path to chat interaction models",
                             },
                             "model_actions": {
                                 "type": "object",
@@ -330,76 +295,53 @@ class APIDocumentationGenerator:
                                     "properties": {
                                         "keypress": {
                                             "type": "string",
-                                            "description": "Keyboard shortcut to execute"
+                                            "description": "Keyboard shortcut to execute",
                                         },
-                                        "url": {
-                                            "type": "string",
-                                            "description": "URL to request"
-                                        }
-                                    }
+                                        "url": {"type": "string", "description": "URL to request"},
+                                    },
                                 },
-                                "description": "Mapping of voice commands to actions"
+                                "description": "Mapping of voice commands to actions",
                             },
                             "default_state": {
                                 "type": "string",
                                 "enum": ["idle", "computer", "chatty"],
-                                "description": "Default state on startup"
-                            }
-                        }
+                                "description": "Default state on startup",
+                            },
+                        },
                     },
                     "StateInfo": {
                         "type": "object",
                         "properties": {
                             "current_state": {
                                 "type": "string",
-                                "enum": ["idle", "computer", "chatty"]
+                                "enum": ["idle", "computer", "chatty"],
                             },
-                            "active_models": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
+                            "active_models": {"type": "array", "items": {"type": "string"}},
                             "last_command": {
                                 "type": "string",
-                                "description": "Last detected voice command"
+                                "description": "Last detected voice command",
                             },
                             "timestamp": {
                                 "type": "string",
                                 "format": "date-time",
-                                "description": "Timestamp of last state change"
-                            }
+                                "description": "Timestamp of last state change",
+                            },
                         },
-                        "required": ["current_state", "active_models"]
-                    }
+                        "required": ["current_state", "active_models"],
+                    },
                 }
             },
             "tags": [
-                {
-                    "name": "System",
-                    "description": "System status and health monitoring"
-                },
-                {
-                    "name": "Configuration",
-                    "description": "System configuration management"
-                },
-                {
-                    "name": "State Management",
-                    "description": "Operational state control"
-                },
-                {
-                    "name": "Commands",
-                    "description": "Voice command execution"
-                },
-                {
-                    "name": "WebSocket",
-                    "description": "Real-time communication"
-                }
-            ]
+                {"name": "System", "description": "System status and health monitoring"},
+                {"name": "Configuration", "description": "System configuration management"},
+                {"name": "State Management", "description": "Operational state control"},
+                {"name": "Commands", "description": "Voice command execution"},
+                {"name": "WebSocket", "description": "Real-time communication"},
+            ],
         }
-        
+
         return spec
-    
+
     def generate_markdown_docs(self) -> str:
         """Generate comprehensive markdown documentation."""
         docs = f"""
@@ -871,7 +813,7 @@ curl http://localhost:8100/api/v1/status
 - Configuration management
 """
         return docs
-    
+
     def save_documentation(self) -> None:
         """Save all documentation files."""
         # Save OpenAPI spec
@@ -880,14 +822,14 @@ curl http://localhost:8100/api/v1/status
         with open(openapi_file, 'w') as f:
             json.dump(openapi_spec, f, indent=2)
         logger.info(f"✅ OpenAPI specification saved to {openapi_file}")
-        
+
         # Save markdown docs
         markdown_docs = self.generate_markdown_docs()
         markdown_file = self.docs_dir / "API.md"
         with open(markdown_file, 'w') as f:
             f.write(markdown_docs)
         logger.info(f"✅ Markdown documentation saved to {markdown_file}")
-        
+
         # Create a simple index file
         index_content = f"""
 # ChattyCommander Documentation
@@ -911,12 +853,12 @@ When the server is running, you can access interactive API documentation at:
 - Swagger UI: [http://localhost:8100/docs](http://localhost:8100/docs)
 - ReDoc: [http://localhost:8100/redoc](http://localhost:8100/redoc)
 """
-        
+
         index_file = self.docs_dir / "README.md"
         with open(index_file, 'w') as f:
             f.write(index_content)
         logger.info(f"✅ Documentation index saved to {index_file}")
-    
+
     def generate_all(self) -> None:
         """Generate all documentation."""
         logger.info("🚀 Generating comprehensive API documentation...")

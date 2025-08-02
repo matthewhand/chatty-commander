@@ -1,6 +1,8 @@
-import unittest
 import os
+import unittest
+
 from helpers import ensure_directory_exists, format_command_output, parse_model_keybindings
+
 
 class TestHelpers(unittest.TestCase):
     def test_ensure_directory_exists(self):
@@ -23,6 +25,7 @@ class TestHelpers(unittest.TestCase):
     def test_parse_model_keybindings_empty(self):
         result = parse_model_keybindings('')
         self.assertEqual(result, {})
+
 
 if __name__ == '__main__':
     unittest.main()

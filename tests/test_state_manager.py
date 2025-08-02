@@ -1,5 +1,7 @@
 import pytest
+
 from state_manager import StateManager
+
 
 class TestStateManager:
     def test_initial_state(self):
@@ -17,8 +19,10 @@ class TestStateManager:
     def test_add_state_change_callback(self):
         sm = StateManager()
         called = []
+
         def cb(old, new):
             called.append((old, new))
+
         sm.add_state_change_callback(cb)
         sm.change_state("chatty")
         assert called == [("idle", "chatty")]

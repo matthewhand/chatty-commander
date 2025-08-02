@@ -1,7 +1,8 @@
-import pytest
-from model_manager import ModelManager
+from unittest.mock import MagicMock, patch
+
 from config import Config
-from unittest.mock import patch, MagicMock
+from model_manager import ModelManager
+
 
 class TestModelManager:
     def test_init(self):
@@ -29,5 +30,6 @@ class TestModelManager:
         mm = ModelManager(config)
         # Should not raise, but returns None or str
         import asyncio
+
         result = asyncio.run(mm.async_listen_for_commands())
         assert result is None or isinstance(result, str)

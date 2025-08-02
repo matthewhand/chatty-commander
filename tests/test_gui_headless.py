@@ -1,8 +1,9 @@
-import os
-import io
 import importlib
+import io
+import os
 import unittest
 from contextlib import redirect_stdout
+
 
 class TestGuiHeadless(unittest.TestCase):
     def setUp(self):
@@ -28,9 +29,11 @@ class TestGuiHeadless(unittest.TestCase):
         f = io.StringIO()
         with redirect_stdout(f):
             import gui
+
             importlib.reload(gui)
         output = f.getvalue()
         self.assertIn("Warning: DISPLAY environment variable not set", output)
+
 
 if __name__ == '__main__':
     unittest.main()

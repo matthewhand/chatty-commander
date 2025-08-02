@@ -53,14 +53,14 @@ describe('AuthService', () => {
 
   test('getCurrentUser returns user data when token exists', async () => {
     const userData = { username: 'testuser', is_active: true, roles: ['user'] };
-    localStorage.setItem('auth_token', 'valid-token');
+    // Ensure token exists before calling
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce('valid-token');
     
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(userData)
     } as Response);
 
-    localStorage.setItem('auth_token', 'dummy-token');
     const user = await authService.getCurrentUser();
     
     expect(user).toEqual(userData);
@@ -83,8 +83,8 @@ describe('AuthService', () => {
   });
 
   test('getCurrentUser handles API errors', async () => {
-    localStorage.setItem('auth_token', 'invalid-token');
-    localStorage.setItem('auth_token', 'dummy-token');
+    // Ensure token is present so we exercise the fetch error path
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce('invalid-token');
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 401,

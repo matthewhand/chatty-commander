@@ -1,11 +1,8 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import main  # Assuming main.py can be imported as main
 
-from model_manager import ModelManager
-from state_manager import StateManager
-from command_executor import CommandExecutor
-from config import Config
 
 class TestMain(unittest.TestCase):
     @patch('main.StateManager')
@@ -13,7 +10,14 @@ class TestMain(unittest.TestCase):
     @patch('main.CommandExecutor')
     @patch('main.Config')
     @patch('main.setup_logger')
-    def test_main_loop(self, mock_setup_logger, mock_Config, mock_CommandExecutor, mock_ModelManager, mock_StateManager):
+    def test_main_loop(
+        self,
+        mock_setup_logger,
+        mock_Config,
+        mock_CommandExecutor,
+        mock_ModelManager,
+        mock_StateManager,
+    ):
         mock_config = MagicMock()
         mock_config.general_models_path = 'path'
         mock_config.system_models_path = 'path'
@@ -42,6 +46,7 @@ class TestMain(unittest.TestCase):
         mock_model_manager.listen_for_commands.assert_called()
         mock_state_manager.update_state.assert_called_with('command')
         mock_executor.execute_command.assert_called_with('command')
+
 
 if __name__ == '__main__':
     unittest.main()
