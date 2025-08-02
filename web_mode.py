@@ -482,26 +482,64 @@ def create_web_server(
     )
 
 
-if __name__ == "__main__":
-    # This allows running the web server standalone for testing
-    from command_executor import CommandExecutor
-    from config import Config
-    from model_manager import ModelManager
-    from state_manager import StateManager
+# NOTE: Keep a single application factory. Remove duplicate definitions.
+# (This block intentionally removed to deduplicate create_app)
 
-    # Initialize components
-    config_manager = Config()
-    state_manager = StateManager(config_manager)
-    model_manager = ModelManager(config_manager, state_manager)
-    command_executor = CommandExecutor(config_manager)
 
-    # Create and run server
-    server = create_web_server(
-        config_manager=config_manager,
-        state_manager=state_manager,
-        model_manager=model_manager,
-        command_executor=command_executor,
-        no_auth=True,
+# (This duplicate create_app block intentionally removed)
+
+
+# Keep this single canonical application factory
+def create_app(no_auth: bool = False) -> FastAPI:
+    """
+    Stateless FastAPI application factory suitable for tests and tooling.
+    Exposes FastAPI docs at /docs and schema at /openapi.json when no_auth=True.
+    Keeps configuration minimal and independent of runtime state managers.
+    """
+    app = FastAPI(
+        title="ChattyCommander API",
+        description="Voice command automation system with web interface",
+        version="0.2.0",
+        docs_url="/docs" if no_auth else None,
+        redoc_url="/redoc" if no_auth else None,
     )
 
-    server.run()
+    # CORS policy: permissive when no_auth (dev), restricted otherwise
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"] if no_auth else ["http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/api/v1/health")
+    async def health_check():
+        return {"status": "healthy"}
+
+    return app
+
+
+if __name__ == "__main__":
+   # This allows running the web server standalone for testing
+   from command_executor import CommandExecutor
+   from config import Config
+   from model_manager import ModelManager
+   from state_manager import StateManager
+
+   # Initialize components using current runtime signatures
+   config_manager = Config()
+   state_manager = StateManager()
+   model_manager = ModelManager(config_manager)
+   command_executor = CommandExecutor(config_manager, model_manager, state_manager)
+
+   # Create and run server
+   server = create_web_server(
+       config_manager=config_manager,
+       state_manager=state_manager,
+       model_manager=model_manager,
+       command_executor=command_executor,
+       no_auth=True,
+   )
+
+   server.run()
