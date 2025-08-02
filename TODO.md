@@ -453,3 +453,12 @@ webui/frontend/ (React) ← Keep but fix to connect to Python
 - 📊 Analytics
 - 🌍 Community
 - 📈 Business
+References:
+- API docs endpoints covered by tests in tests/test_openapi_endpoints.py
+- README section: API documentation (links to /docs and /openapi.json)
+
+-e 
+References:
+- API docs endpoints covered by tests in tests/test_openapi_endpoints.py
+- README section: API documentation (links to /docs and /openapi.json)
+
