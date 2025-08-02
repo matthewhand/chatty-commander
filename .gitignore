@@ -171,3 +171,13 @@ logs/*
 webui/frontend/node_modules/*
 .pytest_cache/*
 *.pyc
+
+# Ignore Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Specifically ignore utils/__pycache__
+utils/__pycache__/
+
