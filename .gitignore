@@ -171,3 +171,35 @@ logs/*
 webui/frontend/node_modules/*
 .pytest_cache/*
 *.pyc
+
+# Ignore Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Specifically ignore utils/__pycache__
+utils/__pycache__/
+
+
+# Ignore Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Specifically ignore utils/__pycache__
+utils/__pycache__/
+
+
+# Global Python/JS build and test artifacts
+**/__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+node_modules/
+# Other common noise
+.DS_Store
+Thumbs.db
+
