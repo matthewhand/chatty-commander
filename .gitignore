@@ -181,3 +181,13 @@ __pycache__/
 # Specifically ignore utils/__pycache__
 utils/__pycache__/
 
+
+# Ignore Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Specifically ignore utils/__pycache__
+utils/__pycache__/
+
