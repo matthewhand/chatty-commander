@@ -8,46 +8,84 @@
 - [x] **CRITICAL**: Implement `--no-auth` flag for local development (insecure but convenient)
 - [x] Integrate existing FastAPI endpoints into main Python application
 - [x] Add WebSocket support for real-time communication
-- [ ] **NEW**: Ensure API publishes OpenAPI/Swagger specification at `/docs` and `/openapi.json` endpoints for easier consumption
-  - Issue: Expose and validate OpenAPI/Swagger
-    - Acceptance criteria:
-      - Running `python main.py --web` serves Swagger UI at GET /docs (200 OK)
-      - GET /openapi.json returns JSON schema with at least core endpoints defined (200 OK; content-type application/json)
-      - CORS allows GET from http://localhost:3000 during dev (no-auth mode)
-      - Add pytest that asserts both endpoints respond 200 and schema has "paths"
-    - Tasks:
-      - Verify FastAPI app includes `get_openapi` or FastAPI default docs enabled
-      - Ensure docs/openapi.json matches served schema or update generation process
-      - Add tests: tests/test_web_mode_unit.py or new tests/test_openapi_endpoints.py
-      - Update README.md with "API docs available at /docs and /openapi.json"
+- [x] **NEW**: Ensure API publishes OpenAPI/Swagger specification at `/docs` and `/openapi.json` endpoints for easier consumption
+  - Owner: core
+  - Target: 2025-08-09
+  - Notes: Implemented create_app(no_auth), TestClient coverage for /docs and /openapi.json
+  - Acceptance criteria:
+    - Running `python main.py --web` serves Swagger UI at GET /docs (200 OK)
+    - GET /openapi.json returns JSON schema with core endpoints (200 OK; application/json)
+    - CORS allows GET from http://localhost:3000 during dev (no-auth mode)
+    - Pytest asserts both endpoints 200 and schema has "paths"
+  - Validation:
+    - tests/test_openapi_endpoints.py added and passing (156 tests total)
+    - README pending update to mention endpoints
 
 ### CLI Enhancement & User Experience
 - [ ] **HIGH**: Add comprehensive `--help` with detailed argument descriptions
+  - Owner: cli
+  - Target: 2025-08-16
+  - Acceptance criteria: `python main.py --help` lists web/gui/config/shell flags with usage examples; test asserts presence
 - [ ] **HIGH**: Implement interactive shell mode when no arguments provided
+  - Owner: cli
+  - Target: 2025-08-16
+  - Acceptance criteria: running with no args shows shell prompt; minimal REPL cycle test passes
 - [ ] **HIGH**: Add tab completion for parameters in interactive mode
+  - Owner: cli
+  - Target: 2025-08-23
+  - Acceptance criteria: completion for built-ins and configured actions; test for completer output
 - [x] Add argument validation with helpful error messages
 - [x] Create CLI configuration wizard
 
 ### Frontend Integration
 - [ ] Fix React frontend to connect to Python backend on correct port
+  - Owner: webui
+  - Target: 2025-08-23
+  - Acceptance criteria: base URL/env for API/WS points to Python backend; e2e test succeeds
 - [ ] Remove proxy configuration pointing to non-existent TypeScript backend
+  - Owner: webui
+  - Target: 2025-08-23
+  - Acceptance criteria: package.json has no proxy to Node backend; local dev uses Python port
 - [ ] Implement no-auth mode in frontend for development
+  - Owner: webui
+  - Target: 2025-08-23
+  - Acceptance criteria: toggle respects backend no-auth; happy path login bypassed in dev
 - [ ] Test WebUI with actual Python backend - **WORKING!** 🎉
+  - Owner: webui
+  - Target: 2025-08-30
+  - Acceptance criteria: smoke E2E passes against local Python backend
 
 ### Testing & Quality Assurance
 - [ ] Create comprehensive system testing script (56 tests, 100% pass rate)
-- [ ] Fixed config listing bug in CLI
-- [ ] Created automated test runner script
+  - Owner: qa
+  - Target: 2025-08-30
+- [x] Fixed config listing bug in CLI
+- [x] Created automated test runner script
 - [ ] Add unit tests for all core modules
+  - Owner: qa
+  - Target: 2025-09-06
 - [ ] Implement integration tests for voice recognition
+  - Owner: qa
+  - Target: 2025-09-06
 - [ ] Add performance benchmarking tests
-- [ ] Run comprehensive test suite with `uv run pytest`
-- [ ] Test new web mode functionality
+  - Owner: qa
+  - Target: 2025-09-06
+- [x] Run comprehensive test suite with `uv run pytest`
+- [x] Test new web mode functionality
 - [ ] Validate CLI interactive shell
+  - Owner: qa
+  - Target: 2025-08-23
 - [ ] End-to-end testing of WebUI + Python backend
+  - Owner: qa
+  - Target: 2025-08-30
 - [ ] Create automated CI/CD pipeline
-- [ ] Add code coverage reporting
+  - Owner: devops
+  - Target: 2025-08-30
+  - Acceptance criteria: GitHub Actions runs lint, tests, frontend tests; status checks required
+- [x] Add code coverage reporting
 - [ ] Implement stress testing for continuous operation
+  - Owner: qa
+  - Target: 2025-09-13
 
 ### WebUI Testing & Demonstration Strategy 🎭
 - [ ] ✅ **Backend API Testing**
@@ -130,29 +168,30 @@ webui/frontend/ (React) ← Keep but fix to connect to Python
 ```
 
 ## 🚀 Next Release (v0.2.0)
+Note: This is the lean milestone for the next release. Long-term roadmap lives in WEBUI_ROADMAP.md.
 
-### Core Features
-- [ ] **WebUI Mode Development** 🌐
-  - [ ] **Phase 1: Foundation (Week 1-2)**
-    - [ ] FastAPI backend with OpenAPI specification
-    - [ ] RESTful API endpoints mirroring desktop GUI
-    - [ ] JWT authentication and CORS middleware
-    - [ ] Pydantic models for configuration management
-  - [ ] **Phase 2: Frontend (Week 2-3)**
-    - [ ] React TypeScript application with Tailwind CSS
-    - [ ] Component library matching desktop GUI functionality
-    - [ ] API client with error handling and state management
-    - [ ] Responsive design for mobile/tablet compatibility
-  - [ ] **Phase 3: Advanced Features (Week 3-4)**
-    - [ ] WebSocket integration for real-time status updates
-    - [ ] Live service logs streaming and audio monitoring
-    - [ ] Voice command testing interface
-    - [ ] Role-based access control and API key management
-  - [ ] **Phase 4: Testing & Documentation (Week 4-5)**
-    - [ ] Comprehensive test suite (pytest-asyncio, React Testing Library, Playwright)
-    - [ ] Interactive OpenAPI documentation with examples
-    - [ ] Performance testing and security assessment
-    - [ ] User guide with video demonstrations
+### Core Features (v0.2.0 lean selection)
+- [ ] OpenAPI endpoints exposed and covered by tests (DONE backend; docs update pending)
+  - Owner: core
+  - Target: 2025-08-09
+- [ ] CLI: comprehensive --help with examples
+  - Owner: cli
+  - Target: 2025-08-16
+- [ ] Interactive shell default with tab completion
+  - Owner: cli
+  - Target: 2025-08-23
+- [ ] Frontend connects to Python backend (no proxy), supports no-auth dev
+  - Owner: webui
+  - Target: 2025-08-23
+- [ ] CI pipeline enforcing tests and coverage on PRs
+  - Owner: devops
+  - Target: 2025-08-30
+- [ ] E2E smoke for WebUI + Python backend
+  - Owner: qa
+  - Target: 2025-08-30
+- [ ] Headless GUI handling verified with test
+  - Owner: qa
+  - Target: 2025-08-23
 
 ### User Experience Improvements
 - [ ] Configuration management UI in WebUI
@@ -225,6 +264,7 @@ webui/frontend/ (React) ← Keep but fix to connect to Python
   - [ ] Backup and restore functionality
 
 ## 🔮 Future Vision (v1.0.0+)
+See WEBUI_ROADMAP.md for long-term plans. This section is summarized; details moved to the roadmap.
 
 ### AI & Machine Learning
 - [ ] **Natural Language Processing**
