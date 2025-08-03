@@ -525,3 +525,246 @@
 This roadmap provides a comprehensive plan for developing the ChattyCommander WebUI over 12 weeks. The phased approach ensures steady progress while maintaining quality and allowing for iterative feedback. The emphasis on testing, documentation, and user experience ensures a production-ready solution that enhances the ChattyCommander ecosystem.
 
 Regular milestone reviews and stakeholder feedback sessions should be scheduled at the end of each phase to ensure alignment with project goals and user needs.
+
+---
+
+Extracted historical notes from TODO.md (for reference):
+
+## 🔮 Future Vision (v1.0.0+)
+
+### AI & Machine Learning
+- [ ] **Natural Language Processing**
+  - [ ] Conversational AI integration
+  - [ ] Context understanding
+  - [ ] Intent recognition
+  - [ ] Sentiment analysis
+  - [ ] Personalized responses
+
+- [ ] **Learning & Adaptation**
+  - [ ] User behavior learning
+  - [ ] Automatic command optimization
+  - [ ] Predictive command suggestions
+  - [ ] Usage pattern analysis
+  - [ ] Adaptive noise filtering
+
+### Enterprise Features
+- [ ] **Multi-user Support**
+  - [ ] User profiles and permissions
+  - [ ] Voice authentication
+  - [ ] Shared command libraries
+  - [ ] Team collaboration features
+  - [ ] Audit logging
+
+- [ ] **Enterprise Integration**
+  - [ ] Active Directory integration
+  - [ ] LDAP authentication
+  - [ ] Enterprise security compliance
+  - [ ] Centralized management
+  - [ ] API for third-party integration
+
+### Platform Expansion
+- [ ] **Cross-platform Support**
+  - [ ] macOS native support
+  - [ ] Windows native support
+  - [ ] iOS app
+  - [ ] Android app
+  - [ ] Web interface
+
+- [ ] **Cloud Integration**
+  - [ ] Cloud-based voice processing
+  - [ ] Configuration sync across devices
+  - [ ] Remote device management
+  - [ ] Analytics and insights
+  - [ ] Backup to cloud storage
+
+### Advanced Automation
+- [ ] **Workflow Automation**
+  - [ ] Visual workflow builder
+  - [ ] Integration with Zapier/IFTTT
+  - [ ] Custom script execution
+  - [ ] API webhook support
+  - [ ] Event-driven automation
+
+- [ ] **AI Assistant Features**
+  - [ ] Calendar integration
+  - [ ] Email management
+  - [ ] Task scheduling
+  - [ ] Meeting assistance
+  - [ ] Document summarization
+
+## 🛠 Technical Debt & Refactoring
+
+### Code Quality
+- [ ] Implement type hints throughout codebase
+- [ ] Add comprehensive docstrings
+- [ ] Refactor large functions into smaller modules
+- [ ] Implement design patterns (Observer, Strategy)
+- [ ] Add logging standardization
+- [ ] Code style enforcement (black, flake8)
+
+### Architecture Improvements
+- [ ] **Plugin System**
+  - [ ] Plugin architecture design
+  - [ ] Plugin API specification
+  - [ ] Plugin marketplace
+  - [ ] Hot-swappable plugins
+  - [ ] Plugin security sandboxing
+
+- [ ] **Microservices Architecture**
+  - [ ] Split into microservices
+  - [ ] API gateway implementation
+  - [ ] Service discovery
+  - [ ] Load balancing
+  - [ ] Distributed logging
+
+### Security Enhancements
+- [ ] **Security Hardening**
+  - [ ] Input validation and sanitization
+  - [ ] Secure credential storage
+  - [ ] Encryption for sensitive data
+  - [ ] Security audit and penetration testing
+  - [ ] Vulnerability scanning automation
+
+- [ ] **Privacy Features**
+  - [ ] Local-only processing option
+  - [ ] Data anonymization
+  - [ ] GDPR compliance
+  - [ ] User data export/deletion
+  - [ ] Privacy policy and consent management
+
+## 📊 Analytics & Monitoring
+
+### Observability
+- [ ] **Metrics Collection**
+  - [ ] Performance metrics
+  - [ ] Usage analytics
+  - [ ] Error tracking
+  - [ ] User behavior insights
+  - [ ] System health monitoring
+
+- [ ] **Monitoring Dashboard**
+  - [ ] Real-time system status
+  - [ ] Performance graphs
+  - [ ] Alert management
+  - [ ] Historical data analysis
+  - [ ] Predictive maintenance
+
+### User Analytics
+- [ ] Command usage statistics
+- [ ] Voice recognition accuracy tracking
+- [ ] User satisfaction metrics
+- [ ] Feature adoption rates
+- [ ] Performance benchmarking
+
+## 🌍 Community & Ecosystem
+
+### Open Source Community
+- [ ] **Community Building**
+  - [ ] Contributor guidelines
+  - [ ] Code of conduct
+  - [ ] Issue templates
+  - [ ] Pull request templates
+  - [ ] Community forum setup
+
+- [ ] **Developer Experience**
+  - [ ] Developer documentation
+  - [ ] SDK for third-party developers
+  - [ ] Example applications
+  - [ ] Developer tools and utilities
+  - [ ] Hackathon organization
+
+### Ecosystem Integration
+- [ ] **Third-party Integrations**
+  - [ ] Slack integration
+  - [ ] Discord bot
+  - [ ] Telegram bot
+  - [ ] Microsoft Teams integration
+  - [ ] Google Workspace integration
+
+- [ ] **Hardware Partnerships**
+  - [ ] Smart speaker integration
+  - [ ] IoT device compatibility
+  - [ ] Wearable device support
+  - [ ] Automotive integration
+  - [ ] Smart home hub partnerships
+
+## 📈 Business & Marketing
+
+### Product Strategy
+- [ ] **Market Research**
+  - [ ] Competitor analysis
+  - [ ] User surveys and feedback
+  - [ ] Market size assessment
+  - [ ] Pricing strategy development
+  - [ ] Go-to-market planning
+
+- [ ] **Product Roadmap**
+  - [ ] Feature prioritization framework
+  - [ ] User story mapping
+  - [ ] Release planning
+  - [ ] Beta testing program
+  - [ ] Customer feedback integration
+
+### Marketing & Outreach
+- [ ] **Content Marketing**
+  - [ ] Blog posts and tutorials
+  - [ ] Video demonstrations
+  - [ ] Podcast appearances
+  - [ ] Conference presentations
+  - [ ] Social media strategy
+
+- [ ] **Community Outreach**
+  - [ ] Open source conferences
+  - [ ] Developer meetups
+  - [ ] University partnerships
+  - [ ] Research collaborations
+  - [ ] Industry partnerships
+
+---
+
+## 📝 Notes
+
+### Development Guidelines
+- All new features must include comprehensive tests
+- Documentation must be updated with every feature addition
+- Security review required for all external integrations
+- Performance impact assessment for all major changes
+- User experience testing for all UI modifications
+
+### Release Criteria
+- [ ] All tests passing (unit, integration, system)
+- [ ] Documentation complete and reviewed
+- [ ] Security audit completed
+- [ ] Performance benchmarks met
+- [ ] User acceptance testing completed
+- [ ] Backward compatibility maintained
+
+### Success Metrics
+- **Technical**: 99.9% uptime, <100ms response time, <5% error rate
+- **User**: >4.5 star rating, >80% user retention, <10% support tickets
+- **Business**: >1000 active users, >50 contributors, >10 integrations
+
+---
+
+*Last Updated: 2024-01-27*
+*Next Review: Weekly during sprints, Monthly for long-term planning*
+
+**Legend:**
+- [x] Completed
+- [ ] Pending
+- 🎯 High Priority
+- 🚀 Next Release
+- 🔮 Future Vision
+- 🛠 Technical
+- 📊 Analytics
+- 🌍 Community
+- 📈 Business
+References:
+- API docs endpoints covered by tests in tests/test_openapi_endpoints.py
+- README section: API documentation (links to /docs and /openapi.json)
+
+-e 
+References:
+- API docs endpoints covered by tests in tests/test_openapi_endpoints.py
+- README section: API documentation (links to /docs and /openapi.json)
+
