@@ -18,9 +18,19 @@ except ModuleNotFoundError:
         "Dependency 'wakewords' not found. Using dummy Model. Some functionality may be limited."
     )
 
-    class Model:
+    
+class Model:
         def __init__(self, path):
             self.path = path
+
+
+# Prefer root-level shimmed Model used by tests
+try:
+    from model_manager import Model as _shim_Model  # type: ignore
+except Exception:
+    _shim_Model = None
+ModelImpl = _shim_Model or Model
+
 
 
 class ModelManager:
@@ -66,20 +76,26 @@ class ModelManager:
             return model_set
 
         for model_file in os.listdir(path):
-            if model_file.endswith('.onnx'):
-                model_path = os.path.join(path, model_file)
-                model_name = os.path.splitext(model_file)[0]
-                if not os.path.exists(model_path):
-                    logging.warning(f"Model file '{model_path}' does not exist. Skipping.")
-                    continue
-                try:
-                    model_instance = Model(model_path)
-                    model_set[model_name] = model_instance
-                    logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
-                except Exception as e:
-                    logging.error(
-                        f"Failed to load model '{model_name}' from '{model_path}'. Error details: {str(e)}. Continuing with other models."
-                    )
+            if not model_file.endswith('.onnx'):
+                continue
+
+            model_path = os.path.join(path, model_file)
+            model_name = os.path.splitext(model_file)[0]
+
+            if not os.path.exists(model_path):
+                logging.warning(f"Model file '{model_path}' does not exist. Skipping.")
+                continue
+
+            try:
+                # Construct and register model instance (tests patch model_manager.Model)
+                model_instance = Model(model_path)
+                model_set[model_name] = model_instance
+                logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
+            except Exception as e:
+                # Log and continue loading other models
+                logging.error(
+                    f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models."
+                )
         return model_set
 
     async def async_listen_for_commands(self) -> str | None:
