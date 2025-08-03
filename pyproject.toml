@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.scripts]
-chatty = "cli:cli_main"
+chatty-commander = "chatty_commander.cli.cli:main"
 
 [dependency-groups]
 dev = []
@@ -50,10 +50,7 @@ omit = [
     "*/site-packages/*",
 ]
 
-[tool.setuptools]
-py-modules = ["cli", "command_executor", "command_extractor", "config", "config_cli", "helpers", "main", "model_manager", "state_manager"]
-packages = ["utils"]
-
+# Removed legacy setuptools block for old flat-layout (py-modules, utils)
 [tool.black]
 line-length = 100
 target-version = ["py311"]
