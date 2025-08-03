@@ -80,7 +80,7 @@ class CommandExecutor:
         if _shim_pg is not None:
             pg = _shim_pg
         else:
-            pg = pyautogui  # fall back to module import
+            pg = _get_pyautogui()  # fall back to module import
 
         if pg is None:
             logging.error("pyautogui is not installed")
@@ -199,16 +199,24 @@ class CommandExecutor:
     def _execute_keybinding(self, command_name: str, keys: str | list[str]) -> None:
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
+
+        Tests patch 'command_executor.pyautogui' (root-level shim). We must fetch the
+        patched object via _get_pyautogui() instead of relying on a static import.
         """
         try:
-            if pyautogui is None:
+            pg = _get_pyautogui()
+            if pg is None:
                 raise RuntimeError("pyautogui not available")
+
             if isinstance(keys, list):
-                pyautogui.hotkey(*keys)  # type: ignore[union-attr]
-            elif '+' in keys:
-                pyautogui.hotkey(*keys.split('+'))  # type: ignore[union-attr]
+                pg.hotkey(*keys)  # type: ignore[union-attr]
+            elif isinstance(keys, str) and '+' in keys:
+                pg.hotkey(*[p.strip() for p in keys.split('+') if p.strip()])  # type: ignore[union-attr]
+            elif isinstance(keys, str):
+                pg.press(keys)  # type: ignore[union-attr]
             else:
-                pyautogui.press(keys)  # type: ignore[union-attr]
+                raise ValueError("Invalid keypress specification")
+
             logging.warning(f"Executed keybinding for {command_name}: {keys}")
             # Elevate one completion message to WARNING so caplog captures it
             logging.warning(f"Completed execution of command: {command_name}")
@@ -232,7 +240,7 @@ class CommandExecutor:
             return
         try:
             # Match tests: do not pass extra kwargs like timeout
-            response = requests.get(url)
+            response = _get_requests().get(url)
             if 200 <= response.status_code < 300:
                 logging.info(f"URL request to {url} returned {response.status_code}")
             else:
@@ -285,3 +293,34 @@ class CommandExecutor:
 
 
 # Example usage intentionally removed to avoid instantiation without required args during static analysis/tests.
+
+
+def _get_pyautogui():
+    try:
+        import importlib
+        _shim_ce = importlib.import_module("command_executor")
+        pg = getattr(_shim_ce, "pyautogui", None)
+        if pg is not None:
+            return pg
+    except Exception:
+        pass
+    try:
+        import pyautogui as _real_pg  # type: ignore
+        return _real_pg
+    except Exception:
+        return None
+
+def _get_requests():
+    try:
+        import importlib
+        _shim_ce = importlib.import_module("command_executor")
+        rq = getattr(_shim_ce, "requests", None)
+        if rq is not None:
+            return rq
+    except Exception:
+        pass
+    try:
+        import requests as _real_requests  # type: ignore
+        return _real_requests
+    except Exception:
+        return None
