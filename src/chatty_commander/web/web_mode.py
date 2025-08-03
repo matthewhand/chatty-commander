@@ -518,3 +518,27 @@ if __name__ == "__main__":
     )
 
     server.run()
+
+
+# Minimal, stateless FastAPI app factory for tests
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+def create_app(no_auth: bool = True) -> FastAPI:
+    app = FastAPI(
+        title="ChattyCommander API",
+        version="0.2.0",
+        docs_url="/docs" if no_auth else None,
+        redoc_url="/redoc" if no_auth else None,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"] if no_auth else ["http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    @app.get("/api/v1/health")
+    async def health_check():
+        return {"status": "healthy"}
+    return app
