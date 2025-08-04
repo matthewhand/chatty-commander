@@ -6,13 +6,14 @@
 install:
 	uv sync
 
-# Run full test suite (quiet)
+# Run full test suite (quiet) with a safety timeout
+# GNU coreutils 'timeout' will send SIGTERM after 120s; adjust if needed.
 test:
-	uv run pytest -q
+	timeout 120s uv run pytest -q || { code=$$?; echo "pytest terminated or timed out with exit code $$code"; exit $$code; }
 
-# Coverage run with summary
+# Coverage run with summary and timeout guard
 test-cov:
-	uv run pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing
+	timeout 180s uv run pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing || { code=$$?; echo "coverage run terminated or timed out with exit code $$code"; exit $$code; }
 
 # Focused web tests
 test-web:
