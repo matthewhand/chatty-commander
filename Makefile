@@ -1,18 +1,39 @@
-# Makefile for Python project to handle testing
-.PHONY: install test clean all
+# Makefile for ChattyCommander
+# Prefer uv over pip/python
+.PHONY: install test test-cov test-web test-cli clean all lint format
 
-# Install dependencies
+# Install dependencies using uv
 install:
-	pip install -r requirements.txt
+	uv sync
 
-# Run tests with PYTHONPATH set
+# Run full test suite (quiet)
 test:
-	PYTHONPATH=$(PWD) pytest
+	uv run pytest -q
 
-# Command to clean up test cache or other temporary files
+# Coverage run with summary
+test-cov:
+	uv run pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing
+
+# Focused web tests
+test-web:
+	uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py tests/test_cors_no_auth.py
+
+# Focused CLI tests
+test-cli:
+	uv run pytest -q tests/test_repl_basic.py tests/test_cli_help_and_shell.py tests/test_cli_features.py
+
+# Lint (placeholder; recommend ruff/black configs in pyproject.toml)
+lint:
+	@echo "Add ruff/black configs in pyproject.toml to enable linting targets."
+
+# Format (placeholder)
+format:
+	@echo "Add formatter configs in pyproject.toml to enable formatting targets."
+
+# Clean caches
 clean:
 	rm -rf .pytest_cache
-	rm -rf __pycache__
+	find . -type d -name "__pycache__" -exec rm -rf {} +
 
-# Command to run all steps
+# Run all steps
 all: install test clean

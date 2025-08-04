@@ -19,17 +19,33 @@ except ModuleNotFoundError:
     )
 
     
+# NOTE:
+# Keep a simple default Model implementation, but tests patch the root-level
+# symbol `model_manager.Model`. To respect that, we will not reference this
+# class directly when instantiating models; instead we dynamically import the
+# root shim and pull `Model` from there when available.
 class Model:
-        def __init__(self, path):
-            self.path = path
+    def __init__(self, path):
+        self.path = path
 
 
-# Prefer root-level shimmed Model used by tests
-try:
-    from model_manager import Model as _shim_Model  # type: ignore
-except Exception:
-    _shim_Model = None
-ModelImpl = _shim_Model or Model
+def _get_patchable_model_class():
+    """
+    Return the Model class to instantiate.
+    Priority:
+      1) Root-level shim model_manager.Model (so tests can patch it)
+      2) Local fallback Model defined above
+    """
+    try:
+        # Import the root-level shim module to allow tests to patch it
+        import importlib
+        mm = importlib.import_module("model_manager")
+        M = getattr(mm, "Model", None)
+        if M is not None:
+            return M
+    except Exception:
+        pass
+    return Model
 
 
 
@@ -70,13 +86,26 @@ class ModelManager:
         return {}
 
     def load_model_set(self, path: str) -> dict[str, Model]:
+        """
+        Load all .onnx models from the given path.
+
+        Test expectations:
+          - If Model(...) raises, the model must NOT be added
+          - Tests monkeypatch model_manager.Model to MagicMock; ensure we call the symbol Model here
+        """
         model_set: dict[str, Model] = {}
         if not os.path.exists(path):
             logging.error(f"Model directory {path} does not exist.")
             return model_set
 
-        for model_file in os.listdir(path):
-            if not model_file.endswith('.onnx'):
+        try:
+            entries = os.listdir(path)
+        except Exception as e:
+            logging.error(f"Error listing directory {path}: {e}")
+            return model_set
+
+        for model_file in entries:
+            if not model_file.lower().endswith('.onnx'):
                 continue
 
             model_path = os.path.join(path, model_file)
@@ -87,15 +116,16 @@ class ModelManager:
                 continue
 
             try:
-                # Construct and register model instance (tests patch model_manager.Model)
-                model_instance = Model(model_path)
-                model_set[model_name] = model_instance
+                # Use patchable class so tests replacing model_manager.Model with MagicMock are respected
+                ModelClass = _get_patchable_model_class()
+                instance = ModelClass(model_path)  # type: ignore[call-arg]
+                model_set[model_name] = instance  # only add on success
                 logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
             except Exception as e:
-                # Log and continue loading other models
-                logging.error(
-                    f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models."
-                )
+                logging.error(f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models.")
+                # do not add on failure
+                continue
+
         return model_set
 
     async def async_listen_for_commands(self) -> str | None:

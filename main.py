@@ -18,11 +18,27 @@ import signal
 import sys
 import threading
 
-from command_executor import CommandExecutor
-from config import Config
-from model_manager import ModelManager
-from state_manager import StateManager
-from utils.logger import setup_logger
+# Ensure src/ is on sys.path so root execution finds package modules without PYTHONPATH
+import os as _os, sys as _sys
+_src_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "src")
+if _src_path not in _sys.path:
+    _sys.path.insert(0, _src_path)
+
+# Support both package and repo-root execution without PYTHONPATH tweaks.
+try:
+    # Preferred: installed package
+    from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+    from chatty_commander.config import Config  # type: ignore
+    from chatty_commander.app.model_manager import ModelManager  # type: ignore
+    from chatty_commander.app.state_manager import StateManager  # type: ignore
+    from chatty_commander.utils.logger import setup_logger  # type: ignore
+except Exception:
+    # Repo-root fallback: use local shim modules that re-export src implementations
+    from command_executor import CommandExecutor  # shim file at repo root
+    from config import Config  # shim file at repo root
+    from model_manager import ModelManager  # shim file at repo root
+    from state_manager import StateManager  # shim file at repo root
+    from utils.logger import setup_logger  # local utils
 
 try:
     from default_config import generate_default_config_if_needed
@@ -342,10 +358,14 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
 
 def main():
     parser = create_parser()
-    # Use parse_known_args to avoid failing on external/pytest args
-    args, _unknown = parser.parse_known_args()
+    # Parse as the very first action and immediately return argparse exit code for help/usage
+    try:
+        args, _unknown = parser.parse_known_args()
+    except SystemExit as e:
+        # Propagate argparse's exit code (0 on --help)
+        return int(getattr(e, "code", 0) or 0)
 
-    # Argument validation
+    # Argument validation (only enforce when options are provided)
     if args.web and args.port < 1024:
         parser.error("Port must be 1024 or higher for non-root users")
     if args.no_auth and not args.web:
@@ -376,10 +396,12 @@ def main():
 
         config_cli = ConfigCLI()
         config_cli.run_wizard()
+        return 0
     elif args.web:
         run_web_mode(
             config, model_manager, state_manager, command_executor, logger, args.no_auth, args.port
         )
+        return 0
     elif args.gui:
         # Respect return codes from GUI runner (0=headless skipped, 2=deps missing)
         rc = run_gui_mode(
@@ -393,11 +415,16 @@ def main():
         )
         if isinstance(rc, int) and rc != 0:
             # Non-zero means GUI could not start; exit without stack trace
-            sys.exit(rc)
+            return rc
+        return 0
     elif args.shell:
         run_interactive_shell(config, model_manager, state_manager, command_executor, logger)
+        return 0
     else:
         run_cli_mode(config, model_manager, state_manager, command_executor, logger)
+        return 0
+        return 0
+        return 0
 
 
 if __name__ == "__main__":
