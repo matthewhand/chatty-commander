@@ -24,7 +24,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "-o",
         "--output",
         type=Path,
-        default=None,
+        default=Path("docs"),
         help="Output directory for docs (defaults to ./docs).",
     )
     parser.add_argument(
@@ -64,6 +64,8 @@ def main(argv: list[str] | None = None) -> int:
         logger.info("Generated docs: %s", {k: str(v) for k, v in result.items()})
         return 0
     except SystemExit as e:
+        # When invoked via runpy/run_module, pytest may inject flags causing argparse/SystemExit.
+        # Our parser swallows unknowns; if a SystemExit still bubbles, map non-int to 1.
         return int(e.code) if isinstance(e.code, int) else 1
     except Exception as e:  # noqa: BLE001
         logger.error("Failed to generate docs: %s", e)
