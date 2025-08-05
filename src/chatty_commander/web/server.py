@@ -4,7 +4,10 @@ import logging
 
 from fastapi import FastAPI
 
+from .auth import apply_cors, enable_no_auth_docs
+from .lifecycle import register_lifecycle
 from .routes.core import include_core_routes
+from .routes.ws import include_ws_routes
 
 # For now we delegate to constructing the legacy WebModeServer to keep behavior stable.
 from .web_mode import WebModeServer as _LegacyWebModeServer  # type: ignore
@@ -26,9 +29,10 @@ def create_app(
     backward compatibility. This establishes the stable assembly boundary for future
     extraction (routes/auth/lifecycle) without breaking tests.
 
-    Additionally, attach extracted core REST routes using dependency callables that
-    bridge to the legacy server instance. This is behavior-preserving because routes
-    are equivalent and rely on the same underlying state/config/executor.
+    Additionally, attach extracted routers (core REST, websocket), CORS/docs toggles,
+    and lifecycle hooks using dependency callables that bridge to the legacy server
+    instance. This is behavior-preserving because routes and wiring rely on the same
+    underlying state/config/executor.
     """
     legacy = _LegacyWebModeServer(
         config_manager=config_manager,
@@ -39,8 +43,17 @@ def create_app(
     )
     app = legacy.app
 
+    # Docs visibility and CORS (behavior-preserving toggles)
     try:
-        router = include_core_routes(
+        enable_no_auth_docs(app, no_auth=no_auth)
+        apply_cors(app, no_auth=no_auth, origins=None)
+        logger.debug("server.create_app: applied docs/cors policies (no_auth=%s)", no_auth)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Failed to apply auth/cors policies; continuing with legacy defaults: %s", e)
+
+    # Core REST routes
+    try:
+        core_router = include_core_routes(
             get_start_time=lambda: legacy.start_time,
             get_state_manager=lambda: legacy.state_manager,
             get_config_manager=lambda: legacy.config_manager,
@@ -48,11 +61,46 @@ def create_app(
             get_last_state_change=lambda: legacy.last_state_change,
             execute_command_fn=lambda cmd: legacy.command_executor.execute_command(cmd),
         )
-        app.include_router(router)
+        app.include_router(core_router)
         logger.debug("server.create_app: included core REST routes from routes.core")
     except Exception as e:  # noqa: BLE001
-        # Defensive: if inclusion fails for any reason, keep legacy behavior intact
         logger.warning("Failed to include core routes, falling back to legacy-only: %s", e)
+
+    # WebSocket route
+    try:
+        ws_router = include_ws_routes(
+            get_connections=lambda: legacy.active_connections,
+            set_connections=lambda s: setattr(legacy, "active_connections", s),
+            get_state_snapshot=lambda: {
+                "current_state": legacy.state_manager.current_state,
+                "active_models": legacy.state_manager.get_active_models()
+                if hasattr(legacy.state_manager, "get_active_models")
+                else [],
+                "timestamp": legacy.last_state_change.isoformat()
+                if getattr(legacy, "last_state_change", None)
+                else None,
+            },
+            on_message=None,  # preserve legacy: inbound messages are ignored today
+            heartbeat_seconds=30.0,
+        )
+        app.include_router(ws_router)
+        logger.debug("server.create_app: included websocket routes from routes.ws")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Failed to include websocket routes; falling back to legacy-only: %s", e)
+
+    # Lifecycle hooks (no-op by default to preserve behavior)
+    try:
+        register_lifecycle(
+            app,
+            get_state_manager=lambda: legacy.state_manager,
+            get_model_manager=lambda: legacy.model_manager,
+            get_command_executor=lambda: legacy.command_executor,
+            on_startup=None,
+            on_shutdown=None,
+        )
+        logger.debug("server.create_app: registered lifecycle hooks")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Failed to register lifecycle hooks; continuing: %s", e)
 
     logger.debug("server.create_app constructed legacy WebModeServer and returned app")
     return app
