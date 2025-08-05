@@ -11,7 +11,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Tuple
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,8 +25,8 @@ class TestRunner:
         self.test_results: list[tuple[str, bool, str]] = []
 
     def run_command(
-        self, command: List[str], description: str, cwd: Path | None = None, timeout: int = 60
-    ) -> Tuple[bool, str]:
+        self, command: list[str], description: str, cwd: Path | None = None, timeout: int = 60
+    ) -> tuple[bool, str]:
         """Run a command and return success status and output. Default timeout reduced to 60s to prevent stalls in CI."""
         try:
             logger.info(f"🔄 Running: {description}")
@@ -83,7 +82,7 @@ class TestRunner:
 
         return True
 
-    def run_unit_tests(self, extra_paths: List[str] | None = None) -> bool:
+    def run_unit_tests(self, extra_paths: list[str] | None = None) -> bool:
         """Run unit tests with coverage. Accept optional extra paths to be passed through."""
         paths = extra_paths or ["tests/"]
         command = [
@@ -243,7 +242,7 @@ class TestRunner:
             )
             return False
 
-    def run_all_tests(self, extra_paths: List[str] | None = None) -> bool:
+    def run_all_tests(self, extra_paths: list[str] | None = None) -> bool:
         """Run the complete test suite."""
         logger.info("🚀 Starting Comprehensive Test Suite")
         logger.info(f"Project root: {self.project_root}")

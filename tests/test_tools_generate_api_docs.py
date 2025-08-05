@@ -1,11 +1,9 @@
+import importlib
 import json
 import os
+import runpy
 from pathlib import Path
 from typing import Any
-
-import importlib
-import runpy
-import sys
 
 
 def _run_generator_in(tmp_path: Path) -> Path:

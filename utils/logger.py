@@ -12,5 +12,6 @@ for _name in dir(_real):
 
 # Ensure the module object identity is shared for patching
 import sys as _sys
+
 _sys.modules.setdefault("utils", _sys.modules.get("utils", type(_sys)("utils")))
 _sys.modules["utils.logger"] = _sys.modules[__name__]

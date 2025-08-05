@@ -8,10 +8,12 @@ logging practices and easy maintenance.
 
 import logging
 import os
-from logging.handlers import RotatingFileHandler
+
 # Ensure this module is also accessible as 'utils.logger' so tests patching that path
 # affect the same module object. This creates an alias in sys.modules.
 import sys as _sys
+from logging.handlers import RotatingFileHandler
+
 _sys.modules.setdefault("utils", _sys.modules.get("utils", type(_sys)("utils")))
 _sys.modules["utils.logger"] = _sys.modules[__name__]
 

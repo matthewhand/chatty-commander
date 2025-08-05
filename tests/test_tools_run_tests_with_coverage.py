@@ -1,10 +1,9 @@
+import importlib
+import runpy
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, call
-
-import importlib
-import runpy
+from unittest.mock import MagicMock
 
 
 def _run_module_as_main(module: str, inject_argv: list[str]) -> int:

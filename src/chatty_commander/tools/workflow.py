@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from .builder import build_openapi_schema, generate_markdown_docs
 from .fs_ops import ensure_dir, write_json, write_text
@@ -10,7 +10,7 @@ from .fs_ops import ensure_dir, write_json, write_text
 logger = logging.getLogger(__name__)
 
 
-def generate_docs(output_dir: Path | None = None) -> Dict[str, Path]:
+def generate_docs(output_dir: Path | None = None) -> dict[str, Path]:
     """
     Orchestrate API documentation generation.
 
@@ -36,7 +36,7 @@ def generate_docs(output_dir: Path | None = None) -> Dict[str, Path]:
     write_text(markdown_file, markdown_docs)
     logger.info("✅ Markdown documentation saved to %s", markdown_file)
 
-    index_content = f"""
+    index_content = """
 # ChattyCommander Documentation
 
 ## Available Documentation

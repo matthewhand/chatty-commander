@@ -1,6 +1,7 @@
 # Compatibility shim for tests that import `command_executor` at repo root.
 # Ensure src/ on sys.path, expose patch points (pyautogui, requests), and re-export CommandExecutor.
-import os as _os, sys as _sys
+import os as _os
+import sys as _sys
 
 _src_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "src")
 if _src_path not in _sys.path:

@@ -16,7 +16,6 @@ from __future__ import annotations
 import sys
 
 from .cli import main as _main
-from .workflow import generate_docs  # re-export for backward compatibility
 
 
 def main() -> int:

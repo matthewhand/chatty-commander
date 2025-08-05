@@ -18,7 +18,7 @@ except ModuleNotFoundError:
         "Dependency 'wakewords' not found. Using dummy Model. Some functionality may be limited."
     )
 
-    
+
 # NOTE:
 # Keep a simple default Model implementation, but tests patch the root-level
 # symbol `model_manager.Model`. To respect that, we will not reference this

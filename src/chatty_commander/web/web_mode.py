@@ -522,7 +522,7 @@ if __name__ == "__main__":
 
 # Minimal, stateless FastAPI app factory for tests
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+
 
 def create_app(no_auth: bool = True) -> FastAPI:
     app = FastAPI(
