@@ -196,16 +196,29 @@ def run_gui_mode(
             "No DISPLAY environment variable set. Skipping GUI mode in headless environment."
         )
         return 0
+    # Prefer new tray popup GUI (pystray + pywebview) with fallback to legacy tkinter GUI
     try:
-        from gui import main as gui_main
+        try:
+            # Installed package path
+            from chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
+        except Exception:
+            # Repo-root execution fallback
+            from src.chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
 
-        logger.info("Starting GUI mode")
-        # Let underlying GUI implementation handle potential TclError gracefully.
-        rc = gui_main()
+        logger.info("Starting GUI tray popup mode")
+        rc = run_tray_popup(config, logger)
         return 0 if rc is None else int(rc)
-    except ImportError:
-        logger.error("GUI dependencies not available. Install with: uv add tkinter")
-        return 2
+    except Exception as e:
+        logger.warning(f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI")
+        try:
+            from gui import main as gui_main
+
+            logger.info("Starting legacy tkinter GUI mode")
+            rc = gui_main()
+            return 0 if rc is None else int(rc)
+        except Exception:
+            logger.error("GUI dependencies not available. Install with: uv add tkinter")
+            return 2
 
 
 def create_parser():
@@ -430,8 +443,6 @@ def main():
         return 0
     else:
         run_cli_mode(config, model_manager, state_manager, command_executor, logger)
-        return 0
-        return 0
         return 0
 
 
