@@ -193,6 +193,31 @@ webui/frontend/ (React) ← Keep and connect to Python backend
 - [ ] CLI interactive: uv run pytest -q tests/test_repl_basic.py
 - [ ] Performance: uv run pytest -q tests/test_performance_benchmarks.py
 
+## GUI Mode Direction
+
+- [ ] Promote current draft GUI mode to "GUI Settings" module
+  Acceptance:
+  - Existing draft GUI becomes a dedicated settings/preferences UI for Chatty Commander
+  - Settings persist and are reflected in CLI/Web modes
+  Tasks:
+  - [ ] Extract current draft GUI into a settings-focused module
+  - [ ] Wire settings to config/state manager
+  - [ ] Tests: ensure settings round-trip and are applied at runtime
+
+- [ ] New GUI mode: transparent simple browser window showing a custom webpage as a popup from the system tray (Windows/macOS)
+  Acceptance:
+  - System tray icon available on Windows and macOS
+  - Clicking tray icon opens a frameless/transparent browser window with user-provided URL
+  - Window behaves as a popup (focus, auto-dismiss behavior configurable)
+  - Works alongside CLI/Web modes; does not require Node backend
+  Tasks:
+  - [ ] Choose embedded browser approach (e.g., PyWebview/CEF/Electron-lite alternative)
+  - [ ] Implement tray integration (platform-specific fallbacks if needed)
+  - [ ] Config keys for custom URL, transparency, window size/position
+  - [ ] Safety: allowlist domains and content security considerations
+  - [ ] Tests: config plumbing and smoke tests for tray/window lifecycle
+  - [ ] Documentation: setup and platform notes
+
 ## Documentation
 
 - [ ] API docs parity
