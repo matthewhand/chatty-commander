@@ -229,6 +229,20 @@ webui/frontend/ (React) ← Keep and connect to Python backend
 - [ ] Troubleshooting and videos linked and versioned in docs/
 - [ ] Code style enforcement: black + ruff (configs checked in)
 
+## Auto-Mode Selection Policy
+
+- [ ] Auto-detect GUI availability; launch GUI mode when a GUI is detected
+  Acceptance:
+  - On platforms with a display/session (e.g., DISPLAY on Linux, user session on Windows/macOS), application defaults to GUI mode
+  - If no GUI is detected, fallback to CLI or Web mode based on flags/config
+  - --gui flag forces GUI mode and skips detection logic
+  Tasks:
+  - [ ] Implement cross-platform GUI detection helper
+  - [ ] Wire detection into main entrypoint before mode selection
+  - [ ] Ensure --gui overrides detection and forces GUI mode
+  - [ ] Tests: simulate GUI/no-GUI environments to assert correct mode selection
+  - [ ] Docs: document detection behavior and --gui override
+
 ## References
 
 - Tests: tests/test_openapi_endpoints.py, tests/test_web_mode_unit.py, tests/test_web_mode.py, tests/test_web_integration.py, tests/test_repl_basic.py, tests/test_cli_help_and_shell.py, tests/test_cli_features.py, tests/test_performance_benchmarks.py
