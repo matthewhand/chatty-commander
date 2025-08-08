@@ -1,29 +1,59 @@
 
-# ChattyCommander Documentation
+# Documentation
 
-Generated on 2025-08-04 12:27:15
+This directory contains comprehensive documentation for the ChattyCommander project.
 
 ## Available Documentation
 
-- [API Documentation](API.md) - Comprehensive API reference
-- [OpenAPI Specification](openapi.json) - Machine-readable API spec
-- [OpenAI-Agents Advisor Design](OPENAI_AGENTS_ADVISOR.md) - Advisor system overview and scope
-- [Architecture Overview](ARCHITECTURE_OVERVIEW.md) - How CLI, GUI, and WebUI share functionality via the orchestrator
-- [Recurring Prompts](RECURRING_PROMPTS.md) - Blueprint and implementation notes
+- **[Architecture Overview](ARCHITECTURE_OVERVIEW.md)** - High-level system architecture and component relationships
+- **[Modes of Operation](MODES_OF_OPERATION.md)** - Detailed explanation of CLI, Web, GUI, and Shell modes
+- **[OpenAI Agents Advisor](OPENAI_AGENTS_ADVISOR.md)** - Design and implementation of the AI advisor system
+- **[Recurring Prompts](RECURRING_PROMPTS.md)** - Blueprint for scheduled, self-contained prompts
 
-## Quick Start
+## Quick Reference
 
-1. Start the server: `python main.py --web --no-auth`
-2. Open the API docs: [http://localhost:8100/docs](http://localhost:8100/docs)
-3. Test the API: `curl http://localhost:8100/api/v1/status`
+### Core Modes
+- **CLI Mode**: `python main.py` - Voice-activated commands
+- **Web Mode**: `python main.py --web` - FastAPI backend + React frontend
+- **GUI Mode**: `python main.py --gui` - Desktop UI for configuration
+- **Shell Mode**: `python main.py --shell` - Interactive text input
 
-### OS-specific launchers
+### Optional Features
+- **Advisors**: `python main.py --advisors` - AI-powered assistant
+- **Discord Bridge**: `python main.py --enable-discord-bridge` - External messaging
+- **OpenWakeWord**: `python main.py --enable-openwakeword` - Voice wake word
+- **Computer Vision**: `python main.py --enable-computer-vision` - Visual commands
 
-- Windows (PowerShell): `./scripts/windows/start-web.ps1 -Port 8100 -NoAuth`
-- macOS (Terminal): `PORT=8100 NO_AUTH=1 ./scripts/macos/start-web.sh`
+### Orchestrator Mode
+Combine multiple modes and features:
+```bash
+python main.py --orchestrate --enable-text --enable-web --advisors
+```
 
-## Interactive Documentation
+## OS-specific launchers
 
-When the server is running, you can access interactive API documentation at:
-- Swagger UI: [http://localhost:8100/docs](http://localhost:8100/docs)
-- ReDoc: [http://localhost:8100/redoc](http://localhost:8100/redoc)
+- **Windows**: `./scripts/windows/start-web.ps1`
+- **macOS**: `./scripts/macos/start-web.sh`
+
+## Development
+
+### Testing
+```bash
+# Run all tests
+uv run pytest -q
+
+# Test specific components
+uv run pytest -q tests/test_web_mode.py
+uv run pytest -q tests/test_advisors_service.py
+```
+
+### API Testing
+```bash
+# Start web server
+python main.py --web --no-auth
+
+# Test advisor API
+curl -X POST http://localhost:8100/api/v1/advisors/message \
+  -H "Content-Type: application/json" \
+  -d '{"platform":"web","channel":"test","user":"user123","text":"Hello"}'
+```
