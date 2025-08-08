@@ -73,4 +73,32 @@
 
 Note: Implementation is tracked in `TODO.md` under “OpenAI‑Agents advisor (MVP/Enhancements)”.
 
+## Usage examples
+
+- Enable advisors at runtime with web server and Discord bridge:
+  ```bash
+  export ADVISORS_BRIDGE_TOKEN=secret
+  export ADVISORS_BRIDGE_URL=http://localhost:3001
+  uv run python main.py --orchestrate --web --enable-discord-bridge --advisors --port 8100
+  ```
+
+- Persona configuration (philosophy advisor):
+  ```json
+  {
+    "advisors": {
+      "enabled": true,
+      "llm_api_mode": "completion",
+      "model": "gpt-oss20b",
+      "personas": { "default": "philosophy_advisor" }
+    }
+  }
+  ```
+
+- Summarize via API:
+  ```bash
+  curl -s -X POST http://localhost:8100/api/v1/advisors/message \
+    -H 'Content-Type: application/json' \
+    -d '{"platform":"discord","channel":"c1","user":"u1","text":"summarize https://example.com"}'
+  ```
+
 
