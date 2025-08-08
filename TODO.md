@@ -252,20 +252,35 @@ Notes
   - `README.md` and `docs/README.md` show Windows/macOS launch snippets
 
 9) Node.js bridge API implementation (external app for Discord/Slack)
-- [ ] Create external Node.js application that connects to Python advisor API
+- [x] Create external Node.js application that connects to Python advisor API
   Acceptance:
   - Node.js app can authenticate with Python bridge endpoint using shared secret
   - Discord/Slack webhooks can send messages to Node.js app
   - Node.js app forwards messages to Python advisor API and returns responses
   - Messages are routed back to appropriate Discord/Slack channels
   Tasks:
-  - [ ] Design Node.js app architecture (Express.js server, Discord.js/Slack SDK)
-  - [ ] Implement authentication with Python bridge endpoint
-  - [ ] Add Discord bot integration with slash commands and message handling
-  - [ ] Add Slack app integration with event subscriptions and message handling
-  - [ ] Implement message routing between platforms and Python advisor
-  - [ ] Add error handling and logging for cross-platform communication
-  - [ ] Create deployment documentation for Node.js bridge
+  - [x] Design Node.js app architecture (Express.js server, Discord.js/Slack SDK)
+  - [x] Implement authentication with Python bridge endpoint
+  - [x] Add Discord bot integration with slash commands and message handling
+  - [x] Add Slack app integration with event subscriptions and message handling
+  - [x] Implement message routing between platforms and Python advisor
+  - [x] Add error handling and logging for cross-platform communication
+  - [x] Create deployment documentation for Node.js bridge
+
+10) Real LLM provider integrations
+- [ ] Implement actual LLM API calls in CompletionProvider and ResponsesProvider
+  Acceptance:
+  - CompletionProvider makes real API calls to OpenAI-compatible endpoints
+  - ResponsesProvider implements streaming responses for real-time chat
+  - Both providers handle authentication, rate limiting, and error recovery
+  - Support for local models like GPT-OSS20B via custom base URLs
+  Tasks:
+  - [ ] Add OpenAI SDK integration with configurable base URLs
+  - [ ] Implement streaming responses for real-time advisor interactions
+  - [ ] Add retry logic and exponential backoff for API failures
+  - [ ] Support for custom model parameters (temperature, max_tokens, etc.)
+  - [ ] Add provider health checks and connection testing
+  - [ ] Implement fallback providers for high availability
 
 ## Next (Ready to Pull)
 
