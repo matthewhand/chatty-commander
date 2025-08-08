@@ -66,6 +66,47 @@ class Config:
         # Command sequences
         self.command_sequences = self.config_data.get("command_sequences", {})
 
+        # Advisors (OpenAI-Agents advisor) settings
+        advisors_cfg = self.config_data.get("advisors", {})
+        provider_cfg = advisors_cfg.get("provider", {})
+        # Environment overrides
+        provider_base_url = os.environ.get("ADVISORS_PROVIDER_BASE_URL", provider_cfg.get("base_url", ""))
+        provider_api_key = os.environ.get("ADVISORS_PROVIDER_API_KEY", provider_cfg.get("api_key", ""))
+
+        self.advisors = {
+            "enabled": advisors_cfg.get("enabled", False),
+            "llm_api_mode": advisors_cfg.get("llm_api_mode", "completion"),
+            "model": advisors_cfg.get("model", "gpt-oss20b"),
+            "provider": {
+                "base_url": provider_base_url,
+                "api_key": provider_api_key,
+            },
+            "bridge": {
+                "token": os.environ.get(
+                    "ADVISORS_BRIDGE_TOKEN", advisors_cfg.get("bridge", {}).get("token", "")
+                ),
+                "url": os.environ.get(
+                    "ADVISORS_BRIDGE_URL", advisors_cfg.get("bridge", {}).get("url", "")
+                ),
+            },
+            "memory": {
+                "persistence_enabled": bool(
+                    os.environ.get("ADVISORS_MEMORY_PERSIST", str(advisors_cfg.get("memory", {}).get("persistence_enabled", False))).lower()
+                    in ["1", "true", "yes"]
+                ),
+                "persistence_path": os.environ.get(
+                    "ADVISORS_MEMORY_PATH",
+                    advisors_cfg.get("memory", {}).get("persistence_path", "data/advisors_memory.jsonl"),
+                ),
+            },
+            "platforms": advisors_cfg.get("platforms", ["discord", "slack"]),
+            "personas": advisors_cfg.get("personas", {"default": "philosophy_advisor"}),
+            "features": advisors_cfg.get(
+                "features",
+                {"browser_analyst": True, "avatar_talkinghead": False},
+            ),
+        }
+
     def _load_config(self):
         """Load configuration from JSON file with fallbacks and environment overrides."""
         import json

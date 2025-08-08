@@ -50,6 +50,18 @@ ChattyCommander utilizes ONNX (Open Neural Network Exchange) models for efficien
 4. **Install Dependencies**: Run `uv sync` to install all required packages. This will also make the `chatty` command available in `.venv/bin/`.
 5. **Model Setup**: Place your ONNX models in the appropriate directories: `models-idle`, `models-computer`, `models-chatty`.
 
+### Quickstart (Windows/macOS)
+
+- Windows (PowerShell):
+  ```powershell
+  .\scripts\windows\start-web.ps1 -Port 8100 -NoAuth
+  ```
+- macOS (Terminal):
+  ```bash
+  chmod +x scripts/macos/start-web.sh
+  PORT=8100 NO_AUTH=1 scripts/macos/start-web.sh
+  ```
+
 ## Usage
 
 ### Command Line Interface
@@ -95,6 +107,34 @@ The GUI provides:
 
 The GUI is optional - you can continue using the CLI-only approach if preferred. Both interfaces work with the same configuration files and provide the same functionality.
 
+### Orchestrator examples
+
+- Text + Web (no auth):
+  ```bash
+  uv run python main.py --orchestrate --enable-text --web --no-auth --port 8100
+  ```
+- Web + Discord bridge (advisors enabled):
+  ```bash
+  export ADVISORS_BRIDGE_TOKEN=secret
+  export ADVISORS_BRIDGE_URL=http://localhost:3001
+  # ensure advisors.enabled=true in config
+  uv run python main.py --orchestrate --web --enable-discord-bridge --port 8100
+  ```
+- Text only (headless dev):
+  ```bash
+  uv run python main.py --orchestrate --enable-text
+  ```
+
+### Advisors usage examples
+
+- Persona tag (config): set `"personas": { "default": "philosophy_advisor" }`.
+- Summarize via Web API:
+  ```bash
+  curl -s -X POST http://localhost:8100/api/v1/advisors/message \
+    -H 'Content-Type: application/json' \
+    -d '{"platform":"discord","channel":"c1","user":"u1","text":"summarize https://example.com"}'
+  ```
+
 ## Configuration
 
 The application uses a JSON-based configuration system with automatic default generation.
@@ -133,6 +173,24 @@ Alternatively, edit `config.py` manually for static changes.
 - Model paths and state associations.
 - Actions for commands (e.g., keypresses or URLs).
 - Audio settings like sample rate.
+
+### Advisors and bridge configuration (example)
+
+```json
+{
+  "advisors": {
+    "enabled": true,
+    "llm_api_mode": "completion", 
+    "model": "gpt-oss20b",
+    "provider": { "base_url": "http://localhost:11434", "api_key": "" },
+    "bridge": { "token": "secret" },
+    "platforms": ["discord", "slack"],
+    "personas": { "default": "philosophy_advisor" },
+    "features": { "browser_analyst": true, "avatar_talkinghead": false },
+    "memory": { "persistence_enabled": true, "persistence_path": "data/advisors_memory.jsonl" }
+  }
+}
+```
 
 ## Troubleshooting
 

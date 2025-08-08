@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.advisors.service import AdvisorsService, AdvisorMessage, AdvisorReply
 
 # Import our core modules from src package
 from chatty_commander.app.config import Config
@@ -103,6 +104,8 @@ class WebModeServer:
         self.start_time = time.time()
         self.last_command: str | None = None
         self.last_state_change = datetime.now()
+        # Advisors service (optional)
+        self.advisors_service = AdvisorsService(config=config_manager)
 
         # WebSocket connection management
         self.active_connections: set[WebSocket] = set()
@@ -290,6 +293,78 @@ class WebModeServer:
                     ),
                     execution_time=execution_time,
                 )
+        class AdvisorInbound(BaseModel):
+            platform: str
+            channel: str
+            user: str
+            text: str
+            meta: dict[str, Any] | None = None
+
+        class AdvisorOutbound(BaseModel):
+            text: str
+            meta: dict[str, Any] | None = None
+
+        @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
+        async def advisors_message(payload: AdvisorInbound):
+            if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
+                raise HTTPException(status_code=400, detail="Advisors feature disabled")
+
+            msg = AdvisorMessage(
+                platform=payload.platform,
+                channel=payload.channel,
+                user=payload.user,
+                text=payload.text,
+                meta=payload.meta,
+            )
+            reply: AdvisorReply = self.advisors_service.handle_message(msg)
+            return AdvisorOutbound(text=reply.text, meta=reply.meta)
+
+        class AdvisorMemoryItem(BaseModel):
+            role: str
+            content: str
+            timestamp: str
+
+        @app.get("/api/v1/advisors/memory", response_model=list[AdvisorMemoryItem])
+        async def advisors_memory(platform: str, channel: str, user: str, limit: int = 20):
+            if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
+                raise HTTPException(status_code=400, detail="Advisors feature disabled")
+            items = self.advisors_service.memory.get(platform, channel, user, limit)
+            return [AdvisorMemoryItem(role=i.role, content=i.content, timestamp=i.timestamp) for i in items]
+
+        @app.delete("/api/v1/advisors/memory")
+        async def advisors_memory_clear(platform: str, channel: str, user: str):
+            if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
+                raise HTTPException(status_code=400, detail="Advisors feature disabled")
+            count = self.advisors_service.memory.clear(platform, channel, user)
+            return {"cleared": count}
+
+        @app.post("/bridge/event")
+        async def bridge_event(event: dict[str, Any], request: Any):
+            # Auth: shared secret header must match config token
+            token_expected = (
+                getattr(self.config_manager, "advisors", {})
+                .get("bridge", {})
+                .get("token", "")
+            )
+            token_header = request.headers.get("X-Bridge-Token", "")
+            if not token_expected or token_header != token_expected:
+                raise HTTPException(status_code=401, detail="Unauthorized bridge request")
+
+            # Minimal contract: platform, channel, user, text
+            try:
+                msg = AdvisorMessage(
+                    platform=event.get("platform", "unknown"),
+                    channel=event.get("channel", ""),
+                    user=event.get("user", ""),
+                    text=event.get("text", ""),
+                    meta=event.get("meta"),
+                )
+                reply = self.advisors_service.handle_message(msg)
+                return {"ok": True, "reply": {"text": reply.text, "meta": reply.meta}}
+            except Exception as e:
+                logger.error(f"Bridge event processing failed: {e}")
+                raise HTTPException(status_code=400, detail=str(e))
+
 
             except HTTPException:
                 raise

@@ -32,6 +32,10 @@ try:
     from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
     from chatty_commander.app.model_manager import ModelManager  # type: ignore
     from chatty_commander.app.state_manager import StateManager  # type: ignore
+    from chatty_commander.app.orchestrator import (  # type: ignore
+        ModeOrchestrator,
+        OrchestratorFlags,
+    )
     from chatty_commander.config import Config  # type: ignore
     from chatty_commander.utils.logger import setup_logger  # type: ignore
 except Exception:
@@ -41,6 +45,7 @@ except Exception:
     from model_manager import ModelManager  # shim file at repo root
     from state_manager import StateManager  # shim file at repo root
     from utils.logger import setup_logger  # local utils
+    from app.orchestrator import ModeOrchestrator, OrchestratorFlags  # type: ignore
 
 try:
     from default_config import generate_default_config_if_needed
@@ -273,6 +278,33 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         help="Start interactive shell mode for text-based command input and execution.",
     )
 
+    # Orchestrator flags (opt-in; does not change default behavior)
+    parser.add_argument(
+        "--orchestrate",
+        action="store_true",
+        help="Use the mode orchestrator to unify adapters (text, web, gui, wakeword, cv, discord bridge).",
+    )
+    parser.add_argument(
+        "--enable-text",
+        action="store_true",
+        help="Enable text adapter in orchestrator.",
+    )
+    parser.add_argument(
+        "--enable-openwakeword",
+        action="store_true",
+        help="Enable OpenWakeWord adapter in orchestrator.",
+    )
+    parser.add_argument(
+        "--enable-computer-vision",
+        action="store_true",
+        help="Enable Computer Vision adapter in orchestrator.",
+    )
+    parser.add_argument(
+        "--enable-discord-bridge",
+        action="store_true",
+        help="Enable Discord/Slack bridge adapter (requires advisors + bridge token).",
+    )
+
     parser.add_argument(
         "--no-auth",
         action="store_true",
@@ -371,6 +403,35 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
     logger.info("Exiting interactive shell")
 
 
+def run_orchestrator_mode(config, model_manager, state_manager, command_executor, logger, args):
+    """Run orchestrator-driven mode; adapters route to the same command sink."""
+    flags = OrchestratorFlags(
+        enable_text=bool(getattr(args, "enable_text", False)),
+        enable_gui=bool(getattr(args, "gui", False)),
+        enable_web=bool(getattr(args, "web", False)),
+        enable_openwakeword=bool(getattr(args, "enable_openwakeword", False)),
+        enable_computer_vision=bool(getattr(args, "enable_computer_vision", False)),
+        enable_discord_bridge=bool(getattr(args, "enable_discord_bridge", False)),
+    )
+    orchestrator = ModeOrchestrator(
+        config=config,
+        command_sink=command_executor,
+        advisor_sink=None,
+        flags=flags,
+    )
+    selected = orchestrator.start()
+    logger.info(f"Orchestrator started adapters: {selected}")
+    # For now, block on CLI loop to keep process alive if no web/gui
+    if not args.web and not args.gui:
+        try:
+            while True:
+                signal.pause()
+        except KeyboardInterrupt:
+            pass
+    orchestrator.stop()
+    return 0
+
+
 def main():
     parser = create_parser()
     # Parse as the very first action and immediately return argparse exit code for help/usage
@@ -441,6 +502,10 @@ def main():
     elif args.shell:
         run_interactive_shell(config, model_manager, state_manager, command_executor, logger)
         return 0
+    elif getattr(args, "orchestrate", False):
+        return run_orchestrator_mode(
+            config, model_manager, state_manager, command_executor, logger, args
+        )
     else:
         run_cli_mode(config, model_manager, state_manager, command_executor, logger)
         return 0
