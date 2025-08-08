@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional
 from chatty_commander.tools.browser_analyst import AnalystRequest, summarize_url
 from .memory import MemoryStore
 from .providers import build_provider
-from .prompting import Persona, build_provider_prompt
+from .prompting import resolve_persona, build_provider_prompt
 
 @dataclass
 class AdvisorMessage:
@@ -51,14 +51,7 @@ class AdvisorsService:
         self.provider = build_provider(config)
         personas = getattr(config, "advisors", {}).get("personas", {})
         self.persona_name: str = personas.get("default", "default")
-        self.persona = Persona(
-            name=self.persona_name,
-            system=(
-                "Provide helpful, concise answers."
-                if self.persona_name == "default"
-                else f"Persona {self.persona_name}: provide helpful, concise answers."
-            ),
-        )
+        self.persona = resolve_persona(self.persona_name, getattr(config, "advisors", {}).get("personas", {}))
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
         """Handle a message. MVP: echo with a prefix to verify wiring."""
