@@ -12,7 +12,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Dict
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -308,26 +308,81 @@ class WebModeServer:
             channel: str
             user: str
             text: str
-            meta: dict[str, Any] | None = None
+            username: Optional[str] = None
+            metadata: Optional[Dict[str, Any]] = None
 
         class AdvisorOutbound(BaseModel):
-            text: str
-            meta: dict[str, Any] | None = None
+            reply: str
+            context_key: str
+            persona_id: str
+            model: str
+            api_mode: str
+
+
+        class ContextStats(BaseModel):
+            total_contexts: int
+            platform_distribution: Dict[str, int]
+            persona_distribution: Dict[str, int]
+            persistence_enabled: bool
+            persistence_path: str
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
-        async def advisors_message(payload: AdvisorInbound):
-            if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
-                raise HTTPException(status_code=400, detail="Advisors feature disabled")
+        async def advisor_message(message: AdvisorInbound):
+            """Process a message through the advisor service."""
+            try:
+                reply = self.advisors_service.handle_message(
+                    AdvisorMessage(
+                        platform=message.platform,
+                        channel=message.channel,
+                        user=message.user,
+                        text=message.text,
+                        username=message.username,
+                        metadata=message.metadata
+                    )
+                )
+                return AdvisorOutbound(
+                    reply=reply.reply,
+                    context_key=reply.context_key,
+                    persona_id=reply.persona_id,
+                    model=reply.model,
+                    api_mode=reply.api_mode
+                )
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
 
-            msg = AdvisorMessage(
-                platform=payload.platform,
-                channel=payload.channel,
-                user=payload.user,
-                text=payload.text,
-                meta=payload.meta,
-            )
-            reply: AdvisorReply = self.advisors_service.handle_message(msg)
-            return AdvisorOutbound(text=reply.text, meta=reply.meta)
+
+        @app.post("/api/v1/advisors/context/switch")
+        async def switch_persona(context_key: str, persona_id: str):
+            """Switch persona for a specific context."""
+            try:
+                success = self.advisors_service.switch_persona(context_key, persona_id)
+                if not success:
+                    raise HTTPException(status_code=400, detail="Invalid persona or context")
+                return {"success": True, "context_key": context_key, "persona_id": persona_id}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+
+        @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
+        async def get_context_stats():
+            """Get statistics about current contexts."""
+            try:
+                stats = self.advisors_service.get_context_stats()
+                return ContextStats(**stats)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+
+        @app.delete("/api/v1/advisors/context/{context_key}")
+        async def clear_context(context_key: str):
+            """Clear a specific context."""
+            try:
+                success = self.advisors_service.clear_context(context_key)
+                if not success:
+                    raise HTTPException(status_code=404, detail="Context not found")
+                return {"success": True, "context_key": context_key}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
 
         class AdvisorMemoryItem(BaseModel):
             role: str

@@ -1,100 +1,124 @@
-from __future__ import annotations
+"""
+Advisor service for handling AI advisor interactions.
+"""
 
+from typing import Dict, Any, Optional
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
 
-from chatty_commander.tools.browser_analyst import AnalystRequest, summarize_url
 from .memory import MemoryStore
 from .providers import build_provider
-from .prompting import resolve_persona
-from .templates import get_prompt_template, render_with_template
+from .prompting import resolve_persona, build_provider_prompt
+from .context import ContextManager, PlatformType
+
 
 @dataclass
 class AdvisorMessage:
+    """Incoming message for advisor processing."""
     platform: str
     channel: str
     user: str
     text: str
-    meta: dict[str, Any] | None = None
+    username: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 @dataclass
 class AdvisorReply:
-    text: str
-    meta: dict[str, Any] | None = None
+    """Response from advisor processing."""
+    reply: str
+    context_key: str
+    persona_id: str
+    model: str
+    api_mode: str
 
 
 class AdvisorsService:
-    """Thin facade for the advisor core (openai-agents based).
-
-    MVP provides a simple echo pipeline and pluggable LLM/tool calls later.
-    """
-
-    def __init__(
-        self,
-        *,
-        config: Any,
-        send_reply: Optional[Callable[[AdvisorReply, AdvisorMessage], None]] = None,
-    ) -> None:
+    """Core service for handling advisor messages and responses."""
+    
+    def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.send_reply = send_reply
-
-        self.enabled: bool = bool(getattr(config, "advisors", {}).get("enabled", False))
-        self.llm_api_mode: str = getattr(config, "advisors", {}).get("llm_api_mode", "completion")
-        self.model: str = getattr(config, "advisors", {}).get("model", "gpt-oss20b")
-        self.features: dict[str, Any] = getattr(config, "advisors", {}).get("features", {})
-        mem_cfg = getattr(config, "advisors", {}).get("memory", {})
-        self.memory = MemoryStore(
-            max_items_per_context=200,
-            persist=bool(mem_cfg.get("persistence_enabled", False)),
-            persist_path=mem_cfg.get("persistence_path"),
-        )
-        self.provider = build_provider(config)
-        personas = getattr(config, "advisors", {}).get("personas", {})
-        self.persona_name: str = personas.get("default", "default")
-        self.persona = resolve_persona(self.persona_name, getattr(config, "advisors", {}).get("personas", {}))
-
+        self.memory = MemoryStore(config.get('memory', {}))
+        self.provider = build_provider(config.get('providers', {}))
+        self.context_manager = ContextManager(config.get('context', {}))
+        
+        # Check if advisors are enabled
+        self.enabled = config.get('enabled', False)
+    
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
-        """Handle a message. MVP: echo with a prefix to verify wiring."""
+        """
+        Process an incoming message and return advisor response.
+        
+        Args:
+            message: The incoming message to process
+            
+        Returns:
+            AdvisorReply with response and metadata
+        """
         if not self.enabled:
-            return AdvisorReply(text="[advisors disabled]")
-
-        # Minimal tool invocation: summarize URL if feature enabled and pattern matches
-        if self.features.get("browser_analyst") and message.text.lower().startswith("summarize"):
-            # Accept formats: "summarize URL" or "summarize: URL"
-            parts = message.text.split(None, 1)
-            url = ""
-            if len(parts) == 2:
-                url = parts[1].strip().lstrip(":").strip()
-            if url:
-                result = summarize_url(AnalystRequest(url=url))
-                reply_text = f"(advisor:{self.model}/{self.llm_api_mode}) summary: {result.title}"
-                reply = AdvisorReply(text=reply_text, meta={"summary": result.summary, "url": result.url})
-                self.memory.add(message.platform, message.channel, message.user, "user", message.text)
-                self.memory.add(message.platform, message.channel, message.user, "assistant", reply.text)
-                if self.send_reply:
-                    try:
-                        self.send_reply(reply, message)
-                    except Exception:
-                        pass
-                return reply
-
-        # Default echo w/ provider hint and persona tag (if set)
-        # Demonstrate prompt build (stubbed) and provider hint
-        # Build prompt via template
-        tpl = get_prompt_template(self.model, self.persona.name, self.llm_api_mode)
-        _prompt = render_with_template(tpl, system=self.persona.system, text=message.text)
-        provider_hint = self.provider.generate("")
-        persona_tag = f" [persona:{self.persona_name}]" if self.persona_name != "default" else ""
-        reply_text = f"(advisor:{self.model}/{self.llm_api_mode}) {message.text}{persona_tag} [{provider_hint}]"
-        reply = AdvisorReply(text=reply_text)
-        self.memory.add(message.platform, message.channel, message.user, "user", message.text)
-        self.memory.add(message.platform, message.channel, message.user, "assistant", reply.text)
-        if self.send_reply:
-            try:
-                self.send_reply(reply, message)
-            except Exception:
-                pass
-        return reply
+            raise RuntimeError("Advisors are not enabled")
+        
+        # Handle special commands
+        if message.text.startswith("summarize "):
+            return self._handle_summarize_command(message)
+        
+        # Get or create context for this identity
+        platform = PlatformType(message.platform.lower())
+        context = self.context_manager.get_or_create_context(
+            platform=platform,
+            channel=message.channel,
+            user_id=message.user,
+            username=message.username,
+            **(message.metadata or {})
+        )
+        
+        # Build prompt using context-aware persona
+        prompt = build_provider_prompt(
+            provider=self.provider,
+            system_prompt=context.system_prompt,
+            user_message=message.text,
+            memory_items=self.memory.get(context.memory_key)
+        )
+        
+        # Generate response (for now, echo with context info)
+        response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text}"
+        
+        # Add to memory
+        self.memory.add(context.memory_key, "user", message.text)
+        self.memory.add(context.memory_key, "assistant", response)
+        
+        return AdvisorReply(
+            reply=response,
+            context_key=context.identity.context_key,
+            persona_id=context.persona_id,
+            model=self.provider.model,
+            api_mode=self.provider.api_mode
+        )
+    
+    def _handle_summarize_command(self, message: AdvisorMessage) -> AdvisorReply:
+        """Handle the summarize command."""
+        from .tools.browser_analyst import browser_analyst_tool
+        
+        url = message.text[10:]  # Remove "summarize "
+        summary = browser_analyst_tool(url)
+        
+        return AdvisorReply(
+            reply=f"Summary of {url}: {summary}",
+            context_key="summarize",
+            persona_id="analyst",
+            model=self.provider.model,
+            api_mode=self.provider.api_mode
+        )
+    
+    def switch_persona(self, context_key: str, persona_id: str) -> bool:
+        """Switch persona for a specific context."""
+        return self.context_manager.switch_persona(context_key, persona_id)
+    
+    def get_context_stats(self) -> Dict[str, Any]:
+        """Get statistics about current contexts."""
+        return self.context_manager.get_stats()
+    
+    def clear_context(self, context_key: str) -> bool:
+        """Clear a specific context."""
+        return self.context_manager.clear_context(context_key)
 
 
