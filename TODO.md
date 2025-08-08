@@ -66,6 +66,118 @@ Documentation consolidation
 Notes
 - Long-horizon roadmap items (analytics, community, business, extensive UI testing plans) were moved out of TODO and should be tracked in WEBUI_ROADMAP.md and WEBUI_TEST_PLAN.md.
 
+## Design summary: OpenAI-Agents advisor
+
+- **Core SDK**: `openai-agents` (local), derived from OpenAI Swarm; supports MCP, handoff, and as_tool with BYO-LLM.
+- **LLM mode**: Default to `completion` API for broad compatibility (e.g., GPT-OSS20B and other local/uncensored models). The upstream default `responses` API has limited third-party support.
+- **Platforms**: Modular adapters for Discord, Slack, and other messengers.
+- **Advisors**: Per-app/system prompts (e.g., philosophy-focused) with tab-aware context switching that preserves identity across apps.
+- **Avatar (optional)**: 3D anime-style avatar with lip-sync via TalkingHead.
+- **Browser/analyst**: Built-in analyst/browser capabilities.
+- **Goal**: Personal AI advisors with a modular multi-platform UI and LLM backend; suitable for hackathon/contest entry.
+
+## Feature: OpenAI-Agents advisor (Work Plan)
+
+### Milestone A — MVP foundations
+
+- [ ] SDK integration
+  - Wire `openai-agents` as a service module; enable MCP, handoff, and `as_tool`
+  - Config gate: `advisors.enabled`
+  - Acceptance:
+    - Import succeeds and an echo agent runs in a unit test
+    - Feature can be toggled on/off via config
+
+- [ ] LLM API mode & providers
+  - Default to `completion`; optional `responses` via `advisors.llm_api_mode`
+  - BYO-LLM provider wiring (OpenAI-compatible base URL + key; local models e.g., GPT-OSS20B)
+  - Config keys: `advisors.model`, `advisors.provider.base_url`, `advisors.provider.api_key`
+  - Acceptance:
+    - Unit tests cover selection logic and completion vs responses
+    - E2E test prompts a local provider and returns text
+
+- [ ] Tools: MCP, handoff, and as_tool
+  - Define tool interface; register `browser_analyst` as first tool
+  - Acceptance:
+    - Tool invocation path exercises MCP/tool-call and returns a structured result
+    - Handoff between advisors can be triggered and logged
+
+- [ ] Node.js bridge API (Discord/Slack external adapters)
+  - Define HTTP/WebSocket contract between Node bridge and Python advisor core
+  - Acceptance:
+    - Contract documented in `docs/OPENAI_AGENTS_ADVISOR.md` (endpoints, payloads, auth)
+    - Local mock verifies end-to-end message flow through the bridge
+
+- [x] Web API entrypoint for advisors
+  - POST /api/v1/advisors/message accepts platform/channel/user/text
+  - Acceptance:
+    - Unit test posts message and receives echo with advisor header
+
+- [x] Bridge endpoint auth and echo
+  - POST /bridge/event requires `X-Bridge-Token`; returns advisor echo reply
+  - Acceptance:
+    - Unit tests cover 401 without token and 200 with token
+
+- [x] Orchestrator skeleton
+  - Unifies text/gui/web/cv/wakeword/discord flags and dispatch
+  - Acceptance:
+    - Unit tests verify adapter selection and text dispatch to command sink
+
+- [x] Advisor context memory (per platform/channel/user)
+  - In-memory store with get/clear endpoints
+  - Acceptance:
+    - Unit tests cover memory add/get/clear and API endpoints
+
+- [x] Provider selection (completion vs responses)
+  - Build provider stub and wire into advisor replies; tests cover both modes
+  - Acceptance:
+    - Unit tests assert provider type and hint presence in replies
+
+- [ ] Prompt templating
+  - Build prompt envelope helper and integrate persona prompt
+  - Acceptance:
+    - Unit test validates envelope; advisor path composes prompt deterministically
+
+- [ ] Recurring prompts (MVP)
+  - Add `RecurringPrompt` dataclass and renderer; docs + tests
+  - Acceptance:
+    - JSON example parses; variables render; docs linked in docs/README.md
+
+- [ ] Advisor memory persistence (opt-in)
+  - JSONL append-only persistence with env/config toggles
+  - Acceptance:
+    - Unit test writes two lines; config flag toggles persistence
+
+- [ ] Context manager (tab/app-aware)
+  - Map app/tab identity → persona/system prompt → memory store
+  - Persistence layer for identities and conversation state
+  - Acceptance:
+    - Switching app contexts changes system prompt and preserves per-app memory
+
+- [ ] Browser/analyst tool (basic)
+  - Safe HTTP fetch + readability extraction + summarize
+  - Safety: domain allowlist and timeouts
+  - Acceptance:
+    - Deterministic test on a snapshot page yields expected summary structure
+
+- [ ] Docs (quickstart)
+  - `docs/OPENAI_AGENTS_ADVISOR.md` quickstart updated with config keys and run steps
+  - Example configs for Discord/Slack
+
+### Milestone B — Enhancements & polish
+
+- [ ] Optional 3D avatar (TalkingHead) behind config flag; lip-sync to advisor output
+- [ ] Persona library (e.g., philosophy-focused) and quick switching UX
+- [ ] Provider prompt templates per persona/model
+- [ ] Observability: basic metrics, structured logs for tool calls and handoffs
+- [ ] Security: secret management guidance, allowlists, model safety toggles
+- [ ] Platform polish: richer Discord/Slack features (threads, edits, attachments)
+
+### Milestone C — Test matrix & CI
+
+- [ ] E2E flows for Discord and Slack using recorded sessions/mocks
+- [ ] Coverage ≥ 85% for advisor modules; per-platform adapters have smoke tests
+- [ ] CI secrets strategy documented; integration tests gated for local/dev only
+
 ## Now (Sprint Focus)
 
 1) OpenAPI/Swagger exposure and tests
@@ -128,6 +240,17 @@ Notes
 - [x] Remove stray lines and duplicate "References" at file tail
 - [ ] Keep headings sentence case and consistent
 
+8) Cross-platform launch (Windows/macOS)
+- [x] Windows: add PowerShell launcher and instructions (uv install, `uv run python main.py --web --no-auth`)
+  Acceptance:
+  - `./scripts/windows/start-web.ps1` launches server; docs include prerequisites and path notes
+- [x] macOS: add launch instructions and shell script
+  Acceptance:
+  - `./scripts/macos/start-web.sh` launches server; docs list Gatekeeper notes and `uv` setup
+- [x] README/docs updates with OS-specific quickstart
+  Acceptance:
+  - `README.md` and `docs/README.md` show Windows/macOS launch snippets
+
 ## Next (Ready to Pull)
 
 - [ ] Run web mode tests
@@ -138,6 +261,15 @@ Notes
   - >= 85% lines in src/*
 - [ ] Document "no-auth" mode in README and mark as dev-only
 - [ ] Add basic health and version endpoints with tests
+
+### OpenAI-Agents advisor (MVP)
+- [ ] Integrate `openai-agents` SDK (local); enable MCP, handoff, and `as_tool` usage
+- [ ] Default model API to `completion` mode; config flag to switch to `responses` if needed
+- [ ] BYO-LLM wiring for local models (e.g., GPT-OSS20B); add model selection config
+- [ ] Node.js bridge API for Discord/Slack integration (external adapters)
+- [ ] Tab-aware context switching with per-app/system prompts and persistent identity
+- [ ] Built-in browser/analyst tool available to advisors
+- [ ] Docs: add design summary and quickstart for advisor setup
 
 ## Later (Backlog)
 
@@ -152,6 +284,12 @@ Notes
   - Metrics, error tracking, dashboards
 - [ ] Community artifacts
   - Contributor guide, templates, code of conduct
+
+### OpenAI-Agents advisor (Enhancements)
+- [ ] Optional 3D anime-style avatar via TalkingHead with lip-sync; runtime toggle
+- [ ] Multi-platform polish: richer Discord/Slack features and presence
+- [ ] Local model optimization: prompt templates for uncensored models; safety/policy toggles
+- [ ] UX: advisor persona library (e.g., philosophy-focused) and easy switching
 
 ## Done
 
