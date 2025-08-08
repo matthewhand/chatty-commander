@@ -1,3 +1,5 @@
+"""Add scikit-learn, scipy, and numpy for the AI optimization system"""
+
 [project]
 name = "chatty-commander"
 version = "0.1.0"
@@ -25,6 +27,9 @@ dependencies = [
     "pywebview>=4.4",
     "pystray>=0.19.5",
     "onnx==1.18.0",
+    "scikit-learn>=1.3.0",
+    "scipy>=1.11.0",
+    "numpy>=1.24.0",
 ]
 
 [project.scripts]
