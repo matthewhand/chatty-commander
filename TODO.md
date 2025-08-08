@@ -251,6 +251,22 @@ Notes
   Acceptance:
   - `README.md` and `docs/README.md` show Windows/macOS launch snippets
 
+9) Node.js bridge API implementation (external app for Discord/Slack)
+- [ ] Create external Node.js application that connects to Python advisor API
+  Acceptance:
+  - Node.js app can authenticate with Python bridge endpoint using shared secret
+  - Discord/Slack webhooks can send messages to Node.js app
+  - Node.js app forwards messages to Python advisor API and returns responses
+  - Messages are routed back to appropriate Discord/Slack channels
+  Tasks:
+  - [ ] Design Node.js app architecture (Express.js server, Discord.js/Slack SDK)
+  - [ ] Implement authentication with Python bridge endpoint
+  - [ ] Add Discord bot integration with slash commands and message handling
+  - [ ] Add Slack app integration with event subscriptions and message handling
+  - [ ] Implement message routing between platforms and Python advisor
+  - [ ] Add error handling and logging for cross-platform communication
+  - [ ] Create deployment documentation for Node.js bridge
+
 ## Next (Ready to Pull)
 
 - [ ] Run web mode tests
