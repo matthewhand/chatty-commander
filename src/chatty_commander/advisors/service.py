@@ -6,7 +6,8 @@ from typing import Any, Callable, Optional
 from chatty_commander.tools.browser_analyst import AnalystRequest, summarize_url
 from .memory import MemoryStore
 from .providers import build_provider
-from .prompting import resolve_persona, build_provider_prompt
+from .prompting import resolve_persona
+from .templates import get_prompt_template, render_with_template
 
 @dataclass
 class AdvisorMessage:
@@ -80,7 +81,9 @@ class AdvisorsService:
 
         # Default echo w/ provider hint and persona tag (if set)
         # Demonstrate prompt build (stubbed) and provider hint
-        _prompt = build_provider_prompt(self.llm_api_mode, self.persona, message.text)
+        # Build prompt via template
+        tpl = get_prompt_template(self.model, self.persona.name, self.llm_api_mode)
+        _prompt = render_with_template(tpl, system=self.persona.system, text=message.text)
         provider_hint = self.provider.generate("")
         persona_tag = f" [persona:{self.persona_name}]" if self.persona_name != "default" else ""
         reply_text = f"(advisor:{self.model}/{self.llm_api_mode}) {message.text}{persona_tag} [{provider_hint}]"
