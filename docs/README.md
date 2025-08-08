@@ -9,6 +9,7 @@ Generated on 2025-08-04 12:27:15
 - [OpenAPI Specification](openapi.json) - Machine-readable API spec
 - [OpenAI-Agents Advisor Design](OPENAI_AGENTS_ADVISOR.md) - Advisor system overview and scope
 - [Architecture Overview](ARCHITECTURE_OVERVIEW.md) - How CLI, GUI, and WebUI share functionality via the orchestrator
+- [Recurring Prompts](RECURRING_PROMPTS.md) - Blueprint and implementation notes
 
 ## Quick Start
 

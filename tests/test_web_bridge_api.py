@@ -8,7 +8,11 @@ from chatty_commander.app.command_executor import CommandExecutor
 
 class DummyConfig:
     def __init__(self) -> None:
-        self.config = {}
+        # Minimal paths for ModelManager
+        self.general_models_path = "models-idle"
+        self.system_models_path = "models-computer"
+        self.chat_models_path = "models-chatty"
+        self.config = {"model_actions": {}}
         self.advisors = {
             "enabled": True,
             "llm_api_mode": "completion",

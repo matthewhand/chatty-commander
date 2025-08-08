@@ -137,6 +137,11 @@ Notes
   - Acceptance:
     - Unit test validates envelope; advisor path composes prompt deterministically
 
+- [ ] Recurring prompts (MVP)
+  - Add `RecurringPrompt` dataclass and renderer; docs + tests
+  - Acceptance:
+    - JSON example parses; variables render; docs linked in docs/README.md
+
 - [ ] Advisor memory persistence (opt-in)
   - JSONL append-only persistence with env/config toggles
   - Acceptance:

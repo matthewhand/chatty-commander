@@ -293,6 +293,16 @@ class WebModeServer:
                     ),
                     execution_time=execution_time,
                 )
+            except HTTPException:
+                raise
+            except Exception as e:
+                execution_time = (time.time() - start_time) * 1000
+                logger.error(f"Command execution failed: {e}")
+                return CommandResponse(
+                    success=False,
+                    message=f"Command execution failed: {str(e)}",
+                    execution_time=execution_time,
+                )
         class AdvisorInbound(BaseModel):
             platform: str
             channel: str
@@ -338,8 +348,10 @@ class WebModeServer:
             count = self.advisors_service.memory.clear(platform, channel, user)
             return {"cleared": count}
 
+        from fastapi import Request
+
         @app.post("/bridge/event")
-        async def bridge_event(event: dict[str, Any], request: Any):
+        async def bridge_event(event: dict[str, Any], request: Request):
             # Auth: shared secret header must match config token
             token_expected = (
                 getattr(self.config_manager, "advisors", {})
@@ -364,18 +376,6 @@ class WebModeServer:
             except Exception as e:
                 logger.error(f"Bridge event processing failed: {e}")
                 raise HTTPException(status_code=400, detail=str(e))
-
-
-            except HTTPException:
-                raise
-            except Exception as e:
-                execution_time = (time.time() - start_time) * 1000
-                logger.error(f"Command execution failed: {e}")
-                return CommandResponse(
-                    success=False,
-                    message=f"Command execution failed: {str(e)}",
-                    execution_time=execution_time,
-                )
 
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):

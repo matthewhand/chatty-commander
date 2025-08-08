@@ -45,7 +45,11 @@ except Exception:
     from model_manager import ModelManager  # shim file at repo root
     from state_manager import StateManager  # shim file at repo root
     from utils.logger import setup_logger  # local utils
-    from app.orchestrator import ModeOrchestrator, OrchestratorFlags  # type: ignore
+    # Orchestrator shipped under src/chatty_commander/app
+    from chatty_commander.app.orchestrator import (  # type: ignore
+        ModeOrchestrator,
+        OrchestratorFlags,
+    )
 
 try:
     from default_config import generate_default_config_if_needed
