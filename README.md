@@ -118,7 +118,7 @@ The GUI is optional - you can continue using the CLI-only approach if preferred.
   export ADVISORS_BRIDGE_TOKEN=secret
   export ADVISORS_BRIDGE_URL=http://localhost:3001
   # ensure advisors.enabled=true in config
-  uv run python main.py --orchestrate --web --enable-discord-bridge --port 8100
+  uv run python main.py --orchestrate --web --enable-discord-bridge --advisors --port 8100
   ```
 - Text only (headless dev):
   ```bash

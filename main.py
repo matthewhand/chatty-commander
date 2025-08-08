@@ -339,6 +339,13 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--display", type=str, default=None, help="Override DISPLAY value for GUI mode (e.g., :0)."
     )
 
+    # Advisors convenience flag
+    parser.add_argument(
+        "--advisors",
+        action="store_true",
+        help="Enable advisors feature at runtime (overrides config.advisors.enabled).",
+    )
+
     return parser
 
 
@@ -472,6 +479,14 @@ def main():
 
     # Load configuration settings
     config = Config()
+    # Apply runtime advisors enable if requested
+    if getattr(args, "advisors", False):
+        try:
+            if not hasattr(config, "advisors"):
+                config.advisors = {}
+            config.advisors["enabled"] = True
+        except Exception:
+            pass
     model_manager = ModelManager(config)
     state_manager = StateManager()
     command_executor = CommandExecutor(config, model_manager, state_manager)
