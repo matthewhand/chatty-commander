@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
 from .memory import MemoryStore
-from .providers import build_provider
+from .providers import build_provider_safe
 from .prompting import resolve_persona, build_provider_prompt
 from .context import ContextManager, PlatformType
 
@@ -38,7 +38,7 @@ class AdvisorsService:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.memory = MemoryStore(config.get('memory', {}))
-        self.provider = build_provider(config.get('providers', {}))
+        self.provider = build_provider_safe(config.get('providers', {}))
         self.context_manager = ContextManager(config.get('context', {}))
         
         # Check if advisors are enabled
@@ -79,8 +79,12 @@ class AdvisorsService:
             memory_items=self.memory.get(context.memory_key)
         )
         
-        # Generate response (for now, echo with context info)
-        response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text}"
+        # Generate real LLM response
+        try:
+            response = self.provider.generate(prompt)
+        except Exception as e:
+            # Fallback to echo if LLM fails
+            response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text} (LLM error: {str(e)})"
         
         # Add to memory
         self.memory.add(context.memory_key, "user", message.text)
