@@ -359,6 +359,8 @@ class WebModeServer:
                 if not success:
                     raise HTTPException(status_code=400, detail="Invalid persona or context")
                 return {"success": True, "context_key": context_key, "persona_id": persona_id}
+            except HTTPException:
+                raise
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -381,6 +383,8 @@ class WebModeServer:
                 if not success:
                     raise HTTPException(status_code=404, detail="Context not found")
                 return {"success": True, "context_key": context_key}
+            except HTTPException:
+                raise
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -424,10 +428,11 @@ class WebModeServer:
                     channel=event.get("channel", ""),
                     user=event.get("user", ""),
                     text=event.get("text", ""),
-                    meta=event.get("meta"),
+                    username=event.get("username"),
+                    metadata=event.get("meta")
                 )
                 reply = self.advisors_service.handle_message(msg)
-                return {"ok": True, "reply": {"text": reply.text, "meta": reply.meta}}
+                return {"ok": True, "reply": {"text": reply.reply, "meta": {}}}
             except Exception as e:
                 logger.error(f"Bridge event processing failed: {e}")
                 raise HTTPException(status_code=400, detail=str(e))

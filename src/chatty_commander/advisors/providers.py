@@ -303,25 +303,25 @@ class StubCompletionProvider(LLMProvider):
     """Stub provider for testing."""
     
     def generate(self, prompt: str, **kwargs) -> str:
-        return f"[{self.model}][{self.api_mode}] {prompt}"
+        return f"advisor:{self.model}/{self.api_mode} {prompt}"
     
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        return f"[{self.model}][{self.api_mode}] {prompt}"
+        return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
 
 class StubResponsesProvider(LLMProvider):
     """Stub provider for testing."""
     
     def generate(self, prompt: str, **kwargs) -> str:
-        return f"[{self.model}][{self.api_mode}] {prompt}"
+        return f"advisor:{self.model}/{self.api_mode} {prompt}"
     
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        return f"[{self.model}][{self.api_mode}] {prompt}"
+        return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
 
 def build_provider_safe(config: Dict[str, Any]) -> LLMProvider:
     """
-    Build provider with fallback to stubs if OpenAI SDK is not available.
+    Build provider with fallback to stubs if OpenAI SDK is not available or no API key is provided.
     
     Args:
         config: Provider configuration dictionary
@@ -334,11 +334,36 @@ def build_provider_safe(config: Dict[str, Any]) -> LLMProvider:
         api_mode = config.get('llm_api_mode', 'completion')
         
         if api_mode == 'completion':
-            return StubCompletionProvider(config)
+            stub = StubCompletionProvider(config)
+            stub.api_mode = 'completion'
+            return stub
         elif api_mode == 'responses':
-            return StubResponsesProvider(config)
+            stub = StubResponsesProvider(config)
+            stub.api_mode = 'responses'
+            return stub
         else:
-            return StubCompletionProvider(config)
+            stub = StubCompletionProvider(config)
+            stub.api_mode = 'completion'
+            return stub
+    
+    # Check if API key is available
+    api_key = config.get('api_key', os.getenv('OPENAI_API_KEY'))
+    if not api_key:
+        logger.warning("No OpenAI API key provided, using stub providers")
+        api_mode = config.get('llm_api_mode', 'completion')
+        
+        if api_mode == 'completion':
+            stub = StubCompletionProvider(config)
+            stub.api_mode = 'completion'
+            return stub
+        elif api_mode == 'responses':
+            stub = StubResponsesProvider(config)
+            stub.api_mode = 'responses'
+            return stub
+        else:
+            stub = StubCompletionProvider(config)
+            stub.api_mode = 'completion'
+            return stub
     
     return build_provider(config)
 

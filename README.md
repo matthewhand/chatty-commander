@@ -62,6 +62,31 @@ ChattyCommander utilizes ONNX (Open Neural Network Exchange) models for efficien
   PORT=8100 NO_AUTH=1 scripts/macos/start-web.sh
   ```
 
+### Web UI with Authentication
+
+Start the web server with authentication enabled (default):
+```bash
+uv run python main.py --web --port 8100
+```
+
+### Development Mode (No Authentication)
+
+⚠️ **Security Warning**: Only use `--no-auth` for local development. This mode:
+- Disables all authentication mechanisms
+- Allows unrestricted API access
+- Exposes OpenAPI documentation at `/docs`
+- Should **NEVER** be used in production or on public networks
+
+For local development only:
+```bash
+uv run python main.py --web --no-auth --port 8100
+```
+
+This enables:
+- Swagger UI at `http://localhost:8100/docs`
+- Unrestricted CORS from `http://localhost:3000` (for frontend development)
+- Direct API access without authentication tokens
+
 ## Usage
 
 ### Command Line Interface

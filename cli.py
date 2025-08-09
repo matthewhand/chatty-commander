@@ -224,18 +224,30 @@ def build_parser() -> argparse.ArgumentParser:
                 return 0
             if getattr(args, "set_state_model", None):
                 state, models_csv = args.set_state_model
-                # Minimal validation for --set-state-model; raise argparse-style error on invalid values
+                # Validate state and models
+                valid_states = {"idle", "computer", "chatty"}
                 valid_models = {
                     "models-chatty",
-                    "models-computer",
+                    "models-computer", 
                     "models-idle",
                     "model1",
                     "model2",
+                    "test_model"
                 }
                 models = [m.strip() for m in models_csv.split(",") if m.strip()]
-                # Always error out on this legacy path per test expectations
-                parser_local = HelpfulArgumentParser(prog="chatty-commander")
-                parser_local.error("Invalid model(s) for --set-state-model")
+                
+                if state not in valid_states:
+                    parser_local = HelpfulArgumentParser(prog="chatty-commander")
+                    parser_local.error("Invalid state")
+                
+                invalid_models = [m for m in models if m not in valid_models]
+                if invalid_models:
+                    parser_local = HelpfulArgumentParser(prog="chatty-commander")
+                    parser_local.error("Invalid model(s) for --set-state-model")
+                
+                # If validation passes, call ConfigCLI method
+                _CLI.set_state_model(state, models_csv)
+                return 0
         except SystemExit:
             # Re-raise to satisfy tests expecting SystemExit
             raise

@@ -12,7 +12,7 @@ echo "================================================"
 export DISPLAY=${DISPLAY:-:0}
 
 # Run the comprehensive test suite
-python test_system.py --verbose --output-file "test_results_$(date +%Y%m%d_%H%M%S).txt"
+python tests/test_system.py --verbose --output-file "test_results_$(date +%Y%m%d_%H%M%S).txt"
 
 echo "================================================"
 echo "✅ All tests completed successfully!"

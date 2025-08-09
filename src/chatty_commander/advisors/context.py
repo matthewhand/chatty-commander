@@ -63,8 +63,8 @@ class ContextState:
     persona_id: str
     system_prompt: str
     memory_key: str
-    last_activity: float
     metadata: Dict[str, Any]
+    last_activity: float = None
     
     def __post_init__(self):
         if self.last_activity is None:
