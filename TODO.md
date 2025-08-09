@@ -431,6 +431,56 @@ webui/frontend/ (React) ← Keep and connect to Python backend
 - [ ] CLI interactive: uv run pytest -q tests/test_repl_basic.py
 - [ ] Performance: uv run pytest -q tests/test_performance_benchmarks.py
 
+## Project Cleanup Roadmap (added by Rovo Dev)
+
+Overview
+- Make src/ the single source of truth; keep root-level shims temporarily.
+- Fix console entry point and packaging inconsistencies.
+- Consolidate logging and document migration.
+
+Phased Plan
+
+1) Packaging and CLI entry
+- Update pyproject entry point to a working target:
+  - chatty-commander = "cli:cli_main" (temporary)
+- Create package CLI (preferred longer term):
+  - Create src/chatty_commander/cli/cli.py that exposes cli_main().
+  - Then set: chatty-commander = "chatty_commander.cli.cli:cli_main".
+  - Keep root cli.py as a shim forwarding to the package entry.
+- Remove argparse dependency from project dependencies (stdlib).
+- Add DeprecationWarning to shims: config.py, command_executor.py, utils/logger.py.
+
+2) Logger consolidation
+- Keep src/chatty_commander/utils/logger.py as real implementation.
+- Keep utils/logger.py as shim but warn on import.
+
+3) Normalize imports & docs
+- Add uniform deprecation notes to all root shims with removal timeline.
+- Add MIGRATING.md mapping old imports to new package paths.
+
+4) CLI consolidation
+- Move real CLI to src/chatty_commander/cli/cli.py; make root cli.py a shim.
+- Ensure tests that import cli keep working via shim.
+
+5) Main module consolidation
+- Move real logic to src/chatty_commander/main.py and make root main.py a shim.
+- Keep current shim in src/chatty_commander/main.py during transition.
+
+6) Optional dependencies
+- Split extras for web/gui/wakeword in pyproject.
+
+7) CI & tooling
+- Add pre-commit config; run ruff/black/pytest in CI.
+
+8) Remove legacy files
+- After deprecation window, remove root shims and point all imports to the package.
+
+Milestone 1 (implement now)
+- pyproject: Fix console entry to cli:cli_main (done)
+- pyproject: Drop argparse dependency (done)
+- Add DeprecationWarnings to root shims (done)
+- Append this plan to TODO.md under a new section
+
 ## GUI Mode Direction
 
 - [ ] Promote current draft GUI mode to "GUI Settings" module

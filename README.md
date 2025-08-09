@@ -44,6 +44,14 @@ ChattyCommander utilizes ONNX (Open Neural Network Exchange) models for efficien
 
 ## Installation
 
+Quickstart
+- Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh
+- Create and sync env: uv python install 3.11 && uv sync
+- Run tests: uv run pytest -q
+- Run CLI: uv run chatty-commander --help
+- Run web server: uv run python main.py --web --no-auth
+
+
 1. **Prerequisites**: Ensure you have Python 3.11+ and `uv` installed for dependency management.
 2. **Clone the Repository**: `git clone https://github.com/your-repo/chatty-commander.git`
 3. **Navigate to Directory**: `cd chatty-commander`
