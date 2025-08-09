@@ -2,6 +2,13 @@
 # Ensure src/ on sys.path, expose patch points (pyautogui, requests), and re-export CommandExecutor.
 import os as _os
 import sys as _sys
+import warnings as _w
+
+_w.warn(
+    "command_executor.py is a legacy shim; prefer chatty_commander.app.command_executor",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 _src_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "src")
 if _src_path not in _sys.path:

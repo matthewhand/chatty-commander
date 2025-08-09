@@ -1,6 +1,13 @@
 # utils/logger.py shim
 # Re-export the real logger module so tests can import and monkeypatch via 'utils.logger'
 from importlib import import_module as _import_module
+import warnings as _w
+
+_w.warn(
+    "utils/logger.py is a legacy shim; prefer chatty_commander.utils.logger",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 _real = _import_module("chatty_commander.utils.logger")
 

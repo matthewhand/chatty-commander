@@ -11,6 +11,13 @@ from __future__ import annotations
 import importlib.util as _ilu
 import os as _os
 import sys as _sys
+import warnings as _w
+
+_w.warn(
+    "config.py is a legacy shim; please import from chatty_commander.app.config in future versions",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 _repo_root = _os.path.dirname(_os.path.abspath(__file__))
 _src_dir = _os.path.join(_repo_root, "src")
