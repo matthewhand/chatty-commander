@@ -504,6 +504,9 @@ def main():
         )
         return 0
     elif args.gui:
+        from gui import run_gui
+        run_gui()
+        return
         # Respect return codes from GUI runner (0=headless skipped, 2=deps missing)
         rc = run_gui_mode(
             config,
