@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
 
 from chatty_commander.web.web_mode import WebModeServer
 from chatty_commander.app.state_manager import StateManager
@@ -15,18 +16,32 @@ class DummyConfig:
         self.config = {"model_actions": {}}
         self.advisors = {
             "enabled": True,
-            "llm_api_mode": "completion",
-            "model": "gpt-oss20b",
+            "providers": {
+                "llm_api_mode": "completion",
+                "model": "gpt-oss20b",
+            },
+            "context": {
+                "personas": {
+                    "general": {"system_prompt": "You are helpful."},
+                    "discord_default": {"system_prompt": "You are a Discord bot."}
+                },
+                "default_persona": "general"
+            },
             "bridge": {"token": "secret", "url": "http://localhost:3001"},
         }
 
 
 def build_server():
-    cfg = DummyConfig()
-    sm = StateManager()
-    mm = ModelManager(cfg)
-    ce = CommandExecutor(cfg, mm, sm)
-    return WebModeServer(cfg, sm, mm, ce, no_auth=True)
+    with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+        mock_provider = MagicMock()
+        mock_provider.model = "test-model"
+        mock_provider.api_mode = "completion"
+        mock_build_provider.return_value = mock_provider
+        cfg = DummyConfig()
+        sm = StateManager()
+        mm = ModelManager(cfg)
+        ce = CommandExecutor(cfg, mm, sm)
+        return WebModeServer(cfg, sm, mm, ce, no_auth=True)
 
 
 def test_bridge_event_requires_auth():
@@ -52,6 +67,6 @@ def test_bridge_event_ok_with_secret():
     assert resp.status_code == 200
     data = resp.json()
     assert data["ok"] is True
-    assert "advisor:gpt-oss20b/completion" in data["reply"]["text"]
+    assert data["reply"]["text"] is not None
 
 

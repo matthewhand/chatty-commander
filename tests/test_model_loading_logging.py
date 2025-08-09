@@ -17,7 +17,10 @@ def fake_onnx_load_failure(model_path):
 
 # Test to simulate repeated failures and inspect logging diagnostics.
 def test_model_loading_logging_retry(monkeypatch, caplog):
-    import onnx
+    try:
+        import onnx
+    except ImportError:
+        pytest.skip("onnx not available")
 
     # Patch onnx.load to always raise an error.
     monkeypatch.setattr(onnx, "load", fake_onnx_load_failure)

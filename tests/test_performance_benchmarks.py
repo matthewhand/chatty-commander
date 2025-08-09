@@ -8,7 +8,7 @@ import asyncio
 import statistics
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from unittest.mock import Mock
+from unittest.mock import Mock, patch, MagicMock
 
 import psutil
 import pytest
@@ -75,14 +75,19 @@ class TestPerformanceBenchmarks:
     @pytest.fixture
     def web_server(self, mock_managers):
         """Create WebModeServer for performance testing."""
-        config, state_manager, model_manager, command_executor = mock_managers
-        return WebModeServer(
-            config_manager=config,
-            state_manager=state_manager,
-            model_manager=model_manager,
-            command_executor=command_executor,
-            no_auth=True,
-        )
+        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+            mock_provider = MagicMock()
+            mock_provider.model = "test-model"
+            mock_provider.api_mode = "completion"
+            mock_build_provider.return_value = mock_provider
+            config, state_manager, model_manager, command_executor = mock_managers
+            return WebModeServer(
+                config_manager=config,
+                state_manager=state_manager,
+                model_manager=model_manager,
+                command_executor=command_executor,
+                no_auth=True,
+            )
 
     @pytest.fixture
     def test_client(self, web_server):

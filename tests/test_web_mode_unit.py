@@ -9,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -44,14 +44,19 @@ class TestWebModeServer:
     @pytest.fixture
     def web_server(self, mock_managers):
         """Create WebModeServer instance for testing."""
-        config, state_manager, model_manager, command_executor = mock_managers
-        return WebModeServer(
-            config_manager=config,
-            state_manager=state_manager,
-            model_manager=model_manager,
-            command_executor=command_executor,
-            no_auth=True,
-        )
+        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+            mock_provider = MagicMock()
+            mock_provider.model = "test-model"
+            mock_provider.api_mode = "completion"
+            mock_build_provider.return_value = mock_provider
+            config, state_manager, model_manager, command_executor = mock_managers
+            return WebModeServer(
+                config_manager=config,
+                state_manager=state_manager,
+                model_manager=model_manager,
+                command_executor=command_executor,
+                no_auth=True,
+            )
 
     @pytest.fixture
     def test_client(self, web_server):
@@ -305,8 +310,13 @@ class TestWebModeAdditional:
 
     @pytest.fixture
     def web_server(self, mock_managers):
-        config, state_manager, model_manager, command_executor = mock_managers
-        return WebModeServer(config, state_manager, model_manager, command_executor)
+        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+            mock_provider = MagicMock()
+            mock_provider.model = "test-model"
+            mock_provider.api_mode = "completion"
+            mock_build_provider.return_value = mock_provider
+            config, state_manager, model_manager, command_executor = mock_managers
+            return WebModeServer(config, state_manager, model_manager, command_executor)
 
     @pytest.fixture
     def test_client(self, web_server):

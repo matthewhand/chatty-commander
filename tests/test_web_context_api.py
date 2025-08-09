@@ -4,6 +4,7 @@ Integration tests for context-aware web API endpoints.
 
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
 
 from chatty_commander.web.web_mode import WebModeServer
 
@@ -14,31 +15,49 @@ class TestWebContextAPI:
     @pytest.fixture
     def client(self):
         """Create test client with advisors enabled."""
-        config = {
-            'advisors': {
-                'enabled': True,
-                'context': {
-                    'personas': {
-                        'general': {'system_prompt': 'You are helpful.'},
-                        'philosopher': {'system_prompt': 'You are philosophical.'},
-                        'discord_default': {'system_prompt': 'You are a Discord bot.'},
-                        'slack_default': {'system_prompt': 'You are a Slack app.'}
-                    },
-                    'default_persona': 'general',
-                    'persistence_enabled': False
-                },
-                'providers': {
-                    'llm_api_mode': 'completion',
-                    'model': 'gpt-oss20b'
-                },
-                'memory': {
-                    'persistence_enabled': False
-                }
-            }
-        }
+        from chatty_commander.app.config import Config
+        from chatty_commander.app.state_manager import StateManager
+        from chatty_commander.app.model_manager import ModelManager
+        from chatty_commander.app.command_executor import CommandExecutor
         
-        server = WebModeServer(config)
-        return TestClient(server.app)
+        class TestConfig(Config):
+            def __init__(self):
+                self.general_models_path = "models-idle"
+                self.system_models_path = "models-computer"
+                self.chat_models_path = "models-chatty"
+                self.config = {"model_actions": {}}
+                self.advisors = {
+                    'enabled': True,
+                    'context': {
+                        'personas': {
+                            'general': {'system_prompt': 'You are helpful.'},
+                            'philosopher': {'system_prompt': 'You are philosophical.'},
+                            'discord_default': {'system_prompt': 'You are a Discord bot.'},
+                            'slack_default': {'system_prompt': 'You are a Slack app.'}
+                        },
+                        'default_persona': 'general',
+                        'persistence_enabled': False
+                    },
+                    'providers': {
+                        'llm_api_mode': 'completion',
+                        'model': 'gpt-oss20b'
+                    },
+                    'memory': {
+                        'persistence_enabled': False
+                    }
+                }
+        
+        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+            mock_provider = MagicMock()
+            mock_provider.model = "test-model"
+            mock_provider.api_mode = "completion"
+            mock_build_provider.return_value = mock_provider
+            config = TestConfig()
+            sm = StateManager()
+            mm = ModelManager(config)
+            ce = CommandExecutor(config, mm, sm)
+            server = WebModeServer(config, sm, mm, ce, no_auth=True)
+            return TestClient(server.app)
     
     def test_advisor_message_creates_context(self, client):
         """Test that sending a message creates a context."""

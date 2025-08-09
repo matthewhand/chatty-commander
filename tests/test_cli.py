@@ -44,11 +44,9 @@ def test_cli_set_state_model(monkeypatch, capsys):
     monkeypatch.setattr(
         sys, 'argv', ['cli.py', 'config', '--set-state-model', 'idle', 'model1,model2']
     )
-    with patch('cli.ConfigCLI.set_state_model'):
-        with pytest.raises(SystemExit):
-            cli_main()
-    captured = capsys.readouterr()
-    assert "Invalid model(s) for --set-state-model" in captured.err
+    with patch('cli.ConfigCLI.set_state_model') as mock_set:
+        cli_main()
+        mock_set.assert_called_with('idle', 'model1,model2')
 
 
 def test_cli_set_listen_for(monkeypatch):

@@ -71,7 +71,7 @@ class TestCompletionProvider:
         mock_client = Mock()
         mock_client.chat.completions.create.side_effect = [
             Exception("First failure"),
-            Mock(choices=[Mock(message=Mock(content="Success"))]
+            Mock(choices=[Mock(message=Mock(content="Success"))])
         ]
         mock_openai.return_value = mock_client
         
@@ -378,7 +378,7 @@ class TestProviderIntegration:
     
     @patch('chatty_commander.advisors.providers.OPENAI_AVAILABLE', True)
     @patch('chatty_commander.advisors.providers.OpenAI')
-    def test_provider_with_custom_parameters(self):
+    def test_provider_with_custom_parameters(self, mock_openai):
         """Test provider with custom generation parameters."""
         config = {
             'model': 'gpt-3.5-turbo',
@@ -405,7 +405,7 @@ class TestProviderIntegration:
     
     @patch('chatty_commander.advisors.providers.OPENAI_AVAILABLE', True)
     @patch('chatty_commander.advisors.providers.OpenAI')
-    def test_provider_with_local_model(self):
+    def test_provider_with_local_model(self, mock_openai):
         """Test provider with local model configuration."""
         config = {
             'model': 'gpt-oss20b',
