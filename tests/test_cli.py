@@ -16,7 +16,7 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 )  # noqa: E402 - path manipulation before imports
 
-from cli import cli_main  # noqa: E402 - imported after path setup
+from src.chatty_commander.cli import cli_main  # noqa: E402 - imported after path setup
 
 
 def test_cli_run(monkeypatch):
@@ -146,7 +146,7 @@ def test_cli_list_text_output(monkeypatch, capsys):
 
     # Invoke CLI
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'list'])
-    from cli import cli_main  # noqa: E402
+    from src.chatty_commander.cli import cli_main  # noqa: E402
 
     with __import__('unittest').mock.patch('builtins.print') as mock_print:
         cli_main()
@@ -172,7 +172,7 @@ def test_cli_list_json_output(monkeypatch, capsys):
     monkeypatch.setattr('config.Config', lambda: DummyConfig())
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'list', '--json'])
-    from cli import cli_main  # noqa: E402
+    from src.chatty_commander.cli import cli_main  # noqa: E402
 
     cli_main()
     captured = capsys.readouterr()
@@ -198,7 +198,7 @@ def test_cli_list_empty_config(monkeypatch, capsys):
     monkeypatch.setattr('config.Config', lambda: DummyConfig())
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'list'])
-    from cli import cli_main  # noqa: E402
+    from src.chatty_commander.cli import cli_main  # noqa: E402
 
     with __import__('unittest').mock.patch('builtins.print') as mock_print:
         cli_main()
@@ -222,7 +222,7 @@ def test_cli_exec_known_command_dry_run(monkeypatch, capsys):
 
     # Dry-run should not invoke executor
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 'say', '--dry-run'])
-    from cli import cli_main  # noqa: E402
+    from src.chatty_commander.cli import cli_main  # noqa: E402
 
     with __import__('unittest').mock.patch('cli.CommandExecutor') as mock_exec:
         cli_main()
@@ -248,7 +248,7 @@ def test_cli_exec_unknown_command(monkeypatch, capsys):
     monkeypatch.setattr('config.Config', lambda: DummyConfig())
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 'unknown'])
-    from cli import cli_main  # noqa: E402
+    from src.chatty_commander.cli import cli_main  # noqa: E402
 
     with pytest.raises(SystemExit) as ei:
         cli_main()
@@ -273,7 +273,7 @@ def test_cli_exec_timeout_flag_passthrough(monkeypatch):
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 't', '--timeout', '2'])
     # Ensure we call CommandExecutor and pass through timeout; we won't actually sleep in tests
-    from cli import cli_main  # noqa: E402
+    from src.chatty_commander.cli import cli_main  # noqa: E402
 
     with __import__('unittest').mock.patch('cli.CommandExecutor') as MockExec:
         instance = MockExec.return_value

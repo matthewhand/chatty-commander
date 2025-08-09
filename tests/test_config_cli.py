@@ -6,7 +6,7 @@ from unittest.mock import mock_open, patch
 import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from config_cli import ConfigCLI  # Assuming the class or main function in config_cli.py
+from src.chatty_commander.config_cli import ConfigCLI  # Assuming the class or main function in config_cli.py
 
 
 @pytest.fixture

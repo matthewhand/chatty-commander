@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-import cli
+import src.chatty_commander.cli as cli
 
 
 class DummyConfigDirect:

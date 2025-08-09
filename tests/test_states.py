@@ -6,7 +6,7 @@ import logging
 import unittest
 from unittest.mock import MagicMock
 
-from config import Config
+from src.chatty_commander.config import Config
 from state_manager import StateManager
 
 

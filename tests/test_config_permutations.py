@@ -2,7 +2,7 @@ from itertools import product
 
 import pytest
 
-from config import Config
+from src.chatty_commander.config import Config
 
 
 @pytest.fixture

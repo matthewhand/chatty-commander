@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from command_executor import CommandExecutor
+from src.chatty_commander.command_executor import CommandExecutor
 from config import Config
 from model_manager import ModelManager
 from state_manager import StateManager

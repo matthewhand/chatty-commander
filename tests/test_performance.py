@@ -13,7 +13,7 @@ import pytest
 
 # Import modules to test
 try:
-    from command_executor import CommandExecutor
+    from src.chatty_commander.command_executor import CommandExecutor
     from config import Config
     from model_manager import ModelManager
     from state_manager import StateManager
@@ -22,7 +22,7 @@ except ImportError:
     import os
 
     os.environ['DISPLAY'] = ':0'  # Set dummy display for headless testing
-    from command_executor import CommandExecutor
+    from src.chatty_commander.command_executor import CommandExecutor
     from config import Config
     from model_manager import ModelManager
     from state_manager import StateManager

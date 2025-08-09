@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from model_manager import load_model
+from src.chatty_commander.model_manager import load_model
 
 
 # Dummy exception to simulate model load failure.

@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 from unittest.mock import MagicMock, patch
 
-from config import Config
+from src.chatty_commander.config import Config
 from model_manager import ModelManager
 
 
