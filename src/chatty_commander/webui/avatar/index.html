@@ -24,8 +24,56 @@
       <div>3D Avatar Placeholder</div>
     </div>
     <script>
-      // This is a placeholder page. Replace with the TalkingHead build output.
-      console.log('Avatar UI loaded');
+      // Minimal dev client to consume /avatar/ws and toggle CSS classes for state
+      (function(){
+        function stateClass(state){ return 'state-' + state; }
+        const root = document.querySelector('.avatar-placeholder');
+        function applyState(state){
+          const states = ['idle','thinking','processing','tool_calling','responding','error','handoff'];
+          states.forEach(s => root.classList.remove(stateClass(s)));
+          root.classList.add(stateClass(state));
+        }
+        // Styling hints
+        const style = document.createElement('style');
+        style.textContent = `
+          .state-thinking { box-shadow: 0 0 24px rgba(0,255,200,0.8); }
+          .state-processing { box-shadow: 0 0 24px rgba(200,200,0,0.8); }
+          .state-tool_calling { box-shadow: 0 0 24px rgba(255,0,0,0.8); }
+          .state-responding { box-shadow: 0 0 24px rgba(0,128,255,0.8); }
+          .state-error { box-shadow: 0 0 24px rgba(255,0,0,1); }
+          .state-handoff { box-shadow: 0 0 24px rgba(255,0,255,0.8); }
+        `;
+        document.head.appendChild(style);
+
+        applyState('idle');
+        function wsUrl(){
+          const port = 8100;
+          return 'ws://localhost:' + port + '/avatar/ws';
+        }
+        try {
+          const ws = new WebSocket(wsUrl());
+          ws.onopen = () => console.log('Avatar WS connected');
+          ws.onmessage = (ev) => {
+            try {
+              const msg = JSON.parse(ev.data);
+              if (msg.type === 'agent_state_change' && msg.data && msg.data.state){
+                applyState(msg.data.state);
+              } else if (msg.type === 'tool_call_start'){
+                applyState('tool_calling');
+              } else if (msg.type === 'tool_call_end'){
+                applyState('processing');
+              } else if (msg.type === 'handoff_start'){
+                applyState('handoff');
+              } else if (msg.type === 'handoff_complete'){
+                applyState('idle');
+              }
+            } catch {}
+          };
+          ws.onerror = (e) => console.warn('Avatar WS error', e);
+        } catch (e) {
+          console.warn('WS init failed', e);
+        }
+      })();
     </script>
   </body>
 </html>

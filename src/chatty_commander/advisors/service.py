@@ -94,7 +94,6 @@ class AdvisorsService:
 
         try:
             # Build prompt using context-aware persona and recent memory
-            # Fetch memory items for (platform, channel, user)
             memory_items = self.memory.get(platform.value, message.channel, message.user)
             history_text = "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items]) if memory_items else ""
             combined_user_text = f"{history_text}\n{message.text}" if history_text else message.text
@@ -104,6 +103,15 @@ class AdvisorsService:
 
             # Update to processing state
             thinking_manager.start_processing(agent_id, "Generating response...")
+
+            # Example: instrument a tool call (browser_analyst) if present in text
+            if message.text.startswith("summarize "):
+                thinking_manager.start_tool_call(agent_id, tool_name="browser_analyst")
+                try:
+                    # In real flows this would be the as_tool/MCP call
+                    pass
+                finally:
+                    thinking_manager.end_tool_call(agent_id, tool_name="browser_analyst")
 
             # Generate real LLM response
             try:

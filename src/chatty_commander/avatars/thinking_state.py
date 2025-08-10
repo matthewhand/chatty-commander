@@ -22,6 +22,8 @@ class ThinkingState(Enum):
     PROCESSING = "processing"
     RESPONDING = "responding"
     LISTENING = "listening"
+    TOOL_CALLING = "tool_calling"
+    HANDOFF = "handoff"
     ERROR = "error"
 
 
@@ -118,23 +120,62 @@ class ThinkingStateManager:
         """Remove a broadcast callback."""
         self.broadcast_callbacks.discard(callback)
         
-    def _broadcast_state_change(self, agent_id: str) -> None:
-        """Broadcast state change to all registered callbacks."""
-        agent_info = self.agent_states.get(agent_id)
-        if not agent_info:
-            return
-            
-        message = {
-            "type": "agent_state_change",
-            "data": agent_info.to_dict(),
-            "timestamp": time.time()
-        }
-        
+    def _broadcast(self, message: dict[str, Any]) -> None:
         for callback in self.broadcast_callbacks.copy():
             try:
                 callback(message)
             except Exception as e:
                 logger.error(f"Error in broadcast callback: {e}")
+
+    def _broadcast_state_change(self, agent_id: str) -> None:
+        """Broadcast state change to all registered callbacks."""
+        agent_info = self.agent_states.get(agent_id)
+        if not agent_info:
+            return
+        message = {
+            "type": "agent_state_change",
+            "data": agent_info.to_dict(),
+            "timestamp": time.time(),
+        }
+        self._broadcast(message)
+
+    # Tool calling lifecycle events
+    def start_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
+        self.set_agent_state(agent_id, ThinkingState.TOOL_CALLING, f"Calling tool {tool_name or ''}".strip())
+        self._broadcast({
+            "type": "tool_call_start",
+            "data": {"agent_id": agent_id, "tool": tool_name},
+            "timestamp": time.time(),
+        })
+
+    def end_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
+        # Return to processing by default
+        self.set_agent_state(agent_id, ThinkingState.PROCESSING)
+        self._broadcast({
+            "type": "tool_call_end",
+            "data": {"agent_id": agent_id, "tool": tool_name},
+            "timestamp": time.time(),
+        })
+
+    # Agent handoff lifecycle
+    def handoff_start(self, agent_id: str, to_agent_persona: str, reason: str | None = None) -> None:
+        self.set_agent_state(agent_id, ThinkingState.HANDOFF, reason)
+        self._broadcast({
+            "type": "handoff_start",
+            "data": {"agent_id": agent_id, "to_persona": to_agent_persona, "reason": reason},
+            "timestamp": time.time(),
+        })
+
+    def handoff_complete(self, agent_id: str, new_persona_id: str) -> None:
+        # Update persona mapping and return to idle
+        if agent_id in self.agent_states:
+            self.agent_states[agent_id].persona_id = new_persona_id
+        self.set_agent_state(agent_id, ThinkingState.IDLE)
+        self._broadcast({
+            "type": "handoff_complete",
+            "data": {"agent_id": agent_id, "persona_id": new_persona_id},
+            "timestamp": time.time(),
+        })
                 
     def start_thinking(self, agent_id: str, message: Optional[str] = None) -> None:
         """Convenience method to set thinking state."""
