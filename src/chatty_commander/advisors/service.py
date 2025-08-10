@@ -9,6 +9,7 @@ from .context import ContextManager, PlatformType
 from .memory import MemoryStore
 from .prompting import Persona, build_provider_prompt
 from .providers import build_provider_safe
+from ..avatars.thinking_state import get_thinking_manager, ThinkingState
 
 
 @dataclass
@@ -85,33 +86,55 @@ class AdvisorsService:
             **(message.metadata or {})
         )
 
-        # Build prompt using context-aware persona and recent memory
-        # Fetch memory items for (platform, channel, user)
-        memory_items = self.memory.get(platform.value, message.channel, message.user)
-        history_text = "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items]) if memory_items else ""
-        combined_user_text = f"{history_text}\n{message.text}" if history_text else message.text
+        # Set thinking state for avatar
+        agent_id = f"{message.platform}-{message.channel}-{message.user}"
+        thinking_manager = get_thinking_manager()
+        thinking_manager.register_agent(agent_id, context.persona_id)
+        thinking_manager.start_thinking(agent_id, "Processing your message...")
 
-        persona = Persona(name=context.persona_id, system=context.system_prompt)
-        prompt = build_provider_prompt(self.provider.api_mode, persona, combined_user_text)
-
-        # Generate real LLM response
         try:
-            response = self.provider.generate(prompt)
+            # Build prompt using context-aware persona and recent memory
+            # Fetch memory items for (platform, channel, user)
+            memory_items = self.memory.get(platform.value, message.channel, message.user)
+            history_text = "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items]) if memory_items else ""
+            combined_user_text = f"{history_text}\n{message.text}" if history_text else message.text
+
+            persona = Persona(name=context.persona_id, system=context.system_prompt)
+            prompt = build_provider_prompt(self.provider.api_mode, persona, combined_user_text)
+
+            # Update to processing state
+            thinking_manager.start_processing(agent_id, "Generating response...")
+
+            # Generate real LLM response
+            try:
+                response = self.provider.generate(prompt)
+            except Exception as e:
+                # Fallback to echo if LLM fails
+                response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text} (LLM error: {str(e)})"
+
+            # Update to responding state
+            thinking_manager.start_responding(agent_id, "Finalizing response...")
+
+            # Add to memory using tri-key (platform, channel, user)
+            self.memory.add(platform.value, message.channel, message.user, "user", message.text)
+            self.memory.add(platform.value, message.channel, message.user, "assistant", response)
+
+            reply = AdvisorReply(
+                reply=response,
+                context_key=context.identity.context_key,
+                persona_id=context.persona_id,
+                model=self.provider.model,
+                api_mode=self.provider.api_mode
+            )
+
+            # Return to idle state
+            thinking_manager.set_idle(agent_id)
+            return reply
+
         except Exception as e:
-            # Fallback to echo if LLM fails
-            response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text} (LLM error: {str(e)})"
-
-        # Add to memory using tri-key (platform, channel, user)
-        self.memory.add(platform.value, message.channel, message.user, "user", message.text)
-        self.memory.add(platform.value, message.channel, message.user, "assistant", response)
-
-        return AdvisorReply(
-            reply=response,
-            context_key=context.identity.context_key,
-            persona_id=context.persona_id,
-            model=self.provider.model,
-            api_mode=self.provider.api_mode
-        )
+            # Set error state if processing fails
+            thinking_manager.set_error(agent_id, f"Error processing message: {str(e)}")
+            raise
 
     def _handle_summarize_command(self, message: AdvisorMessage) -> AdvisorReply:
         """Handle the summarize command."""

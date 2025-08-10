@@ -24,7 +24,6 @@ Notes
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 try:
     import webview  # type: ignore
@@ -40,7 +39,7 @@ def _avatar_index_path() -> Path:
     return root / "webui" / "avatar" / "index.html"
 
 
-def run_avatar_gui(debug: bool = True) -> Optional[int]:
+def run_avatar_gui(debug: bool = True) -> int | None:
     """Create and run the transparent pywebview window for the avatar.
 
     Returns 0 on success, 2 if missing dependencies, or None if silently skipped.

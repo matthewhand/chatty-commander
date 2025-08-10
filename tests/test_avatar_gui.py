@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from src.chatty_commander.avatars.avatar_gui import run_avatar_gui
 

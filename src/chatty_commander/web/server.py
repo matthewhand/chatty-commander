@@ -88,6 +88,8 @@ def create_app(
     except Exception as e:  # noqa: BLE001
         logger.warning("Failed to include websocket routes; falling back to legacy-only: %s", e)
 
+    # Avatar WebSocket routes
+    from .routes.avatar_ws import router as avatar_ws_router
     # Lifecycle hooks (no-op by default to preserve behavior)
     try:
         register_lifecycle(
@@ -101,6 +103,13 @@ def create_app(
         logger.debug("server.create_app: registered lifecycle hooks")
     except Exception as e:  # noqa: BLE001
         logger.warning("Failed to register lifecycle hooks; continuing: %s", e)
+
+    # Avatar WebSocket routes (with state management integration)
+    try:
+        app.include_router(avatar_ws_router)
+        logger.debug("server.create_app: included avatar websocket routes from routes.avatar_ws")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Failed to include avatar websocket routes; continuing: %s", e)
 
     logger.debug("server.create_app constructed legacy WebModeServer and returned app")
     return app
