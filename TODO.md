@@ -542,10 +542,64 @@ Milestone 1 (implement now)
 - Scripts/Tools: src/chatty_commander/tools/generate_api_docs.py
 - Docs: docs/API.md, docs/openapi.json, README.md (API docs section)
 
-## Milestone: Avatar Integration (In Progress)
-- [ ] Integrate TalkingHead 3D avatar as a transparent desktop window.
+## Milestone: Avatar Integration (Completed)
+- [x] Integrate TalkingHead 3D avatar as a transparent desktop window.
   - Acceptance Criteria:
     - `uv run python -m src.chatty_commander.main --gui` launches the avatar window.
     - Window is frameless, transparent, and stays on top (best-effort; falls back gracefully).
-    - Loads `src/chatty_commander/webui/avatar/index.html` (replace with TalkingHead build output).
+    - Loads `src/chatty_commander/webui/avatar/index.html` (replace with TalkingHead build output if needed).
+    - Tests: avatar launcher unit tests with high coverage (>=90%).
+    - Docs: module docstring explains design goals and usage.
     - Headless-safe: GUI path is skipped or returns a non-crashing code when DISPLAY is not available.
+
+## Milestone: Avatar Expressive States & Agent Handoff (In Progress)
+- Goal: The avatar should reflect LLM/agent lifecycle states and tool usage with distinct animations and support swapping avatars on agent handoff via openai-agents.
+
+- States and animations (server -> UI mapping):
+  - idle: neutral breathing/idle animation
+  - thinking: triggered when LLM emits <thinking>...</thinking> content; subtle "thinking" animation
+  - processing: general background processing, light activity animation
+  - tool_calling: "hacking" animation during tool/function calls (e.g., as_tool/MCP invocations)
+  - responding: speaking/response animation
+  - error: error/glitch animation
+  - handoff: transition animation when handing off to another agent; then swap avatar theme
+
+- Backend tasks:
+  - [ ] Extend thinking_state manager with new states: tool_calling, handoff, responding, error
+  - [ ] Define unified AgentStateInfo schema: {agent_id, persona_id, state, detail, ts}
+  - [ ] Instrument AdvisorsService to:
+    - set thinking when entering LLM <thinking>
+    - set processing before generate
+    - set responding after generate
+    - set error on exception
+  - [ ] Wrap tool invocation points to broadcast tool_calling start/stop
+    - If using openai-agents as_tool or MCP tools, emit start/end (with tool name)
+  - [ ] Add openai-agents integration hooks:
+    - emit handoff start (from_agent -> to_agent with reasons)
+    - emit handoff complete (new agent persona_id/model)
+  - [ ] Enhance avatar_ws WebSocket protocol:
+    - message types: agent_states_snapshot, agent_state_changed, tool_call_start, tool_call_end, handoff_start, handoff_complete
+    - include minimal payloads for UI routing and telemetry
+  - [ ] Tests: unit tests for thinking_state transitions, AdvisorsService instrumentation, WS broadcast manager (mock websocket)
+
+- Frontend/UI tasks (TalkingHead):
+  - [ ] Implement animation presets for: idle, thinking, processing, tool_calling ("hacking"), responding, error, handoff
+  - [ ] Map incoming WS messages to animation state machine
+  - [ ] Support avatar theme swap on handoff (agent persona -> avatar skin)
+  - [ ] Local dev toggle to simulate states for design work
+
+- Agent persona and avatar theming:
+  - [ ] Define persona->avatar_theme registry (JSON) with default and overrides
+  - [ ] Backend includes persona_id and optional avatar_theme in WS messages
+  - [ ] UI loads theme assets dynamically (preload and graceful fallback)
+
+- Acceptance Criteria:
+  - When tools are executed, the avatar plays the "hacking" animation for the duration of the call
+  - When LLM emits <thinking>...</thinking>, the avatar shows the "thinking" animation until content switches to normal output
+  - On openai-agents handoff, the UI displays a transition animation and swaps to the new agent's avatar theme
+  - Unit tests cover state transitions and WS broadcasting; e2e smoke test verifies UI consumes messages correctly
+  - Documentation updated with state/event protocol and theming guide
+
+- Documentation:
+  - [ ] docs/AVATAR_GUI.md: protocol spec, state machine, theming, dev workflow
+  - [ ] README: brief overview and link to AVATAR_GUI.md
