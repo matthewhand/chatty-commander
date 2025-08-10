@@ -541,3 +541,11 @@ Milestone 1 (implement now)
 - Tests: tests/test_openapi_endpoints.py, tests/test_web_mode_unit.py, tests/test_web_mode.py, tests/test_web_integration.py, tests/test_repl_basic.py, tests/test_cli_help_and_shell.py, tests/test_cli_features.py, tests/test_performance_benchmarks.py
 - Scripts/Tools: src/chatty_commander/tools/generate_api_docs.py
 - Docs: docs/API.md, docs/openapi.json, README.md (API docs section)
+
+## Milestone: Avatar Integration (In Progress)
+- [ ] Integrate TalkingHead 3D avatar as a transparent desktop window.
+  - Acceptance Criteria:
+    - `uv run python -m src.chatty_commander.main --gui` launches the avatar window.
+    - Window is frameless, transparent, and stays on top (best-effort; falls back gracefully).
+    - Loads `src/chatty_commander/webui/avatar/index.html` (replace with TalkingHead build output).
+    - Headless-safe: GUI path is skipped or returns a non-crashing code when DISPLAY is not available.

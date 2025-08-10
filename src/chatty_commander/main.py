@@ -210,16 +210,27 @@ def run_gui_mode(
         return 0
     # Prefer new tray popup GUI (pystray + pywebview) with fallback to legacy tkinter GUI
     try:
+        # Prefer avatar GUI if available (pywebview + local index.html)
         try:
-            # Installed package path
-            from chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
-        except Exception:
-            # Repo-root execution fallback
-            from src.chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
+            try:
+                from chatty_commander.avatars.avatar_gui import run_avatar_gui  # type: ignore
+            except Exception:
+                from src.chatty_commander.avatars.avatar_gui import run_avatar_gui  # type: ignore
+            logger.info("Starting Avatar GUI (TalkingHead)")
+            rc = run_avatar_gui()
+            return 0 if rc is None else int(rc)
+        except Exception as e:
+            logger.warning(f"Avatar GUI unavailable ({e}); falling back to tray popup GUI")
+            try:
+                # Installed package path
+                from chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
+            except Exception:
+                # Repo-root execution fallback
+                from src.chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
 
-        logger.info("Starting GUI tray popup mode")
-        rc = run_tray_popup(config, logger)
-        return 0 if rc is None else int(rc)
+            logger.info("Starting GUI tray popup mode")
+            rc = run_tray_popup(config, logger)
+            return 0 if rc is None else int(rc)
     except Exception as e:
         logger.warning(f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI")
         try:
