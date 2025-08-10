@@ -1,23 +1,25 @@
 """
-TalkingHead 3D Avatar Launcher (pywebview)
+Avatar GUI Launcher (TalkingHead via pywebview)
 
-Purpose:
-- Provide a transparent, frameless, always-on-top desktop window that hosts the web-based
-  TalkingHead avatar UI for Chatty Commander.
-- Keep GUI concerns decoupled from the Python backend by embedding a local index.html via pywebview.
+Summary
+- Provides a lightweight, transparent desktop surface for the Chatty Commander avatar using
+  pywebview. The window is frameless, draggable, always-on-top, and attempts transparency for a
+  seamless overlay experience.
 
-Behavior:
-- Prefers loading the built avatar UI from src/chatty_commander/webui/avatar/index.html.
-- Prints a helpful error if the file is missing or pywebview is not installed.
-- Designed to be headless-friendly when called from main.run_gui_mode which performs DISPLAY checks first.
+Design goals
+- Keep the avatar front-end (HTML/JS) decoupled from Python by loading a local index.html
+  (src/chatty_commander/webui/avatar/index.html). This enables independent iteration on visuals.
+- Fail gracefully in environments where transparency or the GUI backend is not supported, retrying
+  without transparency.
+- Remain headless-safe: run_gui_mode guards for DISPLAY and returns non-fatally on CI.
 
-Usage:
-- from chatty_commander.gui.avatar_gui import run_avatar_gui
-- run_avatar_gui()  # blocks until the window is closed
+Usage
+- from chatty_commander.avatars.avatar_gui import run_avatar_gui
+- run_avatar_gui()  # opens the avatar window; returns 0 on success, 2 on dependency issues
 
-Notes:
+Notes
 - Replace the placeholder index.html with the real TalkingHead build output.
-- Transparency support varies by OS and backend; the code falls back if needed.
+- Transparency and frameless support varies by OS/backend; code falls back when needed.
 """
 from __future__ import annotations
 
