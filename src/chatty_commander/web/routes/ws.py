@@ -3,8 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Iterable, Set
+from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -13,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 def include_ws_routes(
     *,
-    get_connections: Callable[[], Set[WebSocket]],
-    set_connections: Callable[[Set[WebSocket]], None],
+    get_connections: Callable[[], set[WebSocket]],
+    set_connections: Callable[[set[WebSocket]], None],
     get_state_snapshot: Callable[[], dict[str, Any]],
     on_message: Callable[[dict[str, Any]], Any] | None = None,
     heartbeat_seconds: float = 30.0,
@@ -64,7 +65,7 @@ def include_ws_routes(
                         await websocket.send_text(
                             json.dumps({"type": "pong", "data": {"timestamp": datetime.now().isoformat()}})
                         )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Heartbeat
                     await websocket.send_text(
                         json.dumps({"type": "heartbeat", "data": {"timestamp": datetime.now().isoformat()}})

@@ -1,5 +1,6 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
@@ -17,7 +18,7 @@ def client():
         # Mock the AdvisorsService to avoid OpenAI API key requirement
         mock_service = MagicMock()
         mock_advisors_service.return_value = mock_service
-        
+
         # Minimal app factory matching current constructor signatures
         _config = Config()
         _state = StateManager()
@@ -25,7 +26,7 @@ def client():
         _executor = CommandExecutor(_config, _models, _state)
         _server = WebModeServer(config_manager=_config, state_manager=_state, model_manager=_models, command_executor=_executor, no_auth=True)
         app = _server.app
-        
+
         return TestClient(app)
 
 

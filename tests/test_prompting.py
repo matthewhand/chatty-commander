@@ -1,4 +1,9 @@
-from chatty_commander.advisors.prompting import Persona, build_prompt, build_provider_prompt, resolve_persona
+from chatty_commander.advisors.prompting import (
+    Persona,
+    build_prompt,
+    build_provider_prompt,
+    resolve_persona,
+)
 
 
 def test_build_prompt_envelopes_text():

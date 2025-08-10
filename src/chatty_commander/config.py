@@ -36,9 +36,14 @@ except Exception:
             "import chatty_commander.app.config",
             _candidate,
         ]
-        raise FileNotFoundError(
-            "Unable to locate chatty_commander.app.config. Tried:\n - " + "\n - ".join(tried)
-        )
+        try:
+            raise FileNotFoundError(
+                "Unable to locate chatty_commander.app.config. Tried:\n - " + "\n - ".join(tried)
+            )
+        except FileNotFoundError as err:
+            raise FileNotFoundError(
+                "Unable to locate chatty_commander.app.config. Tried:\n - " + "\n - ".join(tried)
+            ) from err
     _mod = _ilu.module_from_spec(_spec)
     _spec.loader.exec_module(_mod)  # type: ignore[attr-defined]
     globals().update({k: getattr(_mod, k) for k in dir(_mod) if not k.startswith("_")})

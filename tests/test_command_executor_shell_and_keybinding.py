@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from command_executor import CommandExecutor
+from src.chatty_commander.command_executor import CommandExecutor
 
 
 class DummyConfig:

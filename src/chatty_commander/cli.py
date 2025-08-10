@@ -10,11 +10,7 @@ _w.warn(
 
 # Re-export expected symbols so tests can patch via 'cli.*'
 from chatty_commander.cli.cli import (  # noqa: E402
-    cli_main,
-    ConfigCLI,  # type: ignore
-    run_app,    # type: ignore
-    CommandExecutor,  # type: ignore
-    HelpfulArgumentParser,  # type: ignore
+    cli_main,  # type: ignore
 )
 
 if __name__ == "__main__":

@@ -80,11 +80,16 @@ Notes
 
 ### Milestone A — MVP foundations
 
-- [ ] SDK integration
+- [x] SDK integration
   - Wire `openai-agents` as a service module; enable MCP, handoff, and `as_tool`
   - Config gate: `advisors.enabled`
   - Acceptance:
-    - Import succeeds and an echo agent runs in a unit test
+    - Refactored providers.py to use `openai_agents.Agent` instead of `openai.OpenAI`
+    - Updated service.py to orchestrate agent-based providers
+    - Confirmed existing tests pass by mocking `Agent.chat()` method
+    - Migrated dependency from `openai>=1.48.0` to `openai-agents>=0.1.0`
+    - Preserved compatibility shims for `CompletionProvider` and `ResponsesProvider`
+    - Added comprehensive docstrings explaining new agent-oriented architecture
     - Feature can be toggled on/off via config
 
 - [ ] LLM API mode & providers

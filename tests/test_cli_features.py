@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-import cli
+from src.chatty_commander.cli.cli import cli_main
 
 
 class DummyConfigDirect:
@@ -25,10 +25,7 @@ def replace_config_with_dummy(monkeypatch):
         monkeypatch.setattr(
             config_module, "Config", staticmethod(lambda: DummyConfigDirect(actions))
         )
-        # Also patch cli module reference to safeguard any future refactors
-        monkeypatch.setattr(
-            cli, "Config", staticmethod(lambda: DummyConfigDirect(actions)), raising=False
-        )
+
         return _dummy_config_ctor
 
     return _factory
@@ -43,7 +40,7 @@ def run_cli_main_with_args(args_list, monkeypatch):
     monkeypatch.setattr(sys, "stdout", stdout)
     monkeypatch.setattr(sys, "stderr", stderr)
     try:
-        cli.cli_main()
+        cli_main()
         code = 0
     except SystemExit as e:
         code = int(e.code) if e.code is not None else 0
@@ -125,7 +122,7 @@ def test_cli_exec_invokes_executor(monkeypatch, replace_config_with_dummy):
             called["count"] += 1
             called["last"] = name
 
-    monkeypatch.setattr(cli, "CommandExecutor", FakeExecutor)
+    monkeypatch.setattr('cli.CommandExecutor', FakeExecutor)
 
     code, out, err = run_cli_main_with_args(["exec", "hello"], monkeypatch)
     assert code == 0
@@ -146,7 +143,7 @@ def test_cli_exec_timeout_flag_passthrough_no_error(monkeypatch, replace_config_
         def execute_command(self, name):
             return
 
-    monkeypatch.setattr(cli, "CommandExecutor", NoopExecutor)
+    monkeypatch.setattr('src.chatty_commander.command_executor.CommandExecutor', NoopExecutor)
 
     code, out, err = run_cli_main_with_args(["exec", "hello", "--timeout", "5"], monkeypatch)
     assert code == 0

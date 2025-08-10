@@ -10,7 +10,7 @@ and more complex state dependencies.
 import logging
 from collections.abc import Callable
 
-from config import Config
+from chatty_commander.config import Config
 
 
 class StateManager:

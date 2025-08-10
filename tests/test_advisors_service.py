@@ -1,5 +1,5 @@
-from chatty_commander.advisors.service import AdvisorsService, AdvisorMessage
-from unittest.mock import patch, MagicMock
+import pytest
+from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
 
 
 class DummyConfig:
@@ -20,12 +20,13 @@ class DummyConfig:
 
 
 def test_advisors_service_echo_reply():
-    with patch('openai.OpenAI') as mock_openai:
-        mock_openai.return_value = MagicMock()
-        svc = AdvisorsService(config=DummyConfig())
-        msg = AdvisorMessage(platform="discord", channel="c1", user="u1", text="hello")
-        reply = svc.handle_message(msg)
-        assert reply is not None
+    svc = AdvisorsService(config=DummyConfig())
+    msg = AdvisorMessage(platform="discord", channel="c1", user="u1", text="hello")
+    reply = svc.handle_message(msg)
+    assert reply is not None
+    assert isinstance(reply.reply, str)
+    assert reply.model == "gpt-oss20b"
+    assert reply.api_mode in ("completion", "responses")
 
 
 def test_advisors_service_disabled_returns_notice():
@@ -34,11 +35,8 @@ def test_advisors_service_disabled_returns_notice():
 
     svc = AdvisorsService(config=DisabledConfig())
     msg = AdvisorMessage(platform="slack", channel="c2", user="u2", text="ping")
-    
-    try:
-        reply = svc.handle_message(msg)
-        assert False, "Should have raised RuntimeError"
-    except RuntimeError as e:
-        assert "not enabled" in str(e)
+    with pytest.raises(RuntimeError) as exc:
+        _ = svc.handle_message(msg)
+    assert "not enabled" in str(exc.value)
 
 

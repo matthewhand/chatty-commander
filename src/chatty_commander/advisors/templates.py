@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict
-
-
-_TEMPLATES: Dict[str, str] = {
+_TEMPLATES: dict[str, str] = {
     # key format: persona|api_mode|model (wildcards allowed with *)
     "philosophy_advisor|completion|*": "[tpl:stoic:completion] [sys] {system}\n[user] {text}",
     "philosophy_advisor|responses|*": "[tpl:stoic:responses] [sys] {system}\n[user] {text}",

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-from collections import Counter
 import datetime as dt
 import importlib.util
 import sys
+from collections import Counter
 
 spec = importlib.util.spec_from_file_location('cur', 'scripts/curate_history_proposal.py')
 cur = importlib.util.module_from_spec(spec)

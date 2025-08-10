@@ -12,7 +12,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Dict
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -21,8 +21,8 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
 from chatty_commander.app.command_executor import CommandExecutor
-from chatty_commander.advisors.service import AdvisorsService, AdvisorMessage, AdvisorReply
 
 # Import our core modules from src package
 from chatty_commander.app.config import Config
@@ -207,7 +207,7 @@ class WebModeServer:
                 logger.error(f"Failed to update configuration: {e}")
                 raise HTTPException(
                     status_code=500, detail=str(e)
-                )  # noqa: B904 - preserving current exception behavior
+                ) from e
 
         @app.get("/api/v1/state", response_model=StateInfo)
         async def get_state():
@@ -244,7 +244,7 @@ class WebModeServer:
                 logger.error(f"Failed to change state: {e}")
                 raise HTTPException(
                     status_code=400, detail=str(e)
-                )  # noqa: B904 - preserve current error handling
+                ) from e
 
         @app.post("/api/v1/command", response_model=CommandResponse)
         async def execute_command(request: CommandRequest):
@@ -308,8 +308,8 @@ class WebModeServer:
             channel: str
             user: str
             text: str
-            username: Optional[str] = None
-            metadata: Optional[Dict[str, Any]] = None
+            username: str | None = None
+            metadata: dict[str, Any] | None = None
 
         class AdvisorOutbound(BaseModel):
             reply: str
@@ -321,8 +321,8 @@ class WebModeServer:
 
         class ContextStats(BaseModel):
             total_contexts: int
-            platform_distribution: Dict[str, int]
-            persona_distribution: Dict[str, int]
+            platform_distribution: dict[str, int]
+            persona_distribution: dict[str, int]
             persistence_enabled: bool
             persistence_path: str
 
@@ -348,7 +348,7 @@ class WebModeServer:
                     api_mode=reply.api_mode
                 )
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
 
         @app.post("/api/v1/advisors/context/switch")
@@ -362,8 +362,7 @@ class WebModeServer:
             except HTTPException:
                 raise
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
         async def get_context_stats():
@@ -372,8 +371,7 @@ class WebModeServer:
                 stats = self.advisors_service.get_context_stats()
                 return ContextStats(**stats)
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @app.delete("/api/v1/advisors/context/{context_key}")
         async def clear_context(context_key: str):
@@ -386,7 +384,7 @@ class WebModeServer:
             except HTTPException:
                 raise
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         class AdvisorMemoryItem(BaseModel):
             role: str
@@ -435,7 +433,7 @@ class WebModeServer:
                 return {"ok": True, "reply": {"text": reply.reply, "meta": {}}}
             except Exception as e:
                 logger.error(f"Bridge event processing failed: {e}")
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=400, detail=str(e)) from e
 
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
@@ -656,7 +654,6 @@ if __name__ == "__main__":
 
 
 # Minimal, stateless FastAPI app factory for tests
-from fastapi import FastAPI
 
 
 def create_app(no_auth: bool = True) -> FastAPI:

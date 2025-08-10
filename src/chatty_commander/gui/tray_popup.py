@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-"""
-Tray popup GUI using pystray (system tray) and pywebview (embedded browser).
-Best-effort transparency and frameless window with OS fallbacks.
-"""
-
 import threading
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    try:
+        from PIL import Image
+    except ImportError:
+        Image = None
 
 try:
     import pystray
@@ -19,6 +20,11 @@ try:
     import webview
 except Exception:  # pragma: no cover
     webview = None  # type: ignore
+
+"""
+Tray popup GUI using pystray (system tray) and pywebview (embedded browser).
+Best-effort transparency and frameless window with OS fallbacks.
+"""
 
 
 def _load_settings(config: Any) -> dict[str, Any]:
@@ -47,7 +53,7 @@ def _load_settings(config: Any) -> dict[str, Any]:
     return settings
 
 
-def _icon_image() -> Optional["Image.Image"]:
+def _icon_image() -> Image.Image | None:
     """
     Try to load a tray icon image.
 

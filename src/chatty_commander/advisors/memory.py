@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+import json
+import os
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Deque, Dict, List
-import json
-import os
 
 
 @dataclass
@@ -22,7 +21,7 @@ class MemoryStore:
         persist: bool = False,
         persist_path: str | None = None,
     ) -> None:
-        self._store: Dict[str, Deque[MemoryItem]] = {}
+        self._store: dict[str, deque[MemoryItem]] = {}
         self._max = max(1, int(max_items_per_context))
         self._persist = persist
         self._path = persist_path or "data/advisors_memory.jsonl"
@@ -55,7 +54,7 @@ class MemoryStore:
             except Exception:
                 pass
 
-    def get(self, platform: str, channel: str, user: str, limit: int = 20) -> List[MemoryItem]:
+    def get(self, platform: str, channel: str, user: str, limit: int = 20) -> list[MemoryItem]:
         key = self._ctx(platform, channel, user)
         items = list(self._store.get(key, deque()))
         if limit <= 0:

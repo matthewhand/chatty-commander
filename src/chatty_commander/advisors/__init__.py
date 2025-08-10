@@ -1,4 +1,4 @@
-from .service import AdvisorsService, AdvisorMessage, AdvisorReply
+from .service import AdvisorMessage, AdvisorReply, AdvisorsService
 
 __all__ = [
     "AdvisorsService",

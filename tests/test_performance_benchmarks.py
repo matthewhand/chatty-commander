@@ -8,17 +8,17 @@ import asyncio
 import statistics
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import psutil
 import pytest
-from fastapi.testclient import TestClient
-
-from command_executor import CommandExecutor
 from config import Config
+from fastapi.testclient import TestClient
 from model_manager import ModelManager
 from state_manager import StateManager
 from web_mode import WebModeServer
+
+from src.chatty_commander.command_executor import CommandExecutor
 
 
 class PerformanceMonitor:

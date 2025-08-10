@@ -5,13 +5,18 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 from unittest.mock import MagicMock, patch
 
-from config import Config
-from model_manager import ModelManager
+from src.chatty_commander.app.model_manager import ModelManager
+from src.chatty_commander.config import Config
 
 
 class TestModelLoading(unittest.TestCase):
     def setUp(self):
         """Setup configuration and model manager for testing."""
+        self._get_patchable_model_class_patch = patch(
+            'src.chatty_commander.app.model_manager._get_patchable_model_class',
+            return_value=MagicMock
+        )
+        self._get_patchable_model_class_patch.start()
         self.config = Config()
         self.model_manager = ModelManager(self.config)
 
@@ -55,7 +60,7 @@ class TestModelLoading(unittest.TestCase):
         with (
             patch('os.path.exists', return_value=True),
             patch('os.listdir', return_value=['invalid.onnx']),
-            patch('model_manager.Model', side_effect=Exception('Load error')),
+            patch('src.chatty_commander.app.model_manager._get_patchable_model_class', side_effect=Exception('Load error')),
         ):
             models = self.model_manager.load_model_set('dummy_path')
             self.assertEqual(len(models), 0)
@@ -84,6 +89,9 @@ class TestModelLoading(unittest.TestCase):
         result = self.model_manager.get_models('test')
         self.assertEqual(result, {'model1': 'instance'})
         self.assertEqual(self.model_manager.get_models('nonexistent'), {})
+
+    def tearDown(self):
+        self._get_patchable_model_class_patch.stop()
 
     def test_repr(self):
         """Test __repr__ method."""
