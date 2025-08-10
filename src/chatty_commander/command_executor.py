@@ -10,9 +10,11 @@ _w.warn(
     stacklevel=2,
 )
 
-_src_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "src")
-if _src_path not in _sys.path:
-    _sys.path.insert(0, _src_path)
+# Add the project src root (parent of this package) to sys.path for repo-root execution
+_pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
+_root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
+if _root_src not in _sys.path:
+    _sys.path.insert(0, _root_src)
 
 # Expose attributes that tests patch directly on this module
 try:

@@ -9,16 +9,16 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-
-from src.chatty_commander.command_executor import CommandExecutor
 from config import Config
+from fastapi.testclient import TestClient
 from model_manager import ModelManager
 from state_manager import StateManager
 from web_mode import CommandRequest, StateChangeRequest, SystemStatus, WebModeServer
+
+from src.chatty_commander.command_executor import CommandExecutor
 
 
 class TestWebModeServer:

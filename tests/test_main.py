@@ -1,17 +1,17 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-import main  # Assuming main.py can be imported as main
+from src.chatty_commander import main
 
 
 class TestMain(unittest.TestCase):
     @patch('sys.argv', ['main.py', '--shell'])
     @patch('builtins.input', side_effect=['exit'])
-    @patch('main.StateManager')
-    @patch('main.ModelManager')
-    @patch('main.CommandExecutor')
-    @patch('main.Config')
-    @patch('main.setup_logger')
+    @patch('src.chatty_commander.main.StateManager')
+    @patch('src.chatty_commander.main.ModelManager')
+    @patch('src.chatty_commander.main.CommandExecutor')
+    @patch('src.chatty_commander.main.Config')
+    @patch('src.chatty_commander.main.setup_logger')
     def test_main_loop(
         self,
         mock_setup_logger,

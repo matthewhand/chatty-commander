@@ -7,7 +7,7 @@ Best-effort transparency and frameless window with OS fallbacks.
 
 import threading
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
     import pystray
@@ -47,7 +47,7 @@ def _load_settings(config: Any) -> dict[str, Any]:
     return settings
 
 
-def _icon_image() -> Optional["Image.Image"]:
+def _icon_image() -> Image.Image | None:
     """
     Try to load a tray icon image.
 

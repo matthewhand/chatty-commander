@@ -11,7 +11,7 @@ def test_memory_store_persistence_appends_lines():
         store.add("discord", "c1", "u1", "user", "hello")
         store.add("discord", "c1", "u1", "assistant", "hi")
         assert os.path.exists(path)
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             lines = f.readlines()
         assert len(lines) == 2
         assert "\"content\": \"hello\"" in lines[0]

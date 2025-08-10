@@ -11,7 +11,11 @@ import shlex
 import subprocess
 from typing import Any
 
-import requests
+# Make requests optional in environments where it's not installed
+try:
+    import requests  # type: ignore
+except Exception:  # noqa: BLE001
+    requests = None  # type: ignore
 
 # Use the exact root logger object that caplog captures
 logger = logging.getLogger()
@@ -230,7 +234,12 @@ class CommandExecutor:
             return
         try:
             # Match tests: do not pass extra kwargs like timeout
-            response = _get_requests().get(url)
+            rq = _get_requests()
+            if rq is None:
+                logger.error("requests is not installed")
+                self.report_error(command_name, "requests not available")
+                return
+            response = rq.get(url)
             if 200 <= response.status_code < 300:
                 logger.info(f"URL request to {url} returned {response.status_code}")
                 logger.info(f"Completed execution of command: {command_name}")

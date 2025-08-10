@@ -201,11 +201,6 @@ class WebIntegrationTester:
             original_state = state_data["current_state"]
 
             # Test POST state change
-            valid_states = [
-                "idle",
-                "computer",
-                "chatty",
-            ]  # noqa: F841 - kept for clarity of valid options
             test_state = "computer" if original_state != "computer" else "idle"
 
             response = requests.post(
@@ -342,8 +337,8 @@ class WebIntegrationTester:
 
             for (
                 header,
-                expected_value,
-            ) in cors_headers.items():  # noqa: B007 - iterating keys; expected_value unused
+                _expected_value,
+            ) in cors_headers.items():
                 if header not in response.headers:
                     self.test_results["errors"].append(f"Missing CORS header: {header}")
                     return False

@@ -22,20 +22,22 @@ import sys
 import sys as _sys
 import threading
 
-_src_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "src")
-if _src_path not in _sys.path:
-    _sys.path.insert(0, _src_path)
+# Fix sys.path to include the project src root (one level up from this package directory)
+_pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
+_root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
+if _root_src not in _sys.path:
+    _sys.path.insert(0, _root_src)
 
 # Support both package and repo-root execution without PYTHONPATH tweaks.
 try:
     # Preferred: installed package
     from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
     from chatty_commander.app.model_manager import ModelManager  # type: ignore
-    from chatty_commander.app.state_manager import StateManager  # type: ignore
     from chatty_commander.app.orchestrator import (  # type: ignore
         ModeOrchestrator,
         OrchestratorFlags,
     )
+    from chatty_commander.app.state_manager import StateManager  # type: ignore
     from chatty_commander.config import Config  # type: ignore
     from chatty_commander.utils.logger import setup_logger  # type: ignore
 except Exception:
@@ -44,12 +46,13 @@ except Exception:
     from config import Config  # shim file at repo root
     from model_manager import ModelManager  # shim file at repo root
     from state_manager import StateManager  # shim file at repo root
-    from utils.logger import setup_logger  # local utils
+
     # Orchestrator shipped under src/chatty_commander/app
     from chatty_commander.app.orchestrator import (  # type: ignore
         ModeOrchestrator,
         OrchestratorFlags,
     )
+    from utils.logger import setup_logger  # local utils
 
 try:
     from default_config import generate_default_config_if_needed

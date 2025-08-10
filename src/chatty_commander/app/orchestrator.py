@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Protocol
+from typing import Any, Protocol
 
 
 class CommandSink(Protocol):
@@ -86,16 +87,16 @@ class ModeOrchestrator:
         *,
         config: Any,
         command_sink: CommandSink,
-        advisor_sink: Optional[AdvisorSink] = None,
-        flags: Optional[OrchestratorFlags] = None,
+        advisor_sink: AdvisorSink | None = None,
+        flags: OrchestratorFlags | None = None,
     ) -> None:
         self.config = config
         self.command_sink = command_sink
         self.advisor_sink = advisor_sink
         self.flags = flags or OrchestratorFlags()
-        self.adapters: List[InputAdapter] = []
+        self.adapters: list[InputAdapter] = []
 
-    def select_adapters(self) -> List[str]:
+    def select_adapters(self) -> list[str]:
         selected: list[InputAdapter] = []
 
         if self.flags.enable_text:
@@ -119,7 +120,7 @@ class ModeOrchestrator:
         self.adapters = selected
         return [a.name for a in selected]
 
-    def start(self) -> List[str]:
+    def start(self) -> list[str]:
         if not self.adapters:
             self.select_adapters()
         for adapter in self.adapters:

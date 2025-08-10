@@ -12,7 +12,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Dict
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -21,8 +21,8 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
 from chatty_commander.app.command_executor import CommandExecutor
-from chatty_commander.advisors.service import AdvisorsService, AdvisorMessage, AdvisorReply
 
 # Import our core modules from src package
 from chatty_commander.app.config import Config
@@ -308,8 +308,8 @@ class WebModeServer:
             channel: str
             user: str
             text: str
-            username: Optional[str] = None
-            metadata: Optional[Dict[str, Any]] = None
+            username: str | None = None
+            metadata: dict[str, Any] | None = None
 
         class AdvisorOutbound(BaseModel):
             reply: str
@@ -321,8 +321,8 @@ class WebModeServer:
 
         class ContextStats(BaseModel):
             total_contexts: int
-            platform_distribution: Dict[str, int]
-            persona_distribution: Dict[str, int]
+            platform_distribution: dict[str, int]
+            persona_distribution: dict[str, int]
             persistence_enabled: bool
             persistence_path: str
 

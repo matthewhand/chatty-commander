@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass
@@ -13,12 +13,12 @@ class RecurringPrompt:
     trigger: str  # cron|webhook|manual
     context: str
     prompt: str
-    variables: Dict[str, Any] = field(default_factory=dict)
-    response_handler: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    variables: dict[str, Any] = field(default_factory=dict)
+    response_handler: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "RecurringPrompt":
+    def from_dict(data: dict[str, Any]) -> RecurringPrompt:
         required = [
             "id",
             "name",
@@ -44,7 +44,7 @@ class RecurringPrompt:
             metadata=dict(data.get("metadata", {})),
         )
 
-    def render_prompt(self, runtime_vars: Optional[Dict[str, Any]] = None) -> str:
+    def render_prompt(self, runtime_vars: dict[str, Any] | None = None) -> str:
         merged = dict(self.variables)
         if runtime_vars:
             merged.update(runtime_vars)

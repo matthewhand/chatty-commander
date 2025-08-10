@@ -1,7 +1,11 @@
 import os
 import unittest
 
-from src.chatty_commander.helpers import ensure_directory_exists, format_command_output, parse_model_keybindings
+from src.chatty_commander.helpers import (
+    ensure_directory_exists,
+    format_command_output,
+    parse_model_keybindings,
+)
 
 
 class TestHelpers(unittest.TestCase):

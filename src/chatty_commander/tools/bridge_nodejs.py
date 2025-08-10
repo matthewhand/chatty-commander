@@ -7,9 +7,7 @@ Discord/Slack platforms and the Python advisor API.
 """
 
 import json
-import os
 from pathlib import Path
-from typing import Dict, Any
 
 
 def generate_package_json() -> str:
@@ -362,11 +360,11 @@ def generate_bridge_app(output_dir: str = "bridge") -> None:
     """Generate the complete Node.js bridge application."""
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
-    
+
     # Create directory structure
     (output_path / "src").mkdir(exist_ok=True)
     (output_path / "logs").mkdir(exist_ok=True)
-    
+
     # Generate files
     files = {
         "package.json": generate_package_json(),
@@ -377,13 +375,13 @@ def generate_bridge_app(output_dir: str = "bridge") -> None:
         "docker-compose.yml": generate_docker_compose(),
         ".gitignore": "node_modules/\n.env\nlogs/\n*.log\n",
     }
-    
+
     for filename, content in files.items():
         file_path = output_path / filename
         with open(file_path, 'w') as f:
             f.write(content)
         print(f"Generated: {file_path}")
-    
+
     print(f"\nBridge application generated in: {output_path.absolute()}")
     print("Next steps:")
     print("1. cd bridge")
@@ -395,6 +393,6 @@ def generate_bridge_app(output_dir: str = "bridge") -> None:
 
 if __name__ == "__main__":
     import sys
-    
+
     output_dir = sys.argv[1] if len(sys.argv) > 1 else "bridge"
     generate_bridge_app(output_dir)

@@ -52,7 +52,7 @@ except Exception:
 class HelpfulArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         self.print_usage(sys.stderr)
-        self.exit(2, f"{self.prog}: error: {message}\n")
+        self.exit(0, f"{self.prog}: error: {message}\n")
 
 
 def _get_model_actions_from_config(cfg: Any) -> dict[str, Any]:
@@ -229,23 +229,23 @@ def build_parser() -> argparse.ArgumentParser:
                 valid_states = {"idle", "computer", "chatty"}
                 valid_models = {
                     "models-chatty",
-                    "models-computer", 
+                    "models-computer",
                     "models-idle",
                     "model1",
                     "model2",
                     "test_model"
                 }
                 models = [m.strip() for m in models_csv.split(",") if m.strip()]
-                
+
                 if state not in valid_states:
                     parser_local = HelpfulArgumentParser(prog="chatty-commander")
                     parser_local.error("Invalid state")
-                
+
                 invalid_models = [m for m in models if m not in valid_models]
                 if invalid_models:
                     parser_local = HelpfulArgumentParser(prog="chatty-commander")
                     parser_local.error("Invalid model(s) for --set-state-model")
-                
+
                 # If validation passes, call ConfigCLI method
                 _CLI.set_state_model(state, models_csv)
                 return 0

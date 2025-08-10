@@ -10,7 +10,7 @@ def run_cmd(args, timeout=10):
 
 
 def test_cli_help_lists_key_flags():
-    rc, out, err = run_cmd([PYTHON, 'main.py', '--help'])
+    rc, out, err = run_cmd([PYTHON, 'src/chatty_commander/main.py', '--help'])
     assert rc == 0
     text = out + err
     for token in ['--web', '--no-auth', '--port', '--gui', '--config', '--shell', '--log-level']:
@@ -18,6 +18,6 @@ def test_cli_help_lists_key_flags():
 
 
 def test_no_args_prints_intro_and_does_not_crash():
-    rc, out, err = run_cmd([PYTHON, 'main.py', '--help'])
+    rc, out, err = run_cmd([PYTHON, 'src/chatty_commander/main.py', '--help'])
     assert rc == 0
     assert 'ChattyCommander' in (out + err)

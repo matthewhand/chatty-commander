@@ -23,12 +23,10 @@ from __future__ import annotations
 import argparse
 import dataclasses as dc
 import datetime as dt
-import os
-import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
-from typing import Iterable, List, Tuple
+from collections.abc import Iterable
 
 
 @dc.dataclass
@@ -43,16 +41,16 @@ def sh(cmd: str) -> str:
     return subprocess.check_output(cmd, shell=True, text=True).strip()
 
 
-def parse_git_log() -> List[Commit]:
+def parse_git_log() -> list[Commit]:
     # We print commit header lines then changed file paths; commits separated by blank lines
     cmd = (
         "git log --reverse --date=short "
         "--pretty=format:%H\t%ad\t%s --name-only"
     )
     out = sh(cmd)
-    commits: List[Commit] = []
+    commits: list[Commit] = []
     sha = date = subj = None
-    files: List[str] = []
+    files: list[str] = []
     for line in out.splitlines():
         if not line.strip():
             # end of block
@@ -121,7 +119,7 @@ class Batch:
     period_label: str
     start: dt.date
     end: dt.date
-    commits: List[Commit]
+    commits: list[Commit]
     areas: Counter
 
     def title(self) -> str:
@@ -153,19 +151,19 @@ class Batch:
 
 
 def build_batches(
-    commits: List[Commit],
+    commits: list[Commit],
     *,
     boundary: dt.date,
     granularity: str,
     smart: bool,
     max_commits_per_batch: int,
     min_overlap: float,
-) -> Tuple[List[Batch], int]:
+) -> tuple[list[Batch], int]:
     pre = [c for c in commits if c.date < boundary]
     post = [c for c in commits if c.date >= boundary]
 
     # Group by period
-    grouped: dict[str, List[Commit]] = defaultdict(list)
+    grouped: dict[str, list[Commit]] = defaultdict(list)
     for c in pre:
         grouped[period_key(c.date, granularity)].append(c)
 
@@ -173,7 +171,7 @@ def build_batches(
     periods = sorted(grouped.keys(), key=lambda p: grouped[p][0].date if grouped[p] else boundary)
 
     # Build initial monthly/quarterly batches
-    batches: List[Batch] = []
+    batches: list[Batch] = []
     for p in periods:
         commits_p = grouped[p]
         if not commits_p:
@@ -193,7 +191,7 @@ def build_batches(
 
     if smart and len(batches) > 1:
         # Merge adjacent small/similar batches
-        merged: List[Batch] = []
+        merged: list[Batch] = []
         i = 0
         while i < len(batches):
             cur = batches[i]
@@ -218,9 +216,9 @@ def build_batches(
     return batches, len(post)
 
 
-def render_markdown(batches: List[Batch], post_count: int, boundary: dt.date) -> str:
+def render_markdown(batches: list[Batch], post_count: int, boundary: dt.date) -> str:
     lines = []
-    lines.append(f"# Curated History Proposal (dry-run)\n")
+    lines.append("# Curated History Proposal (dry-run)\n")
     lines.append(f"Boundary: keep commits on/after {boundary.isoformat()} intact\n")
     lines.append(f"Pre-boundary batches: {len(batches)}\n")
     lines.append(f"Post-boundary commits preserved: {post_count}\n")
@@ -263,7 +261,7 @@ def render_markdown(batches: List[Batch], post_count: int, boundary: dt.date) ->
     return "\n".join(lines)
 
 
-def main(argv: List[str]) -> int:
+def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Dry-run proposal for curated history batches")
     ap.add_argument("--boundary", required=False, default="2025-08-05", help="Boundary date YYYY-MM-DD; keep commits on/after this date intact")
     ap.add_argument("--granularity", choices=["monthly", "quarterly"], default="monthly")
