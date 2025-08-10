@@ -126,16 +126,18 @@ def create_app(
     except Exception as e:  # noqa: BLE001
         logger.warning("Failed to include avatar routes; continuing: %s", e)
 
-    # Avatar settings routes
+    # Avatar/Agent settings + selector routes
     try:
         from .routes.avatar_settings import include_avatar_settings_routes
         from .routes.avatar_selector import router as avatar_selector_router
+        from .routes.agents import router as agents_router
         settings_router = include_avatar_settings_routes(get_config_manager=lambda: legacy.config_manager)
         app.include_router(settings_router)
         app.include_router(avatar_selector_router)
-        logger.debug("server.create_app: included avatar settings + selector routes")
+        app.include_router(agents_router)
+        logger.debug("server.create_app: included avatar settings + selector + agents routes")
     except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to include avatar settings/selector routes; continuing: %s", e)
+        logger.warning("Failed to include avatar settings/selector/agents routes; continuing: %s", e)
 
     logger.debug("server.create_app constructed legacy WebModeServer and returned app")
     return app

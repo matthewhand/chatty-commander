@@ -614,6 +614,117 @@ Milestone 1 (implement now)
   - [ ] Tests: endpoint scanning, config roundtrip, permission checks.
 - WebUI/GUI
   - [ ] Settings page to show available animations (from endpoint), toggles, and state mapping controls.
+
+## Milestone: Agent Blueprint Management & Team Orchestration
+
+### Goal
+Implement natural language agent blueprint definition with GUI/WebUI integration for comprehensive persona management, team visualization, and dynamic agent lifecycle management.
+
+### Core Features
+
+#### Natural Language Agent Blueprint Definition
+- [ ] Create agent blueprint schema that accepts natural language descriptions
+  - Acceptance:
+    - Schema supports: name, description, persona_prompt, capabilities, team_role, handoff_triggers
+    - Natural language parser extracts structured data from free-form descriptions
+    - Blueprint validation ensures required fields and capability compatibility
+  - Tasks:
+    - [ ] Define AgentBlueprint dataclass with comprehensive schema
+    - [ ] Implement natural language parser using LLM to extract structured blueprint data
+    - [ ] Add blueprint validation and capability checking
+    - [ ] Create blueprint serialization/deserialization (JSON/YAML)
+    - [ ] Tests: parser accuracy, validation edge cases, serialization roundtrip
+
+#### GUI/WebUI Agent Management Interface
+- [ ] Implement comprehensive agent management UI in settings
+  - Acceptance:
+    - Settings page shows all configured agents with personas, prompts, and team relationships
+    - "+Create Agent" button opens natural language blueprint creation dialog
+    - "Destroy Agent" option with confirmation dialog before deletion
+    - Team visualization shows agent relationships and handoff flows
+    - Real-time agent status (active, idle, error) with connection to thinking_state manager
+  - Tasks:
+    - [ ] Create agent management settings page/component
+    - [ ] Implement "+Create Agent" dialog with natural language input field
+    - [ ] Add "Destroy Agent" functionality with confirmation modal
+    - [ ] Build team visualization component (graph/tree view of agent relationships)
+    - [ ] Integrate with existing avatar WebSocket for real-time agent status
+    - [ ] Add agent editing capabilities (modify persona, prompts, capabilities)
+    - [ ] Tests: UI component tests, agent CRUD operations, team visualization rendering
+
+#### Backend API for Agent Management
+- [ ] Extend advisor API with agent blueprint management endpoints
+  - Acceptance:
+    - POST /api/v1/agents/blueprints - create agent from natural language description
+    - GET /api/v1/agents/blueprints - list all configured agents with metadata
+    - PUT /api/v1/agents/blueprints/{agent_id} - update agent configuration
+    - DELETE /api/v1/agents/blueprints/{agent_id} - remove agent with safety checks
+    - GET /api/v1/agents/team - get team structure and relationships
+    - POST /api/v1/agents/team/handoff - trigger manual agent handoff
+  - Tasks:
+    - [ ] Create agent blueprint management router
+    - [ ] Implement CRUD operations for agent blueprints
+    - [ ] Add team structure API endpoints
+    - [ ] Integrate with openai-agents for dynamic agent creation/destruction
+    - [ ] Add safety checks for agent deletion (active conversations, dependencies)
+    - [ ] Tests: API endpoint coverage, error handling, safety validations
+
+#### Agent Team Orchestration
+- [ ] Implement dynamic agent team management with openai-agents integration
+  - Acceptance:
+    - Agents can be dynamically created/destroyed at runtime
+    - Team handoff flows respect blueprint-defined triggers and capabilities
+    - Agent personas are properly mapped to avatar themes
+    - Team state is persisted and restored across application restarts
+  - Tasks:
+    - [ ] Integrate agent blueprint system with openai-agents SDK
+    - [ ] Implement dynamic agent registration/deregistration
+    - [ ] Create team handoff orchestration logic
+    - [ ] Add agent-to-avatar theme mapping system
+    - [ ] Implement team state persistence (JSON/database)
+    - [ ] Add team health monitoring and error recovery
+    - [ ] Tests: dynamic agent lifecycle, handoff flows, persistence, error scenarios
+
+#### Animation Setup UI Integration
+- [ ] Create dedicated animation configuration interface
+  - Acceptance:
+    - Separate view/pane/mode for animation setup and testing
+    - Preview animations with real-time playback
+    - Map animations to agent states and personas
+    - Test animation transitions and timing
+    - Export/import animation configurations
+  - Tasks:
+    - [ ] Create animation setup UI component/page
+    - [ ] Implement animation preview with playback controls
+    - [ ] Add drag-and-drop animation assignment to states
+    - [ ] Create animation testing mode with state simulation
+    - [ ] Add animation configuration export/import
+    - [ ] Integrate with existing /avatar/animations endpoint
+    - [ ] Tests: animation UI components, preview functionality, configuration persistence
+
+### Integration Points
+- [ ] Connect agent management to existing avatar WebSocket system
+- [ ] Integrate with thinking_state manager for real-time agent status
+- [ ] Link to openai-agents SDK for actual agent orchestration
+- [ ] Connect to avatar theme system for persona-based visual representation
+- [ ] Integrate with existing configuration system for persistence
+
+### Documentation
+- [ ] Create docs/AGENT_BLUEPRINT_MANAGEMENT.md with:
+  - Natural language blueprint syntax and examples
+  - GUI/WebUI usage guide for agent management
+  - Team orchestration concepts and best practices
+  - Animation setup and configuration guide
+  - API reference for agent management endpoints
+
+### Acceptance Criteria
+- Users can describe agents in natural language and have them automatically configured
+- GUI provides intuitive agent creation with "+Create Agent" button
+- Agent destruction requires confirmation and handles dependencies safely
+- Team visualization shows agent relationships and current status
+- Animation setup provides dedicated interface for configuration and testing
+- All agent management operations are reflected in real-time across UI components
+- System handles agent lifecycle gracefully with proper error recovery
   - [ ] Live preview controls and safe fallbacks when an animation is missing or broken.
   - [ ] Import/export of animation presets.
 - Acceptance
