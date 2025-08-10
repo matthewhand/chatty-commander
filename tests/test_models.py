@@ -11,6 +11,9 @@ from model_manager import ModelManager
 
 class TestModelLoading(unittest.TestCase):
     def setUp(self):
+        # Patch the Model class used by the implementation so model instances are MagicMock
+        self._model_patch = patch('chatty_commander.app.model_manager.Model', new=MagicMock)
+        self._model_patch.start()
         """Setup configuration and model manager for testing."""
         self.config = Config()
         self.model_manager = ModelManager(self.config)
@@ -84,6 +87,12 @@ class TestModelLoading(unittest.TestCase):
         result = self.model_manager.get_models('test')
         self.assertEqual(result, {'model1': 'instance'})
         self.assertEqual(self.model_manager.get_models('nonexistent'), {})
+
+    def tearDown(self):
+        try:
+            self._model_patch.stop()
+        except Exception:
+            pass
 
     def test_repr(self):
         """Test __repr__ method."""
