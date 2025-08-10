@@ -109,6 +109,19 @@ def create_app(
     try:
         app.include_router(avatar_ws_router)
         app.include_router(avatar_api_router)
+        # Provide persona->theme resolution to WS manager from config
+        try:
+            from .routes import avatar_ws as _avatar_ws_mod
+            def _resolve_theme(persona_id: str) -> str:
+                cfg = getattr(legacy.config_manager, "config", {}) or {}
+                gui = cfg.get("gui", {}) if isinstance(cfg, dict) else {}
+                avatar = gui.get("avatar", {}) if isinstance(gui, dict) else {}
+                mapping = avatar.get("persona_theme_map", {}) if isinstance(avatar, dict) else {}
+                return mapping.get(persona_id, mapping.get("default", "default"))
+            setattr(_avatar_ws_mod.manager, "theme_resolver", _resolve_theme)
+            logger.debug("server.create_app: set WS theme_resolver from config")
+        except Exception as e:
+            logger.debug("server.create_app: theme_resolver not set: %s", e)
         logger.debug("server.create_app: included avatar ws/api routes")
     except Exception as e:  # noqa: BLE001
         logger.warning("Failed to include avatar routes; continuing: %s", e)
@@ -116,11 +129,13 @@ def create_app(
     # Avatar settings routes
     try:
         from .routes.avatar_settings import include_avatar_settings_routes
+        from .routes.avatar_selector import router as avatar_selector_router
         settings_router = include_avatar_settings_routes(get_config_manager=lambda: legacy.config_manager)
         app.include_router(settings_router)
-        logger.debug("server.create_app: included avatar settings routes")
+        app.include_router(avatar_selector_router)
+        logger.debug("server.create_app: included avatar settings + selector routes")
     except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to include avatar settings routes; continuing: %s", e)
+        logger.warning("Failed to include avatar settings/selector routes; continuing: %s", e)
 
     logger.debug("server.create_app constructed legacy WebModeServer and returned app")
     return app
