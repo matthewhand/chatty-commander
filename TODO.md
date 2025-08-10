@@ -603,3 +603,37 @@ Milestone 1 (implement now)
 - Documentation:
   - [ ] docs/AVATAR_GUI.md: protocol spec, state machine, theming, dev workflow
   - [ ] README: brief overview and link to AVATAR_GUI.md
+
+### Settings GUI/WebUI for Animation Configuration
+- Goal: Allow users to enable/disable animations and map states/categories to specific animations discovered on disk.
+- Backend/API
+  - [ ] Add endpoint GET /avatar/animations to list available animations by scanning a configured directory (e.g., src/chatty_commander/webui/avatar/animations/ or build assets).
+  - [ ] Include metadata: { name, file, category, duration?, loop?, preview? } where feasible.
+  - [ ] Config schema: config.gui.avatar with keys: animations_dir, enabled, defaults, state_map: {state->animation}, category_map.
+  - [ ] Persist user selections to config and reload at runtime.
+  - [ ] Tests: endpoint scanning, config roundtrip, permission checks.
+- WebUI/GUI
+  - [ ] Settings page to show available animations (from endpoint), toggles, and state mapping controls.
+  - [ ] Live preview controls and safe fallbacks when an animation is missing or broken.
+  - [ ] Import/export of animation presets.
+- Acceptance
+  - Users can view animations discovered on disk, toggle them, and assign per-state mappings.
+  - Settings persist and are respected by the avatar UI and server broadcasts.
+
+### Intelligent Animation Selection (LLM-based)
+- Goal: Dynamically choose an animation based on the content of the model’s thinking/reply.
+- Backend service
+  - [ ] Add AnimationSelector service that classifies text into a constrained set of labels (e.g., excited, calm, curious, warning, success, error, neutral) using a local LLM (e.g., gpt-oss:20b) or configured provider.
+  - [ ] Use regex-constrained output or JSON schema to guarantee one label from the allowed set.
+  - [ ] Input sources: (a) accumulated <thinking> buffer snapshots, (b) final assistant reply; configurable thresholds and debounce.
+  - [ ] API: POST /avatar/animation/choose { text, context?, candidate_labels? } -> { label, confidence, rationale? }.
+  - [ ] WS: emit animation_hint messages so the UI can smoothly transition.
+  - [ ] Performance/safety: timeouts, rate-limiting, and disable switch in config.
+- UI behavior
+  - [ ] Map classified labels to animations via configurable label->animation map; allow overrides.
+  - [ ] Fall back to state-based default if classifier returns none or low confidence.
+- Tests/metrics
+  - [ ] Unit tests for label constraints and fallback logic.
+  - [ ] Offline evaluation harness with a small labeled dataset for smoke-quality metrics.
+- Acceptance
+  - Given representative thinking/reply text, the system selects appropriate animations (e.g., hacking for tool_calling, calm for neutral, warning for errors) and falls back predictably.
