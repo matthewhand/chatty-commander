@@ -120,7 +120,7 @@ class CompletionProvider(LLMProvider):
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
         """Generate streaming response.
-        
+
         If streaming isn't supported by the agent, fall back to a single chat call.
         """
         try:
@@ -237,10 +237,10 @@ class FallbackProvider(LLMProvider):
 def build_provider(config: dict[str, Any]) -> LLMProvider:
     """
     Build the appropriate LLM provider based on configuration.
-    
+
     Args:
         config: Provider configuration dictionary
-        
+
     Returns:
         Configured LLM provider instance
     """
@@ -283,10 +283,10 @@ class StubResponsesProvider(LLMProvider):
 def build_provider_safe(config: dict[str, Any]) -> LLMProvider:
     """
     Build provider with fallback to stubs if openai-agents SDK is not available or no API key is provided.
-    
+
     Args:
         config: Provider configuration dictionary
-        
+
     Returns:
         Configured LLM provider instance (real or stub)
     """

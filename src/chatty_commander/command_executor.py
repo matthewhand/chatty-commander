@@ -1,5 +1,5 @@
 # Compatibility shim for tests that import `command_executor` at repo root.
-# Ensure src/ on sys.path, expose patch points (pyautogui, requests), and re-export CommandExecutor.
+# Ensure src/ on sys.path, expose patch points (pyautogui, requests), and lazily expose CommandExecutor.
 import os as _os
 import sys as _sys
 import warnings as _w
@@ -27,8 +27,13 @@ try:
 except Exception:
     requests = None  # type: ignore
 
-# Re-export implementation
-from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+# Lazy attribute loader to avoid import-order issues (and E402)
 
-# Make these names visible to patchers
-__all__ = ["CommandExecutor", "pyautogui", "requests"]
+def __getattr__(name: str):  # type: ignore[override]
+    if name == "CommandExecutor":
+        from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+        return CommandExecutor
+    raise AttributeError(name)
+
+# Make these names visible to patchers; CommandExecutor is provided lazily via __getattr__
+__all__ = ["pyautogui", "requests"]

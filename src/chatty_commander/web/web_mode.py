@@ -207,7 +207,7 @@ class WebModeServer:
                 logger.error(f"Failed to update configuration: {e}")
                 raise HTTPException(
                     status_code=500, detail=str(e)
-                )  # noqa: B904 - preserving current exception behavior
+                ) from e
 
         @app.get("/api/v1/state", response_model=StateInfo)
         async def get_state():
@@ -244,7 +244,7 @@ class WebModeServer:
                 logger.error(f"Failed to change state: {e}")
                 raise HTTPException(
                     status_code=400, detail=str(e)
-                )  # noqa: B904 - preserve current error handling
+                ) from e
 
         @app.post("/api/v1/command", response_model=CommandResponse)
         async def execute_command(request: CommandRequest):
@@ -348,7 +348,7 @@ class WebModeServer:
                     api_mode=reply.api_mode
                 )
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
 
         @app.post("/api/v1/advisors/context/switch")
@@ -362,8 +362,7 @@ class WebModeServer:
             except HTTPException:
                 raise
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
         async def get_context_stats():
@@ -372,8 +371,7 @@ class WebModeServer:
                 stats = self.advisors_service.get_context_stats()
                 return ContextStats(**stats)
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @app.delete("/api/v1/advisors/context/{context_key}")
         async def clear_context(context_key: str):
@@ -386,7 +384,7 @@ class WebModeServer:
             except HTTPException:
                 raise
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         class AdvisorMemoryItem(BaseModel):
             role: str
@@ -435,7 +433,7 @@ class WebModeServer:
                 return {"ok": True, "reply": {"text": reply.reply, "meta": {}}}
             except Exception as e:
                 logger.error(f"Bridge event processing failed: {e}")
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=400, detail=str(e)) from e
 
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
@@ -656,7 +654,6 @@ if __name__ == "__main__":
 
 
 # Minimal, stateless FastAPI app factory for tests
-from fastapi import FastAPI
 
 
 def create_app(no_auth: bool = True) -> FastAPI:

@@ -466,7 +466,7 @@ def main():
 
     # If user only asked for help (--help), we would have already returned.
     # If no args other than program name, print intro and exit 0 per tests expecting non-crash and intro visibility.
-    if len(sys.argv) == 1:
+    if len(sys.argv) <= 1 or '--help' in sys.argv or '-h' in sys.argv:
         print("ChattyCommander - Voice Command System")
         print("Use --help for available options")
         # Align with tests expecting SystemExit on main invocation path.

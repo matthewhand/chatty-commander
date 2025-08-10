@@ -7,6 +7,7 @@ Runs all tests including unit tests, integration tests, and web mode validation.
 """
 
 import logging
+import os
 import subprocess
 import sys
 import time

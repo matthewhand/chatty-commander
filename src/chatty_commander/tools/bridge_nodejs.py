@@ -159,7 +159,7 @@ discordClient.on('ready', () => {
 
 discordClient.on('messageCreate', async (message) => {
   if (message.author.bot) return;
-  
+
   try {
     const response = await advisorClient.sendMessage(
       'discord',
@@ -167,7 +167,7 @@ discordClient.on('messageCreate', async (message) => {
       message.author.id,
       message.content
     );
-    
+
     await message.reply(response.reply);
   } catch (error) {
     logger.error('Error handling Discord message:', error);
@@ -184,7 +184,7 @@ slackApp.message(async ({ message, say }) => {
       message.user,
       message.text
     );
-    
+
     await say(response.reply);
   } catch (error) {
     logger.error('Error handling Slack message:', error);
@@ -208,11 +208,11 @@ async function start() {
 
     // Start Discord bot
     await discordClient.login(process.env.DISCORD_TOKEN);
-    
+
     // Start Slack app
     await slackApp.start();
     logger.info('Slack app started');
-    
+
   } catch (error) {
     logger.error('Error starting bridge application:', error);
     process.exit(1);

@@ -1,3 +1,4 @@
+import pytest
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
 
 
@@ -34,11 +35,8 @@ def test_advisors_service_disabled_returns_notice():
 
     svc = AdvisorsService(config=DisabledConfig())
     msg = AdvisorMessage(platform="slack", channel="c2", user="u2", text="ping")
-
-    try:
+    with pytest.raises(RuntimeError) as exc:
         _ = svc.handle_message(msg)
-        assert False, "Should have raised RuntimeError"
-    except RuntimeError as e:
-        assert "not enabled" in str(e)
+    assert "not enabled" in str(exc.value)
 
 

@@ -5,6 +5,7 @@ import warnings as _w
 _w.warn(
     "model_manager.py is a compatibility shim; preferred import is chatty_commander.app.model_manager",
     DeprecationWarning,
+    stacklevel=2,
 )
 
 try:
@@ -24,12 +25,13 @@ try:
     _under_pytest = bool(_os.environ.get("PYTEST_CURRENT_TEST")) or ("pytest" in _sys.modules)
     if _under_pytest:
         Model = _MagicMock  # type: ignore # noqa: F401
-        try:
-            __all__  # type: ignore[name-defined]
-        except Exception:
-            __all__ = []  # type: ignore[assignment]
-        if "Model" not in __all__:
-            __all__.append("Model")  # type: ignore[attr-defined]
+        # Ensure __all__ exists and includes "Model" without referencing a possibly star-imported name
+        _all = globals().get("__all__")
+        if not isinstance(_all, list):
+            _all = []
+            globals()["__all__"] = _all
+        if "Model" not in _all:
+            _all.append("Model")
 except Exception:
     # If unittest.mock is unavailable for any reason, silently skip override.
     pass

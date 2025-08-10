@@ -61,10 +61,10 @@ class AdvisorsService:
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
         """
         Process an incoming message and return advisor response.
-        
+
         Args:
             message: The incoming message to process
-            
+
         Returns:
             AdvisorReply with response and metadata
         """

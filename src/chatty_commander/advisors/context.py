@@ -86,7 +86,7 @@ class ContextState:
 class ContextManager:
     """
     Manages tab-aware context switching for advisors.
-    
+
     This class handles:
     - Persistent identity tracking across applications
     - Context-aware persona switching
@@ -113,14 +113,14 @@ class ContextManager:
                             **kwargs) -> ContextState:
         """
         Get existing context or create new one for the given identity.
-        
+
         Args:
             platform: The platform type (Discord, Slack, etc.)
             channel: Channel or conversation ID
             user_id: Unique user identifier
             username: Optional username for display
             **kwargs: Additional identity metadata
-            
+
         Returns:
             ContextState for the identity
         """
@@ -171,11 +171,11 @@ class ContextManager:
     def switch_persona(self, context_key: str, persona_id: str) -> bool:
         """
         Switch the persona for a specific context.
-        
+
         Args:
             context_key: The context to switch
             persona_id: New persona ID
-            
+
         Returns:
             True if switch successful, False if persona not found
         """
@@ -206,10 +206,10 @@ class ContextManager:
     def clear_context(self, context_key: str) -> bool:
         """
         Clear a specific context.
-        
+
         Args:
             context_key: The context to clear
-            
+
         Returns:
             True if context was cleared, False if not found
         """
@@ -226,10 +226,10 @@ class ContextManager:
     def clear_inactive_contexts(self, max_age_hours: float = 24.0) -> int:
         """
         Clear contexts that haven't been active for the specified time.
-        
+
         Args:
             max_age_hours: Maximum age in hours before clearing
-            
+
         Returns:
             Number of contexts cleared
         """
@@ -252,7 +252,7 @@ class ContextManager:
     def _resolve_persona_for_context(self, identity: ContextIdentity) -> str:
         """
         Resolve which persona to use for a given context.
-        
+
         This can be extended to implement more sophisticated persona
         selection logic based on platform, channel, user, etc.
         """

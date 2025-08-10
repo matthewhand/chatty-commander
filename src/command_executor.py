@@ -14,7 +14,7 @@ try:
 except Exception:  # noqa: BLE001
     requests = None  # type: ignore
 
-__all__ = ["CommandExecutor", "pyautogui", "requests"]
+__all__ = ["pyautogui", "requests"]
 
 # Lazily load CommandExecutor to avoid circular import during app module init
 def __getattr__(name: str):  # PEP 562
