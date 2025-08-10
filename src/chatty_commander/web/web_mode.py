@@ -152,6 +152,23 @@ class WebModeServer:
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
 
+        # Serve avatar UI (TalkingHead placeholder) if available
+        avatar_path = Path("src/chatty_commander/webui/avatar")
+        if avatar_path.exists():
+            try:
+                app.mount("/avatar-ui", StaticFiles(directory=str(avatar_path)), name="avatar")
+
+                @app.get("/avatar", response_class=HTMLResponse)
+                async def serve_avatar_ui():
+                    index_file = avatar_path / "index.html"
+                    if index_file.exists():
+                        return FileResponse(str(index_file))
+                    return HTMLResponse(
+                        "<h1>Avatar UI</h1><p>Avatar UI not found. Ensure index.html exists under src/chatty_commander/webui/avatar/</p>"
+                    )
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"Failed to mount avatar UI static files: {e}")
+
         return app
 
     def _register_routes(self, app: FastAPI) -> None:
