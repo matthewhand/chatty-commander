@@ -236,6 +236,14 @@ Enjoy using ChattyCommander! If you have questions, feel free to open an issue.
 
 
 
+## Avatar GUI and Settings
+
+- See docs/AVATAR_GUI.md for protocol, discovery, settings API, and local dev tips.
+- Quick start:
+  - Run backend: `uv run python -m src.chatty_commander.main --web --no-auth`
+  - Launch avatar GUI: `uv run python -m src.chatty_commander.main --gui`
+  - Dev client will attempt to connect to ws://localhost:8100/avatar/ws
+
 ## CLI and REPL usage
 
 Basic help:
