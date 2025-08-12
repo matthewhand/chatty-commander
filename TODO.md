@@ -186,7 +186,7 @@ Notes
 ## Now (Sprint Focus)
 
 1) OpenAPI/Swagger exposure and tests
-- [ ] Ensure API publishes OpenAPI/Swagger at /docs and /openapi.json
+- [x] Ensure API publishes OpenAPI/Swagger at /docs and /openapi.json
   Acceptance:
   - Running: uv run python main.py --web --no-auth exposes Swagger UI at GET /docs (200 OK)
   - GET /openapi.json returns JSON with "paths" and includes "/health" (content-type: application/json)
@@ -200,7 +200,7 @@ Notes
   - Add README note linking /docs and /openapi.json
 
 2) CLI UX hardening
-- [ ] Comprehensive --help descriptions
+- [x] Comprehensive --help descriptions
   Acceptance:
   - uv run python cli.py --help exits 0, includes all flags and descriptions
   - uv run pytest -q tests/test_cli_help_and_shell.py::test_help_outputs_usage
@@ -215,7 +215,7 @@ Notes
 
 3) Test infrastructure unblocked
 - [x] Add pytest.ini with pythonpath=src so chatty_commander package is importable
-- [ ] Run full suite and address failures
+- [x] Run full suite and address failures
   Commands:
   - uv run pytest -q
   Targets:
@@ -229,13 +229,13 @@ Notes
   - Basic auth disabled when --no-auth is provided
 
 5) Minimal docs parity
-- [ ] API docs parity automation
+- [x] API docs parity automation
   Acceptance:
   - uv run python -m src.chatty_commander.tools.generate_api_docs writes docs/openapi.json
   - Tests assert parity between runtime schema and docs/openapi.json
 
 6) Makefile convenience
-- [ ] Add/ensure Make targets:
+- [x] Add/ensure Make targets:
   - make test           → uv run pytest -q
   - make test-cov       → uv run pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing
   - make test-web       → uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py
@@ -358,14 +358,14 @@ Notes
 
 ## Next (Ready to Pull)
 
-- [ ] Run web mode tests
+- [x] Run web mode tests
   - uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py tests/test_cors_no_auth.py
 - [ ] Performance smoke
   - uv run pytest -q tests/test_performance_benchmarks.py
 - [ ] Coverage target
   - >= 85% lines in src/*
 - [ ] Document "no-auth" mode in README and mark as dev-only
-- [ ] Add basic health and version endpoints with tests
+- [x] Add basic health and version endpoints with tests
 
 ### OpenAI-Agents advisor (MVP)
 - [ ] Integrate `openai-agents` SDK (local); enable MCP, handoff, and `as_tool` usage
@@ -485,6 +485,14 @@ Milestone 1 (implement now)
 - pyproject: Drop argparse dependency (done)
 - Add DeprecationWarnings to root shims (done)
 - Append this plan to TODO.md under a new section
+
+## Packaging & Distribution (next)
+
+- [x] Implement PyInstaller-based CLI executable build for Linux/macOS/Windows
+- [x] Add Makefile targets: build-exe, build-exe-all, dist-clean
+- [x] Add CI matrix job to build and upload artifacts on release tags
+- [x] Add smoke tests for artifacts (chatty --help, chatty list)
+- [x] Document standalone install in README and developer docs
 
 ## GUI Mode Direction
 

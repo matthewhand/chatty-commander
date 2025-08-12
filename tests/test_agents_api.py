@@ -10,7 +10,10 @@ def test_agents_blueprints_crud_and_team():
     client = TestClient(app)
 
     # Create from NL description
-    r = client.post('/api/v1/agents/blueprints', json={"description": "Expert analyst who summarizes URLs and hands off to coder"})
+    r = client.post(
+        '/api/v1/agents/blueprints',
+        json={"description": "Expert analyst who summarizes URLs and hands off to coder"},
+    )
     assert r.status_code == 200
     bp1 = r.json()
     aid = bp1['id']
@@ -27,7 +30,7 @@ def test_agents_blueprints_crud_and_team():
         "persona_prompt": "You are an analyst",
         "capabilities": ["summarize", "route"],
         "team_role": "analyst",
-        "handoff_triggers": ["needs_coding"]
+        "handoff_triggers": ["needs_coding"],
     }
     r3 = client.put(f'/api/v1/agents/blueprints/{aid}', json=payload)
     assert r3.status_code == 200
@@ -40,10 +43,15 @@ def test_agents_blueprints_crud_and_team():
 
     # Handoff
     # Create a second agent
-    r5 = client.post('/api/v1/agents/blueprints', json={"description": "Coder who implements tasks"})
+    r5 = client.post(
+        '/api/v1/agents/blueprints', json={"description": "Coder who implements tasks"}
+    )
     assert r5.status_code == 200
     bid = r5.json()['id']
-    r6 = client.post('/api/v1/agents/team/handoff', json={"from_agent_id": aid, "to_agent_id": bid, "reason": "needs_coding"})
+    r6 = client.post(
+        '/api/v1/agents/team/handoff',
+        json={"from_agent_id": aid, "to_agent_id": bid, "reason": "needs_coding"},
+    )
     assert r6.status_code == 200
 
     # Delete

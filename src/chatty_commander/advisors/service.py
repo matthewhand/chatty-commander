@@ -5,16 +5,17 @@ Advisor service for handling AI advisor interactions.
 from dataclasses import dataclass
 from typing import Any
 
+from ..avatars.thinking_state import get_thinking_manager
 from .context import ContextManager, PlatformType
 from .memory import MemoryStore
 from .prompting import Persona, build_provider_prompt
 from .providers import build_provider_safe
-from ..avatars.thinking_state import get_thinking_manager, ThinkingState
 
 
 @dataclass
 class AdvisorMessage:
     """Incoming message for advisor processing."""
+
     platform: str
     channel: str
     user: str
@@ -26,6 +27,7 @@ class AdvisorMessage:
 @dataclass
 class AdvisorReply:
     """Response from advisor processing."""
+
     reply: str
     context_key: str
     persona_id: str
@@ -51,7 +53,7 @@ class AdvisorsService:
         self.memory = MemoryStore(
             max_items_per_context=mem_cfg.get('max_items_per_context', 100),
             persist=mem_cfg.get('persistence_enabled', mem_cfg.get('persist', False)),
-            persist_path=mem_cfg.get('persistence_path') or mem_cfg.get('persist_path')
+            persist_path=mem_cfg.get('persistence_path') or mem_cfg.get('persist_path'),
         )
         self.provider = build_provider_safe(base_cfg.get('providers', {}))
         self.context_manager = ContextManager(base_cfg.get('context', {}))
@@ -83,7 +85,7 @@ class AdvisorsService:
             channel=message.channel,
             user_id=message.user,
             username=message.username,
-            **(message.metadata or {})
+            **(message.metadata or {}),
         )
 
         # Set thinking state for avatar
@@ -95,7 +97,11 @@ class AdvisorsService:
         try:
             # Build prompt using context-aware persona and recent memory
             memory_items = self.memory.get(platform.value, message.channel, message.user)
-            history_text = "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items]) if memory_items else ""
+            history_text = (
+                "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items])
+                if memory_items
+                else ""
+            )
             combined_user_text = f"{history_text}\n{message.text}" if history_text else message.text
 
             persona = Persona(name=context.persona_id, system=context.system_prompt)
@@ -116,6 +122,17 @@ class AdvisorsService:
             # Generate real LLM response
             try:
                 response = self.provider.generate(prompt)
+                # Lightweight directive handling for tool-like replies
+                if isinstance(response, str) and response.startswith("SWITCH_MODE:"):
+                    _, target = response.split(":", 1)
+                    # Allow advisors to request a mode change via response directive
+                    from ..app.state_manager import StateManager  # local import to avoid cycles
+
+                    try:
+                        sm = StateManager()
+                        sm.change_state(target)
+                    except Exception:
+                        pass
             except Exception as e:
                 # Fallback to echo if LLM fails
                 response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text} (LLM error: {str(e)})"
@@ -132,7 +149,7 @@ class AdvisorsService:
                 context_key=context.identity.context_key,
                 persona_id=context.persona_id,
                 model=self.provider.model,
-                api_mode=self.provider.api_mode
+                api_mode=self.provider.api_mode,
             )
 
             # Return to idle state
@@ -156,7 +173,7 @@ class AdvisorsService:
             context_key="summarize",
             persona_id="analyst",
             model=self.provider.model,
-            api_mode=self.provider.api_mode
+            api_mode=self.provider.api_mode,
         )
 
     def switch_persona(self, context_key: str, persona_id: str) -> bool:
@@ -170,5 +187,3 @@ class AdvisorsService:
     def clear_context(self, context_key: str) -> bool:
         """Clear a specific context."""
         return self.context_manager.clear_context(context_key)
-
-

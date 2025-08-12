@@ -75,7 +75,9 @@ class TestPerformanceBenchmarks:
     @pytest.fixture
     def web_server(self, mock_managers):
         """Create WebModeServer for performance testing."""
-        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+        with patch(
+            'chatty_commander.advisors.providers.build_provider_safe'
+        ) as mock_build_provider:
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
             mock_provider.api_mode = "completion"

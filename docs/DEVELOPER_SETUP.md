@@ -11,6 +11,13 @@
 3. Set up pre-commit: `uv run pre-commit install`
 
 ## Development
+
+### Packaging (Standalone CLI)
+- Build: `uv run pyinstaller --clean -y packaging/chatty_cli.spec`
+- Output binary: `dist/chatty` (or `dist/chatty.exe` on Windows)
+- Smoke test: `./dist/chatty --help` and `./dist/chatty list`
+
+
 - Run tests: `uv run pytest`
 - Run linter: `uv run ruff check .`
 - Build docs: `uv run python generate_api_docs.py`

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import Annotated, Any
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel, Field
 
 router = APIRouter()
@@ -42,7 +42,7 @@ _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
 # Placeholder natural language parser (stub for LLM)
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
     # Very naive heuristic parser for now
-    lines = [l.strip() for l in (text or '').splitlines() if l.strip()]
+    lines = [line.strip() for line in (text or '').splitlines() if line.strip()]
     name = lines[0][:48] if lines else 'Agent'
     description = text.strip()[:256]
     persona_prompt = text.strip()
@@ -61,29 +61,28 @@ class NLBlueprintRequest(BaseModel):
 
 
 @router.post('/api/v1/agents/blueprints', response_model=AgentBlueprintResponse)
-async def create_blueprint(bp: AgentBlueprintModel | None = None, nl: NLBlueprintRequest | None = None):
+async def create_blueprint(payload: Annotated[dict[str, Any], Body(...)]) -> AgentBlueprintResponse:
     try:
-        if nl and nl.description:
-            model = parse_blueprint_from_text(nl.description)
-        elif bp:
-            model = bp
+        # If a simple NL description payload
+        if isinstance(payload, dict) and 'description' in payload and len(payload.keys()) == 1:
+            model = parse_blueprint_from_text(str(payload.get('description', '')))
         else:
-            raise HTTPException(status_code=400, detail='Provide blueprint or natural language description')
+            # Try to parse as structured blueprint
+            model = AgentBlueprintModel(**payload)
         uid = str(uuid4())
         ent = AgentBlueprint(id=uid, **model.model_dump())
         _STORE[uid] = ent
         if ent.team_role:
             _TEAM.setdefault(ent.team_role, []).append(uid)
         return AgentBlueprintResponse(id=uid, **model.model_dump())
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get('/api/v1/agents/blueprints', response_model=list[AgentBlueprintResponse])
 async def list_blueprints():
-    return [AgentBlueprintResponse(id=k, **asdict(v) | {"id": k}) for k, v in _STORE.items()]
+    # Each AgentBlueprint already contains its id; avoid passing 'id' twice
+    return [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
 
 
 @router.put('/api/v1/agents/blueprints/{agent_id}', response_model=AgentBlueprintResponse)
@@ -116,7 +115,7 @@ class TeamInfo(BaseModel):
 
 @router.get('/api/v1/agents/team', response_model=TeamInfo)
 async def get_team():
-    agents = [AgentBlueprintResponse(id=k, **asdict(v) | {"id": k}) for k, v in _STORE.items()]
+    agents = [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
     return TeamInfo(roles={k: list(v) for k, v in _TEAM.items()}, agents=agents)
 
 

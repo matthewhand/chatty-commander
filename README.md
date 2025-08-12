@@ -1,4 +1,19 @@
-# Welcome to ChattyCommander
+# ChattyCommander
+
+ChattyCommander is a multi-mode assistant that turns voice and typed commands into useful actions across your system. It ships with:
+
+- CLI mode for power users with discoverable commands and help examples
+- Web mode (FastAPI) with REST + WebSocket APIs, Swagger UI, and metrics
+- Optional GUI/avatar UI for expressive state and animation syncing
+
+Core capabilities:
+- Trigger actions (keypress, URL) mapped to model_actions
+- Track agent thinking/responding states and broadcast to avatar/WebSocket clients
+- Expose system status, config, and health endpoints for automation
+- Provide observability via JSON and Prometheus metrics
+- Package as a standalone CLI binary with PyInstaller
+
+
 
 ## Introduction
 
@@ -158,6 +173,103 @@ The GUI is optional - you can continue using the CLI-only approach if preferred.
   uv run python main.py --orchestrate --enable-text
   ```
 
+## Quickstart
+
+### CLI
+
+- List available commands
+```
+uv run python -m src.chatty_commander.cli.cli list
+```
+
+- Execute a command in dry-run mode (no side effects)
+```
+uv run python -m src.chatty_commander.cli.cli exec hello --dry-run
+```
+
+- Start interactive shell
+```
+uv run python -m src.chatty_commander.cli.cli
+```
+
+### Web mode (FastAPI)
+
+- Start backend (dev, no auth):
+```
+uv run python -m src.chatty_commander.main --web --no-auth --port 8100
+```
+
+- Swagger UI: http://localhost:8100/docs
+
+- Health/status/version:
+```
+curl -s http://localhost:8100/api/v1/health | jq
+curl -s http://localhost:8100/api/v1/status | jq
+curl -s http://localhost:8100/api/v1/version | jq
+```
+
+- Get/Put config and change state:
+```
+curl -s http://localhost:8100/api/v1/config | jq
+curl -s -X PUT http://localhost:8100/api/v1/config -H 'Content-Type: application/json' -d '{"foo":{"bar":1}}'
+curl -s -X POST http://localhost:8100/api/v1/state -H 'Content-Type: application/json' -d '{"state":"computer"}' | jq
+```
+
+- Metrics:
+```
+curl -s http://localhost:8100/metrics/json | jq
+curl -s http://localhost:8100/metrics/prom | head -n 20
+```
+
+### WebUI
+
+See docs/WEBUI_CONNECTIVITY.md for running the React frontend against the Python backend.
+
+## Example workflows
+
+1) Configure and trigger a keypress
+- Add a `commands` entry mapping a friendly name to a keybinding
+- Use CLI to list and dry-run
+```
+uv run python -m src.chatty_commander.cli.cli list
+uv run python -m src.chatty_commander.cli.cli exec hello --dry-run
+```
+
+2) Update config and switch states via Web API
+```
+curl -s -X PUT http://localhost:8100/api/v1/config -H 'Content-Type: application/json' -d '{"foo":{"bar":1}}'
+curl -s -X POST http://localhost:8100/api/v1/state -H 'Content-Type: application/json' -d '{"state":"computer"}' | jq
+```
+
+3) Observe metrics
+```
+curl -s http://localhost:8100/metrics/json | jq
+```
+
+4) Agents: create, list, update, delete
+```
+# Create
+curl -s -X POST http://localhost:8100/api/v1/agents/blueprints -H 'Content-Type: application/json' -d '{"description":"Summarizer agent"}' | jq
+# List
+curl -s http://localhost:8100/api/v1/agents/blueprints | jq
+# Update (replace <ID>)
+curl -s -X PUT http://localhost:8100/api/v1/agents/blueprints/<ID> -H 'Content-Type: application/json' -d '{"name":"SummarizerX","description":"d","persona_prompt":"p","capabilities":[],"team_role":null,"handoff_triggers":[]}' | jq
+# Delete
+curl -s -X DELETE http://localhost:8100/api/v1/agents/blueprints/<ID> | jq
+```
+
+Run the consolidated smoke script: `bash scripts/e2e_smoke.sh`
+```
+curl -s http://localhost:8100/metrics/json | jq
+```
+
+## Architecture overview
+
+- FastAPI app with modular routers: core REST, avatar APIs, WS, agents
+- Thinking state manager broadcasts animations to avatar clients
+- Optional observability module with middleware + metrics router
+- CLI wraps configuration and command execution (discoverable help/examples)
+
 ### Advisors usage examples
 
 - Persona tag (config): set `"personas": { "default": "philosophy_advisor" }`.
@@ -237,6 +349,32 @@ Enjoy using ChattyCommander! If you have questions, feel free to open an issue.
 
 
 ## Avatar GUI and Settings
+
+## Standalone CLI (PyInstaller)
+
+You can build a standalone binary for your platform using PyInstaller.
+
+- Build locally:
+  - `uv run pyinstaller --clean -y packaging/chatty_cli.spec`
+  - Result: `dist/chatty` (Linux/macOS) or `dist/chatty.exe` (Windows)
+- Run smoke tests on the binary:
+  - `./dist/chatty --help`
+  - `./dist/chatty list`
+
+In CI, release tag builds create artifacts for Linux/macOS/Windows (see `.github/workflows/ci.yml`).
+
+
+
+### API Endpoints (New)
+
+- GET `/api/v1/version` -> `{ version: string, git_sha: string | null }`
+- GET `/api/v1/metrics` (JSON) via `/metrics/json` and Prometheus text via `/metrics/prom`
+
+### Development Tips
+
+- No-auth mode: `--no-auth` enables docs and permissive CORS for local development.
+- WebUI connectivity: see `docs/WEBUI_CONNECTIVITY.md`.
+
 
 - See docs/AVATAR_GUI.md for protocol, discovery, settings API, and local dev tips.
 - Quick start:

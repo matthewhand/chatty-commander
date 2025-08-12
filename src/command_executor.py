@@ -16,10 +16,12 @@ except Exception:  # noqa: BLE001
 
 __all__ = ["pyautogui", "requests"]
 
+
 # Lazily load CommandExecutor to avoid circular import during app module init
 def __getattr__(name: str):  # PEP 562
     if name == "CommandExecutor":
         import importlib
+
         m = importlib.import_module("chatty_commander.app.command_executor")
         return getattr(m, name)
     raise AttributeError(name)

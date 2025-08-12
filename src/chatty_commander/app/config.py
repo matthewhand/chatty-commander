@@ -5,6 +5,8 @@ class Config:
         # Load configuration from JSON file (with fallbacks and env overrides)
         self.config_file = config_file
         self.config_data = self._load_config()
+        # Expose raw config under .config for web routers expecting a dict
+        self.config: dict = self.config_data
 
         # Path configurations for model directories
         model_paths = self.config_data.get("model_paths", {})
@@ -36,11 +38,37 @@ class Config:
         self.state_models = self.config_data.get(
             "state_models",
             {
-                "idle": ["hey_chat_tee", "hey_khum_puter"],
-                "computer": ["oh_kay_screenshot"],
-                "chatty": ["wax_poetic"],
+                "idle": ["hey_chat_tee", "hey_khum_puter", "okay_stop"],
+                "computer": ["oh_kay_screenshot", "okay_stop"],
+                "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"],
             },
         )
+
+        # Flexible modes configuration (optional)
+        # Example structure:
+        # modes: {
+        #   "idle": {"wakewords": ["hey_chat_tee", "hey_khum_puter"], "persona": "default", "tools": ["fs","browser"]},
+        #   "computer": {"wakewords": ["oh_kay_screenshot"], "persona": null},
+        #   "chatty": {"wakewords": [], "persona": "chatty"}
+        # }
+        self.modes: dict = self.config_data.get("modes", {})
+
+        # Build wakeword -> target mode map from modes, with legacy fallbacks
+        self.wakeword_state_map: dict[str, str] = {}
+        for mode_name, cfg in self.modes.items():
+            for ww in (cfg or {}).get("wakewords", []) or []:
+                self.wakeword_state_map[str(ww)] = mode_name
+
+        # Legacy default fallbacks if not otherwise specified
+        legacy_map = {
+            "hey_chat_tee": "chatty",
+            "hey_khum_puter": "computer",
+            "okay_stop": "idle",
+            "thanks_chat_tee": "idle",
+            "that_ill_do": "idle",
+        }
+        for k, v in legacy_map.items():
+            self.wakeword_state_map.setdefault(k, v)
 
         # Audio settings
         audio_settings = self.config_data.get("audio_settings", {})
@@ -70,13 +98,24 @@ class Config:
         advisors_cfg = self.config_data.get("advisors", {})
         provider_cfg = advisors_cfg.get("provider", {})
         # Environment overrides
-        provider_base_url = os.environ.get("ADVISORS_PROVIDER_BASE_URL", provider_cfg.get("base_url", ""))
-        provider_api_key = os.environ.get("ADVISORS_PROVIDER_API_KEY", provider_cfg.get("api_key", ""))
+        provider_base_url = os.environ.get(
+            "ADVISORS_PROVIDER_BASE_URL", provider_cfg.get("base_url", "")
+        )
+        provider_api_key = os.environ.get(
+            "ADVISORS_PROVIDER_API_KEY", provider_cfg.get("api_key", "")
+        )
 
         self.advisors = {
             "enabled": advisors_cfg.get("enabled", False),
             "llm_api_mode": advisors_cfg.get("llm_api_mode", "completion"),
             "model": advisors_cfg.get("model", "gpt-oss20b"),
+            "default_persona": advisors_cfg.get("default_persona", "chatty"),
+            "personas": advisors_cfg.get(
+                "personas",
+                {
+                    "chatty": "You are Chatty, a friendly multimodal avatar with 3D talking head, continuous TTS/STT. Be concise and engaging."
+                },
+            ),
             "provider": {
                 "base_url": provider_base_url,
                 "api_key": provider_api_key,
@@ -91,16 +130,20 @@ class Config:
             },
             "memory": {
                 "persistence_enabled": bool(
-                    os.environ.get("ADVISORS_MEMORY_PERSIST", str(advisors_cfg.get("memory", {}).get("persistence_enabled", False))).lower()
+                    os.environ.get(
+                        "ADVISORS_MEMORY_PERSIST",
+                        str(advisors_cfg.get("memory", {}).get("persistence_enabled", False)),
+                    ).lower()
                     in ["1", "true", "yes"]
                 ),
                 "persistence_path": os.environ.get(
                     "ADVISORS_MEMORY_PATH",
-                    advisors_cfg.get("memory", {}).get("persistence_path", "data/advisors_memory.jsonl"),
+                    advisors_cfg.get("memory", {}).get(
+                        "persistence_path", "data/advisors_memory.jsonl"
+                    ),
                 ),
             },
             "platforms": advisors_cfg.get("platforms", ["discord", "slack"]),
-            "personas": advisors_cfg.get("personas", {"default": "philosophy_advisor"}),
             "features": advisors_cfg.get(
                 "features",
                 {"browser_analyst": True, "avatar_talkinghead": False},

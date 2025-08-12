@@ -23,9 +23,9 @@ class DummyConfig:
             "context": {
                 "personas": {
                     "general": {"system_prompt": "You are helpful."},
-                    "discord_default": {"system_prompt": "You are a Discord bot."}
+                    "discord_default": {"system_prompt": "You are a Discord bot."},
                 },
-                "default_persona": "general"
+                "default_persona": "general",
             },
             "bridge": {"token": "secret", "url": "http://localhost:3001"},
         }
@@ -68,5 +68,3 @@ def test_bridge_event_ok_with_secret():
     data = resp.json()
     assert data["ok"] is True
     assert data["reply"]["text"] is not None
-
-

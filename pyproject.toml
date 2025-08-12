@@ -29,6 +29,7 @@ dependencies = [
 
 [project.scripts]
 chatty-commander = "chatty_commander.cli.cli:cli_main"
+chatty = "chatty_commander.cli.cli:cli_main"
 
 [dependency-groups]
 dev = [

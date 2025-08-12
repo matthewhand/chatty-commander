@@ -24,11 +24,12 @@ class DummyConfig(Config):
             "context": {
                 "personas": {
                     "general": {"system_prompt": "You are helpful."},
-                    "discord_default": {"system_prompt": "You are a Discord bot."}
+                    "discord_default": {"system_prompt": "You are a Discord bot."},
                 },
-                "default_persona": "general"
-            }
+                "default_persona": "general",
+            },
         }
+
 
 def build_server(cfg):
     with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
@@ -80,5 +81,3 @@ def test_advisors_message_endpoint_summarize():
     assert resp.status_code == 200
     data = resp.json()
     assert data["reply"] is not None
-
-
