@@ -16,6 +16,7 @@ from types import ModuleType
 ALIASES: dict[str, str] = {
     "config": "chatty_commander.app.config",
     "model_manager": "chatty_commander.app.model_manager",
+    "state_manager": "chatty_commander.app.state_manager",
     "web_mode": "chatty_commander.web.web_mode",
 }
 
