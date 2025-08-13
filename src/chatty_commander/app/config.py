@@ -47,6 +47,8 @@ class Config:
         # Apply environment variable overrides
         self._apply_env_overrides()
 
+        # Apply web server configuration
+        self._apply_web_server_config()
         # Load general settings with possible environment overrides
         self._load_general_settings()
 
@@ -57,6 +59,17 @@ class Config:
         if "HOME_ASSISTANT_ENDPOINT" in os.environ:
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
 
+    def _apply_web_server_config(self) -> None:
+        """Expose web server settings with defaults."""
+        web_cfg = self.config_data.get("web_server", {})
+        host = web_cfg.get("host", "0.0.0.0")
+        port = web_cfg.get("port", 8100)
+        auth = web_cfg.get("auth_enabled", True)
+        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
+        self.web_host = host
+        self.web_port = port
+        self.web_auth_enabled = auth
+        
     @staticmethod
     def _get_int_env(var_name: str, fallback: int) -> int:
         """Return an integer from the environment or the provided fallback."""
@@ -76,6 +89,10 @@ class Config:
         if config_data is not None:
             self.config_data.update(config_data)
             self.config = self.config_data
+
+        # Persist web server configuration
+        self._apply_web_server_config()
+        self.config_data["web_server"] = self.web_server
 
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:
