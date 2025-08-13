@@ -1,7 +1,6 @@
 from itertools import product
 
 import pytest
-
 from chatty_commander.app.config import Config
 
 

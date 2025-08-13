@@ -1,8 +1,10 @@
 import logging
+
 import pytest
+from chatty_commander.app.model_manager import load_model
 
 from src.chatty_commander.model_manager import ModelManager
-from chatty_commander.app.model_manager import load_model
+
 
 class DummyError(Exception):
     pass

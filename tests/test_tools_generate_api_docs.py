@@ -16,7 +16,7 @@ def _run_generator_in(tmp_path: Path) -> Path:
     os.chdir(tmp_path)
     try:
         Path("docs").mkdir(parents=True, exist_ok=True)
-        mod_name = "src.chatty_commander.tools.generate_api_docs"
+        mod_name = "chatty_commander.tools.generate_api_docs"
         spec = importlib.util.find_spec(mod_name)
         assert spec is not None, f"Module {mod_name} not found"
         try:

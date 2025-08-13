@@ -7,12 +7,14 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 ## Completed Milestones ✅
 
 ### 1. Core Architecture (Completed)
+
 - **Unified Mode System**: CLI, Web, GUI, Shell modes with shared business logic
 - **ModeOrchestrator**: Central component managing all input adapters and optional features
 - **Shared Components**: Config, StateManager, ModelManager, CommandExecutor
 - **Documentation**: Comprehensive architecture and modes documentation
 
 ### 2. AI Advisor System (Completed)
+
 - **Real LLM Integration**: OpenAI SDK with completion/responses API modes
 - **Context-Aware Memory**: Persistent identity tracking across platforms
 - **Persona System**: Platform-specific personas (Discord/Slack/Web/CLI/GUI)
@@ -21,6 +23,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 - **Memory Persistence**: JSONL file storage for conversation history
 
 ### 3. Web API & Bridge System (Completed)
+
 - **FastAPI Backend**: REST endpoints for advisors, context, memory management
 - **WebSocket Support**: Real-time communication for UI updates
 - **Bridge API**: External Node.js integration for Discord/Slack
@@ -28,6 +31,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 - **CORS Support**: Cross-origin requests for frontend integration
 
 ### 4. Node.js Bridge (Completed)
+
 - **Express Server**: HTTP/WebSocket server for platform integration
 - **Discord.js Integration**: Bot with slash commands and message handling
 - **Slack Bolt SDK**: App with event subscriptions and message routing
@@ -36,6 +40,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 - **Deployment Ready**: Docker support with environment configuration
 
 ### 5. Production Deployment (Completed)
+
 - **Docker Containerization**: Multi-stage builds with Python 3.11-slim
 - **Kubernetes Manifests**: Complete production deployment with ConfigMap, Secret, Deployment, Service, Ingress
 - **Persistent Storage**: PVC for data and logs with 10Gi/5Gi allocation
@@ -44,6 +49,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 - **Automated Deployment**: Script with prerequisites checking and health validation
 
 ### 6. Real LLM Provider Integration (Completed)
+
 - **OpenAI SDK**: Completion and responses API modes
 - **Local Model Support**: GPT-OSS20B via custom base URLs
 - **Streaming Responses**: Real-time chat capabilities
@@ -55,6 +61,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 ## Current Status
 
 ### System Capabilities
+
 - ✅ **Multi-Modal Input**: Voice, web, GUI, text interfaces
 - ✅ **Real AI Responses**: LLM integration with fallback mechanisms
 - ✅ **Context Awareness**: Persistent identity and memory across platforms
@@ -63,6 +70,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 - ✅ **Cross-Platform**: Windows, macOS, Linux support
 
 ### Performance Metrics
+
 - **Response Time**: < 2s for LLM queries with fallback
 - **Memory Usage**: 256Mi-512Mi per container
 - **CPU Usage**: 250m-500m per container
@@ -72,14 +80,17 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 ## Next Priority: Advanced Voice Processing
 
 ### OpenWakeWord Integration
+
 **Goal**: Voice wake word detection for hands-free advisor interactions
 
 **Acceptance Criteria**:
+
 - Voice wake word triggers advisor interactions
 - Works with CLI mode and advisor system
 - Configurable wake word sensitivity and recognition
 
 **Implementation Plan**:
+
 1. **Dependency Integration**
    - Add OpenWakeWord to requirements
    - Configure audio input/output devices
@@ -96,6 +107,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
    - Optimize for low-latency response
 
 **Technical Requirements**:
+
 - Audio device access and configuration
 - Wake word model training and deployment
 - Real-time audio processing pipeline
@@ -104,30 +116,35 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 ## Future Roadmap
 
 ### Phase 1: Voice Enhancement (Next 2 weeks)
+
 - [ ] OpenWakeWord integration
 - [ ] Voice command processing
 - [ ] Speech-to-text optimization
 - [ ] Voice activity detection
 
 ### Phase 2: Visual Commands (Next 4 weeks)
+
 - [ ] Computer vision integration
 - [ ] Gesture recognition algorithms
 - [ ] Camera input processing
 - [ ] Visual feedback system
 
 ### Phase 3: Avatar System (Next 6 weeks)
+
 - [ ] TalkingHead integration
 - [ ] 3D avatar rendering
 - [ ] Lip-sync implementation
 - [ ] Performance optimization
 
 ### Phase 4: Platform Expansion (Next 8 weeks)
+
 - [ ] Telegram integration
 - [ ] WhatsApp Business API
 - [ ] Microsoft Teams integration
 - [ ] Custom webhook support
 
 ### Phase 5: Advanced Features (Next 12 weeks)
+
 - [ ] Multi-agent collaboration
 - [ ] Advanced tool calling
 - [ ] MCP protocol support
@@ -136,6 +153,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 ## Technical Architecture
 
 ### Current Stack
+
 ```
 Frontend: React + WebSocket
 Backend: FastAPI + Python 3.11
@@ -147,8 +165,9 @@ Deployment: Docker + Kubernetes
 ```
 
 ### Data Flow
+
 ```
-Input (Voice/Web/GUI/Text) 
+Input (Voice/Web/GUI/Text)
     ↓
 Adapter (Mode-specific)
     ↓
@@ -164,6 +183,7 @@ Output (Actions + Responses)
 ```
 
 ### Security Considerations
+
 - ✅ Non-root container execution
 - ✅ Secret management for API keys
 - ✅ TLS/SSL encryption
@@ -174,18 +194,21 @@ Output (Actions + Responses)
 ## Development Guidelines
 
 ### Code Quality
+
 - **Test Coverage**: >85% for all new features
 - **Documentation**: Comprehensive docstrings and README updates
 - **Type Hints**: Full type annotation for all functions
 - **Error Handling**: Graceful degradation with informative messages
 
 ### Deployment Process
+
 1. **Local Testing**: `docker-compose up` for development
 2. **CI/CD**: Automated testing and deployment
 3. **Production**: Kubernetes deployment with health checks
 4. **Monitoring**: Logs, metrics, and alerting
 
 ### Feature Development
+
 1. **Plan**: Update TODO.md with acceptance criteria
 2. **Implement**: Code with comprehensive tests
 3. **Test**: Verify functionality and performance
@@ -195,18 +218,21 @@ Output (Actions + Responses)
 ## Success Metrics
 
 ### Technical Metrics
+
 - **Response Time**: < 2s for advisor interactions
 - **Uptime**: >99.9% availability
 - **Error Rate**: <1% for API calls
 - **Test Coverage**: >85% for all modules
 
 ### User Experience Metrics
+
 - **Voice Recognition**: >95% accuracy for wake word
 - **Context Retention**: Persistent across sessions
 - **Platform Support**: Discord, Slack, Web, CLI, GUI
 - **Scalability**: Support for 1000+ concurrent users
 
 ### Business Metrics
+
 - **Deployment Success**: Automated deployment with zero downtime
 - **Cost Efficiency**: Optimized resource usage
 - **Maintainability**: Clear documentation and modular architecture

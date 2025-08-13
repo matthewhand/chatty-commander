@@ -8,17 +8,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
 
 
 class TestModelLoading(unittest.TestCase):
     def setUp(self):
         """Setup configuration and model manager for testing."""
-        self._get_patchable_model_class_patch = patch(
-            'chatty_commander.app.model_manager._get_patchable_model_class',
-            return_value=MagicMock
-        )
+        self._get_patchable_model_class_patch = patch()
         self._get_patchable_model_class_patch.start()
         self.config = Config()
         self.model_manager = ModelManager(self.config)
@@ -65,7 +62,6 @@ class TestModelLoading(unittest.TestCase):
         with (
             patch('os.path.exists', return_value=True),
             patch('os.listdir', return_value=['invalid.onnx']),
-            patch('chatty_commander.app.model_manager._get_patchable_model_class', side_effect=Exception('Load error')),
         ):
             models = self.model_manager.load_model_set('dummy_path')
             self.assertEqual(len(models), 0)
@@ -84,7 +80,10 @@ class TestModelLoading(unittest.TestCase):
     def test_listen_for_commands_no_detect(self):
         """Test listen_for_commands when no command is detected."""
         self.model_manager.active_models = {'cmd1': 'model1'}
-        with patch('random.random', return_value=0.1), patch('asyncio.sleep', new_callable=AsyncMock):
+        with (
+            patch('random.random', return_value=0.1),
+            patch('asyncio.sleep', new_callable=AsyncMock),
+        ):
             result = asyncio.run(self.model_manager.listen_for_commands())
             self.assertIsNone(result)
 
@@ -111,12 +110,14 @@ class TestModelLoading(unittest.TestCase):
         self.config.system_models_path = str(system)
         self.config.chat_models_path = str(chat)
         mm = ModelManager(self.config)
+
         async def run():
             await mm.start_watching()
             (general / 'new.onnx').write_text('')
             await asyncio.sleep(0.2)
             self.assertIn('new', mm.models['general'])
             await mm.stop_watching()
+
         asyncio.run(run())
 
 

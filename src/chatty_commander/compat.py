@@ -4,12 +4,13 @@ This module provides a central alias table that maps old module names to their
 new locations under :mod:`chatty_commander`.  Importers should rely on
 :func:`load` or :func:`expose` rather than accessing modules directly.
 """
+
 from __future__ import annotations
 
 import importlib
 import warnings
+from collections.abc import Iterable
 from types import ModuleType
-from typing import Dict, Iterable
 
 # Map legacy module names to their modern implementation paths.
 ALIASES: Dict[str, str] = {
@@ -48,5 +49,6 @@ def expose(namespace: dict, name: str) -> ModuleType:
         namespace[attr] = getattr(module, attr)
     namespace["__all__"] = list(public)
     return module
+
 
 __all__ = ["ALIASES", "load", "expose"]
