@@ -3,7 +3,13 @@
 Exposes ``pyautogui`` and ``requests`` symbols for tests to patch before the
 real implementation is imported.
 """
+
+from typing import TYPE_CHECKING
+
 from chatty_commander.compat import load
+
+if TYPE_CHECKING:  # pragma: no cover
+    from chatty_commander.app.command_executor import CommandExecutor
 
 try:  # pragma: no cover - best effort import
     import pyautogui  # type: ignore

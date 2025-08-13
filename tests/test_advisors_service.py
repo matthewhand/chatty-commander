@@ -12,10 +12,10 @@ class DummyConfig:
         "context": {
             "personas": {
                 "general": {"system_prompt": "You are helpful."},
-                "discord_default": {"system_prompt": "You are a Discord bot."}
+                "discord_default": {"system_prompt": "You are a Discord bot."},
             },
-            "default_persona": "general"
-        }
+            "default_persona": "general",
+        },
     }
 
 
@@ -38,5 +38,3 @@ def test_advisors_service_disabled_returns_notice():
     with pytest.raises(RuntimeError) as exc:
         _ = svc.handle_message(msg)
     assert "not enabled" in str(exc.value)
-
-

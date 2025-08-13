@@ -23,9 +23,9 @@ class DummyConfig:
             "context": {
                 "personas": {
                     "general": {"system_prompt": "You are helpful."},
-                    "discord_default": {"system_prompt": "You are a Discord bot."}
+                    "discord_default": {"system_prompt": "You are a Discord bot."},
                 },
-                "default_persona": "general"
+                "default_persona": "general",
             },
             "features": {"browser_analyst": True},
         }
@@ -41,7 +41,11 @@ def test_advisors_memory_flow():
         # Mock memory methods
         mock_memory.get.return_value = [
             MagicMock(role="user", content="hello", timestamp="2023-01-01T00:00:00"),
-            MagicMock(role="assistant", content="Hello! How can I help you?", timestamp="2023-01-01T00:00:01")
+            MagicMock(
+                role="assistant",
+                content="Hello! How can I help you?",
+                timestamp="2023-01-01T00:00:01",
+            ),
         ]
         mock_memory.clear.return_value = 2
 
@@ -84,7 +88,9 @@ def test_advisors_memory_flow():
         )
 
         # Read memory
-        resp = client.get("/api/v1/advisors/memory", params={"platform": "discord", "channel": "c1", "user": "u1"})
+        resp = client.get(
+            "/api/v1/advisors/memory", params={"platform": "discord", "channel": "c1", "user": "u1"}
+        )
         assert resp.status_code == 200
         items = resp.json()
         # Expect 4 items: user+assistant for each message
@@ -93,7 +99,8 @@ def test_advisors_memory_flow():
         assert any(i["role"] == "user" for i in items)
 
         # Clear memory
-        resp = client.delete("/api/v1/advisors/memory", params={"platform": "discord", "channel": "c1", "user": "u1"})
+        resp = client.delete(
+            "/api/v1/advisors/memory", params={"platform": "discord", "channel": "c1", "user": "u1"}
+        )
         assert resp.status_code == 200
         assert resp.json()["cleared"] >= 1
-

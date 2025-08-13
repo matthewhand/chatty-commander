@@ -7,5 +7,3 @@ def test_summarize_url_returns_deterministic_result():
     assert result.title == "Snapshot Title"
     assert result.summary.startswith("Snapshot")
     assert result.url.endswith("/test")
-
-

@@ -10,13 +10,12 @@ which improves discoverability and validation.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
 import json
 import logging
 import os
 import subprocess
-from typing import Any, Dict, List
-
+from dataclasses import asdict, dataclass, field
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Dataclass models for individual configuration sections
@@ -101,9 +100,9 @@ class AdvisorsConfig:
     provider: AdvisorsProvider = field(default_factory=AdvisorsProvider)
     bridge: AdvisorsBridge = field(default_factory=AdvisorsBridge)
     memory: AdvisorsMemory = field(default_factory=AdvisorsMemory)
-    platforms: List[str] = field(default_factory=lambda: ["discord", "slack"])
-    personas: Dict[str, str] = field(default_factory=lambda: {"default": "philosophy_advisor"})
-    features: Dict[str, bool] = field(
+    platforms: list[str] = field(default_factory=lambda: ["discord", "slack"])
+    personas: dict[str, str] = field(default_factory=lambda: {"default": "philosophy_advisor"})
+    features: dict[str, bool] = field(
         default_factory=lambda: {"browser_analyst": True, "avatar_talkinghead": False}
     )
 
@@ -123,8 +122,8 @@ class Config:
 
     model_paths: ModelPaths = field(default_factory=ModelPaths)
     api_endpoints: ApiEndpoints = field(default_factory=ApiEndpoints)
-    model_actions: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    state_models: Dict[str, List[str]] = field(
+    model_actions: dict[str, dict[str, str]] = field(default_factory=dict)
+    state_models: dict[str, list[str]] = field(
         default_factory=lambda: {
             "idle": ["hey_chat_tee", "hey_khum_puter"],
             "computer": ["oh_kay_screenshot"],
@@ -133,12 +132,12 @@ class Config:
     )
     audio_settings: AudioSettings = field(default_factory=AudioSettings)
     general_settings: GeneralSettings = field(default_factory=GeneralSettings)
-    keybindings: Dict[str, str] = field(default_factory=dict)
-    commands: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    command_sequences: Dict[str, Any] = field(default_factory=dict)
+    keybindings: dict[str, str] = field(default_factory=dict)
+    commands: dict[str, dict[str, str]] = field(default_factory=dict)
+    command_sequences: dict[str, Any] = field(default_factory=dict)
     advisors: AdvisorsConfig = field(default_factory=AdvisorsConfig)
-    listen_for: Dict[str, str] = field(default_factory=dict)
-    modes: Dict[str, str] = field(default_factory=dict)
+    listen_for: dict[str, str] = field(default_factory=dict)
+    modes: dict[str, str] = field(default_factory=dict)
     config_file: str = "config.json"
 
     # ------------------------------------------------------------------
@@ -219,7 +218,7 @@ class Config:
     # ------------------------------------------------------------------
     # Serialization helpers
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON serialisable dict of the configuration."""
         data = asdict(self)
         # ``config_file`` is an internal detail and should not be persisted
@@ -230,7 +229,7 @@ class Config:
     # Loading helpers
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], config_file: str = "config.json") -> "Config":
+    def from_dict(cls, data: dict[str, Any], config_file: str = "config.json") -> Config:
         """Create a ``Config`` instance from a raw dictionary."""
         model_paths = ModelPaths(**data.get("model_paths", {}))
         api_endpoints = ApiEndpoints(**data.get("api_endpoints", {}))
@@ -273,15 +272,15 @@ class Config:
         )
 
     @classmethod
-    def load(cls, config_file: str = "config.json") -> "Config":
+    def load(cls, config_file: str = "config.json") -> Config:
         """Load configuration from JSON using the search rules of the old class."""
         data = cls._read_config(config_file)
         return cls.from_dict(data, config_file=config_file)
 
     @staticmethod
-    def _read_config(config_file: str) -> Dict[str, Any]:
+    def _read_config(config_file: str) -> dict[str, Any]:
         """Read configuration data from ``config_file`` with fallbacks."""
-        candidates: List[str] = []
+        candidates: list[str] = []
         if config_file:
             candidates.append(config_file)
         env_path = os.getenv("CHATCOMM_CONFIG")
@@ -290,7 +289,7 @@ class Config:
         candidates.extend(["default_config.json", "config.json"])
 
         seen: set[str] = set()
-        ordered: List[str] = []
+        ordered: list[str] = []
         for p in candidates:
             if p and p not in seen:
                 ordered.append(p)
@@ -312,9 +311,9 @@ class Config:
     # ------------------------------------------------------------------
     # Behavioural helpers (largely ported from previous implementation)
 
-    def _build_model_actions(self) -> Dict[str, Dict[str, str]]:
+    def _build_model_actions(self) -> dict[str, dict[str, str]]:
         """Build model actions from commands configuration."""
-        actions: Dict[str, Dict[str, str]] = {}
+        actions: dict[str, dict[str, str]] = {}
         for command_name, command_config in self.commands.items():
             action_type = command_config.get("action")
             if action_type == "keypress":
@@ -399,7 +398,9 @@ WantedBy=default.target
             with open(service_file, "w") as f:  # noqa: PTH123 - user path
                 f.write(service_content)
             subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-            subprocess.run(["systemctl", "--user", "enable", "chatty-commander.service"], check=True)
+            subprocess.run(
+                ["systemctl", "--user", "enable", "chatty-commander.service"], check=True
+            )
             logging.info("Start on boot enabled successfully")
         except Exception as e:  # pragma: no cover - environment specific
             logging.error(f"Failed to enable start on boot: {e}")
@@ -409,7 +410,9 @@ WantedBy=default.target
         """Disable start on boot by removing systemd user service."""
         try:
             subprocess.run(["systemctl", "--user", "stop", "chatty-commander.service"], check=False)
-            subprocess.run(["systemctl", "--user", "disable", "chatty-commander.service"], check=False)
+            subprocess.run(
+                ["systemctl", "--user", "disable", "chatty-commander.service"], check=False
+            )
             service_file = os.path.expanduser("~/.config/systemd/user/chatty-commander.service")
             if os.path.exists(service_file):
                 os.remove(service_file)
@@ -419,7 +422,7 @@ WantedBy=default.target
             logging.error(f"Failed to disable start on boot: {e}")
             raise
 
-    def perform_update_check(self) -> Dict[str, Any] | None:
+    def perform_update_check(self) -> dict[str, Any] | None:
         """Check for updates from the repository."""
         if not self.check_for_updates:
             return None
@@ -459,4 +462,3 @@ WantedBy=default.target
 
 
 __all__ = ["Config"]
-

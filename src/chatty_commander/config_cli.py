@@ -14,7 +14,6 @@ import sys
 
 from chatty_commander.app.config import Config
 
-
 XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 APP_CONFIG_DIR = os.path.join(XDG_CONFIG_HOME, "chatty-commander")
 DEFAULT_CONFIG_PATH = os.path.join(APP_CONFIG_DIR, "config.json")
@@ -123,4 +122,3 @@ class ConfigCLI:
 
 
 __all__ = ["ConfigCLI"]
-

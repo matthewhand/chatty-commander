@@ -41,6 +41,7 @@ def _get_patchable_model_class():
     # 1) If tests have already imported the shim, it will be in sys.modules and may be patched
     try:
         import sys as _sys
+
         mm = _sys.modules.get("model_manager")
         if mm is not None:
             M = getattr(mm, "Model", None)
@@ -52,6 +53,7 @@ def _get_patchable_model_class():
     # 2) Attempt dynamic import as fallback
     try:
         import importlib
+
         mm = importlib.import_module("model_manager")
         M = getattr(mm, "Model", None)
         if M is not None:
@@ -62,15 +64,16 @@ def _get_patchable_model_class():
     # 3) If under pytest, default to MagicMock for test convenience
     try:
         import os as _os
+
         if _os.environ.get("PYTEST_CURRENT_TEST"):
             from unittest.mock import MagicMock as _MagicMock  # type: ignore
+
             return _MagicMock  # type: ignore[return-value]
     except Exception:
         pass
 
     # 4) Final fallback to the local dummy
     return Model
-
 
 
 class ModelManager:
@@ -146,7 +149,9 @@ class ModelManager:
                 model_set[model_name] = instance  # only add on success
                 logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
             except Exception as e:
-                logging.error(f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models.")
+                logging.error(
+                    f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models."
+                )
                 # do not add on failure
                 continue
 

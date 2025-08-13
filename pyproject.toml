@@ -108,6 +108,11 @@ add-ignore = [
   "D104", # Missing docstring in public package
   "D105", # Missing docstring in magic method
   "D107", # Missing docstring in __init__
+  "D200", # One-line docstring should fit on one line
+  "D205", # 1 blank line required between summary line and description
+  "D212", # Multi-line docstring summary should start at the first line
+  "D403", # First word of the first line should be properly capitalized
+  "D415", # First line should end with punctuation
 ]
 
 [tool.doc8]

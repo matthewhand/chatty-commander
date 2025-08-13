@@ -239,7 +239,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "models-idle",
                     "model1",
                     "model2",
-                    "test_model"
+                    "test_model",
                 }
                 models = [m.strip() for m in models_csv.split(",") if m.strip()]
 

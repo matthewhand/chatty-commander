@@ -34,5 +34,3 @@ def test_run_orchestrator_mode_returns_quickly_when_web_true():
         args=args,
     )
     assert rc == 0
-
-

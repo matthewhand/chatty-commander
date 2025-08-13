@@ -1,4 +1,5 @@
 """Compat shim: prefer :mod:`chatty_commander.app.model_manager`"""
+
 from .compat import expose
 
 expose(globals(), "model_manager")

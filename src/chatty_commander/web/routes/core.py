@@ -125,16 +125,22 @@ def include_core_routes(
         try:
             cfg_mgr = get_config_manager()
             config_dict = getattr(cfg_mgr, "config", {})
-            model_actions = config_dict.get("model_actions", {}) if isinstance(config_dict, dict) else {}
+            model_actions = (
+                config_dict.get("model_actions", {}) if isinstance(config_dict, dict) else {}
+            )
             if request.command not in model_actions:
-                raise HTTPException(status_code=404, detail=f"Command '{request.command}' not found")
+                raise HTTPException(
+                    status_code=404, detail=f"Command '{request.command}' not found"
+                )
 
             # Delegate to provided executor bridge to ensure consistent integration surface
             success = bool(execute_command_fn(request.command))
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
                 success=success,
-                message=("Command executed successfully" if success else "Command execution failed"),
+                message=(
+                    "Command executed successfully" if success else "Command execution failed"
+                ),
                 execution_time=execution_time,
             )
         except HTTPException:

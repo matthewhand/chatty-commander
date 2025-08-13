@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-
 from chatty_commander.app.model_manager import load_model
 
 

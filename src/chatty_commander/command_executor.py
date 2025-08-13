@@ -1,5 +1,11 @@
 """Compat shim: prefer :mod:`chatty_commander.app.command_executor`"""
+
+from typing import TYPE_CHECKING
+
 from .compat import load
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .app.command_executor import CommandExecutor
 
 try:  # pragma: no cover - best effort import
     import pyautogui  # type: ignore

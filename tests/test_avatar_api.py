@@ -1,8 +1,8 @@
 from pathlib import Path
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from fastapi import FastAPI
 from src.chatty_commander.web.routes.avatar_api import router as avatar_router
 
 

@@ -15,4 +15,3 @@ def test_memory_store_persistence_appends_lines():
             lines = f.readlines()
         assert len(lines) == 2
         assert "\"content\": \"hello\"" in lines[0]
-

@@ -58,7 +58,9 @@ def build_openapi_schema() -> dict[str, Any]:
                         "200": {
                             "description": "Configuration retrieved successfully",
                             "content": {
-                                "application/json": {"schema": {"$ref": "#/components/schemas/Configuration"}}
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/Configuration"}
+                                }
                             },
                         }
                     },
@@ -69,7 +71,11 @@ def build_openapi_schema() -> dict[str, Any]:
                     "tags": ["Configuration"],
                     "requestBody": {
                         "required": True,
-                        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Configuration"}}},
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/Configuration"}
+                            }
+                        },
                     },
                     "responses": {
                         "200": {"description": "Configuration updated successfully"},
@@ -222,14 +228,25 @@ def build_openapi_schema() -> dict[str, Any]:
                 "SystemStatus": {
                     "type": "object",
                     "properties": {
-                        "status": {"type": "string", "enum": ["running", "stopped", "error"], "description": "Overall system status"},
+                        "status": {
+                            "type": "string",
+                            "enum": ["running", "stopped", "error"],
+                            "description": "Overall system status",
+                        },
                         "current_state": {
                             "type": "string",
                             "enum": ["idle", "computer", "chatty"],
                             "description": "Current operational state",
                         },
-                        "active_models": {"type": "array", "items": {"type": "string"}, "description": "List of currently loaded voice models"},
-                        "uptime": {"type": "string", "description": "System uptime in human-readable format"},
+                        "active_models": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of currently loaded voice models",
+                        },
+                        "uptime": {
+                            "type": "string",
+                            "description": "System uptime in human-readable format",
+                        },
                         "version": {"type": "string", "description": "Application version"},
                     },
                     "required": ["status", "current_state", "active_models"],
@@ -237,15 +254,27 @@ def build_openapi_schema() -> dict[str, Any]:
                 "Configuration": {
                     "type": "object",
                     "properties": {
-                        "general_models_path": {"type": "string", "description": "Path to general voice models"},
-                        "system_models_path": {"type": "string", "description": "Path to system command models"},
-                        "chat_models_path": {"type": "string", "description": "Path to chat interaction models"},
+                        "general_models_path": {
+                            "type": "string",
+                            "description": "Path to general voice models",
+                        },
+                        "system_models_path": {
+                            "type": "string",
+                            "description": "Path to system command models",
+                        },
+                        "chat_models_path": {
+                            "type": "string",
+                            "description": "Path to chat interaction models",
+                        },
                         "model_actions": {
                             "type": "object",
                             "additionalProperties": {
                                 "type": "object",
                                 "properties": {
-                                    "keypress": {"type": "string", "description": "Keyboard shortcut to execute"},
+                                    "keypress": {
+                                        "type": "string",
+                                        "description": "Keyboard shortcut to execute",
+                                    },
                                     "url": {"type": "string", "description": "URL to request"},
                                 },
                             },
@@ -263,8 +292,15 @@ def build_openapi_schema() -> dict[str, Any]:
                     "properties": {
                         "current_state": {"type": "string", "enum": ["idle", "computer", "chatty"]},
                         "active_models": {"type": "array", "items": {"type": "string"}},
-                        "last_command": {"type": "string", "description": "Last detected voice command"},
-                        "timestamp": {"type": "string", "format": "date-time", "description": "Timestamp of last state change"},
+                        "last_command": {
+                            "type": "string",
+                            "description": "Last detected voice command",
+                        },
+                        "timestamp": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Timestamp of last state change",
+                        },
                     },
                     "required": ["current_state", "active_models"],
                 },

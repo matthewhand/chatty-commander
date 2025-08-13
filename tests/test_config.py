@@ -2,7 +2,6 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from chatty_commander.app.config import Config
 
 
