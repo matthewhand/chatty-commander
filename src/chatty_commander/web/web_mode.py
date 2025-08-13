@@ -127,9 +127,16 @@ class WebModeServer:
         )
 
         # Add CORS middleware
+        if self.no_auth:
+            allow_origins = ["*"]
+        else:
+            try:
+                allow_origins = self.config_manager.auth["allowed_origins"]
+            except Exception:
+                allow_origins = ["http://localhost:3000"]
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"] if self.no_auth else ["http://localhost:3000"],
+            allow_origins=allow_origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
@@ -674,20 +681,24 @@ if __name__ == "__main__":
 
 
 def create_app(no_auth: bool = True) -> FastAPI:
+    cfg = Config()
     app = FastAPI(
         title="ChattyCommander API",
         version="0.2.0",
         docs_url="/docs" if no_auth else None,
         redoc_url="/redoc" if no_auth else None,
     )
+    allow_origins = ["*"] if no_auth else cfg.auth["allowed_origins"]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if no_auth else ["http://localhost:3000"],
+        allow_origins=allow_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
     @app.get("/api/v1/health")
     async def health_check():
         return {"status": "healthy"}
+
     return app
