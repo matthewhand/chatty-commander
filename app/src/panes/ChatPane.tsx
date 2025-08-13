@@ -48,7 +48,7 @@ export default function ChatPane() {
   };
 
   return (
-    <section className="h-full flex flex-col" aria-label="Chat">
+    <section className="h-full flex flex-col bg-gray-900" aria-label="Chat">
       <div className="flex-1 overflow-auto p-2">
         {messages.map(m => (
           <div key={m.id} className="mb-2">
@@ -57,16 +57,16 @@ export default function ChatPane() {
           </div>
         ))}
       </div>
-      <div className="p-2 border-t border-gray-700">
+      <div className="p-2 border-t border-gray-700 bg-gray-900">
         <textarea
-          className="w-full p-2 bg-gray-800"
+          className="w-full p-2 bg-gray-800 text-gray-100 border border-gray-700"
           placeholder="Type a message"
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKey}
         />
         <button
-          className="mt-2 px-3 py-1 bg-blue-600 rounded"
+          className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded"
           onClick={send}
         >
           Send
