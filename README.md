@@ -396,6 +396,10 @@ Alternatively, edit `config.py` manually for static changes.
 
 Enjoy using ChattyCommander! If you have questions, feel free to open an issue.
 
+## Future Plans
+
+- Background Docker task runner that schedules `--yolo -p` Codex containers, surfaces live 3-word summaries, and provides a stop button.
+
 ## Avatar GUI and Settings
 
 ## Standalone CLI (PyInstaller)
