@@ -12,10 +12,74 @@ import logging
 
 import requests
 import websockets
+import pytest
+from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
+from unittest.mock import MagicMock, patch
+
+from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.web_mode import WebModeServer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class DummyConfig(Config):
+    def __init__(self):
+        self.general_models_path = "models-idle"
+        self.system_models_path = "models-computer"
+        self.chat_models_path = "models-chatty"
+        self.config = {"model_actions": {}}
+        self.auth = {"enabled": True, "api_key": "secret", "allowed_origins": ["*"]}
+        self.advisors = {"enabled": False}
+
+
+def create_server(*, no_auth: bool) -> WebModeServer:
+    with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+        mock_provider = MagicMock()
+        mock_provider.model = "test-model"
+        mock_provider.api_mode = "completion"
+        mock_build_provider.return_value = mock_provider
+        cfg = DummyConfig()
+        sm = StateManager()
+        mm = ModelManager(cfg)
+        ce = CommandExecutor(cfg, mm, sm)
+        return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth)
+
+
+def test_status_authentication():
+    server = create_server(no_auth=False)
+    client = TestClient(server.app)
+
+    resp = client.get("/api/v1/status")
+    assert resp.status_code == 401
+
+    resp = client.get("/api/v1/status", headers={"X-API-Key": "secret"})
+    assert resp.status_code == 200
+
+
+def test_status_no_auth():
+    server = create_server(no_auth=True)
+    client = TestClient(server.app)
+    assert client.get("/api/v1/status").status_code == 200
+
+
+def test_websocket_authentication():
+    server = create_server(no_auth=False)
+    client = TestClient(server.app)
+    try:
+        with client.websocket_connect("/ws") as ws:
+            with pytest.raises(WebSocketDisconnect):
+                ws.receive_json()
+    except WebSocketDisconnect:
+        pass
+    with client.websocket_connect("/ws", headers={"X-API-Key": "secret"}) as ws:
+        data = ws.receive_json()
+        assert data["type"] == "connection_established"
 
 
 class WebModeValidator:
