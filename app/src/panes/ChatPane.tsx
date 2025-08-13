@@ -2,11 +2,13 @@ import React, { useState, KeyboardEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useChatStore, ChatMessage } from '../stores/chat';
 import { sse } from '../lib/sse';
+import { useSidecarStore } from '../stores/sidecar';
 
 export default function ChatPane() {
   const messages = useChatStore(s => s.messages);
   const push = useChatStore(s => s.push);
   const update = useChatStore(s => s.update);
+  const setSidecar = useSidecarStore(s => s.set);
   const [text, setText] = useState('');
 
   const send = async () => {
@@ -37,6 +39,9 @@ export default function ChatPane() {
         }));
       },
       done: () => {},
+      'sidecar.open': data => {
+        setSidecar(data);
+      },
     });
   };
 
