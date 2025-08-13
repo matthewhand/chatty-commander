@@ -1,0 +1,11 @@
+{
+  "name": "chatty-commander-workers",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
