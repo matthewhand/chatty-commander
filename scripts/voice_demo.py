@@ -4,7 +4,7 @@ Voice integration demo script for ChattyCommander.
 
 Demonstrates the complete voice pipeline:
 1. Wake word detection
-2. Voice transcription  
+2. Voice transcription
 3. Command matching and execution
 4. Status reporting
 
@@ -19,16 +19,18 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from chatty_commander.voice import VoicePipeline
-from chatty_commander.app.config import Config
 from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
+from chatty_commander.voice import VoicePipeline
 
 
 def main():
     parser = argparse.ArgumentParser(description="ChattyCommander Voice Integration Demo")
-    parser.add_argument("--mock", action="store_true", help="Use mock components (no audio hardware)")
+    parser.add_argument(
+        "--mock", action="store_true", help="Use mock components (no audio hardware)"
+    )
     parser.add_argument("--duration", type=int, default=30, help="Demo duration in seconds")
     parser.add_argument("--config", default="config.json", help="Config file path")
     args = parser.parse_args()
@@ -40,7 +42,7 @@ def main():
         # Load configuration
         print("📋 Loading configuration...")
         config = Config(args.config)
-        
+
         # Show available commands
         if config.model_actions:
             print(f"📋 Available commands ({len(config.model_actions)}):")
@@ -71,18 +73,19 @@ def main():
             state_manager=state_manager,
             use_mock=args.mock,
             wake_words=["hey_jarvis", "alexa"],
-            transcription_backend="mock" if args.mock else "whisper_local"
+            transcription_backend="mock" if args.mock else "whisper_local",
         )
 
         # Show pipeline status
         status = pipeline.get_status()
-        print(f"📊 Pipeline Status:")
+        print("📊 Pipeline Status:")
         print(f"   Transcriber: {status['transcriber_info']['backend_type']}")
         print(f"   Available: {status['transcriber_available']}")
         print(f"   Wake words: {status['available_wake_words']}")
 
         # Add callback to show results
         commands_executed = []
+
         def command_callback(command_name: str, transcription: str):
             timestamp = time.strftime("%H:%M:%S")
             if command_name:
@@ -101,7 +104,7 @@ def main():
             print("\n💡 Mock Mode Demo:")
             print("   - Simulating wake word detection and voice commands")
             print("   - No audio hardware required")
-            
+
             # Demo sequence
             demo_commands = [
                 ("hey_jarvis", "hello world"),
@@ -109,7 +112,7 @@ def main():
                 ("hey_jarvis", "play some music"),
                 ("alexa", "unknown command"),
             ]
-            
+
             for i, (wake_word, command) in enumerate(demo_commands):
                 time.sleep(3)
                 print(f"\n🧪 Demo {i+1}/{len(demo_commands)}: Wake word '{wake_word}'")
@@ -117,7 +120,7 @@ def main():
                 time.sleep(1)
                 print(f"🧪 Processing command: '{command}'")
                 pipeline.process_text_command(command)
-                
+
         else:
             print("\n🎯 Real Voice Mode:")
             print("   1. Say a wake word: 'Hey Jarvis' or 'Alexa'")
@@ -127,7 +130,7 @@ def main():
             print("      - 'Hey Jarvis, hello'")
             print("      - 'Alexa, turn on the lights'")
             print("      - 'Hey Jarvis, play music'")
-            
+
             # Wait for the specified duration
             for remaining in range(args.duration, 0, -5):
                 print(f"⏱️  {remaining} seconds remaining...")
@@ -138,7 +141,7 @@ def main():
         pipeline.stop()
 
         # Show summary
-        print(f"\n📊 Demo Summary:")
+        print("\n📊 Demo Summary:")
         print(f"   Commands executed: {len(commands_executed)}")
         for cmd_name, transcription in commands_executed:
             print(f"   - {cmd_name}: '{transcription}'")
@@ -150,6 +153,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Demo failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
