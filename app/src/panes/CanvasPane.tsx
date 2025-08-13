@@ -19,12 +19,12 @@ export default function CanvasPane() {
   }, []);
 
   return (
-    <section className="flex-1 flex flex-col">
+    <section className="flex-1 flex flex-col bg-gray-900">
       <iframe
         ref={iframeRef}
         title="canvas"
         sandbox="allow-scripts allow-downloads"
-        className="flex-1 bg-white"
+        className="flex-1 bg-gray-800"
       />
       <div className="h-40 overflow-auto bg-black text-green-400 text-xs p-2" aria-label="Console">
         {log.map((l, i) => (

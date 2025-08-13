@@ -11,5 +11,6 @@ Provides:
 from .pipeline import VoicePipeline
 from .transcription import VoiceTranscriber
 from .wakeword import WakeWordDetector
+from .tts import TextToSpeech
 
-__all__ = ["WakeWordDetector", "VoiceTranscriber", "VoicePipeline"]
+__all__ = ["WakeWordDetector", "VoiceTranscriber", "VoicePipeline", "TextToSpeech"]
