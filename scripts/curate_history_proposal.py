@@ -43,10 +43,7 @@ def sh(cmd: str) -> str:
 
 def parse_git_log() -> list[Commit]:
     # We print commit header lines then changed file paths; commits separated by blank lines
-    cmd = (
-        "git log --reverse --date=short "
-        "--pretty=format:%H\t%ad\t%s --name-only"
-    )
+    cmd = "git log --reverse --date=short " "--pretty=format:%H\t%ad\t%s --name-only"
     out = sh(cmd)
     commits: list[Commit] = []
     sha = date = subj = None
@@ -56,9 +53,7 @@ def parse_git_log() -> list[Commit]:
             # end of block
             if sha and date and subj is not None:
                 tp = Counter(_top_path(p) for p in files if p)
-                commits.append(
-                    Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp)
-                )
+                commits.append(Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp))
             sha = date = subj = None
             files = []
             continue
@@ -66,9 +61,7 @@ def parse_git_log() -> list[Commit]:
             # new commit header
             if sha and date and subj is not None:
                 tp = Counter(_top_path(p) for p in files if p)
-                commits.append(
-                    Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp)
-                )
+                commits.append(Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp))
                 files = []
             parts = line.split('\t', 2)
             if len(parts) == 3:
@@ -263,11 +256,26 @@ def render_markdown(batches: list[Batch], post_count: int, boundary: dt.date) ->
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Dry-run proposal for curated history batches")
-    ap.add_argument("--boundary", required=False, default="2025-08-05", help="Boundary date YYYY-MM-DD; keep commits on/after this date intact")
+    ap.add_argument(
+        "--boundary",
+        required=False,
+        default="2025-08-05",
+        help="Boundary date YYYY-MM-DD; keep commits on/after this date intact",
+    )
     ap.add_argument("--granularity", choices=["monthly", "quarterly"], default="monthly")
     ap.add_argument("--smart", type=lambda s: s.lower() in {"1", "true", "yes", "y"}, default=True)
-    ap.add_argument("--max-commits-per-batch", type=int, default=30, help="Max combined commits when merging adjacent batches")
-    ap.add_argument("--min-overlap", type=float, default=0.4, help="Min Jaccard overlap of areas to merge adjacent batches")
+    ap.add_argument(
+        "--max-commits-per-batch",
+        type=int,
+        default=30,
+        help="Max combined commits when merging adjacent batches",
+    )
+    ap.add_argument(
+        "--min-overlap",
+        type=float,
+        default=0.4,
+        help="Min Jaccard overlap of areas to merge adjacent batches",
+    )
     args = ap.parse_args(argv)
 
     try:

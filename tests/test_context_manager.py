@@ -21,9 +21,7 @@ class TestContextIdentity:
     def test_context_key_generation(self):
         """Test context key generation."""
         identity = ContextIdentity(
-            platform=PlatformType.DISCORD,
-            channel="123456789",
-            user_id="user123"
+            platform=PlatformType.DISCORD, channel="123456789", user_id="user123"
         )
 
         expected_key = "discord:123456789:user123"
@@ -36,7 +34,7 @@ class TestContextIdentity:
             channel="general",
             user_id="user456",
             username="testuser",
-            display_name="Test User"
+            display_name="Test User",
         )
 
         data = identity.to_dict()
@@ -50,11 +48,7 @@ class TestContextIdentity:
 
     def test_created_at_default(self):
         """Test that created_at is set automatically."""
-        identity = ContextIdentity(
-            platform=PlatformType.WEB,
-            channel="chat",
-            user_id="user789"
-        )
+        identity = ContextIdentity(platform=PlatformType.WEB, channel="chat", user_id="user789")
 
         assert identity.created_at is not None
         assert isinstance(identity.created_at, float)
@@ -66,9 +60,7 @@ class TestContextState:
     def test_serialization(self):
         """Test serialization to/from dict."""
         identity = ContextIdentity(
-            platform=PlatformType.DISCORD,
-            channel="test-channel",
-            user_id="user123"
+            platform=PlatformType.DISCORD, channel="test-channel", user_id="user123"
         )
 
         state = ContextState(
@@ -77,7 +69,7 @@ class TestContextState:
             system_prompt="You are a philosophical advisor.",
             memory_key="discord:test-channel:user123:memory",
             last_activity=time.time(),
-            metadata={"last_topic": "ethics"}
+            metadata={"last_topic": "ethics"},
         )
 
         data = state.to_dict()
@@ -92,9 +84,7 @@ class TestContextState:
     def test_last_activity_default(self):
         """Test that last_activity is set automatically."""
         identity = ContextIdentity(
-            platform=PlatformType.SLACK,
-            channel="general",
-            user_id="user456"
+            platform=PlatformType.SLACK, channel="general", user_id="user456"
         )
 
         state = ContextState(
@@ -102,7 +92,7 @@ class TestContextState:
             persona_id="general",
             system_prompt="You are a helpful assistant.",
             memory_key="slack:general:user456:memory",
-            metadata={}
+            metadata={},
         )
 
         assert state.last_activity is not None
@@ -117,21 +107,13 @@ class TestContextManager:
         """Test configuration."""
         return {
             'personas': {
-                'general': {
-                    'system_prompt': 'You are a helpful assistant.'
-                },
-                'philosopher': {
-                    'system_prompt': 'You are a philosophical advisor.'
-                },
-                'discord_default': {
-                    'system_prompt': 'You are a Discord bot assistant.'
-                },
-                'slack_default': {
-                    'system_prompt': 'You are a Slack app assistant.'
-                }
+                'general': {'system_prompt': 'You are a helpful assistant.'},
+                'philosopher': {'system_prompt': 'You are a philosophical advisor.'},
+                'discord_default': {'system_prompt': 'You are a Discord bot assistant.'},
+                'slack_default': {'system_prompt': 'You are a Slack app assistant.'},
             },
             'default_persona': 'general',
-            'persistence_enabled': False
+            'persistence_enabled': False,
         }
 
     @pytest.fixture
@@ -145,7 +127,7 @@ class TestContextManager:
             platform=PlatformType.DISCORD,
             channel="123456789",
             user_id="user123",
-            username="testuser"
+            username="testuser",
         )
 
         assert context.identity.platform == PlatformType.DISCORD
@@ -160,16 +142,12 @@ class TestContextManager:
         """Test retrieving an existing context."""
         # Create context
         context1 = context_manager.get_or_create_context(
-            platform=PlatformType.SLACK,
-            channel="general",
-            user_id="user456"
+            platform=PlatformType.SLACK, channel="general", user_id="user456"
         )
 
         # Get same context again
         context2 = context_manager.get_or_create_context(
-            platform=PlatformType.SLACK,
-            channel="general",
-            user_id="user456"
+            platform=PlatformType.SLACK, channel="general", user_id="user456"
         )
 
         assert context1 is context2
@@ -178,9 +156,7 @@ class TestContextManager:
     def test_switch_persona(self, context_manager):
         """Test switching persona for a context."""
         context = context_manager.get_or_create_context(
-            platform=PlatformType.WEB,
-            channel="chat",
-            user_id="user789"
+            platform=PlatformType.WEB, channel="chat", user_id="user789"
         )
 
         # Switch to philosopher persona
@@ -193,9 +169,7 @@ class TestContextManager:
     def test_switch_persona_invalid(self, context_manager):
         """Test switching to invalid persona."""
         context = context_manager.get_or_create_context(
-            platform=PlatformType.DISCORD,
-            channel="test",
-            user_id="user123"
+            platform=PlatformType.DISCORD, channel="test", user_id="user123"
         )
 
         # Try to switch to non-existent persona
@@ -207,9 +181,7 @@ class TestContextManager:
     def test_clear_context(self, context_manager):
         """Test clearing a context."""
         context = context_manager.get_or_create_context(
-            platform=PlatformType.SLACK,
-            channel="general",
-            user_id="user456"
+            platform=PlatformType.SLACK, channel="general", user_id="user456"
         )
 
         context_key = context.identity.context_key
@@ -225,15 +197,11 @@ class TestContextManager:
         """Test clearing inactive contexts."""
         # Create contexts
         context1 = context_manager.get_or_create_context(
-            platform=PlatformType.DISCORD,
-            channel="channel1",
-            user_id="user1"
+            platform=PlatformType.DISCORD, channel="channel1", user_id="user1"
         )
 
         context2 = context_manager.get_or_create_context(
-            platform=PlatformType.SLACK,
-            channel="channel2",
-            user_id="user2"
+            platform=PlatformType.SLACK, channel="channel2", user_id="user2"
         )
 
         # Make one context inactive
@@ -250,21 +218,15 @@ class TestContextManager:
         """Test getting context statistics."""
         # Create contexts
         context_manager.get_or_create_context(
-            platform=PlatformType.DISCORD,
-            channel="channel1",
-            user_id="user1"
+            platform=PlatformType.DISCORD, channel="channel1", user_id="user1"
         )
 
         context_manager.get_or_create_context(
-            platform=PlatformType.DISCORD,
-            channel="channel2",
-            user_id="user2"
+            platform=PlatformType.DISCORD, channel="channel2", user_id="user2"
         )
 
         context_manager.get_or_create_context(
-            platform=PlatformType.SLACK,
-            channel="general",
-            user_id="user3"
+            platform=PlatformType.SLACK, channel="general", user_id="user3"
         )
 
         stats = context_manager.get_stats()
@@ -280,20 +242,16 @@ class TestContextManager:
         """Test context persistence."""
         with tempfile.TemporaryDirectory() as temp_dir:
             config = {
-                'personas': {
-                    'general': {'system_prompt': 'You are helpful.'}
-                },
+                'personas': {'general': {'system_prompt': 'You are helpful.'}},
                 'default_persona': 'general',
                 'persistence_enabled': True,
-                'persistence_path': str(Path(temp_dir) / 'contexts.json')
+                'persistence_path': str(Path(temp_dir) / 'contexts.json'),
             }
 
             # Create manager and add context
             manager1 = ContextManager(config)
             context = manager1.get_or_create_context(
-                platform=PlatformType.WEB,
-                channel="test",
-                user_id="user123"
+                platform=PlatformType.WEB, channel="test", user_id="user123"
             )
 
             # Create new manager (should load existing context)
@@ -308,42 +266,31 @@ class TestContextManager:
         """Test persona resolution logic."""
         # Discord should get discord_default persona
         discord_context = context_manager.get_or_create_context(
-            platform=PlatformType.DISCORD,
-            channel="test",
-            user_id="user123"
+            platform=PlatformType.DISCORD, channel="test", user_id="user123"
         )
         assert discord_context.persona_id == "discord_default"
 
         # Slack should get slack_default persona
         slack_context = context_manager.get_or_create_context(
-            platform=PlatformType.SLACK,
-            channel="test",
-            user_id="user456"
+            platform=PlatformType.SLACK, channel="test", user_id="user456"
         )
         assert slack_context.persona_id == "slack_default"
 
         # Web should get general persona (no platform-specific available)
         web_context = context_manager.get_or_create_context(
-            platform=PlatformType.WEB,
-            channel="test",
-            user_id="user789"
+            platform=PlatformType.WEB, channel="test", user_id="user789"
         )
         assert web_context.persona_id == "general"
 
     def test_identity_update(self, context_manager):
         """Test updating identity information."""
         context = context_manager.get_or_create_context(
-            platform=PlatformType.DISCORD,
-            channel="test",
-            user_id="user123"
+            platform=PlatformType.DISCORD, channel="test", user_id="user123"
         )
 
         # Update with new username
         updated_context = context_manager.get_or_create_context(
-            platform=PlatformType.DISCORD,
-            channel="test",
-            user_id="user123",
-            username="newusername"
+            platform=PlatformType.DISCORD, channel="test", user_id="user123", username="newusername"
         )
 
         assert updated_context is context  # Same context object

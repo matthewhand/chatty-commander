@@ -16,6 +16,7 @@ from typing import Any
 
 class PlatformType(Enum):
     """Supported platform types for context switching."""
+
     DISCORD = "discord"
     SLACK = "slack"
     WEB = "web"
@@ -26,6 +27,7 @@ class PlatformType(Enum):
 @dataclass
 class ContextIdentity:
     """Represents a user's identity in a specific context."""
+
     platform: PlatformType
     channel: str
     user_id: str
@@ -59,6 +61,7 @@ class ContextIdentity:
 @dataclass
 class ContextState:
     """Represents the current state of a context."""
+
     identity: ContextIdentity
     persona_id: str
     system_prompt: str
@@ -108,9 +111,14 @@ class ContextManager:
         if self.persistence_enabled:
             self._load_contexts()
 
-    def get_or_create_context(self, platform: PlatformType, channel: str,
-                            user_id: str, username: str | None = None,
-                            **kwargs) -> ContextState:
+    def get_or_create_context(
+        self,
+        platform: PlatformType,
+        channel: str,
+        user_id: str,
+        username: str | None = None,
+        **kwargs,
+    ) -> ContextState:
         """
         Get existing context or create new one for the given identity.
 
@@ -125,11 +133,7 @@ class ContextManager:
             ContextState for the identity
         """
         identity = ContextIdentity(
-            platform=platform,
-            channel=channel,
-            user_id=user_id,
-            username=username,
-            **kwargs
+            platform=platform, channel=channel, user_id=user_id, username=username, **kwargs
         )
 
         context_key = identity.context_key
@@ -146,7 +150,7 @@ class ContextManager:
                 system_prompt=system_prompt,
                 memory_key=memory_key,
                 last_activity=time.time(),
-                metadata={}
+                metadata={},
             )
 
             self.contexts[context_key] = context
@@ -313,5 +317,5 @@ class ContextManager:
             'platform_distribution': platform_counts,
             'persona_distribution': persona_counts,
             'persistence_enabled': self.persistence_enabled,
-            'persistence_path': str(self.persistence_path)
+            'persistence_path': str(self.persistence_path),
         }

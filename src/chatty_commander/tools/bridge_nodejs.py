@@ -12,32 +12,30 @@ from pathlib import Path
 
 def generate_package_json() -> str:
     """Generate package.json for the Node.js bridge application."""
-    return json.dumps({
-        "name": "chatty-commander-bridge",
-        "version": "1.0.0",
-        "description": "Node.js bridge for Discord/Slack integration with ChattyCommander advisors",
-        "main": "src/index.js",
-        "scripts": {
-            "start": "node src/index.js",
-            "dev": "nodemon src/index.js",
-            "test": "jest"
+    return json.dumps(
+        {
+            "name": "chatty-commander-bridge",
+            "version": "1.0.0",
+            "description": "Node.js bridge for Discord/Slack integration with ChattyCommander advisors",
+            "main": "src/index.js",
+            "scripts": {
+                "start": "node src/index.js",
+                "dev": "nodemon src/index.js",
+                "test": "jest",
+            },
+            "dependencies": {
+                "express": "^4.18.2",
+                "discord.js": "^14.14.1",
+                "@slack/bolt": "^3.17.1",
+                "axios": "^1.6.0",
+                "dotenv": "^16.3.1",
+                "winston": "^3.11.0",
+            },
+            "devDependencies": {"nodemon": "^3.0.1", "jest": "^29.7.0"},
+            "engines": {"node": ">=18.0.0"},
         },
-        "dependencies": {
-            "express": "^4.18.2",
-            "discord.js": "^14.14.1",
-            "@slack/bolt": "^3.17.1",
-            "axios": "^1.6.0",
-            "dotenv": "^16.3.1",
-            "winston": "^3.11.0"
-        },
-        "devDependencies": {
-            "nodemon": "^3.0.1",
-            "jest": "^29.7.0"
-        },
-        "engines": {
-            "node": ">=18.0.0"
-        }
-    }, indent=2)
+        indent=2,
+    )
 
 
 def generate_env_template() -> str:

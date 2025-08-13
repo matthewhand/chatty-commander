@@ -22,5 +22,3 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
     """
     # Minimal deterministic result for tests
     return AnalystResult(title="Snapshot Title", summary="Snapshot Summary", url=request.url)
-
-

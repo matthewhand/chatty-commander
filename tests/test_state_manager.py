@@ -47,7 +47,7 @@ class TestStateManager:
 
     def test_initial_state_respects_config(self, monkeypatch):
         cfg = Config()
-        cfg.default_state = "computer"
+        cfg.general_settings.default_state = "computer"
         cfg.state_models["computer"] = ["comp_model"]
         monkeypatch.setattr("chatty_commander.app.state_manager.Config", lambda: cfg)
         sm = StateManager()

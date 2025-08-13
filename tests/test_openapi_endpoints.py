@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
@@ -24,7 +24,13 @@ def client():
         _state = StateManager()
         _models = ModelManager(_config)
         _executor = CommandExecutor(_config, _models, _state)
-        _server = WebModeServer(config_manager=_config, state_manager=_state, model_manager=_models, command_executor=_executor, no_auth=True)
+        _server = WebModeServer(
+            config_manager=_config,
+            state_manager=_state,
+            model_manager=_models,
+            command_executor=_executor,
+            no_auth=True,
+        )
         app = _server.app
 
         return TestClient(app)
