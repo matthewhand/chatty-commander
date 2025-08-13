@@ -58,9 +58,10 @@ def test_cli_set_listen_for(monkeypatch):
 
 def test_cli_set_mode(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-mode', 'mode1', 'option1'])
-    with patch('cli.ConfigCLI.set_mode'):
+    with patch('cli.ConfigCLI.set_mode') as mock_set:
         with pytest.raises(SystemExit):
             cli_main()
+        mock_set.assert_not_called()
     captured = capsys.readouterr()
     assert "Invalid mode" in captured.err
 
