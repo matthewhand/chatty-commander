@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chatty Commander Avatar</title>
+    <style>
+      html, body { height: 100%; margin: 0; background: transparent; }
+      body { display: grid; place-items: center; color: white; font-family: sans-serif; }
+      .avatar-placeholder {
+        width: 280px;
+        height: 280px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at center, rgba(0,200,255,0.8), rgba(0,100,200,0.2));
+        box-shadow: 0 0 24px rgba(0,200,255,0.6);
+        display: grid;
+        place-items: center;
+        backdrop-filter: blur(2px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="avatar-placeholder">
+      <div>3D Avatar Placeholder</div>
+    </div>
+    <script>
+      // Minimal dev client to consume /avatar/ws and toggle CSS classes for state
+      (function(){
+        function stateClass(state){ return 'state-' + state; }
+        const root = document.querySelector('.avatar-placeholder');
+        function applyState(state){
+          const states = ['idle','thinking','processing','tool_calling','responding','error','handoff'];
+          states.forEach(s => root.classList.remove(stateClass(s)));
+          root.classList.add(stateClass(state));
+        }
+        // Styling hints
+        const style = document.createElement('style');
+        style.textContent = `
+          .state-thinking { box-shadow: 0 0 24px rgba(0,255,200,0.8); }
+          .state-processing { box-shadow: 0 0 24px rgba(200,200,0,0.8); }
+          .state-tool_calling { box-shadow: 0 0 24px rgba(255,0,0,0.8); }
+          .state-responding { box-shadow: 0 0 24px rgba(0,128,255,0.8); }
+          .state-error { box-shadow: 0 0 24px rgba(255,0,0,1); }
+          .state-handoff { box-shadow: 0 0 24px rgba(255,0,255,0.8); }
+        `;
+        document.head.appendChild(style);
+
+        applyState('idle');
+        function wsUrl(){
+          const port = 8100;
+          return 'ws://localhost:' + port + '/avatar/ws';
+        }
+        try {
+          const ws = new WebSocket(wsUrl());
+          ws.onopen = () => console.log('Avatar WS connected');
+          ws.onmessage = (ev) => {
+            try {
+              const msg = JSON.parse(ev.data);
+              if (msg.type === 'agent_state_change' && msg.data && msg.data.state){
+                applyState(msg.data.state);
+              } else if (msg.type === 'tool_call_start'){
+                applyState('tool_calling');
+              } else if (msg.type === 'tool_call_end'){
+                applyState('processing');
+              } else if (msg.type === 'handoff_start'){
+                applyState('handoff');
+              } else if (msg.type === 'handoff_complete'){
+                applyState('idle');
+              }
+            } catch {}
+          };
+          ws.onerror = (e) => console.warn('Avatar WS error', e);
+        } catch (e) {
+          console.warn('WS init failed', e);
+        }
+      })();
+    </script>
+  </body>
+</html>

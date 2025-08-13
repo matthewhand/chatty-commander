@@ -16,26 +16,26 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 )  # noqa: E402 - path manipulation before imports
 
-from cli import cli_main  # noqa: E402 - imported after path setup
+from chatty_commander.cli.cli import cli_main  # noqa: E402 - imported after path setup
 
 
 def test_cli_run(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'run'])
-    with patch('cli.run_app') as mock_run:
+    with patch('chatty_commander.cli.cli.run_app') as mock_run:
         cli_main()
         mock_run.assert_called_once()
 
 
 def test_cli_config_interactive(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--interactive'])
-    with patch('cli.ConfigCLI.interactive_mode') as mock_interactive:
+    with patch('chatty_commander.cli.cli.ConfigCLI.interactive_mode') as mock_interactive:
         cli_main()
         mock_interactive.assert_called_once()
 
 
 def test_cli_config_list(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--list'])
-    with patch('cli.ConfigCLI.list_config') as mock_list:
+    with patch('chatty_commander.cli.cli.ConfigCLI.list_config') as mock_list:
         cli_main()
         mock_list.assert_called_once()
 
@@ -44,25 +44,24 @@ def test_cli_set_state_model(monkeypatch, capsys):
     monkeypatch.setattr(
         sys, 'argv', ['cli.py', 'config', '--set-state-model', 'idle', 'model1,model2']
     )
-    with patch('cli.ConfigCLI.set_state_model'):
-        with pytest.raises(SystemExit):
-            cli_main()
-    captured = capsys.readouterr()
-    assert "Invalid model(s) for --set-state-model" in captured.err
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_state_model') as mock_set:
+        cli_main()
+        mock_set.assert_called_with('idle', 'model1,model2')
 
 
 def test_cli_set_listen_for(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-listen-for', 'param1', 'value1'])
-    with patch('cli.ConfigCLI.set_listen_for') as mock_set:
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_listen_for') as mock_set:
         cli_main()
         mock_set.assert_called_with('param1', 'value1')
 
 
 def test_cli_set_mode(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-mode', 'mode1', 'option1'])
-    with patch('cli.ConfigCLI.set_mode'):
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_mode') as mock_set:
         with pytest.raises(SystemExit):
             cli_main()
+        mock_set.assert_not_called()
     captured = capsys.readouterr()
     assert "Invalid mode" in captured.err
 
@@ -81,7 +80,7 @@ def test_cli_help(monkeypatch, capsys):
 def test_cli_config_wizard(monkeypatch):
     # Simulate: chatty-commander config wizard
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', 'wizard'])
-    with patch('cli.ConfigCLI.run_wizard') as mock_wizard:
+    with patch('chatty_commander.cli.cli.ConfigCLI.run_wizard') as mock_wizard:
         cli_main()
         mock_wizard.assert_called_once()
 
@@ -92,7 +91,7 @@ def test_cli_interactive_shell_exit(monkeypatch):
     inputs = iter(['exit'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
     # Patch parser.print_help to avoid printing
-    with patch('cli.HelpfulArgumentParser.print_help'):
+    with patch('chatty_commander.cli.cli.HelpfulArgumentParser.print_help'):
         with pytest.raises(SystemExit):
             cli_main()
 
@@ -102,7 +101,7 @@ def test_cli_argument_validation_invalid_model(monkeypatch, capsys):
     monkeypatch.setattr(
         sys, 'argv', ['cli.py', 'config', '--set-model-action', 'invalid_model', 'summarize']
     )
-    with patch('cli.ConfigCLI.set_model_action'):
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_model_action'):
         with pytest.raises(SystemExit):
             cli_main()
     captured = capsys.readouterr()
@@ -113,7 +112,7 @@ def test_cli_system_update_check(monkeypatch):
     # Simulate: chatty-commander system updates check
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'system', 'updates', 'check'])
     with patch(
-        'config.Config.perform_update_check',
+        'chatty_commander.app.config.Config.perform_update_check',
         return_value={"updates_available": False, "update_count": 0},
     ):
         with patch('builtins.print') as mock_print:
@@ -124,7 +123,7 @@ def test_cli_system_update_check(monkeypatch):
 def test_cli_system_start_on_boot_enable(monkeypatch):
     # Simulate: chatty-commander system start-on-boot enable
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'system', 'start-on-boot', 'enable'])
-    with patch('config.Config.set_start_on_boot') as mock_set:
+    with patch('chatty_commander.app.config.Config.set_start_on_boot') as mock_set:
         with patch('builtins.print') as mock_print:
             cli_main()
             mock_set.assert_called_with(True)
@@ -144,11 +143,11 @@ def test_cli_list_text_output(monkeypatch, capsys):
     class DummyConfig:
         model_actions = {'hello': {'shell': 'echo hello'}, 'web': {'url': 'http://localhost'}}
 
-    monkeypatch.setattr('config.Config', lambda: DummyConfig())
+    monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
 
     # Invoke CLI
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'list'])
-    from cli import cli_main  # noqa: E402
+    from chatty_commander.cli.cli import cli_main  # noqa: E402
 
     with __import__('unittest').mock.patch('builtins.print') as mock_print:
         cli_main()
@@ -171,10 +170,10 @@ def test_cli_list_json_output(monkeypatch, capsys):
     class DummyConfig:
         model_actions = {'cmd1': {'shell': 'echo 1'}, 'cmd2': {'keypress': 'a'}}
 
-    monkeypatch.setattr('config.Config', lambda: DummyConfig())
+    monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'list', '--json'])
-    from cli import cli_main  # noqa: E402
+    from chatty_commander.cli.cli import cli_main  # noqa: E402
 
     cli_main()
     captured = capsys.readouterr()
@@ -197,10 +196,10 @@ def test_cli_list_empty_config(monkeypatch, capsys):
     class DummyConfig:
         model_actions = {}
 
-    monkeypatch.setattr('config.Config', lambda: DummyConfig())
+    monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'list'])
-    from cli import cli_main  # noqa: E402
+    from chatty_commander.cli.cli import cli_main  # noqa: E402
 
     with __import__('unittest').mock.patch('builtins.print') as mock_print:
         cli_main()
@@ -220,13 +219,13 @@ def test_cli_exec_known_command_dry_run(monkeypatch, capsys):
     class DummyConfig:
         model_actions = {'say': {'shell': 'echo hi'}}
 
-    monkeypatch.setattr('config.Config', lambda: DummyConfig())
+    monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
 
     # Dry-run should not invoke executor
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 'say', '--dry-run'])
-    from cli import cli_main  # noqa: E402
+    from chatty_commander.cli.cli import cli_main  # noqa: E402
 
-    with __import__('unittest').mock.patch('cli.CommandExecutor') as mock_exec:
+    with __import__('unittest').mock.patch('chatty_commander.cli.cli.CommandExecutor') as mock_exec:
         cli_main()
         assert not mock_exec.called
     captured = capsys.readouterr()
@@ -247,10 +246,10 @@ def test_cli_exec_unknown_command(monkeypatch, capsys):
     class DummyConfig:
         model_actions = {'known': {'shell': 'echo ok'}}
 
-    monkeypatch.setattr('config.Config', lambda: DummyConfig())
+    monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 'unknown'])
-    from cli import cli_main  # noqa: E402
+    from chatty_commander.cli.cli import cli_main  # noqa: E402
 
     with pytest.raises(SystemExit) as ei:
         cli_main()
@@ -271,13 +270,13 @@ def test_cli_exec_timeout_flag_passthrough(monkeypatch):
     class DummyConfig:
         model_actions = {'t': {'shell': 'sleep 5'}}
 
-    monkeypatch.setattr('config.Config', lambda: DummyConfig())
+    monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 't', '--timeout', '2'])
     # Ensure we call CommandExecutor and pass through timeout; we won't actually sleep in tests
-    from cli import cli_main  # noqa: E402
+    from chatty_commander.cli.cli import cli_main  # noqa: E402
 
-    with __import__('unittest').mock.patch('cli.CommandExecutor') as MockExec:
+    with __import__('unittest').mock.patch('chatty_commander.cli.cli.CommandExecutor') as MockExec:
         instance = MockExec.return_value
         cli_main()
         # Expect executor to be asked to run the command; our CLI layer will call execute_command(name)

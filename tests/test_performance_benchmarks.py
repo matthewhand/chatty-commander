@@ -8,17 +8,16 @@ import asyncio
 import statistics
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import psutil
 import pytest
+from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.web_mode import WebModeServer
 from fastapi.testclient import TestClient
-
-from command_executor import CommandExecutor
-from config import Config
-from model_manager import ModelManager
-from state_manager import StateManager
-from web_mode import WebModeServer
 
 
 class PerformanceMonitor:
@@ -75,14 +74,21 @@ class TestPerformanceBenchmarks:
     @pytest.fixture
     def web_server(self, mock_managers):
         """Create WebModeServer for performance testing."""
-        config, state_manager, model_manager, command_executor = mock_managers
-        return WebModeServer(
-            config_manager=config,
-            state_manager=state_manager,
-            model_manager=model_manager,
-            command_executor=command_executor,
-            no_auth=True,
-        )
+        with patch(
+            'chatty_commander.advisors.providers.build_provider_safe'
+        ) as mock_build_provider:
+            mock_provider = MagicMock()
+            mock_provider.model = "test-model"
+            mock_provider.api_mode = "completion"
+            mock_build_provider.return_value = mock_provider
+            config, state_manager, model_manager, command_executor = mock_managers
+            return WebModeServer(
+                config_manager=config,
+                state_manager=state_manager,
+                model_manager=model_manager,
+                command_executor=command_executor,
+                no_auth=True,
+            )
 
     @pytest.fixture
     def test_client(self, web_server):
@@ -267,7 +273,7 @@ class TestPerformanceBenchmarks:
         """Test WebSocket message broadcasting performance."""
         from unittest.mock import AsyncMock
 
-        from web_mode import WebSocketMessage
+        from chatty_commander.web.web_mode import WebSocketMessage
 
         # Create mock WebSocket connections
         num_connections = 50

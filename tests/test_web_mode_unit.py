@@ -9,16 +9,20 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.web_mode import (
+    CommandRequest,
+    StateChangeRequest,
+    SystemStatus,
+    WebModeServer,
+)
 from fastapi.testclient import TestClient
-
-from command_executor import CommandExecutor
-from config import Config
-from model_manager import ModelManager
-from state_manager import StateManager
-from web_mode import CommandRequest, StateChangeRequest, SystemStatus, WebModeServer
 
 
 class TestWebModeServer:
@@ -44,14 +48,21 @@ class TestWebModeServer:
     @pytest.fixture
     def web_server(self, mock_managers):
         """Create WebModeServer instance for testing."""
-        config, state_manager, model_manager, command_executor = mock_managers
-        return WebModeServer(
-            config_manager=config,
-            state_manager=state_manager,
-            model_manager=model_manager,
-            command_executor=command_executor,
-            no_auth=True,
-        )
+        with patch(
+            'chatty_commander.advisors.providers.build_provider_safe'
+        ) as mock_build_provider:
+            mock_provider = MagicMock()
+            mock_provider.model = "test-model"
+            mock_provider.api_mode = "completion"
+            mock_build_provider.return_value = mock_provider
+            config, state_manager, model_manager, command_executor = mock_managers
+            return WebModeServer(
+                config_manager=config,
+                state_manager=state_manager,
+                model_manager=model_manager,
+                command_executor=command_executor,
+                no_auth=True,
+            )
 
     @pytest.fixture
     def test_client(self, web_server):
@@ -151,7 +162,7 @@ class TestWebModeServer:
         web_server.active_connections.add(mock_ws1)
         web_server.active_connections.add(mock_ws2)
 
-        from web_mode import WebSocketMessage
+        from chatty_commander.web.web_mode import WebSocketMessage
 
         message = WebSocketMessage(type="test", data={"key": "value"})
 
@@ -272,7 +283,7 @@ class TestPydanticModels:
 
     def test_command_response_model(self):
         """Test CommandResponse model."""
-        from web_mode import CommandResponse
+        from chatty_commander.web.web_mode import CommandResponse
 
         response = CommandResponse(
             success=True, message="Command executed successfully", execution_time=123.45
@@ -305,8 +316,15 @@ class TestWebModeAdditional:
 
     @pytest.fixture
     def web_server(self, mock_managers):
-        config, state_manager, model_manager, command_executor = mock_managers
-        return WebModeServer(config, state_manager, model_manager, command_executor)
+        with patch(
+            'chatty_commander.advisors.providers.build_provider_safe'
+        ) as mock_build_provider:
+            mock_provider = MagicMock()
+            mock_provider.model = "test-model"
+            mock_provider.api_mode = "completion"
+            mock_build_provider.return_value = mock_provider
+            config, state_manager, model_manager, command_executor = mock_managers
+            return WebModeServer(config, state_manager, model_manager, command_executor)
 
     @pytest.fixture
     def test_client(self, web_server):

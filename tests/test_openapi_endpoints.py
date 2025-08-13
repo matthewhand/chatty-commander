@@ -1,4 +1,13 @@
-import json
+from unittest.mock import MagicMock, patch
+
+import pytest
+from chatty_commander.app import CommandExecutor
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+
+# Import FastAPI app from the source package
+from chatty_commander.web.web_mode import WebModeServer
 from fastapi.testclient import TestClient
 
 # Import FastAPI app from the source package
@@ -16,7 +25,13 @@ _executor = CommandExecutor(_config, _models, _state)
 _server = WebModeServer(config_manager=_config, state_manager=_state, model_manager=_models, command_executor=_executor, no_auth=True)
 app = _server.app
 
-client = TestClient(app)
+@pytest.fixture
+def client():
+    """Create a test client with mocked advisors service."""
+    with patch('chatty_commander.web.web_mode.AdvisorsService') as mock_advisors_service:
+        # Mock the AdvisorsService to avoid OpenAI API key requirement
+        mock_service = MagicMock()
+        mock_advisors_service.return_value = mock_service
 
 
 def test_swagger_ui_docs_available():

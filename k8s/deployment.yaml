@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chatty-commander-config
+data:
+  config.json: |
+    {
+      "models": {
+        "idle": "models/idle",
+        "computer": "models/computer",
+        "chatty": "models/chatty"
+      },
+      "commands": {
+        "open_browser": "start chrome",
+        "volume_up": "keypress:volume_up"
+      },
+      "advisors": {
+        "enabled": true,
+        "providers": {
+          "llm_api_mode": "completion",
+          "model": "gpt-3.5-turbo",
+          "temperature": 0.7,
+          "max_tokens": 1000
+        },
+        "context": {
+          "personas": {
+            "general": {"system_prompt": "You are a helpful assistant."},
+            "philosopher": {"system_prompt": "You are a philosophical advisor."},
+            "discord_default": {"system_prompt": "You are a Discord bot assistant."},
+            "slack_default": {"system_prompt": "You are a Slack app assistant."}
+          },
+          "default_persona": "general",
+          "persistence_enabled": true,
+          "persistence_path": "/app/data/contexts.json"
+        },
+        "memory": {
+          "persistence_enabled": true,
+          "persistence_path": "/app/data/advisors_memory.jsonl"
+        }
+      }
+    }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chatty-commander-secrets
+type: Opaque
+data:
+  openai-api-key: <base64-encoded-api-key>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatty-commander
+  labels:
+    app: chatty-commander
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: chatty-commander
+  template:
+    metadata:
+      labels:
+        app: chatty-commander
+    spec:
+      containers:
+      - name: chatty-commander
+        image: chatty-commander:latest
+        ports:
+        - containerPort: 8100
+        env:
+        - name: PYTHONPATH
+          value: "/app/src"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: chatty-commander-secrets
+              key: openai-api-key
+        - name: ADVISORS_ENABLED
+          value: "true"
+        - name: ADVISORS_MODEL
+          value: "gpt-3.5-turbo"
+        - name: ADVISORS_API_MODE
+          value: "completion"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config.json
+          subPath: config.json
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/status
+            port: 8100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/status
+            port: 8100
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: chatty-commander-config
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: chatty-commander-data
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: chatty-commander-logs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatty-commander-service
+spec:
+  selector:
+    app: chatty-commander
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8100
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: chatty-commander-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  rules:
+  - host: chatty-commander.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: chatty-commander-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - chatty-commander.example.com
+    secretName: chatty-commander-tls
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatty-commander-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatty-commander-logs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

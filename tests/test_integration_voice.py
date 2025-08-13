@@ -1,10 +1,9 @@
 from unittest.mock import patch
 
 import pytest
-
-from config import Config
-from model_manager import ModelManager
-from state_manager import StateManager
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
 
 
 @pytest.fixture
@@ -28,8 +27,8 @@ def test_voice_recognition_integration_idle(state_manager, model_manager):
     model_manager.reload_models('idle')
     assert len(model_manager.active_models) > 0
     with (
-        patch('model_manager.random.random', return_value=0.01),
-        patch('model_manager.random.choice', return_value='hey_chat_tee'),
+        patch('chatty_commander.app.model_manager.random.random', return_value=0.01),
+        patch('chatty_commander.app.model_manager.random.choice', return_value='hey_chat_tee'),
         patch('time.sleep'),
     ):
         detected = model_manager.listen_for_commands()
@@ -44,8 +43,8 @@ def test_voice_recognition_integration_chatty(state_manager, model_manager):
     model_manager.reload_models('chatty')
     assert len(model_manager.active_models) > 0
     with (
-        patch('model_manager.random.random', return_value=0.01),
-        patch('model_manager.random.choice', return_value='okay_stop'),
+        patch('chatty_commander.app.model_manager.random.random', return_value=0.01),
+        patch('chatty_commander.app.model_manager.random.choice', return_value='okay_stop'),
         patch('time.sleep'),
     ):
         detected = model_manager.listen_for_commands()
@@ -58,7 +57,10 @@ def test_no_detection_integration(state_manager, model_manager):
     """Test no detection case."""
     state_manager.change_state('computer')
     model_manager.reload_models('computer')
-    with patch('model_manager.random.random', return_value=0.1), patch('time.sleep'):
+    with (
+        patch('chatty_commander.app.model_manager.random.random', return_value=0.1),
+        patch('time.sleep'),
+    ):
         detected = model_manager.listen_for_commands()
         assert detected is None
         new_state = state_manager.update_state('invalid')

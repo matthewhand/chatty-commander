@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Any
 
 import pytest
+
 
 def pytest_ignore_collect(collection_path: Path, config: "pytest.Config") -> bool:
     """Ignore certain paths during test collection using pathlib.Path as per pytest>=8."""
