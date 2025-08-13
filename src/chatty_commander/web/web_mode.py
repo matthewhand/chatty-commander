@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-web_mode.py
+"""web_mode.py.
 
 FastAPI web server implementation for ChattyCommander.
 Provides REST API endpoints and WebSocket support for web interface.
@@ -9,6 +8,7 @@ Provides REST API endpoints and WebSocket support for web interface.
 import asyncio
 import json
 import logging
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -455,7 +455,7 @@ class WebModeServer:
 
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
-            """WebSocket endpoint for real-time updates."""
+            """Websocket endpoint for real-time updates."""
             await websocket.accept()
             self.active_connections.add(websocket)
 
@@ -621,7 +621,21 @@ class WebModeServer:
             pass
 
     def run(self, host: str = "0.0.0.0", port: int = 8100, log_level: str = "info") -> None:
-        """Run the web server."""
+        """Run the web server, honoring environment overrides."""
+        env_host = os.getenv("CHATCOMM_HOST")
+        env_port = os.getenv("CHATCOMM_PORT")
+        env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
+
+        if env_host:
+            host = env_host
+        if env_port:
+            try:
+                port = int(env_port)
+            except ValueError:
+                logger.warning("Invalid CHATCOMM_PORT '%s'; falling back to %s", env_port, port)
+        if env_log_level:
+            log_level = env_log_level
+
         logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
         logger.info(f"📖 API documentation: http://{host}:{port}/docs")
         logger.info(f"🔧 Authentication: {'Disabled' if self.no_auth else 'Enabled'}")
@@ -668,7 +682,11 @@ if __name__ == "__main__":
         no_auth=True,
     )
 
-    server.run()
+    env_host = os.getenv("CHATCOMM_HOST", "0.0.0.0")
+    env_port = int(os.getenv("CHATCOMM_PORT", "8100"))
+    env_log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
+
+    server.run(host=env_host, port=env_port, log_level=env_log_level)
 
 
 # Minimal, stateless FastAPI app factory for tests
