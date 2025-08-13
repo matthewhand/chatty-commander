@@ -419,7 +419,7 @@ chatty-commander/
 ```bash
 # Backend
 cd webui/backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8100
 
 # Frontend
 cd webui/frontend
@@ -439,8 +439,8 @@ npm run dev
    services:
      backend:
        build: ./backend
-       ports:
-         - "8000:8000"
+      ports:
+        - "8100:8100"
        environment:
          - DATABASE_URL=postgresql://user:pass@db:5432/chatty
      

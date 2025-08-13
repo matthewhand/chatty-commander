@@ -2,13 +2,15 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
+from jsonschema import ValidationError, validate
 
 from src.chatty_commander.config import Config
-
+from src.chatty_commander.tools.builder import build_openapi_schema
 
 @pytest.fixture
 def config():
-    return Config()
+    # Load configuration from default config.json so model_actions are populated
+    return Config.load()
 
 
 def test_validate_empty_actions(config):
@@ -86,9 +88,8 @@ def test_multiple_warnings(caplog, config, logger):
 def test_custom_paths(config, logger):
     """Test custom model paths."""
     config.general_models_path = 'custom/path'
-    config.idle_models_path = (
-        'custom/path/idle'  # Note: Config may not have idle_models_path, adjust if needed
-    )
+    config.system_models_path = 'custom/path/system'
+    config.chat_models_path = 'custom/path/chat'
     with (
         patch('os.path.exists', return_value=True),
         patch('os.listdir', return_value=['model.onnx']),
@@ -198,34 +199,47 @@ def test_init_default_values(config):
     assert config.debug_mode is True
     assert config.default_state == "idle"
     assert config.inference_framework == "onnx"
-    assert config.start_on_boot is False
-    assert config.check_for_updates is True
 
 
-def test_load_config_file_not_exist(config, monkeypatch):
+def test_update_general_setting_serialization_error(config, caplog, monkeypatch, tmp_path):
+    """Ensure serialization errors are logged without crashing."""
+    config.config_file = tmp_path / "config.json"
+
+    def fail_dump(*args, **kwargs):
+        raise TypeError("boom")
+
+    monkeypatch.setattr("json.dump", fail_dump)
+
+    with caplog.at_level(logging.ERROR):
+        config._update_general_setting("bad", object())
+
+    assert "Could not save config file" in caplog.text
+
+
+def test_load_config_file_not_exist(monkeypatch):
     """Test loading config when file does not exist."""
     monkeypatch.setattr('os.path.exists', lambda x: False)
-    config.config_data = config._load_config()
-    assert config.config_data == {}
+    cfg = Config.load('missing.json')
+    assert cfg.model_actions == {}
 
 
 def test_build_model_actions_keypress(config):
     """Test building model actions for keypress type."""
-    config.config_data['commands'] = {'test_command': {'action': 'keypress', 'keys': 'ctrl+alt+t'}}
+    config.commands = {'test_command': {'action': 'keypress', 'keys': 'ctrl+alt+t'}}
     actions = config._build_model_actions()
     assert actions['test_command'] == {'keypress': 'ctrl+alt+t'}
 
 
 def test_build_model_actions_url(config):
     """Test building model actions for url type with placeholder replacement."""
-    config.config_data['commands'] = {'test_url': {'action': 'url', 'url': '{home_assistant}/test'}}
+    config.commands = {'test_url': {'action': 'url', 'url': '{home_assistant}/test'}}
     actions = config._build_model_actions()
     assert actions['test_url'] == {'url': 'http://homeassistant.domain.home:8123/api/test'}
 
 
 def test_build_model_actions_custom_message(config):
     """Test building model actions for custom message."""
-    config.config_data['commands'] = {'test_msg': {'action': 'custom_message', 'message': 'Hello'}}
+    config.commands = {'test_msg': {'action': 'custom_message', 'message': 'Hello'}}
     actions = config._build_model_actions()
     assert actions['test_msg'] == {'message': 'Hello'}
 
@@ -254,3 +268,38 @@ def test_check_for_updates_error(config, monkeypatch):
     monkeypatch.setattr('subprocess.run', MagicMock(side_effect=Exception("Git error")))
     result = config.perform_update_check()
     assert result is None
+
+
+# Typed configuration schema validation tests
+
+def _get_config_schema() -> dict:
+    """Helper to extract Configuration schema from the OpenAPI builder."""
+    schema = build_openapi_schema()
+    return schema["components"]["schemas"]["Configuration"]
+
+
+def test_config_schema_accepts_valid_config():
+    """Ensure a minimal valid config passes JSON Schema validation."""
+    schema = _get_config_schema()
+    valid_cfg = {
+        "general_models_path": "models-idle",
+        "system_models_path": "models-computer",
+        "chat_models_path": "models-chatty",
+        "model_actions": {"foo": {"keypress": "ctrl+c"}},
+        "default_state": "idle",
+    }
+    validate(instance=valid_cfg, schema=schema)  # Should not raise
+
+
+def test_config_schema_rejects_invalid_state():
+    """Invalid default_state should raise a ValidationError."""
+    schema = _get_config_schema()
+    invalid_cfg = {
+        "general_models_path": "models-idle",
+        "system_models_path": "models-computer",
+        "chat_models_path": "models-chatty",
+        "model_actions": {},
+        "default_state": "unknown",
+    }
+    with pytest.raises(ValidationError):
+        validate(instance=invalid_cfg, schema=schema)

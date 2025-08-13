@@ -23,6 +23,12 @@ Core capabilities:
 
 Hello and welcome to ChattyCommander! If you're new here or revisiting after some time, this README will guide you through what the app does, its benefits, and how to get started. ChattyCommander is a voice-activated command processing system that uses machine learning models to detect wake words and execute predefined actions, making hands-free computing a reality.
 
+If you're looking to contribute, start with the [New Contributor Guide](docs/NEW_CONTRIBUTOR_GUIDE.md).
+For component diagrams and extension points see
+[Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md),
+[Configuration Schema](docs/CONFIG_SCHEMA.md), and
+[Adapter and Plugin System](docs/ADAPTERS.md).
+
 ## What It Does
 
 ChattyCommander listens continuously for voice commands using ONNX-based models. It supports different states (idle, computer, chatty) and transitions between them based on detected wake words like "hey chat tee" or "hey khum puter". Once in a specific state, it can execute actions such as keypresses, API calls to home assistants, or interactions with chatbots.
@@ -37,39 +43,42 @@ ChattyCommander listens continuously for voice commands using ONNX-based models.
 ## Core Concepts
 
 ### Modes (States)
+
 ChattyCommander operates in distinct "modes" or "states," each designed to activate a specific set of voice models and functionalities. This allows the application to respond differently based on the context you've set. The primary states are:
 
--   **Idle**: The default state. In this mode, ChattyCommander primarily listens for wake words that transition it to other states (e.g., "hey chat tee", "hey khum puter").
--   **Computer**: Once in this state, ChattyCommander activates models specifically designed for system-level commands, allowing you to control your computer through voice.
--   **Chatty**: In this mode, the application is configured to interact with chatbot models, enabling conversational commands and responses.
+- **Idle**: The default state. In this mode, ChattyCommander primarily listens for wake words that transition it to other states (e.g., "hey chat tee", "hey khum puter").
+- **Computer**: Once in this state, ChattyCommander activates models specifically designed for system-level commands, allowing you to control your computer through voice.
+- **Chatty**: In this mode, the application is configured to interact with chatbot models, enabling conversational commands and responses.
 
 Transitions between these states are triggered by specific wake words defined in your configuration, ensuring that only relevant models are active at any given time.
 
 ### Actions and Keybindings
+
 Actions are the core functionalities ChattyCommander performs in response to recognized commands. These can include:
 
--   **Keypresses**: Emulating keyboard shortcuts (e.g., `ctrl+shift+;` for `okay_stop`). These are handled by the `pyautogui` library.
--   **URL Calls**: Sending HTTP requests to specified URLs, often used for integrating with smart home systems like Home Assistant.
--   **System Commands**: Executing shell commands directly on your operating system.
+- **Keypresses**: Emulating keyboard shortcuts (e.g., `ctrl+shift+;` for `okay_stop`). These are handled by the `pyautogui` library.
+- **URL Calls**: Sending HTTP requests to specified URLs, often used for integrating with smart home systems like Home Assistant.
+- **System Commands**: Executing shell commands directly on your operating system.
 
 Each recognized voice command is mapped to a specific action within the `config.py` file, allowing for flexible and customizable responses.
 
 ### Voice Files (ONNX Models)
+
 ChattyCommander utilizes ONNX (Open Neural Network Exchange) models for efficient and accurate voice command recognition. These models are pre-trained neural networks that convert spoken words into actionable commands.
 
--   **Model Placement**: ONNX models are organized into specific directories (`models-idle`, `models-computer`, `models-chatty`) corresponding to the application's states.
--   **Efficiency**: ONNX models are chosen for their optimized performance, enabling real-time voice processing with minimal latency.
--   **Customization**: Users can train and integrate their own ONNX models to extend ChattyCommander's vocabulary and command recognition capabilities.
+- **Model Placement**: ONNX models are organized into specific directories (`models-idle`, `models-computer`, `models-chatty`) corresponding to the application's states.
+- **Efficiency**: ONNX models are chosen for their optimized performance, enabling real-time voice processing with minimal latency.
+- **Customization**: Users can train and integrate their own ONNX models to extend ChattyCommander's vocabulary and command recognition capabilities.
 
 ## Installation
 
 Quickstart
+
 - Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh
 - Create and sync env: uv python install 3.11 && uv sync
 - Run tests: uv run pytest -q
 - Run CLI: uv run chatty-commander --help
 - Run web server: uv run python main.py --web --no-auth
-
 
 1. **Prerequisites**: Ensure you have Python 3.11+ and `uv` installed for dependency management.
 2. **Clone the Repository**: `git clone https://github.com/your-repo/chatty-commander.git`
@@ -92,6 +101,7 @@ Quickstart
 ### Web UI with Authentication
 
 Start the web server with authentication enabled (default):
+
 ```bash
 uv run python main.py --web --port 8100
 ```
@@ -99,17 +109,20 @@ uv run python main.py --web --port 8100
 ### Development Mode (No Authentication)
 
 ⚠️ **Security Warning**: Only use `--no-auth` for local development. This mode:
+
 - Disables all authentication mechanisms
 - Allows unrestricted API access
 - Exposes OpenAPI documentation at `/docs`
 - Should **NEVER** be used in production or on public networks
 
 For local development only:
+
 ```bash
 uv run python main.py --web --no-auth --port 8100
 ```
 
 This enables:
+
 - Swagger UI at `http://localhost:8100/docs`
 - Unrestricted CORS from `http://localhost:3000` (for frontend development)
 - Direct API access without authentication tokens
@@ -291,6 +304,7 @@ The application uses a JSON-based configuration system with automatic default ge
 ### Default Configuration
 
 When no configuration is detected, the system automatically generates:
+
 - A comprehensive `config.json` with sample commands and settings
 - A `wakewords/` directory containing placeholder ONNX files
 - Model directories (`models-idle`, `models-computer`, `models-chatty`) with symlinks to wakeword files
@@ -305,20 +319,27 @@ When no configuration is detected, the system automatically generates:
 ChattyCommander can be configured dynamically using the CLI tool via the `chatty` command. This allows you to update `config.json` interactively or non-interactively.
 
 ### Interactive Mode
+
 Run:
+
 ```bash
 uv run chatty config
 ```
+
 Follow the prompts to set model-action mappings, state-model associations, and other settings.
 
 ### Non-Interactive Mode
+
 Update specific settings directly:
+
 ```bash
 uv run chatty config --model-action "okay_stop" "ctrl+shift+;"
 ```
+
 Use `uv run chatty config --help` for more options.
 
 Alternatively, edit `config.py` manually for static changes.
+
 - Model paths and state associations.
 - Actions for commands (e.g., keypresses or URLs).
 - Audio settings like sample rate.
@@ -329,14 +350,17 @@ Alternatively, edit `config.py` manually for static changes.
 {
   "advisors": {
     "enabled": true,
-    "llm_api_mode": "completion", 
+    "llm_api_mode": "completion",
     "model": "gpt-oss20b",
     "provider": { "base_url": "http://localhost:11434", "api_key": "" },
     "bridge": { "token": "secret" },
     "platforms": ["discord", "slack"],
     "personas": { "default": "philosophy_advisor" },
     "features": { "browser_analyst": true, "avatar_talkinghead": false },
-    "memory": { "persistence_enabled": true, "persistence_path": "data/advisors_memory.jsonl" }
+    "memory": {
+      "persistence_enabled": true,
+      "persistence_path": "data/advisors_memory.jsonl"
+    }
   }
 }
 ```
@@ -348,9 +372,6 @@ Alternatively, edit `config.py` manually for static changes.
 - Refer to logs for detailed error messages.
 
 Enjoy using ChattyCommander! If you have questions, feel free to open an issue.
-
-
-
 
 ## Avatar GUI and Settings
 
@@ -390,15 +411,12 @@ In CI, release tag builds create artifacts for Linux/macOS/Windows (see `.github
 
 Basic help:
 
-
-
 Start interactive REPL:
-
-
 
 Example session (stdin-driven):
 
-
-
 This flow is covered by automated tests: see [tests.test_repl_basic.test_repl_quick_session_executes_and_exits_cleanly():1].
 
+## Contributing
+
+Contributions are welcome! For larger changes or new features, please start by opening an RFC issue using the provided template and follow the [RFC process](docs/RFC_PROCESS.md).

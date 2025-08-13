@@ -43,7 +43,7 @@ def generate_env_template() -> str:
     return """# Node.js Bridge Configuration
 
 # Python Advisor API
-ADVISOR_API_URL=http://localhost:8000
+ADVISOR_API_URL=http://localhost:8100
 BRIDGE_TOKEN=your_shared_secret_here
 
 # Discord Bot Configuration
@@ -109,7 +109,7 @@ const slackApp = new App({
 // Advisor API client
 class AdvisorAPIClient {
   constructor() {
-    this.baseURL = process.env.ADVISOR_API_URL || 'http://localhost:8000';
+    this.baseURL = process.env.ADVISOR_API_URL || 'http://localhost:8100';
     this.bridgeToken = process.env.BRIDGE_TOKEN;
   }
 
@@ -342,7 +342,7 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=development
-      - ADVISOR_API_URL=http://host.docker.internal:8000
+      - ADVISOR_API_URL=http://host.docker.internal:8100
       - BRIDGE_TOKEN=${BRIDGE_TOKEN}
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}

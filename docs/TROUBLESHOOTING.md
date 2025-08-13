@@ -44,7 +44,7 @@
 - **Symptoms**: Interface not loading or WebSocket disconnects.
 - **Solutions**:
   - Check browser console for errors.
-  - Ensure correct ports are open (default: 8000 for web).
+  - Ensure correct ports are open (default: 8100 for web).
   - Clear browser cache.
 
 ## Advanced Debugging

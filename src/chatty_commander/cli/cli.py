@@ -107,8 +107,14 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
-    if "DISPLAY" not in os.environ:
-        os.environ["DISPLAY"] = ":0"
+    # Do **not** implicitly set a DISPLAY environment variable. Some tests run
+    # in headless environments and expect importing other modules (e.g.,
+    # ``pyautogui`` via ``main.py``) to skip any X11 connection attempts when a
+    # display is not present. Previously, we forced ``DISPLAY=:0`` which caused
+    # later tests spawning new Python processes to fail with
+    # ``Xlib.error.DisplayConnectionError``.  Rely on the caller to provide an
+    # explicit DISPLAY when needed instead of mutating the global environment
+    # here.
 
     subparsers = parser.add_subparsers(dest="command", required=False)
 

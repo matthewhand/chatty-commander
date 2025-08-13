@@ -12,10 +12,48 @@ import logging
 
 import requests
 import websockets
+from unittest.mock import MagicMock, patch
+
+import pytest
+from fastapi.testclient import TestClient
+
+from config import Config
+from web_mode import WebModeServer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def auth_client():
+    cfg = Config()
+    cfg.advisors = {"enabled": True, "bridge": {"token": "secret"}}
+    state_manager = MagicMock()
+    state_manager.current_state = "idle"
+    state_manager.get_active_models.return_value = []
+    state_manager.add_state_change_callback = MagicMock()
+    model_manager = MagicMock()
+    command_executor = MagicMock()
+    with patch("chatty_commander.web.web_mode.AdvisorsService") as svc:
+        reply = MagicMock()
+        reply.reply = "hi"
+        svc.return_value.handle_message.return_value = reply
+        server = WebModeServer(cfg, state_manager, model_manager, command_executor)
+    return TestClient(server.app)
+
+
+def test_bridge_event_requires_token(auth_client):
+    event = {"platform": "p", "channel": "c", "user": "u", "text": "hi"}
+    resp = auth_client.post("/bridge/event", json=event)
+    assert resp.status_code == 401
+
+
+def test_bridge_event_with_token(auth_client):
+    event = {"platform": "p", "channel": "c", "user": "u", "text": "hi"}
+    resp = auth_client.post("/bridge/event", json=event, headers={"X-Bridge-Token": "secret"})
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
 
 
 class WebModeValidator:

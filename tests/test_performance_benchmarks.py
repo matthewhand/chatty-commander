@@ -12,13 +12,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 import psutil
 import pytest
-from config import Config
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.web.web_mode import WebModeServer
 from fastapi.testclient import TestClient
-from model_manager import ModelManager
-from state_manager import StateManager
-from web_mode import WebModeServer
-
-from src.chatty_commander.command_executor import CommandExecutor
 
 
 class PerformanceMonitor:
@@ -274,7 +273,7 @@ class TestPerformanceBenchmarks:
         """Test WebSocket message broadcasting performance."""
         from unittest.mock import AsyncMock
 
-        from web_mode import WebSocketMessage
+        from chatty_commander.web.web_mode import WebSocketMessage
 
         # Create mock WebSocket connections
         num_connections = 50

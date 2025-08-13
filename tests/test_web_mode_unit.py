@@ -12,13 +12,17 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from config import Config
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.web.web_mode import (
+    CommandRequest,
+    StateChangeRequest,
+    SystemStatus,
+    WebModeServer,
+)
 from fastapi.testclient import TestClient
-from model_manager import ModelManager
-from state_manager import StateManager
-from web_mode import CommandRequest, StateChangeRequest, SystemStatus, WebModeServer
-
-from src.chatty_commander.command_executor import CommandExecutor
 
 
 class TestWebModeServer:
@@ -158,7 +162,7 @@ class TestWebModeServer:
         web_server.active_connections.add(mock_ws1)
         web_server.active_connections.add(mock_ws2)
 
-        from web_mode import WebSocketMessage
+        from chatty_commander.web.web_mode import WebSocketMessage
 
         message = WebSocketMessage(type="test", data={"key": "value"})
 
@@ -279,7 +283,7 @@ class TestPydanticModels:
 
     def test_command_response_model(self):
         """Test CommandResponse model."""
-        from web_mode import CommandResponse
+        from chatty_commander.web.web_mode import CommandResponse
 
         response = CommandResponse(
             success=True, message="Command executed successfully", execution_time=123.45

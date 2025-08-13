@@ -33,10 +33,10 @@ except Exception:  # pragma: no cover
 
 
 def _avatar_index_path() -> Path:
-    # File location: src/chatty_commander/gui/avatar_gui.py
+    # File location: src/chatty_commander/avatars/avatar_gui.py
     # We want:      src/chatty_commander/webui/avatar/index.html
     here = Path(__file__).resolve()
-    root = here.parent.parent  # up from gui/ to chatty_commander/
+    root = here.parent.parent  # up from avatars/ to chatty_commander/
     return root / "webui" / "avatar" / "index.html"
 
 
