@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from model_manager import ModelManager
+from chatty_commander.app.model_manager import ModelManager
 
 from src.chatty_commander.config import Config
 import asyncio
@@ -17,14 +17,14 @@ class TestModelManager:
     def test_reload_models(self):
         config = Config()
         mm = ModelManager(config)
-        with patch('model_manager.Model', return_value=MagicMock()):
+        with patch('chatty_commander.app.model_manager.Model', return_value=MagicMock()):
             models = mm.reload_models('idle')
             assert isinstance(models, dict)
 
     def test_reload_models_invalid_state(self):
         config = Config()
         mm = ModelManager(config)
-        with patch('model_manager.Model', return_value=MagicMock()):
+        with patch('chatty_commander.app.model_manager.Model', return_value=MagicMock()):
             models = mm.reload_models('invalid')
             assert models == {}
 

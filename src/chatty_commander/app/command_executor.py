@@ -273,9 +273,7 @@ class CommandExecutor:
                 logging.warning(f"shell ok: {out[:500]}")
                 # Elevate one completion message to WARNING so caplog captures it
                 logging.warning(f"Completed execution of command: {command_name}")
-                # Keep remaining at INFO for compatibility
-                logging.info(f"Completed execution of command: {command_name}")
-                logging.info(f"Completed execution of command: {command_name}")
+                # Keep one INFO log for compatibility
                 logging.info(f"Completed execution of command: {command_name}")
         except subprocess.TimeoutExpired:
             msg = "shell command timed out"

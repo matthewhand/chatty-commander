@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import textwrap
@@ -6,7 +7,11 @@ PYTHON = sys.executable
 
 
 def run_with_stdin(args, input_text: str, timeout=15):
-    proc = subprocess.run(args, input=input_text, capture_output=True, text=True, timeout=timeout)
+    env = os.environ.copy()
+    env.pop("DISPLAY", None)
+    proc = subprocess.run(
+        args, input=input_text, capture_output=True, text=True, timeout=timeout, env=env
+    )
     return proc.returncode, proc.stdout, proc.stderr
 
 
