@@ -27,25 +27,28 @@ class Config:
         self.wakeword_state_map = self.config_data.get("wakeword_state_map", {})
         self.state_transitions = self.config_data.get("state_transitions", {})
         self.commands = self.config_data.get("commands", {})
-        
+
         # Create general_settings object for backward compatibility
         class GeneralSettings:
             def __init__(self, config):
                 self._config = config
-            
+
             @property
             def default_state(self):
                 return self._config.default_state
-            
+
             @default_state.setter
             def default_state(self, value):
                 self._config.default_state = value
                 self._config.config_data["default_state"] = value
-        
+
         self.general_settings = GeneralSettings(self)
 
         # Apply environment variable overrides
         self._apply_env_overrides()
+
+        # Load general settings with possible environment overrides
+        self._load_general_settings()
 
     def _apply_env_overrides(self):
         """Apply environment variable overrides to API endpoints."""
@@ -136,13 +139,7 @@ class Config:
         self.audio_format = audio_settings.get("audio_format", "int16")
 
         # General settings
-        general_settings = self.config_data.get("general_settings", {})
-        self.debug_mode = general_settings.get("debug_mode", True)
-        self.default_state = general_settings.get("default_state", "idle")
-        self.inference_framework = general_settings.get("inference_framework", "onnx")
-        self.start_on_boot = general_settings.get("start_on_boot", False)
-        # Ensure we're using ONNX runtime for ONNX models
-        self.check_for_updates = general_settings.get("check_for_updates", True)
+        self._load_general_settings()
 
         # Keybindings
         self.keybindings = self.config_data.get("keybindings", {})
@@ -273,6 +270,32 @@ class Config:
                 model_actions[command_name] = {"message": command_config.get("message", "")}
 
         return model_actions
+
+    def _load_general_settings(self) -> None:
+        """Load general settings, applying environment variable overrides."""
+        general_settings = self.config_data.get("general_settings", {})
+
+        def _env_bool(name: str, default: bool) -> bool:
+            val = os.getenv(name)
+            if val is None:
+                return default
+            return val.strip().lower() in {"1", "true", "yes"}
+
+        self.debug_mode = _env_bool("CHATCOMM_DEBUG", general_settings.get("debug_mode", True))
+        self.default_state = os.getenv(
+            "CHATCOMM_DEFAULT_STATE", general_settings.get("default_state", "idle")
+        )
+        self.inference_framework = os.getenv(
+            "CHATCOMM_INFERENCE_FRAMEWORK",
+            general_settings.get("inference_framework", "onnx"),
+        )
+        self.start_on_boot = _env_bool(
+            "CHATCOMM_START_ON_BOOT", general_settings.get("start_on_boot", False)
+        )
+        self.check_for_updates = _env_bool(
+            "CHATCOMM_CHECK_FOR_UPDATES",
+            general_settings.get("check_for_updates", True),
+        )
 
     def validate(self):
         import logging
