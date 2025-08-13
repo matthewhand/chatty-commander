@@ -702,7 +702,45 @@ if __name__ == "__main__":
 # Minimal, stateless FastAPI app factory for tests
 
 
-def create_app(no_auth: bool = True) -> FastAPI:
+def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
+    """Create a minimal FastAPI app used in unit tests.
+
+    Parameters
+    ----------
+    no_auth:
+        When ``True`` the server behaves in development/no-auth mode and CORS
+        is fully permissive. When ``False`` the app applies the same CORS
+        restrictions as production.
+    config:
+        Optional :class:`~chatty_commander.app.config.Config` instance.  If
+        supplied and ``no_auth`` is ``False`` the ``web.allowed_origins`` value
+        from the config is used for CORS.  When not provided, the comma-separated
+        ``CHATCOMM_ALLOWED_ORIGINS`` environment variable is consulted.  This
+        mirrors the behaviour of the production server and allows tests to
+        supply custom origins without modifying global state.
+    """
+
+    if no_auth:
+        allowed_origins = ["*"]
+    else:
+        origins: list[str] | None = None
+        # Prefer config-provided origins when available
+        if config is not None:
+            web_cfg = getattr(config, "config", {}).get("web", {})  # type: ignore[arg-type]
+            cfg_origins = web_cfg.get("allowed_origins") if isinstance(web_cfg, dict) else None
+            if isinstance(cfg_origins, str):
+                origins = [cfg_origins]
+            elif isinstance(cfg_origins, (list, tuple)):
+                origins = [str(o) for o in cfg_origins]
+        # Fall back to environment variable
+        if origins is None:
+            env_origins = os.environ.get("CHATCOMM_ALLOWED_ORIGINS")
+            if env_origins:
+                origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+        if not origins:
+            origins = ["http://localhost:3000"]
+        allowed_origins = origins
+
     app = FastAPI(
         title="ChattyCommander API",
         version="0.2.0",
@@ -711,7 +749,7 @@ def create_app(no_auth: bool = True) -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if no_auth else ["http://localhost:3000"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -754,7 +792,7 @@ def create_app(no_auth: bool = True) -> FastAPI:
         def save_config(self, *_args, **_kwargs) -> None:  # matches both signatures
             return None
 
-    cfg_mgr = _MiniConfig()
+    cfg_mgr = config if config is not None else _MiniConfig()
 
     last_cmd: dict[str, str | None] = {"value": None}
 

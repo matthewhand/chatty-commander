@@ -335,8 +335,8 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     parser.add_argument(
         "--port",
         type=int,
-        default=8100,
-        help="Specify the port for the web server (default: 8100). Only used in web mode.",
+        default=None,
+        help="Specify the port for the web server. Only used in web mode.",
     )
 
     parser.add_argument(
@@ -473,7 +473,7 @@ def main():
     # If help was requested, argparse would have exited above with code 0.
     # Continue with validation for actual runs only.
     # Argument validation (only enforce when options are provided)
-    if getattr(args, "web", False) and getattr(args, "port", 8100) < 1024:
+    if getattr(args, "web", False) and args.port is not None and args.port < 1024:
         parser.error("Port must be 1024 or higher for non-root users")
     if getattr(args, "no_auth", False) and not getattr(args, "web", False):
         parser.error("--no-auth only applicable in web mode")
@@ -496,6 +496,20 @@ def main():
 
     # Load configuration settings
     config = Config()
+    # Apply CLI overrides to web server settings
+    web_cfg = getattr(config, "web_server", {}) or {}
+    if args.host is not None:
+        web_cfg["host"] = args.host
+    if args.port is not None:
+        web_cfg["port"] = args.port
+    if args.no_auth:
+        web_cfg["auth_enabled"] = False
+    if web_cfg:
+        config.web_server = web_cfg
+        try:
+            config.config["web_server"] = web_cfg
+        except Exception:
+            pass
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:
@@ -529,8 +543,10 @@ def main():
             command_executor,
             logger,
             host=host,
-            port=port,
             no_auth=args.no_auth,
+            port=args.port if args.port is not None else getattr(
+                getattr(config, "web_server", {}), "get", lambda *_: None
+            )("port", 8100),
         )
         return 0
     elif args.gui:
