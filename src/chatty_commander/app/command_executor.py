@@ -29,7 +29,7 @@ if not logger.handlers:
 # pyautogui is optional in headless/test envs; type as Optional[Any] for static analyzers
 try:
     import pyautogui  # type: ignore
-except (ImportError, OSError, KeyError):
+except Exception:  # noqa: BLE001 - handle headless DisplayConnectionError etc.
     pyautogui = None  # type: ignore[assignment]
 
 # Bridge to root-level shim so tests can patch command_executor.pyautogui/requests
@@ -290,6 +290,12 @@ class CommandExecutor:
         Reports an error to the logging system or an external monitoring service.
         """
         logging.critical(f"Error in {command_name}: {error_message}")
+        try:
+            from utils.logger import report_error as _report_error
+
+            _report_error(error_message, config=getattr(self, "config", None), context={"command": command_name})
+        except Exception:
+            pass
 
 
 # Example usage intentionally removed to avoid instantiation without required args during static analysis/tests.

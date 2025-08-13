@@ -57,6 +57,25 @@ class Config:
         # Ensure we're using ONNX runtime for ONNX models
         self.check_for_updates = general_settings.get("check_for_updates", True)
 
+        # Logging configuration
+        logging_settings = self.config_data.get("logging", {})
+        self.log_level = logging_settings.get("level", "INFO")
+        self.log_format = logging_settings.get("format", "plain")
+        self.log_handlers = logging_settings.get("handlers", ["console"])
+        self.log_file = logging_settings.get("file", "logs/chattycommander.log")
+        self.log_external_url = logging_settings.get("external_url", "")
+        self.telemetry_url = logging_settings.get("telemetry_url", "")
+        self.diagnostics_file = logging_settings.get("diagnostics_file", "logs/diagnostics.jsonl")
+        self.logging = {
+            "level": self.log_level,
+            "format": self.log_format,
+            "handlers": self.log_handlers,
+            "file": self.log_file,
+            "external_url": self.log_external_url or None,
+            "telemetry_url": self.telemetry_url or None,
+            "diagnostics_file": self.diagnostics_file,
+        }
+
         # Keybindings
         self.keybindings = self.config_data.get("keybindings", {})
 
