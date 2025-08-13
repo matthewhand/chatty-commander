@@ -121,6 +121,25 @@ class ConfigCLI:
             if continue_input.lower() != "y":
                 break
 
+    # ------------------------------------------------------------------
+    # Public entrypoints
+
+    def run_wizard(self) -> int:
+        """Launch the guided configuration wizard.
+
+        The current implementation simply delegates to :meth:`interactive_mode`
+        which provides a minimal interactive prompt used throughout the test
+        suite.  Returning an integer exit code mirrors the expectations of
+        callers such as :mod:`main` and :mod:`cli` which treat a ``0`` return
+        value as success.
+
+        Returns:
+            int: ``0`` on success.
+        """
+
+        self.interactive_mode()
+        return 0
+
 
 __all__ = ["ConfigCLI"]
 
