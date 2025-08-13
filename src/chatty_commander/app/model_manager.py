@@ -130,7 +130,7 @@ class ModelManager:
                 logging.error("Model loading failure: %s", diagnostics)
                 if retries > max_retries:
                     try:
-                        from utils.logger import report_error
+                        from chatty_commander.utils.logger import report_error
 
                         report_error(e)
                     except Exception as report_exc:
@@ -206,7 +206,7 @@ class ModelManager:
 if __name__ == "__main__":
     # Assuming a configuration instance 'config' is available
     # This section would be used for testing or development purposes.
-    from config import Config
+    from chatty_commander.app.config import Config
 
     config = Config()
     model_manager = ModelManager(config)

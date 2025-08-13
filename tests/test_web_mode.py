@@ -17,8 +17,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from config import Config
-from web_mode import WebModeServer
+from chatty_commander.app.config import Config
+from chatty_commander.web.web_mode import WebModeServer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
