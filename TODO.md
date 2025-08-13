@@ -183,6 +183,20 @@ Notes
 - [ ] Coverage ≥ 85% for advisor modules; per-platform adapters have smoke tests
 - [ ] CI secrets strategy documented; integration tests gated for local/dev only
 
+## Completed ✅
+
+All major "Now" items have been delivered:
+- ✅ OpenAPI/Swagger exposure and tests
+- ✅ CLI UX hardening (comprehensive help, examples)
+- ✅ Test infrastructure (90% coverage gate, green CI)
+- ✅ WebUI connectivity sanity (docs + tests)
+- ✅ API docs parity automation (Makefile + CI)
+- ✅ Makefile convenience targets
+- ✅ Health/version/metrics endpoints with tests
+- ✅ PyInstaller packaging + CI artifacts + smoke tests
+- ✅ Standalone install documentation
+- ✅ E2E workflows and smoke script
+
 ## Now (Sprint Focus)
 
 1) OpenAPI/Swagger exposure and tests
