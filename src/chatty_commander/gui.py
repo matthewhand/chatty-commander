@@ -870,7 +870,7 @@ class CommandDialog:
         self.dialog.grab_set()
 
         # Center the dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        self.dialog.geometry(f"+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}")
 
         # Name field
         ttk.Label(self.dialog, text="Command Name:").pack(pady=5)
@@ -924,7 +924,7 @@ class StateModelsDialog:
         self.dialog.grab_set()
 
         # Center the dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        self.dialog.geometry(f"+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}")
 
         # Create interface for each state
         self.model_vars = {}

@@ -15,7 +15,7 @@ try:  # pragma: no cover - best effort import
 except Exception:  # noqa: BLE001
     requests = None  # type: ignore
 
-__all__ = ["pyautogui", "requests", "CommandExecutor"]
+__all__ = ["pyautogui", "requests"]
 
 
 def __getattr__(name: str):  # PEP 562
