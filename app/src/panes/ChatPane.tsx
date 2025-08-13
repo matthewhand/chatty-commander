@@ -21,20 +21,39 @@ export default function ChatPane() {
     push(userMsg);
     setText('');
 
-    const assistantId = uuidv4();
-    push({
-      id: assistantId,
-      role: 'assistant',
-      createdAt: new Date().toISOString(),
-      content: [{ type: 'text', text: '' }],
-    });
+    let assistantId: string | null = null;
 
     await sse('/api/chat', { messages: [userMsg] }, {
-      chunk: ({ delta }) => {
-        update(assistantId, m => ({
+      chunk: ({ id, delta }) => {
+        if (!assistantId) {
+          assistantId = id;
+          push({
+            id,
+            role: 'assistant',
+            createdAt: new Date().toISOString(),
+            content: [{ type: 'text', text: '' }],
+          });
+        }
+        update(id, m => ({
           ...m,
           content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
         }));
+      },
+      tool_call: data => {
+        push({
+          id: data.id,
+          role: 'assistant',
+          createdAt: new Date().toISOString(),
+          content: [{ type: 'text', text: `Calling tool ${data.name}` }],
+        });
+      },
+      tool_result: data => {
+        push({
+          id: `${data.id}:result`,
+          role: 'tool',
+          createdAt: new Date().toISOString(),
+          content: [{ type: 'text', text: data.result }],
+        });
       },
       done: () => {},
     });
@@ -58,7 +77,7 @@ export default function ChatPane() {
   return (
     <section
       id="chat-pane"
-      className="h-full flex flex-col"
+      className="h-full flex flex-col bg-gray-900"
       aria-label="Chat"
       tabIndex={-1}
     >
@@ -70,17 +89,17 @@ export default function ChatPane() {
           </div>
         ))}
       </div>
-      <div className="p-2 border-t border-gray-700">
+      <div className="p-2 border-t border-gray-700 bg-gray-900">
         <textarea
           id="chat-input"
-          className="w-full p-2 bg-gray-800"
+          className="w-full p-2 bg-gray-800 text-gray-100 border border-gray-700"
           placeholder="Type a message"
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKey}
         />
         <button
-          className="mt-2 px-3 py-1 bg-blue-600 rounded"
+          className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded"
           onClick={send}
         >
           Send

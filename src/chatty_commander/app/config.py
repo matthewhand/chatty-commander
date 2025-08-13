@@ -28,6 +28,9 @@ class Config:
         self.state_transitions = self.config_data.get("state_transitions", {})
         self.commands = self.config_data.get("commands", {})
 
+        # Voice/GUI behaviour
+        self.voice_only = self.config_data.get("voice_only", False)
+
         # Create general_settings object for backward compatibility
         class GeneralSettings:
             def __init__(self, config):
@@ -93,6 +96,7 @@ class Config:
         # Persist web server configuration
         self._apply_web_server_config()
         self.config_data["web_server"] = self.web_server
+        self.config_data["voice_only"] = self.voice_only
 
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:

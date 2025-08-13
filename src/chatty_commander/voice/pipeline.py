@@ -15,6 +15,7 @@ import threading
 from collections.abc import Callable
 
 from .transcription import VoiceTranscriber
+from .tts import TextToSpeech
 from .wakeword import VOICE_DEPS_AVAILABLE, MockWakeWordDetector, WakeWordDetector
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ class VoicePipeline:
         wake_words: list[str] | None = None,
         transcription_backend: str = "whisper_local",
         use_mock: bool = False,
+        tts_backend: str = "pyttsx3",
+        voice_only: bool = False,
         **kwargs,
     ):
         self.config_manager = config_manager
@@ -46,6 +49,8 @@ class VoicePipeline:
             self.wake_detector = WakeWordDetector(wake_words=wake_words, **kwargs)
 
         self.transcriber = VoiceTranscriber(backend=transcription_backend, **kwargs)
+        self.tts = TextToSpeech(backend=tts_backend)
+        self.voice_only = voice_only
 
         # State
         self._listening = False
@@ -164,12 +169,18 @@ class VoicePipeline:
                     logger.info(f"Successfully executed command: {command_name}")
                     # Notify callbacks
                     self._notify_callbacks(command_name, transcription)
+                    if self.voice_only and self.tts.is_available():
+                        self.tts.speak(command_name)
                 else:
                     logger.warning(f"Failed to execute command: {command_name}")
+                    if self.voice_only and self.tts.is_available():
+                        self.tts.speak(f"Failed to execute {command_name}")
             else:
                 logger.info(f"No matching command found for: '{transcription}'")
                 # Still notify callbacks with empty command name
                 self._notify_callbacks("", transcription)
+                if self.voice_only and self.tts.is_available():
+                    self.tts.speak(transcription)
 
         except Exception as e:
             logger.error(f"Error processing voice command: {e}")
@@ -262,7 +273,14 @@ class VoicePipeline:
             success = self._execute_command(command_name)
             if success:
                 self._notify_callbacks(command_name, text)
+                if self.voice_only and self.tts.is_available():
+                    self.tts.speak(command_name)
                 return command_name
+            if self.voice_only and self.tts.is_available():
+                self.tts.speak(f"Failed to execute {command_name}")
+        else:
+            if self.voice_only and self.tts.is_available():
+                self.tts.speak(text)
         return None
 
     def get_status(self) -> dict[str, any]:

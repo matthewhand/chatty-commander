@@ -4,7 +4,7 @@ export default function SidecarPane() {
   return (
     <section
       id="review-pane"
-      className="h-full p-2"
+      className="h-full p-2 bg-gray-900"
       aria-label="Review"
       tabIndex={-1}
     >

@@ -1,6 +1,6 @@
 # ChattyCommander TODO
 
-Last updated: 2025-08-03 by Kilo Code
+Last updated: 2025-08-13 by OpenAI Assistant
 
 Legend:
 - [x] Completed
@@ -8,6 +8,16 @@ Legend:
 - Now = Current sprint focus (max 7 items)
 - Next = Upcoming, ready to pull
 - Later = Backlog, not yet scheduled
+
+## Background Docker Task Runner & Summaries
+
+Goal: allow users to queue `--yolo -p` prompts that spawn Dockerized Codex tasks, surface rolling 3-word summaries, and expose a kill button.
+
+### Tasks
+- [ ] **Scheduler & Queue** – launch container jobs with prompt, model selection (`gpt-oss:20b` default), and persistent metadata.
+- [ ] **Log Tail & Summarizer** – buffer last _N_ lines, invoke LLM to output enforced 3-word summaries at intervals.
+- [ ] **UI Badge & Stop Control** – display rotating summaries and a square-in-circle stop button that terminates the container.
+- [ ] **Cleanup & History** – remove summaries when jobs finish; optional persistence of logs and summaries.
 
 ## Verification Audit (Old TODO → Current Implementation)
 
