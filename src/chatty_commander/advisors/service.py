@@ -1,15 +1,13 @@
-"""
-Advisor service for handling AI advisor interactions.
-"""
+"""Advisor service for handling AI advisor interactions."""
 
 from dataclasses import dataclass
 from typing import Any
 
+from ..avatars.thinking_state import get_thinking_manager
 from .context import ContextManager, PlatformType
 from .memory import MemoryStore
 from .prompting import Persona, build_provider_prompt
 from .providers import build_provider_safe
-from ..avatars.thinking_state import get_thinking_manager, ThinkingState
 
 
 @dataclass
@@ -60,14 +58,13 @@ class AdvisorsService:
         self.enabled = base_cfg.get('enabled', False)
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
-        """
-        Process an incoming message and return advisor response.
+        """Process an incoming message and return an advisor response.
 
         Args:
-            message: The incoming message to process
+            message: The incoming message to process.
 
         Returns:
-            AdvisorReply with response and metadata
+            AdvisorReply with response and metadata.
         """
         if not self.enabled:
             raise RuntimeError("Advisors are not enabled")

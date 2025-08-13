@@ -1,9 +1,8 @@
 from pathlib import Path
 
-from fastapi.testclient import TestClient
-
-from fastapi import FastAPI
 from chatty_commander.web.routes.avatar_api import router as avatar_router
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 
 def test_list_animations_endpoint(tmp_path: Path):

@@ -10,13 +10,12 @@ which improves discoverability and validation.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
 import json
 import logging
 import os
 import subprocess
-from typing import Any, Dict, List
-
+from dataclasses import asdict, dataclass, field
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Dataclass models for individual configuration sections
@@ -58,7 +57,7 @@ class GeneralSettings:
 
 @dataclass
 class AuthSettings:
-    allowed_origins: List[str] = field(
+    allowed_origins: list[str] = field(
         default_factory=lambda: ["http://localhost:3000"]
     )
 
@@ -118,9 +117,9 @@ class AdvisorsConfig:
     provider: AdvisorsProvider = field(default_factory=AdvisorsProvider)
     bridge: AdvisorsBridge = field(default_factory=AdvisorsBridge)
     memory: AdvisorsMemory = field(default_factory=AdvisorsMemory)
-    platforms: List[str] = field(default_factory=lambda: ["discord", "slack"])
-    personas: Dict[str, str] = field(default_factory=lambda: {"default": "philosophy_advisor"})
-    features: Dict[str, bool] = field(
+    platforms: list[str] = field(default_factory=lambda: ["discord", "slack"])
+    personas: dict[str, str] = field(default_factory=lambda: {"default": "philosophy_advisor"})
+    features: dict[str, bool] = field(
         default_factory=lambda: {"browser_analyst": True, "avatar_talkinghead": False}
     )
 
@@ -140,8 +139,8 @@ class Config:
 
     model_paths: ModelPaths = field(default_factory=ModelPaths)
     api_endpoints: ApiEndpoints = field(default_factory=ApiEndpoints)
-    model_actions: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    state_models: Dict[str, List[str]] = field(
+    model_actions: dict[str, dict[str, str]] = field(default_factory=dict)
+    state_models: dict[str, list[str]] = field(
         default_factory=lambda: {
             "idle": ["hey_chat_tee", "hey_khum_puter"],
             "computer": ["oh_kay_screenshot"],
@@ -151,12 +150,12 @@ class Config:
     audio_settings: AudioSettings = field(default_factory=AudioSettings)
     general_settings: GeneralSettings = field(default_factory=GeneralSettings)
     auth: AuthSettings = field(default_factory=AuthSettings)
-    keybindings: Dict[str, str] = field(default_factory=dict)
-    commands: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    command_sequences: Dict[str, Any] = field(default_factory=dict)
+    keybindings: dict[str, str] = field(default_factory=dict)
+    commands: dict[str, dict[str, str]] = field(default_factory=dict)
+    command_sequences: dict[str, Any] = field(default_factory=dict)
     advisors: AdvisorsConfig = field(default_factory=AdvisorsConfig)
-    listen_for: Dict[str, str] = field(default_factory=dict)
-    modes: Dict[str, str] = field(default_factory=dict)
+    listen_for: dict[str, str] = field(default_factory=dict)
+    modes: dict[str, str] = field(default_factory=dict)
     config_file: str = "config.json"
 
     # ------------------------------------------------------------------
@@ -238,7 +237,7 @@ class Config:
     # ------------------------------------------------------------------
     # Serialization helpers
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON serialisable dict of the configuration."""
         data = asdict(self)
         # ``config_file`` is an internal detail and should not be persisted
@@ -249,7 +248,7 @@ class Config:
     # Loading helpers
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], config_file: str = "config.json") -> "Config":
+    def from_dict(cls, data: dict[str, Any], config_file: str = "config.json") -> Config:
         """Create a ``Config`` instance from a raw dictionary."""
         model_paths = ModelPaths(**data.get("model_paths", {}))
         api_endpoints = ApiEndpoints(**data.get("api_endpoints", {}))
@@ -293,116 +292,23 @@ class Config:
             config_file=config_file,
         )
 
-        # State transitions (current_state -> command -> new_state)
-        self.state_transitions = self.config_data.get(
-            "state_transitions",
-            {
-                "idle": {
-                    "hey_chat_tee": "chatty",
-                    "hey_khum_puter": "computer",
-                    "toggle_mode": "computer",
-                },
-                "chatty": {
-                    "hey_khum_puter": "computer",
-                    "okay_stop": "idle",
-                    "thanks_chat_tee": "idle",
-                    "toggle_mode": "idle",
-                },
-                "computer": {
-                    "hey_chat_tee": "chatty",
-                    "okay_stop": "idle",
-                    "that_ill_do": "idle",
-                    "toggle_mode": "chatty",
-                },
-            },
-        )
-
-        # Audio settings
-        audio_settings = self.config_data.get("audio_settings", {})
-        self.mic_chunk_size = audio_settings.get("mic_chunk_size", 1024)
-        self.sample_rate = audio_settings.get("sample_rate", 16000)
-        self.audio_format = audio_settings.get("audio_format", "int16")
-
-        # General settings
-        general_settings = self.config_data.get("general_settings", {})
-        self.debug_mode = general_settings.get("debug_mode", True)
-        self.default_state = general_settings.get("default_state", "idle")
-        self.inference_framework = general_settings.get("inference_framework", "onnx")
-        self.start_on_boot = general_settings.get("start_on_boot", False)
-        # Ensure we're using ONNX runtime for ONNX models
-        self.check_for_updates = general_settings.get("check_for_updates", True)
-
-        # Keybindings
-        self.keybindings = self.config_data.get("keybindings", {})
-
-        # Commands
-        self.commands = self.config_data.get("commands", {})
-
-        # Command sequences
-        self.command_sequences = self.config_data.get("command_sequences", {})
-
-        # Advisors (OpenAI-Agents advisor) settings
-        advisors_cfg = self.config_data.get("advisors", {})
-        provider_cfg = advisors_cfg.get("provider", {})
-        # Environment overrides
-        provider_base_url = os.environ.get("ADVISORS_PROVIDER_BASE_URL", provider_cfg.get("base_url", ""))
-        provider_api_key = os.environ.get("ADVISORS_PROVIDER_API_KEY", provider_cfg.get("api_key", ""))
-
-        self.advisors = {
-            "enabled": advisors_cfg.get("enabled", False),
-            "llm_api_mode": advisors_cfg.get("llm_api_mode", "completion"),
-            "model": advisors_cfg.get("model", "gpt-oss20b"),
-            "provider": {
-                "base_url": provider_base_url,
-                "api_key": provider_api_key,
-            },
-            "bridge": {
-                "token": os.environ.get(
-                    "ADVISORS_BRIDGE_TOKEN", advisors_cfg.get("bridge", {}).get("token", "")
-                ),
-                "url": os.environ.get(
-                    "ADVISORS_BRIDGE_URL", advisors_cfg.get("bridge", {}).get("url", "")
-                ),
-            },
-            "memory": {
-                "persistence_enabled": bool(
-                    os.environ.get("ADVISORS_MEMORY_PERSIST", str(advisors_cfg.get("memory", {}).get("persistence_enabled", False))).lower()
-                    in ["1", "true", "yes"]
-                ),
-                "persistence_path": os.environ.get(
-                    "ADVISORS_MEMORY_PATH",
-                    advisors_cfg.get("memory", {}).get("persistence_path", "data/advisors_memory.jsonl"),
-                ),
-            },
-            "platforms": advisors_cfg.get("platforms", ["discord", "slack"]),
-            "personas": advisors_cfg.get("personas", {"default": "philosophy_advisor"}),
-            "features": advisors_cfg.get(
-                "features",
-                {"browser_analyst": True, "avatar_talkinghead": False},
-            ),
-        }
-
     def _load_config(self):
         """Load configuration from JSON file with fallbacks and environment overrides."""
-        import json
-        import logging
-        import os
-
         # 1) Candidate paths: explicit file, CHATCOMM_CONFIG, default_config.json, config.json
         candidates = []
         if self.config_file:
             candidates.append(self.config_file)
-        env_path = os.environ.get("CHATCOMM_CONFIG")
+        os.environ.get("CHATCOMM_CONFIG")
     @classmethod
-    def load(cls, config_file: str = "config.json") -> "Config":
+    def load(cls, config_file: str = "config.json") -> Config:
         """Load configuration from JSON using the search rules of the old class."""
         data = cls._read_config(config_file)
         return cls.from_dict(data, config_file=config_file)
 
     @staticmethod
-    def _read_config(config_file: str) -> Dict[str, Any]:
+    def _read_config(config_file: str) -> dict[str, Any]:
         """Read configuration data from ``config_file`` with fallbacks."""
-        candidates: List[str] = []
+        candidates: list[str] = []
         if config_file:
             candidates.append(config_file)
         env_path = os.getenv("CHATCOMM_CONFIG")
@@ -411,7 +317,7 @@ class Config:
         candidates.extend(["default_config.json", "config.json"])
 
         seen: set[str] = set()
-        ordered: List[str] = []
+        ordered: list[str] = []
         for p in candidates:
             if p and p not in seen:
                 ordered.append(p)
@@ -433,9 +339,9 @@ class Config:
     # ------------------------------------------------------------------
     # Behavioural helpers (largely ported from previous implementation)
 
-    def _build_model_actions(self) -> Dict[str, Dict[str, str]]:
+    def _build_model_actions(self) -> dict[str, dict[str, str]]:
         """Build model actions from commands configuration."""
-        actions: Dict[str, Dict[str, str]] = {}
+        actions: dict[str, dict[str, str]] = {}
         for command_name, command_config in self.commands.items():
             action_type = command_config.get("action")
             if action_type == "keypress":
@@ -540,7 +446,7 @@ WantedBy=default.target
             logging.error(f"Failed to disable start on boot: {e}")
             raise
 
-    def perform_update_check(self) -> Dict[str, Any] | None:
+    def perform_update_check(self) -> dict[str, Any] | None:
         """Check for updates from the repository."""
         if not self.check_for_updates:
             return None
