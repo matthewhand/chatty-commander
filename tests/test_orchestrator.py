@@ -59,9 +59,6 @@ def test_orchestrator_text_adapter_dispatches_to_sink():
 
     assert sink.received == ["okay_stop"]
 
-
-#def test_adapter_start_and_stop_flags():
-=======
 def test_orchestrator_omits_discord_when_disabled():
     sink = DummyCommandSink()
 
