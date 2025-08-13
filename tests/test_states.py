@@ -110,14 +110,10 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(self.state_manager.current_state, transitions['idle']['toggle_mode'])
         self.state_manager.update_state('toggle_mode')
         self.logger.debug(f"State after second toggle: {self.state_manager.current_state}")
-        self.assertEqual(
-            self.state_manager.current_state, transitions['computer']['toggle_mode']
-        )
+        self.assertEqual(self.state_manager.current_state, transitions['computer']['toggle_mode'])
         self.state_manager.update_state('toggle_mode')
         self.logger.debug(f"State after third toggle: {self.state_manager.current_state}")
-        self.assertEqual(
-            self.state_manager.current_state, transitions['chatty']['toggle_mode']
-        )
+        self.assertEqual(self.state_manager.current_state, transitions['chatty']['toggle_mode'])
 
     def test_repr(self):
         """Test __repr__ method."""

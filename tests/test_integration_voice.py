@@ -57,7 +57,10 @@ def test_no_detection_integration(state_manager, model_manager):
     """Test no detection case."""
     state_manager.change_state('computer')
     model_manager.reload_models('computer')
-    with patch('chatty_commander.app.model_manager.random.random', return_value=0.1), patch('time.sleep'):
+    with (
+        patch('chatty_commander.app.model_manager.random.random', return_value=0.1),
+        patch('time.sleep'),
+    ):
         detected = model_manager.listen_for_commands()
         assert detected is None
         new_state = state_manager.update_state('invalid')

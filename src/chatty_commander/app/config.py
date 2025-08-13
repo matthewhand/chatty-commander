@@ -1,12 +1,33 @@
+from __future__ import annotations
+
+import json
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
+
 class Config:
     def __init__(self, config_file="config.json"):
-        import os
 
         # Load configuration from JSON file (with fallbacks and env overrides)
         self.config_file = config_file
         self.config_data = self._load_config()
         # Expose raw config under .config for web routers expecting a dict
         self.config: dict = self.config_data
+
+    def save_config(self, config_data: dict | None = None) -> None:
+        """Save configuration to file."""
+        if config_data is not None:
+            self.config_data.update(config_data)
+            self.config = self.config_data
+
+        try:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config_data, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save config: {e}")
+            raise
 
         # Path configurations for model directories
         model_paths = self.config_data.get("model_paths", {})

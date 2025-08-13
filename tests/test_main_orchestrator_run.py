@@ -22,7 +22,7 @@ def test_run_orchestrator_mode_returns_quickly_when_web_true():
     args = SimpleNamespace(web=True, no_auth=True, port=8100)
     config = DummyConfig()
     executor = DummyExecutor()
-    
+
     # Should return quickly without blocking
     result = run_orchestrator_mode(args, config, executor)
     assert result is None  # Function completes without error

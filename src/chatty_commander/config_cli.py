@@ -122,4 +122,3 @@ class ConfigCLI:
 
 
 __all__ = ["ConfigCLI"]
-

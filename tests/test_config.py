@@ -273,6 +273,7 @@ def test_check_for_updates_error(config, monkeypatch):
 
 # Typed configuration schema validation tests
 
+
 def _get_config_schema() -> dict:
     """Helper to extract Configuration schema from the OpenAPI builder."""
     schema = build_openapi_schema()
