@@ -1,9 +1,11 @@
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 import json
 
-from src.chatty_commander.web.routes.avatar_ws import router as avatar_ws_router, manager
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
 from src.chatty_commander.avatars.thinking_state import get_thinking_manager, reset_thinking_manager
+from src.chatty_commander.web.routes.avatar_ws import manager
+from src.chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
 
 
 def test_avatar_ws_includes_theme_in_snapshot():

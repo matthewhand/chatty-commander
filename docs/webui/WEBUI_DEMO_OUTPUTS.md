@@ -1,11 +1,13 @@
 # ChattyCommander WebUI Demo Outputs
 
 ## Overview
+
 This document showcases the expected user outputs, interface mockups, and demonstration scenarios for the ChattyCommander WebUI implementation. It provides concrete examples of what users will see and experience.
 
 ## User Interface Mockups
 
 ### 1. Login Page
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    ChattyCommander WebUI                    │
@@ -26,6 +28,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 2. Dashboard
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ ChattyCommander │ Dashboard │ Config │ Service │ Audio │ ⚙️  │
@@ -51,6 +54,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 3. Configuration Manager
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ ChattyCommander │ Dashboard │ Config │ Service │ Audio │ ⚙️  │
@@ -80,6 +84,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 4. Service Control
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ ChattyCommander │ Dashboard │ Config │ Service │ Audio │ ⚙️  │
@@ -110,6 +115,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 5. Audio Settings
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ ChattyCommander │ Dashboard │ Config │ Service │ Audio │ ⚙️  │
@@ -140,6 +146,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ## API Response Examples
 
 ### 1. Authentication Response
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMzI2ODAwMH0.signature",
@@ -154,6 +161,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 2. Configuration Response
+
 ```json
 {
   "model_actions": {
@@ -195,17 +203,14 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 3. Service Status Response
+
 ```json
 {
   "running": true,
   "pid": 12345,
   "uptime": 8100,
   "current_state": "idle",
-  "loaded_models": [
-    "hey_chat_tee",
-    "hey_khum_puter",
-    "okay_stop"
-  ],
+  "loaded_models": ["hey_chat_tee", "hey_khum_puter", "okay_stop"],
   "memory_usage": 256.5,
   "cpu_usage": 12.5,
   "thread_count": 8,
@@ -223,6 +228,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 4. Voice Test Response
+
 ```json
 {
   "recognized": true,
@@ -247,6 +253,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ## WebSocket Event Examples
 
 ### 1. Service Status Update
+
 ```json
 {
   "type": "service_status",
@@ -261,6 +268,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 2. Audio Level Update
+
 ```json
 {
   "type": "audio_level",
@@ -274,6 +282,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 3. Command Recognition Event
+
 ```json
 {
   "type": "command_recognized",
@@ -292,6 +301,7 @@ This document showcases the expected user outputs, interface mockups, and demons
 ```
 
 ### 4. Log Message Event
+
 ```json
 {
   "type": "log",
@@ -311,24 +321,25 @@ This document showcases the expected user outputs, interface mockups, and demons
 ## User Workflow Demonstrations
 
 ### Workflow 1: First-Time Setup
+
 ```
 1. User navigates to http://localhost:3000
    → Sees clean login interface
-   
+
 2. User logs in with default credentials
    → Redirected to dashboard
    → Sees welcome tour overlay
-   
+
 3. User clicks "Start Setup Wizard"
    → Guided through audio device selection
    → Microphone test with real-time level display
    → Voice model download progress
-   
+
 4. User creates first voice command
    → Form with validation and preview
    → Test command execution
    → Success confirmation
-   
+
 5. User starts voice service
    → Real-time status updates
    → Live log streaming
@@ -339,20 +350,21 @@ User Feedback: "Intuitive and well-guided setup process"
 ```
 
 ### Workflow 2: Daily Usage
+
 ```
 1. User opens WebUI on mobile device
    → Responsive layout adapts to screen size
    → Touch-optimized controls
-   
+
 2. User checks service status
    → Dashboard shows running service
    → Recent activity log visible
-   
+
 3. User adds new command while away from computer
    → Mobile-friendly form interface
    → Voice test using phone microphone
    → Changes sync to desktop service
-   
+
 4. User monitors voice recognition remotely
    → Real-time command notifications
    → Audio level visualization
@@ -363,19 +375,20 @@ User Feedback: "Convenient remote management"
 ```
 
 ### Workflow 3: Troubleshooting
+
 ```
 1. User notices voice commands not working
    → Dashboard shows service stopped
    → Clear error message displayed
-   
+
 2. User checks logs
    → Detailed error information
    → Suggested solutions provided
-   
+
 3. User adjusts audio settings
    → Real-time microphone test
    → Threshold adjustment with visual feedback
-   
+
 4. User restarts service
    → Progress indicator shown
    → Success confirmation
@@ -388,6 +401,7 @@ User Feedback: "Clear diagnostics and easy resolution"
 ## Performance Demonstration
 
 ### Load Test Results
+
 ```
 API Performance Test Results:
 ┌─────────────────┬──────────┬──────────┬──────────┐
@@ -406,6 +420,7 @@ Uptime: 100%
 ```
 
 ### Frontend Performance
+
 ```
 Lighthouse Audit Results:
 ┌─────────────────────────┬───────┬────────┐
@@ -431,6 +446,7 @@ Memory Usage: 12.5 MB
 ## Mobile Experience Demo
 
 ### Responsive Design Breakpoints
+
 ```
 Desktop (1200px+):
 ┌─────────────────────────────────────────────────────────────┐
@@ -456,6 +472,7 @@ Mobile (< 768px):
 ```
 
 ### Touch Interactions
+
 ```
 Mobile-Specific Features:
 • Swipe left/right to navigate between sections
@@ -470,6 +487,7 @@ Mobile-Specific Features:
 ## Accessibility Features Demo
 
 ### Screen Reader Support
+
 ```
 ARIA Labels and Descriptions:
 • "Service status: Running, uptime 2 hours 15 minutes"
@@ -491,6 +509,7 @@ High Contrast Mode:
 ```
 
 ### Voice Control Integration
+
 ```
 Voice Commands for WebUI:
 • "Navigate to dashboard" → Opens dashboard page
@@ -503,6 +522,7 @@ Voice Commands for WebUI:
 ## Security Demonstration
 
 ### Authentication Flow
+
 ```
 Security Features Demo:
 1. Login attempt with wrong password
@@ -530,6 +550,7 @@ Security Features Demo:
 ## Integration Examples
 
 ### Home Assistant Integration
+
 ```
 Demo Scenario: Smart Home Control
 1. User configures Home Assistant endpoint
@@ -552,6 +573,7 @@ Expected Output:
 ```
 
 ### Chatbot Integration
+
 ```
 Demo Scenario: AI Assistant Interaction
 1. User triggers "wax_poetic" command

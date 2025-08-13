@@ -30,7 +30,7 @@ _CATEGORY_HINTS = {
     "error": ["error", "fail", "oops"],
     "handoff": ["handoff", "swap", "switch"],
     "processing": ["process", "work", "load", "busy"],
-    "idle": ["idle", "rest", "breath", "calm"],
+    "idle": ["idle", "rest", "breathe", "calm"],
 }
 
 
@@ -53,7 +53,9 @@ def _infer_category(name: str) -> str:
 
 
 @router.get("/avatar/animations")
-async def list_animations(dir: str | None = Query(default=None, description="Directory to scan for animations (optional)")) -> dict[str, Any]:
+async def list_animations(
+    dir: str | None = Query(default=None, description="Directory to scan for animations (optional)")
+) -> dict[str, Any]:
     try:
         root = Path(dir) if dir else _default_animations_dir()
         if not root.exists() or not root.is_dir():

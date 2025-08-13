@@ -12,7 +12,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import psutil
 import pytest
-from config import Config
+from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.web_mode import WebModeServer
 from fastapi.testclient import TestClient
 from model_manager import ModelManager
 from state_manager import StateManager
@@ -75,7 +79,9 @@ class TestPerformanceBenchmarks:
     @pytest.fixture
     def web_server(self, mock_managers):
         """Create WebModeServer for performance testing."""
-        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+        with patch(
+            'chatty_commander.advisors.providers.build_provider_safe'
+        ) as mock_build_provider:
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
             mock_provider.api_mode = "completion"
@@ -272,7 +278,7 @@ class TestPerformanceBenchmarks:
         """Test WebSocket message broadcasting performance."""
         from unittest.mock import AsyncMock
 
-        from web_mode import WebSocketMessage
+        from chatty_commander.web.web_mode import WebSocketMessage
 
         # Create mock WebSocket connections
         num_connections = 50

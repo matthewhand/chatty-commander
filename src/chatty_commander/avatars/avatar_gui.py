@@ -21,6 +21,7 @@ Notes
 - Replace the placeholder index.html with the real TalkingHead build output.
 - Transparency and frameless support varies by OS/backend; code falls back when needed.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -32,10 +33,10 @@ except Exception:  # pragma: no cover
 
 
 def _avatar_index_path() -> Path:
-    # File location: src/chatty_commander/gui/avatar_gui.py
+    # File location: src/chatty_commander/avatars/avatar_gui.py
     # We want:      src/chatty_commander/webui/avatar/index.html
     here = Path(__file__).resolve()
-    root = here.parent.parent  # up from gui/ to chatty_commander/
+    root = here.parent.parent  # up from avatars/ to chatty_commander/
     return root / "webui" / "avatar" / "index.html"
 
 
@@ -68,7 +69,9 @@ def run_avatar_gui(debug: bool = True) -> int | None:
         webview.start(debug=debug, gui=None, http_server=False)
         return 0
     except Exception as e:
-        print(f"WARNING: Transparent/frameless not supported or failed ({e}); retrying without it...")
+        print(
+            f"WARNING: Transparent/frameless not supported or failed ({e}); retrying without it..."
+        )
         try:
             webview.create_window(
                 title="Chatty Commander Avatar",

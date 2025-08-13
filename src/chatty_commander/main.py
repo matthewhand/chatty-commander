@@ -1,16 +1,7 @@
-"""
-main.py
+"""Entry point for the ChattyCommander application.
 
-This module serves as the entry point for the ChattyCommander application. It coordinates the
-loading of machine learning models, manages state transitions based on voice commands, and
-handles the execution of commands.
-
-Usage:
-    Run the script from the command line to start the voice-activated command processing system.
-    Ensure that all dependencies are installed and models are correctly placed in their respective directories.
-
-Example:
-    python main.py
+This module coordinates model loading, manages state transitions based on
+voice commands, and handles the execution of commands.
 """
 
 import argparse
@@ -114,18 +105,30 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
 
 def run_web_mode(
-    config, model_manager, state_manager, command_executor, logger, no_auth=False, port=8100
+    config,
+    model_manager,
+    state_manager,
+    command_executor,
+    logger,
+    *,
+    host: str = "0.0.0.0",
+    port: int = 8100,
+    no_auth: bool = False,
 ):
     """Run the web UI mode with FastAPI server and graceful shutdown."""
+    import os
+
     try:
-        from web_mode import create_web_server
+        from chatty_commander.web.web_mode import create_web_server
     except ImportError:
         logger.error(
             "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
         )
         sys.exit(1)
 
-    logger.info(f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on port {port}")
+    logger.info(
+        f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
+    )
 
     # Create web server instance
     web_server = create_web_server(
@@ -144,9 +147,9 @@ def run_web_mode(
         web_server._on_state_change(old_state, new_state)
 
     # Register callbacks
-    if hasattr(model_manager, 'add_command_callback'):
+    if hasattr(model_manager, "add_command_callback"):
         model_manager.add_command_callback(on_command_detected)
-    if hasattr(state_manager, 'add_state_change_callback'):
+    if hasattr(state_manager, "add_state_change_callback"):
         state_manager.add_state_change_callback(on_state_change)
 
     stop_event = threading.Event()
@@ -164,9 +167,20 @@ def run_web_mode(
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
+    env_host = os.getenv("CHATCOMM_HOST")
+    env_port = os.getenv("CHATCOMM_PORT")
+    if env_host:
+        host = env_host
+    if env_port:
+        try:
+            port = int(env_port)
+        except ValueError:
+            logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
+    log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
+
     # Start the server
     try:
-        web_server.run(host="0.0.0.0", port=port, log_level="info")
+        web_server.run(host=host, port=port, log_level=log_level)
     finally:
         try:
             if hasattr(model_manager, "shutdown"):
@@ -196,6 +210,10 @@ def run_gui_mode(
 
     if no_gui:
         logger.info("--no-gui specified; skipping GUI launch")
+        return 0
+
+    if getattr(config, "voice_only", False):
+        logger.info("Voice-only mode enabled; skipping GUI launch")
         return 0
 
     # Apply DISPLAY override if provided (POSIX only)
@@ -234,7 +252,7 @@ def run_gui_mode(
     except Exception as e:
         logger.warning(f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI")
         try:
-            from gui import main as gui_main
+            from chatty_commander.gui import main as gui_main
 
             logger.info("Starting legacy tkinter GUI mode")
             rc = gui_main()
@@ -330,10 +348,17 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     )
 
     parser.add_argument(
+        "--host",
+        type=str,
+        default=None,
+        help="Specify the host interface for the web server (default: 0.0.0.0).",
+    )
+
+    parser.add_argument(
         "--port",
         type=int,
-        default=8100,
-        help="Specify the port for the web server (default: 8100). Only used in web mode.",
+        default=None,
+        help="Specify the port for the web server. Only used in web mode.",
     )
 
     parser.add_argument(
@@ -470,7 +495,7 @@ def main():
     # If help was requested, argparse would have exited above with code 0.
     # Continue with validation for actual runs only.
     # Argument validation (only enforce when options are provided)
-    if getattr(args, "web", False) and getattr(args, "port", 8100) < 1024:
+    if getattr(args, "web", False) and args.port is not None and args.port < 1024:
         parser.error("Port must be 1024 or higher for non-root users")
     if getattr(args, "no_auth", False) and not getattr(args, "web", False):
         parser.error("--no-auth only applicable in web mode")
@@ -493,6 +518,20 @@ def main():
 
     # Load configuration settings
     config = Config()
+    # Apply CLI overrides to web server settings
+    web_cfg = getattr(config, "web_server", {}) or {}
+    if args.host is not None:
+        web_cfg["host"] = args.host
+    if args.port is not None:
+        web_cfg["port"] = args.port
+    if args.no_auth:
+        web_cfg["auth_enabled"] = False
+    if web_cfg:
+        config.web_server = web_cfg
+        try:
+            config.config["web_server"] = web_cfg
+        except Exception:
+            pass
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:
@@ -501,20 +540,52 @@ def main():
             config.advisors["enabled"] = True
         except Exception:
             pass
+
+    # Derive web server settings with CLI overrides
+    web_cfg = getattr(config, "web_server", {}) or {}
+    host = web_cfg.get("host", "0.0.0.0")
+    port = int(web_cfg.get("port", 8100))
+    auth_enabled = bool(web_cfg.get("auth_enabled", True))
+
+    if args.host is not None:
+        host = args.host
+    if args.port is not None:
+        port = args.port
+    if getattr(args, "no_auth", False):
+        auth_enabled = False
+
+    web_cfg.update({"host": host, "port": port, "auth_enabled": auth_enabled})
+    config.web_server = web_cfg
+
     model_manager = ModelManager(config)
     state_manager = StateManager()
     command_executor = CommandExecutor(config, model_manager, state_manager)
 
     # Route to appropriate mode
     if getattr(args, "config", False):
-        from config_cli import ConfigCLI
+        from chatty_commander.config_cli import ConfigCLI
 
         config_cli = ConfigCLI()
         config_cli.run_wizard()
         return 0
     elif getattr(args, "web", False):
+        # Ensure web_server config exists and reflect CLI overrides
+        if not hasattr(config, "web_server") or config.web_server is None:
+            config.web_server = {}
+        host = getattr(args, "host", None) or config.web_server.get("host", "0.0.0.0")
+        port = getattr(args, "port", None) or config.web_server.get("port", 8100)
+        config.web_server.update({"host": host, "port": port, "auth_enabled": not args.no_auth})
         run_web_mode(
-            config, model_manager, state_manager, command_executor, logger, args.no_auth, args.port
+            config,
+            model_manager,
+            state_manager,
+            command_executor,
+            logger,
+            host=host,
+            no_auth=args.no_auth,
+            port=args.port if args.port is not None else getattr(
+                getattr(config, "web_server", {}), "get", lambda *_: None
+            )("port", 8100),
         )
         return 0
     elif args.gui:

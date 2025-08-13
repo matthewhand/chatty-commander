@@ -8,6 +8,7 @@ class Persona:
     name: str
     system: str
 
+
 DEFAULT_PERSONAS: dict[str, str] = {
     "philosophy_advisor": "Answer concisely in the style of a Stoic philosopher. Cite relevant thinkers when helpful.",
 }
@@ -18,7 +19,9 @@ def resolve_persona(name: str | None, personas_cfg: dict[str, str] | None = None
     name = name or "default"
     if name == "default":
         return Persona(name="default", system="Provide helpful, concise answers.")
-    system = personas_cfg.get(name) or DEFAULT_PERSONAS.get(name) or "Provide helpful, concise answers."
+    system = (
+        personas_cfg.get(name) or DEFAULT_PERSONAS.get(name) or "Provide helpful, concise answers."
+    )
     return Persona(name=name, system=system)
 
 
@@ -39,5 +42,3 @@ def build_provider_prompt(api_mode: str, persona: Persona, user_text: str) -> st
     if api_mode.lower() == "responses":
         return f"[mode:responses]\n{base}"
     return f"[mode:completion]\n{base}"
-
-

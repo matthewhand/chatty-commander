@@ -42,9 +42,7 @@ def _load_settings(config: Any) -> dict[str, Any]:
     # Coerce types
     settings["url"] = str(settings.get("url", defaults["url"]))
     settings["transparent"] = bool(settings.get("transparent", defaults["transparent"]))
-    settings["always_on_top"] = bool(
-        settings.get("always_on_top", defaults["always_on_top"])
-    )
+    settings["always_on_top"] = bool(settings.get("always_on_top", defaults["always_on_top"]))
     try:
         settings["width"] = int(settings.get("width", defaults["width"]))
         settings["height"] = int(settings.get("height", defaults["height"]))

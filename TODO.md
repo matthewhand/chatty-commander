@@ -1,6 +1,6 @@
 # ChattyCommander TODO
 
-Last updated: 2025-08-03 by Kilo Code
+Last updated: 2025-08-13 by OpenAI Assistant
 
 Legend:
 - [x] Completed
@@ -8,6 +8,16 @@ Legend:
 - Now = Current sprint focus (max 7 items)
 - Next = Upcoming, ready to pull
 - Later = Backlog, not yet scheduled
+
+## Background Docker Task Runner & Summaries
+
+Goal: allow users to queue `--yolo -p` prompts that spawn Dockerized Codex tasks, surface rolling 3-word summaries, and expose a kill button.
+
+### Tasks
+- [ ] **Scheduler & Queue** – launch container jobs with prompt, model selection (`gpt-oss:20b` default), and persistent metadata.
+- [ ] **Log Tail & Summarizer** – buffer last _N_ lines, invoke LLM to output enforced 3-word summaries at intervals.
+- [ ] **UI Badge & Stop Control** – display rotating summaries and a square-in-circle stop button that terminates the container.
+- [ ] **Cleanup & History** – remove summaries when jobs finish; optional persistence of logs and summaries.
 
 ## Verification Audit (Old TODO → Current Implementation)
 
@@ -183,10 +193,24 @@ Notes
 - [ ] Coverage ≥ 85% for advisor modules; per-platform adapters have smoke tests
 - [ ] CI secrets strategy documented; integration tests gated for local/dev only
 
+## Completed ✅
+
+All major "Now" items have been delivered:
+- ✅ OpenAPI/Swagger exposure and tests
+- ✅ CLI UX hardening (comprehensive help, examples)
+- ✅ Test infrastructure (90% coverage gate, green CI)
+- ✅ WebUI connectivity sanity (docs + tests)
+- ✅ API docs parity automation (Makefile + CI)
+- ✅ Makefile convenience targets
+- ✅ Health/version/metrics endpoints with tests
+- ✅ PyInstaller packaging + CI artifacts + smoke tests
+- ✅ Standalone install documentation
+- ✅ E2E workflows and smoke script
+
 ## Now (Sprint Focus)
 
 1) OpenAPI/Swagger exposure and tests
-- [ ] Ensure API publishes OpenAPI/Swagger at /docs and /openapi.json
+- [x] Ensure API publishes OpenAPI/Swagger at /docs and /openapi.json
   Acceptance:
   - Running: uv run python main.py --web --no-auth exposes Swagger UI at GET /docs (200 OK)
   - GET /openapi.json returns JSON with "paths" and includes "/health" (content-type: application/json)
@@ -200,7 +224,7 @@ Notes
   - Add README note linking /docs and /openapi.json
 
 2) CLI UX hardening
-- [ ] Comprehensive --help descriptions
+- [x] Comprehensive --help descriptions
   Acceptance:
   - uv run python cli.py --help exits 0, includes all flags and descriptions
   - uv run pytest -q tests/test_cli_help_and_shell.py::test_help_outputs_usage
@@ -215,7 +239,7 @@ Notes
 
 3) Test infrastructure unblocked
 - [x] Add pytest.ini with pythonpath=src so chatty_commander package is importable
-- [ ] Run full suite and address failures
+- [x] Run full suite and address failures
   Commands:
   - uv run pytest -q
   Targets:
@@ -229,13 +253,13 @@ Notes
   - Basic auth disabled when --no-auth is provided
 
 5) Minimal docs parity
-- [ ] API docs parity automation
+- [x] API docs parity automation
   Acceptance:
   - uv run python -m src.chatty_commander.tools.generate_api_docs writes docs/openapi.json
   - Tests assert parity between runtime schema and docs/openapi.json
 
 6) Makefile convenience
-- [ ] Add/ensure Make targets:
+- [x] Add/ensure Make targets:
   - make test           → uv run pytest -q
   - make test-cov       → uv run pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing
   - make test-web       → uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py
@@ -358,14 +382,14 @@ Notes
 
 ## Next (Ready to Pull)
 
-- [ ] Run web mode tests
+- [x] Run web mode tests
   - uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py tests/test_cors_no_auth.py
 - [ ] Performance smoke
   - uv run pytest -q tests/test_performance_benchmarks.py
 - [ ] Coverage target
   - >= 85% lines in src/*
 - [ ] Document "no-auth" mode in README and mark as dev-only
-- [ ] Add basic health and version endpoints with tests
+- [x] Add basic health and version endpoints with tests
 
 ### OpenAI-Agents advisor (MVP)
 - [ ] Integrate `openai-agents` SDK (local); enable MCP, handoff, and `as_tool` usage
@@ -485,6 +509,14 @@ Milestone 1 (implement now)
 - pyproject: Drop argparse dependency (done)
 - Add DeprecationWarnings to root shims (done)
 - Append this plan to TODO.md under a new section
+
+## Packaging & Distribution (next)
+
+- [x] Implement PyInstaller-based CLI executable build for Linux/macOS/Windows
+- [x] Add Makefile targets: build-exe, build-exe-all, dist-clean
+- [x] Add CI matrix job to build and upload artifacts on release tags
+- [x] Add smoke tests for artifacts (chatty --help, chatty list)
+- [x] Document standalone install in README and developer docs
 
 ## GUI Mode Direction
 
@@ -614,6 +646,117 @@ Milestone 1 (implement now)
   - [ ] Tests: endpoint scanning, config roundtrip, permission checks.
 - WebUI/GUI
   - [ ] Settings page to show available animations (from endpoint), toggles, and state mapping controls.
+
+## Milestone: Agent Blueprint Management & Team Orchestration
+
+### Goal
+Implement natural language agent blueprint definition with GUI/WebUI integration for comprehensive persona management, team visualization, and dynamic agent lifecycle management.
+
+### Core Features
+
+#### Natural Language Agent Blueprint Definition
+- [ ] Create agent blueprint schema that accepts natural language descriptions
+  - Acceptance:
+    - Schema supports: name, description, persona_prompt, capabilities, team_role, handoff_triggers
+    - Natural language parser extracts structured data from free-form descriptions
+    - Blueprint validation ensures required fields and capability compatibility
+  - Tasks:
+    - [ ] Define AgentBlueprint dataclass with comprehensive schema
+    - [ ] Implement natural language parser using LLM to extract structured blueprint data
+    - [ ] Add blueprint validation and capability checking
+    - [ ] Create blueprint serialization/deserialization (JSON/YAML)
+    - [ ] Tests: parser accuracy, validation edge cases, serialization roundtrip
+
+#### GUI/WebUI Agent Management Interface
+- [ ] Implement comprehensive agent management UI in settings
+  - Acceptance:
+    - Settings page shows all configured agents with personas, prompts, and team relationships
+    - "+Create Agent" button opens natural language blueprint creation dialog
+    - "Destroy Agent" option with confirmation dialog before deletion
+    - Team visualization shows agent relationships and handoff flows
+    - Real-time agent status (active, idle, error) with connection to thinking_state manager
+  - Tasks:
+    - [ ] Create agent management settings page/component
+    - [ ] Implement "+Create Agent" dialog with natural language input field
+    - [ ] Add "Destroy Agent" functionality with confirmation modal
+    - [ ] Build team visualization component (graph/tree view of agent relationships)
+    - [ ] Integrate with existing avatar WebSocket for real-time agent status
+    - [ ] Add agent editing capabilities (modify persona, prompts, capabilities)
+    - [ ] Tests: UI component tests, agent CRUD operations, team visualization rendering
+
+#### Backend API for Agent Management
+- [ ] Extend advisor API with agent blueprint management endpoints
+  - Acceptance:
+    - POST /api/v1/agents/blueprints - create agent from natural language description
+    - GET /api/v1/agents/blueprints - list all configured agents with metadata
+    - PUT /api/v1/agents/blueprints/{agent_id} - update agent configuration
+    - DELETE /api/v1/agents/blueprints/{agent_id} - remove agent with safety checks
+    - GET /api/v1/agents/team - get team structure and relationships
+    - POST /api/v1/agents/team/handoff - trigger manual agent handoff
+  - Tasks:
+    - [ ] Create agent blueprint management router
+    - [ ] Implement CRUD operations for agent blueprints
+    - [ ] Add team structure API endpoints
+    - [ ] Integrate with openai-agents for dynamic agent creation/destruction
+    - [ ] Add safety checks for agent deletion (active conversations, dependencies)
+    - [ ] Tests: API endpoint coverage, error handling, safety validations
+
+#### Agent Team Orchestration
+- [ ] Implement dynamic agent team management with openai-agents integration
+  - Acceptance:
+    - Agents can be dynamically created/destroyed at runtime
+    - Team handoff flows respect blueprint-defined triggers and capabilities
+    - Agent personas are properly mapped to avatar themes
+    - Team state is persisted and restored across application restarts
+  - Tasks:
+    - [ ] Integrate agent blueprint system with openai-agents SDK
+    - [ ] Implement dynamic agent registration/deregistration
+    - [ ] Create team handoff orchestration logic
+    - [ ] Add agent-to-avatar theme mapping system
+    - [ ] Implement team state persistence (JSON/database)
+    - [ ] Add team health monitoring and error recovery
+    - [ ] Tests: dynamic agent lifecycle, handoff flows, persistence, error scenarios
+
+#### Animation Setup UI Integration
+- [ ] Create dedicated animation configuration interface
+  - Acceptance:
+    - Separate view/pane/mode for animation setup and testing
+    - Preview animations with real-time playback
+    - Map animations to agent states and personas
+    - Test animation transitions and timing
+    - Export/import animation configurations
+  - Tasks:
+    - [ ] Create animation setup UI component/page
+    - [ ] Implement animation preview with playback controls
+    - [ ] Add drag-and-drop animation assignment to states
+    - [ ] Create animation testing mode with state simulation
+    - [ ] Add animation configuration export/import
+    - [ ] Integrate with existing /avatar/animations endpoint
+    - [ ] Tests: animation UI components, preview functionality, configuration persistence
+
+### Integration Points
+- [ ] Connect agent management to existing avatar WebSocket system
+- [ ] Integrate with thinking_state manager for real-time agent status
+- [ ] Link to openai-agents SDK for actual agent orchestration
+- [ ] Connect to avatar theme system for persona-based visual representation
+- [ ] Integrate with existing configuration system for persistence
+
+### Documentation
+- [ ] Create docs/AGENT_BLUEPRINT_MANAGEMENT.md with:
+  - Natural language blueprint syntax and examples
+  - GUI/WebUI usage guide for agent management
+  - Team orchestration concepts and best practices
+  - Animation setup and configuration guide
+  - API reference for agent management endpoints
+
+### Acceptance Criteria
+- Users can describe agents in natural language and have them automatically configured
+- GUI provides intuitive agent creation with "+Create Agent" button
+- Agent destruction requires confirmation and handles dependencies safely
+- Team visualization shows agent relationships and current status
+- Animation setup provides dedicated interface for configuration and testing
+- All agent management operations are reflected in real-time across UI components
+- System handles agent lifecycle gracefully with proper error recovery
   - [ ] Live preview controls and safe fallbacks when an animation is missing or broken.
   - [ ] Import/export of animation presets.
 - Acceptance

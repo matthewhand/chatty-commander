@@ -12,6 +12,13 @@ from .routes.ws import include_ws_routes
 # For now we delegate to constructing the legacy WebModeServer to keep behavior stable.
 from .web_mode import WebModeServer as _LegacyWebModeServer  # type: ignore
 
+# Optional observability (may not be available in some environments)
+try:
+    from chatty_commander.obs.metrics import RequestMetricsMiddleware, create_metrics_router
+except Exception:  # pragma: no cover
+    RequestMetricsMiddleware = None  # type: ignore
+    create_metrics_router = None  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +41,24 @@ def create_app(
     instance. This is behavior-preserving because routes and wiring rely on the same
     underlying state/config/executor.
     """
+    # Provide default instances when not supplied to preserve test behavior
+    if config_manager is None:
+        from chatty_commander.app.config import Config as _Config
+
+        config_manager = _Config()
+    if state_manager is None:
+        from chatty_commander.app.state_manager import StateManager as _StateManager
+
+        state_manager = _StateManager()
+    if model_manager is None:
+        from chatty_commander.app.model_manager import ModelManager as _ModelManager
+
+        model_manager = _ModelManager(config_manager)
+    if command_executor is None:
+        from chatty_commander.app.command_executor import CommandExecutor as _CommandExecutor
+
+        command_executor = _CommandExecutor(config_manager, model_manager, state_manager)
+
     legacy = _LegacyWebModeServer(
         config_manager=config_manager,
         state_manager=state_manager,
@@ -42,6 +67,14 @@ def create_app(
         no_auth=bool(no_auth),
     )
     app = legacy.app
+
+    # Install request metrics middleware if available
+    try:
+        if RequestMetricsMiddleware is not None:  # type: ignore
+            app.add_middleware(RequestMetricsMiddleware)
+            logger.debug("server.create_app: installed RequestMetricsMiddleware")
+    except Exception as e:  # noqa: BLE001
+        logger.debug("server.create_app: metrics middleware not installed: %s", e)
 
     # Docs visibility and CORS (behavior-preserving toggles)
     try:
@@ -73,12 +106,16 @@ def create_app(
             set_connections=lambda s: setattr(legacy, "active_connections", s),
             get_state_snapshot=lambda: {
                 "current_state": legacy.state_manager.current_state,
-                "active_models": legacy.state_manager.get_active_models()
-                if hasattr(legacy.state_manager, "get_active_models")
-                else [],
-                "timestamp": legacy.last_state_change.isoformat()
-                if getattr(legacy, "last_state_change", None)
-                else None,
+                "active_models": (
+                    legacy.state_manager.get_active_models()
+                    if hasattr(legacy.state_manager, "get_active_models")
+                    else []
+                ),
+                "timestamp": (
+                    legacy.last_state_change.isoformat()
+                    if getattr(legacy, "last_state_change", None)
+                    else None
+                ),
             },
             on_message=None,  # preserve legacy: inbound messages are ignored today
             heartbeat_seconds=30.0,
@@ -89,8 +126,18 @@ def create_app(
         logger.warning("Failed to include websocket routes; falling back to legacy-only: %s", e)
 
     # Avatar routes
-    from .routes.avatar_ws import router as avatar_ws_router
     from .routes.avatar_api import router as avatar_api_router
+    from .routes.avatar_ws import router as avatar_ws_router
+    from .routes.version import router as version_router
+
+    # Metrics router (optional)
+    metrics_router = None
+    try:
+        if create_metrics_router is not None:  # type: ignore
+            metrics_router = create_metrics_router()
+    except Exception as e:  # noqa: BLE001
+        logger.debug("server.create_app: metrics router not created: %s", e)
+
     # Lifecycle hooks (no-op by default to preserve behavior)
     try:
         register_lifecycle(
@@ -109,16 +156,21 @@ def create_app(
     try:
         app.include_router(avatar_ws_router)
         app.include_router(avatar_api_router)
+        app.include_router(version_router)
+        if metrics_router is not None:
+            app.include_router(metrics_router)
         # Provide persona->theme resolution to WS manager from config
         try:
             from .routes import avatar_ws as _avatar_ws_mod
+
             def _resolve_theme(persona_id: str) -> str:
                 cfg = getattr(legacy.config_manager, "config", {}) or {}
                 gui = cfg.get("gui", {}) if isinstance(cfg, dict) else {}
                 avatar = gui.get("avatar", {}) if isinstance(gui, dict) else {}
                 mapping = avatar.get("persona_theme_map", {}) if isinstance(avatar, dict) else {}
                 return mapping.get(persona_id, mapping.get("default", "default"))
-            setattr(_avatar_ws_mod.manager, "theme_resolver", _resolve_theme)
+
+            _avatar_ws_mod.manager.theme_resolver = _resolve_theme
             logger.debug("server.create_app: set WS theme_resolver from config")
         except Exception as e:
             logger.debug("server.create_app: theme_resolver not set: %s", e)
@@ -126,16 +178,23 @@ def create_app(
     except Exception as e:  # noqa: BLE001
         logger.warning("Failed to include avatar routes; continuing: %s", e)
 
-    # Avatar settings routes
+    # Avatar/Agent settings + selector routes
     try:
-        from .routes.avatar_settings import include_avatar_settings_routes
+        from .routes.agents import router as agents_router
         from .routes.avatar_selector import router as avatar_selector_router
-        settings_router = include_avatar_settings_routes(get_config_manager=lambda: legacy.config_manager)
+        from .routes.avatar_settings import include_avatar_settings_routes
+
+        settings_router = include_avatar_settings_routes(
+            get_config_manager=lambda: legacy.config_manager
+        )
         app.include_router(settings_router)
         app.include_router(avatar_selector_router)
-        logger.debug("server.create_app: included avatar settings + selector routes")
+        app.include_router(agents_router)
+        logger.debug("server.create_app: included avatar settings + selector + agents routes")
     except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to include avatar settings/selector routes; continuing: %s", e)
+        logger.warning(
+            "Failed to include avatar settings/selector/agents routes; continuing: %s", e
+        )
 
     logger.debug("server.create_app constructed legacy WebModeServer and returned app")
     return app

@@ -28,5 +28,3 @@ def get_prompt_template(model: str, persona_name: str, api_mode: str) -> str:
 
 def render_with_template(template: str, *, system: str, text: str) -> str:
     return template.format(system=system, text=text)
-
-
