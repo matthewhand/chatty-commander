@@ -421,6 +421,14 @@ def build_parser() -> argparse.ArgumentParser:
             "  chatty-commander system updates check"
         ),
     )
+
+    # Voice integration commands
+    try:
+        from chatty_commander.voice.cli import add_voice_subcommands
+
+        add_voice_subcommands(subparsers)
+    except ImportError:
+        pass  # Voice integration not available
     system_subparsers = system_parser.add_subparsers(
         dest="system_command", required=True, help="System management command to execute."
     )

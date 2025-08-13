@@ -11,6 +11,7 @@ ChattyCommander is a multi-mode assistant that turns voice and typed commands in
 - Optional GUI/avatar UI for expressive state and animation syncing
 
 Core capabilities:
+- **Voice Integration**: Wake word detection + voice-to-text transcription
 - Trigger actions (keypress, URL) mapped to model_actions
 - Track agent thinking/responding states and broadcast to avatar/WebSocket clients
 - Expose system status, config, and health endpoints for automation
@@ -236,6 +237,28 @@ curl -s -X POST http://localhost:8100/api/v1/state -H 'Content-Type: application
 ```
 curl -s http://localhost:8100/metrics/json | jq
 curl -s http://localhost:8100/metrics/prom | head -n 20
+```
+
+### Voice Integration
+
+- Install voice dependencies:
+```
+uv sync --group voice
+```
+
+- Test voice pipeline:
+```
+uv run python -m src.chatty_commander.cli.cli voice test --mock --duration 10
+```
+
+- Check voice system status:
+```
+uv run python -m src.chatty_commander.cli.cli voice status
+```
+
+- Demo voice integration:
+```
+python scripts/voice_demo.py --mock
 ```
 
 ### WebUI
