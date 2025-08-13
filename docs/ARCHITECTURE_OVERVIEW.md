@@ -19,6 +19,26 @@ All modes are unified by the `ModeOrchestrator` which selects and starts adapter
 - **Advisors**: `AdvisorsService` with context memory and tools (e.g., browser analyst); accessible via Web API and bridge.
 - **Bridge**: External Node.js integration for Discord/Slack; shared-secret auth, HTTP/WebSocket contract.
 
+## Module interactions and state transitions
+
+1. **Adapters** feed recognized text into the shared `CommandExecutor`.
+2. `StateManager.update_state()` reacts to wake words and toggles between `idle`, `computer`, and `chatty`.
+3. `ModelManager` activates the model list provided by `StateManager` for the new state.
+4. `CommandExecutor` performs the configured action for the command.
+
+### State transition map
+
+| Command                                       | New state             |
+| --------------------------------------------- | --------------------- |
+| `hey_chat_tee`                                | `chatty`              |
+| `hey_khum_puter`                              | `computer`            |
+| `okay_stop`, `thanks_chat_tee`, `that_ill_do` | `idle`                |
+| `toggle_mode`                                 | cycles through states |
+
+## Adapter architecture
+
+Adapters implement a tiny protocol (`start`/`stop` and a `name`) and are registered by the `ModeOrchestrator`. Custom adapters can live in separate packages and plug in without modifying core logic. This plugin model keeps mode-specific code isolated while sharing a common command sink and configuration.
+
 ## Solution design mitigations
 
 - **Single business logic path**: Commands flow into `CommandExecutor` from all modes to avoid duplication.
@@ -32,8 +52,8 @@ All modes are unified by the `ModeOrchestrator` which selects and starts adapter
 
 ## Data flow (high level)
 
-1) Input (voice/text/web/bridge) → Adapter → `StateManager` (optional) → `CommandExecutor` (actions)
-2) Advisors input (web/bridge) → `AdvisorsService` → tools/LLM → reply + memory → Web/bridge
+1. Input (voice/text/web/bridge) → Adapter → `StateManager` (optional) → `CommandExecutor` (actions)
+2. Advisors input (web/bridge) → `AdvisorsService` → tools/LLM → reply + memory → Web/bridge
 
 ## References
 
@@ -42,4 +62,3 @@ All modes are unified by the `ModeOrchestrator` which selects and starts adapter
 - `src/chatty_commander/advisors/` (service, memory)
 - `src/chatty_commander/app/{config,state_manager,model_manager,command_executor}.py`
 - `README.md`, `WEBUI_PLAN.md`, `WEBUI_IMPLEMENTATION.md`, `TODO.md`
-

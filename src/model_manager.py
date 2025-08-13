@@ -1,2 +1,4 @@
-# Compatibility shim to preserve `from model_manager import ...`
-from chatty_commander.app.model_manager import *  # noqa: F401,F403
+"""Legacy compatibility shim for ``from model_manager import ...`` imports."""
+from chatty_commander.compat import expose
+
+expose(globals(), "model_manager")
