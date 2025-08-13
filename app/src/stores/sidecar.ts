@@ -18,6 +18,14 @@ interface SidecarStore {
 export const useSidecarStore = create<SidecarStore>(set => ({
   open: false,
   current: undefined,
-  set: item => set({ open: true, current: item }),
+  set: item => {
+    set({ open: true, current: item });
+    if (item.contentUrl && !item.snippet) {
+      fetch(item.contentUrl)
+        .then(res => res.text())
+        .then(text => set({ open: true, current: { ...item, snippet: text } }))
+        .catch(() => {});
+    }
+  },
   close: () => set({ open: false, current: undefined }),
 }));

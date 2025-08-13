@@ -1,12 +1,14 @@
 import React, { useState, KeyboardEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useChatStore, ChatMessage } from '../stores/chat';
+import { useSidecarStore } from '../stores/sidecar';
 import { sse } from '../lib/sse';
 
 export default function ChatPane() {
   const messages = useChatStore(s => s.messages);
   const push = useChatStore(s => s.push);
   const update = useChatStore(s => s.update);
+  const setSidecar = useSidecarStore(s => s.set);
   const [text, setText] = useState('');
 
   const send = async () => {
@@ -35,6 +37,19 @@ export default function ChatPane() {
           ...m,
           content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
         }));
+      },
+      tool: data => {
+        if ((data?.name === 'open_file' || data?.name === 'open_diff') && data.path) {
+          const isDiff = data.name === 'open_diff' || data.diff;
+          setSidecar({
+            refId: data.path,
+            title: data.path,
+            kind: isDiff ? 'diff' : 'code',
+            contentUrl: `/api/sidecar/file?path=${encodeURIComponent(data.path)}${
+              isDiff ? '&diff=1' : ''
+            }`,
+          });
+        }
       },
       done: () => {},
     });
