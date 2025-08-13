@@ -10,7 +10,12 @@ export default function CanvasPane() {
         sandbox="allow-scripts allow-downloads"
         className="flex-1 bg-white"
       />
-      <div className="h-40 overflow-auto bg-black text-green-400 text-xs p-2" aria-label="Console">
+      <div
+        id="console-pane"
+        className="h-40 overflow-auto bg-black text-green-400 text-xs p-2"
+        aria-label="Console"
+        tabIndex={-1}
+      >
         Console output...
       </div>
     </section>

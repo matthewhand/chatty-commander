@@ -1,4 +1,4 @@
-import React, { useState, KeyboardEvent } from 'react';
+import React, { useState, KeyboardEvent, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useChatStore, ChatMessage } from '../stores/chat';
 import { sse } from '../lib/sse';
@@ -9,7 +9,7 @@ export default function ChatPane() {
   const update = useChatStore(s => s.update);
   const [text, setText] = useState('');
 
-  const send = async () => {
+  const send = useCallback(async () => {
     const content = text.trim();
     if (!content) return;
     const userMsg: ChatMessage = {
@@ -38,7 +38,15 @@ export default function ChatPane() {
       },
       done: () => {},
     });
-  };
+  }, [text, push, update, setText]);
+
+  useEffect(() => {
+    const handler = () => {
+      void send();
+    };
+    window.addEventListener('chat:send', handler);
+    return () => window.removeEventListener('chat:send', handler);
+  }, [send]);
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -59,6 +67,7 @@ export default function ChatPane() {
       </div>
       <div className="p-2 border-t border-gray-700">
         <textarea
+          id="chat-input"
           className="w-full p-2 bg-gray-800"
           placeholder="Type a message"
           value={text}
