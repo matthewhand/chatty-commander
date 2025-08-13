@@ -127,6 +127,34 @@ class ModelManager:
 
         return {}
 
+    def _load_model_with_retry(self, model_path: str) -> Model | None:
+        import traceback
+        from datetime import datetime
+
+        max_retries = 3
+        retries = 0
+        while True:
+            try:
+                ModelClass = _get_patchable_model_class()
+                return ModelClass(model_path)  # type: ignore[call-arg]
+            except Exception as e:  # pragma: no cover - diagnostics handled below
+                retries += 1
+                diagnostics = {
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "model_path": model_path,
+                    "exception": traceback.format_exc(),
+                    "retry": retries,
+                }
+                logging.error("Model loading failure: %s", diagnostics)
+                if retries > max_retries:
+                    try:
+                        from utils.logger import report_error
+
+                        report_error(e)
+                    except Exception as report_exc:
+                        logging.error("Error reporting failed: %s", report_exc)
+                    return None
+
     def load_model_set(self, path: str) -> dict[str, Model]:
         """
         Load all .onnx models from the given path.
@@ -157,16 +185,11 @@ class ModelManager:
                 logging.warning(f"Model file '{model_path}' does not exist. Skipping.")
                 continue
 
-            try:
-                # Use patchable class so tests replacing model_manager.Model with MagicMock are respected
-                ModelClass = _get_patchable_model_class()
-                instance = ModelClass(model_path)  # type: ignore[call-arg]
-                model_set[model_name] = instance  # only add on success
-                logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
-            except Exception as e:
-                logging.error(f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models.")
-                # do not add on failure
+            instance = self._load_model_with_retry(model_path)
+            if instance is None:
                 continue
+            model_set[model_name] = instance
+            logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
 
         return model_set
 
@@ -220,36 +243,3 @@ if __name__ == "__main__":
     config = Config()
     model_manager = ModelManager(config)
     print(model_manager)
-
-
-def load_model(model_path):
-    import logging
-    import traceback
-    from datetime import datetime
-
-    import onnx
-
-    max_retries = 3
-    retries = 0
-
-    while True:
-        try:
-            model = onnx.load(model_path)
-            return model
-        except Exception as e:
-            retries += 1
-            diagnostics = {
-                "timestamp": datetime.utcnow().isoformat() + "Z",
-                "model_path": model_path,
-                "exception": traceback.format_exc(),
-                "retry": retries,
-            }
-            logging.error("Model loading failure: %s", diagnostics)
-            if retries > max_retries:
-                try:
-                    from utils.logger import report_error
-
-                    report_error(e)
-                except Exception as report_exc:
-                    logging.error("Error reporting failed: %s", report_exc)
-                raise Exception("Max retries exceeded") from e
