@@ -29,30 +29,15 @@ if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
 
 # Support both package and repo-root execution without PYTHONPATH tweaks.
-try:
-    # Preferred: installed package
-    from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
-    from chatty_commander.app.model_manager import ModelManager  # type: ignore
-    from chatty_commander.app.orchestrator import (  # type: ignore
-        ModeOrchestrator,
-        OrchestratorFlags,
-    )
-    from chatty_commander.app.state_manager import StateManager  # type: ignore
-    from chatty_commander.config import Config  # type: ignore
-    from chatty_commander.utils.logger import setup_logger  # type: ignore
-except Exception:
-    # Repo-root fallback: use local shim modules that re-export src implementations
-    from command_executor import CommandExecutor  # shim file at repo root
-    from config import Config  # shim file at repo root
-    from model_manager import ModelManager  # shim file at repo root
-    from state_manager import StateManager  # shim file at repo root
-
-    # Orchestrator shipped under src/chatty_commander/app
-    from chatty_commander.app.orchestrator import (  # type: ignore
-        ModeOrchestrator,
-        OrchestratorFlags,
-    )
-    from utils.logger import setup_logger  # local utils
+from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+from chatty_commander.app.model_manager import ModelManager  # type: ignore
+from chatty_commander.app.orchestrator import (  # type: ignore
+    ModeOrchestrator,
+    OrchestratorFlags,
+)
+from chatty_commander.app.state_manager import StateManager  # type: ignore
+from chatty_commander.app.config import Config  # type: ignore
+from chatty_commander.utils.logger import setup_logger  # type: ignore
 
 try:
     from default_config import generate_default_config_if_needed
@@ -118,7 +103,7 @@ def run_web_mode(
 ):
     """Run the web UI mode with FastAPI server and graceful shutdown."""
     try:
-        from web_mode import create_web_server
+        from chatty_commander.web.web_mode import create_web_server
     except ImportError:
         logger.error(
             "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
@@ -507,7 +492,7 @@ def main():
 
     # Route to appropriate mode
     if getattr(args, "config", False):
-        from config_cli import ConfigCLI
+        from chatty_commander.config_cli import ConfigCLI
 
         config_cli = ConfigCLI()
         config_cli.run_wizard()

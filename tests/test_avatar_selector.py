@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.chatty_commander.web.routes.avatar_selector import router as selector_router
+from chatty_commander.web.routes.avatar_selector import router as selector_router
 
 
 def test_animation_selector_basic():

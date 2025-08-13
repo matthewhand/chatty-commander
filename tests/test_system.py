@@ -37,11 +37,11 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-from config import Config  # noqa: E402 - imported after path manipulation
-from model_manager import ModelManager  # noqa: E402 - imported after path manipulation
-from state_manager import StateManager  # noqa: E402 - imported after path manipulation
+from chatty_commander.app.config import Config  # noqa: E402 - imported after path manipulation
+from chatty_commander.app.model_manager import ModelManager  # noqa: E402 - imported after path manipulation
+from chatty_commander.app.state_manager import StateManager  # noqa: E402 - imported after path manipulation
 
-from src.chatty_commander.command_executor import (
+from chatty_commander.app.command_executor import (
     CommandExecutor,  # noqa: E402 - imported after path manipulation
 )
 
@@ -475,7 +475,13 @@ class SystemTester:
             self.log("✗ 'chatty' command not found in PATH", "Installation", "FAIL")
 
         # Test Python module imports
-        modules = ['config', 'state_manager', 'model_manager', 'command_executor', 'cli']
+        modules = [
+            'chatty_commander.app.config',
+            'chatty_commander.app.state_manager',
+            'chatty_commander.app.model_manager',
+            'chatty_commander.app.command_executor',
+            'chatty_commander.cli.cli',
+        ]
         for module in modules:
             result = self.run_command(f'python -c "import {module}; print(\'OK\')"; echo')
             if result['success'] and 'OK' in result['stdout']:

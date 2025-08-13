@@ -7,11 +7,11 @@ import sys
 from typing import Any
 
 # Re-export CommandExecutor so tests can patch cli.CommandExecutor
-from command_executor import CommandExecutor  # noqa: F401
+from chatty_commander.app.command_executor import CommandExecutor  # noqa: F401
 
 # Re-export run_app and ConfigCLI at module level so tests can patch cli.run_app and cli.ConfigCLI
 try:
-    from main import run_app as run_app  # type: ignore # noqa: F401
+    from chatty_commander.main import run_app as run_app  # type: ignore # noqa: F401
 except Exception:
 
     def run_app() -> None:  # type: ignore
@@ -19,7 +19,7 @@ except Exception:
 
 
 try:
-    from config_cli import ConfigCLI as ConfigCLI  # type: ignore # noqa: F401
+    from chatty_commander.config_cli import ConfigCLI as ConfigCLI  # type: ignore # noqa: F401
 except Exception:
 
     class ConfigCLI:  # type: ignore
@@ -258,7 +258,7 @@ def build_parser() -> argparse.ArgumentParser:
 
         # Extended flags passthrough
         try:
-            from config_cli import handle_config_cli  # noqa
+            from chatty_commander.config_cli import handle_config_cli  # noqa
 
             rc = handle_config_cli(args)
             if rc is None:
@@ -307,7 +307,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def list_func(args: argparse.Namespace) -> int:
         try:
-            from config import Config  # noqa
+            from chatty_commander.app.config import Config  # noqa
 
             cfg = Config()
             actions = _get_model_actions_from_config(cfg)
@@ -340,7 +340,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def exec_func(args: argparse.Namespace) -> int:
         try:
-            from config import Config  # noqa
+            from chatty_commander.app.config import Config  # noqa
 
             cfg = Config()
             actions = _get_model_actions_from_config(cfg)
@@ -360,7 +360,7 @@ def build_parser() -> argparse.ArgumentParser:
             except Exception:
                 CommandExecutorRT = None
             if CommandExecutorRT is None:
-                from command_executor import CommandExecutor as CommandExecutorRT  # type: ignore
+                from chatty_commander.app.command_executor import CommandExecutor as CommandExecutorRT  # type: ignore
             executor = CommandExecutorRT(cfg, None, None)  # type: ignore
             executor.execute_command(args.name)
             return 0
@@ -417,7 +417,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def system_func(args: argparse.Namespace) -> int:
         # Integrate with config.Config methods as tests expect
-        from config import Config  # lazy import
+        from chatty_commander.app.config import Config  # lazy import
 
         cfg = Config()
         if args.system_command == "start-on-boot":

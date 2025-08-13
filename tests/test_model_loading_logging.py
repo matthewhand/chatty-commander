@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from src.chatty_commander.model_manager import load_model
+from chatty_commander.app.model_manager import load_model
 
 
 # Dummy exception to simulate model load failure.
@@ -31,7 +31,7 @@ def test_model_loading_logging_retry(monkeypatch, caplog):
     def fake_report_error(exc):
         error_reported["called"] = True
 
-    monkeypatch.setattr("utils.logger.report_error", fake_report_error)
+    monkeypatch.setattr("chatty_commander.utils.logger.report_error", fake_report_error)
 
     with caplog.at_level(logging.ERROR):
         with pytest.raises(Exception) as exc_info:

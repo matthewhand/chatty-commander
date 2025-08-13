@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-from src.chatty_commander.cli.cli import cli_main
+from chatty_commander.cli.cli import cli_main
 
 
 class DummyConfigDirect:
@@ -20,7 +20,7 @@ def replace_config_with_dummy(monkeypatch):
             return DummyConfigDirect(actions)
 
         # Patch where cli imports Config inside functions: config.Config
-        import config as config_module
+        import chatty_commander.app.config as config_module
 
         monkeypatch.setattr(
             config_module, "Config", staticmethod(lambda: DummyConfigDirect(actions))
@@ -143,7 +143,9 @@ def test_cli_exec_timeout_flag_passthrough_no_error(monkeypatch, replace_config_
         def execute_command(self, name):
             return
 
-    monkeypatch.setattr('src.chatty_commander.command_executor.CommandExecutor', NoopExecutor)
+    monkeypatch.setattr(
+        'chatty_commander.app.command_executor.CommandExecutor', NoopExecutor
+    )
 
     code, out, err = run_cli_main_with_args(["exec", "hello", "--timeout", "5"], monkeypatch)
     assert code == 0

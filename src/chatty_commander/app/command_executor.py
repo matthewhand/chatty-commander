@@ -32,20 +32,6 @@ try:
 except (ImportError, OSError, KeyError):
     pyautogui = None  # type: ignore[assignment]
 
-# Bridge to root-level shim so tests can patch command_executor.pyautogui/requests
-try:  # pragma: no cover
-    from command_executor import pyautogui as _shim_pg  # type: ignore
-except Exception:
-    _shim_pg = None  # type: ignore
-if _shim_pg is not None:
-    pyautogui = _shim_pg  # type: ignore
-
-try:  # pragma: no cover
-    from command_executor import requests as _shim_requests  # type: ignore
-except Exception:
-    _shim_requests = None  # type: ignore
-if _shim_requests is not None:
-    requests = _shim_requests  # type: ignore
 
 
 class CommandExecutor:
@@ -318,16 +304,4 @@ def _get_pyautogui():
         return None
 
 def _get_requests():
-    try:
-        import importlib
-        _shim_ce = importlib.import_module("command_executor")
-        rq = getattr(_shim_ce, "requests", None)
-        if rq is not None:
-            return rq
-    except Exception:
-        pass
-    try:
-        import requests as _real_requests  # type: ignore
-        return _real_requests
-    except Exception:
-        return None
+    return requests

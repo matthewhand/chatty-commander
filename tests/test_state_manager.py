@@ -1,6 +1,6 @@
 import pytest
 
-from src.chatty_commander.state_manager import StateManager
+from chatty_commander.app.state_manager import StateManager
 
 
 class TestStateManager:
