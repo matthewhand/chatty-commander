@@ -76,7 +76,7 @@
   },
   "api_endpoints": {
     "home_assistant": "http://homeassistant.domain.home:8123/api",
-    "chatbot_endpoint": "http://localhost:3000/"
+    "chatbot_endpoint": "https://ubuntu-gtx.domain.home/"
   },
   "state_models": {
     "idle": [

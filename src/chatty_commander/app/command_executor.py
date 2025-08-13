@@ -122,12 +122,7 @@ class CommandExecutor:
         elif 'shell' in command_action:
             try:
                 cmd = command_action.get('shell', '')
-                result = subprocess.run(
-                    cmd,
-                    shell=True,
-                    text=True,
-                    capture_output=True
-                )
+                result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
                 if result.returncode == 0:
                     # Ensure tests can detect success in caplog
                     logger.warning("shell ok")
@@ -305,6 +300,7 @@ def _get_pyautogui():
     # Prefer root-level shim attribute so tests can patch command_executor.pyautogui
     try:
         import importlib
+
         _shim_ce = importlib.import_module("command_executor")
         pg = getattr(_shim_ce, "pyautogui", None)
         if pg is not None:
@@ -319,13 +315,16 @@ def _get_pyautogui():
     # Finally, try importing real library
     try:
         import pyautogui as _real_pg  # type: ignore
+
         return _real_pg
     except Exception:
         return None
 
+
 def _get_requests():
     try:
         import importlib
+
         _shim_ce = importlib.import_module("command_executor")
         rq = getattr(_shim_ce, "requests", None)
         if rq is not None:
@@ -334,6 +333,7 @@ def _get_requests():
         pass
     try:
         import requests as _real_requests  # type: ignore
+
         return _real_requests
     except Exception:
         return None

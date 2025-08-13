@@ -1,4 +1,8 @@
-from chatty_commander.app.orchestrator import ModeOrchestrator, OrchestratorFlags
+from chatty_commander.app.orchestrator import (
+    InputAdapter,
+    ModeOrchestrator,
+    OrchestratorFlags,
+)
 
 
 class DummyCommandSink:
@@ -54,5 +58,3 @@ def test_orchestrator_text_adapter_dispatches_to_sink():
     text_adapter.feed("okay_stop")
 
     assert sink.received == ["okay_stop"]
-
-

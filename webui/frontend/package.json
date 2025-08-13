@@ -30,9 +30,9 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
-    "test:ci": "npm run jest:ci",
+    "test:ci": "react-scripts test --watchAll=false --ci",
     "jest:ci": "jest --ci --runInBand --watch=false",
-    "test:ci:coverage": "jest --ci --runInBand --watch=false --coverage",
+    "test:ci:coverage": "react-scripts test --watchAll=false --ci --coverage",
     "test:changed": "jest --ci --runInBand --watch=false --onlyChanged",
     "test:watch:ci": "npm run test:ci",
     "lint:ci": "eslint src --ext .ts,.tsx --max-warnings=0",
@@ -55,6 +55,18 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx,js,jsx}",
+      "!src/**/*.d.ts",
+      "!src/**/__tests__/**"
+    ],
+    "coverageReporters": ["text", "lcov"],
+    "coverageDirectory": "coverage",
+    "coverageThreshold": {
+      "global": { "branches": 50, "functions": 55, "lines": 60, "statements": 60 }
+    }
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.6",

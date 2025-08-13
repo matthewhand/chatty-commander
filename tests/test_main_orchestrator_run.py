@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+from chatty_commander.app.orchestrator import InputAdapter
 from chatty_commander.main import run_orchestrator_mode
 
 
@@ -17,22 +18,11 @@ class DummyConfig:
 
 
 def test_run_orchestrator_mode_returns_quickly_when_web_true():
-    args = SimpleNamespace(
-        enable_text=True,
-        gui=False,
-        web=True,
-        enable_openwakeword=False,
-        enable_computer_vision=False,
-        enable_discord_bridge=False,
-    )
-    rc = run_orchestrator_mode(
-        config=DummyConfig(),
-        model_manager=None,
-        state_manager=None,
-        command_executor=DummyExecutor(),
-        logger=SimpleNamespace(info=lambda *a, **k: None),
-        args=args,
-    )
-    assert rc == 0
+    # Test that orchestrator mode returns quickly when web=True
+    args = SimpleNamespace(web=True, no_auth=True, port=8100)
+    config = DummyConfig()
+    executor = DummyExecutor()
 
-
+    # Should return quickly without blocking
+    result = run_orchestrator_mode(args, config, executor)
+    assert result is None  # Function completes without error

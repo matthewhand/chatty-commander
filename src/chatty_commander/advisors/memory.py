@@ -34,9 +34,7 @@ class MemoryStore:
     def add(self, platform: str, channel: str, user: str, role: str, content: str) -> None:
         key = self._ctx(platform, channel, user)
         q = self._store.setdefault(key, deque(maxlen=self._max))
-        q.append(
-            MemoryItem(role=role, content=content, timestamp=datetime.utcnow().isoformat())
-        )
+        q.append(MemoryItem(role=role, content=content, timestamp=datetime.utcnow().isoformat()))
         if self._persist:
             try:
                 with open(self._path, "a", encoding="utf-8") as f:
@@ -67,5 +65,3 @@ class MemoryStore:
         if key in self._store:
             del self._store[key]
         return count
-
-

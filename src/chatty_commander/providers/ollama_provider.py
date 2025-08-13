@@ -39,10 +39,9 @@ class OllamaProvider(LLMProvider):
 
         # Session for connection pooling
         self.session = requests.Session()
-        self.session.headers.update({
-            'Content-Type': 'application/json',
-            'User-Agent': 'chatty-commander/1.0'
-        })
+        self.session.headers.update(
+            {'Content-Type': 'application/json', 'User-Agent': 'chatty-commander/1.0'}
+        )
 
     def _make_request(self, endpoint: str, payload: dict[str, Any]) -> requests.Response:
         """Make HTTP request to Ollama API with retries."""
@@ -51,10 +50,7 @@ class OllamaProvider(LLMProvider):
         for attempt in range(self.max_retries):
             try:
                 response = self.session.post(
-                    url,
-                    json=payload,
-                    timeout=self.timeout,
-                    stream=self.stream
+                    url, json=payload, timeout=self.timeout, stream=self.stream
                 )
                 response.raise_for_status()
                 return response
@@ -62,7 +58,7 @@ class OllamaProvider(LLMProvider):
                 logger.warning(f"Ollama request attempt {attempt + 1} failed: {e}")
                 if attempt == self.max_retries - 1:
                     raise
-                time.sleep(2 ** attempt)  # Exponential backoff
+                time.sleep(2**attempt)  # Exponential backoff
 
         raise RuntimeError(f"Failed to connect to Ollama after {self.max_retries} attempts")
 
@@ -78,7 +74,7 @@ class OllamaProvider(LLMProvider):
                 'num_ctx': kwargs.get('num_ctx', self.num_ctx),
                 'num_predict': kwargs.get('num_predict', self.num_predict),
             },
-            'keep_alive': self.keep_alive
+            'keep_alive': self.keep_alive,
         }
 
         try:
@@ -107,17 +103,12 @@ class OllamaProvider(LLMProvider):
                 'num_ctx': kwargs.get('num_ctx', self.num_ctx),
                 'num_predict': kwargs.get('num_predict', self.num_predict),
             },
-            'keep_alive': self.keep_alive
+            'keep_alive': self.keep_alive,
         }
 
         try:
             url = f"{self.base_url}/generate"
-            response = self.session.post(
-                url,
-                json=payload,
-                timeout=self.timeout,
-                stream=True
-            )
+            response = self.session.post(url, json=payload, timeout=self.timeout, stream=True)
             response.raise_for_status()
 
             for line in response.iter_lines():
@@ -161,7 +152,9 @@ class OllamaProvider(LLMProvider):
 
             # Test simple generation
             test_response = self.generate("Hello")
-            return bool(test_response and len(test_response) > 0 and not test_response.startswith("Error:"))
+            return bool(
+                test_response and len(test_response) > 0 and not test_response.startswith("Error:")
+            )
 
         except Exception as e:
             logger.error(f"Ollama health check failed: {e}")
