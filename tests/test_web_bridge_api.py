@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app import CommandExecutor
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
@@ -23,9 +23,9 @@ class DummyConfig:
             "context": {
                 "personas": {
                     "general": {"system_prompt": "You are helpful."},
-                    "discord_default": {"system_prompt": "You are a Discord bot."}
+                    "discord_default": {"system_prompt": "You are a Discord bot."},
                 },
-                "default_persona": "general"
+                "default_persona": "general",
             },
             "bridge": {"token": "secret", "url": "http://localhost:3001"},
         }
@@ -68,5 +68,3 @@ def test_bridge_event_ok_with_secret():
     data = resp.json()
     assert data["ok"] is True
     assert data["reply"]["text"] is not None
-
-

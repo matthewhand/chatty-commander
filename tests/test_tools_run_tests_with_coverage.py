@@ -38,6 +38,7 @@ def test_cli_parsing_and_success_path(monkeypatch, tmp_path: Path):
 
     # Mock pytest.main to simulate success (exit code 0)
     calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
     def fake_pytest_main(args: list[str]) -> int:
         calls.append(((tuple(args),), {}))
         return 0

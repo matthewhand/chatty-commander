@@ -1,5 +1,3 @@
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 import json
 
 from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router, manager

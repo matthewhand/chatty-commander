@@ -21,21 +21,21 @@ from chatty_commander.cli.cli import cli_main  # noqa: E402 - imported after pat
 
 def test_cli_run(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'run'])
-    with patch('cli.run_app') as mock_run:
+    with patch('chatty_commander.cli.cli.run_app') as mock_run:
         cli_main()
         mock_run.assert_called_once()
 
 
 def test_cli_config_interactive(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--interactive'])
-    with patch('cli.ConfigCLI.interactive_mode') as mock_interactive:
+    with patch('chatty_commander.cli.cli.ConfigCLI.interactive_mode') as mock_interactive:
         cli_main()
         mock_interactive.assert_called_once()
 
 
 def test_cli_config_list(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--list'])
-    with patch('cli.ConfigCLI.list_config') as mock_list:
+    with patch('chatty_commander.cli.cli.ConfigCLI.list_config') as mock_list:
         cli_main()
         mock_list.assert_called_once()
 
@@ -44,23 +44,24 @@ def test_cli_set_state_model(monkeypatch, capsys):
     monkeypatch.setattr(
         sys, 'argv', ['cli.py', 'config', '--set-state-model', 'idle', 'model1,model2']
     )
-    with patch('cli.ConfigCLI.set_state_model') as mock_set:
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_state_model') as mock_set:
         cli_main()
         mock_set.assert_called_with('idle', 'model1,model2')
 
 
 def test_cli_set_listen_for(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-listen-for', 'param1', 'value1'])
-    with patch('cli.ConfigCLI.set_listen_for') as mock_set:
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_listen_for') as mock_set:
         cli_main()
         mock_set.assert_called_with('param1', 'value1')
 
 
 def test_cli_set_mode(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-mode', 'mode1', 'option1'])
-    with patch('cli.ConfigCLI.set_mode'):
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_mode') as mock_set:
         with pytest.raises(SystemExit):
             cli_main()
+        mock_set.assert_not_called()
     captured = capsys.readouterr()
     assert "Invalid mode" in captured.err
 
@@ -79,7 +80,7 @@ def test_cli_help(monkeypatch, capsys):
 def test_cli_config_wizard(monkeypatch):
     # Simulate: chatty-commander config wizard
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', 'wizard'])
-    with patch('cli.ConfigCLI.run_wizard') as mock_wizard:
+    with patch('chatty_commander.cli.cli.ConfigCLI.run_wizard') as mock_wizard:
         cli_main()
         mock_wizard.assert_called_once()
 
@@ -90,7 +91,7 @@ def test_cli_interactive_shell_exit(monkeypatch):
     inputs = iter(['exit'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
     # Patch parser.print_help to avoid printing
-    with patch('cli.HelpfulArgumentParser.print_help'):
+    with patch('chatty_commander.cli.cli.HelpfulArgumentParser.print_help'):
         with pytest.raises(SystemExit):
             cli_main()
 
@@ -100,7 +101,7 @@ def test_cli_argument_validation_invalid_model(monkeypatch, capsys):
     monkeypatch.setattr(
         sys, 'argv', ['cli.py', 'config', '--set-model-action', 'invalid_model', 'summarize']
     )
-    with patch('cli.ConfigCLI.set_model_action'):
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_model_action'):
         with pytest.raises(SystemExit):
             cli_main()
     captured = capsys.readouterr()
@@ -224,7 +225,7 @@ def test_cli_exec_known_command_dry_run(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 'say', '--dry-run'])
     from chatty_commander.cli.cli import cli_main  # noqa: E402
 
-    with __import__('unittest').mock.patch('cli.CommandExecutor') as mock_exec:
+    with __import__('unittest').mock.patch('chatty_commander.cli.cli.CommandExecutor') as mock_exec:
         cli_main()
         assert not mock_exec.called
     captured = capsys.readouterr()
@@ -275,7 +276,7 @@ def test_cli_exec_timeout_flag_passthrough(monkeypatch):
     # Ensure we call CommandExecutor and pass through timeout; we won't actually sleep in tests
     from chatty_commander.cli.cli import cli_main  # noqa: E402
 
-    with __import__('unittest').mock.patch('cli.CommandExecutor') as MockExec:
+    with __import__('unittest').mock.patch('chatty_commander.cli.cli.CommandExecutor') as MockExec:
         instance = MockExec.return_value
         cli_main()
         # Expect executor to be asked to run the command; our CLI layer will call execute_command(name)

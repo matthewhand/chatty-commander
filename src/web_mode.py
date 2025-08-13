@@ -1,2 +1,5 @@
-# Compatibility shim to preserve `from web_mode import ...`
-from chatty_commander.web.web_mode import *  # noqa: F401,F403
+"""Legacy compatibility shim for ``from web_mode import ...`` imports."""
+
+from chatty_commander.compat import expose
+
+expose(globals(), "web_mode")

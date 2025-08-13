@@ -38,5 +38,3 @@ def test_orchestrator_selects_text_web_discord():
     )
     names = orch.select_adapters()
     assert set(names) == {"text", "web", "discord_bridge"}
-
-

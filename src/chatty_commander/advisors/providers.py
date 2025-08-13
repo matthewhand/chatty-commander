@@ -37,6 +37,7 @@ from typing import Any
 try:
     # Prefer explicit import of Agent symbol for test patchability.
     from openai_agents import Agent  # type: ignore
+
     AGENTS_AVAILABLE = True
 except Exception:  # pragma: no cover - import guard
     Agent = None  # type: ignore
@@ -56,7 +57,9 @@ class LLMProvider(ABC):
         # Nested provider config is common; flatten for convenience
         provider_cfg = config.get('provider', {}) or {}
         self.base_url = config.get('base_url', provider_cfg.get('base_url'))
-        self.api_key = config.get('api_key', provider_cfg.get('api_key', os.getenv('OPENAI_API_KEY')))
+        self.api_key = config.get(
+            'api_key', provider_cfg.get('api_key', os.getenv('OPENAI_API_KEY'))
+        )
         self.max_retries = config.get('max_retries', 3)
         self.timeout = config.get('timeout', 30)
 
@@ -94,7 +97,9 @@ class CompletionProvider(LLMProvider):
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         if not AGENTS_AVAILABLE:
-            raise ImportError("openai-agents SDK not available. Install with: pip install openai-agents")
+            raise ImportError(
+                "openai-agents SDK not available. Install with: pip install openai-agents"
+            )
 
         # Initialize Agent client. openai-agents does not expose timeout directly; keep for parity.
         self.agent = Agent(
@@ -114,7 +119,7 @@ class CompletionProvider(LLMProvider):
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
                 if attempt == self.max_retries - 1:
                     raise
-                time.sleep(2 ** attempt)  # Exponential backoff
+                time.sleep(2**attempt)  # Exponential backoff
 
         return "Error: Failed to generate response"
 
@@ -138,7 +143,9 @@ class ResponsesProvider(LLMProvider):
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         if not AGENTS_AVAILABLE:
-            raise ImportError("openai-agents SDK not available. Install with: pip install openai-agents")
+            raise ImportError(
+                "openai-agents SDK not available. Install with: pip install openai-agents"
+            )
 
         self.agent = Agent(
             model=self.model,
@@ -156,7 +163,7 @@ class ResponsesProvider(LLMProvider):
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
                 if attempt == self.max_retries - 1:
                     raise
-                time.sleep(2 ** attempt)  # Exponential backoff
+                time.sleep(2**attempt)  # Exponential backoff
 
         return "Error: Failed to generate response"
 
@@ -308,7 +315,9 @@ def build_provider_safe(config: dict[str, Any]) -> LLMProvider:
             return stub
 
     # Check if API key is available
-    api_key = config.get('api_key', config.get('provider', {}).get('api_key', os.getenv('OPENAI_API_KEY')))
+    api_key = config.get(
+        'api_key', config.get('provider', {}).get('api_key', os.getenv('OPENAI_API_KEY'))
+    )
     if not api_key:
         logger.warning("No API key provided, using stub providers")
         api_mode = config.get('llm_api_mode', config.get('api_mode', 'completion'))
@@ -327,5 +336,3 @@ def build_provider_safe(config: dict[str, Any]) -> LLMProvider:
             return stub
 
     return build_provider(config)
-
-

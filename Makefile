@@ -23,18 +23,46 @@ test-web:
 test-cli:
 	uv run pytest -q tests/test_repl_basic.py tests/test_cli_help_and_shell.py tests/test_cli_features.py
 
-# Lint (placeholder; recommend ruff/black configs in pyproject.toml)
+# Lint using ruff (configured in pyproject.toml)
 lint:
-	@echo "Add ruff/black configs in pyproject.toml to enable linting targets."
+	uv run ruff check .
 
-# Format (placeholder)
+# Format check using black
 format:
-	@echo "Add formatter configs in pyproject.toml to enable formatting targets."
+	uv run black --check .
 
-# Clean caches
+# Auto-fix formatting and simple lint issues
+format-fix:
+	uv run black .
+	uv run ruff check . --fix
+
+# API docs generation
+api-docs:
+	uv run python -m src.chatty_commander.tools.generate_api_docs -o docs
+
+# Build standalone CLI with PyInstaller
+.PHONY: build-exe build-exe-all dist-clean smoke-exe
+
+build-exe:
+	uv run pyinstaller --clean -y packaging/chatty_cli.spec
+
+build-exe-all:
+	@echo "Build matrix is handled in CI. Use 'make build-exe' locally."
+
+# Smoke test built binary (Linux/macOS)
+smoke-exe:
+	@echo "Smoking built CLI in dist/ ..."
+	@chmod +x dist/chatty || true
+	@./dist/chatty --help >/dev/null || { echo "help failed"; exit 1; }
+	@./dist/chatty list >/dev/null || { echo "list failed"; exit 1; }
+
+# Clean caches and dist artifacts
 clean:
-	rm -rf .pytest_cache
+	rm -rf .pytest_cache build dist chatty.spec
 	find . -type d -name "__pycache__" -exec rm -rf {} +
+
+dist-clean: clean
+	@echo "Distribution artifacts cleaned."
 
 # Run all steps
 all: install test clean

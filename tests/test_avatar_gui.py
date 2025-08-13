@@ -44,11 +44,13 @@ class TestAvatarGUI(unittest.TestCase):
         """If transparent window fails, we retry without transparency and succeed."""
         # First call raises, second call succeeds
         calls = {'i': 0}
+
         def create_window_side_effect(*args, **kwargs):
             calls['i'] += 1
             if calls['i'] == 1:
                 raise RuntimeError('no transparency support')
             return None
+
         mock_webview.create_window = MagicMock(side_effect=create_window_side_effect)
         mock_webview.start = MagicMock(return_value=None)
         rc = run_avatar_gui(debug=False)

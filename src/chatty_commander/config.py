@@ -6,6 +6,7 @@ We attempt, in order:
   1) import chatty_commander.app.config (when src is on sys.path via pytest.ini)
   2) explicit file-path load from src/chatty_commander/app/config.py
 """
+
 from __future__ import annotations
 
 import importlib.util as _ilu

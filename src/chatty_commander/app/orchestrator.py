@@ -114,7 +114,9 @@ class ModeOrchestrator:
         if self.flags.enable_computer_vision:
             selected.append(DummyAdapter("computer_vision"))
 
-        if self.flags.enable_discord_bridge and getattr(self.config, "advisors", {}).get("enabled", False):
+        if self.flags.enable_discord_bridge and getattr(self.config, "advisors", {}).get(
+            "enabled", False
+        ):
             selected.append(DummyAdapter("discord_bridge"))
 
         self.adapters = selected
@@ -137,5 +139,3 @@ class ModeOrchestrator:
     # Routing
     def _dispatch_command(self, command_name: str) -> Any:
         return self.command_sink.execute_command(command_name)
-
-

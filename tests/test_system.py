@@ -455,7 +455,9 @@ class SystemTester:
             # Try a quick non-blocking test
             result = self.run_command('timeout 2 chatty gui || true', timeout=5)
             if result['returncode'] in [0, 124]:  # Success or timeout
-                self.log("✓ GUI command accepts launch (terminated as expected)", "GUI Launch", "PASS")
+                self.log(
+                    "✓ GUI command accepts launch (terminated as expected)", "GUI Launch", "PASS"
+                )
             else:
                 self.log(f"✗ GUI launch failed: {result['stderr']}", "GUI Launch", "FAIL")
 
