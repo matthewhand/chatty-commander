@@ -213,7 +213,7 @@ class Config:
         try:
             with open(self.config_file, 'w') as f:
                 json.dump(self.config_data, f, indent=2)
-        except (OSError, json.JSONEncodeError) as e:
+        except (OSError, TypeError, ValueError) as e:
             import logging
 
             logging.error(f"Could not save config file {self.config_file}: {e}")

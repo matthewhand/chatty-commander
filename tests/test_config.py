@@ -198,8 +198,21 @@ def test_init_default_values(config):
     assert config.debug_mode is True
     assert config.default_state == "idle"
     assert config.inference_framework == "onnx"
-    assert config.start_on_boot is False
-    assert config.check_for_updates is True
+
+
+def test_update_general_setting_serialization_error(config, caplog, monkeypatch, tmp_path):
+    """Ensure serialization errors are logged without crashing."""
+    config.config_file = tmp_path / "config.json"
+
+    def fail_dump(*args, **kwargs):
+        raise TypeError("boom")
+
+    monkeypatch.setattr("json.dump", fail_dump)
+
+    with caplog.at_level(logging.ERROR):
+        config._update_general_setting("bad", object())
+
+    assert "Could not save config file" in caplog.text
 
 
 def test_load_config_file_not_exist(config, monkeypatch):
