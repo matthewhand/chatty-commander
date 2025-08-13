@@ -56,6 +56,23 @@ class GeneralSettings:
     check_for_updates: bool = True
 
 
+@dataclass
+class AuthSettings:
+    allowed_origins: List[str] = field(
+        default_factory=lambda: ["http://localhost:3000"]
+    )
+
+    def apply_env_overrides(self) -> None:
+        origins = os.getenv("CHATCOMM_ALLOWED_ORIGINS")
+        if origins:
+            self.allowed_origins = [
+                origin.strip() for origin in origins.split(",") if origin.strip()
+            ]
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+
 # --- Advisors -----------------------------------------------------------------
 
 
@@ -133,6 +150,7 @@ class Config:
     )
     audio_settings: AudioSettings = field(default_factory=AudioSettings)
     general_settings: GeneralSettings = field(default_factory=GeneralSettings)
+    auth: AuthSettings = field(default_factory=AuthSettings)
     keybindings: Dict[str, str] = field(default_factory=dict)
     commands: Dict[str, Dict[str, str]] = field(default_factory=dict)
     command_sequences: Dict[str, Any] = field(default_factory=dict)
@@ -147,6 +165,7 @@ class Config:
     def __post_init__(self) -> None:  # noqa: D401 - documented on class
         self.api_endpoints.apply_env_overrides()
         self.advisors.apply_env_overrides()
+        self.auth.apply_env_overrides()
         # Build model actions after commands/keybindings have been loaded
         self.model_actions = self._build_model_actions()
 
@@ -236,6 +255,7 @@ class Config:
         api_endpoints = ApiEndpoints(**data.get("api_endpoints", {}))
         audio_settings = AudioSettings(**data.get("audio_settings", {}))
         general_settings = GeneralSettings(**data.get("general_settings", {}))
+        auth_settings = AuthSettings(**data.get("auth", {}))
         advisors_data = data.get("advisors", {})
         advisors = AdvisorsConfig(
             enabled=advisors_data.get("enabled", False),
@@ -267,6 +287,7 @@ class Config:
             commands=data.get("commands", {}),
             command_sequences=data.get("command_sequences", {}),
             advisors=advisors,
+            auth=auth_settings,
             listen_for=data.get("listen_for", {}),
             modes=data.get("modes", {}),
             config_file=config_file,
