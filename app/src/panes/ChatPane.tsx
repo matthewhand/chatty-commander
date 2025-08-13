@@ -39,54 +39,21 @@ export default function ChatPane() {
           content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
         }));
       },
-      tool_call: data => {
+      tool_call: ({ id }) => {
         push({
-          id: data.id,
-          role: 'assistant',
-          createdAt: new Date().toISOString(),
-          content: [{ type: 'text', text: `Calling tool ${data.name}` }],
-        });
-      },
-      tool_result: data => {
-        push({
-          id: `${data.id}:result`,
+          id,
           role: 'tool',
           createdAt: new Date().toISOString(),
-          content: [{ type: 'text', text: data.result }],
+          content: [{ type: 'text', text: '' }],
         });
       },
-      done: () => {
-        if (assistantId) {
-          update(assistantId, m => ({
-            ...m,
-            meta: { ...(m.meta ?? {}), done: true },
-          }));
-        }
+      tool_result: ({ id, delta }) => {
+        update(id, m => ({
+          ...m,
+          content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
+        }));
       },
-      error: () => {
-        if (assistantId) {
-          update(assistantId, m => ({
-            ...m,
-            content: [
-              {
-                type: 'text',
-                text:
-                  (m.content?.[0]?.text ? m.content[0].text + '\n' : '') +
-                  'Request failed.',
-              },
-            ],
-            meta: { ...(m.meta ?? {}), error: true },
-          }));
-        } else {
-          push({
-            id: uuidv4(),
-            role: 'assistant',
-            createdAt: new Date().toISOString(),
-            content: [{ type: 'text', text: 'Request failed.' }],
-            meta: { error: true },
-          });
-        }
-      },
+      done: () => {},
     });
   };
 
