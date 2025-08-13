@@ -50,25 +50,40 @@ class TestStateManager(unittest.TestCase):
 
     def test_update_state_specific_commands(self):
         """Test update_state with specific commands."""
-        self.assertEqual(self.state_manager.update_state('hey_chat_tee'), 'chatty')
+        self.assertEqual(
+            self.state_manager.update_state('hey_chat_tee'),
+            self.config.state_transitions['idle']['hey_chat_tee'],
+        )
         self.logger.debug(f"State after 'hey_chat_tee': {self.state_manager.current_state}")
         self.assertEqual(self.state_manager.current_state, 'chatty')
 
-        self.assertEqual(self.state_manager.update_state('hey_khum_puter'), 'computer')
+        self.assertEqual(
+            self.state_manager.update_state('hey_khum_puter'),
+            self.config.state_transitions['chatty']['hey_khum_puter'],
+        )
         self.logger.debug(f"State after 'hey_khum_puter': {self.state_manager.current_state}")
         self.assertEqual(self.state_manager.current_state, 'computer')
 
-        self.assertEqual(self.state_manager.update_state('okay_stop'), 'idle')
+        self.assertEqual(
+            self.state_manager.update_state('okay_stop'),
+            self.config.state_transitions['computer']['okay_stop'],
+        )
         self.logger.debug(f"State after 'okay_stop': {self.state_manager.current_state}")
         self.assertEqual(self.state_manager.current_state, 'idle')
 
         self.state_manager.change_state('chatty')  # Set to non-idle state first
-        self.assertEqual(self.state_manager.update_state('thanks_chat_tee'), 'idle')
+        self.assertEqual(
+            self.state_manager.update_state('thanks_chat_tee'),
+            self.config.state_transitions['chatty']['thanks_chat_tee'],
+        )
         self.logger.debug(
             f"State after 'thanks_chat_tee' from chatty: {self.state_manager.current_state}"
         )
         self.state_manager.change_state('computer')  # Set to non-idle state first
-        self.assertEqual(self.state_manager.update_state('that_ill_do'), 'idle')
+        self.assertEqual(
+            self.state_manager.update_state('that_ill_do'),
+            self.config.state_transitions['computer']['that_ill_do'],
+        )
         self.logger.debug(
             f"State after 'that_ill_do' from computer: {self.state_manager.current_state}"
         )
@@ -90,15 +105,20 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(self.state_manager.current_state, 'chatty')
 
     def test_toggle_mode(self):
+        transitions = self.config.state_transitions
         self.state_manager.update_state('toggle_mode')
         self.logger.debug(f"State after first toggle: {self.state_manager.current_state}")
-        self.assertEqual(self.state_manager.current_state, 'computer')
+        self.assertEqual(self.state_manager.current_state, transitions['idle']['toggle_mode'])
         self.state_manager.update_state('toggle_mode')
         self.logger.debug(f"State after second toggle: {self.state_manager.current_state}")
-        self.assertEqual(self.state_manager.current_state, 'chatty')
+        self.assertEqual(
+            self.state_manager.current_state, transitions['computer']['toggle_mode']
+        )
         self.state_manager.update_state('toggle_mode')
         self.logger.debug(f"State after third toggle: {self.state_manager.current_state}")
-        self.assertEqual(self.state_manager.current_state, 'idle')
+        self.assertEqual(
+            self.state_manager.current_state, transitions['chatty']['toggle_mode']
+        )
 
     def test_repr(self):
         """Test __repr__ method."""
@@ -111,25 +131,7 @@ class TestStateManager(unittest.TestCase):
     # Expanded tests
     def test_all_state_transitions(self):
         """Test all possible state transitions."""
-        transitions = {
-            'idle': {
-                'hey_chat_tee': 'chatty',
-                'hey_khum_puter': 'computer',
-                'toggle_mode': 'computer',
-            },
-            'chatty': {
-                'hey_khum_puter': 'computer',
-                'okay_stop': 'idle',
-                'thanks_chat_tee': 'idle',
-                'toggle_mode': 'idle',
-            },
-            'computer': {
-                'hey_chat_tee': 'chatty',
-                'okay_stop': 'idle',
-                'that_ill_do': 'idle',
-                'toggle_mode': 'chatty',
-            },
-        }
+        transitions = self.config.state_transitions
         for start_state, cmds in transitions.items():
             for cmd, end_state in cmds.items():
                 self.state_manager.change_state(start_state)
@@ -140,7 +142,7 @@ class TestStateManager(unittest.TestCase):
 
     def test_invalid_commands_in_all_states(self):
         """Test invalid commands in all states do not change state."""
-        states = ['idle', 'chatty', 'computer']
+        states = list(self.config.state_transitions.keys())
         invalid_cmd = 'invalid_command'
         for state in states:
             self.state_manager.change_state(state)
@@ -150,14 +152,15 @@ class TestStateManager(unittest.TestCase):
 
     def test_multiple_toggles(self):
         """Test multiple toggle_mode calls cycle through states correctly."""
-        cycles = [('idle', 'computer'), ('computer', 'chatty'), ('chatty', 'idle')]
+        transitions = self.config.state_transitions
+        cycles = {state: transitions[state]['toggle_mode'] for state in transitions}
         self.state_manager.change_state('idle')
         for _ in range(6):  # Two full cycles
             current = self.state_manager.current_state
             self.state_manager.update_state('toggle_mode')
             new = self.state_manager.current_state
             self.logger.debug(f"Toggle from {current} to {new}")
-            self.assertEqual(new, next((end for start, end in cycles if start == current), None))
+            self.assertEqual(new, cycles[current])
 
     def test_state_after_error(self):
         """Test state remains unchanged after error in transition."""

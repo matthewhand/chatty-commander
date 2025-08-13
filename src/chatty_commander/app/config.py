@@ -42,6 +42,30 @@ class Config:
             },
         )
 
+        # State transitions (current_state -> command -> new_state)
+        self.state_transitions = self.config_data.get(
+            "state_transitions",
+            {
+                "idle": {
+                    "hey_chat_tee": "chatty",
+                    "hey_khum_puter": "computer",
+                    "toggle_mode": "computer",
+                },
+                "chatty": {
+                    "hey_khum_puter": "computer",
+                    "okay_stop": "idle",
+                    "thanks_chat_tee": "idle",
+                    "toggle_mode": "idle",
+                },
+                "computer": {
+                    "hey_chat_tee": "chatty",
+                    "okay_stop": "idle",
+                    "that_ill_do": "idle",
+                    "toggle_mode": "chatty",
+                },
+            },
+        )
+
         # Audio settings
         audio_settings = self.config_data.get("audio_settings", {})
         self.mic_chunk_size = audio_settings.get("mic_chunk_size", 1024)
