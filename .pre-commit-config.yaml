@@ -14,3 +14,13 @@ repos:
     hooks:
       - id: prettier
         types_or: [markdown, yaml, json]
+  - repo: https://github.com/pycqa/doc8
+    rev: v2.0.0
+    hooks:
+      - id: doc8
+        args: ["-e", ".md"]
+        files: "\\.(md|rst)$"
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle

@@ -1,7 +1,6 @@
+from chatty_commander.web.routes.avatar_selector import router as selector_router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from src.chatty_commander.web.routes.avatar_selector import router as selector_router
 
 
 def test_animation_selector_basic():
@@ -14,6 +13,9 @@ def test_animation_selector_basic():
     data = resp.json()
     assert data["label"] in ("hacking", "curious", "neutral")
 
-    resp2 = client.post("/avatar/animation/choose", json={"text": "Oops, an error occurred!", "candidate_labels": ["error", "success"]})
+    resp2 = client.post(
+        "/avatar/animation/choose",
+        json={"text": "Oops, an error occurred!", "candidate_labels": ["error", "success"]},
+    )
     assert resp2.status_code == 200
     assert resp2.json()["label"] == "error"

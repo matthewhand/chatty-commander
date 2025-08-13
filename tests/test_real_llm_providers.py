@@ -28,7 +28,7 @@ class TestCompletionProvider:
             'temperature': 0.7,
             'max_tokens': 1000,
             'max_retries': 2,
-            'timeout': 30
+            'timeout': 30,
         }
 
     @patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', True)
@@ -68,10 +68,7 @@ class TestCompletionProvider:
     def test_completion_provider_generate_retry(self, mock_agent, config):
         """Test generation with retry logic."""
         mock_client = Mock()
-        mock_client.chat.side_effect = [
-            Exception("First failure"),
-            "Success"
-        ]
+        mock_client.chat.side_effect = [Exception("First failure"), "Success"]
         mock_agent.return_value = mock_client
 
         provider = CompletionProvider(config)
@@ -134,7 +131,7 @@ class TestResponsesProvider:
             'temperature': 0.8,
             'max_tokens': 1500,
             'max_retries': 2,
-            'timeout': 30
+            'timeout': 30,
         }
 
     @patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', True)
@@ -175,16 +172,10 @@ class TestFallbackProvider:
         return {
             'model': 'gpt-3.5-turbo',
             'primary_api_mode': 'completion',
-            'fallbacks': [
-                {
-                    'model': 'gpt-4',
-                    'api_mode': 'responses',
-                    'api_key': 'fallback-key'
-                }
-            ],
+            'fallbacks': [{'model': 'gpt-4', 'api_mode': 'responses', 'api_key': 'fallback-key'}],
             'api_key': 'primary-key',
             'max_retries': 1,
-            'timeout': 30
+            'timeout': 30,
         }
 
     @patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', True)
@@ -265,11 +256,7 @@ class TestProviderBuilder:
 
     def test_build_provider_completion(self):
         """Test building completion provider."""
-        config = {
-            'llm_api_mode': 'completion',
-            'model': 'gpt-3.5-turbo',
-            'api_key': 'test-key'
-        }
+        config = {'llm_api_mode': 'completion', 'model': 'gpt-3.5-turbo', 'api_key': 'test-key'}
 
         with patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', True):
             with patch('chatty_commander.advisors.providers.CompletionProvider') as mock_completion:
@@ -281,11 +268,7 @@ class TestProviderBuilder:
 
     def test_build_provider_responses(self):
         """Test building responses provider."""
-        config = {
-            'llm_api_mode': 'responses',
-            'model': 'gpt-4',
-            'api_key': 'test-key'
-        }
+        config = {'llm_api_mode': 'responses', 'model': 'gpt-4', 'api_key': 'test-key'}
 
         with patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', True):
             with patch('chatty_commander.advisors.providers.ResponsesProvider') as mock_responses:
@@ -301,13 +284,7 @@ class TestProviderBuilder:
             'llm_api_mode': 'completion',
             'model': 'gpt-3.5-turbo',
             'api_key': 'test-key',
-            'fallbacks': [
-                {
-                    'model': 'gpt-4',
-                    'api_mode': 'responses',
-                    'api_key': 'fallback-key'
-                }
-            ]
+            'fallbacks': [{'model': 'gpt-4', 'api_mode': 'responses', 'api_key': 'fallback-key'}],
         }
 
         with patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', True):
@@ -320,10 +297,7 @@ class TestProviderBuilder:
 
     def test_build_provider_invalid_mode(self):
         """Test building provider with invalid API mode."""
-        config = {
-            'llm_api_mode': 'invalid',
-            'model': 'gpt-3.5-turbo'
-        }
+        config = {'llm_api_mode': 'invalid', 'model': 'gpt-3.5-turbo'}
 
         with patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', True):
             with pytest.raises(ValueError, match="Unknown API mode"):
@@ -331,10 +305,7 @@ class TestProviderBuilder:
 
     def test_build_provider_safe_without_openai(self):
         """Test safe provider builder without openai-agents SDK."""
-        config = {
-            'llm_api_mode': 'completion',
-            'model': 'gpt-3.5-turbo'
-        }
+        config = {'llm_api_mode': 'completion', 'model': 'gpt-3.5-turbo'}
 
         with patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', False):
             provider = build_provider_safe(config)
@@ -345,11 +316,7 @@ class TestProviderBuilder:
 
     def test_build_provider_safe_with_openai(self):
         """Test safe provider builder with openai-agents SDK."""
-        config = {
-            'llm_api_mode': 'completion',
-            'model': 'gpt-3.5-turbo',
-            'api_key': 'test-key'
-        }
+        config = {'llm_api_mode': 'completion', 'model': 'gpt-3.5-turbo', 'api_key': 'test-key'}
 
         with patch('chatty_commander.advisors.providers.AGENTS_AVAILABLE', True):
             with patch('chatty_commander.advisors.providers.build_provider') as mock_build:
@@ -372,7 +339,7 @@ class TestProviderIntegration:
             'api_mode': 'completion',
             'api_key': 'test-key',
             'temperature': 0.9,
-            'max_tokens': 500
+            'max_tokens': 500,
         }
 
         mock_client = Mock()
@@ -393,13 +360,15 @@ class TestProviderIntegration:
             'model': 'gpt-oss20b',
             'api_mode': 'completion',
             'api_key': 'test-key',
-            'base_url': 'http://localhost:8080/v1'
+            'base_url': 'http://localhost:8080/v1',
         }
 
         mock_client = Mock()
         mock_client.chat.return_value = "Local model response"
 
-        with patch('chatty_commander.advisors.providers.Agent', return_value=mock_client) as agent_ctor:
+        with patch(
+            'chatty_commander.advisors.providers.Agent', return_value=mock_client
+        ) as agent_ctor:
             provider = CompletionProvider(config)
             result = provider.generate("Test prompt")
 

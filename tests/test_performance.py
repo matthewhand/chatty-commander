@@ -115,8 +115,8 @@ class TestPerformanceBenchmarks:
             rapid_transition_time < 0.1
         ), f"100 rapid transitions took {rapid_transition_time:.3f}s"
 
-    @patch('model_manager.os.path.exists')
-    @patch('model_manager.os.listdir')
+    @patch('chatty_commander.app.model_manager.os.path.exists')
+    @patch('chatty_commander.app.model_manager.os.listdir')
     def test_model_loading_performance(self, mock_listdir, mock_exists, model_manager):
         """Test model loading performance."""
         # Mock file system for consistent testing
@@ -125,7 +125,7 @@ class TestPerformanceBenchmarks:
 
         # Mock model loading to avoid actual file I/O
         with patch(
-            'model_manager.Model', return_value=MagicMock()
+            'chatty_commander.app.model_manager.Model', return_value=MagicMock()
         ) as mock_model:  # noqa: F841 - context var not used directly
             # Benchmark model loading
             _, execution_time = self.measure_execution_time(model_manager.reload_models, 'idle')
@@ -216,8 +216,8 @@ class TestPerformanceBenchmarks:
         state_manager = StateManager()
 
         with (
-            patch('model_manager.os.path.exists', return_value=True),
-            patch('model_manager.os.listdir', return_value=['test.onnx']),
+            patch('chatty_commander.app.model_manager.os.path.exists', return_value=True),
+            patch('chatty_commander.app.model_manager.os.listdir', return_value=['test.onnx']),
         ):
             model_manager = ModelManager(config)
 

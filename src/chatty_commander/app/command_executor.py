@@ -107,12 +107,7 @@ class CommandExecutor:
         elif 'shell' in command_action:
             try:
                 cmd = command_action.get('shell', '')
-                result = subprocess.run(
-                    cmd,
-                    shell=True,
-                    text=True,
-                    capture_output=True
-                )
+                result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
                 if result.returncode == 0:
                     # Ensure tests can detect success in caplog
                     logger.warning("shell ok")
@@ -282,6 +277,7 @@ class CommandExecutor:
 
 def _get_pyautogui():
     return pyautogui  # type: ignore[name-defined]
+
 
 def _get_requests():
     return requests  # type: ignore[name-defined]

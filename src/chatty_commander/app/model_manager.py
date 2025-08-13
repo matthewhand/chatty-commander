@@ -23,7 +23,6 @@ except ModuleNotFoundError:
             self.path = path
 
 
-
 class ModelManager:
     def __init__(self, config: Any) -> None:
         """
@@ -95,7 +94,9 @@ class ModelManager:
                 model_set[model_name] = instance  # only add on success
                 logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
             except Exception as e:
-                logging.error(f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models.")
+                logging.error(
+                    f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models."
+                )
                 # do not add on failure
                 continue
 

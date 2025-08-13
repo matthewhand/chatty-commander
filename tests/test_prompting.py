@@ -25,5 +25,3 @@ def test_build_provider_prompt_modes():
 def test_resolve_persona_uses_defaults():
     p = resolve_persona("philosophy_advisor")
     assert "Stoic" in p.system
-
-

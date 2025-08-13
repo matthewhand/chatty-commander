@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Developer-friendly wrapper for the ChattyCommander CLI
+# Uses the repo's source tree without requiring installation.
+exec python -m chatty_commander.cli.cli "$@"

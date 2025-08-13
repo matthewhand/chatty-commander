@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ConfigurationPage from './pages/ConfigurationPage';
 import AudioSettingsPage from './pages/AudioSettingsPage';
+import PersonasPage from './pages/PersonasPage';
 
 // Import components
 import Navigation from './components/Navigation';
@@ -72,24 +73,26 @@ const darkTheme = createTheme({
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
+  const noAuth = process.env.REACT_APP_NO_AUTH === 'true';
+  const showNav = isAuthenticated || noAuth;
 
   return (
     <Router>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        {isAuthenticated && <Navigation />}
+        {showNav && <Navigation />}
         <Box
           component="main"
           sx={{
             flexGrow: 1,
-            p: isAuthenticated ? 3 : 0,
-            ml: isAuthenticated ? '240px' : 0,
+            p: showNav ? 3 : 0,
+            ml: showNav ? '240px' : 0,
           }}
         >
           <Routes>
             <Route
               path="/login"
               element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
+                (isAuthenticated || noAuth) ? <Navigate to="/dashboard" replace /> : <LoginPage />
               }
             />
             <Route
@@ -117,9 +120,17 @@ function AppContent() {
               }
             />
             <Route
+              path="/personas"
+              element={
+                <ProtectedRoute>
+                  <PersonasPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/"
               element={
-                <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+                <Navigate to={(isAuthenticated || noAuth) ? '/dashboard' : '/login'} replace />
               }
             />
           </Routes>

@@ -5,9 +5,11 @@ This module manages the thinking state of AI agents and broadcasts state changes
 to connected avatar UIs for synchronized animations and visual feedback.
 """
 
+import asyncio
+import inspect
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any
@@ -60,6 +62,7 @@ class AgentStateInfo:
 class ThinkingStateManager:
     """
     Manages thinking states for multiple agents and broadcasts changes to avatar UIs.
+
     This enables synchronized animations between AI processing and avatar displays.
     """
 
@@ -115,18 +118,33 @@ class ThinkingStateManager:
             self.agent_states[agent_id].avatar_id = avatar_id
             self._broadcast_state_change(agent_id)
 
-    def add_broadcast_callback(self, callback: Callable[[dict[str, Any]], None]) -> None:
+    def add_broadcast_callback(
+        self,
+        callback: Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]],
+    ) -> None:
         """Add a callback to receive state change broadcasts."""
         self.broadcast_callbacks.add(callback)
 
-    def remove_broadcast_callback(self, callback: Callable[[dict[str, Any]], None]) -> None:
+    def remove_broadcast_callback(
+        self,
+        callback: Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]],
+    ) -> None:
         """Remove a broadcast callback."""
         self.broadcast_callbacks.discard(callback)
 
     def _broadcast(self, message: dict[str, Any]) -> None:
-        for callback in self.broadcast_callbacks.copy():
+        callbacks = list(self.broadcast_callbacks.copy())
+        for callback in callbacks:
             try:
-                callback(message)
+                if inspect.iscoroutinefunction(callback):
+                    # If we're in an event loop, schedule the coroutine, else run it
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(callback(message))
+                    except RuntimeError:
+                        asyncio.run(callback(message))
+                else:
+                    callback(message)
             except Exception as e:
                 logger.error(f"Error in broadcast callback: {e}")
 

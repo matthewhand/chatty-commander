@@ -61,6 +61,7 @@ def test_cli_set_mode(monkeypatch, capsys):
     with patch('chatty_commander.cli.cli.ConfigCLI.set_mode'):
         with pytest.raises(SystemExit):
             cli_main()
+        mock_set.assert_not_called()
     captured = capsys.readouterr()
     assert "Invalid mode" in captured.err
 
