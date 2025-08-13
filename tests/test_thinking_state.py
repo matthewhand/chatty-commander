@@ -1,4 +1,4 @@
-from src.chatty_commander.avatars.thinking_state import (
+from chatty_commander.avatars.thinking_state import (
     get_thinking_manager,
     reset_thinking_manager,
     ThinkingState,

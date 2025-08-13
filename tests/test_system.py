@@ -37,9 +37,6 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-#from config import Config  # noqa: E402 - imported after path manipulation
-#from model_manager import ModelManager  # noqa: E402 - imported after path manipulation
-#from state_manager import StateManager  # noqa: E402 - imported after path manipulation
 
 from chatty_commander.app.config import Config  # noqa: E402 - imported after path manipulation
 from chatty_commander.app.model_manager import ModelManager  # noqa: E402 - imported after path manipulation

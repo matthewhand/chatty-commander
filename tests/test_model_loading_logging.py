@@ -1,8 +1,7 @@
 import logging
 import pytest
 
-from src.chatty_commander.model_manager import ModelManager
-from chatty_commander.app.model_manager import load_model
+from chatty_commander.app.model_manager import ModelManager
 
 class DummyError(Exception):
     pass
@@ -20,7 +19,7 @@ def test_model_loading_logging_retry(monkeypatch, caplog, tmp_path):
         lambda: FailingModel,
     )
     monkeypatch.setattr(
-        "src.chatty_commander.app.model_manager._get_patchable_model_class",
+        "chatty_commander.app.model_manager._get_patchable_model_class",
         lambda: FailingModel,
         raising=False,
     )

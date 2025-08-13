@@ -19,7 +19,7 @@ if 'DISPLAY' not in os.environ or not os.environ['DISPLAY'].strip():
     )
     os.environ['DISPLAY'] = ':0'
 
-from config import Config
+from chatty_commander.app.config import Config
 
 
 class ChattyCommanderGUI:

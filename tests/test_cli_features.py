@@ -20,7 +20,7 @@ def replace_config_with_dummy(monkeypatch):
             return DummyConfigDirect(actions)
 
         # Patch where cli imports Config inside functions: config.Config
-        import config as config_module
+        import chatty_commander.app.config as config_module
 
         monkeypatch.setattr(
             config_module, "Config", staticmethod(lambda: DummyConfigDirect(actions))
@@ -122,7 +122,7 @@ def test_cli_exec_invokes_executor(monkeypatch, replace_config_with_dummy):
             called["count"] += 1
             called["last"] = name
 
-    monkeypatch.setattr('cli.CommandExecutor', FakeExecutor)
+    monkeypatch.setattr('chatty_commander.cli.cli.CommandExecutor', FakeExecutor)
 
     code, out, err = run_cli_main_with_args(["exec", "hello"], monkeypatch)
     assert code == 0

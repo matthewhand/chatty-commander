@@ -32,7 +32,7 @@ def test_cli_parsing_and_success_path(monkeypatch, tmp_path: Path):
     - Invokes pytest main (mocked) with coverage flags
     - Returns exit code 0
     """
-    mod_name = "src.chatty_commander.tools.run_tests_with_coverage"
+    mod_name = "chatty_commander.tools.run_tests_with_coverage"
     spec = importlib.util.find_spec(mod_name)
     assert spec is not None, f"Module {mod_name} not found"
 
@@ -63,7 +63,7 @@ def test_cli_failure_bubbles_nonzero_exit(monkeypatch, tmp_path: Path):
     - pytest.main returns non-zero
     - Tool should exit non-zero
     """
-    mod_name = "src.chatty_commander.tools.run_tests_with_coverage"
+    mod_name = "chatty_commander.tools.run_tests_with_coverage"
     spec = importlib.util.find_spec(mod_name)
     assert spec is not None, f"Module {mod_name} not found"
 
@@ -82,7 +82,7 @@ def test_cli_allows_custom_paths(monkeypatch, tmp_path: Path):
     If the tool supports passing test paths via argv, ensure they are forwarded to pytest.main.
     We simulate by inspecting the args passed into mocked pytest.main.
     """
-    mod_name = "src.chatty_commander.tools.run_tests_with_coverage"
+    mod_name = "chatty_commander.tools.run_tests_with_coverage"
     spec = importlib.util.find_spec(mod_name)
     assert spec is not None, f"Module {mod_name} not found"
 

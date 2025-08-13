@@ -12,10 +12,10 @@ class TestGuiHeadless(unittest.TestCase):
         if 'DISPLAY' in os.environ:
             del os.environ['DISPLAY']
         # Remove gui module from cache to force re-execution of top-level code
-        if 'gui' in globals():
-            del globals()['gui']
-        if 'gui' in importlib.sys.modules:
-            del importlib.sys.modules['gui']
+        if 'chatty_commander.gui' in globals():
+            del globals()['chatty_commander.gui']
+        if 'chatty_commander.gui' in importlib.sys.modules:
+            del importlib.sys.modules['chatty_commander.gui']
 
     def tearDown(self):
         # Restore the original DISPLAY environment variable
@@ -28,7 +28,7 @@ class TestGuiHeadless(unittest.TestCase):
         # Capture the printed output when importing gui
         f = io.StringIO()
         with redirect_stdout(f):
-            import gui
+            import chatty_commander.gui as gui
 
             importlib.reload(gui)
         output = f.getvalue()
