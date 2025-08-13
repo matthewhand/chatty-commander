@@ -10,6 +10,29 @@ export interface Bus {
 export function createBus(target: Window): Bus {
   const handlers = new Map<string, Set<BusHandler>>();
   const anyHandlers = new Set<AnyBusHandler>();
+  let listening = false;
+
+  const listener = (ev: MessageEvent) => {
+    const msg = ev.data;
+    if (!msg || typeof msg.type !== 'string') return;
+    const set = handlers.get(msg.type);
+    if (set) set.forEach((h) => h(msg.payload, ev));
+    anyHandlers.forEach((h) => h(msg.type, msg.payload, ev));
+  };
+
+  function ensureListener() {
+    if (!listening && (handlers.size || anyHandlers.size)) {
+      target.addEventListener('message', listener);
+      listening = true;
+    }
+  }
+
+  function cleanupListener() {
+    if (listening && handlers.size === 0 && anyHandlers.size === 0) {
+      target.removeEventListener('message', listener);
+      listening = false;
+    }
+  }
 
   function post(type: string, payload?: any) {
     target.postMessage({ type, payload }, '*');
@@ -22,21 +45,24 @@ export function createBus(target: Window): Bus {
       handlers.set(type, set);
     }
     set.add(handler);
-    return () => set!.delete(handler);
+    ensureListener();
+    return () => {
+      set!.delete(handler);
+      if (set!.size === 0) {
+        handlers.delete(type);
+      }
+      cleanupListener();
+    };
   }
 
   function onAny(handler: AnyBusHandler) {
     anyHandlers.add(handler);
-    return () => anyHandlers.delete(handler);
+    ensureListener();
+    return () => {
+      anyHandlers.delete(handler);
+      cleanupListener();
+    };
   }
-
-  window.addEventListener('message', (ev) => {
-    const msg = ev.data;
-    if (!msg || typeof msg.type !== 'string') return;
-    const set = handlers.get(msg.type);
-    if (set) set.forEach((h) => h(msg.payload, ev));
-    anyHandlers.forEach((h) => h(msg.type, msg.payload, ev));
-  });
 
   return { post, on, onAny };
 }
