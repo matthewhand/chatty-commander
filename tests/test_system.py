@@ -37,6 +37,13 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# Ensure source directory is on the Python path so imports like
+# ``from config import Config`` continue to work after the project's
+# source was moved under ``src/``.
+SRC_DIR = os.path.join(ROOT_DIR, 'src')
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
 from config import Config  # noqa: E402 - imported after path manipulation
 from model_manager import ModelManager  # noqa: E402 - imported after path manipulation
 from state_manager import StateManager  # noqa: E402 - imported after path manipulation
