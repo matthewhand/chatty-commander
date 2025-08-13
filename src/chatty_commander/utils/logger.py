@@ -33,14 +33,13 @@ def setup_logger(name, log_file, level=logging.INFO):
     directory = os.path.dirname(log_file)
     try:
         # Only create the directory if it does not already exist
-        if not os.path.exists(directory):
+        if directory and not os.path.exists(directory):
             os.makedirs(directory)
     except Exception:
         # Ignore any error; tests care about behavior, not filesystem
         pass
 
     # Always construct the handler so patched RotatingFileHandler sees the call
-    # IMPORTANT: tests patch RotatingFileHandler and assert the exact call signature.
     handler = RotatingFileHandler(log_file, maxBytes=1000000, backupCount=5)
     handler.setFormatter(formatter)
 
@@ -48,18 +47,13 @@ def setup_logger(name, log_file, level=logging.INFO):
     logger.setLevel(level)
 
     # Avoid duplicate handlers for same file
-    for h in list(logger.handlers):
-        try:
-            if isinstance(h, RotatingFileHandler) and getattr(h, "baseFilename", None) == getattr(
-                handler, "baseFilename", None
-            ):
-                # A handler for this file already exists; return existing logger without adding another
-                return logger
-        except Exception:
-            continue
+    if not any(
+        isinstance(h, RotatingFileHandler)
+        and getattr(h, "baseFilename", None) == getattr(handler, "baseFilename", None)
+        for h in logger.handlers
+    ):
+        logger.addHandler(handler)
 
-    # Attach the handler exactly once (do NOT call makedirs again here)
-    logger.addHandler(handler)
     return logger
 
 

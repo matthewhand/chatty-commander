@@ -110,8 +110,8 @@ class DefaultConfigGenerator:
                 "paste": "ctrl+v",
                 "cycle_window": "alt+tab",
                 "open_run": "win+r",
-                "start_typing": "ctrl+shift+;",
-                "stop_typing": "ctrl+shift+;",
+                "start_typing": "ctrl+shift;",
+                "stop_typing": "ctrl+shift;",
                 "submit": "enter",
             },
             "commands": {

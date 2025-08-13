@@ -1,5 +1,12 @@
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/chatty_commander/web/web_mode.py
 #!/usr/bin/env python3
 """web_mode.py.
+=======
+#!/usr/bin/env python3
+"""
+web_mode.py
+>>>>>>> pr-6-head
 
 FastAPI web server implementation for ChattyCommander.
 Provides REST API endpoints and WebSocket support for web interface.
@@ -8,7 +15,10 @@ Provides REST API endpoints and WebSocket support for web interface.
 import asyncio
 import json
 import logging
+<<<<<<< HEAD
 import os
+=======
+>>>>>>> pr-6-head
 import time
 from datetime import datetime
 from pathlib import Path
@@ -21,15 +31,21 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+<<<<<<< HEAD
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
+=======
+>>>>>>> pr-6-head
 from chatty_commander.app.command_executor import CommandExecutor
 
 # Import our core modules from src package
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
+<<<<<<< HEAD
 from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.routes.version import router as version_router
+=======
+>>>>>>> pr-6-head
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -106,8 +122,11 @@ class WebModeServer:
         self.start_time = time.time()
         self.last_command: str | None = None
         self.last_state_change = datetime.now()
+<<<<<<< HEAD
         # Advisors service (optional)
         self.advisors_service = AdvisorsService(config=config_manager)
+=======
+>>>>>>> pr-6-head
 
         # WebSocket connection management
         self.active_connections: set[WebSocket] = set()
@@ -154,6 +173,7 @@ class WebModeServer:
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
 
+<<<<<<< HEAD
         # Serve avatar UI (TalkingHead placeholder) if available
         avatar_path = Path("src/chatty_commander/webui/avatar")
         if avatar_path.exists():
@@ -172,6 +192,8 @@ class WebModeServer:
             except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to mount avatar UI static files: {e}")
 
+=======
+>>>>>>> pr-6-head
         return app
 
     def _register_routes(self, app: FastAPI) -> None:
@@ -225,7 +247,13 @@ class WebModeServer:
                 return {"message": "Configuration updated successfully"}
             except Exception as e:
                 logger.error(f"Failed to update configuration: {e}")
+<<<<<<< HEAD
                 raise HTTPException(status_code=500, detail=str(e)) from e
+=======
+                raise HTTPException(
+                    status_code=500, detail=str(e)
+                )  # noqa: B904 - preserving current exception behavior
+>>>>>>> pr-6-head
 
         @app.get("/api/v1/state", response_model=StateInfo)
         async def get_state():
@@ -260,7 +288,13 @@ class WebModeServer:
                 return {"message": f"State changed to {request.state}"}
             except Exception as e:
                 logger.error(f"Failed to change state: {e}")
+<<<<<<< HEAD
                 raise HTTPException(status_code=400, detail=str(e)) from e
+=======
+                raise HTTPException(
+                    status_code=400, detail=str(e)
+                )  # noqa: B904 - preserve current error handling
+>>>>>>> pr-6-head
 
         @app.post("/api/v1/command", response_model=CommandResponse)
         async def execute_command(request: CommandRequest):
@@ -270,9 +304,13 @@ class WebModeServer:
             try:
                 # Check if command exists in configuration
                 config_dict = getattr(self.config_manager, "config", {})
+<<<<<<< HEAD
                 model_actions = (
                     config_dict.get('model_actions', {}) if isinstance(config_dict, dict) else {}
                 )
+=======
+                model_actions = config_dict.get('model_actions', {}) if isinstance(config_dict, dict) else {}
+>>>>>>> pr-6-head
                 if request.command not in model_actions:
                     raise HTTPException(
                         status_code=404, detail=f"Command '{request.command}' not found"
@@ -311,6 +349,10 @@ class WebModeServer:
                     ),
                     execution_time=execution_time,
                 )
+<<<<<<< HEAD
+=======
+
+>>>>>>> pr-6-head
             except HTTPException:
                 raise
             except Exception as e:
@@ -322,6 +364,7 @@ class WebModeServer:
                     execution_time=execution_time,
                 )
 
+<<<<<<< HEAD
         class AdvisorInbound(BaseModel):
             platform: str
             channel: str
@@ -484,6 +527,11 @@ class WebModeServer:
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
             """Websocket endpoint for real-time updates."""
+=======
+        @app.websocket("/ws")
+        async def websocket_endpoint(websocket: WebSocket):
+            """WebSocket endpoint for real-time updates."""
+>>>>>>> pr-6-head
             await websocket.accept()
             self.active_connections.add(websocket)
 
@@ -648,6 +696,7 @@ class WebModeServer:
             # No event loop running, skip broadcast
             pass
 
+<<<<<<< HEAD
     def run(
         self,
         host: str | None = None,
@@ -690,6 +739,13 @@ class WebModeServer:
 
         logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
         logger.info(f"📖 API documentation: http://{host}:{port}/docs")
+=======
+    def run(self, host: str = "0.0.0.0", port: int = 8100, log_level: str = "info") -> None:
+        """Run the web server."""
+        logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
+        logger.info(f"📖 API documentation: http://{host}:{port}/docs")
+        logger.info(f"🔧 Authentication: {'Disabled' if self.no_auth else 'Enabled'}")
+>>>>>>> pr-6-head
 
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, access_log=True)
 
@@ -733,6 +789,7 @@ if __name__ == "__main__":
         no_auth=True,
     )
 
+<<<<<<< HEAD
     env_host = os.getenv("CHATCOMM_HOST", "0.0.0.0")
     env_port = int(os.getenv("CHATCOMM_PORT", "8100"))
     env_log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
@@ -852,3 +909,9 @@ def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
     app.include_router(core_router)
 
     return app
+========
+import warnings as _w; _w.warn("web_mode.py is deprecated; use chatty_commander.web.web_mode", DeprecationWarning); from chatty_commander.web.web_mode import *  # noqa
+>>>>>>>> pr-6-head:web_mode.py
+=======
+    server.run()
+>>>>>>> pr-6-head

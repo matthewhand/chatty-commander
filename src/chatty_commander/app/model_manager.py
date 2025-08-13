@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/chatty_commander/app/model_manager.py
+=======
+>>>>>>> pr-6-head
 """
 model_manager.py
 
@@ -18,6 +22,7 @@ except ModuleNotFoundError:
         "Dependency 'wakewords' not found. Using dummy Model. Some functionality may be limited."
     )
 
+<<<<<<< HEAD
 
 # NOTE:
 # Keep a simple default Model implementation, but tests patch the root-level
@@ -74,6 +79,11 @@ def _get_patchable_model_class():
 
     # 4) Final fallback to the local dummy
     return Model
+=======
+    class Model:
+        def __init__(self, path):
+            self.path = path
+>>>>>>> pr-6-head
 
 
 class ModelManager:
@@ -113,6 +123,7 @@ class ModelManager:
         return {}
 
     def load_model_set(self, path: str) -> dict[str, Model]:
+<<<<<<< HEAD
         """
         Load all .onnx models from the given path.
 
@@ -120,11 +131,14 @@ class ModelManager:
           - If Model(...) raises, the model must NOT be added
           - Tests monkeypatch model_manager.Model to MagicMock; ensure we call the symbol Model here
         """
+=======
+>>>>>>> pr-6-head
         model_set: dict[str, Model] = {}
         if not os.path.exists(path):
             logging.error(f"Model directory {path} does not exist.")
             return model_set
 
+<<<<<<< HEAD
         try:
             entries = os.listdir(path)
         except Exception as e:
@@ -155,6 +169,23 @@ class ModelManager:
                 # do not add on failure
                 continue
 
+=======
+        for model_file in os.listdir(path):
+            if model_file.endswith('.onnx'):
+                model_path = os.path.join(path, model_file)
+                model_name = os.path.splitext(model_file)[0]
+                if not os.path.exists(model_path):
+                    logging.warning(f"Model file '{model_path}' does not exist. Skipping.")
+                    continue
+                try:
+                    model_instance = Model(model_path)
+                    model_set[model_name] = model_instance
+                    logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
+                except Exception as e:
+                    logging.error(
+                        f"Failed to load model '{model_name}' from '{model_path}'. Error details: {str(e)}. Continuing with other models."
+                    )
+>>>>>>> pr-6-head
         return model_set
 
     async def async_listen_for_commands(self) -> str | None:
@@ -226,3 +257,9 @@ def load_model(model_path):
                 except Exception as report_exc:
                     logging.error("Error reporting failed: %s", report_exc)
                 raise Exception("Max retries exceeded") from e
+<<<<<<< HEAD
+========
+import warnings as _w; _w.warn("model_manager.py is deprecated; use chatty_commander.app.model_manager", DeprecationWarning); from chatty_commander.app.model_manager import *  # noqa
+>>>>>>>> pr-6-head:model_manager.py
+=======
+>>>>>>> pr-6-head
