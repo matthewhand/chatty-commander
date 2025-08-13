@@ -90,6 +90,8 @@ def run_web_mode(
     config, model_manager, state_manager, command_executor, logger, no_auth=False, port=8100
 ):
     """Run the web UI mode with FastAPI server and graceful shutdown."""
+    import os
+
     try:
         from chatty_commander.web.web_mode import create_web_server
     except ImportError:
@@ -137,9 +139,18 @@ def run_web_mode(
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
+    host = os.getenv("CHATCOMM_HOST", "0.0.0.0")
+    env_port = os.getenv("CHATCOMM_PORT")
+    if env_port:
+        try:
+            port = int(env_port)
+        except ValueError:
+            logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
+    log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
+
     # Start the server
     try:
-        web_server.run(host="0.0.0.0", port=port, log_level="info")
+        web_server.run(host=host, port=port, log_level=log_level)
     finally:
         try:
             if hasattr(model_manager, "shutdown"):
