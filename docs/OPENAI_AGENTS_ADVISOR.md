@@ -42,13 +42,13 @@
 
 ## Quickstart (preview)
 
-1) Configure advisors (planned keys):
+1. Configure advisors (planned keys):
 
 ```json
 {
   "advisors": {
     "enabled": true,
-    "llm_api_mode": "completion", 
+    "llm_api_mode": "completion",
     "model": "gpt-oss20b",
     "platforms": ["discord", "slack"],
     "personas": { "default": "philosophy_advisor" },
@@ -57,9 +57,9 @@
 }
 ```
 
-2) Run the web/CLI as usual; platform adapters will register when configured.
+2. Run the web/CLI as usual; platform adapters will register when configured.
 
-3) Toggle avatar and personas via settings (to be wired to config/state manager).
+3. Toggle avatar and personas via settings (to be wired to config/state manager).
 
 ### Node.js bridge API (contract preview)
 
@@ -76,6 +76,7 @@ Note: Implementation is tracked in `TODO.md` under “OpenAI‑Agents advisor (M
 ## Usage examples
 
 - Enable advisors at runtime with web server and Discord bridge:
+
   ```bash
   export ADVISORS_BRIDGE_TOKEN=secret
   export ADVISORS_BRIDGE_URL=http://localhost:3001
@@ -83,6 +84,7 @@ Note: Implementation is tracked in `TODO.md` under “OpenAI‑Agents advisor (M
   ```
 
 - Persona configuration (philosophy advisor):
+
   ```json
   {
     "advisors": {
@@ -100,5 +102,3 @@ Note: Implementation is tracked in `TODO.md` under “OpenAI‑Agents advisor (M
     -H 'Content-Type: application/json' \
     -d '{"platform":"discord","channel":"c1","user":"u1","text":"summarize https://example.com"}'
   ```
-
-
