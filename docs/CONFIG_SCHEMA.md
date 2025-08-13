@@ -61,6 +61,19 @@ class GeneralSettings:
     check_for_updates: bool = True
 ```
 
+### Environment variable overrides
+
+These fields may be overridden with environment variables. Boolean values
+accept `1`, `true` or `yes` (case-insensitive) to enable them.
+
+| Variable                       | Description                    |
+| ------------------------------ | ------------------------------ |
+| `CHATCOMM_DEBUG`               | Enable debug mode              |
+| `CHATCOMM_DEFAULT_STATE`       | Default state when starting    |
+| `CHATCOMM_INFERENCE_FRAMEWORK` | Override inference framework   |
+| `CHATCOMM_START_ON_BOOT`       | Launch ChattyCommander on boot |
+| `CHATCOMM_CHECK_FOR_UPDATES`   | Check for application updates  |
+
 ## Adding a custom command
 
 1. Define a keybinding:
