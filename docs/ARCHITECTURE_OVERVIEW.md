@@ -13,7 +13,7 @@ All modes are unified by the `ModeOrchestrator` which selects and starts adapter
 
 - **Config**: Single source of truth for model paths, state models, commands, and advisor settings.
 - **StateManager**: Consistent state transitions across modes (idle/computer/chatty).
-- **ModelManager**: Loads and swaps active models per state.
+- **ModelManager**: Loads and swaps active models per state. Model loading uses a retry loop with detailed diagnostics and reports failures via `utils.logger.report_error` after repeated errors.
 - **CommandExecutor**: Executes keypress/URL/system actions; used by all modes.
 - **Web API**: Exposes status, config, state, command, advisors, and memory endpoints.
 - **Advisors**: `AdvisorsService` with context memory and tools (e.g., browser analyst); accessible via Web API and bridge.
