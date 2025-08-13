@@ -620,12 +620,24 @@ class WebModeServer:
             # No event loop running, skip broadcast
             pass
 
-    def run(self, host: str | None = None, port: int | None = None, log_level: str = "info") -> None:
+    def run(
+        self,
+        host: str | None = None,
+        port: int | None = None,
+        log_level: str = "info",
+    ) -> None:
+        """Run the web server, honoring environment and config defaults."""
+#     def run(self, host: str | None = None, port: int | None = None, log_level: str = "info") -> None:
         """Run the web server, honoring config and environment overrides."""
         env_host = os.getenv("CHATCOMM_HOST")
         env_port = os.getenv("CHATCOMM_PORT")
         env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
 
+        cfg = getattr(self.config_manager, "web_server", {}) or {}
+#         if host is None:
+#             host = cfg.get("host", "0.0.0.0")
+#         if port is None:
+#             port = int(cfg.get("port", 8100))
         if host is None and getattr(self.config_manager, "web_server", None):
             host = self.config_manager.web_server.get("host", "0.0.0.0")
         if port is None and getattr(self.config_manager, "web_server", None):
@@ -641,14 +653,19 @@ class WebModeServer:
         if env_log_level:
             log_level = env_log_level
 
-        if host is None:
-            host = "0.0.0.0"
-        if port is None:
-            port = 8100
+        logger.info(
+            "🚀 Starting ChattyCommander web server on %s:%s (auth %s)",
+            host,
+            port,
+            "disabled" if self.no_auth else "enabled",
+        )
+#         if host is None:
+#             host = "0.0.0.0"
+#         if port is None:
+#             port = 8100
 
         logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
         logger.info(f"📖 API documentation: http://{host}:{port}/docs")
-        logger.info(f"🔧 Authentication: {'Disabled' if self.no_auth else 'Enabled'}")
 
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, access_log=True)
 

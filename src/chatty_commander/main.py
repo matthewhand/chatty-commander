@@ -129,9 +129,9 @@ def run_web_mode(
         web_server._on_state_change(old_state, new_state)
 
     # Register callbacks
-    if hasattr(model_manager, 'add_command_callback'):
+    if hasattr(model_manager, "add_command_callback"):
         model_manager.add_command_callback(on_command_detected)
-    if hasattr(state_manager, 'add_state_change_callback'):
+    if hasattr(state_manager, "add_state_change_callback"):
         state_manager.add_state_change_callback(on_state_change)
 
     stop_event = threading.Event()
@@ -518,6 +518,23 @@ def main():
             config.advisors["enabled"] = True
         except Exception:
             pass
+
+    # Derive web server settings with CLI overrides
+    web_cfg = getattr(config, "web_server", {}) or {}
+    host = web_cfg.get("host", "0.0.0.0")
+    port = int(web_cfg.get("port", 8100))
+    auth_enabled = bool(web_cfg.get("auth_enabled", True))
+
+    if args.host is not None:
+        host = args.host
+    if args.port is not None:
+        port = args.port
+    if getattr(args, "no_auth", False):
+        auth_enabled = False
+
+    web_cfg.update({"host": host, "port": port, "auth_enabled": auth_enabled})
+    config.web_server = web_cfg
+
     model_manager = ModelManager(config)
     state_manager = StateManager()
     command_executor = CommandExecutor(config, model_manager, state_manager)
@@ -530,6 +547,7 @@ def main():
         config_cli.run_wizard()
         return 0
     elif getattr(args, "web", False):
+        no_auth = not auth_enabled
         # Ensure web_server config exists and reflect CLI overrides
         if not hasattr(config, "web_server") or config.web_server is None:
             config.web_server = {}
