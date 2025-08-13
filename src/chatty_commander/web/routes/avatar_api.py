@@ -30,7 +30,7 @@ _CATEGORY_HINTS = {
     "error": ["error", "fail", "oops"],
     "handoff": ["handoff", "swap", "switch"],
     "processing": ["process", "work", "load", "busy"],
-    "idle": ["idle", "rest", "breath", "calm"],
+    "idle": ["idle", "rest", "breathe", "calm"],
 }
 
 

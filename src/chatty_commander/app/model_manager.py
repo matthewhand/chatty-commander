@@ -11,6 +11,9 @@ import os
 import random  # For simulating command detection in demo mode
 from typing import Any
 
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
 try:
     from wakewords.model import Model
 except ModuleNotFoundError:
@@ -73,40 +76,55 @@ def _get_patchable_model_class():
 
 
 
+class _ModelFileChangeHandler(FileSystemEventHandler):
+    """Watchdog event handler that schedules model reloads."""
+
+    def __init__(self, loop: asyncio.AbstractEventLoop, manager: "ModelManager") -> None:
+        super().__init__()
+        self.loop = loop
+        self.manager = manager
+
+    def _trigger(self, event):  # type: ignore[override]
+        if event.is_directory or not event.src_path.lower().endswith(".onnx"):
+            return
+        self.loop.call_soon_threadsafe(asyncio.create_task, self.manager.reload_models())
+
+    on_created = on_modified = on_moved = _trigger
+
+
 class ModelManager:
     def __init__(self, config: Any) -> None:
-        """
-        Initializes the ModelManager with configuration settings and an empty model cache.
-        """
-        logging.basicConfig(level=logging.INFO)  # Setup logging configuration
-        self.config: Any = config
-        self.models: dict[str, dict[str, Model]] = {'general': {}, 'system': {}, 'chat': {}}
-        self.active_models: dict[str, Model] = {}
-        self.reload_models()
+        """Initialise the ModelManager with configuration settings."""
 
-    def reload_models(self, state: str | None = None) -> dict[str, Model]:
-        """
-        Reloads all models from the specified directories, enabling dynamic updates to model configurations.
-        If state is provided, only loads models for that state.
-        """
+        logging.basicConfig(level=logging.INFO)
+        self.config: Any = config
+
+        self.model_paths = {
+            "general": self.config.general_models_path,
+            "system": self.config.system_models_path,
+            "chat": self.config.chat_models_path,
+        }
+        self.state_map = {"idle": "general", "computer": "system", "chatty": "chat"}
+        self.models: dict[str, dict[str, Model]] = {k: {} for k in self.model_paths}
+        self.active_models: dict[str, Model] = {}
+        self._observer: Observer | None = None
+
+    async def reload_models(self, state: str | None = None) -> dict[str, Model]:
+        """Reload models from disk asynchronously."""
+
         if state is None:
-            self.models['general'] = self.load_model_set(self.config.general_models_path)
-            self.models['system'] = self.load_model_set(self.config.system_models_path)
-            self.models['chat'] = self.load_model_set(self.config.chat_models_path)
-            self.active_models = self.models['general']
+            for key, path in self.model_paths.items():
+                self.models[key] = await asyncio.to_thread(self.load_model_set, path)
+            self.active_models = self.models.get("general", {})
             return self.models
-        elif state == 'idle':
-            self.models['general'] = self.load_model_set(self.config.general_models_path)
-            self.active_models = self.models['general']
-            return self.models['general']
-        elif state == 'computer':
-            self.models['system'] = self.load_model_set(self.config.system_models_path)
-            self.active_models = self.models['system']
-            return self.models['system']
-        elif state == 'chatty':
-            self.models['chat'] = self.load_model_set(self.config.chat_models_path)
-            self.active_models = self.models['chat']
-            return self.models['chat']
+
+        category = self.state_map.get(state)
+        if category:
+            path = self.model_paths[category]
+            self.models[category] = await asyncio.to_thread(self.load_model_set, path)
+            self.active_models = self.models[category]
+            return self.models[category]
+
         return {}
 
     def _load_model_with_retry(self, model_path: str) -> Model | None:
@@ -175,26 +193,40 @@ class ModelManager:
 
         return model_set
 
-    async def async_listen_for_commands(self) -> str | None:
-        """
-        Asynchronous version for listening for voice commands.
-        """
+    async def listen_for_commands(self) -> str | None:
+        """Listen for commands asynchronously."""
+
         await asyncio.sleep(1)  # Simulate processing time
         if self.active_models and random.random() < 0.05:
             return random.choice(list(self.active_models.keys()))
         return None
-
-    def listen_for_commands(self) -> str | None:
-        """
-        Synchronous wrapper for async_listen_for_commands.
-        """
-        return asyncio.run(self.async_listen_for_commands())
 
     def get_models(self, state: str) -> dict[str, Model]:
         """
         Retrieves models relevant to the current application state, allowing the system to adapt dynamically to state changes.
         """
         return self.models.get(state, {})
+
+    async def start_watching(self) -> None:
+        """Start watching model directories for changes."""
+
+        loop = asyncio.get_running_loop()
+        handler = _ModelFileChangeHandler(loop, self)
+        observer = Observer()
+        for path in self.model_paths.values():
+            if os.path.exists(path):
+                observer.schedule(handler, path, recursive=False)
+        self._observer = observer
+        await asyncio.to_thread(observer.start)
+
+    async def stop_watching(self) -> None:
+        """Stop the filesystem watcher if running."""
+
+        if self._observer is None:
+            return
+        await asyncio.to_thread(self._observer.stop)
+        await asyncio.to_thread(self._observer.join)
+        self._observer = None
 
     def __repr__(self) -> str:
         """
