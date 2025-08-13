@@ -14,9 +14,12 @@ export interface ChatMessage {
 interface ChatStore {
   messages: ChatMessage[];
   push: (m: ChatMessage) => void;
+  update: (id: string, fn: (m: ChatMessage) => ChatMessage) => void;
 }
 
 export const useChatStore = create<ChatStore>(set => ({
   messages: [],
   push: m => set(s => ({ messages: [...s.messages, m] })),
+  update: (id, fn) =>
+    set(s => ({ messages: s.messages.map(m => (m.id === id ? fn(m) : m)) })),
 }));
