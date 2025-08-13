@@ -20,4 +20,4 @@
 - Commit changes
 - Push and create PR
 
-See CONTRIBUTING.md for more.
+For major enhancements, open an RFC issue first and follow the [RFC process](RFC_PROCESS.md).

@@ -260,3 +260,7 @@ Example session (stdin-driven):
 
 This flow is covered by automated tests: see [tests.test_repl_basic.test_repl_quick_session_executes_and_exits_cleanly():1].
 
+## Contributing
+
+Contributions are welcome! For larger changes or new features, please start by opening an RFC issue using the provided template and follow the [RFC process](docs/RFC_PROCESS.md).
+
