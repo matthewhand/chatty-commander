@@ -1,5 +1,7 @@
 # ChattyCommander Developer Setup Guide
 
+For a quick project orientation, see the [New Contributor Guide](NEW_CONTRIBUTOR_GUIDE.md).
+
 ## Prerequisites
 - Python 3.11+
 - uv (pip alternative)
