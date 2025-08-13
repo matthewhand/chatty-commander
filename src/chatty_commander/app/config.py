@@ -27,6 +27,22 @@ class Config:
         self.wakeword_state_map = self.config_data.get("wakeword_state_map", {})
         self.state_transitions = self.config_data.get("state_transitions", {})
         self.commands = self.config_data.get("commands", {})
+        
+        # Create general_settings object for backward compatibility
+        class GeneralSettings:
+            def __init__(self, config):
+                self._config = config
+            
+            @property
+            def default_state(self):
+                return self._config.default_state
+            
+            @default_state.setter
+            def default_state(self, value):
+                self._config.default_state = value
+                self._config.config_data["default_state"] = value
+        
+        self.general_settings = GeneralSettings(self)
 
         # Apply environment variable overrides
         self._apply_env_overrides()

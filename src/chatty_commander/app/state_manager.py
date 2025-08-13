@@ -12,8 +12,8 @@ from chatty_commander.app.config import Config
 
 
 class StateManager:
-    def __init__(self) -> None:
-        self.config: Config = Config()
+    def __init__(self, config: Config | None = None) -> None:
+        self.config: Config = config or Config()
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         self.current_state: str = self.config.default_state
