@@ -21,11 +21,14 @@ try:  # pragma: no cover - best effort import
 except Exception:  # noqa: BLE001
     requests = None  # type: ignore
 
-__all__ = ["pyautogui", "requests", "CommandExecutor"]
+__all__ = ["pyautogui", "requests"]
 
 
+# Lazily load CommandExecutor to avoid circular import during app module init
 def __getattr__(name: str):  # PEP 562
     if name == "CommandExecutor":
-        module = load("command_executor")
-        return getattr(module, name)
+        import importlib
+
+        m = importlib.import_module("chatty_commander.app.command_executor")
+        return getattr(m, name)
     raise AttributeError(name)

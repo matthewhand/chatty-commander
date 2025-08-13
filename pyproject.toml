@@ -10,6 +10,7 @@ dependencies = [
     "pytest>=8.4.1",
     "pytest-mock>=3.12.0",
     "pytest-cov>=4.1.0",
+    "watchdog>=3.0.0",
     "requests>=2.32.4",
     "psutil>=7.0.0",
     "fastapi>=0.116.1",
@@ -29,6 +30,15 @@ dependencies = [
 
 [project.scripts]
 chatty-commander = "chatty_commander.cli.cli:cli_main"
+chatty = "chatty_commander.cli.cli:cli_main"
+
+[project.entry-points."chatty_commander.adapters"]
+text = "chatty_commander.app.orchestrator:TextInputAdapter"
+gui = "chatty_commander.app.orchestrator:GUIAdapter"
+web = "chatty_commander.app.orchestrator:WebServerAdapter"
+openwakeword = "chatty_commander.app.orchestrator:WakeWordAdapter"
+computer_vision = "chatty_commander.app.orchestrator:ComputerVisionAdapter"
+discord_bridge = "chatty_commander.app.orchestrator:DiscordBridgeAdapter"
 
 [dependency-groups]
 dev = [
@@ -125,3 +135,28 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["chatty_commander*"]
+
+voice = [
+    "openwakeword>=0.4.0",
+    "pyaudio>=0.2.11",
+    "openai-whisper>=20231117",
+    "openai>=1.0.0",
+    "numpy>=1.24.0",
+    "pyttsx3>=2.90",
+]
+llm = [
+    "openai>=1.0.0",
+    "requests>=2.25.0",
+    "transformers>=4.20.0",
+    "torch>=1.12.0",
+]
+full = [
+    "openwakeword>=0.4.0",
+    "pyaudio>=0.2.11", 
+    "openai-whisper>=20231117",
+    "openai>=1.0.0",
+    "numpy>=1.24.0",
+    "requests>=2.25.0",
+    "transformers>=4.20.0",
+    "torch>=1.12.0",
+]

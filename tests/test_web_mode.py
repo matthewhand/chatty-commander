@@ -9,13 +9,69 @@ Tests FastAPI endpoints, WebSocket connections, and frontend integration.
 import asyncio
 import json
 import logging
+import os
+from unittest.mock import MagicMock, patch
 
+import pytest
 import requests
 import websockets
+from config import Config
+from fastapi.testclient import TestClient
+from web_mode import WebModeServer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def auth_client():
+    cfg = Config()
+    cfg.advisors = {"enabled": True, "bridge": {"token": "secret"}}
+    state_manager = MagicMock()
+    state_manager.current_state = "idle"
+    state_manager.get_active_models.return_value = []
+    state_manager.add_state_change_callback = MagicMock()
+    model_manager = MagicMock()
+    command_executor = MagicMock()
+    with patch("chatty_commander.web.web_mode.AdvisorsService") as svc:
+        reply = MagicMock()
+        reply.reply = "hi"
+        svc.return_value.handle_message.return_value = reply
+        server = WebModeServer(cfg, state_manager, model_manager, command_executor)
+    return TestClient(server.app)
+
+
+def test_bridge_event_requires_token(auth_client):
+    event = {"platform": "p", "channel": "c", "user": "u", "text": "hi"}
+    resp = auth_client.post("/bridge/event", json=event)
+    assert resp.status_code == 401
+
+
+def test_bridge_event_with_token(auth_client):
+    event = {"platform": "p", "channel": "c", "user": "u", "text": "hi"}
+    resp = auth_client.post("/bridge/event", json=event, headers={"X-Bridge-Token": "secret"})
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+
+
+def test_run_uses_config_when_no_overrides():
+    cfg = MagicMock()
+    cfg.web_server = {"host": "x", "port": 9, "auth_enabled": True}
+    state_manager = MagicMock()
+    state_manager.add_state_change_callback = MagicMock()
+    model_manager = MagicMock()
+    command_executor = MagicMock()
+    server = WebModeServer(cfg, state_manager, model_manager, command_executor)
+
+    with patch.dict(os.environ, {}, clear=True), patch(
+        "chatty_commander.web.web_mode.uvicorn.run"
+    ) as mock_run:
+        server.run()
+        mock_run.assert_called_once()
+        _args, kwargs = mock_run.call_args
+        assert kwargs["host"] == "x"
+        assert kwargs["port"] == 9
 
 
 class WebModeValidator:

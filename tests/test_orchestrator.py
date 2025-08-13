@@ -1,4 +1,8 @@
-from chatty_commander.app.orchestrator import ModeOrchestrator, OrchestratorFlags
+from chatty_commander.app.orchestrator import (
+    InputAdapter,
+    ModeOrchestrator,
+    OrchestratorFlags,
+)
 
 
 class DummyCommandSink:

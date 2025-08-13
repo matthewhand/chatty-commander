@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+from chatty_commander.app.orchestrator import InputAdapter
 from chatty_commander.main import run_orchestrator_mode
 
 

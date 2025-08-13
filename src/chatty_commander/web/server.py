@@ -12,6 +12,13 @@ from .routes.ws import include_ws_routes
 # For now we delegate to constructing the legacy WebModeServer to keep behavior stable.
 from .web_mode import WebModeServer as _LegacyWebModeServer  # type: ignore
 
+# Optional observability (may not be available in some environments)
+try:
+    from chatty_commander.obs.metrics import RequestMetricsMiddleware, create_metrics_router
+except Exception:  # pragma: no cover
+    RequestMetricsMiddleware = None  # type: ignore
+    create_metrics_router = None  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +41,24 @@ def create_app(
     instance. This is behavior-preserving because routes and wiring rely on the same
     underlying state/config/executor.
     """
+    # Provide default instances when not supplied to preserve test behavior
+    if config_manager is None:
+        from chatty_commander.app.config import Config as _Config
+
+        config_manager = _Config()
+    if state_manager is None:
+        from chatty_commander.app.state_manager import StateManager as _StateManager
+
+        state_manager = _StateManager()
+    if model_manager is None:
+        from chatty_commander.app.model_manager import ModelManager as _ModelManager
+
+        model_manager = _ModelManager(config_manager)
+    if command_executor is None:
+        from chatty_commander.app.command_executor import CommandExecutor as _CommandExecutor
+
+        command_executor = _CommandExecutor(config_manager, model_manager, state_manager)
+
     legacy = _LegacyWebModeServer(
         config_manager=config_manager,
         state_manager=state_manager,
@@ -42,6 +67,14 @@ def create_app(
         no_auth=bool(no_auth),
     )
     app = legacy.app
+
+    # Install request metrics middleware if available
+    try:
+        if RequestMetricsMiddleware is not None:  # type: ignore
+            app.add_middleware(RequestMetricsMiddleware)
+            logger.debug("server.create_app: installed RequestMetricsMiddleware")
+    except Exception as e:  # noqa: BLE001
+        logger.debug("server.create_app: metrics middleware not installed: %s", e)
 
     # Docs visibility and CORS (behavior-preserving toggles)
     try:
@@ -114,6 +147,9 @@ def create_app(
     try:
         app.include_router(avatar_ws_router)
         app.include_router(avatar_api_router)
+        app.include_router(version_router)
+        if metrics_router is not None:
+            app.include_router(metrics_router)
         # Provide persona->theme resolution to WS manager from config
         try:
             from .routes import avatar_ws as _avatar_ws_mod
@@ -133,7 +169,7 @@ def create_app(
     except Exception as e:  # noqa: BLE001
         logger.warning("Failed to include avatar routes; continuing: %s", e)
 
-    # Avatar settings routes
+    # Avatar/Agent settings + selector routes
     try:
         from .routes.avatar_selector import router as avatar_selector_router
         from .routes.avatar_settings import include_avatar_settings_routes
@@ -143,9 +179,12 @@ def create_app(
         )
         app.include_router(settings_router)
         app.include_router(avatar_selector_router)
-        logger.debug("server.create_app: included avatar settings + selector routes")
+        app.include_router(agents_router)
+        logger.debug("server.create_app: included avatar settings + selector + agents routes")
     except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to include avatar settings/selector routes; continuing: %s", e)
+        logger.warning(
+            "Failed to include avatar settings/selector/agents routes; continuing: %s", e
+        )
 
     logger.debug("server.create_app constructed legacy WebModeServer and returned app")
     return app

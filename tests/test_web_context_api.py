@@ -15,7 +15,7 @@ class TestWebContextAPI:
     @pytest.fixture
     def client(self):
         """Create test client with advisors enabled."""
-        from chatty_commander.app.command_executor import CommandExecutor
+        from chatty_commander.app import CommandExecutor
         from chatty_commander.app.config import Config
         from chatty_commander.app.model_manager import ModelManager
         from chatty_commander.app.state_manager import StateManager

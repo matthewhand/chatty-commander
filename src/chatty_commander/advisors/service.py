@@ -1,6 +1,4 @@
-"""
-Advisor service for handling AI advisor interactions.
-"""
+"""Advisor service for handling AI advisor interactions."""
 
 from dataclasses import dataclass
 from typing import Any
@@ -62,14 +60,13 @@ class AdvisorsService:
         self.enabled = base_cfg.get('enabled', False)
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
-        """
-        Process an incoming message and return advisor response.
+        """Process an incoming message and return an advisor response.
 
         Args:
-            message: The incoming message to process
+            message: The incoming message to process.
 
         Returns:
-            AdvisorReply with response and metadata
+            AdvisorReply with response and metadata.
         """
         if not self.enabled:
             raise RuntimeError("Advisors are not enabled")
@@ -122,6 +119,17 @@ class AdvisorsService:
             # Generate real LLM response
             try:
                 response = self.provider.generate(prompt)
+                # Lightweight directive handling for tool-like replies
+                if isinstance(response, str) and response.startswith("SWITCH_MODE:"):
+                    _, target = response.split(":", 1)
+                    # Allow advisors to request a mode change via response directive
+                    from ..app.state_manager import StateManager  # local import to avoid cycles
+
+                    try:
+                        sm = StateManager()
+                        sm.change_state(target)
+                    except Exception:
+                        pass
             except Exception as e:
                 # Fallback to echo if LLM fails
                 response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text} (LLM error: {str(e)})"

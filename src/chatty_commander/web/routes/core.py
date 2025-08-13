@@ -78,11 +78,13 @@ def include_core_routes(
 
     @router.get("/api/v1/config")
     async def get_config():
+        counters["config_get"] += 1
         cfg_mgr = get_config_manager()
         return getattr(cfg_mgr, "config", {})
 
     @router.put("/api/v1/config")
     async def update_config(config_data: dict[str, Any]):
+        counters["config_put"] += 1
         try:
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
@@ -101,6 +103,7 @@ def include_core_routes(
 
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
+        counters["state_get"] += 1
         sm = get_state_manager()
         return StateInfo(
             current_state=getattr(sm, "current_state", "idle"),
@@ -111,6 +114,7 @@ def include_core_routes(
 
     @router.post("/api/v1/state")
     async def change_state(request: StateChangeRequest):
+        counters["state_post"] += 1
         try:
             sm = get_state_manager()
             sm.change_state(request.state)
@@ -121,6 +125,7 @@ def include_core_routes(
 
     @router.post("/api/v1/command", response_model=CommandResponse)
     async def execute_command(request: CommandRequest):
+        counters["command_post"] += 1
         start_time = time.time()
         try:
             cfg_mgr = get_config_manager()
@@ -153,12 +158,28 @@ def include_core_routes(
                 execution_time=execution_time,
             )
 
-    @router.get("/api/v1/health")
+    # Basic in-memory metrics counters (per-router instance)
+    counters = {
+        "status": 0,
+        "config_get": 0,
+        "config_put": 0,
+        "state_get": 0,
+        "state_post": 0,
+        "command_post": 0,
+    }
+
+    @router.get("/api/v1/health", operation_id="health_check_core")
     async def health_check():
+        counters["status"] += 1
         return {
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
             "uptime": _format_uptime(time.time() - get_start_time()),
         }
+
+    @router.get("/api/v1/metrics")
+    async def metrics():
+        # Shallow copy to avoid external mutation
+        return {**counters}
 
     return router

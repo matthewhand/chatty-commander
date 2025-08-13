@@ -9,19 +9,24 @@ if TYPE_CHECKING:  # pragma: no cover
 
 try:  # pragma: no cover - best effort import
     import pyautogui  # type: ignore
-except Exception:  # noqa: BLE001 - optional dependency
+except Exception:
     pyautogui = None  # type: ignore
 
-try:  # pragma: no cover
+try:
     import requests  # type: ignore
-except Exception:  # noqa: BLE001
+except Exception:
     requests = None  # type: ignore
 
-__all__ = ["pyautogui", "requests", "CommandExecutor"]
+# Lazy attribute loader to avoid import-order issues (and E402)
 
 
-def __getattr__(name: str):
+def __getattr__(name: str):  # type: ignore[override]
     if name == "CommandExecutor":
-        module = load("command_executor")
-        return getattr(module, name)
+        from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+
+        return CommandExecutor
     raise AttributeError(name)
+
+
+# Make these names visible to patchers; CommandExecutor is provided lazily via __getattr__
+__all__ = ["pyautogui", "requests"]
