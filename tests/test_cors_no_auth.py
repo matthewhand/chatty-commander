@@ -1,3 +1,4 @@
+from chatty_commander.app.config import Config
 from chatty_commander.web.web_mode import create_app
 from fastapi.testclient import TestClient
 
@@ -29,12 +30,15 @@ def test_cors_header_present_on_simple_get_when_no_auth():
     assert resp.headers.get("access-control-allow-origin") in {"*", "http://example.com"}
 
 
-def test_cors_respects_configured_origins(monkeypatch):
-    monkeypatch.setenv(
-        "CHATCOMM_ALLOWED_ORIGINS",
-        "http://foo.example,http://bar.example",
-    )
-    app = create_app(no_auth=False)
+def test_cors_respects_configured_origins():
+    """Custom origins can be supplied via Config for test parity with production."""
+
+    cfg = Config()
+    cfg.config.setdefault("web", {})["allowed_origins"] = [
+        "http://foo.example",
+        "http://bar.example",
+    ]
+    app = create_app(no_auth=False, config=cfg)
     client = TestClient(app)
 
     headers = {
