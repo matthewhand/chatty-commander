@@ -87,7 +87,15 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
 
 def run_web_mode(
-    config, model_manager, state_manager, command_executor, logger, no_auth=False, port=8100
+    config,
+    model_manager,
+    state_manager,
+    command_executor,
+    logger,
+    *,
+    host: str = "0.0.0.0",
+    port: int = 8100,
+    no_auth: bool = False,
 ):
     """Run the web UI mode with FastAPI server and graceful shutdown."""
     import os
@@ -100,7 +108,9 @@ def run_web_mode(
         )
         sys.exit(1)
 
-    logger.info(f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on port {port}")
+    logger.info(
+        f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
+    )
 
     # Create web server instance
     web_server = create_web_server(
@@ -139,8 +149,10 @@ def run_web_mode(
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
-    host = os.getenv("CHATCOMM_HOST", "0.0.0.0")
+    env_host = os.getenv("CHATCOMM_HOST")
     env_port = os.getenv("CHATCOMM_PORT")
+    if env_host:
+        host = env_host
     if env_port:
         try:
             port = int(env_port)
@@ -311,6 +323,13 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--no-auth",
         action="store_true",
         help="Disable authentication for web mode (INSECURE - use only for local development).",
+    )
+
+    parser.add_argument(
+        "--host",
+        type=str,
+        default=None,
+        help="Specify the host interface for the web server (default: 0.0.0.0).",
     )
 
     parser.add_argument(
@@ -497,8 +516,21 @@ def main():
         config_cli.run_wizard()
         return 0
     elif getattr(args, "web", False):
+        # Ensure web_server config exists and reflect CLI overrides
+        if not hasattr(config, "web_server") or config.web_server is None:
+            config.web_server = {}
+        host = getattr(args, "host", None) or config.web_server.get("host", "0.0.0.0")
+        port = getattr(args, "port", None) or config.web_server.get("port", 8100)
+        config.web_server.update({"host": host, "port": port, "auth_enabled": not args.no_auth})
         run_web_mode(
-            config, model_manager, state_manager, command_executor, logger, args.no_auth, args.port
+            config,
+            model_manager,
+            state_manager,
+            command_executor,
+            logger,
+            host=host,
+            port=port,
+            no_auth=args.no_auth,
         )
         return 0
     elif args.gui:
