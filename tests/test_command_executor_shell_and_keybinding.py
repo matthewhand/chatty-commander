@@ -1,9 +1,11 @@
+import importlib
 import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
+from chatty_commander.app import CommandExecutor
 
-from chatty_commander.app.command_executor import CommandExecutor
+ce_module = importlib.import_module(CommandExecutor.__module__)
 
 
 class DummyConfig:
@@ -85,7 +87,7 @@ class TestShellExecution:
 class TestKeybindingExecution:
     def test_keypress_pyautogui_missing(self, executor, caplog, monkeypatch):
         # Simulate missing pyautogui
-        monkeypatch.setattr('command_executor.pyautogui', None, raising=False)
+        monkeypatch.setattr(ce_module, 'pyautogui', None, raising=False)
         executor.config.model_actions = {'kp': {'keypress': 'a'}}
 
         executor.execute_command('kp')
@@ -98,7 +100,7 @@ class TestKeybindingExecution:
 
     def test_keypress_single_key(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
-        monkeypatch.setattr('command_executor.pyautogui', mock_pg, raising=False)
+        monkeypatch.setattr(ce_module, 'pyautogui', mock_pg, raising=False)
         executor.config.model_actions = {'kp': {'keypress': 'a'}}
 
         executor.execute_command('kp')
@@ -113,7 +115,7 @@ class TestKeybindingExecution:
 
     def test_keypress_combo_plus_syntax(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
-        monkeypatch.setattr('command_executor.pyautogui', mock_pg, raising=False)
+        monkeypatch.setattr(ce_module, 'pyautogui', mock_pg, raising=False)
         executor.config.model_actions = {'kp': {'keypress': 'ctrl+alt+t'}}
 
         executor.execute_command('kp')
@@ -129,7 +131,7 @@ class TestKeybindingExecution:
 
     def test_keypress_list_hotkey(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
-        monkeypatch.setattr('command_executor.pyautogui', mock_pg, raising=False)
+        monkeypatch.setattr(ce_module, 'pyautogui', mock_pg, raising=False)
         executor.config.model_actions = {'kp': {'keypress': ['ctrl', 'shift', ';']}}
 
         executor.execute_command('kp')
@@ -144,7 +146,7 @@ class TestKeybindingExecution:
     def test_keypress_runtime_error_logged(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
         mock_pg.press.side_effect = RuntimeError('kb fail')
-        monkeypatch.setattr('command_executor.pyautogui', mock_pg, raising=False)
+        monkeypatch.setattr(ce_module, 'pyautogui', mock_pg, raising=False)
         executor.config.model_actions = {'kp': {'keypress': 'x'}}
 
         executor.execute_command('kp')

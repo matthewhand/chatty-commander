@@ -31,7 +31,7 @@ if _root_src not in _sys.path:
 # Support both package and repo-root execution without PYTHONPATH tweaks.
 try:
     # Preferred: installed package
-    from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+    from chatty_commander.app import CommandExecutor  # type: ignore
     from chatty_commander.app.model_manager import ModelManager  # type: ignore
     from chatty_commander.app.orchestrator import (  # type: ignore
         ModeOrchestrator,
@@ -42,7 +42,6 @@ try:
     from chatty_commander.utils.logger import setup_logger  # type: ignore
 except Exception:
     # Repo-root fallback: use local shim modules that re-export src implementations
-    from command_executor import CommandExecutor  # shim file at repo root
     from config import Config  # shim file at repo root
     from model_manager import ModelManager  # shim file at repo root
     from state_manager import StateManager  # shim file at repo root

@@ -1,5 +1,5 @@
 """
-command_executor.py
+Implementation of the command execution logic.
 
 Handles the execution of commands in response to recognized voice commands from the models.
 This includes executing system commands, sending HTTP requests, and emulating keystrokes.
@@ -165,7 +165,7 @@ class CommandExecutor:
         of relying on a static import.
         """
         # Special-case early return when pyautogui is explicitly None (tests patch
-        # chatty_commander.app.command_executor.pyautogui)
+        # module-level pyautogui reference
         if _get_pyautogui() is None:
             # Emit exactly the messages tests assert, using root-level logging functions so patch('logging.critical') catches them
             logging.error("pyautogui is not installed")
@@ -280,7 +280,7 @@ class CommandExecutor:
 def _get_pyautogui():
     """Return pyautogui or ``None`` if unavailable.
 
-    Tests may patch ``chatty_commander.app.command_executor.pyautogui``; this
+    Tests may patch the module-level ``pyautogui`` reference; this
     helper returns whatever object is currently assigned.
     """
     try:
@@ -298,7 +298,7 @@ def _get_pyautogui():
 def _get_requests():
     """Return the requests module or ``None`` if unavailable.
 
-    Tests may patch ``chatty_commander.app.command_executor.requests``; this
+    Tests may patch the module-level ``requests`` reference; this
     helper retrieves the patched module when present.
     """
     try:

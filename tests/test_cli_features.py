@@ -3,7 +3,6 @@ import json
 import sys
 
 import pytest
-
 from chatty_commander.cli.cli import cli_main
 
 
@@ -143,7 +142,7 @@ def test_cli_exec_timeout_flag_passthrough_no_error(monkeypatch, replace_config_
         def execute_command(self, name):
             return
 
-    monkeypatch.setattr('chatty_commander.app.command_executor.CommandExecutor', NoopExecutor)
+    monkeypatch.setattr('chatty_commander.app.CommandExecutor', NoopExecutor)
 
     code, out, err = run_cli_main_with_args(["exec", "hello", "--timeout", "5"], monkeypatch)
     assert code == 0
