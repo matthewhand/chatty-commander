@@ -4,7 +4,7 @@
  */
 
 class ApiService {
-  constructor(baseURL = 'http://localhost:8100') {
+  constructor(baseURL = '') {
     this.baseURL = baseURL;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
@@ -358,6 +358,51 @@ class ApiService {
    */
   async checkUpdates() {
     return this.get('/api/system/updates');
+  }
+
+  /**
+   * Get advisor personas
+   */
+  async getAdvisorPersonas() {
+    return this.get('/api/v1/advisors/personas');
+  }
+
+  /**
+   * Get advisors context stats
+   */
+  async getAdvisorContextStats() {
+    return this.get('/api/v1/advisors/context/stats');
+  }
+
+  /**
+   * Switch advisor persona for a context
+   */
+  async switchAdvisorPersona(contextKey, personaId) {
+    const url = new URL(`${this.baseURL}/api/v1/advisors/context/switch`);
+    url.searchParams.append('context_key', contextKey);
+    url.searchParams.append('persona_id', personaId);
+    return this.post(url.pathname + url.search, {});
+  }
+
+  /**
+   * Get advisor memory items for a context
+   */
+  async getAdvisorMemory({ platform, channel, user, limit = 20 }) {
+    return this.get('/api/v1/advisors/memory', { platform, channel, user, limit });
+  }
+
+  /**
+   * Clear advisor memory for a context
+   */
+  async clearAdvisorMemory({ platform, channel, user }) {
+    return this.delete(`/api/v1/advisors/memory?platform=${encodeURIComponent(platform)}&channel=${encodeURIComponent(channel)}&user=${encodeURIComponent(user)}`);
+  }
+
+  /**
+   * Send message to advisors
+   */
+  async sendAdvisorMessage({ platform, channel, user, text, username, metadata }) {
+    return this.post('/api/v1/advisors/message', { platform, channel, user, text, username, metadata });
   }
 
   // =============================================================================

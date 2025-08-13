@@ -1,3 +1,4 @@
+from chatty_commander.web.routes.avatar_settings import include_avatar_settings_routes
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

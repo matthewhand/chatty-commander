@@ -21,6 +21,7 @@ Notes
 - Replace the placeholder index.html with the real TalkingHead build output.
 - Transparency and frameless support varies by OS/backend; code falls back when needed.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -68,7 +69,9 @@ def run_avatar_gui(debug: bool = True) -> int | None:
         webview.start(debug=debug, gui=None, http_server=False)
         return 0
     except Exception as e:
-        print(f"WARNING: Transparent/frameless not supported or failed ({e}); retrying without it...")
+        print(
+            f"WARNING: Transparent/frameless not supported or failed ({e}); retrying without it..."
+        )
         try:
             webview.create_window(
                 title="Chatty Commander Avatar",

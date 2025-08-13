@@ -21,21 +21,19 @@ class TestAdvisorsServiceRealLLM:
                 'model': 'gpt-3.5-turbo',
                 'api_key': 'test-key',
                 'temperature': 0.7,
-                'max_tokens': 1000
+                'max_tokens': 1000,
             },
             'context': {
                 'personas': {
                     'general': {'system_prompt': 'You are a helpful assistant.'},
                     'philosopher': {'system_prompt': 'You are a philosophical advisor.'},
                     'discord_default': {'system_prompt': 'You are a Discord bot assistant.'},
-                    'slack_default': {'system_prompt': 'You are a Slack app assistant.'}
+                    'slack_default': {'system_prompt': 'You are a Slack app assistant.'},
                 },
                 'default_persona': 'general',
-                'persistence_enabled': False
+                'persistence_enabled': False,
             },
-            'memory': {
-                'persistence_enabled': False
-            }
+            'memory': {'persistence_enabled': False},
         }
 
     @pytest.fixture
@@ -73,7 +71,7 @@ class TestAdvisorsServiceRealLLM:
             channel="123456789",
             user="user123",
             text="Hello, how are you?",
-            username="testuser"
+            username="testuser",
         )
 
         reply = service.handle_message(message)
@@ -107,7 +105,7 @@ class TestAdvisorsServiceRealLLM:
             channel="general",
             user="user456",
             text="What's the weather like?",
-            username="weatheruser"
+            username="weatheruser",
         )
 
         reply = service.handle_message(message)
@@ -130,18 +128,14 @@ class TestAdvisorsServiceRealLLM:
             channel="chat",
             user="user789",
             text="My name is Alice",
-            username="alice"
+            username="alice",
         )
 
         reply1 = service.handle_message(message1)
 
         # Send second message
         message2 = AdvisorMessage(
-            platform="web",
-            channel="chat",
-            user="user789",
-            text="What's my name?",
-            username="alice"
+            platform="web", channel="chat", user="user789", text="What's my name?", username="alice"
         )
 
         reply2 = service.handle_message(message2)
@@ -161,10 +155,7 @@ class TestAdvisorsServiceRealLLM:
         service = AdvisorsService(config)
 
         message = AdvisorMessage(
-            platform="web",
-            channel="test",
-            user="user123",
-            text="summarize https://example.com"
+            platform="web", channel="test", user="user123", text="summarize https://example.com"
         )
 
         reply = service.handle_message(message)
@@ -185,12 +176,7 @@ class TestAdvisorsServiceRealLLM:
         service = AdvisorsService(config)
 
         # Create context first
-        message = AdvisorMessage(
-            platform="discord",
-            channel="test",
-            user="user123",
-            text="Hello"
-        )
+        message = AdvisorMessage(platform="discord", channel="test", user="user123", text="Hello")
 
         reply = service.handle_message(message)
         context_key = reply.context_key
@@ -205,7 +191,7 @@ class TestAdvisorsServiceRealLLM:
             platform="discord",
             channel="test",
             user="user123",
-            text="What do you think about ethics?"
+            text="What do you think about ethics?",
         )
 
         reply2 = service.handle_message(message2)
@@ -224,26 +210,17 @@ class TestAdvisorsServiceRealLLM:
         service = AdvisorsService(config)
 
         # Create some contexts
-        service.handle_message(AdvisorMessage(
-            platform="discord",
-            channel="channel1",
-            user="user1",
-            text="Hello"
-        ))
+        service.handle_message(
+            AdvisorMessage(platform="discord", channel="channel1", user="user1", text="Hello")
+        )
 
-        service.handle_message(AdvisorMessage(
-            platform="discord",
-            channel="channel2",
-            user="user2",
-            text="Hello"
-        ))
+        service.handle_message(
+            AdvisorMessage(platform="discord", channel="channel2", user="user2", text="Hello")
+        )
 
-        service.handle_message(AdvisorMessage(
-            platform="slack",
-            channel="general",
-            user="user3",
-            text="Hello"
-        ))
+        service.handle_message(
+            AdvisorMessage(platform="slack", channel="general", user="user3", text="Hello")
+        )
 
         stats = service.get_context_stats()
 
@@ -261,12 +238,7 @@ class TestAdvisorsServiceRealLLM:
         service = AdvisorsService(config)
 
         # Create context
-        message = AdvisorMessage(
-            platform="web",
-            channel="test",
-            user="user123",
-            text="Hello"
-        )
+        message = AdvisorMessage(platform="web", channel="test", user="user123", text="Hello")
 
         reply = service.handle_message(message)
         context_key = reply.context_key
@@ -288,12 +260,7 @@ class TestAdvisorsServiceRealLLM:
 
         service = AdvisorsService(config)
 
-        message = AdvisorMessage(
-            platform="discord",
-            channel="test",
-            user="user123",
-            text="Hello"
-        )
+        message = AdvisorMessage(platform="discord", channel="test", user="user123", text="Hello")
 
         with pytest.raises(RuntimeError, match="Advisors are not enabled"):
             service.handle_message(message)
@@ -307,19 +274,13 @@ class TestAdvisorsServiceRealLLM:
 
         # Send multiple messages
         message1 = AdvisorMessage(
-            platform="web",
-            channel="chat",
-            user="user123",
-            text="I like pizza"
+            platform="web", channel="chat", user="user123", text="I like pizza"
         )
 
         service.handle_message(message1)
 
         message2 = AdvisorMessage(
-            platform="web",
-            channel="chat",
-            user="user123",
-            text="What did I say I like?"
+            platform="web", channel="chat", user="user123", text="What did I say I like?"
         )
 
         reply = service.handle_message(message2)
@@ -341,10 +302,7 @@ class TestAdvisorsServiceRealLLM:
         service = AdvisorsService(config)
 
         message = AdvisorMessage(
-            platform="web",
-            channel="chat",
-            user="user123",
-            text="Tell me a story"
+            platform="web", channel="chat", user="user123", text="Tell me a story"
         )
 
         reply = service.handle_message(message)

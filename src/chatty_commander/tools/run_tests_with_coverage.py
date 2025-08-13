@@ -274,7 +274,9 @@ def main(argv: list[str] | None = None) -> int:
     """
     # Detect pytest monkeypatch
     pytest_mod = sys.modules.get("pytest")
-    fast_env = (pytest_mod is not None and hasattr(pytest_mod, "main")) or (os.getenv("CC_FAST") == "1")
+    fast_env = (pytest_mod is not None and hasattr(pytest_mod, "main")) or (
+        os.getenv("CC_FAST") == "1"
+    )
 
     # Extract any additional test paths passed to our CLI module (used by tests)
     extra_paths = []
@@ -284,6 +286,7 @@ def main(argv: list[str] | None = None) -> int:
     if fast_env:
         try:
             import importlib
+
             pytest = importlib.import_module("pytest")
             # Include coverage flags as required by tests
             base_args = [

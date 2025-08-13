@@ -15,7 +15,7 @@ class TestWebContextAPI:
     @pytest.fixture
     def client(self):
         """Create test client with advisors enabled."""
-        from chatty_commander.app.command_executor import CommandExecutor
+        from chatty_commander.app import CommandExecutor
         from chatty_commander.app.config import Config
         from chatty_commander.app.model_manager import ModelManager
         from chatty_commander.app.state_manager import StateManager
@@ -33,21 +33,18 @@ class TestWebContextAPI:
                             'general': {'system_prompt': 'You are helpful.'},
                             'philosopher': {'system_prompt': 'You are philosophical.'},
                             'discord_default': {'system_prompt': 'You are a Discord bot.'},
-                            'slack_default': {'system_prompt': 'You are a Slack app.'}
+                            'slack_default': {'system_prompt': 'You are a Slack app.'},
                         },
                         'default_persona': 'general',
-                        'persistence_enabled': False
+                        'persistence_enabled': False,
                     },
-                    'providers': {
-                        'llm_api_mode': 'completion',
-                        'model': 'gpt-oss20b'
-                    },
-                    'memory': {
-                        'persistence_enabled': False
-                    }
+                    'providers': {'llm_api_mode': 'completion', 'model': 'gpt-oss20b'},
+                    'memory': {'persistence_enabled': False},
                 }
 
-        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+        with patch(
+            'chatty_commander.advisors.providers.build_provider_safe'
+        ) as mock_build_provider:
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
             mock_provider.api_mode = "completion"
@@ -61,13 +58,16 @@ class TestWebContextAPI:
 
     def test_advisor_message_creates_context(self, client):
         """Test that sending a message creates a context."""
-        response = client.post("/api/v1/advisors/message", json={
-            "platform": "discord",
-            "channel": "123456789",
-            "user": "user123",
-            "text": "Hello advisor",
-            "username": "testuser"
-        })
+        response = client.post(
+            "/api/v1/advisors/message",
+            json={
+                "platform": "discord",
+                "channel": "123456789",
+                "user": "user123",
+                "text": "Hello advisor",
+                "username": "testuser",
+            },
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -85,20 +85,26 @@ class TestWebContextAPI:
     def test_advisor_message_existing_context(self, client):
         """Test that existing context is reused."""
         # Send first message
-        response1 = client.post("/api/v1/advisors/message", json={
-            "platform": "slack",
-            "channel": "general",
-            "user": "user456",
-            "text": "First message"
-        })
+        response1 = client.post(
+            "/api/v1/advisors/message",
+            json={
+                "platform": "slack",
+                "channel": "general",
+                "user": "user456",
+                "text": "First message",
+            },
+        )
 
         # Send second message
-        response2 = client.post("/api/v1/advisors/message", json={
-            "platform": "slack",
-            "channel": "general",
-            "user": "user456",
-            "text": "Second message"
-        })
+        response2 = client.post(
+            "/api/v1/advisors/message",
+            json={
+                "platform": "slack",
+                "channel": "general",
+                "user": "user456",
+                "text": "Second message",
+            },
+        )
 
         assert response1.status_code == 200
         assert response2.status_code == 200
@@ -113,20 +119,20 @@ class TestWebContextAPI:
     def test_switch_persona(self, client):
         """Test switching persona for a context."""
         # Create context first
-        response = client.post("/api/v1/advisors/message", json={
-            "platform": "web",
-            "channel": "chat",
-            "user": "user789",
-            "text": "Hello"
-        })
+        response = client.post(
+            "/api/v1/advisors/message",
+            json={"platform": "web", "channel": "chat", "user": "user789", "text": "Hello"},
+        )
 
         assert response.status_code == 200
         data = response.json()
         context_key = data["context_key"]
 
         # Switch persona
-        switch_response = client.post("/api/v1/advisors/context/switch",
-                                   params={"context_key": context_key, "persona_id": "philosopher"})
+        switch_response = client.post(
+            "/api/v1/advisors/context/switch",
+            params={"context_key": context_key, "persona_id": "philosopher"},
+        )
 
         assert switch_response.status_code == 200
         switch_data = switch_response.json()
@@ -138,20 +144,20 @@ class TestWebContextAPI:
     def test_switch_persona_invalid(self, client):
         """Test switching to invalid persona."""
         # Create context first
-        response = client.post("/api/v1/advisors/message", json={
-            "platform": "discord",
-            "channel": "test",
-            "user": "user123",
-            "text": "Hello"
-        })
+        response = client.post(
+            "/api/v1/advisors/message",
+            json={"platform": "discord", "channel": "test", "user": "user123", "text": "Hello"},
+        )
 
         assert response.status_code == 200
         data = response.json()
         context_key = data["context_key"]
 
         # Try to switch to invalid persona
-        switch_response = client.post("/api/v1/advisors/context/switch",
-                                   params={"context_key": context_key, "persona_id": "nonexistent"})
+        switch_response = client.post(
+            "/api/v1/advisors/context/switch",
+            params={"context_key": context_key, "persona_id": "nonexistent"},
+        )
 
         assert switch_response.status_code == 400
         assert "Invalid persona" in switch_response.json()["detail"]
@@ -159,26 +165,20 @@ class TestWebContextAPI:
     def test_get_context_stats(self, client):
         """Test getting context statistics."""
         # Create some contexts
-        client.post("/api/v1/advisors/message", json={
-            "platform": "discord",
-            "channel": "channel1",
-            "user": "user1",
-            "text": "Hello"
-        })
+        client.post(
+            "/api/v1/advisors/message",
+            json={"platform": "discord", "channel": "channel1", "user": "user1", "text": "Hello"},
+        )
 
-        client.post("/api/v1/advisors/message", json={
-            "platform": "discord",
-            "channel": "channel2",
-            "user": "user2",
-            "text": "Hello"
-        })
+        client.post(
+            "/api/v1/advisors/message",
+            json={"platform": "discord", "channel": "channel2", "user": "user2", "text": "Hello"},
+        )
 
-        client.post("/api/v1/advisors/message", json={
-            "platform": "slack",
-            "channel": "general",
-            "user": "user3",
-            "text": "Hello"
-        })
+        client.post(
+            "/api/v1/advisors/message",
+            json={"platform": "slack", "channel": "general", "user": "user3", "text": "Hello"},
+        )
 
         # Get stats
         response = client.get("/api/v1/advisors/context/stats")
@@ -196,12 +196,10 @@ class TestWebContextAPI:
     def test_clear_context(self, client):
         """Test clearing a specific context."""
         # Create context
-        response = client.post("/api/v1/advisors/message", json={
-            "platform": "web",
-            "channel": "test",
-            "user": "user123",
-            "text": "Hello"
-        })
+        response = client.post(
+            "/api/v1/advisors/message",
+            json={"platform": "web", "channel": "test", "user": "user123", "text": "Hello"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -225,12 +223,15 @@ class TestWebContextAPI:
 
     def test_summarize_command(self, client):
         """Test the summarize command."""
-        response = client.post("/api/v1/advisors/message", json={
-            "platform": "web",
-            "channel": "test",
-            "user": "user123",
-            "text": "summarize https://example.com"
-        })
+        response = client.post(
+            "/api/v1/advisors/message",
+            json={
+                "platform": "web",
+                "channel": "test",
+                "user": "user123",
+                "text": "summarize https://example.com",
+            },
+        )
 
         assert response.status_code == 200
         data = response.json()
