@@ -7,25 +7,31 @@ ChattyCommander operates in **4 main modes**, all unified by the `ModeOrchestrat
 ## Core Modes
 
 ### 1. CLI Mode (Default) - Voice-Activated Commands
+
 **Purpose**: Traditional voice command interface with continuous listening
+
 - **Input**: Voice commands via microphone
 - **Processing**: Voice → Text → State transitions → Action execution
 - **Output**: System actions (keypresses, URLs, system commands)
 - **Usage**: `python main.py`
 
 **Flow**:
+
 ```
 Voice Input → ModelManager (speech-to-text) → StateManager (state transitions) → CommandExecutor (actions)
 ```
 
 ### 2. Web Mode - FastAPI Backend + React Frontend
+
 **Purpose**: Modern web interface with real-time capabilities
+
 - **Input**: HTTP requests, WebSocket messages
 - **Processing**: REST API endpoints, real-time WebSocket communication
 - **Output**: JSON responses, WebSocket updates, system actions
 - **Usage**: `python main.py --web`
 
 **Key Endpoints**:
+
 - `/api/v1/status` - System status
 - `/api/v1/config` - Configuration management
 - `/api/v1/state` - State transitions
@@ -34,14 +40,18 @@ Voice Input → ModelManager (speech-to-text) → StateManager (state transition
 - `/bridge/event` - Discord/Slack bridge
 
 ### 3. GUI Mode - Desktop UI
+
 **Purpose**: Native desktop interface for configuration and control
+
 - **Input**: Mouse clicks, keyboard shortcuts
 - **Processing**: Desktop UI events, system tray integration
 - **Output**: Visual feedback, configuration dialogs
 - **Usage**: `python main.py --gui`
 
 ### 4. Shell Mode - Interactive Text Input
+
 **Purpose**: Text-based command simulation for testing and development
+
 - **Input**: Text commands via terminal
 - **Processing**: Direct text → Command execution
 - **Output**: System actions, command feedback
@@ -50,6 +60,7 @@ Voice Input → ModelManager (speech-to-text) → StateManager (state transition
 ## Shared Architecture
 
 ### Core Components (All Modes Use These)
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │     Config      │    │  StateManager   │    │  ModelManager   │
@@ -71,7 +82,9 @@ Voice Input → ModelManager (speech-to-text) → StateManager (state transition
 ```
 
 ### Mode Orchestrator
+
 The `ModeOrchestrator` unifies all modes by:
+
 - **Selecting adapters** based on CLI flags
 - **Starting/stopping** mode-specific components
 - **Routing commands** to shared `CommandExecutor`
@@ -80,21 +93,25 @@ The `ModeOrchestrator` unifies all modes by:
 ## Optional Features
 
 ### Voice Wake Word (`--enable-openwakeword`)
+
 - **Purpose**: Continuous listening for wake word
 - **Integration**: Works with CLI mode
 - **Usage**: `python main.py --enable-openwakeword`
 
 ### Computer Vision (`--enable-computer-vision`)
+
 - **Purpose**: Visual command recognition
 - **Integration**: Works with any mode
 - **Usage**: `python main.py --enable-computer-vision`
 
 ### Discord/Slack Bridge (`--enable-discord-bridge`)
+
 - **Purpose**: External messaging platform integration
 - **Integration**: Node.js bridge connects to Web API
 - **Usage**: `python main.py --enable-discord-bridge`
 
 ### AI Advisors (`--advisors`)
+
 - **Purpose**: AI-powered assistant interactions
 - **Integration**: Web API endpoints, context-aware memory
 - **Usage**: `python main.py --advisors`
@@ -102,6 +119,7 @@ The `ModeOrchestrator` unifies all modes by:
 ## Mode Selection Examples
 
 ### Single Mode
+
 ```bash
 python main.py                    # CLI mode (default)
 python main.py --web              # Web mode
@@ -110,6 +128,7 @@ python main.py --shell            # Shell mode
 ```
 
 ### Multiple Modes (Orchestrator)
+
 ```bash
 python main.py --orchestrate --enable-text --enable-web
 python main.py --orchestrate --enable-gui --enable-discord-bridge
@@ -117,6 +136,7 @@ python main.py --orchestrate --enable-text --enable-web --advisors
 ```
 
 ### With Optional Features
+
 ```bash
 python main.py --web --advisors --enable-discord-bridge
 python main.py --orchestrate --enable-text --enable-openwakeword
@@ -125,8 +145,9 @@ python main.py --orchestrate --enable-text --enable-openwakeword
 ## Data Flow Architecture
 
 ### Standard Command Flow
+
 ```
-Input (Voice/Web/GUI/Text) 
+Input (Voice/Web/GUI/Text)
     ↓
 Adapter (Mode-specific)
     ↓
@@ -138,8 +159,9 @@ Output (Keypresses, URLs, System commands)
 ```
 
 ### Advisor Flow
+
 ```
-Input (Web/Bridge) 
+Input (Web/Bridge)
     ↓
 AdvisorsService (Context-aware)
     ↓
@@ -153,6 +175,7 @@ Response (AI-generated reply)
 ## Configuration
 
 ### Shared Config Structure
+
 ```json
 {
   "models": {
@@ -172,8 +195,8 @@ Response (AI-generated reply)
     },
     "context": {
       "personas": {
-        "general": {"system_prompt": "You are helpful."},
-        "philosopher": {"system_prompt": "You are philosophical."}
+        "general": { "system_prompt": "You are helpful." },
+        "philosopher": { "system_prompt": "You are philosophical." }
       }
     }
   }
@@ -183,6 +206,7 @@ Response (AI-generated reply)
 ## Development Workflow
 
 ### Testing Different Modes
+
 ```bash
 # Test CLI mode
 python main.py
@@ -198,6 +222,7 @@ python main.py --web --advisors
 ```
 
 ### API Testing
+
 ```bash
 # Start web server
 python main.py --web --no-auth
@@ -220,6 +245,7 @@ curl -X POST http://localhost:8100/api/v1/advisors/message \
 ## Next Steps
 
 The architecture is designed to support:
+
 - **Real LLM integration** (replacing echo responses)
 - **Advanced voice processing** (OpenWakeWord integration)
 - **Computer vision commands** (visual recognition)

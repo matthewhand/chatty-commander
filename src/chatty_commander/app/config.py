@@ -1,13 +1,3 @@
-"""Configuration handling using dataclasses.
-
-The previous implementation exposed a large ``Config`` class that populated a
-collection of dictionaries and performed environment overrides manually.  This
-module replaces that ad‑hoc approach with a small hierarchy of dataclasses that
-encode defaults, types and environment variable overrides directly in the
-schema.  Consumers interact with typed attributes instead of raw dictionaries
-which improves discoverability and validation.
-"""
-
 from __future__ import annotations
 
 import json
@@ -118,7 +108,7 @@ class AdvisorsConfig:
 
 @dataclass
 class Config:
-    """Application configuration loaded from JSON with env overrides."""
+    def __init__(self, config_file="config.json"):
 
     model_paths: ModelPaths = field(default_factory=ModelPaths)
     api_endpoints: ApiEndpoints = field(default_factory=ApiEndpoints)
@@ -161,13 +151,119 @@ class Config:
     modes: dict[str, str] = field(default_factory=dict)
     config_file: str = "config.json"
 
-    # ------------------------------------------------------------------
-    # Construction helpers
+        # Extract commonly used config values as properties
+        self.default_state = self.config_data.get("default_state", "idle")
+        self.general_models_path = self.config_data.get("general_models_path", "models/general")
+        self.system_models_path = self.config_data.get("system_models_path", "models/system")
+        self.chat_models_path = self.config_data.get("chat_models_path", "models/chat")
+        self.model_actions = self.config_data.get("model_actions", {})
+        self.state_models = self.config_data.get("state_models", {})
+        self.api_endpoints = self.config_data.get("api_endpoints", {})
+        self.wakeword_state_map = self.config_data.get("wakeword_state_map", {})
+        self.state_transitions = self.config_data.get("state_transitions", {})
+        self.commands = self.config_data.get("commands", {})
 
-    def __post_init__(self) -> None:  # noqa: D401 - documented on class
-        self.api_endpoints.apply_env_overrides()
-        self.advisors.apply_env_overrides()
-        # Build model actions after commands/keybindings have been loaded
+        # Voice/GUI behaviour
+        self.voice_only = self.config_data.get("voice_only", False)
+
+        # Create general_settings object for backward compatibility
+        class GeneralSettings:
+            def __init__(self, config):
+                self._config = config
+
+            @property
+            def default_state(self):
+                return self._config.default_state
+
+            @default_state.setter
+            def default_state(self, value):
+                self._config.default_state = value
+                self._config.config_data["default_state"] = value
+
+        self.general_settings = GeneralSettings(self)
+
+        # Apply environment variable overrides
+        self._apply_env_overrides()
+
+        # Apply web server configuration
+        self._apply_web_server_config()
+        # Load general settings with possible environment overrides
+        self._load_general_settings()
+
+    def _apply_env_overrides(self):
+        """Apply environment variable overrides to API endpoints."""
+        if "CHATBOT_ENDPOINT" in os.environ:
+            self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
+        if "HOME_ASSISTANT_ENDPOINT" in os.environ:
+            self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
+
+    def _apply_web_server_config(self) -> None:
+        """Expose web server settings with defaults."""
+        web_cfg = self.config_data.get("web_server", {})
+        host = web_cfg.get("host", "0.0.0.0")
+        port = web_cfg.get("port", 8100)
+        auth = web_cfg.get("auth_enabled", True)
+        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
+        self.web_host = host
+        self.web_port = port
+        self.web_auth_enabled = auth
+
+    @staticmethod
+    def _get_int_env(var_name: str, fallback: int) -> int:
+        """Return an integer from the environment or the provided fallback."""
+        value = os.environ.get(var_name)
+        if value is not None:
+            try:
+                parsed = int(value)
+                if parsed <= 0:
+                    raise ValueError
+                return parsed
+            except ValueError:
+                logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
+        return fallback
+
+    def save_config(self, config_data: dict | None = None) -> None:
+        """Save configuration to file."""
+        if config_data is not None:
+            self.config_data.update(config_data)
+            self.config = self.config_data
+
+        # Persist web server configuration
+        self._apply_web_server_config()
+        self.config_data["web_server"] = self.web_server
+        self.config_data["voice_only"] = self.voice_only
+
+        try:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config_data, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save config: {e}")
+            raise
+
+        # Path configurations for model directories
+        model_paths = self.config_data.get("model_paths", {})
+        self.general_models_path = model_paths.get("idle", "models-idle")
+        self.system_models_path = model_paths.get("computer", "models-computer")
+        self.chat_models_path = model_paths.get("chatty", "models-chatty")
+
+        # API Endpoints and external command URLs
+        api_endpoints = self.config_data.get(
+            "api_endpoints",
+            {
+                "home_assistant": "http://homeassistant.domain.home:8123/api",
+                "chatbot_endpoint": "http://localhost:3100/",
+            },
+        )
+
+        # Override endpoints from environment variables if available
+        if os.environ.get("CHATBOT_ENDPOINT"):
+            api_endpoints["chatbot_endpoint"] = os.environ.get("CHATBOT_ENDPOINT")
+        if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
+            api_endpoints["home_assistant"] = os.environ.get("HOME_ASSISTANT_ENDPOINT")
+
+        self.api_endpoints = api_endpoints
+
+        # Configuration for model actions (derived from commands)
         self.model_actions = self._build_model_actions()
 
     # --- Convenience attribute accessors ---------------------------------
@@ -392,71 +488,37 @@ class Config:
         """Enable or disable start on boot."""
         self.start_on_boot = enabled
         self._update_general_setting("start_on_boot", enabled)
-        if enabled:
-            self._enable_start_on_boot()
-        else:
-            self._disable_start_on_boot()
 
-    def set_check_for_updates(self, enabled: bool) -> None:
-        """Enable or disable automatic update checking."""
-        self.check_for_updates = enabled
+    def set_check_for_updates(self, enabled):
         self._update_general_setting("check_for_updates", enabled)
 
-    def _update_general_setting(self, key: str, value: Any) -> None:
-        """Update a general setting in the config data and save to file."""
-        setattr(self.general_settings, key, value)
+    def _update_general_setting(self, key, value):
+        if "general" not in self.config_data:
+            self.config_data["general"] = {}
+        self.config_data["general"][key] = value
+        self.save_config(self.config_data)
+
+    def _enable_start_on_boot(self):
+        config_file_path = os.path.join(os.path.expanduser("~"), ".config", "autostart", "chatty-commander.desktop")
         try:
-            with open(self.config_file, "w") as f:  # noqa: PTH123 - user path
-                json.dump(self.to_dict(), f, indent=2)
-        except (OSError, TypeError, ValueError) as e:  # pragma: no cover - log only
-            logging.error(f"Could not save config file {self.config_file}: {e}")
-
-    # --- Systemd helpers ------------------------------------------------
-
-    def _enable_start_on_boot(self) -> None:
-        """Enable start on boot using systemd user service."""
-        try:
-            systemd_dir = os.path.expanduser("~/.config/systemd/user")
-            os.makedirs(systemd_dir, exist_ok=True)
-            cwd = os.getcwd()
-            python_exec = subprocess.check_output(["which", "python3"]).decode().strip()
-            service_content = f"""[Unit]
-Description=ChattyCommander Voice Control Service
-After=graphical-session.target
-
-[Service]
-Type=simple
-ExecStart={python_exec} {cwd}/cli.py run
-WorkingDirectory={cwd}
-Restart=always
-RestartSec=5
-Environment=DISPLAY=:0
-
-[Install]
-WantedBy=default.target
-"""
-            service_file = os.path.join(systemd_dir, "chatty-commander.service")
-            with open(service_file, "w") as f:  # noqa: PTH123 - user path
-                f.write(service_content)
-            subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-            subprocess.run(["systemctl", "--user", "enable", "chatty-commander.service"], check=True)
-            logging.info("Start on boot enabled successfully")
-        except Exception as e:  # pragma: no cover - environment specific
-            logging.error(f"Failed to enable start on boot: {e}")
+            os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
+            with open(config_file_path, "w") as f:
+                f.write("[Desktop Entry]\n")
+                f.write("Type=Application\n")
+                f.write("Name=Chatty Commander\n")
+                f.write("Exec=python3 /path/to/main.py\n")
+                f.write("X-GNOME-Autostart-enabled=true\n")
+        except Exception as e:
+            logger.error(f"Failed to enable start on boot: {e}")
             raise
 
-    def _disable_start_on_boot(self) -> None:
-        """Disable start on boot by removing systemd user service."""
+    def _disable_start_on_boot(self):
+        config_file_path = os.path.join(os.path.expanduser("~"), ".config", "autostart", "chatty-commander.desktop")
         try:
-            subprocess.run(["systemctl", "--user", "stop", "chatty-commander.service"], check=False)
-            subprocess.run(["systemctl", "--user", "disable", "chatty-commander.service"], check=False)
-            service_file = os.path.expanduser("~/.config/systemd/user/chatty-commander.service")
-            if os.path.exists(service_file):
-                os.remove(service_file)
-            subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-            logging.info("Start on boot disabled successfully")
-        except Exception as e:  # pragma: no cover - environment specific
-            logging.error(f"Failed to disable start on boot: {e}")
+            if os.path.exists(config_file_path):
+                os.remove(config_file_path)
+        except Exception as e:
+            logger.error(f"Failed to disable start on boot: {e}")
             raise
 
     def perform_update_check(self) -> dict[str, Any] | None:
@@ -497,6 +559,37 @@ WantedBy=default.target
             logging.error(f"Failed to check for updates: {e}")
             return None
 
+        # Check last check time and see if it's time to check again
+        last_check_time = update_check_config.get("last_check_time", 0)
+        import time
+        current_time = time.time()
+        if current_time - last_check_time < interval_hours * 3600:
+            return {
+                "status": "skip",
+                "reason": "Interval not reached yet.",
+            }
 
-__all__ = ["Config"]
+        # Actually check the latest version (mocked for now)
+        latest_version = "v1.2.3"
+        current_version = self.config_data.get("version", "v1.0.0")
 
+        # Update the last check time in the config
+        update_check_config["last_check_time"] = current_time
+        self.config_data["update_check"] = update_check_config
+        self.save_config(self.config_data)
+
+        if latest_version != current_version:
+            return {
+                "status": "update_available",
+                "latest_version": latest_version,
+                "current_version": current_version,
+            }
+        else:
+            return {
+                "status": "up_to_date",
+                "version": current_version,
+            }
+
+    @classmethod
+    def load(cls, config_file="config.json"):
+        return cls(config_file)

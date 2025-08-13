@@ -1,7 +1,7 @@
 from src.chatty_commander.avatars.thinking_state import (
+    ThinkingState,
     get_thinking_manager,
     reset_thinking_manager,
-    ThinkingState,
 )
 
 

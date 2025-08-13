@@ -978,9 +978,7 @@ def main():
             "Error: GUI cannot be started because no display is available. Running in headless environment."
         )
         return
-    ChattyCommanderGUI(
-        root
-    )
+    ChattyCommanderGUI(root)
     root.mainloop()
 
 

@@ -50,7 +50,9 @@ def setup_logger(name, log_file, level=logging.INFO):
     # Avoid duplicate handlers for same file
     for h in list(logger.handlers):
         try:
-            if isinstance(h, RotatingFileHandler) and getattr(h, "baseFilename", None) == getattr(handler, "baseFilename", None):
+            if isinstance(h, RotatingFileHandler) and getattr(h, "baseFilename", None) == getattr(
+                handler, "baseFilename", None
+            ):
                 # A handler for this file already exists; return existing logger without adding another
                 return logger
         except Exception:

@@ -203,6 +203,10 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Allow library utilities in app
+!app/src/lib/
+!app/src/lib/**
+
 # Data and process artifacts
 data/
 !data/.gitkeep

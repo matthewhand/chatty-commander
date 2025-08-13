@@ -52,7 +52,9 @@ def include_ws_routes(
             while True:
                 try:
                     # Wait for incoming client messages with timeout to allow periodic heartbeats
-                    data = await asyncio.wait_for(websocket.receive_text(), timeout=heartbeat_seconds)
+                    data = await asyncio.wait_for(
+                        websocket.receive_text(), timeout=heartbeat_seconds
+                    )
                     try:
                         message = json.loads(data)
                     except Exception:
@@ -63,12 +65,16 @@ def include_ws_routes(
                     # Respond to ping for client keepalive symmetry
                     if isinstance(message, dict) and message.get("type") == "ping":
                         await websocket.send_text(
-                            json.dumps({"type": "pong", "data": {"timestamp": datetime.now().isoformat()}})
+                            json.dumps(
+                                {"type": "pong", "data": {"timestamp": datetime.now().isoformat()}}
+                            )
                         )
                 except TimeoutError:
                     # Heartbeat
                     await websocket.send_text(
-                        json.dumps({"type": "heartbeat", "data": {"timestamp": datetime.now().isoformat()}})
+                        json.dumps(
+                            {"type": "heartbeat", "data": {"timestamp": datetime.now().isoformat()}}
+                        )
                     )
         except WebSocketDisconnect:
             logger.info("WebSocket client disconnected")

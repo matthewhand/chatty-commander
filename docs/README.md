@@ -4,6 +4,7 @@
 
 - [API Documentation](API.md) - Comprehensive API reference
 - [OpenAPI Specification](openapi.json) - Machine-readable API spec
+- [Background Task Runner & Summaries](BACKGROUND_TASK_RUNNER.md) - Planned queue and live-summary system
 
 ## Quick Start
 
