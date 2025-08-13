@@ -55,7 +55,38 @@ export default function ChatPane() {
           content: [{ type: 'text', text: data.result }],
         });
       },
-      done: () => {},
+      done: () => {
+        if (assistantId) {
+          update(assistantId, m => ({
+            ...m,
+            meta: { ...(m.meta ?? {}), done: true },
+          }));
+        }
+      },
+      error: () => {
+        if (assistantId) {
+          update(assistantId, m => ({
+            ...m,
+            content: [
+              {
+                type: 'text',
+                text:
+                  (m.content?.[0]?.text ? m.content[0].text + '\n' : '') +
+                  'Request failed.',
+              },
+            ],
+            meta: { ...(m.meta ?? {}), error: true },
+          }));
+        } else {
+          push({
+            id: uuidv4(),
+            role: 'assistant',
+            createdAt: new Date().toISOString(),
+            content: [{ type: 'text', text: 'Request failed.' }],
+            meta: { error: true },
+          });
+        }
+      },
     });
   };
 
