@@ -27,25 +27,28 @@ class Config:
         self.wakeword_state_map = self.config_data.get("wakeword_state_map", {})
         self.state_transitions = self.config_data.get("state_transitions", {})
         self.commands = self.config_data.get("commands", {})
-        
+
         # Create general_settings object for backward compatibility
         class GeneralSettings:
             def __init__(self, config):
                 self._config = config
-            
+
             @property
             def default_state(self):
                 return self._config.default_state
-            
+
             @default_state.setter
             def default_state(self, value):
                 self._config.default_state = value
                 self._config.config_data["default_state"] = value
-        
+
         self.general_settings = GeneralSettings(self)
 
         # Apply environment variable overrides
         self._apply_env_overrides()
+
+        # Apply web server configuration
+        self._apply_web_server_config()
 
     def _apply_env_overrides(self):
         """Apply environment variable overrides to API endpoints."""
@@ -54,11 +57,26 @@ class Config:
         if "HOME_ASSISTANT_ENDPOINT" in os.environ:
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
 
+    def _apply_web_server_config(self) -> None:
+        """Expose web server settings with defaults."""
+        web_cfg = self.config_data.get("web_server", {})
+        host = web_cfg.get("host", "0.0.0.0")
+        port = web_cfg.get("port", 8100)
+        auth = web_cfg.get("auth_enabled", True)
+        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
+        self.web_host = host
+        self.web_port = port
+        self.web_auth_enabled = auth
+
     def save_config(self, config_data: dict | None = None) -> None:
         """Save configuration to file."""
         if config_data is not None:
             self.config_data.update(config_data)
             self.config = self.config_data
+
+        # Persist web server configuration
+        self._apply_web_server_config()
+        self.config_data["web_server"] = self.web_server
 
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:
