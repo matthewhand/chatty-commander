@@ -485,7 +485,7 @@ class SystemTester:
             self.log("✗ 'chatty' command not found in PATH", "Installation", "FAIL")
 
         # Test Python module imports
-        modules = ['config', 'state_manager', 'model_manager', 'command_executor', 'cli']
+        modules = ['config', 'state_manager', 'model_manager', 'cli']
         for module in modules:
             result = self.run_command(f'python -c "import {module}; print(\'OK\')"; echo')
             if result['success'] and 'OK' in result['stdout']:

@@ -13,7 +13,6 @@ from typing import Dict, Iterable
 
 # Map legacy module names to their modern implementation paths.
 ALIASES: Dict[str, str] = {
-    "command_executor": "chatty_commander.app.command_executor",
     "config": "chatty_commander.app.config",
     "model_manager": "chatty_commander.app.model_manager",
     "web_mode": "chatty_commander.web.web_mode",
