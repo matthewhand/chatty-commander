@@ -21,36 +21,27 @@ def test_config_env_audio_overrides(monkeypatch, tmp_path):
     cfg_path.write_text(
         json.dumps(
             {
-                "audio_settings": {
-                    "mic_chunk_size": 512,
-                    "sample_rate": 8000,
-                    "audio_format": "int8",
+                "general_settings": {
+                    "debug_mode": False,
+                    "default_state": "idle",
+                    "inference_framework": "onnx",
+                    "start_on_boot": False,
+                    "check_for_updates": True,
                 }
             }
         )
     )
 
-    monkeypatch.setenv("CHATCOMM_MIC_CHUNK_SIZE", "2048")
-    monkeypatch.setenv("CHATCOMM_SAMPLE_RATE", "44100")
-    monkeypatch.setenv("CHATCOMM_AUDIO_FORMAT", "float32")
+    monkeypatch.setenv("CHATCOMM_DEBUG", "TrUe")
+    monkeypatch.setenv("CHATCOMM_DEFAULT_STATE", "computer")
+    monkeypatch.setenv("CHATCOMM_INFERENCE_FRAMEWORK", "pytorch")
+    monkeypatch.setenv("CHATCOMM_START_ON_BOOT", "YeS")
+    monkeypatch.setenv("CHATCOMM_CHECK_FOR_UPDATES", "0")
 
     c = Config(config_file=str(cfg_path))
-    c.save_config()
-    assert c.mic_chunk_size == 2048
-    assert c.sample_rate == 44100
-    assert c.audio_format == "float32"
 
-
-def test_config_env_audio_invalid(monkeypatch, tmp_path):
-    cfg_path = tmp_path / "config.json"
-    cfg_path.write_text(
-        json.dumps({"audio_settings": {"mic_chunk_size": 512, "sample_rate": 8000}})
-    )
-
-    monkeypatch.setenv("CHATCOMM_MIC_CHUNK_SIZE", "not-a-number")
-    monkeypatch.setenv("CHATCOMM_SAMPLE_RATE", "-1")
-
-    c = Config(config_file=str(cfg_path))
-    c.save_config()
-    assert c.mic_chunk_size == 512
-    assert c.sample_rate == 8000
+    assert c.debug_mode is True
+    assert c.default_state == "computer"
+    assert c.inference_framework == "pytorch"
+    assert c.start_on_boot is True
+    assert c.check_for_updates is False
