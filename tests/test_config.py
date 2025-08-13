@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.chatty_commander.config import Config
+from chatty_commander.app.config import Config
 
 
 @pytest.fixture
