@@ -2,6 +2,7 @@ import React, { useState, KeyboardEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useChatStore, ChatMessage } from '../stores/chat';
 import { sse } from '../lib/sse';
+import { startSendSpan } from '../lib/telemetry';
 
 export default function ChatPane() {
   const messages = useChatStore(s => s.messages);
@@ -12,6 +13,7 @@ export default function ChatPane() {
   const send = async () => {
     const content = text.trim();
     if (!content) return;
+    const endSpan = startSendSpan();
     const userMsg: ChatMessage = {
       id: uuidv4(),
       role: 'user',
@@ -31,12 +33,18 @@ export default function ChatPane() {
 
     await sse('/api/chat', { messages: [userMsg] }, {
       chunk: ({ delta }) => {
+        endSpan();
         update(assistantId, m => ({
           ...m,
           content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
         }));
       },
-      done: () => {},
+      done: () => {
+        endSpan();
+      },
+      error: () => {
+        endSpan();
+      },
     });
   };
 

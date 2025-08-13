@@ -1,7 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
+import { traceCanvasLoad } from '../lib/telemetry';
 
 export default function CanvasPane() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  useEffect(() => {
+    if (iframeRef.current) {
+      traceCanvasLoad(iframeRef.current);
+    }
+  }, []);
   return (
     <section className="flex-1 flex flex-col">
       <iframe

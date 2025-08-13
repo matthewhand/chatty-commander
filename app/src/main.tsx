@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { initTelemetry, recordHydration } from './lib/telemetry';
 import TopBar from './app-shell/TopBar';
 import GridLayout from './app-shell/Grid';
 import ChatPane from './panes/ChatPane';
@@ -20,8 +21,10 @@ function App() {
   );
 }
 
+initTelemetry();
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
+recordHydration();
