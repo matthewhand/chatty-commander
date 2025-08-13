@@ -7,11 +7,11 @@ import sys
 from typing import Any
 
 # Re-export CommandExecutor so tests can patch cli.CommandExecutor
-from chatty_commander.app import CommandExecutor  # noqa: F401
+from chatty_commander.app.command_executor import CommandExecutor  # noqa: F401
 
 # Re-export run_app and ConfigCLI at module level so tests can patch cli.run_app and cli.ConfigCLI
 try:
-    from main import run_app as run_app  # type: ignore # noqa: F401
+    from chatty_commander.main import run_app as run_app  # type: ignore # noqa: F401
 except Exception:
 
     def run_app() -> None:  # type: ignore
@@ -19,7 +19,7 @@ except Exception:
 
 
 try:
-    from config_cli import ConfigCLI as ConfigCLI  # type: ignore # noqa: F401
+    from chatty_commander.config_cli import ConfigCLI as ConfigCLI  # type: ignore # noqa: F401
 except Exception:
 
     class ConfigCLI:  # type: ignore
@@ -119,20 +119,10 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--display", help="Override DISPLAY for GUI features.")
 
     def run_func() -> None:
-        # Prefer patched cli.run_app if tests patched it
         try:
-            from cli import run_app as _patched  # self-import picks patched symbol
-
-            if callable(_patched):
-                _patched()
-                return
-        except Exception:
-            pass
-        try:
-            from main import run_app as _run_app  # type: ignore
-
-            if callable(_run_app):
-                _run_app()
+            func = globals().get("run_app")
+            if callable(func):
+                func()
         except Exception:
             return
 
@@ -145,7 +135,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def gui_func(args: argparse.Namespace) -> None:
         try:
-            from gui import run_gui  # noqa
+            from chatty_commander.gui import run_gui  # noqa
 
             run_gui()
         except Exception:
@@ -194,7 +184,7 @@ def build_parser() -> argparse.ArgumentParser:
     def config_func(args: argparse.Namespace) -> int:
         # Compatibility path for tests that patch cli.ConfigCLI.*
         try:
-            from cli import ConfigCLI as _CLI  # pick patched symbol if any
+            _CLI = globals().get("ConfigCLI")  # pick patched symbol if any
 
             if getattr(args, "config_subcommand", None) == "wizard":
                 _CLI.run_wizard()
@@ -264,7 +254,7 @@ def build_parser() -> argparse.ArgumentParser:
 
         # Extended flags passthrough
         try:
-            from config_cli import handle_config_cli  # noqa
+            from chatty_commander.config_cli import handle_config_cli  # noqa
 
             rc = handle_config_cli(args)
             if rc is None:
@@ -313,7 +303,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def list_func(args: argparse.Namespace) -> int:
         try:
-            from config import Config  # noqa
+            from chatty_commander.app.config import Config  # noqa
 
             cfg = Config()
             actions = _get_model_actions_from_config(cfg)
@@ -346,7 +336,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def exec_func(args: argparse.Namespace) -> int:
         try:
-            from config import Config  # noqa
+            from chatty_commander.app.config import Config  # noqa
 
             cfg = Config()
             actions = _get_model_actions_from_config(cfg)
@@ -358,16 +348,10 @@ def build_parser() -> argparse.ArgumentParser:
                 print(f"DRY RUN: would execute command '{args.name}' with action {action_entry}")
                 return 0
             # Resolve CommandExecutor in a way that allows tests to patch via 'cli.CommandExecutor'
-            CommandExecutorRT = None
-            try:
-                import cli as _root_cli  # type: ignore
-
-                CommandExecutorRT = getattr(_root_cli, "CommandExecutor", None)
-            except Exception:
-                CommandExecutorRT = None
+            CommandExecutorRT = globals().get("CommandExecutor")
             if CommandExecutorRT is None:
-                from chatty_commander.app import (
-                    CommandExecutor as CommandExecutorRT,  # type: ignore
+                from chatty_commander.app.command_executor import (
+                    CommandExecutor as CommandExecutorRT,
                 )
             executor = CommandExecutorRT(cfg, None, None)  # type: ignore
             executor.execute_command(args.name)
@@ -425,7 +409,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def system_func(args: argparse.Namespace) -> int:
         # Integrate with config.Config methods as tests expect
-        from config import Config  # lazy import
+        from chatty_commander.app.config import Config  # lazy import
 
         cfg = Config()
         if args.system_command == "start-on-boot":
