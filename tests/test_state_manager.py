@@ -1,7 +1,6 @@
 import pytest
-
-from src.chatty_commander.config import Config
-from src.chatty_commander.state_manager import StateManager
+from chatty_commander.app.config import Config
+from chatty_commander.app.state_manager import StateManager
 
 
 class TestStateManager:
@@ -47,7 +46,7 @@ class TestStateManager:
 
     def test_initial_state_respects_config(self, monkeypatch):
         cfg = Config()
-        cfg.default_state = "computer"
+        cfg.general_settings.default_state = "computer"
         cfg.state_models["computer"] = ["comp_model"]
         monkeypatch.setattr("chatty_commander.app.state_manager.Config", lambda: cfg)
         sm = StateManager()

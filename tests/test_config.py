@@ -2,10 +2,10 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
+from chatty_commander.app.config import Config
+from chatty_commander.tools.builder import build_openapi_schema
 from jsonschema import ValidationError, validate
 
-from src.chatty_commander.config import Config
-from src.chatty_commander.tools.builder import build_openapi_schema
 
 @pytest.fixture
 def config():
@@ -271,6 +271,7 @@ def test_check_for_updates_error(config, monkeypatch):
 
 
 # Typed configuration schema validation tests
+
 
 def _get_config_schema() -> dict:
     """Helper to extract Configuration schema from the OpenAPI builder."""
