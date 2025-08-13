@@ -11,8 +11,12 @@ class AvatarConfigModel(BaseModel):
     animations_dir: str | None = Field(default=None, description="Directory to scan for animations")
     enabled: bool = Field(default=True, description="Whether avatar animations are enabled")
     defaults: dict[str, Any] | None = Field(default=None, description="Default settings for avatar")
-    state_map: dict[str, str] | None = Field(default=None, description="Mapping of state -> animation name")
-    category_map: dict[str, str] | None = Field(default=None, description="Mapping of label/category -> animation name")
+    state_map: dict[str, str] | None = Field(
+        default=None, description="Mapping of state -> animation name"
+    )
+    category_map: dict[str, str] | None = Field(
+        default=None, description="Mapping of label/category -> animation name"
+    )
 
 
 _DEFAULTS = {

@@ -52,5 +52,3 @@ class RecurringPrompt:
         for key, value in merged.items():
             rendered = rendered.replace(f"{{{{{key}}}}}", str(value))
         return rendered
-
-

@@ -1,25 +1,27 @@
-# Compatibility shim to preserve `from command_executor import CommandExecutor`
-# Provide pyautogui and requests symbols for tests to patch, and lazily expose CommandExecutor
-# to avoid circular import with chatty_commander.app.command_executor which imports this shim
-# to read pyautogui/requests.
+"""Legacy compatibility shim for ``from command_executor import CommandExecutor``.
 
-# Expose patch points first so app module can import them during its initialization
-try:
+Exposes ``pyautogui`` and ``requests`` symbols for tests to patch before the
+real implementation is imported.
+"""
+
+try:  # pragma: no cover - best effort import
     import pyautogui  # type: ignore
-except Exception:  # noqa: BLE001 - broad to allow headless envs
+except Exception:  # noqa: BLE001 - optional dependency
     pyautogui = None  # type: ignore
 
-try:
+try:  # pragma: no cover - best effort import
     import requests  # type: ignore
 except Exception:  # noqa: BLE001
     requests = None  # type: ignore
 
 __all__ = ["pyautogui", "requests"]
 
+
 # Lazily load CommandExecutor to avoid circular import during app module init
 def __getattr__(name: str):  # PEP 562
     if name == "CommandExecutor":
         import importlib
+
         m = importlib.import_module("chatty_commander.app.command_executor")
         return getattr(m, name)
     raise AttributeError(name)

@@ -2,8 +2,7 @@ import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from src.chatty_commander.command_executor import CommandExecutor
+from chatty_commander.app.command_executor import CommandExecutor
 
 
 class DummyConfig:

@@ -3,8 +3,7 @@ import json
 import sys
 
 import pytest
-
-from src.chatty_commander.cli.cli import cli_main
+from chatty_commander.cli.cli import cli_main
 
 
 class DummyConfigDirect:
@@ -19,8 +18,8 @@ def replace_config_with_dummy(monkeypatch):
         def _dummy_config_ctor():
             return DummyConfigDirect(actions)
 
-        # Patch where cli imports Config inside functions: config.Config
-        import config as config_module
+        # Patch where cli imports Config inside functions: chatty_commander.app.config.Config
+        import chatty_commander.app.config as config_module
 
         monkeypatch.setattr(
             config_module, "Config", staticmethod(lambda: DummyConfigDirect(actions))
@@ -122,7 +121,7 @@ def test_cli_exec_invokes_executor(monkeypatch, replace_config_with_dummy):
             called["count"] += 1
             called["last"] = name
 
-    monkeypatch.setattr('cli.CommandExecutor', FakeExecutor)
+    monkeypatch.setattr('chatty_commander.cli.cli.CommandExecutor', FakeExecutor)
 
     code, out, err = run_cli_main_with_args(["exec", "hello"], monkeypatch)
     assert code == 0
@@ -143,7 +142,7 @@ def test_cli_exec_timeout_flag_passthrough_no_error(monkeypatch, replace_config_
         def execute_command(self, name):
             return
 
-    monkeypatch.setattr('src.chatty_commander.command_executor.CommandExecutor', NoopExecutor)
+    monkeypatch.setattr('chatty_commander.cli.cli.CommandExecutor', NoopExecutor)
 
     code, out, err = run_cli_main_with_args(["exec", "hello", "--timeout", "5"], monkeypatch)
     assert code == 0

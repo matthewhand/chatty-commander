@@ -33,7 +33,11 @@ class TestAvatarGUI(unittest.TestCase):
     def test_run_avatar_gui_missing_index(self, mock_webview: MagicMock):
         """If the index.html cannot be found, we return 2 and do not call webview APIs."""
         from pathlib import Path
-        with patch('src.chatty_commander.avatars.avatar_gui._avatar_index_path', return_value=Path('does/not/exist.html')):
+
+        with patch(
+            'src.chatty_commander.avatars.avatar_gui._avatar_index_path',
+            return_value=Path('does/not/exist.html'),
+        ):
             rc = run_avatar_gui(debug=False)
             self.assertEqual(rc, 2)
             mock_webview.create_window.assert_not_called()
@@ -44,11 +48,13 @@ class TestAvatarGUI(unittest.TestCase):
         """If transparent window fails, we retry without transparency and succeed."""
         # First call raises, second call succeeds
         calls = {'i': 0}
+
         def create_window_side_effect(*args, **kwargs):
             calls['i'] += 1
             if calls['i'] == 1:
                 raise RuntimeError('no transparency support')
             return None
+
         mock_webview.create_window = MagicMock(side_effect=create_window_side_effect)
         mock_webview.start = MagicMock(return_value=None)
         rc = run_avatar_gui(debug=False)

@@ -29,11 +29,14 @@ except Exception:
 
 # Lazy attribute loader to avoid import-order issues (and E402)
 
+
 def __getattr__(name: str):  # type: ignore[override]
     if name == "CommandExecutor":
         from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+
         return CommandExecutor
     raise AttributeError(name)
+
 
 # Make these names visible to patchers; CommandExecutor is provided lazily via __getattr__
 __all__ = ["pyautogui", "requests"]
