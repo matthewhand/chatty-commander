@@ -3,7 +3,12 @@ import React, { useRef } from 'react';
 export default function CanvasPane() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   return (
-    <section className="flex-1 flex flex-col">
+    <section
+      id="canvas-pane"
+      className="flex-1 flex flex-col"
+      aria-label="Canvas"
+      tabIndex={-1}
+    >
       <iframe
         ref={iframeRef}
         title="canvas"

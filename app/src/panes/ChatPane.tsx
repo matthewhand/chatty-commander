@@ -56,7 +56,12 @@ export default function ChatPane() {
   };
 
   return (
-    <section className="h-full flex flex-col" aria-label="Chat">
+    <section
+      id="chat-pane"
+      className="h-full flex flex-col"
+      aria-label="Chat"
+      tabIndex={-1}
+    >
       <div className="flex-1 overflow-auto p-2">
         {messages.map(m => (
           <div key={m.id} className="mb-2">
