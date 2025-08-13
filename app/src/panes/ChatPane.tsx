@@ -36,6 +36,20 @@ export default function ChatPane() {
           content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
         }));
       },
+      tool_call: ({ id }) => {
+        push({
+          id,
+          role: 'tool',
+          createdAt: new Date().toISOString(),
+          content: [{ type: 'text', text: '' }],
+        });
+      },
+      tool_result: ({ id, delta }) => {
+        update(id, m => ({
+          ...m,
+          content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
+        }));
+      },
       done: () => {},
     });
   };
