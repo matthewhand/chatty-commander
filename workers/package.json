@@ -6,6 +6,7 @@
     "build": "tsc"
   },
   "devDependencies": {
+    "esbuild": "^0.20.2",
     "typescript": "^5.0.0"
   }
 }
