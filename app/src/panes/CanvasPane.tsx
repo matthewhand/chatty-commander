@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createBus } from '../lib/bus';
 
+const RUNTIME_SRC = `<!DOCTYPE html>
+<html>
+  <body class="bg-gray-800">
+    <script type="module" src="/src/lib/iframe-runtime.ts"></script>
+  </body>
+</html>`;
+
 export default function CanvasPane() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [log, setLog] = useState<string[]>([]);
@@ -14,7 +21,6 @@ export default function CanvasPane() {
         setLog((l) => [...l, `${type}: ${JSON.stringify(payload)}`]);
       }
     });
-    bus.post('canvas:ready');
     return () => off();
   }, []);
 
@@ -25,6 +31,7 @@ export default function CanvasPane() {
         title="canvas"
         sandbox="allow-scripts allow-downloads"
         className="flex-1 bg-gray-800"
+        srcDoc={RUNTIME_SRC}
       />
       <div className="h-40 overflow-auto bg-black text-green-400 text-xs p-2" aria-label="Console">
         {log.map((l, i) => (
