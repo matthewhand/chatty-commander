@@ -1,11 +1,11 @@
 from unittest.mock import patch
 
 import pytest
-from config import Config
-from model_manager import ModelManager
-from state_manager import StateManager
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
 
-from src.chatty_commander.command_executor import CommandExecutor
+from chatty_commander.app.command_executor import CommandExecutor
 
 
 class TestCommandExecutor:

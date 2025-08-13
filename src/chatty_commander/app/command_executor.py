@@ -32,21 +32,6 @@ try:
 except (ImportError, OSError, KeyError):
     pyautogui = None  # type: ignore[assignment]
 
-# Bridge to root-level shim so tests can patch command_executor.pyautogui/requests
-try:  # pragma: no cover
-    from command_executor import pyautogui as _shim_pg  # type: ignore
-except Exception:
-    _shim_pg = None  # type: ignore
-if _shim_pg is not None:
-    pyautogui = _shim_pg  # type: ignore
-
-try:  # pragma: no cover
-    from command_executor import requests as _shim_requests  # type: ignore
-except Exception:
-    _shim_requests = None  # type: ignore
-if _shim_requests is not None:
-    requests = _shim_requests  # type: ignore
-
 
 class CommandExecutor:
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
@@ -296,38 +281,7 @@ class CommandExecutor:
 
 
 def _get_pyautogui():
-    # Prefer root-level shim attribute so tests can patch command_executor.pyautogui
-    try:
-        import importlib
-        _shim_ce = importlib.import_module("command_executor")
-        pg = getattr(_shim_ce, "pyautogui", None)
-        if pg is not None:
-            return pg
-    except Exception:
-        pass
-    # Fall back to local module variable first (may have been overridden by earlier bridge)
-    try:
-        return pyautogui  # type: ignore[name-defined]
-    except Exception:
-        pass
-    # Finally, try importing real library
-    try:
-        import pyautogui as _real_pg  # type: ignore
-        return _real_pg
-    except Exception:
-        return None
+    return pyautogui  # type: ignore[name-defined]
 
 def _get_requests():
-    try:
-        import importlib
-        _shim_ce = importlib.import_module("command_executor")
-        rq = getattr(_shim_ce, "requests", None)
-        if rq is not None:
-            return rq
-    except Exception:
-        pass
-    try:
-        import requests as _real_requests  # type: ignore
-        return _real_requests
-    except Exception:
-        return None
+    return requests  # type: ignore[name-defined]
