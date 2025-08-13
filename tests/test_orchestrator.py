@@ -56,3 +56,34 @@ def test_orchestrator_text_adapter_dispatches_to_sink():
     assert sink.received == ["okay_stop"]
 
 
+def test_orchestrator_omits_discord_when_disabled():
+    sink = DummyCommandSink()
+
+    class DisabledConfig:
+        advisors = {"enabled": False}
+
+    orch = ModeOrchestrator(
+        config=DisabledConfig(),
+        command_sink=sink,
+        flags=OrchestratorFlags(enable_discord_bridge=True),
+    )
+    names = orch.select_adapters()
+    assert "discord_bridge" not in names
+
+
+def test_adapter_lifecycle():
+    sink = DummyCommandSink()
+    orch = ModeOrchestrator(
+        config=DummyConfig(),
+        command_sink=sink,
+        flags=OrchestratorFlags(enable_text=True),
+    )
+
+    orch.select_adapters()
+    assert all(getattr(a, "_started", False) is False for a in orch.adapters)
+    orch.start()
+    assert all(getattr(a, "_started", False) is True for a in orch.adapters)
+    orch.stop()
+    assert all(getattr(a, "_started", False) is False for a in orch.adapters)
+
+

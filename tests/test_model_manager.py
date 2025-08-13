@@ -3,6 +3,8 @@ from unittest.mock import MagicMock, patch
 from model_manager import ModelManager
 
 from src.chatty_commander.config import Config
+import asyncio
+import pytest
 
 
 class TestModelManager:
@@ -30,7 +32,24 @@ class TestModelManager:
         config = Config()
         mm = ModelManager(config)
         # Should not raise, but returns None or str
-        import asyncio
-
         result = asyncio.run(mm.async_listen_for_commands())
         assert result is None or isinstance(result, str)
+
+    def test_hot_reload_detects_new_model(self, tmp_path):
+        cfg = Config()
+        model_dir = tmp_path / "models"
+        model_dir.mkdir()
+        cfg.general_models_path = str(model_dir)
+        (model_dir / "first.onnx").write_text("dummy")
+        mm = ModelManager(cfg)
+        assert "first" in mm.models["general"]
+        (model_dir / "second.onnx").write_text("dummy2")
+
+        async def _run():
+            await asyncio.gather(
+                mm.async_listen_for_commands(),
+                asyncio.to_thread(mm.reload_models, "idle"),
+            )
+
+        asyncio.run(_run())
+        assert "second" in mm.models["general"]

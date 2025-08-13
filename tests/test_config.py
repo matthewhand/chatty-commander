@@ -2,8 +2,10 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
+from jsonschema import ValidationError, validate
 
 from src.chatty_commander.config import Config
+from src.chatty_commander.tools.builder import build_openapi_schema
 
 
 @pytest.fixture
@@ -267,3 +269,38 @@ def test_check_for_updates_error(config, monkeypatch):
     monkeypatch.setattr('subprocess.run', MagicMock(side_effect=Exception("Git error")))
     result = config.perform_update_check()
     assert result is None
+
+
+# Typed configuration schema validation tests
+
+def _get_config_schema() -> dict:
+    """Helper to extract Configuration schema from the OpenAPI builder."""
+    schema = build_openapi_schema()
+    return schema["components"]["schemas"]["Configuration"]
+
+
+def test_config_schema_accepts_valid_config():
+    """Ensure a minimal valid config passes JSON Schema validation."""
+    schema = _get_config_schema()
+    valid_cfg = {
+        "general_models_path": "models-idle",
+        "system_models_path": "models-computer",
+        "chat_models_path": "models-chatty",
+        "model_actions": {"foo": {"keypress": "ctrl+c"}},
+        "default_state": "idle",
+    }
+    validate(instance=valid_cfg, schema=schema)  # Should not raise
+
+
+def test_config_schema_rejects_invalid_state():
+    """Invalid default_state should raise a ValidationError."""
+    schema = _get_config_schema()
+    invalid_cfg = {
+        "general_models_path": "models-idle",
+        "system_models_path": "models-computer",
+        "chat_models_path": "models-chatty",
+        "model_actions": {},
+        "default_state": "unknown",
+    }
+    with pytest.raises(ValidationError):
+        validate(instance=invalid_cfg, schema=schema)
