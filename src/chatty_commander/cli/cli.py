@@ -132,12 +132,20 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     run_parser.add_argument("--display", help="Override DISPLAY for GUI features.")
+    run_parser.add_argument(
+        "--voice-only",
+        action="store_true",
+        help="Run without avatar GUI; responses are spoken via TTS.",
+    )
 
-    def run_func() -> None:
+    def run_func(args: argparse.Namespace) -> None:
         try:
             func = globals().get("run_app")
             if callable(func):
-                func()
+                if "voice_only" in getattr(func, "__code__", {}).co_varnames:
+                    func(voice_only=args.voice_only)
+                else:
+                    func()
         except Exception:
             return
 
