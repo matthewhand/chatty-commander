@@ -49,6 +49,8 @@ class Config:
 
         # Apply web server configuration
         self._apply_web_server_config()
+        # Load general settings with possible environment overrides
+        self._load_general_settings()
 
     def _apply_env_overrides(self):
         """Apply environment variable overrides to API endpoints."""
@@ -67,6 +69,20 @@ class Config:
         self.web_host = host
         self.web_port = port
         self.web_auth_enabled = auth
+        
+    @staticmethod
+    def _get_int_env(var_name: str, fallback: int) -> int:
+        """Return an integer from the environment or the provided fallback."""
+        value = os.environ.get(var_name)
+        if value is not None:
+            try:
+                parsed = int(value)
+                if parsed <= 0:
+                    raise ValueError
+                return parsed
+            except ValueError:
+                logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
+        return fallback
 
     def save_config(self, config_data: dict | None = None) -> None:
         """Save configuration to file."""
@@ -149,18 +165,18 @@ class Config:
 
         # Audio settings
         audio_settings = self.config_data.get("audio_settings", {})
-        self.mic_chunk_size = audio_settings.get("mic_chunk_size", 1024)
-        self.sample_rate = audio_settings.get("sample_rate", 16000)
-        self.audio_format = audio_settings.get("audio_format", "int16")
+        self.mic_chunk_size = self._get_int_env(
+            "CHATCOMM_MIC_CHUNK_SIZE", audio_settings.get("mic_chunk_size", 1024)
+        )
+        self.sample_rate = self._get_int_env(
+            "CHATCOMM_SAMPLE_RATE", audio_settings.get("sample_rate", 16000)
+        )
+        self.audio_format = os.environ.get(
+            "CHATCOMM_AUDIO_FORMAT", audio_settings.get("audio_format", "int16")
+        )
 
         # General settings
-        general_settings = self.config_data.get("general_settings", {})
-        self.debug_mode = general_settings.get("debug_mode", True)
-        self.default_state = general_settings.get("default_state", "idle")
-        self.inference_framework = general_settings.get("inference_framework", "onnx")
-        self.start_on_boot = general_settings.get("start_on_boot", False)
-        # Ensure we're using ONNX runtime for ONNX models
-        self.check_for_updates = general_settings.get("check_for_updates", True)
+        self._load_general_settings()
 
         # Keybindings
         self.keybindings = self.config_data.get("keybindings", {})
@@ -291,6 +307,32 @@ class Config:
                 model_actions[command_name] = {"message": command_config.get("message", "")}
 
         return model_actions
+
+    def _load_general_settings(self) -> None:
+        """Load general settings, applying environment variable overrides."""
+        general_settings = self.config_data.get("general_settings", {})
+
+        def _env_bool(name: str, default: bool) -> bool:
+            val = os.getenv(name)
+            if val is None:
+                return default
+            return val.strip().lower() in {"1", "true", "yes"}
+
+        self.debug_mode = _env_bool("CHATCOMM_DEBUG", general_settings.get("debug_mode", True))
+        self.default_state = os.getenv(
+            "CHATCOMM_DEFAULT_STATE", general_settings.get("default_state", "idle")
+        )
+        self.inference_framework = os.getenv(
+            "CHATCOMM_INFERENCE_FRAMEWORK",
+            general_settings.get("inference_framework", "onnx"),
+        )
+        self.start_on_boot = _env_bool(
+            "CHATCOMM_START_ON_BOOT", general_settings.get("start_on_boot", False)
+        )
+        self.check_for_updates = _env_bool(
+            "CHATCOMM_CHECK_FOR_UPDATES",
+            general_settings.get("check_for_updates", True),
+        )
 
     def validate(self):
         import logging
