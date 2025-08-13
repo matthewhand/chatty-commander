@@ -18,6 +18,8 @@ def test_cli_help_lists_key_flags():
 
 
 def test_no_args_prints_intro_and_does_not_crash():
-    rc, out, err = run_cmd([PYTHON, 'src/chatty_commander/main.py', '--help'])
+    rc, out, err = run_cmd([PYTHON, 'src/chatty_commander/main.py'])
     assert rc == 0
-    assert 'ChattyCommander' in (out + err)
+    text = out + err
+    assert "ChattyCommander - Voice Command System" in text
+    assert "Use --help for available options" in text

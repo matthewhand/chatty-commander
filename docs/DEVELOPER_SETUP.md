@@ -1,5 +1,7 @@
 # ChattyCommander Developer Setup Guide
 
+For a quick project orientation, see the [New Contributor Guide](NEW_CONTRIBUTOR_GUIDE.md).
+
 ## Prerequisites
 - Python 3.11+
 - uv (pip alternative)
@@ -21,3 +23,4 @@
 - Push and create PR
 
 For major enhancements, open an RFC issue first and follow the [RFC process](RFC_PROCESS.md).
+See CONTRIBUTING.md for more.
