@@ -51,10 +51,10 @@ export default function CanvasPane() {
     };
   }, [addLog, asciiOnly, setStatus]);
 
+export default function CanvasPane() {
   return (
     <section className="flex-1 flex flex-col bg-gray-900">
       <iframe
-        ref={iframeRef}
         title="canvas"
         sandbox="allow-scripts allow-downloads"
         className="flex-1 bg-gray-800"
