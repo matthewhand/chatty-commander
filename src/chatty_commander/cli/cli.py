@@ -7,7 +7,7 @@ import sys
 from typing import Any
 
 # Re-export CommandExecutor so tests can patch cli.CommandExecutor
-from command_executor import CommandExecutor  # noqa: F401
+from chatty_commander.app.command_executor import CommandExecutor  # noqa: F401
 
 # Re-export run_app and ConfigCLI at module level so tests can patch cli.run_app and cli.ConfigCLI
 try:
@@ -366,7 +366,7 @@ def build_parser() -> argparse.ArgumentParser:
             except Exception:
                 CommandExecutorRT = None
             if CommandExecutorRT is None:
-                from command_executor import CommandExecutor as CommandExecutorRT  # type: ignore
+                from chatty_commander.app.command_executor import CommandExecutor as CommandExecutorRT  # type: ignore
             executor = CommandExecutorRT(cfg, None, None)  # type: ignore
             executor.execute_command(args.name)
             return 0

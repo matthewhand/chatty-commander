@@ -32,21 +32,6 @@ try:
 except (ImportError, OSError, KeyError):
     pyautogui = None  # type: ignore[assignment]
 
-# Bridge to root-level shim so tests can patch command_executor.pyautogui/requests
-try:  # pragma: no cover
-    from command_executor import pyautogui as _shim_pg  # type: ignore
-except Exception:
-    _shim_pg = None  # type: ignore
-if _shim_pg is not None:
-    pyautogui = _shim_pg  # type: ignore
-
-try:  # pragma: no cover
-    from command_executor import requests as _shim_requests  # type: ignore
-except Exception:
-    _shim_requests = None  # type: ignore
-if _shim_requests is not None:
-    requests = _shim_requests  # type: ignore
-
 
 class CommandExecutor:
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
@@ -178,10 +163,11 @@ class CommandExecutor:
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
 
-        Tests patch 'command_executor.pyautogui' (root-level shim). We must fetch the
-        patched object via _get_pyautogui() instead of relying on a static import.
+        Tests may patch ``pyautogui`` at runtime. Fetch the patched object via
+        _get_pyautogui() instead of relying on a static import.
         """
-        # Special-case early return when pyautogui is explicitly None (tests patch command_executor.pyautogui)
+        # Special-case early return when pyautogui is explicitly None (tests patch
+        # chatty_commander.app.command_executor.pyautogui)
         if _get_pyautogui() is None:
             # Emit exactly the messages tests assert, using root-level logging functions so patch('logging.critical') catches them
             logging.error("pyautogui is not installed")
@@ -296,21 +282,10 @@ class CommandExecutor:
 
 
 def _get_pyautogui():
-    # Prefer root-level shim attribute so tests can patch command_executor.pyautogui
-    try:
-        import importlib
-        _shim_ce = importlib.import_module("command_executor")
-        pg = getattr(_shim_ce, "pyautogui", None)
-        if pg is not None:
-            return pg
-    except Exception:
-        pass
-    # Fall back to local module variable first (may have been overridden by earlier bridge)
     try:
         return pyautogui  # type: ignore[name-defined]
     except Exception:
         pass
-    # Finally, try importing real library
     try:
         import pyautogui as _real_pg  # type: ignore
         return _real_pg
@@ -319,11 +294,7 @@ def _get_pyautogui():
 
 def _get_requests():
     try:
-        import importlib
-        _shim_ce = importlib.import_module("command_executor")
-        rq = getattr(_shim_ce, "requests", None)
-        if rq is not None:
-            return rq
+        return requests  # type: ignore[name-defined]
     except Exception:
         pass
     try:

@@ -42,7 +42,7 @@ try:
     from chatty_commander.utils.logger import setup_logger  # type: ignore
 except Exception:
     # Repo-root fallback: use local shim modules that re-export src implementations
-    from command_executor import CommandExecutor  # shim file at repo root
+    from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
     from config import Config  # shim file at repo root
     from model_manager import ModelManager  # shim file at repo root
     from state_manager import StateManager  # shim file at repo root

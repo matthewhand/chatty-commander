@@ -17,7 +17,7 @@ try:
     from model_manager import ModelManager
     from state_manager import StateManager
 
-    from src.chatty_commander.command_executor import CommandExecutor
+    from chatty_commander.app.command_executor import CommandExecutor
 except ImportError:
     # Handle headless environment
     import os
@@ -27,7 +27,7 @@ except ImportError:
     from model_manager import ModelManager
     from state_manager import StateManager
 
-    from src.chatty_commander.command_executor import CommandExecutor
+    from chatty_commander.app.command_executor import CommandExecutor
 
 
 class TestPerformanceBenchmarks:

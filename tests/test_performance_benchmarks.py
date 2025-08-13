@@ -18,7 +18,7 @@ from model_manager import ModelManager
 from state_manager import StateManager
 from web_mode import WebModeServer
 
-from src.chatty_commander.command_executor import CommandExecutor
+from chatty_commander.app.command_executor import CommandExecutor
 
 
 class PerformanceMonitor:
