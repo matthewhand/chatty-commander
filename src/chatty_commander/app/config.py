@@ -1,45 +1,275 @@
+"""Configuration handling using dataclasses.
+
+The previous implementation exposed a large ``Config`` class that populated a
+collection of dictionaries and performed environment overrides manually.  This
+module replaces that ad‑hoc approach with a small hierarchy of dataclasses that
+encode defaults, types and environment variable overrides directly in the
+schema.  Consumers interact with typed attributes instead of raw dictionaries
+which improves discoverability and validation.
+"""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+import json
+import logging
+import os
+import subprocess
+from typing import Any, Dict, List
+
+
+# ---------------------------------------------------------------------------
+# Dataclass models for individual configuration sections
+
+
+@dataclass
+class ModelPaths:
+    idle: str = "models-idle"
+    computer: str = "models-computer"
+    chatty: str = "models-chatty"
+
+
+@dataclass
+class ApiEndpoints:
+    home_assistant: str = "http://homeassistant.domain.home:8123/api"
+    chatbot_endpoint: str = "http://localhost:3100/"
+
+    def apply_env_overrides(self) -> None:
+        """Override endpoint values from environment variables."""
+        self.chatbot_endpoint = os.getenv("CHATBOT_ENDPOINT", self.chatbot_endpoint)
+        self.home_assistant = os.getenv("HOME_ASSISTANT_ENDPOINT", self.home_assistant)
+
+
+@dataclass
+class AudioSettings:
+    mic_chunk_size: int = 1024
+    sample_rate: int = 16000
+    audio_format: str = "int16"
+
+
+@dataclass
+class GeneralSettings:
+    debug_mode: bool = True
+    default_state: str = "idle"
+    inference_framework: str = "onnx"
+    start_on_boot: bool = False
+    check_for_updates: bool = True
+
+
+# --- Advisors -----------------------------------------------------------------
+
+
+@dataclass
+class AdvisorsProvider:
+    base_url: str = ""
+    api_key: str = ""
+
+    def apply_env_overrides(self) -> None:
+        self.base_url = os.getenv("ADVISORS_PROVIDER_BASE_URL", self.base_url)
+        self.api_key = os.getenv("ADVISORS_PROVIDER_API_KEY", self.api_key)
+
+
+@dataclass
+class AdvisorsBridge:
+    token: str = ""
+    url: str = ""
+
+    def apply_env_overrides(self) -> None:
+        self.token = os.getenv("ADVISORS_BRIDGE_TOKEN", self.token)
+        self.url = os.getenv("ADVISORS_BRIDGE_URL", self.url)
+
+
+@dataclass
+class AdvisorsMemory:
+    persistence_enabled: bool = False
+    persistence_path: str = "data/advisors_memory.jsonl"
+
+    def apply_env_overrides(self) -> None:
+        persist = os.getenv("ADVISORS_MEMORY_PERSIST")
+        if persist is not None:
+            self.persistence_enabled = persist.lower() in {"1", "true", "yes"}
+        path = os.getenv("ADVISORS_MEMORY_PATH")
+        if path is not None:
+            self.persistence_path = path
+
+
+@dataclass
+class AdvisorsConfig:
+    enabled: bool = False
+    llm_api_mode: str = "completion"
+    model: str = "gpt-oss20b"
+    provider: AdvisorsProvider = field(default_factory=AdvisorsProvider)
+    bridge: AdvisorsBridge = field(default_factory=AdvisorsBridge)
+    memory: AdvisorsMemory = field(default_factory=AdvisorsMemory)
+    platforms: List[str] = field(default_factory=lambda: ["discord", "slack"])
+    personas: Dict[str, str] = field(default_factory=lambda: {"default": "philosophy_advisor"})
+    features: Dict[str, bool] = field(
+        default_factory=lambda: {"browser_analyst": True, "avatar_talkinghead": False}
+    )
+
+    def apply_env_overrides(self) -> None:
+        self.provider.apply_env_overrides()
+        self.bridge.apply_env_overrides()
+        self.memory.apply_env_overrides()
+
+
+# ---------------------------------------------------------------------------
+# Root configuration dataclass
+
+
+@dataclass
 class Config:
-    def __init__(self, config_file="config.json"):
-        import os
+    """Application configuration loaded from JSON with env overrides."""
 
-        # Load configuration from JSON file (with fallbacks and env overrides)
-        self.config_file = config_file
-        self.config_data = self._load_config()
+    model_paths: ModelPaths = field(default_factory=ModelPaths)
+    api_endpoints: ApiEndpoints = field(default_factory=ApiEndpoints)
+    model_actions: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    state_models: Dict[str, List[str]] = field(
+        default_factory=lambda: {
+            "idle": ["hey_chat_tee", "hey_khum_puter"],
+            "computer": ["oh_kay_screenshot"],
+            "chatty": ["wax_poetic"],
+        }
+    )
+    audio_settings: AudioSettings = field(default_factory=AudioSettings)
+    general_settings: GeneralSettings = field(default_factory=GeneralSettings)
+    keybindings: Dict[str, str] = field(default_factory=dict)
+    commands: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    command_sequences: Dict[str, Any] = field(default_factory=dict)
+    advisors: AdvisorsConfig = field(default_factory=AdvisorsConfig)
+    listen_for: Dict[str, str] = field(default_factory=dict)
+    modes: Dict[str, str] = field(default_factory=dict)
+    config_file: str = "config.json"
 
-        # Path configurations for model directories
-        model_paths = self.config_data.get("model_paths", {})
-        self.general_models_path = model_paths.get("idle", "models-idle")
-        self.system_models_path = model_paths.get("computer", "models-computer")
-        self.chat_models_path = model_paths.get("chatty", "models-chatty")
+    # ------------------------------------------------------------------
+    # Construction helpers
 
-        # API Endpoints and external command URLs
-        api_endpoints = self.config_data.get(
-            "api_endpoints",
-            {
-                "home_assistant": "http://homeassistant.domain.home:8123/api",
-                "chatbot_endpoint": "http://localhost:3100/",
-            },
-        )
-
-        # Override endpoints from environment variables if available
-        if os.environ.get("CHATBOT_ENDPOINT"):
-            api_endpoints["chatbot_endpoint"] = os.environ.get("CHATBOT_ENDPOINT")
-        if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
-            api_endpoints["home_assistant"] = os.environ.get("HOME_ASSISTANT_ENDPOINT")
-
-        self.api_endpoints = api_endpoints
-
-        # Configuration for model actions (derived from commands)
+    def __post_init__(self) -> None:  # noqa: D401 - documented on class
+        self.api_endpoints.apply_env_overrides()
+        self.advisors.apply_env_overrides()
+        # Build model actions after commands/keybindings have been loaded
         self.model_actions = self._build_model_actions()
 
-        # Configuration for different states and their associated models
-        self.state_models = self.config_data.get(
-            "state_models",
-            {
+    # --- Convenience attribute accessors ---------------------------------
+
+    @property
+    def general_models_path(self) -> str:
+        return self.model_paths.idle
+
+    @general_models_path.setter
+    def general_models_path(self, value: str) -> None:
+        self.model_paths.idle = value
+
+    @property
+    def system_models_path(self) -> str:
+        return self.model_paths.computer
+
+    @system_models_path.setter
+    def system_models_path(self, value: str) -> None:
+        self.model_paths.computer = value
+
+    @property
+    def chat_models_path(self) -> str:
+        return self.model_paths.chatty
+
+    @chat_models_path.setter
+    def chat_models_path(self, value: str) -> None:
+        self.model_paths.chatty = value
+
+    @property
+    def mic_chunk_size(self) -> int:
+        return self.audio_settings.mic_chunk_size
+
+    @property
+    def sample_rate(self) -> int:
+        return self.audio_settings.sample_rate
+
+    @property
+    def audio_format(self) -> str:
+        return self.audio_settings.audio_format
+
+    @property
+    def debug_mode(self) -> bool:
+        return self.general_settings.debug_mode
+
+    @property
+    def default_state(self) -> str:
+        return self.general_settings.default_state
+
+    @property
+    def inference_framework(self) -> str:
+        return self.general_settings.inference_framework
+
+    @property
+    def start_on_boot(self) -> bool:
+        return self.general_settings.start_on_boot
+
+    @start_on_boot.setter
+    def start_on_boot(self, value: bool) -> None:
+        self.general_settings.start_on_boot = value
+
+    @property
+    def check_for_updates(self) -> bool:
+        return self.general_settings.check_for_updates
+
+    @check_for_updates.setter
+    def check_for_updates(self, value: bool) -> None:
+        self.general_settings.check_for_updates = value
+
+    # ------------------------------------------------------------------
+    # Serialization helpers
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a JSON serialisable dict of the configuration."""
+        data = asdict(self)
+        # ``config_file`` is an internal detail and should not be persisted
+        data.pop("config_file", None)
+        return data
+
+    # ------------------------------------------------------------------
+    # Loading helpers
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any], config_file: str = "config.json") -> "Config":
+        """Create a ``Config`` instance from a raw dictionary."""
+        model_paths = ModelPaths(**data.get("model_paths", {}))
+        api_endpoints = ApiEndpoints(**data.get("api_endpoints", {}))
+        audio_settings = AudioSettings(**data.get("audio_settings", {}))
+        general_settings = GeneralSettings(**data.get("general_settings", {}))
+        advisors_data = data.get("advisors", {})
+        advisors = AdvisorsConfig(
+            enabled=advisors_data.get("enabled", False),
+            llm_api_mode=advisors_data.get("llm_api_mode", "completion"),
+            model=advisors_data.get("model", "gpt-oss20b"),
+            provider=AdvisorsProvider(**advisors_data.get("provider", {})),
+            bridge=AdvisorsBridge(**advisors_data.get("bridge", {})),
+            memory=AdvisorsMemory(**advisors_data.get("memory", {})),
+            platforms=advisors_data.get("platforms", ["discord", "slack"]),
+            personas=advisors_data.get("personas", {"default": "philosophy_advisor"}),
+            features=advisors_data.get(
+                "features", {"browser_analyst": True, "avatar_talkinghead": False}
+            ),
+        )
+
+        return cls(
+            model_paths=model_paths,
+            api_endpoints=api_endpoints,
+            model_actions=data.get("model_actions", {}),
+            state_models=data.get("state_models")
+            or {
                 "idle": ["hey_chat_tee", "hey_khum_puter"],
                 "computer": ["oh_kay_screenshot"],
                 "chatty": ["wax_poetic"],
             },
+            audio_settings=audio_settings,
+            general_settings=general_settings,
+            keybindings=data.get("keybindings", {}),
+            commands=data.get("commands", {}),
+            command_sequences=data.get("command_sequences", {}),
+            advisors=advisors,
+            listen_for=data.get("listen_for", {}),
+            modes=data.get("modes", {}),
+            config_file=config_file,
         )
 
         # Audio settings
@@ -137,122 +367,116 @@ class Config:
         if self.config_file:
             candidates.append(self.config_file)
         env_path = os.environ.get("CHATCOMM_CONFIG")
+        
+    @classmethod
+    def load(cls, config_file: str = "config.json") -> "Config":
+        """Load configuration from JSON using the search rules of the old class."""
+        data = cls._read_config(config_file)
+        return cls.from_dict(data, config_file=config_file)
+
+    @staticmethod
+    def _read_config(config_file: str) -> Dict[str, Any]:
+        """Read configuration data from ``config_file`` with fallbacks."""
+        candidates: List[str] = []
+        if config_file:
+            candidates.append(config_file)
+        env_path = os.getenv("CHATCOMM_CONFIG")
+        
         if env_path:
             candidates.append(env_path)
-        # Prefer default_config.json if present, then config.json
         candidates.extend(["default_config.json", "config.json"])
 
-        # De-duplicate while preserving order
-        seen = set()
-        ordered = []
+        seen: set[str] = set()
+        ordered: List[str] = []
         for p in candidates:
             if p and p not in seen:
                 ordered.append(p)
                 seen.add(p)
 
-        # Attempt to load the first existing and valid JSON
         for path in ordered:
             if os.path.exists(path):
                 try:
-                    with open(path) as f:
+                    with open(path) as f:  # noqa: PTH123 - user provided path
                         data = json.load(f)
                     logging.info(f"Loaded configuration from {path}")
                     return data
-                except (json.JSONDecodeError, OSError) as e:
+                except (json.JSONDecodeError, OSError) as e:  # pragma: no cover - log only
                     logging.warning(f"Could not load config file {path}: {e}")
 
         logging.warning("No valid configuration found; falling back to empty config")
         return {}
 
-    def _build_model_actions(self):
+    # ------------------------------------------------------------------
+    # Behavioural helpers (largely ported from previous implementation)
+
+    def _build_model_actions(self) -> Dict[str, Dict[str, str]]:
         """Build model actions from commands configuration."""
-        model_actions = {}
-        commands = self.config_data.get("commands", {})
-
-        for command_name, command_config in commands.items():
+        actions: Dict[str, Dict[str, str]] = {}
+        for command_name, command_config in self.commands.items():
             action_type = command_config.get("action")
-
             if action_type == "keypress":
                 keys = command_config.get("keys")
-                if keys and keys in self.config_data.get("keybindings", {}):
-                    model_actions[command_name] = {
-                        "keypress": self.config_data["keybindings"][keys]
-                    }
+                if keys and keys in self.keybindings:
+                    actions[command_name] = {"keypress": self.keybindings[keys]}
                 else:
-                    model_actions[command_name] = {"keypress": keys}
+                    actions[command_name] = {"keypress": keys}
             elif action_type == "url":
                 url = command_config.get("url", "")
-                # Replace endpoint placeholders
-                for endpoint_name, endpoint_url in self.api_endpoints.items():
+                for endpoint_name, endpoint_url in asdict(self.api_endpoints).items():
                     url = url.replace(f"{{{endpoint_name}}}", endpoint_url)
-                model_actions[command_name] = {"url": url}
+                actions[command_name] = {"url": url}
             elif action_type == "custom_message":
-                model_actions[command_name] = {"message": command_config.get("message", "")}
+                actions[command_name] = {"message": command_config.get("message", "")}
+        return actions
 
-        return model_actions
+    # --- Public API ----------------------------------------------------
 
-    def validate(self):
-        import logging
-        import os
-
+    def validate(self) -> None:
+        """Validate configuration values."""
         if not self.model_actions:
             raise ValueError("Model actions configuration is empty.")
+
         paths = [self.general_models_path, self.system_models_path, self.chat_models_path]
         for path in paths:
-            if not os.path.exists(path):
+            if not os.path.exists(path):  # noqa: PTH110
                 logging.warning(f"Model directory {path} does not exist.")
             elif not os.listdir(path):
                 logging.warning(f"Model directory {path} is empty.")
 
-    def set_start_on_boot(self, enabled):
+    # --- Start on boot / update checks ---------------------------------
+
+    def set_start_on_boot(self, enabled: bool) -> None:
         """Enable or disable start on boot."""
         self.start_on_boot = enabled
         self._update_general_setting("start_on_boot", enabled)
-
         if enabled:
             self._enable_start_on_boot()
         else:
             self._disable_start_on_boot()
 
-    def set_check_for_updates(self, enabled):
+    def set_check_for_updates(self, enabled: bool) -> None:
         """Enable or disable automatic update checking."""
         self.check_for_updates = enabled
         self._update_general_setting("check_for_updates", enabled)
 
-    def _update_general_setting(self, key, value):
+    def _update_general_setting(self, key: str, value: Any) -> None:
         """Update a general setting in the config data and save to file."""
-        import json
-
-        if "general_settings" not in self.config_data:
-            self.config_data["general_settings"] = {}
-
-        self.config_data["general_settings"][key] = value
-
-        # Save to file
+        setattr(self.general_settings, key, value)
         try:
-            with open(self.config_file, 'w') as f:
-                json.dump(self.config_data, f, indent=2)
-        except (OSError, TypeError, ValueError) as e:
-            import logging
-
+            with open(self.config_file, "w") as f:  # noqa: PTH123 - user path
+                json.dump(self.to_dict(), f, indent=2)
+        except (OSError, TypeError, ValueError) as e:  # pragma: no cover - log only
             logging.error(f"Could not save config file {self.config_file}: {e}")
 
-    def _enable_start_on_boot(self):
-        """Enable start on boot using systemd user service."""
-        import logging
-        import os
-        import subprocess
+    # --- Systemd helpers ------------------------------------------------
 
+    def _enable_start_on_boot(self) -> None:
+        """Enable start on boot using systemd user service."""
         try:
-            # Create systemd user directory if it doesn't exist
             systemd_dir = os.path.expanduser("~/.config/systemd/user")
             os.makedirs(systemd_dir, exist_ok=True)
-
-            # Get current working directory and python executable
             cwd = os.getcwd()
             python_exec = subprocess.check_output(["which", "python3"]).decode().strip()
-
-            # Create systemd service file
             service_content = f"""[Unit]
 Description=ChattyCommander Voice Control Service
 After=graphical-session.target
@@ -268,81 +492,50 @@ Environment=DISPLAY=:0
 [Install]
 WantedBy=default.target
 """
-
             service_file = os.path.join(systemd_dir, "chatty-commander.service")
-            with open(service_file, 'w') as f:
+            with open(service_file, "w") as f:  # noqa: PTH123 - user path
                 f.write(service_content)
-
-            # Enable and start the service
             subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-            subprocess.run(
-                ["systemctl", "--user", "enable", "chatty-commander.service"], check=True
-            )
-
+            subprocess.run(["systemctl", "--user", "enable", "chatty-commander.service"], check=True)
             logging.info("Start on boot enabled successfully")
-
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - environment specific
             logging.error(f"Failed to enable start on boot: {e}")
             raise
 
-    def _disable_start_on_boot(self):
+    def _disable_start_on_boot(self) -> None:
         """Disable start on boot by removing systemd user service."""
-        import logging
-        import os
-        import subprocess
-
         try:
-            # Stop and disable the service
             subprocess.run(["systemctl", "--user", "stop", "chatty-commander.service"], check=False)
-            subprocess.run(
-                ["systemctl", "--user", "disable", "chatty-commander.service"], check=False
-            )
-
-            # Remove service file
+            subprocess.run(["systemctl", "--user", "disable", "chatty-commander.service"], check=False)
             service_file = os.path.expanduser("~/.config/systemd/user/chatty-commander.service")
             if os.path.exists(service_file):
                 os.remove(service_file)
-
             subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-
             logging.info("Start on boot disabled successfully")
-
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - environment specific
             logging.error(f"Failed to disable start on boot: {e}")
             raise
 
-    def perform_update_check(self):
+    def perform_update_check(self) -> Dict[str, Any] | None:
         """Check for updates from the repository."""
-        import logging
-        import subprocess
-
         if not self.check_for_updates:
             return None
-
         try:
-            # Check if we're in a git repository
             result = subprocess.run(
                 ["git", "rev-parse", "--git-dir"], capture_output=True, text=True, check=False
             )
             if result.returncode != 0:
                 logging.warning("Not in a git repository, cannot check for updates")
                 return None
-
-            # Fetch latest changes
             subprocess.run(["git", "fetch", "origin"], capture_output=True, check=True)
-
-            # Check if there are updates available
             result = subprocess.run(
                 ["git", "rev-list", "HEAD..origin/main", "--count"],
                 capture_output=True,
                 text=True,
                 check=True,
             )
-
             update_count = int(result.stdout.strip())
-
             if update_count > 0:
-                # Get the latest commit message
                 result = subprocess.run(
                     ["git", "log", "origin/main", "-1", "--pretty=format:%s"],
                     capture_output=True,
@@ -350,7 +543,6 @@ WantedBy=default.target
                     check=True,
                 )
                 latest_commit = result.stdout.strip()
-
                 return {
                     "updates_available": True,
                     "update_count": update_count,
@@ -358,7 +550,10 @@ WantedBy=default.target
                 }
             else:
                 return {"updates_available": False, "update_count": 0}
-
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - log only
             logging.error(f"Failed to check for updates: {e}")
             return None
+
+
+__all__ = ["Config"]
+
