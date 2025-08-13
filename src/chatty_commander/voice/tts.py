@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Light‑weight text‑to‑speech helpers.
 
 This module provides a small facade around optional text‑to‑speech backends.  The
@@ -9,8 +7,10 @@ missing the system gracefully falls back to an in‑memory mock backend so unit
 tests can run without additional requirements.
 """
 
-from abc import ABC, abstractmethod
+from __future__ import annotations
+
 import logging
+from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 

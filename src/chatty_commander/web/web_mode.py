@@ -661,11 +661,7 @@ class WebModeServer:
         env_port = os.getenv("CHATCOMM_PORT")
         env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
 
-        cfg = getattr(self.config_manager, "web_server", {}) or {}
-#         if host is None:
-#             host = cfg.get("host", "0.0.0.0")
-#         if port is None:
-#             port = int(cfg.get("port", 8100))
+        # Prefer configuration defaults when explicit host/port not provided
         if host is None and getattr(self.config_manager, "web_server", None):
             host = self.config_manager.web_server.get("host", "0.0.0.0")
         if port is None and getattr(self.config_manager, "web_server", None):
@@ -775,7 +771,7 @@ def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
             cfg_origins = web_cfg.get("allowed_origins") if isinstance(web_cfg, dict) else None
             if isinstance(cfg_origins, str):
                 origins = [cfg_origins]
-            elif isinstance(cfg_origins, (list, tuple)):
+            elif isinstance(cfg_origins, list | tuple):
                 origins = [str(o) for o in cfg_origins]
         # Fall back to environment variable
         if origins is None:
