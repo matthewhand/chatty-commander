@@ -34,6 +34,9 @@ chatty-commander = "chatty_commander.cli.cli:cli_main"
 dev = [
     "ruff>=0.1.0",
     "black>=23.0.0",
+    "doc8>=1.1.1",
+    "pydocstyle>=6.0.0",
+    "pytest-check-links>=0.5.0",
 ]
 
 [tool.pytest.ini_options]
@@ -94,6 +97,22 @@ quote-style = "preserve"
 indent-style = "space"
 docstring-code-format = true
 skip-magic-trailing-comma = false
+
+[tool.pydocstyle]
+convention = "google"
+add-ignore = [
+  "D100", # Missing docstring in public module
+  "D101", # Missing docstring in public class
+  "D102", # Missing docstring in public method
+  "D103", # Missing docstring in public function
+  "D104", # Missing docstring in public package
+  "D105", # Missing docstring in magic method
+  "D107", # Missing docstring in __init__
+]
+
+[tool.doc8]
+max-line-length = 100
+ignore = ["D001"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

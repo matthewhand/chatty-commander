@@ -27,6 +27,15 @@ jobs:
       - name: Format check (black)
         run: uv run black --check .
 
+      - name: Docstring lint (pydocstyle)
+        run: uv run pydocstyle src
+
+      - name: Lint docs (doc8)
+        run: uv run doc8 README.md docs
+
+      - name: Check links
+        run: uv run pytest --check-links README.md docs -q
+
       - name: Run tests with coverage
         run: uv run pytest -q --cov=. --cov-report=term --cov-report=xml
 
