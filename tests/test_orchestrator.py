@@ -1,4 +1,8 @@
-from chatty_commander.app.orchestrator import ModeOrchestrator, OrchestratorFlags
+from chatty_commander.app.orchestrator import (
+    InputAdapter,
+    ModeOrchestrator,
+    OrchestratorFlags,
+)
 
 
 class DummyCommandSink:
@@ -56,6 +60,8 @@ def test_orchestrator_text_adapter_dispatches_to_sink():
     assert sink.received == ["okay_stop"]
 
 
+#def test_adapter_start_and_stop_flags():
+=======
 def test_orchestrator_omits_discord_when_disabled():
     sink = DummyCommandSink()
 
@@ -78,6 +84,48 @@ def test_adapter_lifecycle():
         command_sink=sink,
         flags=OrchestratorFlags(enable_text=True),
     )
+    orch.start()
+    adapter = orch.adapters[0]
+    assert getattr(adapter, "_started", False) is True
+    orch.stop()
+    assert getattr(adapter, "_started", False) is False
+
+
+def test_dynamic_registry_override_and_lifecycle():
+    """Adapters can be swapped via the registry and respect lifecycle hooks."""
+
+    original_cls = InputAdapter.registry["gui"]
+
+    class TestGUIAdapter(InputAdapter):
+        name = "gui"
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.started = False
+            self.stopped = False
+
+        def on_start(self) -> None:
+            self.started = True
+
+        def on_stop(self) -> None:
+            self.stopped = True
+
+    try:
+        sink = DummyCommandSink()
+        orch = ModeOrchestrator(
+            config=DummyConfig(),
+            command_sink=sink,
+            flags=OrchestratorFlags(enable_gui=True),
+        )
+        orch.select_adapters()
+        assert isinstance(orch.adapters[0], TestGUIAdapter)
+
+        orch.start()
+        assert orch.adapters[0].started
+        orch.stop()
+        assert orch.adapters[0].stopped
+    finally:
+        InputAdapter.registry["gui"] = original_cls
 
     orch.select_adapters()
     assert all(getattr(a, "_started", False) is False for a in orch.adapters)
@@ -85,5 +133,4 @@ def test_adapter_lifecycle():
     assert all(getattr(a, "_started", False) is True for a in orch.adapters)
     orch.stop()
     assert all(getattr(a, "_started", False) is False for a in orch.adapters)
-
 
