@@ -12,10 +12,10 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from chatty_commander.app import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.web.web_mode import (
     CommandRequest,
     StateChangeRequest,
@@ -48,7 +48,9 @@ class TestWebModeServer:
     @pytest.fixture
     def web_server(self, mock_managers):
         """Create WebModeServer instance for testing."""
-        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+        with patch(
+            'chatty_commander.advisors.providers.build_provider_safe'
+        ) as mock_build_provider:
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
             mock_provider.api_mode = "completion"
@@ -314,7 +316,9 @@ class TestWebModeAdditional:
 
     @pytest.fixture
     def web_server(self, mock_managers):
-        with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+        with patch(
+            'chatty_commander.advisors.providers.build_provider_safe'
+        ) as mock_build_provider:
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
             mock_provider.api_mode = "completion"

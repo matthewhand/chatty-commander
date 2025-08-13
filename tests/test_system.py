@@ -37,21 +37,24 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-#from config import Config  # noqa: E402 - imported after path manipulation
-#from model_manager import ModelManager  # noqa: E402 - imported after path manipulation
-#from state_manager import StateManager  # noqa: E402 - imported after path manipulation
+# from config import Config  # noqa: E402 - imported after path manipulation
+# from model_manager import ModelManager  # noqa: E402 - imported after path manipulation
+# from state_manager import StateManager  # noqa: E402 - imported after path manipulation
 
 from chatty_commander.app.config import Config  # noqa: E402 - imported after path manipulation
-from chatty_commander.app.model_manager import ModelManager  # noqa: E402 - imported after path manipulation
-from chatty_commander.app.state_manager import StateManager  # noqa: E402 - imported after path manipulation
+from chatty_commander.app.model_manager import (
+    ModelManager,  # noqa: E402 - imported after path manipulation
+)
+from chatty_commander.app.state_manager import (
+    StateManager,  # noqa: E402 - imported after path manipulation
+)
 
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
 
-
-from chatty_commander.app.command_executor import (
+from chatty_commander.app import (
     CommandExecutor,  # noqa: E402 - imported after path manipulation
 )
 
@@ -408,7 +411,7 @@ class SystemTester:
         except Exception as e:
             self.log(f"✗ Model manager testing failed: {str(e)}", "Model Manager", "ERROR")
 
-    def test_command_executor(self):
+    def test_executor(self):
         """Test command executor functionality"""
         self.log("Testing command executor...", "Command Executor")
 
@@ -465,7 +468,9 @@ class SystemTester:
             # Try a quick non-blocking test
             result = self.run_command('timeout 2 chatty gui || true', timeout=5)
             if result['returncode'] in [0, 124]:  # Success or timeout
-                self.log("✓ GUI command accepts launch (terminated as expected)", "GUI Launch", "PASS")
+                self.log(
+                    "✓ GUI command accepts launch (terminated as expected)", "GUI Launch", "PASS"
+                )
             else:
                 self.log(f"✗ GUI launch failed: {result['stderr']}", "GUI Launch", "FAIL")
 
@@ -485,7 +490,7 @@ class SystemTester:
             self.log("✗ 'chatty' command not found in PATH", "Installation", "FAIL")
 
         # Test Python module imports
-        modules = ['config', 'state_manager', 'model_manager', 'command_executor', 'cli']
+        modules = ['config', 'state_manager', 'model_manager', 'cli']
         for module in modules:
             result = self.run_command(f'python -c "import {module}; print(\'OK\')"; echo')
             if result['success'] and 'OK' in result['stdout']:
@@ -505,7 +510,7 @@ class SystemTester:
             self.test_system_management,
             self.test_state_transitions,
             self.test_model_manager,
-            self.test_command_executor,
+            self.test_executor,
             self.test_gui_launch,
         ]
 

@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
-from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app import CommandExecutor
 
 # Import our core modules from src package
 from chatty_commander.app.config import Config
@@ -166,6 +166,7 @@ class WebModeServer:
                     return HTMLResponse(
                         "<h1>Avatar UI</h1><p>Avatar UI not found. Ensure index.html exists under src/chatty_commander/webui/avatar/</p>"
                     )
+
             except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to mount avatar UI static files: {e}")
 
@@ -222,9 +223,7 @@ class WebModeServer:
                 return {"message": "Configuration updated successfully"}
             except Exception as e:
                 logger.error(f"Failed to update configuration: {e}")
-                raise HTTPException(
-                    status_code=500, detail=str(e)
-                ) from e
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @app.get("/api/v1/state", response_model=StateInfo)
         async def get_state():
@@ -259,9 +258,7 @@ class WebModeServer:
                 return {"message": f"State changed to {request.state}"}
             except Exception as e:
                 logger.error(f"Failed to change state: {e}")
-                raise HTTPException(
-                    status_code=400, detail=str(e)
-                ) from e
+                raise HTTPException(status_code=400, detail=str(e)) from e
 
         @app.post("/api/v1/command", response_model=CommandResponse)
         async def execute_command(request: CommandRequest):
@@ -271,7 +268,9 @@ class WebModeServer:
             try:
                 # Check if command exists in configuration
                 config_dict = getattr(self.config_manager, "config", {})
-                model_actions = config_dict.get('model_actions', {}) if isinstance(config_dict, dict) else {}
+                model_actions = (
+                    config_dict.get('model_actions', {}) if isinstance(config_dict, dict) else {}
+                )
                 if request.command not in model_actions:
                     raise HTTPException(
                         status_code=404, detail=f"Command '{request.command}' not found"
@@ -320,6 +319,7 @@ class WebModeServer:
                     message=f"Command execution failed: {str(e)}",
                     execution_time=execution_time,
                 )
+
         class AdvisorInbound(BaseModel):
             platform: str
             channel: str
@@ -334,7 +334,6 @@ class WebModeServer:
             persona_id: str
             model: str
             api_mode: str
-
 
         class ContextStats(BaseModel):
             total_contexts: int
@@ -354,7 +353,7 @@ class WebModeServer:
                         user=message.user,
                         text=message.text,
                         username=message.username,
-                        metadata=message.metadata
+                        metadata=message.metadata,
                     )
                 )
                 return AdvisorOutbound(
@@ -362,11 +361,10 @@ class WebModeServer:
                     context_key=reply.context_key,
                     persona_id=reply.persona_id,
                     model=reply.model,
-                    api_mode=reply.api_mode
+                    api_mode=reply.api_mode,
                 )
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e)) from e
-
 
         @app.post("/api/v1/advisors/context/switch")
         async def switch_persona(context_key: str, persona_id: str):
@@ -413,7 +411,10 @@ class WebModeServer:
             if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors feature disabled")
             items = self.advisors_service.memory.get(platform, channel, user, limit)
-            return [AdvisorMemoryItem(role=i.role, content=i.content, timestamp=i.timestamp) for i in items]
+            return [
+                AdvisorMemoryItem(role=i.role, content=i.content, timestamp=i.timestamp)
+                for i in items
+            ]
 
         @app.delete("/api/v1/advisors/memory")
         async def advisors_memory_clear(platform: str, channel: str, user: str):
@@ -428,9 +429,7 @@ class WebModeServer:
         async def bridge_event(event: dict[str, Any], request: Request):
             # Auth: shared secret header must match config token
             token_expected = (
-                getattr(self.config_manager, "advisors", {})
-                .get("bridge", {})
-                .get("token", "")
+                getattr(self.config_manager, "advisors", {}).get("bridge", {}).get("token", "")
             )
             token_header = request.headers.get("X-Bridge-Token", "")
             if not token_expected or token_header != token_expected:
@@ -444,7 +443,7 @@ class WebModeServer:
                     user=event.get("user", ""),
                     text=event.get("text", ""),
                     username=event.get("username"),
-                    metadata=event.get("meta")
+                    metadata=event.get("meta"),
                 )
                 reply = self.advisors_service.handle_message(msg)
                 return {"ok": True, "reply": {"text": reply.reply, "meta": {}}}
@@ -647,7 +646,7 @@ def create_web_server(
 
 if __name__ == "__main__":
     # This allows running the web server standalone for testing
-    from chatty_commander.app.command_executor import CommandExecutor
+    from chatty_commander.app import CommandExecutor
     from chatty_commander.app.config import Config
     from chatty_commander.app.model_manager import ModelManager
     from chatty_commander.app.state_manager import StateManager
@@ -687,7 +686,9 @@ def create_app(no_auth: bool = True) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
     @app.get("/api/v1/health")
     async def health_check():
         return {"status": "healthy"}
+
     return app
