@@ -7,6 +7,7 @@ from jsonschema import ValidationError, validate
 from src.chatty_commander.config import Config
 from src.chatty_commander.tools.builder import build_openapi_schema
 
+
 @pytest.fixture
 def config():
     # Load configuration from default config.json so model_actions are populated

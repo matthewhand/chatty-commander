@@ -8,21 +8,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
 
 
 class TestModelLoading(unittest.TestCase):
     def setUp(self):
         """Setup configuration and model manager for testing."""
         self._get_patchable_model_class_patch = patch(
-<<<<<<< HEAD
-            'src.chatty_commander.app.model_manager._get_patchable_model_class',
-            return_value=MagicMock,
-=======
-            'chatty_commander.app.model_manager._get_patchable_model_class',
-            return_value=MagicMock
->>>>>>> 231e8853a6a87e434f7239c3dc0540d12f1f1a94
         )
         self._get_patchable_model_class_patch.start()
         self.config = Config()
@@ -70,14 +63,6 @@ class TestModelLoading(unittest.TestCase):
         with (
             patch('os.path.exists', return_value=True),
             patch('os.listdir', return_value=['invalid.onnx']),
-<<<<<<< HEAD
-            patch(
-                'src.chatty_commander.app.model_manager._get_patchable_model_class',
-                side_effect=Exception('Load error'),
-            ),
-=======
-            patch('chatty_commander.app.model_manager._get_patchable_model_class', side_effect=Exception('Load error')),
->>>>>>> 231e8853a6a87e434f7239c3dc0540d12f1f1a94
         ):
             models = self.model_manager.load_model_set('dummy_path')
             self.assertEqual(len(models), 0)

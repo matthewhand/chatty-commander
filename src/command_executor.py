@@ -3,7 +3,6 @@
 Exposes ``pyautogui`` and ``requests`` symbols for tests to patch before the
 real implementation is imported.
 """
-from chatty_commander.compat import load
 
 try:  # pragma: no cover - best effort import
     import pyautogui  # type: ignore
@@ -15,7 +14,7 @@ try:  # pragma: no cover - best effort import
 except Exception:  # noqa: BLE001
     requests = None  # type: ignore
 
-__all__ = ["pyautogui", "requests", "CommandExecutor"]
+__all__ = ["pyautogui", "requests"]
 
 
 # Lazily load CommandExecutor to avoid circular import during app module init
