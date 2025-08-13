@@ -21,20 +21,39 @@ export default function ChatPane() {
     push(userMsg);
     setText('');
 
-    const assistantId = uuidv4();
-    push({
-      id: assistantId,
-      role: 'assistant',
-      createdAt: new Date().toISOString(),
-      content: [{ type: 'text', text: '' }],
-    });
+    let assistantId: string | null = null;
 
     await sse('/api/chat', { messages: [userMsg] }, {
-      chunk: ({ delta }) => {
-        update(assistantId, m => ({
+      chunk: ({ id, delta }) => {
+        if (!assistantId) {
+          assistantId = id;
+          push({
+            id,
+            role: 'assistant',
+            createdAt: new Date().toISOString(),
+            content: [{ type: 'text', text: '' }],
+          });
+        }
+        update(id, m => ({
           ...m,
           content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
         }));
+      },
+      tool_call: data => {
+        push({
+          id: data.id,
+          role: 'assistant',
+          createdAt: new Date().toISOString(),
+          content: [{ type: 'text', text: `Calling tool ${data.name}` }],
+        });
+      },
+      tool_result: data => {
+        push({
+          id: `${data.id}:result`,
+          role: 'tool',
+          createdAt: new Date().toISOString(),
+          content: [{ type: 'text', text: data.result }],
+        });
       },
       done: () => {},
     });
