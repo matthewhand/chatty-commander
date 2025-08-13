@@ -92,8 +92,9 @@ def run_web_mode(
     state_manager,
     command_executor,
     logger,
-    host,
-    port,
+    *,
+    host: str = "0.0.0.0",
+    port: int = 8100,
     no_auth: bool = False,
 ):
     """Run the web UI mode with FastAPI server and graceful shutdown."""
@@ -148,6 +149,15 @@ def run_web_mode(
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
+    env_host = os.getenv("CHATCOMM_HOST")
+    env_port = os.getenv("CHATCOMM_PORT")
+    if env_host:
+        host = env_host
+    if env_port:
+        try:
+            port = int(env_port)
+        except ValueError:
+            logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
     log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
 
     # Start the server
@@ -319,13 +329,14 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--host",
         type=str,
         default=None,
-        help="Specify the host interface for the web server (default from config).",
+        help="Specify the host interface for the web server (default: 0.0.0.0).",
     )
+
     parser.add_argument(
         "--port",
         type=int,
         default=None,
-        help="Specify the port for the web server (default from config). Only used in web mode.",
+        help="Specify the port for the web server. Only used in web mode.",
     )
 
     parser.add_argument(
@@ -485,6 +496,20 @@ def main():
 
     # Load configuration settings
     config = Config()
+    # Apply CLI overrides to web server settings
+    web_cfg = getattr(config, "web_server", {}) or {}
+    if args.host is not None:
+        web_cfg["host"] = args.host
+    if args.port is not None:
+        web_cfg["port"] = args.port
+    if args.no_auth:
+        web_cfg["auth_enabled"] = False
+    if web_cfg:
+        config.web_server = web_cfg
+        try:
+            config.config["web_server"] = web_cfg
+        except Exception:
+            pass
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:
@@ -523,6 +548,12 @@ def main():
         return 0
     elif getattr(args, "web", False):
         no_auth = not auth_enabled
+        # Ensure web_server config exists and reflect CLI overrides
+        if not hasattr(config, "web_server") or config.web_server is None:
+            config.web_server = {}
+        host = getattr(args, "host", None) or config.web_server.get("host", "0.0.0.0")
+        port = getattr(args, "port", None) or config.web_server.get("port", 8100)
+        config.web_server.update({"host": host, "port": port, "auth_enabled": not args.no_auth})
         run_web_mode(
             config,
             model_manager,
@@ -530,8 +561,10 @@ def main():
             command_executor,
             logger,
             host=host,
-            port=port,
-            no_auth=no_auth,
+            no_auth=args.no_auth,
+            port=args.port if args.port is not None else getattr(
+                getattr(config, "web_server", {}), "get", lambda *_: None
+            )("port", 8100),
         )
         return 0
     elif args.gui:
