@@ -1,8 +1,8 @@
 import logging
-import pytest
 
-from src.chatty_commander.model_manager import ModelManager
-from chatty_commander.app.model_manager import load_model
+import pytest
+from chatty_commander.app.model_manager import ModelManager
+
 
 class DummyError(Exception):
     pass
@@ -18,11 +18,6 @@ def test_model_loading_logging_retry(monkeypatch, caplog, tmp_path):
     monkeypatch.setattr(
         "chatty_commander.app.model_manager._get_patchable_model_class",
         lambda: FailingModel,
-    )
-    monkeypatch.setattr(
-        "src.chatty_commander.app.model_manager._get_patchable_model_class",
-        lambda: FailingModel,
-        raising=False,
     )
 
     # Patch the centralized error-reporting function.
