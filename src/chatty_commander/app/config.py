@@ -57,6 +57,20 @@ class Config:
         if "HOME_ASSISTANT_ENDPOINT" in os.environ:
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
 
+    @staticmethod
+    def _get_int_env(var_name: str, fallback: int) -> int:
+        """Return an integer from the environment or the provided fallback."""
+        value = os.environ.get(var_name)
+        if value is not None:
+            try:
+                parsed = int(value)
+                if parsed <= 0:
+                    raise ValueError
+                return parsed
+            except ValueError:
+                logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
+        return fallback
+
     def save_config(self, config_data: dict | None = None) -> None:
         """Save configuration to file."""
         if config_data is not None:
@@ -134,9 +148,15 @@ class Config:
 
         # Audio settings
         audio_settings = self.config_data.get("audio_settings", {})
-        self.mic_chunk_size = audio_settings.get("mic_chunk_size", 1024)
-        self.sample_rate = audio_settings.get("sample_rate", 16000)
-        self.audio_format = audio_settings.get("audio_format", "int16")
+        self.mic_chunk_size = self._get_int_env(
+            "CHATCOMM_MIC_CHUNK_SIZE", audio_settings.get("mic_chunk_size", 1024)
+        )
+        self.sample_rate = self._get_int_env(
+            "CHATCOMM_SAMPLE_RATE", audio_settings.get("sample_rate", 16000)
+        )
+        self.audio_format = os.environ.get(
+            "CHATCOMM_AUDIO_FORMAT", audio_settings.get("audio_format", "int16")
+        )
 
         # General settings
         self._load_general_settings()

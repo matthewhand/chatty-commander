@@ -620,11 +620,16 @@ class WebModeServer:
             # No event loop running, skip broadcast
             pass
 
-    def run(self, host: str = "0.0.0.0", port: int = 8100, log_level: str = "info") -> None:
-        """Run the web server, honoring environment overrides."""
+    def run(self, host: str | None = None, port: int | None = None, log_level: str = "info") -> None:
+        """Run the web server, honoring config and environment overrides."""
         env_host = os.getenv("CHATCOMM_HOST")
         env_port = os.getenv("CHATCOMM_PORT")
         env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
+
+        if host is None and getattr(self.config_manager, "web_server", None):
+            host = self.config_manager.web_server.get("host", "0.0.0.0")
+        if port is None and getattr(self.config_manager, "web_server", None):
+            port = self.config_manager.web_server.get("port", 8100)
 
         if env_host:
             host = env_host
@@ -635,6 +640,11 @@ class WebModeServer:
                 logger.warning("Invalid CHATCOMM_PORT '%s'; falling back to %s", env_port, port)
         if env_log_level:
             log_level = env_log_level
+
+        if host is None:
+            host = "0.0.0.0"
+        if port is None:
+            port = 8100
 
         logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
         logger.info(f"📖 API documentation: http://{host}:{port}/docs")
@@ -692,7 +702,45 @@ if __name__ == "__main__":
 # Minimal, stateless FastAPI app factory for tests
 
 
-def create_app(no_auth: bool = True) -> FastAPI:
+def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
+    """Create a minimal FastAPI app used in unit tests.
+
+    Parameters
+    ----------
+    no_auth:
+        When ``True`` the server behaves in development/no-auth mode and CORS
+        is fully permissive. When ``False`` the app applies the same CORS
+        restrictions as production.
+    config:
+        Optional :class:`~chatty_commander.app.config.Config` instance.  If
+        supplied and ``no_auth`` is ``False`` the ``web.allowed_origins`` value
+        from the config is used for CORS.  When not provided, the comma-separated
+        ``CHATCOMM_ALLOWED_ORIGINS`` environment variable is consulted.  This
+        mirrors the behaviour of the production server and allows tests to
+        supply custom origins without modifying global state.
+    """
+
+    if no_auth:
+        allowed_origins = ["*"]
+    else:
+        origins: list[str] | None = None
+        # Prefer config-provided origins when available
+        if config is not None:
+            web_cfg = getattr(config, "config", {}).get("web", {})  # type: ignore[arg-type]
+            cfg_origins = web_cfg.get("allowed_origins") if isinstance(web_cfg, dict) else None
+            if isinstance(cfg_origins, str):
+                origins = [cfg_origins]
+            elif isinstance(cfg_origins, (list, tuple)):
+                origins = [str(o) for o in cfg_origins]
+        # Fall back to environment variable
+        if origins is None:
+            env_origins = os.environ.get("CHATCOMM_ALLOWED_ORIGINS")
+            if env_origins:
+                origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+        if not origins:
+            origins = ["http://localhost:3000"]
+        allowed_origins = origins
+
     app = FastAPI(
         title="ChattyCommander API",
         version="0.2.0",
@@ -701,7 +749,7 @@ def create_app(no_auth: bool = True) -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if no_auth else ["http://localhost:3000"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -744,7 +792,7 @@ def create_app(no_auth: bool = True) -> FastAPI:
         def save_config(self, *_args, **_kwargs) -> None:  # matches both signatures
             return None
 
-    cfg_mgr = _MiniConfig()
+    cfg_mgr = config if config is not None else _MiniConfig()
 
     last_cmd: dict[str, str | None] = {"value": None}
 

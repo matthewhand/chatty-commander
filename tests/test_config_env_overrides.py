@@ -16,7 +16,7 @@ def test_config_env_endpoint_overrides(monkeypatch, tmp_path):
     assert c.api_endpoints["home_assistant"] == "http://ha.local/api"
 
 
-def test_config_general_settings_env_overrides(monkeypatch, tmp_path):
+def test_config_env_audio_overrides(monkeypatch, tmp_path):
     cfg_path = tmp_path / "config.json"
     cfg_path.write_text(
         json.dumps(
