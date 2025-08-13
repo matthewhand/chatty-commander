@@ -390,6 +390,34 @@ class WebModeServer:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
+        @app.get("/api/v1/advisors/personas")
+        async def get_personas():
+            """Get available personas."""
+            try:
+                # Access personas from the advisors config
+                advisors_config = getattr(self.config_manager, "advisors", {})
+                context_config = advisors_config.get("context", {})
+                personas = context_config.get("personas", {})
+                default_persona = context_config.get("default_persona", "general")
+
+                # Format personas for the UI
+                personas_list = []
+                for persona_id, persona_config in personas.items():
+                    personas_list.append({
+                        "id": persona_id,
+                        "name": persona_id.replace("_", " ").title(),
+                        "system_prompt": persona_config.get("system_prompt", ""),
+                        "is_default": persona_id == default_persona
+                    })
+
+                return {
+                    "personas": personas_list,
+                    "default_persona": default_persona,
+                    "total_count": len(personas_list)
+                }
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e)) from e
+
         @app.delete("/api/v1/advisors/context/{context_key}")
         async def clear_context(context_key: str):
             """Clear a specific context."""

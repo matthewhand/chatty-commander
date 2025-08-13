@@ -6,6 +6,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import MicIcon from '@mui/icons-material/Mic';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../hooks/useAuth';
+import GroupIcon from '@mui/icons-material/Group';
 
 const Navigation: React.FC = () => {
   const { logout } = useAuth();
@@ -33,6 +34,10 @@ const Navigation: React.FC = () => {
         <ListItem button component={Link} to="/audio-settings">
           <ListItemIcon><MicIcon /></ListItemIcon>
           <ListItemText primary="Audio Settings" />
+        </ListItem>
+        <ListItem button component={Link} to="/personas">
+          <ListItemIcon><GroupIcon /></ListItemIcon>
+          <ListItemText primary="Personas" />
         </ListItem>
       </List>
       <Divider />
