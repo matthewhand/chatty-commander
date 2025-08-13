@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 
@@ -5,7 +6,12 @@ PYTHON = sys.executable
 
 
 def run_cmd(args, timeout=10):
-    proc = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    """Run a command in a clean environment and capture output."""
+    env = os.environ.copy()
+    # Some tests set DISPLAY which can cause headless runs to fail when
+    # downstream libraries (e.g., pyautogui) try to connect to an X server.
+    env.pop("DISPLAY", None)
+    proc = subprocess.run(args, capture_output=True, text=True, timeout=timeout, env=env)
     return proc.returncode, proc.stdout, proc.stderr
 
 

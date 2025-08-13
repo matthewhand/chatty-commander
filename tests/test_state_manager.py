@@ -1,5 +1,6 @@
 import pytest
 
+from src.chatty_commander.config import Config
 from src.chatty_commander.state_manager import StateManager
 
 
@@ -43,3 +44,21 @@ class TestStateManager:
         assert sm.update_state("go") == "chatty"
         assert sm.current_state == "chatty"
         assert sm.update_state("go") is None
+
+    def test_initial_state_respects_config(self, monkeypatch):
+        cfg = Config()
+        cfg.default_state = "computer"
+        cfg.state_models["computer"] = ["comp_model"]
+        monkeypatch.setattr("chatty_commander.app.state_manager.Config", lambda: cfg)
+        sm = StateManager()
+        assert sm.current_state == "computer"
+        assert sm.get_active_models() == ["comp_model"]
+
+    def test_dynamic_state_from_config(self, monkeypatch):
+        cfg = Config()
+        cfg.state_models["gaming"] = ["shoot"]
+        monkeypatch.setattr("chatty_commander.app.state_manager.Config", lambda: cfg)
+        sm = StateManager()
+        sm.change_state("gaming")
+        assert sm.current_state == "gaming"
+        assert sm.get_active_models() == ["shoot"]

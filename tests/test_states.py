@@ -6,9 +6,9 @@ import logging
 import unittest
 from unittest.mock import MagicMock
 
-from state_manager import StateManager
+from chatty_commander.app.state_manager import StateManager
 
-from src.chatty_commander.config import Config
+from chatty_commander.app.config import Config
 
 
 class TestStateManager(unittest.TestCase):
