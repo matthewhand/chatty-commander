@@ -1,6 +1,4 @@
-"""
-Advisor service for handling AI advisor interactions.
-"""
+"""Advisor service for handling AI advisor interactions."""
 
 from dataclasses import dataclass
 from typing import Any
@@ -62,14 +60,13 @@ class AdvisorsService:
         self.enabled = base_cfg.get('enabled', False)
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
-        """
-        Process an incoming message and return advisor response.
+        """Process an incoming message and return an advisor response.
 
         Args:
-            message: The incoming message to process
+            message: The incoming message to process.
 
         Returns:
-            AdvisorReply with response and metadata
+            AdvisorReply with response and metadata.
         """
         if not self.enabled:
             raise RuntimeError("Advisors are not enabled")

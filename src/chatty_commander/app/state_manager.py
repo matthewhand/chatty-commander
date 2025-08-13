@@ -1,16 +1,14 @@
-"""
-state_manager.py
+"""Manage application state transitions.
 
-Manages the state transitions and active model sets for the ChattyCommander application.
-This module helps in toggling between different operational states based on detected commands
-and manages the corresponding model activations. Enhanced to support dynamic state updates
-and more complex state dependencies.
+This module toggles between different operational states based on detected
+commands and manages the corresponding model activations. It supports dynamic
+state updates and complex state dependencies.
 """
 
 import logging
 from collections.abc import Callable
 
-from chatty_commander.config import Config
+from chatty_commander.app.config import Config
 
 
 class StateManager:
@@ -24,9 +22,9 @@ class StateManager:
         self.logger.info(f"StateManager initialized with state: {self.current_state}")
 
     def update_state(self, command: str) -> str | None:
-        """
-        Updates the state based on the detected command.
-        Returns the new state if a transition occurred, otherwise None.
+        """Update state based on a command.
+
+        Returns the new state if a transition occurred, otherwise ``None``.
         """
         new_state: str | None = None
         # Flexible resolution via config-defined wakeword mapping

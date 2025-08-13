@@ -1,11 +1,13 @@
 # ChattyCommander WebUI Implementation Guide
 
 ## Overview
+
 This document provides a detailed implementation roadmap for the ChattyCommander WebUI mode, which will provide a web-based interface that mirrors all desktop GUI functionality through RESTful APIs and WebSocket connections.
 
 ## Architecture Overview
 
 ### Backend (FastAPI)
+
 - **FastAPI** for REST API endpoints
 - **WebSocket** support for real-time updates
 - **JWT Authentication** for security
@@ -14,6 +16,7 @@ This document provides a detailed implementation roadmap for the ChattyCommander
 - **AsyncIO** for concurrent operations
 
 ### Frontend (React)
+
 - **React 18** with TypeScript
 - **Material-UI (MUI)** for components
 - **React Query** for API state management
@@ -198,7 +201,9 @@ chatty-commander/
 ### Phase 1: Foundation (Week 1-2)
 
 #### Backend Setup
+
 1. **Project Structure**
+
    ```bash
    mkdir -p webui/backend/app/{api/v1,core,models,schemas,services,utils}
    cd webui/backend
@@ -207,6 +212,7 @@ chatty-commander/
    ```
 
 2. **Dependencies** (`requirements.txt`)
+
    ```
    fastapi==0.104.1
    uvicorn[standard]==0.24.0
@@ -223,12 +229,13 @@ chatty-commander/
    ```
 
 3. **Core FastAPI Application** (`app/main.py`)
+
    ```python
    from fastapi import FastAPI, WebSocket
    from fastapi.middleware.cors import CORSMiddleware
    from app.api.v1 import auth, config, service
    from app.core.config import settings
-   
+
    app = FastAPI(
        title="ChattyCommander WebUI API",
        description="RESTful API for ChattyCommander web interface",
@@ -237,7 +244,7 @@ chatty-commander/
        docs_url="/api/v1/docs",
        redoc_url="/api/v1/redoc"
    )
-   
+
    # CORS middleware
    app.add_middleware(
        CORSMiddleware,
@@ -246,7 +253,7 @@ chatty-commander/
        allow_methods=["*"],
        allow_headers=["*"],
    )
-   
+
    # Include routers
    app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
    app.include_router(config.router, prefix="/api/v1/config", tags=["config"])
@@ -254,7 +261,9 @@ chatty-commander/
    ```
 
 #### Frontend Setup
+
 1. **React Project**
+
    ```bash
    cd webui/frontend
    npm create vite@latest . -- --template react-ts
@@ -264,6 +273,7 @@ chatty-commander/
    ```
 
 2. **Basic App Structure** (`src/App.tsx`)
+
    ```typescript
    import React from 'react';
    import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -274,9 +284,9 @@ chatty-commander/
    import Layout from './components/common/Layout';
    import Dashboard from './components/dashboard/Dashboard';
    import Login from './components/auth/LoginForm';
-   
+
    const queryClient = new QueryClient();
-   
+
    function App() {
      return (
        <QueryClientProvider client={queryClient}>
@@ -294,19 +304,21 @@ chatty-commander/
        </QueryClientProvider>
      );
    }
-   
+
    export default App;
    ```
 
 ### Phase 2: Authentication & Core API (Week 3-4)
 
 #### Backend Authentication
+
 1. **JWT Authentication** (`app/core/auth.py`)
 2. **User Management** (`app/models/user.py`)
 3. **Auth Endpoints** (`app/api/v1/auth.py`)
 4. **Protected Routes** (`app/dependencies.py`)
 
 #### Frontend Authentication
+
 1. **Auth Context** (`src/components/auth/AuthProvider.tsx`)
 2. **Login Form** (`src/components/auth/LoginForm.tsx`)
 3. **Protected Routes** (`src/components/auth/ProtectedRoute.tsx`)
@@ -315,12 +327,14 @@ chatty-commander/
 ### Phase 3: Configuration Management (Week 5-6)
 
 #### Backend Config API
+
 1. **Config Schemas** (`app/schemas/config.py`)
 2. **Config Service** (`app/services/config_service.py`)
 3. **Config Endpoints** (`app/api/v1/config.py`)
 4. **Commands Management** (`app/api/v1/commands.py`)
 
 #### Frontend Config UI
+
 1. **Config Manager** (`src/components/config/ConfigManager.tsx`)
 2. **Commands List** (`src/components/config/CommandsList.tsx`)
 3. **Command Editor** (`src/components/config/CommandEditor.tsx`)
@@ -329,12 +343,14 @@ chatty-commander/
 ### Phase 4: Service Control & Monitoring (Week 7-8)
 
 #### Backend Service API
+
 1. **Service Integration** (`app/services/chatty_service.py`)
 2. **Process Management** (`app/utils/process_utils.py`)
 3. **Service Endpoints** (`app/api/v1/service.py`)
 4. **System Info** (`app/api/v1/system.py`)
 
 #### Frontend Service UI
+
 1. **Service Control** (`src/components/service/ServiceControl.tsx`)
 2. **Process Monitor** (`src/components/service/ProcessMonitor.tsx`)
 3. **System Info** (`src/components/system/SystemInfo.tsx`)
@@ -343,11 +359,13 @@ chatty-commander/
 ### Phase 5: Real-time Features (Week 9-10)
 
 #### Backend WebSocket
+
 1. **WebSocket Service** (`app/services/websocket_service.py`)
 2. **WebSocket Handlers** (`app/api/v1/websocket.py`)
 3. **Real-time Events** (service status, audio levels, logs)
 
 #### Frontend WebSocket
+
 1. **WebSocket Hook** (`src/hooks/useWebSocket.ts`)
 2. **Real-time Components** (status updates, audio meter)
 3. **Log Viewer** (`src/components/service/LogViewer.tsx`)
@@ -356,12 +374,14 @@ chatty-commander/
 ### Phase 6: Audio & Voice Features (Week 11-12)
 
 #### Backend Audio API
+
 1. **Audio Service** (`app/services/audio_service.py`)
 2. **Audio Endpoints** (`app/api/v1/audio.py`)
 3. **Voice Testing** (file upload, live testing)
 4. **Model Management** (`app/api/v1/models.py`)
 
 #### Frontend Audio UI
+
 1. **Audio Settings** (`src/components/audio/AudioSettings.tsx`)
 2. **Device Selector** (`src/components/audio/DeviceSelector.tsx`)
 3. **Voice Test** (`src/components/audio/VoiceTest.tsx`)
@@ -370,6 +390,7 @@ chatty-commander/
 ## Testing Strategy
 
 ### Backend Testing
+
 1. **Unit Tests** (pytest)
    - API endpoints
    - Service classes
@@ -387,6 +408,7 @@ chatty-commander/
    - Error handling
 
 ### Frontend Testing
+
 1. **Unit Tests** (Jest + React Testing Library)
    - Component rendering
    - Hook functionality
@@ -403,6 +425,7 @@ chatty-commander/
    - Mobile responsiveness
 
 ### Performance Testing
+
 1. **Load Testing** (Locust)
    - API endpoint performance
    - WebSocket connection limits
@@ -416,6 +439,7 @@ chatty-commander/
 ## Deployment Strategy
 
 ### Development Environment
+
 ```bash
 # Backend
 cd webui/backend
@@ -427,6 +451,7 @@ npm run dev
 ```
 
 ### Production Deployment
+
 1. **Docker Containers**
    - Backend: FastAPI + Uvicorn
    - Frontend: Nginx + React build
@@ -434,6 +459,7 @@ npm run dev
    - Reverse Proxy: Nginx
 
 2. **Docker Compose**
+
    ```yaml
    version: '3.8'
    services:
@@ -443,19 +469,19 @@ npm run dev
         - "8100:8100"
        environment:
          - DATABASE_URL=postgresql://user:pass@db:5432/chatty
-     
+
      frontend:
        build: ./frontend
        ports:
          - "3000:80"
-     
+
      db:
        image: postgres:15
        environment:
          - POSTGRES_DB=chatty
          - POSTGRES_USER=user
          - POSTGRES_PASSWORD=pass
-     
+
      nginx:
        image: nginx:alpine
        ports:

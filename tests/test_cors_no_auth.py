@@ -27,3 +27,21 @@ def test_cors_header_present_on_simple_get_when_no_auth():
     assert resp.status_code == 200
     # Response to a simple request should include ACAO when Origin is present
     assert resp.headers.get("access-control-allow-origin") in {"*", "http://example.com"}
+
+
+def test_cors_respects_configured_origins(monkeypatch):
+    monkeypatch.setenv(
+        "CHATCOMM_ALLOWED_ORIGINS",
+        "http://foo.example,http://bar.example",
+    )
+    app = create_app(no_auth=False)
+    client = TestClient(app)
+
+    headers = {
+        "Origin": "http://bar.example",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type",
+    }
+    resp = client.options("/api/v1/health", headers=headers)
+    assert resp.status_code in (200, 204)
+    assert resp.headers.get("access-control-allow-origin") == "http://bar.example"
