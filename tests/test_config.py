@@ -8,7 +8,8 @@ from chatty_commander.app.config import Config
 
 @pytest.fixture
 def config():
-    return Config()
+    # Load configuration from default config.json so model_actions are populated
+    return Config.load()
 
 
 def test_validate_empty_actions(config):
@@ -86,9 +87,8 @@ def test_multiple_warnings(caplog, config, logger):
 def test_custom_paths(config, logger):
     """Test custom model paths."""
     config.general_models_path = 'custom/path'
-    config.idle_models_path = (
-        'custom/path/idle'  # Note: Config may not have idle_models_path, adjust if needed
-    )
+    config.system_models_path = 'custom/path/system'
+    config.chat_models_path = 'custom/path/chat'
     with (
         patch('os.path.exists', return_value=True),
         patch('os.listdir', return_value=['model.onnx']),
@@ -215,30 +215,30 @@ def test_update_general_setting_serialization_error(config, caplog, monkeypatch,
     assert "Could not save config file" in caplog.text
 
 
-def test_load_config_file_not_exist(config, monkeypatch):
+def test_load_config_file_not_exist(monkeypatch):
     """Test loading config when file does not exist."""
     monkeypatch.setattr('os.path.exists', lambda x: False)
-    config.config_data = config._load_config()
-    assert config.config_data == {}
+    cfg = Config.load('missing.json')
+    assert cfg.model_actions == {}
 
 
 def test_build_model_actions_keypress(config):
     """Test building model actions for keypress type."""
-    config.config_data['commands'] = {'test_command': {'action': 'keypress', 'keys': 'ctrl+alt+t'}}
+    config.commands = {'test_command': {'action': 'keypress', 'keys': 'ctrl+alt+t'}}
     actions = config._build_model_actions()
     assert actions['test_command'] == {'keypress': 'ctrl+alt+t'}
 
 
 def test_build_model_actions_url(config):
     """Test building model actions for url type with placeholder replacement."""
-    config.config_data['commands'] = {'test_url': {'action': 'url', 'url': '{home_assistant}/test'}}
+    config.commands = {'test_url': {'action': 'url', 'url': '{home_assistant}/test'}}
     actions = config._build_model_actions()
     assert actions['test_url'] == {'url': 'http://homeassistant.domain.home:8123/api/test'}
 
 
 def test_build_model_actions_custom_message(config):
     """Test building model actions for custom message."""
-    config.config_data['commands'] = {'test_msg': {'action': 'custom_message', 'message': 'Hello'}}
+    config.commands = {'test_msg': {'action': 'custom_message', 'message': 'Hello'}}
     actions = config._build_model_actions()
     assert actions['test_msg'] == {'message': 'Hello'}
 
