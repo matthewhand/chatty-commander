@@ -38,6 +38,13 @@ class TestStateManager:
         sm.active_models = ["model1", "model2"]
         assert sm.get_active_models() == ["model1", "model2"]
 
+    def test_update_state_with_custom_mapping(self):
+        sm = StateManager()
+        sm.config.state_transitions = {"idle": {"go": "chatty"}, "chatty": {}}
+        assert sm.update_state("go") == "chatty"
+        assert sm.current_state == "chatty"
+        assert sm.update_state("go") is None
+
     def test_initial_state_respects_config(self, monkeypatch):
         cfg = Config()
         cfg.default_state = "computer"

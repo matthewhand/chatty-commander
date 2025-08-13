@@ -29,16 +29,8 @@ class StateManager:
         Returns the new state if a transition occurred, otherwise None.
         """
         new_state: str | None = None
-        if command == 'hey_chat_tee':
-            new_state = 'chatty'
-        elif command == 'hey_khum_puter':
-            new_state = 'computer'
-        elif command in ['okay_stop', 'thanks_chat_tee', 'that_ill_do']:
-            new_state = 'idle'
-        elif command == 'toggle_mode':
-            states = ['idle', 'computer', 'chatty']
-            current_index = states.index(self.current_state)
-            new_state = states[(current_index + 1) % len(states)]
+        state_transitions = self.config.state_transitions.get(self.current_state, {})
+        new_state = state_transitions.get(command)
 
         if new_state and new_state != self.current_state:
             self.change_state(new_state)
