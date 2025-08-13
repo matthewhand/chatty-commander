@@ -13,10 +13,15 @@ _w.warn(
 _real = _import_module("chatty_commander.utils.logger")
 
 # Re-export public names
+setup_logger = _real.setup_logger
+report_error = _real.report_error
+
+# Re-export all other names dynamically
 for _name in dir(_real):
     if _name.startswith("_"):
         continue
-    globals()[_name] = getattr(_real, _name)
+    if _name not in globals():
+        globals()[_name] = getattr(_real, _name)
 
 # Ensure the module object identity is shared for patching
 _sys.modules.setdefault("utils", _sys.modules.get("utils", type(_sys)("utils")))

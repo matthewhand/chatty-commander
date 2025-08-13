@@ -194,6 +194,10 @@ def run_gui_mode(
         logger.info("--no-gui specified; skipping GUI launch")
         return 0
 
+    if getattr(config, "voice_only", False):
+        logger.info("Voice-only mode enabled; skipping GUI launch")
+        return 0
+
     # Apply DISPLAY override if provided (POSIX only)
     if display_override and os.name != "nt":
         os.environ["DISPLAY"] = display_override
@@ -547,7 +551,6 @@ def main():
         config_cli.run_wizard()
         return 0
     elif getattr(args, "web", False):
-        no_auth = not auth_enabled
         # Ensure web_server config exists and reflect CLI overrides
         if not hasattr(config, "web_server") or config.web_server is None:
             config.web_server = {}

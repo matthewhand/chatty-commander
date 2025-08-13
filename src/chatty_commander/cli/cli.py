@@ -55,6 +55,33 @@ class HelpfulArgumentParser(argparse.ArgumentParser):
         self.exit(0, f"{self.prog}: error: {message}\n")
 
 
+# Resolve Config in a way that allows tests to monkeypatch the top-level 'config' module
+# and provide a DummyCfg. Falls back to chatty_commander.app.config.Config otherwise.
+def _resolve_Config():
+    try:
+        import sys as _sys
+
+        mod = _sys.modules.get("config")
+        if mod is not None:
+            C = getattr(mod, "Config", None)
+            if C is not None:
+                return C
+    except Exception:
+        pass
+    try:
+        import importlib as _il
+
+        mod = _il.import_module("config")
+        C = getattr(mod, "Config", None)
+        if C is not None:
+            return C
+    except Exception:
+        pass
+    from chatty_commander.app.config import Config as _Cfg  # fallback
+
+    return _Cfg
+
+
 def _get_model_actions_from_config(cfg: Any) -> dict[str, Any]:
     try:
         if hasattr(cfg, "__dict__"):
@@ -132,12 +159,20 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     run_parser.add_argument("--display", help="Override DISPLAY for GUI features.")
+    run_parser.add_argument(
+        "--voice-only",
+        action="store_true",
+        help="Run without avatar GUI; responses are spoken via TTS.",
+    )
 
-    def run_func() -> None:
+    def run_func(args: argparse.Namespace) -> None:
         try:
             func = globals().get("run_app")
             if callable(func):
-                func()
+                if "voice_only" in getattr(func, "__code__", {}).co_varnames:
+                    func(voice_only=args.voice_only)
+                else:
+                    func()
         except Exception:
             return
 
@@ -329,9 +364,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def list_func(args: argparse.Namespace) -> int:
         try:
-            from chatty_commander.app.config import Config  # noqa
-
-            cfg = Config()
+            # Use patchable Config resolver
+            ConfigRT = _resolve_Config()
+            cfg = ConfigRT()
             actions = _get_model_actions_from_config(cfg)
             if args.json:
                 _print_actions_json(actions)
@@ -367,9 +402,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def exec_func(args: argparse.Namespace) -> int:
         try:
-            from chatty_commander.app.config import Config  # noqa
-
-            cfg = Config()
+            # Use patchable Config resolver
+            ConfigRT = _resolve_Config()
+            cfg = ConfigRT()
             actions = _get_model_actions_from_config(cfg)
             action_entry = actions.get(args.name)
             if action_entry is None:
@@ -451,9 +486,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def system_func(args: argparse.Namespace) -> int:
         # Integrate with config.Config methods as tests expect
-        from chatty_commander.app.config import Config  # lazy import
-
-        cfg = Config()
+        # Use patchable Config resolver
+        ConfigRT = _resolve_Config()
+        cfg = ConfigRT()
         if args.system_command == "start-on-boot":
             if args.boot_action == "enable":
                 try:

@@ -390,6 +390,34 @@ class WebModeServer:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
+        @app.get("/api/v1/advisors/personas")
+        async def get_personas():
+            """Get available personas."""
+            try:
+                # Access personas from the advisors config
+                advisors_config = getattr(self.config_manager, "advisors", {})
+                context_config = advisors_config.get("context", {})
+                personas = context_config.get("personas", {})
+                default_persona = context_config.get("default_persona", "general")
+
+                # Format personas for the UI
+                personas_list = []
+                for persona_id, persona_config in personas.items():
+                    personas_list.append({
+                        "id": persona_id,
+                        "name": persona_id.replace("_", " ").title(),
+                        "system_prompt": persona_config.get("system_prompt", ""),
+                        "is_default": persona_id == default_persona
+                    })
+
+                return {
+                    "personas": personas_list,
+                    "default_persona": default_persona,
+                    "total_count": len(personas_list)
+                }
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e)) from e
+
         @app.delete("/api/v1/advisors/context/{context_key}")
         async def clear_context(context_key: str):
             """Clear a specific context."""
@@ -633,11 +661,7 @@ class WebModeServer:
         env_port = os.getenv("CHATCOMM_PORT")
         env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
 
-        cfg = getattr(self.config_manager, "web_server", {}) or {}
-#         if host is None:
-#             host = cfg.get("host", "0.0.0.0")
-#         if port is None:
-#             port = int(cfg.get("port", 8100))
+        # Prefer configuration defaults when explicit host/port not provided
         if host is None and getattr(self.config_manager, "web_server", None):
             host = self.config_manager.web_server.get("host", "0.0.0.0")
         if port is None and getattr(self.config_manager, "web_server", None):
@@ -747,7 +771,7 @@ def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
             cfg_origins = web_cfg.get("allowed_origins") if isinstance(web_cfg, dict) else None
             if isinstance(cfg_origins, str):
                 origins = [cfg_origins]
-            elif isinstance(cfg_origins, (list, tuple)):
+            elif isinstance(cfg_origins, list | tuple):
                 origins = [str(o) for o in cfg_origins]
         # Fall back to environment variable
         if origins is None:

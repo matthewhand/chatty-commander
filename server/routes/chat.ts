@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { chat } from '../services/llm';
 
 const router = Router();
 

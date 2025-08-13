@@ -170,6 +170,18 @@ class TestVoicePipeline:
         # Should not raise an error
         pipeline.trigger_mock_wake_word("hey_jarvis")
 
+    def test_voice_only_invokes_tts(self):
+        pipeline = VoicePipeline(
+            config_manager=self.mock_config,
+            command_executor=self.mock_executor,
+            use_mock=True,
+            tts_backend="mock",
+            voice_only=True,
+        )
+
+        pipeline.process_text_command("hello there")
+        assert pipeline.tts.backend.spoken[0] == "hello"
+
     def test_pipeline_without_managers(self):
         # Test pipeline works without config/executor managers
         pipeline = VoicePipeline(use_mock=True)
