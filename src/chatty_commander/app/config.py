@@ -16,6 +16,25 @@ class Config:
         # Expose raw config under .config for web routers expecting a dict
         self.config: dict = self.config_data
 
+        # Extract commonly used config values as properties
+        self.default_state = self.config_data.get("default_state", "idle")
+        self.general_models_path = self.config_data.get("general_models_path", "models/general")
+        self.system_models_path = self.config_data.get("system_models_path", "models/system") 
+        self.chat_models_path = self.config_data.get("chat_models_path", "models/chat")
+        self.model_actions = self.config_data.get("model_actions", {})
+        self.state_models = self.config_data.get("state_models", {})
+        self.api_endpoints = self.config_data.get("api_endpoints", {})
+        
+        # Apply environment variable overrides
+        self._apply_env_overrides()
+
+    def _apply_env_overrides(self):
+        """Apply environment variable overrides to API endpoints."""
+        if "CHATBOT_ENDPOINT" in os.environ:
+            self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
+        if "HOME_ASSISTANT_ENDPOINT" in os.environ:
+            self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
+
     def save_config(self, config_data: dict | None = None) -> None:
         """Save configuration to file."""
         if config_data is not None:
@@ -407,3 +426,8 @@ WantedBy=default.target
         except Exception as e:
             logging.error(f"Failed to check for updates: {e}")
             return None
+
+    @classmethod
+    def load(cls, config_file="config.json"):
+        """Load configuration from file (class method for backward compatibility)."""
+        return cls(config_file)
