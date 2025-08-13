@@ -1,4 +1,3 @@
-import importlib
 import logging
 from unittest.mock import MagicMock, patch
 
@@ -7,9 +6,6 @@ from chatty_commander.app import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-
-CE_MODULE = importlib.import_module(CommandExecutor.__module__)
-
 
 @pytest.fixture
 def config():
@@ -41,7 +37,7 @@ def executor(config, model_manager, state_manager):
 
 
 class TestCommandExecution:
-    @patch.object(CE_MODULE, 'requests')
+    @patch('chatty_commander.app.command_executor.requests')
     def test_url_command_execution(self, mock_requests, executor):
         """Test executing a URL command."""
         mock_requests.get.return_value = MagicMock(status_code=200)
@@ -51,7 +47,7 @@ class TestCommandExecution:
         )
         logging.debug("URL command 'lights_on' executed with status 200")
 
-    @patch.object(CE_MODULE, 'pyautogui', create=True)
+    @patch('chatty_commander.app.command_executor.pyautogui', create=True)
     def test_keypress_command_execution(self, mock_pyautogui, executor):
         """Test executing a keypress command."""
         executor.execute_command('okay_stop')
@@ -64,14 +60,14 @@ class TestCommandExecution:
             executor.execute_command('undefined_command')
         logging.debug("Invalid command raised ValueError as expected")
 
-    @patch.object(CE_MODULE, 'requests')
+    @patch('chatty_commander.app.command_executor.requests')
     def test_url_command_failure(self, mock_requests, executor):
         """Test URL command with failure."""
         mock_requests.get.side_effect = Exception("Network error")
         executor._execute_url('lights_on', 'http://homeassistant.domain.home:8123/api/lights_on')
         logging.debug("URL command failure handled")
 
-    @patch.object(CE_MODULE, 'pyautogui', create=True)
+    @patch('chatty_commander.app.command_executor.pyautogui', create=True)
     def test_keypress_single_key(self, mock_pyautogui, executor):
         """Test single key press."""
         executor.execute_command('single_key')
@@ -80,7 +76,7 @@ class TestCommandExecution:
 
     def test_missing_pyautogui(self, executor):
         """Test behavior when pyautogui is not available."""
-        with patch.object(CE_MODULE, 'pyautogui', None), patch('logging.critical') as mock_log:
+        with patch('chatty_commander.app.command_executor.pyautogui', None), patch('logging.critical') as mock_log:
             executor.execute_command('test_key')
             mock_log.assert_called_once_with("Error in test_key: pyautogui not available")
         logging.debug("Handled missing pyautogui")
@@ -90,7 +86,7 @@ class TestCommandExecution:
         with (
             patch.object(executor, 'pre_execute_hook') as mock_pre,
             patch.object(executor, 'post_execute_hook') as mock_post,
-            patch.object(CE_MODULE, 'requests') as mock_requests,
+            patch('chatty_commander.app.command_executor.requests') as mock_requests,
         ):
             mock_requests.get.return_value = MagicMock(status_code=200)
             executor.execute_command('lights_on')
@@ -105,8 +101,8 @@ class TestCommandExecution:
             mock_log.assert_called_once_with("Error in test_cmd: Test error")
         logging.debug("Error reported")
 
-    @patch.object(CE_MODULE, 'pyautogui', create=True)
-    @patch.object(CE_MODULE, 'requests')
+    @patch('chatty_commander.app.command_executor.pyautogui', create=True)
+    @patch('chatty_commander.app.command_executor.requests')
     def test_multiple_commands(self, mock_requests, mock_pyautogui, executor):
         """Test executing multiple different commands."""
         mock_requests.get.return_value = MagicMock(status_code=200)

@@ -1,17 +1,17 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from src.chatty_commander import main
+from chatty_commander import main
 
 
 class TestMain(unittest.TestCase):
     @patch('sys.argv', ['main.py', '--shell'])
     @patch('builtins.input', side_effect=['exit'])
-    @patch('src.chatty_commander.main.StateManager')
-    @patch('src.chatty_commander.main.ModelManager')
-    @patch('src.chatty_commander.main.CommandExecutor')
-    @patch('src.chatty_commander.main.Config')
-    @patch('src.chatty_commander.main.setup_logger')
+    @patch('chatty_commander.main.StateManager')
+    @patch('chatty_commander.main.ModelManager')
+    @patch('chatty_commander.main.CommandExecutor')
+    @patch('chatty_commander.main.Config')
+    @patch('chatty_commander.main.setup_logger')
     def test_main_loop(
         self,
         mock_setup_logger,
