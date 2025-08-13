@@ -9,15 +9,13 @@ Tests FastAPI endpoints, WebSocket connections, and frontend integration.
 import asyncio
 import json
 import logging
-
-import requests
-import websockets
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-
+import requests
+import websockets
 from config import Config
+from fastapi.testclient import TestClient
 from web_mode import WebModeServer
 
 # Configure logging

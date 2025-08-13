@@ -1,10 +1,9 @@
 from unittest.mock import patch
 
 import pytest
+from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-
-from chatty_commander.app.config import Config
 
 
 @pytest.fixture

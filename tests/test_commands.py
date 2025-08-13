@@ -7,6 +7,7 @@ from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 
+
 @pytest.fixture
 def config():
     """Setup the CommandExecutor with a mock configuration for testing."""

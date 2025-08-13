@@ -1,16 +1,7 @@
-"""
-main.py
+"""Entry point for the ChattyCommander application.
 
-This module serves as the entry point for the ChattyCommander application. It coordinates the
-loading of machine learning models, manages state transitions based on voice commands, and
-handles the execution of commands.
-
-Usage:
-    Run the script from the command line to start the voice-activated command processing system.
-    Ensure that all dependencies are installed and models are correctly placed in their respective directories.
-
-Example:
-    python main.py
+This module coordinates model loading, manages state transitions based on
+voice commands, and handles the execution of commands.
 """
 
 import argparse
@@ -28,18 +19,20 @@ _root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
 
-from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
-from chatty_commander.app.model_manager import ModelManager  # type: ignore
-from chatty_commander.app.orchestrator import (  # type: ignore
+from chatty_commander.app.command_executor import (  # noqa: E402, type: ignore
+    CommandExecutor,
+)
+from chatty_commander.app.config import Config  # noqa: E402, type: ignore
+from chatty_commander.app.default_config import (  # noqa: E402, type: ignore
+    generate_default_config_if_needed,
+)
+from chatty_commander.app.model_manager import ModelManager  # noqa: E402, type: ignore
+from chatty_commander.app.orchestrator import (  # noqa: E402, type: ignore
     ModeOrchestrator,
     OrchestratorFlags,
 )
-from chatty_commander.app.state_manager import StateManager  # type: ignore
-from chatty_commander.app.config import Config  # type: ignore
-from chatty_commander.app.default_config import (  # type: ignore
-    generate_default_config_if_needed,
-)
-from chatty_commander.utils.logger import setup_logger  # type: ignore
+from chatty_commander.app.state_manager import StateManager  # noqa: E402, type: ignore
+from chatty_commander.utils.logger import setup_logger  # noqa: E402, type: ignore
 
 
 def run_cli_mode(config, model_manager, state_manager, command_executor, logger):
