@@ -1,5 +1,7 @@
 import React from 'react';
 
+// Render a sandboxed iframe for canvas experiments
+
 export default function CanvasPane() {
   return (
     <section className="flex-1 flex flex-col bg-gray-900">
