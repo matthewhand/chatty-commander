@@ -72,7 +72,7 @@ class Config:
         self.web_host = host
         self.web_port = port
         self.web_auth_enabled = auth
-        
+
     @staticmethod
     def _get_int_env(var_name: str, fallback: int) -> int:
         """Return an integer from the environment or the provided fallback."""
@@ -269,7 +269,7 @@ class Config:
     def _load_config(self):
         """Load configuration from file or defaults."""
         try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
+            with open(self.config_file, encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
             logger.warning(f"Config file {self.config_file} not found. Using defaults.")
@@ -345,7 +345,6 @@ class Config:
         update_check_config = self.config_data.get("update_check", {})
 
         enabled = update_check_config.get("enabled", False)
-        url = update_check_config.get("url", "https://api.github.com/repos/username/repo/releases/latest")
         interval_hours = update_check_config.get("interval_hours", 24)
 
         if not enabled:

@@ -64,7 +64,7 @@ class OpenAIBackend(LLMBackend):
 
         try:
             # Test with a minimal request
-            response = self._client.chat.completions.create(
+            self._client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": "test"}],
                 max_tokens=1

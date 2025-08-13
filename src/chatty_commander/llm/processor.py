@@ -48,7 +48,7 @@ class CommandProcessor:
     def process_command(self, user_input: str) -> tuple[str | None, float, str]:
         """
         Process natural language command.
-        
+
         Returns:
             Tuple of (command_name, confidence, explanation)
         """
@@ -121,7 +121,7 @@ class CommandProcessor:
         """Build prompt for LLM command interpretation."""
         available_commands = list(self._available_commands.keys())
 
-        prompt = f"""You are a voice assistant command interpreter. 
+        prompt = f"""You are a voice assistant command interpreter.
 
 Available commands: {', '.join(available_commands)}
 

@@ -551,7 +551,6 @@ def main():
         config_cli.run_wizard()
         return 0
     elif getattr(args, "web", False):
-        no_auth = not auth_enabled
         # Ensure web_server config exists and reflect CLI overrides
         if not hasattr(config, "web_server") or config.web_server is None:
             config.web_server = {}
