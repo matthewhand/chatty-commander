@@ -624,7 +624,7 @@ module.exports = {
 # ChattyCommander WebUI Demo Script
 
 ## Demo Environment Setup
-1. **Backend Service**: Running on http://localhost:8000
+1. **Backend Service**: Running on http://localhost:8100
 2. **Frontend Application**: Running on http://localhost:3000
 3. **Test Data**: Pre-configured with sample commands and states
 4. **Audio Setup**: Microphone connected for voice testing

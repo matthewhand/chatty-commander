@@ -111,7 +111,7 @@ def test_update_command():
 
 # WebSocket tests
 async def test_status_websocket():
-    async with websockets.connect("ws://localhost:8000/ws/status") as websocket:
+    async with websockets.connect("ws://localhost:8100/ws/status") as websocket:
         message = await websocket.recv()
         data = json.loads(message)
         assert "status" in data

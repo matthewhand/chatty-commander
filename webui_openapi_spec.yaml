@@ -26,7 +26,7 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: http://localhost:8000/api/v1
+  - url: http://localhost:8100/api/v1
     description: Development server
   - url: https://chatty.yourdomain.com/api/v1
     description: Production server

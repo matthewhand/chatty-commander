@@ -35,7 +35,7 @@
 
 **Deliverables**:
 - Working development environment
-- Basic FastAPI server running on port 8000
+- Basic FastAPI server running on port 8100
 - React development server on port 3000
 - Docker Compose setup
 - Initial test suites
