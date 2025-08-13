@@ -149,27 +149,26 @@ class ModeOrchestrator:
 
         registry = InputAdapter.registry
 
-        if self.flags.enable_text and "text" in registry:
-            selected.append(registry["text"](on_command=self._dispatch_command))
+        flag_map: dict[str, tuple[str, Callable[[type[InputAdapter]], InputAdapter], Callable[[], bool]]] = {
+            "enable_text": (
+                "text",
+                lambda cls: cls(on_command=self._dispatch_command),
+                lambda: True,
+            ),
+            "enable_gui": ("gui", lambda cls: cls(), lambda: True),
+            "enable_web": ("web", lambda cls: cls(), lambda: True),
+            "enable_openwakeword": ("openwakeword", lambda cls: cls(), lambda: True),
+            "enable_computer_vision": ("computer_vision", lambda cls: cls(), lambda: True),
+            "enable_discord_bridge": (
+                "discord_bridge",
+                lambda cls: cls(),
+                lambda: getattr(self.config, "advisors", {}).get("enabled", False),
+            ),
+        }
 
-        if self.flags.enable_gui and "gui" in registry:
-            selected.append(registry["gui"]())
-
-        if self.flags.enable_web and "web" in registry:
-            selected.append(registry["web"]())
-
-        if self.flags.enable_openwakeword and "openwakeword" in registry:
-            selected.append(registry["openwakeword"]())
-
-        if self.flags.enable_computer_vision and "computer_vision" in registry:
-            selected.append(registry["computer_vision"]())
-
-        if (
-            self.flags.enable_discord_bridge
-            and getattr(self.config, "advisors", {}).get("enabled", False)
-            and "discord_bridge" in registry
-        ):
-            selected.append(registry["discord_bridge"]())
+        for flag_attr, (adapter_name, factory, condition) in flag_map.items():
+            if getattr(self.flags, flag_attr) and adapter_name in registry and condition():
+                selected.append(factory(registry[adapter_name]))
 
         self.adapters = selected
         return [a.name for a in selected]
