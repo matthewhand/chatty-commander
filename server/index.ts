@@ -4,9 +4,11 @@ import chat from './routes/chat.js';
 import canvas from './routes/canvas.js';
 import consoleRoute from './routes/console.js';
 import sidecar from './routes/sidecar.js';
+import { cspHeaders } from './middleware/csp.js';
 
 const app = express();
 app.use(cors());
+app.use(cspHeaders);
 app.use(express.json());
 
 app.use('/api/chat', chat);
