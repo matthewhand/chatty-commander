@@ -67,7 +67,8 @@ def test_load_config_error(monkeypatch, capsys):
     cli = ConfigCLI()
     captured = capsys.readouterr()
     assert 'Error: Invalid JSON' in captured.err
-    assert cli.config == {'model_actions': {}, 'state_models': {}}
+    assert cli.config.model_actions == {}
+    assert cli.config.state_models == {}
     # No need to call load_config again as it's called in __init__
 
 
@@ -87,7 +88,7 @@ def test_interactive_mode(monkeypatch, mock_config_file):
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
     cli = ConfigCLI()
     cli.interactive_mode()
-    assert 'test_model' in cli.config['model_actions']
-    assert cli.config['model_actions']['test_model'] == 'test_action'
-    assert 'test_state' in cli.config['state_models']
-    assert cli.config['state_models']['test_state'] == ['model1', 'model2']
+    assert 'test_model' in cli.config.model_actions
+    assert cli.config.model_actions['test_model'] == 'test_action'
+    assert 'test_state' in cli.config.state_models
+    assert cli.config.state_models['test_state'] == ['model1', 'model2']
