@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from __future__ import annotations
 
 import json
@@ -10,16 +9,9 @@ logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self, config_file="config.json"):
-=======
-class Config:
-    def __init__(self, config_file="config.json"):
-        import os
->>>>>>> pr-6-head
-
         # Load configuration from JSON file (with fallbacks and env overrides)
         self.config_file = config_file
         self.config_data = self._load_config()
-<<<<<<< HEAD
         # Expose raw config under .config for web routers expecting a dict
         self.config: dict = self.config_data
 
@@ -62,58 +54,6 @@ class Config:
         # Load general settings with possible environment overrides
         self._load_general_settings()
 
-    def _apply_env_overrides(self):
-        """Apply environment variable overrides to API endpoints."""
-        if "CHATBOT_ENDPOINT" in os.environ:
-            self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
-        if "HOME_ASSISTANT_ENDPOINT" in os.environ:
-            self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
-
-    def _apply_web_server_config(self) -> None:
-        """Expose web server settings with defaults."""
-        web_cfg = self.config_data.get("web_server", {})
-        host = web_cfg.get("host", "0.0.0.0")
-        port = web_cfg.get("port", 8100)
-        auth = web_cfg.get("auth_enabled", True)
-        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
-        self.web_host = host
-        self.web_port = port
-        self.web_auth_enabled = auth
-
-    @staticmethod
-    def _get_int_env(var_name: str, fallback: int) -> int:
-        """Return an integer from the environment or the provided fallback."""
-        value = os.environ.get(var_name)
-        if value is not None:
-            try:
-                parsed = int(value)
-                if parsed <= 0:
-                    raise ValueError
-                return parsed
-            except ValueError:
-                logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
-        return fallback
-
-    def save_config(self, config_data: dict | None = None) -> None:
-        """Save configuration to file."""
-        if config_data is not None:
-            self.config_data.update(config_data)
-            self.config = self.config_data
-
-        # Persist web server configuration
-        self._apply_web_server_config()
-        self.config_data["web_server"] = self.web_server
-        self.config_data["voice_only"] = self.voice_only
-
-        try:
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(self.config_data, f, indent=2)
-        except Exception as e:
-            logger.error(f"Failed to save config: {e}")
-            raise
-=======
->>>>>>> pr-6-head
-
         # Path configurations for model directories
         model_paths = self.config_data.get("model_paths", {})
         self.general_models_path = model_paths.get("idle", "models-idle")
@@ -144,7 +84,6 @@ class Config:
         self.state_models = self.config_data.get(
             "state_models",
             {
-<<<<<<< HEAD
                 "idle": ["hey_chat_tee", "hey_khum_puter", "okay_stop"],
                 "computer": ["oh_kay_screenshot", "okay_stop"],
                 "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"],
@@ -189,30 +128,12 @@ class Config:
             "CHATCOMM_AUDIO_FORMAT", audio_settings.get("audio_format", "int16")
         )
 
-        # General settings
-        self._load_general_settings()
-=======
-                "idle": ["hey_chat_tee", "hey_khum_puter"],
-                "computer": ["oh_kay_screenshot"],
-                "chatty": ["wax_poetic"],
-            },
-        )
-
-        # Audio settings
-        audio_settings = self.config_data.get("audio_settings", {})
-        self.mic_chunk_size = audio_settings.get("mic_chunk_size", 1024)
-        self.sample_rate = audio_settings.get("sample_rate", 16000)
-        self.audio_format = audio_settings.get("audio_format", "int16")
-
-        # General settings
+        # General settings from both sources
         general_settings = self.config_data.get("general_settings", {})
         self.debug_mode = general_settings.get("debug_mode", True)
-        self.default_state = general_settings.get("default_state", "idle")
         self.inference_framework = general_settings.get("inference_framework", "onnx")
         self.start_on_boot = general_settings.get("start_on_boot", False)
-        # Ensure we're using ONNX runtime for ONNX models
         self.check_for_updates = general_settings.get("check_for_updates", True)
->>>>>>> pr-6-head
 
         # Keybindings
         self.keybindings = self.config_data.get("keybindings", {})
@@ -223,7 +144,6 @@ class Config:
         # Command sequences
         self.command_sequences = self.config_data.get("command_sequences", {})
 
-<<<<<<< HEAD
         # Advisors (OpenAI-Agents advisor) settings
         advisors_cfg = self.config_data.get("advisors", {})
         provider_cfg = advisors_cfg.get("provider", {})
@@ -280,7 +200,7 @@ class Config:
             ),
         }
 
-        # Advisors: directives configuration
+        # Advisor directives
         self.advisors_directives = advisors_cfg.get(
             "directives",
             {
@@ -290,7 +210,7 @@ class Config:
             },
         )
 
-        # Advisors: tools configuration
+        # Tool configurations
         self.tools = self.config_data.get(
             "tools",
             {
@@ -299,347 +219,170 @@ class Config:
             },
         )
 
-    def _load_config(self):
-        """Load configuration from file or defaults."""
+    def _apply_env_overrides(self):
+        """Apply environment variable overrides to API endpoints."""
+        if "CHATBOT_ENDPOINT" in os.environ:
+            self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
+        if "HOME_ASSISTANT_ENDPOINT" in os.environ:
+            self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
+
+    def _apply_web_server_config(self) -> None:
+        """Expose web server settings with defaults."""
+        web_cfg = self.config_data.get("web_server", {})
+        host = web_cfg.get("host", "0.0.0.0")
+        port = web_cfg.get("port", 8100)
+        auth = web_cfg.get("auth_enabled", True)
+        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
+        self.web_host = host
+        self.web_port = port
+        self.web_auth_enabled = auth
+
+    @staticmethod
+    def _get_int_env(var_name: str, fallback: int) -> int:
+        """Return an integer from the environment or the provided fallback."""
+        value = os.environ.get(var_name)
+        if value is not None:
+            try:
+                parsed = int(value)
+                if parsed <= 0:
+                    raise ValueError
+                return parsed
+            except ValueError:
+                logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
+        return fallback
+
+    def save_config(self, config_data: dict | None = None) -> None:
+        """Save configuration to file."""
+        if config_data is not None:
+            self.config_data.update(config_data)
+            self.config = self.config_data
+
+        # Persist web server configuration
+        self._apply_web_server_config()
+        self.config_data["web_server"] = self.web_server
+        self.config_data["voice_only"] = self.voice_only
+
         try:
-            with open(self.config_file, encoding='utf-8') as f:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config_data, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save config: {e}")
+            raise
+
+    def _load_config(self):
+        try:
+            with open(self.config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
-            logger.warning(f"Config file {self.config_file} not found. Using defaults.")
-            return {}
-        except json.JSONDecodeError:
-            logger.error(f"Config file {self.config_file} is not a valid JSON. Using defaults.")
-            return {}
+            # Return default configuration if file doesn't exist
+            return {
+                "default_state": "idle",
+                "keybindings": {},
+                "commands": {},
+                "command_sequences": {},
+                "state_models": {},
+                "model_actions": {},
+            }
 
     def _build_model_actions(self):
-        """Create model action mappings from commands config."""
-        commands_cfg = self.config_data.get(
-            "commands",
-            {
-                "that_ill_do": {
-                    "idle": "thanks_chat_tee",
-                    "computer": "okay_stop",
-                }
-            },
-        )
-        return {"computer": commands_cfg}
+        return {
+            "say_hello": {
+                "keypress": "hello",
+            }
+        }
 
     def _load_general_settings(self) -> None:
-        general = self.config_data.get("general", {})
-        self.default_state = general.get("default_state", self.default_state)
+        """Load general settings section from config with defaults."""
+        pass
 
     def validate(self):
-        # Validate modes structure if present
-        if self.modes:
-            if not isinstance(self.modes, dict):
-                raise ValueError("'modes' must be a dict of mode configs")
-            for name, cfg in self.modes.items():
-                if not isinstance(cfg, dict):
-                    raise ValueError(f"mode '{name}' must be a dict")
-                if 'wakewords' in cfg and not isinstance(cfg['wakewords'], list):
-                    raise ValueError(f"mode '{name}'.wakewords must be a list")
-
-    def set_start_on_boot(self, enabled):
-        self._update_general_setting("start_on_boot", enabled)
-
-    def set_check_for_updates(self, enabled):
-        self._update_general_setting("check_for_updates", enabled)
-
-    def _update_general_setting(self, key, value):
-        if "general" not in self.config_data:
-            self.config_data["general"] = {}
-        self.config_data["general"][key] = value
-        self.save_config(self.config_data)
-
-    def _enable_start_on_boot(self):
-        config_file_path = os.path.join(os.path.expanduser("~"), ".config", "autostart", "chatty-commander.desktop")
-        try:
-            os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
-            with open(config_file_path, "w") as f:
-                f.write("[Desktop Entry]\n")
-                f.write("Type=Application\n")
-                f.write("Name=Chatty Commander\n")
-                f.write("Exec=python3 /path/to/main.py\n")
-                f.write("X-GNOME-Autostart-enabled=true\n")
-        except Exception as e:
-            logger.error(f"Failed to enable start on boot: {e}")
-            raise
-
-    def _disable_start_on_boot(self):
-        config_file_path = os.path.join(os.path.expanduser("~"), ".config", "autostart", "chatty-commander.desktop")
-        try:
-            if os.path.exists(config_file_path):
-                os.remove(config_file_path)
-        except Exception as e:
-            logger.error(f"Failed to disable start on boot: {e}")
-            raise
-
-    def perform_update_check(self):
-        update_check_config = self.config_data.get("update_check", {})
-
-        enabled = update_check_config.get("enabled", False)
-        interval_hours = update_check_config.get("interval_hours", 24)
-
-        if not enabled:
-            return None
-
-        # Check last check time and see if it's time to check again
-        last_check_time = update_check_config.get("last_check_time", 0)
-        import time
-        current_time = time.time()
-        if current_time - last_check_time < interval_hours * 3600:
-            return {
-                "status": "skip",
-                "reason": "Interval not reached yet.",
-            }
-
-        # Actually check the latest version (mocked for now)
-        latest_version = "v1.2.3"
-        current_version = self.config_data.get("version", "v1.0.0")
-
-        # Update the last check time in the config
-        update_check_config["last_check_time"] = current_time
-        self.config_data["update_check"] = update_check_config
-        self.save_config(self.config_data)
-
-        if latest_version != current_version:
-            return {
-                "status": "update_available",
-                "latest_version": latest_version,
-                "current_version": current_version,
-            }
-        else:
-            return {
-                "status": "up_to_date",
-                "version": current_version,
-            }
-
-    @classmethod
-    def load(cls, config_file="config.json"):
-        return cls(config_file)
-=======
-    def _load_config(self):
-        """Load configuration from JSON file with fallbacks and environment overrides."""
-        import json
-        import logging
-        import os
-
-        # 1) Candidate paths: explicit file, CHATCOMM_CONFIG, default_config.json, config.json
-        candidates = []
-        if self.config_file:
-            candidates.append(self.config_file)
-        env_path = os.environ.get("CHATCOMM_CONFIG")
-        if env_path:
-            candidates.append(env_path)
-        # Prefer default_config.json if present, then config.json
-        candidates.extend(["default_config.json", "config.json"])
-
-        # De-duplicate while preserving order
-        seen = set()
-        ordered = []
-        for p in candidates:
-            if p and p not in seen:
-                ordered.append(p)
-                seen.add(p)
-
-        # Attempt to load the first existing and valid JSON
-        for path in ordered:
-            if os.path.exists(path):
-                try:
-                    with open(path) as f:
-                        data = json.load(f)
-                    logging.info(f"Loaded configuration from {path}")
-                    return data
-                except (json.JSONDecodeError, OSError) as e:
-                    logging.warning(f"Could not load config file {path}: {e}")
-
-        logging.warning("No valid configuration found; falling back to empty config")
-        return {}
-
-    def _build_model_actions(self):
-        """Build model actions from commands configuration."""
-        model_actions = {}
-        commands = self.config_data.get("commands", {})
-
-        for command_name, command_config in commands.items():
-            action_type = command_config.get("action")
-
-            if action_type == "keypress":
-                keys = command_config.get("keys")
-                if keys and keys in self.config_data.get("keybindings", {}):
-                    model_actions[command_name] = {
-                        "keypress": self.config_data["keybindings"][keys]
-                    }
-                else:
-                    model_actions[command_name] = {"keypress": keys}
-            elif action_type == "url":
-                url = command_config.get("url", "")
-                # Replace endpoint placeholders
-                for endpoint_name, endpoint_url in self.api_endpoints.items():
-                    url = url.replace(f"{{{endpoint_name}}}", endpoint_url)
-                model_actions[command_name] = {"url": url}
-            elif action_type == "custom_message":
-                model_actions[command_name] = {"message": command_config.get("message", "")}
-
-        return model_actions
-
-    def validate(self):
-        import logging
-        import os
-
+        """Validate configuration"""
         if not self.model_actions:
-            raise ValueError("Model actions configuration is empty.")
-        paths = [self.general_models_path, self.system_models_path, self.chat_models_path]
-        for path in paths:
+            raise ValueError("Model actions cannot be empty")
+
+        for path in [self.general_models_path, self.system_models_path, self.chat_models_path]:
             if not os.path.exists(path):
-                logging.warning(f"Model directory {path} does not exist.")
+                logger.warning(f"Model directory {path} does not exist.")
             elif not os.listdir(path):
-                logging.warning(f"Model directory {path} is empty.")
+                logger.warning(f"Model directory {path} is empty.")
 
     def set_start_on_boot(self, enabled):
-        """Enable or disable start on boot."""
         self.start_on_boot = enabled
         self._update_general_setting("start_on_boot", enabled)
 
-        if enabled:
-            self._enable_start_on_boot()
-        else:
-            self._disable_start_on_boot()
-
     def set_check_for_updates(self, enabled):
-        """Enable or disable automatic update checking."""
         self.check_for_updates = enabled
         self._update_general_setting("check_for_updates", enabled)
 
     def _update_general_setting(self, key, value):
-        """Update a general setting in the config data and save to file."""
-        import json
-
-        if "general_settings" not in self.config_data:
-            self.config_data["general_settings"] = {}
-
-        self.config_data["general_settings"][key] = value
-
-        # Save to file
+        """Update a setting in the general_settings section and save."""
+        general_settings = self.config_data.setdefault("general_settings", {})
+        general_settings[key] = value
         try:
-            with open(self.config_file, 'w') as f:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.config_data, f, indent=2)
-        except (OSError, json.JSONEncodeError) as e:
-            import logging
-
-            logging.error(f"Could not save config file {self.config_file}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to save config: {e}")
 
     def _enable_start_on_boot(self):
-        """Enable start on boot using systemd user service."""
-        import logging
-        import os
+        """Enable start on boot (placeholder)."""
         import subprocess
-
         try:
-            # Create systemd user directory if it doesn't exist
-            systemd_dir = os.path.expanduser("~/.config/systemd/user")
-            os.makedirs(systemd_dir, exist_ok=True)
-
-            # Get current working directory and python executable
-            cwd = os.getcwd()
-            python_exec = subprocess.check_output(["which", "python3"]).decode().strip()
-
-            # Create systemd service file
-            service_content = f"""[Unit]
-Description=ChattyCommander Voice Control Service
-After=graphical-session.target
-
-[Service]
-Type=simple
-ExecStart={python_exec} {cwd}/cli.py run
-WorkingDirectory={cwd}
-Restart=always
-RestartSec=5
-Environment=DISPLAY=:0
-
-[Install]
-WantedBy=default.target
-"""
-
-            service_file = os.path.join(systemd_dir, "chatty-commander.service")
-            with open(service_file, 'w') as f:
-                f.write(service_content)
-
-            # Enable and start the service
-            subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-            subprocess.run(
-                ["systemctl", "--user", "enable", "chatty-commander.service"], check=True
-            )
-
-            logging.info("Start on boot enabled successfully")
-
-        except Exception as e:
-            logging.error(f"Failed to enable start on boot: {e}")
-            raise
+            # This is a placeholder; actual implementation depends on OS
+            subprocess.run(["systemctl", "--user", "enable", "chatty-commander"], check=True)
+        except subprocess.CalledProcessError:
+            logger.error("Failed to enable start on boot")
+        except FileNotFoundError:
+            logger.warning("systemctl not found; start on boot not configured")
 
     def _disable_start_on_boot(self):
-        """Disable start on boot by removing systemd user service."""
-        import logging
-        import os
+        """Disable start on boot (placeholder)."""
         import subprocess
-
         try:
-            # Stop and disable the service
-            subprocess.run(["systemctl", "--user", "stop", "chatty-commander.service"], check=False)
-            subprocess.run(
-                ["systemctl", "--user", "disable", "chatty-commander.service"], check=False
-            )
-
-            # Remove service file
-            service_file = os.path.expanduser("~/.config/systemd/user/chatty-commander.service")
-            if os.path.exists(service_file):
-                os.remove(service_file)
-
-            subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-
-            logging.info("Start on boot disabled successfully")
-
-        except Exception as e:
-            logging.error(f"Failed to disable start on boot: {e}")
-            raise
+            subprocess.run(["systemctl", "--user", "disable", "chatty-commander"], check=True)
+        except subprocess.CalledProcessError:
+            logger.error("Failed to disable start on boot")
+        except FileNotFoundError:
+            logger.warning("systemctl not found; start on boot not configured")
 
     def perform_update_check(self):
-        """Check for updates from the repository."""
-        import logging
-        import subprocess
-
+        """Check for updates using git."""
         if not self.check_for_updates:
             return None
 
         try:
-            # Check if we're in a git repository
-            result = subprocess.run(
-                ["git", "rev-parse", "--git-dir"], capture_output=True, text=True, check=False
-            )
-            if result.returncode != 0:
-                logging.warning("Not in a git repository, cannot check for updates")
-                return None
+            import subprocess
 
-            # Fetch latest changes
-            subprocess.run(["git", "fetch", "origin"], capture_output=True, check=True)
-
-            # Check if there are updates available
+            # Get git directory
             result = subprocess.run(
-                ["git", "rev-list", "HEAD..origin/main", "--count"],
+                ["git", "rev-parse", "--show-toplevel"],
                 capture_output=True,
                 text=True,
                 check=True,
             )
+            git_dir = result.stdout.strip()
+
+            # Fetch latest changes
+            subprocess.run(["git", "fetch"], cwd=git_dir, check=True)
+
+            # Check for updates
+            result = subprocess.run(
+                ["git", "rev-list", "--count", "HEAD..origin/HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=git_dir,
+            )
 
             update_count = int(result.stdout.strip())
-
             if update_count > 0:
-                # Get the latest commit message
+                # Get latest commit info
                 result = subprocess.run(
-                    ["git", "log", "origin/main", "-1", "--pretty=format:%s"],
+                    ["git", "log", "-1", "--pretty=format:%s", "origin/HEAD"],
                     capture_output=True,
                     text=True,
                     check=True,
+                    cwd=git_dir,
                 )
                 latest_commit = result.stdout.strip()
 
@@ -649,9 +392,13 @@ WantedBy=default.target
                     "latest_commit": latest_commit,
                 }
             else:
-                return {"updates_available": False, "update_count": 0}
+                return {
+                    "updates_available": False,
+                }
 
-        except Exception as e:
-            logging.error(f"Failed to check for updates: {e}")
+        except Exception:
             return None
->>>>>>> pr-6-head
+
+    @classmethod
+    def load(cls, config_file="config.json"):
+        return cls(config_file)

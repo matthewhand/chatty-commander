@@ -299,6 +299,16 @@ curl -s -X DELETE http://localhost:8100/api/v1/agents/blueprints/<ID> | jq
 ```
 
 Run the consolidated smoke script: `bash scripts/e2e_smoke.sh`
+
+## Configuration Examples
+
+ChattyCommander supports multiple configuration profiles for different use cases:
+
+- **🎤 Voice-Only**: Minimal setup for controlling external apps like codex-cli with pure voice commands
+- **🤖 Full Assistant**: Complete smart home and productivity assistant with web UI
+- **💻 Developer Tools**: Voice-controlled git, testing, and IDE integration
+
+See [Configuration Examples](docs/CONFIGURATION_EXAMPLES.md) for detailed setup guides and video demonstrations.
 ```
 curl -s http://localhost:8100/metrics/json | jq
 ```

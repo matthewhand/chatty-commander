@@ -1,0 +1,69 @@
+{
+  "profile_name": "Voice-Only Assistant",
+  "description": "Minimal voice-only configuration with keybinding-based transcription for controlling external apps like codex-cli",
+  
+  "default_state": "voice_listening",
+  
+  "model_actions": {
+    "start_transcription": {
+      "keypress": {
+        "keys": "ctrl+shift+v",
+        "description": "Start voice transcription (configurable hotkey)"
+      }
+    },
+    "end_and_paste": {
+      "keypress": {
+        "keys": "ctrl+shift+enter",
+        "description": "End transcription, paste result, and press enter"
+      }
+    },
+    "codex_query": {
+      "keypress": {
+        "keys": "ctrl+alt+c",
+        "description": "Trigger codex-cli with voice input"
+      }
+    },
+    "quick_paste": {
+      "keypress": {
+        "keys": "ctrl+v",
+        "description": "Paste transcribed text"
+      }
+    },
+    "new_line": {
+      "keypress": {
+        "keys": "enter",
+        "description": "Press enter after voice input"
+      }
+    }
+  },
+
+  "voice": {
+    "enabled": true,
+    "wake_words": ["hey_coder", "start_transcription"],
+    "transcription_backend": "whisper_local",
+    "auto_paste": true,
+    "hotkey_mode": true,
+    "silence_timeout": 2.0,
+    "record_timeout": 10.0
+  },
+
+  "ui": {
+    "web_enabled": false,
+    "gui_enabled": false,
+    "avatar_enabled": false,
+    "notifications": "minimal"
+  },
+
+  "workflows": {
+    "codex_integration": {
+      "description": "Voice control for codex-cli",
+      "sequence": [
+        "start_transcription",
+        "wait_for_speech",
+        "transcribe",
+        "codex_query",
+        "end_and_paste"
+      ]
+    }
+  }
+}

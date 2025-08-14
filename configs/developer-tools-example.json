@@ -1,0 +1,97 @@
+{
+  "profile_name": "Developer Tools Assistant",
+  "description": "Voice-controlled development workflow with IDE integration and git commands",
+  
+  "default_state": "coding",
+  
+  "model_actions": {
+    "git_status": {
+      "shell": {
+        "cmd": "git status",
+        "capture_output": true
+      }
+    },
+    "git_add_all": {
+      "shell": {
+        "cmd": "git add .",
+        "confirm": true
+      }
+    },
+    "git_commit": {
+      "keypress": {
+        "keys": "ctrl+shift+c",
+        "description": "Trigger IDE commit dialog"
+      }
+    },
+    "run_tests": {
+      "shell": {
+        "cmd": "pytest -v",
+        "capture_output": true
+      }
+    },
+    "format_code": {
+      "shell": {
+        "cmd": "black . && ruff check . --fix"
+      }
+    },
+    "search_files": {
+      "keypress": {
+        "keys": "ctrl+shift+f",
+        "description": "Open global search in IDE"
+      }
+    },
+    "debug_mode": {
+      "keypress": {
+        "keys": "f5",
+        "description": "Start debugger"
+      }
+    },
+    "new_terminal": {
+      "keypress": {
+        "keys": "ctrl+shift+grave",
+        "description": "Open new terminal"
+      }
+    },
+    "voice_to_comment": {
+      "keypress": {
+        "keys": "ctrl+slash",
+        "description": "Comment current line and add voice transcription"
+      }
+    }
+  },
+
+  "voice": {
+    "enabled": true,
+    "wake_words": ["hey_dev", "code_assistant"],
+    "transcription_backend": "whisper_local",
+    "command_mode": true,
+    "silence_timeout": 2.0,
+    "record_timeout": 15.0
+  },
+
+  "ui": {
+    "web_enabled": true,
+    "web_port": 8200,
+    "gui_enabled": false,
+    "avatar_enabled": false,
+    "notifications": "terminal_only"
+  },
+
+  "workflows": {
+    "commit_workflow": {
+      "description": "Voice-controlled git commit process",
+      "sequence": [
+        "git_status",
+        "git_add_all", 
+        "git_commit"
+      ]
+    },
+    "test_and_format": {
+      "description": "Run tests and format code",
+      "sequence": [
+        "format_code",
+        "run_tests"
+      ]
+    }
+  }
+}

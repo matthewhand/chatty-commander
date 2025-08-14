@@ -1,49 +1,41 @@
-<<<<<<< HEAD
-<<<<<<<< HEAD:src/chatty_commander/app/model_manager.py
-=======
->>>>>>> pr-6-head
 """
 model_manager.py
 
-This module manages the loading and utilization of machine learning models for the ChattyCommander application.
-It dynamically loads models based on the application's current state, handles errors robustly, and supports dynamic model reloading.
+Manages loading and utilization of wakeword models for the ChattyCommander application.
+Supports dynamic reloading and provides a patchable Model symbol for tests.
 """
+
+from __future__ import annotations
 
 import asyncio
 import logging
 import os
-import random  # For simulating command detection in demo mode
+import random
 from typing import Any
 
-try:
-    from wakewords.model import Model
-except ModuleNotFoundError:
+# Try importing the real wakewords Model, but keep a local fallback
+try:  # pragma: no cover - optional dependency
+    from wakewords.model import Model  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - exercised via fallback
     logging.warning(
         "Dependency 'wakewords' not found. Using dummy Model. Some functionality may be limited."
     )
 
-<<<<<<< HEAD
-
-# NOTE:
-# Keep a simple default Model implementation, but tests patch the root-level
-# symbol `model_manager.Model`. To respect that, we will not reference this
-# class directly when instantiating models; instead we dynamically import the
-# root shim and pull `Model` from there when available.
-class Model:
-    def __init__(self, path):
-        self.path = path
+    class Model:  # type: ignore[no-redef]
+        def __init__(self, path: str):
+            self.path = path
 
 
 def _get_patchable_model_class():
     """
     Return the Model class to instantiate.
-    Priority:
-      1) Root-level shim model_manager.Model (so tests can patch it), resolved from sys.modules first
-      2) Import module 'model_manager' via importlib and get Model
-      3) If running under pytest, fall back to MagicMock
-      4) Local fallback Model defined above
+    Priority order so tests can monkeypatch root-level 'model_manager.Model':
+      1) sys.modules['model_manager'].Model if present
+      2) importlib.import_module('model_manager').Model
+      3) If running under pytest, MagicMock
+      4) Local fallback Model defined in this module
     """
-    # 1) If tests have already imported the shim, it will be in sys.modules and may be patched
+    # 1) Already-imported shim module in sys.modules
     try:
         import sys as _sys
 
@@ -55,7 +47,7 @@ def _get_patchable_model_class():
     except Exception:
         pass
 
-    # 2) Attempt dynamic import as fallback
+    # 2) Dynamic import
     try:
         import importlib
 
@@ -66,7 +58,7 @@ def _get_patchable_model_class():
     except Exception:
         pass
 
-    # 3) If under pytest, default to MagicMock for test convenience
+    # 3) Under pytest: return MagicMock to simplify tests if requested
     try:
         import os as _os
 
@@ -77,68 +69,58 @@ def _get_patchable_model_class():
     except Exception:
         pass
 
-    # 4) Final fallback to the local dummy
+    # 4) Fallback to local class
     return Model
-=======
-    class Model:
-        def __init__(self, path):
-            self.path = path
->>>>>>> pr-6-head
 
 
 class ModelManager:
     def __init__(self, config: Any) -> None:
-        """
-        Initializes the ModelManager with configuration settings and an empty model cache.
-        """
-        logging.basicConfig(level=logging.INFO)  # Setup logging configuration
+        """Initialize with configuration and preload models."""
+        logging.basicConfig(level=logging.INFO)
         self.config: Any = config
-        self.models: dict[str, dict[str, Model]] = {'general': {}, 'system': {}, 'chat': {}}
+        self.models: dict[str, dict[str, Model]] = {"general": {}, "system": {}, "chat": {}}
         self.active_models: dict[str, Model] = {}
         self.reload_models()
 
-    def reload_models(self, state: str | None = None) -> dict[str, Model]:
+    def reload_models(self, state: str | None = None) -> dict[str, Model] | dict[str, dict[str, Model]]:
         """
-        Reloads all models from the specified directories, enabling dynamic updates to model configurations.
-        If state is provided, only loads models for that state.
+        Reload models from configured directories.
+        If state is provided, only that state's models are loaded.
+        Returns the loaded models mapping.
         """
         if state is None:
-            self.models['general'] = self.load_model_set(self.config.general_models_path)
-            self.models['system'] = self.load_model_set(self.config.system_models_path)
-            self.models['chat'] = self.load_model_set(self.config.chat_models_path)
-            self.active_models = self.models['general']
+            self.models["general"] = self.load_model_set(self.config.general_models_path)
+            self.models["system"] = self.load_model_set(self.config.system_models_path)
+            self.models["chat"] = self.load_model_set(self.config.chat_models_path)
+            self.active_models = self.models["general"]
             return self.models
-        elif state == 'idle':
-            self.models['general'] = self.load_model_set(self.config.general_models_path)
-            self.active_models = self.models['general']
-            return self.models['general']
-        elif state == 'computer':
-            self.models['system'] = self.load_model_set(self.config.system_models_path)
-            self.active_models = self.models['system']
-            return self.models['system']
-        elif state == 'chatty':
-            self.models['chat'] = self.load_model_set(self.config.chat_models_path)
-            self.active_models = self.models['chat']
-            return self.models['chat']
+        if state == "idle":
+            self.models["general"] = self.load_model_set(self.config.general_models_path)
+            self.active_models = self.models["general"]
+            return self.models["general"]
+        if state == "computer":
+            self.models["system"] = self.load_model_set(self.config.system_models_path)
+            self.active_models = self.models["system"]
+            return self.models["system"]
+        if state == "chatty":
+            self.models["chat"] = self.load_model_set(self.config.chat_models_path)
+            self.active_models = self.models["chat"]
+            return self.models["chat"]
         return {}
 
     def load_model_set(self, path: str) -> dict[str, Model]:
-<<<<<<< HEAD
         """
         Load all .onnx models from the given path.
 
         Test expectations:
           - If Model(...) raises, the model must NOT be added
-          - Tests monkeypatch model_manager.Model to MagicMock; ensure we call the symbol Model here
+          - Tests may monkeypatch model_manager.Model; ensure we call that symbol here
         """
-=======
->>>>>>> pr-6-head
         model_set: dict[str, Model] = {}
         if not os.path.exists(path):
             logging.error(f"Model directory {path} does not exist.")
             return model_set
 
-<<<<<<< HEAD
         try:
             entries = os.listdir(path)
         except Exception as e:
@@ -146,7 +128,7 @@ class ModelManager:
             return model_set
 
         for model_file in entries:
-            if not model_file.lower().endswith('.onnx'):
+            if not model_file.lower().endswith(".onnx"):
                 continue
 
             model_path = os.path.join(path, model_file)
@@ -157,109 +139,37 @@ class ModelManager:
                 continue
 
             try:
-                # Use patchable class so tests replacing model_manager.Model with MagicMock are respected
                 ModelClass = _get_patchable_model_class()
                 instance = ModelClass(model_path)  # type: ignore[call-arg]
-                model_set[model_name] = instance  # only add on success
-                logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
+                model_set[model_name] = instance
+                logging.info(
+                    f"Successfully loaded model '{model_name}' from '{model_path}'."
+                )
             except Exception as e:
                 logging.error(
                     f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models."
                 )
-                # do not add on failure
                 continue
 
-=======
-        for model_file in os.listdir(path):
-            if model_file.endswith('.onnx'):
-                model_path = os.path.join(path, model_file)
-                model_name = os.path.splitext(model_file)[0]
-                if not os.path.exists(model_path):
-                    logging.warning(f"Model file '{model_path}' does not exist. Skipping.")
-                    continue
-                try:
-                    model_instance = Model(model_path)
-                    model_set[model_name] = model_instance
-                    logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
-                except Exception as e:
-                    logging.error(
-                        f"Failed to load model '{model_name}' from '{model_path}'. Error details: {str(e)}. Continuing with other models."
-                    )
->>>>>>> pr-6-head
         return model_set
 
     async def async_listen_for_commands(self) -> str | None:
-        """
-        Asynchronous version for listening for voice commands.
-        """
-        await asyncio.sleep(1)  # Simulate processing time
+        """Asynchronously simulate listening for voice commands."""
+        await asyncio.sleep(1)
         if self.active_models and random.random() < 0.05:
             return random.choice(list(self.active_models.keys()))
         return None
 
     def listen_for_commands(self) -> str | None:
-        """
-        Synchronous wrapper for async_listen_for_commands.
-        """
+        """Synchronous wrapper for async_listen_for_commands."""
         return asyncio.run(self.async_listen_for_commands())
 
     def get_models(self, state: str) -> dict[str, Model]:
-        """
-        Retrieves models relevant to the current application state, allowing the system to adapt dynamically to state changes.
-        """
+        """Retrieve models for the given state."""
         return self.models.get(state, {})
 
     def __repr__(self) -> str:
-        """
-        Provides a representation of the ModelManager's state, useful for debugging and logging.
-        """
-        return f"<ModelManager(general={len(self.models['general'])}, system={len(self.models['system'])}, chat={len(self.models['chat'])})>"
-
-
-if __name__ == "__main__":
-    # Assuming a configuration instance 'config' is available
-    # This section would be used for testing or development purposes.
-    from config import Config
-
-    config = Config()
-    model_manager = ModelManager(config)
-    print(model_manager)
-
-
-def load_model(model_path):
-    import logging
-    import traceback
-    from datetime import datetime
-
-    import onnx
-
-    max_retries = 3
-    retries = 0
-
-    while True:
-        try:
-            model = onnx.load(model_path)
-            return model
-        except Exception as e:
-            retries += 1
-            diagnostics = {
-                "timestamp": datetime.utcnow().isoformat() + "Z",
-                "model_path": model_path,
-                "exception": traceback.format_exc(),
-                "retry": retries,
-            }
-            logging.error("Model loading failure: %s", diagnostics)
-            if retries > max_retries:
-                try:
-                    from utils.logger import report_error
-
-                    report_error(e)
-                except Exception as report_exc:
-                    logging.error("Error reporting failed: %s", report_exc)
-                raise Exception("Max retries exceeded") from e
-<<<<<<< HEAD
-========
-import warnings as _w; _w.warn("model_manager.py is deprecated; use chatty_commander.app.model_manager", DeprecationWarning); from chatty_commander.app.model_manager import *  # noqa
->>>>>>>> pr-6-head:model_manager.py
-=======
->>>>>>> pr-6-head
+        return (
+            f"<ModelManager(general={len(self.models['general'])}, "
+            f"system={len(self.models['system'])}, chat={len(self.models['chat'])})>"
+        )
