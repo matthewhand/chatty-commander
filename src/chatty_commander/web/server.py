@@ -128,15 +128,6 @@ def create_app(
     # Avatar routes
     from .routes.avatar_api import router as avatar_api_router
     from .routes.avatar_ws import router as avatar_ws_router
-    from .routes.version import router as version_router
-
-    # Metrics router (optional)
-    metrics_router = None
-    try:
-        if create_metrics_router is not None:  # type: ignore
-            metrics_router = create_metrics_router()
-    except Exception as e:  # noqa: BLE001
-        logger.debug("server.create_app: metrics router not created: %s", e)
 
     # Lifecycle hooks (no-op by default to preserve behavior)
     try:
@@ -180,7 +171,6 @@ def create_app(
 
     # Avatar/Agent settings + selector routes
     try:
-        from .routes.agents import router as agents_router
         from .routes.avatar_selector import router as avatar_selector_router
         from .routes.avatar_settings import include_avatar_settings_routes
 

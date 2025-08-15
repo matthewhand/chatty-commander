@@ -13,8 +13,7 @@ from collections.abc import Iterable
 from types import ModuleType
 
 # Map legacy module names to their modern implementation paths.
-ALIASES: dict[str, str] = {
-    "command_executor": "chatty_commander.app.command_executor",
+ALIASES: Dict[str, str] = {
     "config": "chatty_commander.app.config",
     "model_manager": "chatty_commander.app.model_manager",
     "web_mode": "chatty_commander.web.web_mode",

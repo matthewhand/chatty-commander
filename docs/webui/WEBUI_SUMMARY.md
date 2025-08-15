@@ -57,8 +57,8 @@ The ChattyCommander WebUI project aims to create a comprehensive web-based inter
 3. **[WEBUI_TEST_PLAN.md](./WEBUI_TEST_PLAN.md)**: Complete testing strategy and quality assurance plan
 4. **[WEBUI_DEMO_OUTPUTS.md](./WEBUI_DEMO_OUTPUTS.md)**: User interface mockups and demonstration scenarios
 5. **[WEBUI_ROADMAP.md](./WEBUI_ROADMAP.md)**: Week-by-week development timeline with milestones
-6. **[webui_openapi_spec.yaml](./webui_openapi_spec.yaml)**: Complete API specification
-7. **[TODO.md](./TODO.md)**: Updated project TODO list with WebUI integration
+6. **[webui_openapi_spec.yaml](../../webui_openapi_spec.yaml)**: Complete API specification
+7. **[TODO.md](../../TODO.md)**: Updated project TODO list with WebUI integration
 
 ### Technical Specifications
 

@@ -1,14 +1,13 @@
 # Migrating to package paths (src/chatty_commander/*)
 
-This release begins consolidating code under `src/chatty_commander`. Root-level modules remain as shims for backward compatibility but now emit `DeprecationWarning`.
+This release begins consolidating code under `src/chatty_commander`. Root-level modules remain as shims for backward compatibility but now emit `DeprecationWarning`. The `command_executor.py` shim has been removed; import from `chatty_commander.app.command_executor` instead.
 
 What changed
 - Console entry now points to the package CLI: `chatty_commander.cli.cli:cli_main`.
 - A new CLI module lives at `src/chatty_commander/cli/cli.py`.
 - Root `cli.py` forwards to the package and re-exports symbols used by tests (cli_main, ConfigCLI, run_app, CommandExecutor, HelpfulArgumentParser).
-- Root shims emit `DeprecationWarning`:
+- Remaining root shims emit `DeprecationWarning`:
   - config.py → chatty_commander.app.config
-  - command_executor.py → chatty_commander.app.command_executor
   - utils/logger.py → chatty_commander.utils.logger
 
 How to update imports

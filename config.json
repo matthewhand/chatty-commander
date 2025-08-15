@@ -114,7 +114,13 @@
     "start_on_boot": false,
     "check_for_updates": true
   },
-  "foo": {
-    "bar": 1
+  "logging": {
+    "level": "INFO",
+    "format": "plain",
+    "handlers": ["console", "file"],
+    "file": "logs/chattycommander.log",
+    "telemetry_url": "",
+    "external_url": "",
+    "diagnostics_file": "logs/diagnostics.jsonl"
   }
 }

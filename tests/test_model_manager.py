@@ -2,10 +2,8 @@ import asyncio
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from chatty_commander.app.model_manager import ModelManager
-
-from src.chatty_commander.config import Config
+from chatty_commander.app.config import Config
 
 
 class TestModelManager:
@@ -18,8 +16,6 @@ class TestModelManager:
     def test_reload_models(self):
         config = Config()
         mm = ModelManager(config)
-        #        with patch("model_manager.Model", return_value=MagicMock()):
-        #            models = asyncio.run(mm.reload_models("idle"))
         with patch('chatty_commander.app.model_manager.Model', return_value=MagicMock()):
             models = mm.reload_models('idle')
             assert isinstance(models, dict)
@@ -27,8 +23,6 @@ class TestModelManager:
     def test_reload_models_invalid_state(self):
         config = Config()
         mm = ModelManager(config)
-        #        with patch("model_manager.Model", return_value=MagicMock()):
-        #            models = asyncio.run(mm.reload_models("invalid"))
         with patch('chatty_commander.app.model_manager.Model', return_value=MagicMock()):
             models = mm.reload_models('invalid')
             assert models == {}

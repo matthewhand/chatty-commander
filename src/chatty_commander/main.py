@@ -18,21 +18,22 @@ _pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
 _root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
+<<<<<<< HEAD
+=======
 
-from chatty_commander.app.command_executor import (  # noqa: E402, type: ignore
-    CommandExecutor,
-)
-from chatty_commander.app.config import Config  # noqa: E402, type: ignore
-from chatty_commander.app.default_config import (  # noqa: E402, type: ignore
-    generate_default_config_if_needed,
-)
-from chatty_commander.app.model_manager import ModelManager  # noqa: E402, type: ignore
-from chatty_commander.app.orchestrator import (  # noqa: E402, type: ignore
+>>>>>>> update/pr-51
+from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+from chatty_commander.app.model_manager import ModelManager  # type: ignore
+from chatty_commander.app.orchestrator import (  # type: ignore
     ModeOrchestrator,
     OrchestratorFlags,
 )
-from chatty_commander.app.state_manager import StateManager  # noqa: E402, type: ignore
-from chatty_commander.utils.logger import setup_logger  # noqa: E402, type: ignore
+from chatty_commander.app.state_manager import StateManager  # type: ignore
+from chatty_commander.app.config import Config  # type: ignore
+from chatty_commander.app.default_config import (  # type: ignore
+    generate_default_config_if_needed,
+)
+from chatty_commander.utils.logger import setup_logger  # type: ignore
 
 
 def run_cli_mode(config, model_manager, state_manager, command_executor, logger):
@@ -490,30 +491,15 @@ def main():
         # Align with tests expecting SystemExit on main invocation path.
         raise SystemExit(0)
 
-    # Ensure logger is created with the expected name for tests
-    logger = setup_logger('main', 'logs/chattycommander.log')
+    # Load configuration settings first so logging can honor user preferences
+    config = Config()
+    logger = setup_logger('main', config=config)
     logger.info("Starting ChattyCommander application")
 
-    # Generate default configuration if needed
+    # Generate default configuration if needed and reload config to pick up defaults
     if generate_default_config_if_needed():
         logger.info("Default configuration generated")
-
-    # Load configuration settings
-    config = Config()
-    # Apply CLI overrides to web server settings
-    web_cfg = getattr(config, "web_server", {}) or {}
-    if args.host is not None:
-        web_cfg["host"] = args.host
-    if args.port is not None:
-        web_cfg["port"] = args.port
-    if args.no_auth:
-        web_cfg["auth_enabled"] = False
-    if web_cfg:
-        config.web_server = web_cfg
-        try:
-            config.config["web_server"] = web_cfg
-        except Exception:
-            pass
+        config = Config()
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:

@@ -29,16 +29,7 @@ dependencies = [
 ]
 
 [project.scripts]
-chatty-commander = "chatty_commander.cli.cli:cli_main"
-chatty = "chatty_commander.cli.cli:cli_main"
-
-[project.entry-points."chatty_commander.adapters"]
-text = "chatty_commander.app.orchestrator:TextInputAdapter"
-gui = "chatty_commander.app.orchestrator:GUIAdapter"
-web = "chatty_commander.app.orchestrator:WebServerAdapter"
-openwakeword = "chatty_commander.app.orchestrator:WakeWordAdapter"
-computer_vision = "chatty_commander.app.orchestrator:ComputerVisionAdapter"
-discord_bridge = "chatty_commander.app.orchestrator:DiscordBridgeAdapter"
+chatty-commander = "chatty_commander.cli.cli:main"
 
 [dependency-groups]
 dev = [
@@ -107,7 +98,6 @@ quote-style = "preserve"
 indent-style = "space"
 docstring-code-format = true
 skip-magic-trailing-comma = false
-
 [tool.pydocstyle]
 convention = "google"
 add-ignore = [
@@ -118,40 +108,16 @@ add-ignore = [
   "D104", # Missing docstring in public package
   "D105", # Missing docstring in magic method
   "D107", # Missing docstring in __init__
+  "D200", # One-line docstring should fit on one line
+  "D205", # 1 blank line required between summary line and description
+  "D212", # Multi-line docstring summary should start at the first line
+  "D403", # First word of the first line should be properly capitalized
+  "D415", # First line should end with punctuation
 ]
 
 [tool.doc8]
 max-line-length = 100
 ignore = ["D001"]
-
 [tool.setuptools]
 package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["chatty_commander*"]
-
-voice = [
-    "openwakeword>=0.4.0",
-    "pyaudio>=0.2.11",
-    "openai-whisper>=20231117",
-    "openai>=1.0.0",
-    "numpy>=1.24.0",
-    "pyttsx3>=2.90",
-]
-llm = [
-    "openai>=1.0.0",
-    "requests>=2.25.0",
-    "transformers>=4.20.0",
-    "torch>=1.12.0",
-]
-full = [
-    "openwakeword>=0.4.0",
-    "pyaudio>=0.2.11", 
-    "openai-whisper>=20231117",
-    "openai>=1.0.0",
-    "numpy>=1.24.0",
-    "requests>=2.25.0",
-    "transformers>=4.20.0",
-    "torch>=1.12.0",
-]
+packages = ["chatty_commander"]

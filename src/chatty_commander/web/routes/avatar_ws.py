@@ -5,7 +5,6 @@ This endpoint broadcasts agent thinking/responding states and supports minimal
 control messages from the avatar client.
 """
 
-import asyncio
 import json
 import logging
 from collections.abc import Callable
@@ -107,13 +106,10 @@ class AvatarWSConnectionManager:
             loop = asyncio.get_running_loop()
             loop.create_task(_broadcast())
         except RuntimeError:
-            # No running loop in this thread; run synchronously
-            try:
-                asyncio.run(_broadcast())
-            except RuntimeError:
-                # If already in an event loop in a different framework context, fall back to task creation
-                loop = asyncio.get_event_loop()
-                loop.create_task(_broadcast())
+            # Not in a thread capable context; best effort
+            import asyncio
+
+            asyncio.create_task(_broadcast())
 
 
 manager = AvatarWSConnectionManager()

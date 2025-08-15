@@ -2,7 +2,7 @@
 
 ## Summary
 - Fix packaging and console entry by introducing a package CLI and keeping a root shim.
-- Add DeprecationWarnings to legacy shims (config.py, command_executor.py, utils/logger.py).
+- Add DeprecationWarnings to legacy shims (config.py, utils/logger.py); remove command_executor.py shim.
 - Clean test/coverage config and improve CI quality (ruff/black + coverage, uv).
 
 ## Changes
@@ -11,7 +11,7 @@
   - Root `cli.py` is now a thin shim, re-exporting symbols used in tests and emitting a DeprecationWarning.
   - Console script: `chatty_commander.cli.cli:cli_main`.
 - Deprecations
-  - Root shims now warn: `config.py`, `command_executor.py`, `utils/logger.py`.
+  - Root shims now warn: `config.py`, `utils/logger.py`; `command_executor.py` shim removed.
 - Coverage config
   - Omit `config-*.py` to avoid warnings from stray temporary files.
 - CI & Tooling
