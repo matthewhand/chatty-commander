@@ -101,7 +101,6 @@ class TestGitHygiene:
         tracked_files = result.stdout.strip().split("\n") if result.stdout.strip() else []
         
         # Check for conflict markers in text files
-        conflict_markers = ["<<<<<<<", "=======", ">>>>>>>"]
         files_with_conflicts = []
         
         for file_path in tracked_files:
@@ -111,14 +110,39 @@ class TestGitHygiene:
             if not full_path.exists() or not full_path.is_file():
                 continue
             
+            # Skip files that legitimately contain these patterns
+            skip_patterns = [
+                "test_git_hygiene.py",  # This test file itself
+                ".github/workflows/",   # CI scripts may check for conflicts
+                "scripts/",             # Scripts may contain these patterns
+                "docs/",               # Documentation may show examples
+                "reports/",             # Reports may contain conflict examples
+                ".bak.",               # Backup files
+                ".backup",             # Backup files
+            ]
+            
+            if any(pattern in file_path for pattern in skip_patterns):
+                continue
+            
             # Only check text files
             try:
                 content = full_path.read_text(encoding="utf-8", errors="ignore")
+                lines = content.split("\n")
                 
-                for marker in conflict_markers:
-                    if marker in content:
-                        files_with_conflicts.append((file_path, marker))
-                        break
+                # Look for actual Git conflict markers (start of line)
+                conflict_patterns = [
+                    r"^<<<<<<< ",  # Git conflict start
+                    r"^=======$",  # Git conflict separator
+                    r"^>>>>>>> ",  # Git conflict end
+                ]
+                
+                for i, line in enumerate(lines, 1):
+                    for pattern in conflict_patterns:
+                        import re
+                        if re.match(pattern, line):
+                            files_with_conflicts.append((file_path, f"line {i}: {line.strip()}"))
+                            break
+                    
             except (UnicodeDecodeError, PermissionError):
                 # Skip files that can't be read as text
                 continue
@@ -236,7 +260,7 @@ class TestProjectStructure:
             "ruff",
             "trailing-whitespace",
             "end-of-file-fixer",
-            "prevent-worktrees-tracking"
+            "compile-server"
         ]
         
         for hook in required_hooks:

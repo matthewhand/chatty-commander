@@ -195,4 +195,8 @@ build/
 .eggs/
 *.egg-info/
 reports/
+
+# Git worktrees (experimental branches)
+.worktrees/
+
 # <<< hygiene-managed <<<
