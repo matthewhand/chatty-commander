@@ -148,16 +148,18 @@ def create_app(
         app.include_router(avatar_ws_router)
         app.include_router(avatar_api_router)
 try:
-    _r = globals().get('version_router')
-    if _r:
-        app.include_router(_r)
+    try:
+        app.include_router(version_router)
+    except NameError:
+        pass
 except NameError:
     pass
         if metrics_router is not None:
 try:
-    _r = globals().get('metrics_router')
-    if _r:
-        app.include_router(_r)
+    try:
+        app.include_router(metrics_router)
+    except NameError:
+        pass
 except NameError:
     pass
         # Provide persona->theme resolution to WS manager from config
@@ -190,9 +192,10 @@ except NameError:
         app.include_router(settings_router)
         app.include_router(avatar_selector_router)
 try:
-    _r = globals().get('agents_router')
-    if _r:
-        app.include_router(_r)
+    try:
+        app.include_router(agents_router)
+    except NameError:
+        pass
 except NameError:
     pass
         logger.debug("server.create_app: included avatar settings + selector + agents routes")
