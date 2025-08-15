@@ -57,6 +57,25 @@ def add_voice_subcommands(subparsers) -> None:
     transcribe_parser.add_argument(
         "--timeout", type=float, default=5.0, help="Recording timeout in seconds"
     )
+    
+    # Self-test commands
+    selftest_parser = voice_subparsers.add_parser(
+        "self-test",
+        help="Run voice system self-tests and improvements",
+        description="Use TTS→STT→LLM judge loop to test and improve voice recognition"
+    )
+    
+    selftest_subparsers = selftest_parser.add_subparsers(dest="test_command", help="Self-test commands")
+    
+    # Basic test
+    basic_parser = selftest_subparsers.add_parser("run", help="Run basic self-test")
+    basic_parser.add_argument("--openai-key", help="OpenAI API key for LLM judge")
+    basic_parser.add_argument("--phrases", nargs="+", help="Custom test phrases")
+    
+    # Improvement loop
+    improve_parser = selftest_subparsers.add_parser("improve", help="Run self-improvement loop")
+    improve_parser.add_argument("--iterations", type=int, default=3, help="Number of improvement iterations")
+    improve_parser.add_argument("--openai-key", help="OpenAI API key for LLM judge")
 
 
 def handle_voice_command(
@@ -74,6 +93,13 @@ def handle_voice_command(
         _handle_voice_status(args)
     elif args.voice_command == "transcribe":
         _handle_voice_transcribe(args)
+    elif args.voice_command == "self-test":
+        try:
+            from .self_test import handle_self_test_command
+
+            handle_self_test_command(args)
+        except ImportError:
+            print("❌ Self-test not available. Install with: pip install pyttsx3 openai")
     else:
         print(f"Unknown voice command: {args.voice_command}")
 

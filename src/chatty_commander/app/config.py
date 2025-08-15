@@ -273,7 +273,7 @@ class Config:
         """Load configuration from file or return empty dict if not found."""
         if os.path.exists(self.config_file):
             try:
-                with open(self.config_file, 'r', encoding='utf-8') as f:
+                with open(self.config_file, encoding='utf-8') as f:
                     data = json.load(f)
                 logger.info(f"Loaded configuration from {self.config_file}")
                 return data
@@ -293,7 +293,9 @@ class Config:
             if action_type == 'keypress':
                 actions[name] = {'keypress': cmd.get('keys', '')}
             elif action_type == 'url':
-                url = cmd.get('url', '').replace('{home_assistant}', 'http://homeassistant.domain.home:8123/api')
+                url = cmd.get('url', '').replace(
+                    '{home_assistant}', 'http://homeassistant.domain.home:8123/api'
+                )
                 actions[name] = {'url': url}
             elif action_type == 'custom_message':
                 actions[name] = {'message': cmd.get('message', '')}
@@ -335,6 +337,7 @@ class Config:
     def _enable_start_on_boot(self):
         """Enable start on boot (placeholder)."""
         import subprocess
+
         try:
             # This is a placeholder; actual implementation depends on OS
             subprocess.run(["systemctl", "--user", "enable", "chatty-commander"], check=True)
@@ -346,6 +349,7 @@ class Config:
     def _disable_start_on_boot(self):
         """Disable start on boot (placeholder)."""
         import subprocess
+
         try:
             subprocess.run(["systemctl", "--user", "disable", "chatty-commander"], check=True)
         except subprocess.CalledProcessError:

@@ -76,11 +76,23 @@ line-length = 100
 target-version = ["py311"]
 include = "\\.pyi?$"
 skip-string-normalization = true
+exclude = '(\.venv|venv|build|dist|\.pytest_cache|htmlcov|node_modules|webui/frontend|\.worktrees|archive)'
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-extend-exclude = ["webui/frontend", "node_modules", ".venv", "venv", "build", "dist", ".pytest_cache", "htmlcov"]
+extend-exclude = [
+  "webui/frontend",
+  "node_modules",
+  ".venv",
+  "venv",
+  "build",
+  "dist",
+  ".pytest_cache",
+  "htmlcov",
+  ".worktrees",
+  "archive",
+]
 src = ["."]
 fix = true
 

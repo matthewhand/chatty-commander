@@ -15,9 +15,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 import websockets
-from config import Config
 from fastapi.testclient import TestClient
 from web_mode import WebModeServer
+
+from config import Config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -64,9 +65,10 @@ def test_run_uses_config_when_no_overrides():
     command_executor = MagicMock()
     server = WebModeServer(cfg, state_manager, model_manager, command_executor)
 
-    with patch.dict(os.environ, {}, clear=True), patch(
-        "chatty_commander.web.web_mode.uvicorn.run"
-    ) as mock_run:
+    with (
+        patch.dict(os.environ, {}, clear=True),
+        patch("chatty_commander.web.web_mode.uvicorn.run") as mock_run,
+    ):
         server.run()
         mock_run.assert_called_once()
         _args, kwargs = mock_run.call_args

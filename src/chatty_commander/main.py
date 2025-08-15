@@ -108,9 +108,7 @@ def run_web_mode(
         )
         sys.exit(1)
 
-    logger.info(
-        f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
-    )
+    logger.info(f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}")
 
     # Create web server instance
     web_server = create_web_server(
@@ -565,9 +563,13 @@ def main():
             logger,
             host=host,
             no_auth=args.no_auth,
-            port=args.port if args.port is not None else getattr(
-                getattr(config, "web_server", {}), "get", lambda *_: None
-            )("port", 8100),
+            port=(
+                args.port
+                if args.port is not None
+                else getattr(getattr(config, "web_server", {}), "get", lambda *_: None)(
+                    "port", 8100
+                )
+            ),
         )
         return 0
     elif args.gui:

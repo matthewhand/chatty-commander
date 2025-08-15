@@ -10,7 +10,7 @@ Provides:
 
 from .pipeline import VoicePipeline
 from .transcription import VoiceTranscriber
-from .wakeword import WakeWordDetector
 from .tts import TextToSpeech
+from .wakeword import WakeWordDetector
 
 __all__ = ["WakeWordDetector", "VoiceTranscriber", "VoicePipeline", "TextToSpeech"]

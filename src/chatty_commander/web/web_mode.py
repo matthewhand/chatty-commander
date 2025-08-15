@@ -1,61 +1,46 @@
-<<<<<<< HEAD
-<<<<<<<< HEAD:src/chatty_commander/web/web_mode.py
-#!/usr/bin/env python3
-"""web_mode.py.
-=======
 #!/usr/bin/env python3
 """
-web_mode.py
->>>>>>> pr-6-head
+Web mode server and models.
 
-FastAPI web server implementation for ChattyCommander.
-Provides REST API endpoints and WebSocket support for web interface.
+Provides a FastAPI application that exposes core REST endpoints, optional
+advisors endpoints, and a WebSocket for realtime updates. This module keeps a
+stable surface used by tests:
+- Pydantic models: SystemStatus, StateChangeRequest, CommandRequest,
+  CommandResponse, StateInfo, WebSocketMessage
+- WebModeServer class with .app and broadcast helpers
+- create_app(no_auth: bool) convenience to spin up a minimal app
 """
+
+from __future__ import annotations
 
 import asyncio
-import json
 import logging
-<<<<<<< HEAD
-import os
-=======
->>>>>>> pr-6-head
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-<<<<<<< HEAD
+# Advisors (optional feature set used by tests)
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
-=======
->>>>>>> pr-6-head
 from chatty_commander.app.command_executor import CommandExecutor
-
-# Import our core modules from src package
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-<<<<<<< HEAD
 from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.routes.version import router as version_router
-=======
->>>>>>> pr-6-head
+from chatty_commander.web.routes.ws import include_ws_routes
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# Pydantic models for request/response validation
 class SystemStatus(BaseModel):
-    """System status response model."""
-
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of loaded models")
@@ -64,31 +49,21 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
-    """State change request model."""
-
     state: str = Field(..., description="Target state", pattern="^(idle|computer|chatty)$")
 
 
 class CommandRequest(BaseModel):
-    """Command execution request model."""
-
     command: str = Field(..., description="Command name to execute")
-    parameters: dict[str, Any] | None = Field(
-        default=None, description="Optional command parameters"
-    )
+    parameters: dict[str, Any] | None = Field(default=None, description="Optional parameters")
 
 
 class CommandResponse(BaseModel):
-    """Command execution response model."""
-
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
     execution_time: float = Field(..., description="Execution time in milliseconds")
 
 
 class StateInfo(BaseModel):
-    """State information response model."""
-
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
     last_command: str | None = Field(default=None, description="Last detected command")
@@ -96,8 +71,6 @@ class StateInfo(BaseModel):
 
 
 class WebSocketMessage(BaseModel):
-    """WebSocket message model."""
-
     type: str = Field(..., description="Message type")
     data: dict[str, Any] = Field(..., description="Message data")
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
@@ -118,27 +91,30 @@ class WebModeServer:
         self.state_manager = state_manager
         self.model_manager = model_manager
         self.command_executor = command_executor
-        self.no_auth = no_auth
+        self.no_auth = bool(no_auth)
         self.start_time = time.time()
         self.last_command: str | None = None
         self.last_state_change = datetime.now()
-<<<<<<< HEAD
-        # Advisors service (optional)
-        self.advisors_service = AdvisorsService(config=config_manager)
-=======
->>>>>>> pr-6-head
+
+        # Optional advisors service (enabled via config)
+        try:
+            self.advisors_service = AdvisorsService(config=config_manager)
+        except Exception as e:  # noqa: BLE001
+            logger.debug("AdvisorsService init failed; continuing without advisors: %s", e)
+            self.advisors_service = None  # type: ignore[assignment]
 
         # WebSocket connection management
         self.active_connections: set[WebSocket] = set()
 
-        # Initialize FastAPI app
+        # Initialize FastAPI app and register routes
         self.app = self._create_app()
-
-        # Setup state change callback
+        # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+    # --------------------------
+    # App and routing
+    # --------------------------
     def _create_app(self) -> FastAPI:
-        """Create and configure FastAPI application."""
         app = FastAPI(
             title="ChattyCommander API",
             description="Voice command automation system with web interface",
@@ -147,7 +123,7 @@ class WebModeServer:
             redoc_url="/redoc" if self.no_auth else None,
         )
 
-        # Add CORS middleware
+        # CORS policy
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"] if self.no_auth else ["http://localhost:3000"],
@@ -156,16 +132,48 @@ class WebModeServer:
             allow_headers=["*"],
         )
 
-        # Register routes
-        self._register_routes(app)
+        # Core REST via extracted router (status/config/state/command)
+        core = include_core_routes(
+            get_start_time=lambda: self.start_time,
+            get_state_manager=lambda: self.state_manager,
+            get_config_manager=lambda: self.config_manager,
+            get_last_command=lambda: self.last_command,
+            get_last_state_change=lambda: self.last_state_change,
+            execute_command_fn=lambda cmd: self.command_executor.execute_command(cmd),
+        )
+        app.include_router(core)
 
-        # Serve static files if frontend exists
+        # Version endpoint
+        app.include_router(version_router)
+
+        # WebSocket endpoint using extracted router
+        ws = include_ws_routes(
+            get_connections=lambda: self.active_connections,
+            set_connections=lambda conns: setattr(self, "active_connections", conns),
+            get_state_snapshot=lambda: {
+                "current_state": self.state_manager.current_state,
+                "active_models": (
+                    self.state_manager.get_active_models()
+                    if hasattr(self.state_manager, "get_active_models")
+                    else []
+                ),
+                "timestamp": self.last_state_change.isoformat(),
+            },
+            on_message=None,
+            heartbeat_seconds=30.0,
+        )
+        app.include_router(ws)
+
+        # Advisors endpoints (if service available)
+        self._register_advisors_routes(app)
+
+        # Serve static web UI (optional)
         frontend_path = Path("webui/frontend/dist")
         if frontend_path.exists():
             app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
 
             @app.get("/", response_class=HTMLResponse)
-            async def serve_frontend():
+            async def _serve_frontend():  # pragma: no cover - exercised in integration
                 index_file = frontend_path / "index.html"
                 if index_file.exists():
                     return FileResponse(str(index_file))
@@ -173,15 +181,14 @@ class WebModeServer:
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
 
-<<<<<<< HEAD
-        # Serve avatar UI (TalkingHead placeholder) if available
+        # Optional avatar UI
         avatar_path = Path("src/chatty_commander/webui/avatar")
         if avatar_path.exists():
             try:
                 app.mount("/avatar-ui", StaticFiles(directory=str(avatar_path)), name="avatar")
 
                 @app.get("/avatar", response_class=HTMLResponse)
-                async def serve_avatar_ui():
+                async def _serve_avatar_ui():  # pragma: no cover - exercised in integration
                     index_file = avatar_path / "index.html"
                     if index_file.exists():
                         return FileResponse(str(index_file))
@@ -190,181 +197,14 @@ class WebModeServer:
                     )
 
             except Exception as e:  # noqa: BLE001
-                logger.warning(f"Failed to mount avatar UI static files: {e}")
+                logger.warning("Failed to mount avatar UI static files: %s", e)
 
-=======
->>>>>>> pr-6-head
         return app
 
-    def _register_routes(self, app: FastAPI) -> None:
-        """Register API routes."""
+    def _register_advisors_routes(self, app: FastAPI) -> None:
+        """Register advisors REST endpoints backed by AdvisorsService."""
 
-        @app.get("/api/v1/status", response_model=SystemStatus)
-        async def get_status():
-            """Get system status."""
-            uptime_seconds = time.time() - self.start_time
-            uptime_str = self._format_uptime(uptime_seconds)
-
-            return SystemStatus(
-                status="running",
-                current_state=self.state_manager.current_state,
-                active_models=self.state_manager.get_active_models(),
-                uptime=uptime_str,
-            )
-
-        @app.get("/api/v1/config")
-        async def get_config():
-            """Get current configuration."""
-            # Access config dict attribute for compatibility with tests/mocks
-            return getattr(self.config_manager, "config", {})
-
-        @app.put("/api/v1/config")
-        async def update_config(config_data: dict[str, Any]):
-            """Update configuration."""
-            try:
-                # Validate and update configuration; tolerate mocks that may not expose methods
-                cfg = getattr(self.config_manager, "config", {})
-                if isinstance(cfg, dict):
-                    cfg.update(config_data)
-                # Save if available (real implementation)
-                save = getattr(self.config_manager, "save_config", None)
-                if callable(save):
-                    try:
-                        save()
-                    except TypeError:
-                        # Some implementations may require passing the cfg
-                        save(cfg)  # type: ignore[arg-type]
-                return {"message": "Configuration updated successfully"}
-
-                # Broadcast configuration change
-                await self._broadcast_message(
-                    WebSocketMessage(
-                        type="config_updated",
-                        data={"message": "Configuration updated successfully"},
-                    )
-                )
-
-                return {"message": "Configuration updated successfully"}
-            except Exception as e:
-                logger.error(f"Failed to update configuration: {e}")
-<<<<<<< HEAD
-                raise HTTPException(status_code=500, detail=str(e)) from e
-=======
-                raise HTTPException(
-                    status_code=500, detail=str(e)
-                )  # noqa: B904 - preserving current exception behavior
->>>>>>> pr-6-head
-
-        @app.get("/api/v1/state", response_model=StateInfo)
-        async def get_state():
-            """Get current state information."""
-            return StateInfo(
-                current_state=self.state_manager.current_state,
-                active_models=self.state_manager.get_active_models(),
-                last_command=self.last_command,
-                timestamp=self.last_state_change.isoformat(),
-            )
-
-        @app.post("/api/v1/state")
-        async def change_state(request: StateChangeRequest):
-            """Change system state."""
-            try:
-                old_state = self.state_manager.current_state
-                self.state_manager.change_state(request.state)
-                self.last_state_change = datetime.now()
-
-                # Broadcast state change
-                await self._broadcast_message(
-                    WebSocketMessage(
-                        type="state_change",
-                        data={
-                            "old_state": old_state,
-                            "new_state": request.state,
-                            "timestamp": self.last_state_change.isoformat(),
-                        },
-                    )
-                )
-
-                return {"message": f"State changed to {request.state}"}
-            except Exception as e:
-                logger.error(f"Failed to change state: {e}")
-<<<<<<< HEAD
-                raise HTTPException(status_code=400, detail=str(e)) from e
-=======
-                raise HTTPException(
-                    status_code=400, detail=str(e)
-                )  # noqa: B904 - preserve current error handling
->>>>>>> pr-6-head
-
-        @app.post("/api/v1/command", response_model=CommandResponse)
-        async def execute_command(request: CommandRequest):
-            """Execute a command programmatically."""
-            start_time = time.time()
-
-            try:
-                # Check if command exists in configuration
-                config_dict = getattr(self.config_manager, "config", {})
-<<<<<<< HEAD
-                model_actions = (
-                    config_dict.get('model_actions', {}) if isinstance(config_dict, dict) else {}
-                )
-=======
-                model_actions = config_dict.get('model_actions', {}) if isinstance(config_dict, dict) else {}
->>>>>>> pr-6-head
-                if request.command not in model_actions:
-                    raise HTTPException(
-                        status_code=404, detail=f"Command '{request.command}' not found"
-                    )
-
-                # Execute the command
-                action = model_actions[request.command]
-                success = False
-
-                if 'keypress' in action:
-                    # Delegate to CommandExecutor.execute_command to keep a single integration surface
-                    success = bool(self.command_executor.execute_command(request.command))
-                elif 'url' in action:
-                    success = bool(self.command_executor.execute_command(request.command))
-
-                execution_time = (time.time() - start_time) * 1000  # Convert to milliseconds
-                self.last_command = request.command
-
-                # Broadcast command execution
-                await self._broadcast_message(
-                    WebSocketMessage(
-                        type="command_executed",
-                        data={
-                            "command": request.command,
-                            "success": success,
-                            "execution_time": execution_time,
-                            "parameters": request.parameters,
-                        },
-                    )
-                )
-
-                return CommandResponse(
-                    success=bool(success),
-                    message=(
-                        "Command executed successfully" if success else "Command execution failed"
-                    ),
-                    execution_time=execution_time,
-                )
-<<<<<<< HEAD
-=======
-
->>>>>>> pr-6-head
-            except HTTPException:
-                raise
-            except Exception as e:
-                execution_time = (time.time() - start_time) * 1000
-                logger.error(f"Command execution failed: {e}")
-                return CommandResponse(
-                    success=False,
-                    message=f"Command execution failed: {str(e)}",
-                    execution_time=execution_time,
-                )
-
-<<<<<<< HEAD
+        # Types for request/response
         class AdvisorInbound(BaseModel):
             platform: str
             channel: str
@@ -389,7 +229,8 @@ class WebModeServer:
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(message: AdvisorInbound):
-            """Process a message through the advisor service."""
+            if not self.advisors_service:
+                raise HTTPException(status_code=500, detail="Advisors unavailable")
             try:
                 reply = self.advisors_service.handle_message(
                     AdvisorMessage(
@@ -408,510 +249,137 @@ class WebModeServer:
                     model=reply.model,
                     api_mode=reply.api_mode,
                 )
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        @app.post("/api/v1/advisors/context/switch")
-        async def switch_persona(context_key: str, persona_id: str):
-            """Switch persona for a specific context."""
-            try:
-                success = self.advisors_service.switch_persona(context_key, persona_id)
-                if not success:
-                    raise HTTPException(status_code=400, detail="Invalid persona or context")
-                return {"success": True, "context_key": context_key, "persona_id": persona_id}
             except HTTPException:
                 raise
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
-        @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
-        async def get_context_stats():
-            """Get statistics about current contexts."""
-            try:
-                stats = self.advisors_service.get_context_stats()
-                return ContextStats(**stats)
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        @app.get("/api/v1/advisors/personas")
-        async def get_personas():
-            """Get available personas."""
-            try:
-                # Access personas from the advisors config
-                advisors_config = getattr(self.config_manager, "advisors", {})
-                context_config = advisors_config.get("context", {})
-                personas = context_config.get("personas", {})
-                default_persona = context_config.get("default_persona", "general")
-
-                # Format personas for the UI
-                personas_list = []
-                for persona_id, persona_config in personas.items():
-                    personas_list.append({
-                        "id": persona_id,
-                        "name": persona_id.replace("_", " ").title(),
-                        "system_prompt": persona_config.get("system_prompt", ""),
-                        "is_default": persona_id == default_persona
-                    })
-
-                return {
-                    "personas": personas_list,
-                    "default_persona": default_persona,
-                    "total_count": len(personas_list)
-                }
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        @app.delete("/api/v1/advisors/context/{context_key}")
-        async def clear_context(context_key: str):
-            """Clear a specific context."""
-            try:
-                success = self.advisors_service.clear_context(context_key)
-                if not success:
-                    raise HTTPException(status_code=404, detail="Context not found")
-                return {"success": True, "context_key": context_key}
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        class AdvisorMemoryItem(BaseModel):
-            role: str
-            content: str
-            timestamp: str
-
-        @app.get("/api/v1/advisors/memory", response_model=list[AdvisorMemoryItem])
+        @app.get("/api/v1/advisors/memory")
         async def advisors_memory(platform: str, channel: str, user: str, limit: int = 20):
-            if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
-                raise HTTPException(status_code=400, detail="Advisors feature disabled")
-            items = self.advisors_service.memory.get(platform, channel, user, limit)
-            return [
-                AdvisorMemoryItem(role=i.role, content=i.content, timestamp=i.timestamp)
-                for i in items
-            ]
+            svc = self.advisors_service
+            if not svc or not getattr(svc, "enabled", False):
+                raise HTTPException(status_code=400, detail="Advisors not enabled")
+            items = svc.memory.get(platform, channel, user, limit=limit)
+            # Convert dataclasses to serializable dicts
+            return [{"role": i.role, "content": i.content, "timestamp": i.timestamp} for i in items]
 
         @app.delete("/api/v1/advisors/memory")
         async def advisors_memory_clear(platform: str, channel: str, user: str):
-            if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
-                raise HTTPException(status_code=400, detail="Advisors feature disabled")
-            count = self.advisors_service.memory.clear(platform, channel, user)
-            return {"cleared": count}
+            svc = self.advisors_service
+            if not svc or not getattr(svc, "enabled", False):
+                raise HTTPException(status_code=400, detail="Advisors not enabled")
+            count = svc.memory.clear(platform, channel, user)
+            return {"cleared": int(count)}
 
-        from fastapi import Request
+        @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
+        async def advisors_context_stats():
+            svc = self.advisors_service
+            if not svc or not getattr(svc, "enabled", False):
+                raise HTTPException(status_code=400, detail="Advisors not enabled")
+            stats = svc.get_context_stats()
+            return ContextStats(**stats)
 
-        @app.post("/bridge/event")
-        async def bridge_event(event: dict[str, Any], request: Request):
-            # Auth: shared secret header must match config token
-            token_expected = (
-                getattr(self.config_manager, "advisors", {}).get("bridge", {}).get("token", "")
-            )
-            token_header = request.headers.get("X-Bridge-Token", "")
-            if not token_expected or token_header != token_expected:
-                raise HTTPException(status_code=401, detail="Unauthorized bridge request")
-
-            # Minimal contract: platform, channel, user, text
-            try:
-                msg = AdvisorMessage(
-                    platform=event.get("platform", "unknown"),
-                    channel=event.get("channel", ""),
-                    user=event.get("user", ""),
-                    text=event.get("text", ""),
-                    username=event.get("username"),
-                    metadata=event.get("meta"),
-                )
-                reply = self.advisors_service.handle_message(msg)
-                return {"ok": True, "reply": {"text": reply.reply, "meta": {}}}
-            except Exception as e:
-                logger.error(f"Bridge event processing failed: {e}")
-                raise HTTPException(status_code=400, detail=str(e)) from e
-
-        @app.websocket("/ws")
-        async def websocket_endpoint(websocket: WebSocket):
-            """Websocket endpoint for real-time updates."""
-=======
-        @app.websocket("/ws")
-        async def websocket_endpoint(websocket: WebSocket):
-            """WebSocket endpoint for real-time updates."""
->>>>>>> pr-6-head
-            await websocket.accept()
-            self.active_connections.add(websocket)
-
-            try:
-                # Send initial status
-                await websocket.send_text(
-                    json.dumps(
-                        {
-                            "type": "connection_established",
-                            "data": {
-                                "current_state": self.state_manager.current_state,
-                                "active_models": self.state_manager.get_active_models(),
-                                "timestamp": datetime.now().isoformat(),
-                            },
-                        }
-                    )
-                )
-
-                # Keep connection alive and handle incoming messages
-                while True:
-                    try:
-                        # Wait for messages (with timeout to allow periodic checks)
-                        data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
-                        message = json.loads(data)
-
-                        # Handle client messages if needed
-                        if message.get('type') == 'ping':
-                            await websocket.send_text(
-                                json.dumps(
-                                    {
-                                        "type": "pong",
-                                        "data": {"timestamp": datetime.now().isoformat()},
-                                    }
-                                )
-                            )
-
-                    except TimeoutError:
-                        # Send periodic heartbeat
-                        await websocket.send_text(
-                            json.dumps(
-                                {
-                                    "type": "heartbeat",
-                                    "data": {"timestamp": datetime.now().isoformat()},
-                                }
-                            )
-                        )
-
-            except WebSocketDisconnect:
-                logger.info("WebSocket client disconnected")
-            except Exception as e:
-                logger.error(f"WebSocket error: {e}")
-            finally:
-                self.active_connections.discard(websocket)
-
-        @app.get("/api/v1/health")
-        async def health_check():
-            """Simple health check endpoint."""
-            return {
-                "status": "healthy",
-                "timestamp": datetime.now().isoformat(),
-                "uptime": self._format_uptime(time.time() - self.start_time),
-            }
-
+    # --------------------------
+    # Broadcast helpers and callbacks
+    # --------------------------
     def _format_uptime(self, seconds: float) -> str:
-        """Format uptime in human-readable format."""
         days, remainder = divmod(int(seconds), 86400)
         hours, remainder = divmod(remainder, 3600)
-        minutes, seconds = divmod(remainder, 60)
-
+        minutes, seconds_i = divmod(remainder, 60)
         if days > 0:
-            return f"{days}d {hours}h {minutes}m {seconds}s"
-        else:
-            return f"{hours}h {minutes}m {seconds}s"
+            return f"{days}d {hours}h {minutes}m {seconds_i}s"
+        return f"{hours}h {minutes}m {seconds_i}s"
 
     async def _broadcast_message(self, message: WebSocketMessage) -> None:
-        """Broadcast message to all connected WebSocket clients."""
-        if not self.active_connections:
-            return
-
-        message_json = message.model_dump()
-        message_text = json.dumps(message_json)
-
-        # Send to all connected clients
-        disconnected = set()
-        for connection in self.active_connections:
+        """Broadcast a message to all active WebSocket connections."""
+        payload = message.model_dump_json()
+        for ws in list(self.active_connections):
             try:
-                await connection.send_text(message_text)
-            except Exception as e:
-                logger.warning(f"Failed to send message to WebSocket client: {e}")
-                disconnected.add(connection)
-
-        # Remove disconnected clients
-        self.active_connections -= disconnected
+                await ws.send_text(payload)
+            except Exception as e:  # noqa: BLE001
+                logger.debug("broadcast failed to a client: %s", e)
+                try:
+                    self.active_connections.discard(ws)
+                except Exception:
+                    pass
 
     def _on_state_change(self, old_state: str, new_state: str) -> None:
-        """Callback for state changes."""
         self.last_state_change = datetime.now()
-
-        # Schedule broadcast (since this might be called from a different thread)
         try:
             loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(
-                    self._broadcast_message(
-                        WebSocketMessage(
-                            type="state_change",
-                            data={
-                                "old_state": old_state,
-                                "new_state": new_state,
-                                "timestamp": self.last_state_change.isoformat(),
-                            },
-                        )
-                    )
-                )
         except RuntimeError:
-            # No event loop running, skip broadcast
-            pass
-
-    def on_command_detected(self, command: str, confidence: float = 1.0) -> None:
-        """Handle command detection events."""
-        self.last_command = command
-
-        # Schedule broadcast
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(
-                    self._broadcast_message(
-                        WebSocketMessage(
-                            type="command_detected",
-                            data={
-                                "command": command,
-                                "confidence": confidence,
-                                "timestamp": datetime.now().isoformat(),
-                            },
-                        )
-                    )
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.create_task(
+            self._broadcast_message(
+                WebSocketMessage(
+                    type="state_change",
+                    data={
+                        "old_state": old_state,
+                        "new_state": new_state,
+                        "timestamp": self.last_state_change.isoformat(),
+                    },
                 )
-        except RuntimeError:
-            # No event loop running, skip broadcast
-            pass
-
-    def on_system_event(self, event: str, details: str) -> None:
-        """Handle system events."""
-        # Schedule broadcast
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(
-                    self._broadcast_message(
-                        WebSocketMessage(
-                            type="system_event",
-                            data={
-                                "event": event,
-                                "details": details,
-                                "timestamp": datetime.now().isoformat(),
-                            },
-                        )
-                    )
-                )
-        except RuntimeError:
-            # No event loop running, skip broadcast
-            pass
-
-<<<<<<< HEAD
-    def run(
-        self,
-        host: str | None = None,
-        port: int | None = None,
-        log_level: str = "info",
-    ) -> None:
-        """Run the web server, honoring environment and config defaults."""
-#     def run(self, host: str | None = None, port: int | None = None, log_level: str = "info") -> None:
-        """Run the web server, honoring config and environment overrides."""
-        env_host = os.getenv("CHATCOMM_HOST")
-        env_port = os.getenv("CHATCOMM_PORT")
-        env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
-
-        # Prefer configuration defaults when explicit host/port not provided
-        if host is None and getattr(self.config_manager, "web_server", None):
-            host = self.config_manager.web_server.get("host", "0.0.0.0")
-        if port is None and getattr(self.config_manager, "web_server", None):
-            port = self.config_manager.web_server.get("port", 8100)
-
-        if env_host:
-            host = env_host
-        if env_port:
-            try:
-                port = int(env_port)
-            except ValueError:
-                logger.warning("Invalid CHATCOMM_PORT '%s'; falling back to %s", env_port, port)
-        if env_log_level:
-            log_level = env_log_level
-
-        logger.info(
-            "🚀 Starting ChattyCommander web server on %s:%s (auth %s)",
-            host,
-            port,
-            "disabled" if self.no_auth else "enabled",
+            )
         )
-#         if host is None:
-#             host = "0.0.0.0"
-#         if port is None:
-#             port = 8100
 
-        logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
-        logger.info(f"📖 API documentation: http://{host}:{port}/docs")
-=======
-    def run(self, host: str = "0.0.0.0", port: int = 8100, log_level: str = "info") -> None:
-        """Run the web server."""
-        logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
-        logger.info(f"📖 API documentation: http://{host}:{port}/docs")
-        logger.info(f"🔧 Authentication: {'Disabled' if self.no_auth else 'Enabled'}")
->>>>>>> pr-6-head
+    # Optional convenience callbacks (exposed for tests)
+    def on_command_detected(self, command: str, confidence: float) -> None:
+        self.last_command = command
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.create_task(
+            self._broadcast_message(
+                WebSocketMessage(
+                    type="command_detected",
+                    data={"command": command, "confidence": confidence},
+                )
+            )
+        )
 
-        uvicorn.run(self.app, host=host, port=port, log_level=log_level, access_log=True)
+    def on_system_event(self, event_type: str, details: str | dict[str, Any]) -> None:
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.create_task(
+            self._broadcast_message(WebSocketMessage(type=event_type, data={"message": details}))
+        )
 
 
-def create_web_server(
-    config_manager: Config,
-    state_manager: StateManager,
-    model_manager: ModelManager,
-    command_executor: CommandExecutor,
+def create_app(
+    *,
+    config_manager: Config | None = None,
+    state_manager: StateManager | None = None,
+    model_manager: ModelManager | None = None,
+    command_executor: CommandExecutor | None = None,
     no_auth: bool = False,
-) -> WebModeServer:
-    """Factory function to create web server instance."""
-    return WebModeServer(
-        config_manager=config_manager,
-        state_manager=state_manager,
-        model_manager=model_manager,
-        command_executor=command_executor,
-        no_auth=no_auth,
-    )
+) -> FastAPI:
+    """Convenience function to create a minimal FastAPI app for tests."""
+    # Defer to the newer server.create_app to keep assembly consistent
+    try:
+        from .server import create_app as _create
 
-
-if __name__ == "__main__":
-    # This allows running the web server standalone for testing
-    from chatty_commander.app.command_executor import CommandExecutor
-    from chatty_commander.app.config import Config
-    from chatty_commander.app.model_manager import ModelManager
-    from chatty_commander.app.state_manager import StateManager
-
-    # Initialize components using current constructor signatures
-    config_manager = Config()
-    state_manager = StateManager()
-    model_manager = ModelManager(config_manager)
-    command_executor = CommandExecutor(config_manager, model_manager, state_manager)
-
-    # Create and run server
-    server = create_web_server(
-        config_manager=config_manager,
-        state_manager=state_manager,
-        model_manager=model_manager,
-        command_executor=command_executor,
-        no_auth=True,
-    )
-
-<<<<<<< HEAD
-    env_host = os.getenv("CHATCOMM_HOST", "0.0.0.0")
-    env_port = int(os.getenv("CHATCOMM_PORT", "8100"))
-    env_log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
-
-    server.run(host=env_host, port=env_port, log_level=env_log_level)
-
-
-# Minimal, stateless FastAPI app factory for tests
-
-
-def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
-    """Create a minimal FastAPI app used in unit tests.
-
-    Parameters
-    ----------
-    no_auth:
-        When ``True`` the server behaves in development/no-auth mode and CORS
-        is fully permissive. When ``False`` the app applies the same CORS
-        restrictions as production.
-    config:
-        Optional :class:`~chatty_commander.app.config.Config` instance.  If
-        supplied and ``no_auth`` is ``False`` the ``web.allowed_origins`` value
-        from the config is used for CORS.  When not provided, the comma-separated
-        ``CHATCOMM_ALLOWED_ORIGINS`` environment variable is consulted.  This
-        mirrors the behaviour of the production server and allows tests to
-        supply custom origins without modifying global state.
-    """
-
-    if no_auth:
-        allowed_origins = ["*"]
-    else:
-        origins: list[str] | None = None
-        # Prefer config-provided origins when available
-        if config is not None:
-            web_cfg = getattr(config, "config", {}).get("web", {})  # type: ignore[arg-type]
-            cfg_origins = web_cfg.get("allowed_origins") if isinstance(web_cfg, dict) else None
-            if isinstance(cfg_origins, str):
-                origins = [cfg_origins]
-            elif isinstance(cfg_origins, list | tuple):
-                origins = [str(o) for o in cfg_origins]
-        # Fall back to environment variable
-        if origins is None:
-            env_origins = os.environ.get("CHATCOMM_ALLOWED_ORIGINS")
-            if env_origins:
-                origins = [o.strip() for o in env_origins.split(",") if o.strip()]
-        if not origins:
-            origins = ["http://localhost:3000"]
-        allowed_origins = origins
-
-    app = FastAPI(
-        title="ChattyCommander API",
-        version="0.2.0",
-        docs_url="/docs" if no_auth else None,
-        redoc_url="/redoc" if no_auth else None,
-    )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # Include version endpoint for minimal factory
-    app.include_router(version_router)
-
-    # Minimal core routes for tests (status/config/state/command)
-    start_time = time.time()
-
-    class _MiniState:
-        def __init__(self):
-            from datetime import datetime as _dt
-
-            self.current_state = "idle"
-            self._active_models: list[str] = []
-            self._last_change = _dt.now()
-
-        def get_active_models(self) -> list[str]:
-            return list(self._active_models)
-
-        def change_state(self, state: str) -> None:
-            from datetime import datetime as _dt
-
-            self.current_state = state
-            self._last_change = _dt.now()
-
-    state_mgr = _MiniState()
-
-    class _MiniConfig:
-        def __init__(self):
-            # Provide minimal model_actions so /api/v1/command is available
-            self.config: dict[str, object] = {
-                "model_actions": {
-                    "hello": {"shell": {"cmd": "true"}},
-                }
-            }
-
-        def save_config(self, *_args, **_kwargs) -> None:  # matches both signatures
-            return None
-
-    cfg_mgr = config if config is not None else _MiniConfig()
-
-    last_cmd: dict[str, str | None] = {"value": None}
-
-    def _exec_command(cmd: str) -> bool:
-        last_cmd["value"] = cmd
-        return True
-
-    core_router = include_core_routes(
-        get_start_time=lambda: start_time,
-        get_state_manager=lambda: state_mgr,
-        get_config_manager=lambda: cfg_mgr,
-        get_last_command=lambda: last_cmd["value"],
-        get_last_state_change=lambda: state_mgr._last_change,  # noqa: SLF001
-        execute_command_fn=_exec_command,
-    )
-    app.include_router(core_router)
-
-    return app
-========
-import warnings as _w; _w.warn("web_mode.py is deprecated; use chatty_commander.web.web_mode", DeprecationWarning); from chatty_commander.web.web_mode import *  # noqa
->>>>>>>> pr-6-head:web_mode.py
-=======
-    server.run()
->>>>>>> pr-6-head
+        # Use an in-memory config to avoid external config.json affecting tests
+        cfg = config_manager or Config(config_file="")
+        sm = state_manager or StateManager(cfg)
+        mm = model_manager or ModelManager(cfg)
+        ce = command_executor or CommandExecutor(cfg, mm, sm)
+        return _create(
+            config_manager=cfg,
+            state_manager=sm,
+            model_manager=mm,
+            command_executor=ce,
+            no_auth=no_auth,
+        )
+    except Exception:
+        # Fallback: construct locally
+        cfg = config_manager or Config(config_file="")
+        sm = state_manager or StateManager(cfg)
+        mm = model_manager or ModelManager(cfg)
+        ce = command_executor or CommandExecutor(cfg, mm, sm)
+        return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth).app

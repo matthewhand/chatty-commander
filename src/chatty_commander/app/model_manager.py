@@ -81,7 +81,9 @@ class ModelManager:
         self.active_models: dict[str, Model] = {}
         self.reload_models()
 
-    def reload_models(self, state: str | None = None) -> dict[str, Model] | dict[str, dict[str, Model]]:
+    def reload_models(
+        self, state: str | None = None
+    ) -> dict[str, Model] | dict[str, dict[str, Model]]:
         """
         Reload models from configured directories.
         If state is provided, only that state's models are loaded.
@@ -141,9 +143,7 @@ class ModelManager:
                 ModelClass = _get_patchable_model_class()
                 instance = ModelClass(model_path)  # type: ignore[call-arg]
                 model_set[model_name] = instance
-                logging.info(
-                    f"Successfully loaded model '{model_name}' from '{model_path}'."
-                )
+                logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
             except Exception as e:
                 logging.error(
                     f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models."
