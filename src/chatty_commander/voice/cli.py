@@ -21,6 +21,7 @@ def add_voice_subcommands(subparsers) -> None:
         help="Voice integration commands",
         description="Test and configure voice features including wake word detection and transcription.",
     )
+    voice_parser.set_defaults(func=lambda args: handle_voice_command(args))
 
     voice_subparsers = voice_parser.add_subparsers(dest="voice_command", help="Voice commands")
 

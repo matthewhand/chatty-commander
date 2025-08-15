@@ -1,120 +1,69 @@
 {
-  "keybindings": {
-    "take_screenshot": "alt+print_screen",
-    "paste": "ctrl+v",
-    "cycle_window": "alt+tab",
-    "open_run": "win+r",
-    "start_typing": "ctrl+shift+;",
-    "stop_typing": "ctrl+shift+;",
-    "submit": "enter"
-  },
-  "commands": {
-    "take_screenshot": {
-      "action": "keypress",
-      "keys": "take_screenshot"
+  "profile_name": "Voice-Only Assistant",
+  "description": "Minimal voice-only configuration with keybinding-based transcription for controlling external apps like codex-cli",
+  
+  "default_state": "voice_listening",
+  
+  "model_actions": {
+    "start_transcription": {
+      "keypress": {
+        "keys": "ctrl+shift+v",
+        "description": "Start voice transcription (configurable hotkey)"
+      }
     },
-    "paste": {
-      "action": "keypress",
-      "keys": "paste"
+    "end_and_paste": {
+      "keypress": {
+        "keys": "ctrl+shift+enter",
+        "description": "End transcription, paste result, and press enter"
+      }
     },
-    "submit": {
-      "action": "keypress",
-      "keys": "submit"
+    "codex_query": {
+      "keypress": {
+        "keys": "ctrl+alt+c",
+        "description": "Trigger codex-cli with voice input"
+      }
     },
-    "cycle_window": {
-      "action": "keypress",
-      "keys": "cycle_window"
+    "quick_paste": {
+      "keypress": {
+        "keys": "ctrl+v",
+        "description": "Paste transcribed text"
+      }
     },
-    "okay_send": {
-      "action": "keypress",
-      "keys": "submit"
-    },
-    "okay_stop": {
-      "action": "keypress",
-      "keys": "stop_typing"
-    },
-    "oh_kay_screenshot": {
-      "action": "keypress",
-      "keys": "take_screenshot"
-    },
-    "thanks_chat_tee": {
-      "action": "custom_message",
-      "message": "That'll do, bro"
-    },
-    "that_ill_do": {
-      "action": "custom_message",
-      "message": "Thanks chatty, dude"
-    },
-    "lights_on": {
-      "action": "url",
-      "url": "{home_assistant}/lights_on"
-    },
-    "lights_off": {
-      "action": "url",
-      "url": "{home_assistant}/lights_off"
-    },
-    "wax_poetic": {
-      "action": "url",
-      "url": "{chatbot_endpoint}"
+    "new_line": {
+      "keypress": {
+        "keys": "enter",
+        "description": "Press enter after voice input"
+      }
     }
   },
-  "command_sequences": {
-    "screenshot_paste_submit": [
-      {
-        "command": "take_screenshot",
-        "delay_after_ms": 3000
-      },
-      {
-        "command": "paste",
-        "delay_after_ms": 1000
-      },
-      {
-        "command": "submit",
-        "delay_after_ms": 0
-      }
-    ]
+
+  "voice": {
+    "enabled": true,
+    "wake_words": ["hey_coder", "start_transcription"],
+    "transcription_backend": "whisper_local",
+    "auto_paste": true,
+    "hotkey_mode": true,
+    "silence_timeout": 2.0,
+    "record_timeout": 10.0
   },
-  "api_endpoints": {
-    "home_assistant": "http://homeassistant.domain.home:8123/api",
-    "chatbot_endpoint": "https://ubuntu-gtx.domain.home/"
+
+  "ui": {
+    "web_enabled": false,
+    "gui_enabled": false,
+    "avatar_enabled": false,
+    "notifications": "minimal"
   },
-  "state_models": {
-    "idle": [
-      "hey_chat_tee",
-      "hey_khum_puter",
-      "okay_stop",
-      "lights_on",
-      "lights_off"
-    ],
-    "computer": [
-      "oh_kay_screenshot",
-      "okay_stop"
-    ],
-    "chatty": [
-      "wax_poetic",
-      "thanks_chat_tee",
-      "that_ill_do",
-      "okay_stop"
-    ]
-  },
-  "model_paths": {
-    "idle": "models-idle",
-    "computer": "models-computer",
-    "chatty": "models-chatty"
-  },
-  "audio_settings": {
-    "mic_chunk_size": 1024,
-    "sample_rate": 16000,
-    "audio_format": "int16"
-  },
-  "general_settings": {
-    "debug_mode": true,
-    "default_state": "idle",
-    "inference_framework": "onnx",
-    "start_on_boot": false,
-    "check_for_updates": true
-  },
-  "foo": {
-    "bar": 1
+
+  "workflows": {
+    "codex_integration": {
+      "description": "Voice control for codex-cli",
+      "sequence": [
+        "start_transcription",
+        "wait_for_speech",
+        "transcribe",
+        "codex_query",
+        "end_and_paste"
+      ]
+    }
   }
 }
