@@ -270,26 +270,34 @@ class Config:
             raise
 
     def _load_config(self):
-        try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            # Return default configuration if file doesn't exist
-            return {
-                "default_state": "idle",
-                "keybindings": {},
-                "commands": {},
-                "command_sequences": {},
-                "state_models": {},
-                "model_actions": {},
-            }
+        """Load configuration from file or return empty dict if not found."""
+        if os.path.exists(self.config_file):
+            try:
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                logger.info(f"Loaded configuration from {self.config_file}")
+                return data
+            except Exception as e:
+                logger.error(f"Failed to load config: {e}")
+                return {}
+        else:
+            logger.info(f"Config file {self.config_file} not found, returning empty config")
+            return {}
 
     def _build_model_actions(self):
-        return {
-            "say_hello": {
-                "keypress": "hello",
-            }
-        }
+        """Build model actions from commands."""
+        actions = {}
+        commands = getattr(self, 'commands', {})
+        for name, cmd in commands.items():
+            action_type = cmd.get('action')
+            if action_type == 'keypress':
+                actions[name] = {'keypress': cmd.get('keys', '')}
+            elif action_type == 'url':
+                url = cmd.get('url', '').replace('{home_assistant}', 'http://homeassistant.domain.home:8123/api')
+                actions[name] = {'url': url}
+            elif action_type == 'custom_message':
+                actions[name] = {'message': cmd.get('message', '')}
+        return actions
 
     def _load_general_settings(self) -> None:
         """Load general settings section from config with defaults."""
