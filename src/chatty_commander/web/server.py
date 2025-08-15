@@ -15,9 +15,8 @@ from .web_mode import WebModeServer as _LegacyWebModeServer  # type: ignore
 # Optional observability (may not be available in some environments)
 try:
     from chatty_commander.obs.metrics import RequestMetricsMiddleware, create_metrics_router
-except Exception:  # pragma: no cover
-    RequestMetricsMiddleware = None  # type: ignore
-    create_metrics_router = None  # type: ignore
+RequestMetricsMiddleware = None  # type: ignore
+create_metrics_router = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -73,16 +72,14 @@ def create_app(
         if RequestMetricsMiddleware is not None:  # type: ignore
             app.add_middleware(RequestMetricsMiddleware)
             logger.debug("server.create_app: installed RequestMetricsMiddleware")
-    except Exception as e:  # noqa: BLE001
-        logger.debug("server.create_app: metrics middleware not installed: %s", e)
+    logger.debug("server.create_app: metrics middleware not installed: %s", e)
 
     # Docs visibility and CORS (behavior-preserving toggles)
     try:
         enable_no_auth_docs(app, no_auth=no_auth)
         apply_cors(app, no_auth=no_auth, origins=None)
         logger.debug("server.create_app: applied docs/cors policies (no_auth=%s)", no_auth)
-    except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to apply auth/cors policies; continuing with legacy defaults: %s", e)
+    logger.warning("Failed to apply auth/cors policies; continuing with legacy defaults: %s", e)
 
     # Core REST routes
     try:
@@ -96,8 +93,7 @@ def create_app(
         )
         app.include_router(core_router)
         logger.debug("server.create_app: included core REST routes from routes.core")
-    except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to include core routes, falling back to legacy-only: %s", e)
+    logger.warning("Failed to include core routes, falling back to legacy-only: %s", e)
 
     # WebSocket route
     try:
@@ -122,8 +118,7 @@ def create_app(
         )
         app.include_router(ws_router)
         logger.debug("server.create_app: included websocket routes from routes.ws")
-    except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to include websocket routes; falling back to legacy-only: %s", e)
+    logger.warning("Failed to include websocket routes; falling back to legacy-only: %s", e)
 
     # Avatar routes
     from .routes.avatar_api import router as avatar_api_router
@@ -140,8 +135,7 @@ def create_app(
             on_shutdown=None,
         )
         logger.debug("server.create_app: registered lifecycle hooks")
-    except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to register lifecycle hooks; continuing: %s", e)
+    logger.warning("Failed to register lifecycle hooks; continuing: %s", e)
 
     # Avatar routes (with state management integration)
     _r = globals().get('avatar_ws_router')
@@ -168,11 +162,9 @@ def create_app(
 
             _avatar_ws_mod.manager.theme_resolver = _resolve_theme
             logger.debug("server.create_app: set WS theme_resolver from config")
-        except Exception as e:
-            logger.debug("server.create_app: theme_resolver not set: %s", e)
+        logger.debug("server.create_app: theme_resolver not set: %s", e)
         logger.debug("server.create_app: included avatar ws/api routes")
-    except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to include avatar routes; continuing: %s", e)
+    logger.warning("Failed to include avatar routes; continuing: %s", e)
 
     # Avatar/Agent settings + selector routes
         from .routes.avatar_selector import router as avatar_selector_router
@@ -187,10 +179,9 @@ def create_app(
     if _r:
         app.include_router(_r)
         logger.debug("server.create_app: included avatar settings + selector + agents routes")
-    except Exception as e:  # noqa: BLE001
-        logger.warning(
-            "Failed to include avatar settings/selector/agents routes; continuing: %s", e
-        )
+    logger.warning(
+        "Failed to include avatar settings/selector/agents routes; continuing: %s", e
+    )
 
     logger.debug("server.create_app constructed legacy WebModeServer and returned app")
     return app
