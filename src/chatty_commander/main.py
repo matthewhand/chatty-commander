@@ -1,8 +1,9 @@
 from __future__ import annotations
-import sys
-from typing import Optional
 
-def main(argv: Optional[list[str]] = None) -> int:
+import sys
+
+
+def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv  # noqa: ARG001
     try:
         from .cli.cli import main as cli_main  # type: ignore

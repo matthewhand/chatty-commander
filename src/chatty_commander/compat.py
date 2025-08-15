@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import Dict
+
 import importlib
 
 # Map legacy module names to their modern implementation paths.
-ALIASES: Dict[str, str] = {
+ALIASES: dict[str, str] = {
     "config": "chatty_commander.app.config",
     "model_manager": "chatty_commander.app.model_manager",
     "web_mode": "chatty_commander.web.web_mode",
