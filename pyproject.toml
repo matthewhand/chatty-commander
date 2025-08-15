@@ -113,3 +113,9 @@ ignore = ["D001"]
 [tool.setuptools]
 package-dir = {"" = "src"}
 packages = ["chatty_commander"]
+
+[tool.setuptools.package-data]
+chatty_commander = ["py.typed"]
+
+[tool.uv]
+package = true
