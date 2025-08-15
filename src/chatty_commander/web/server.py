@@ -144,22 +144,17 @@ def create_app(
         logger.warning("Failed to register lifecycle hooks; continuing: %s", e)
 
     # Avatar routes (with state management integration)
-    try:
-        app.include_router(avatar_ws_router)
+    _r = globals().get('avatar_ws_router')
+    if _r:
+        app.include_router(_r)
         app.include_router(avatar_api_router)
-try:
     _r = globals().get('version_router')
     if _r:
         app.include_router(_r)
-except NameError:
-    pass
-        if metrics_router is not None:
-try:
+
     _r = globals().get('metrics_router')
     if _r:
         app.include_router(_r)
-except NameError:
-    pass
         # Provide persona->theme resolution to WS manager from config
         try:
             from .routes import avatar_ws as _avatar_ws_mod
@@ -180,7 +175,6 @@ except NameError:
         logger.warning("Failed to include avatar routes; continuing: %s", e)
 
     # Avatar/Agent settings + selector routes
-    try:
         from .routes.avatar_selector import router as avatar_selector_router
         from .routes.avatar_settings import include_avatar_settings_routes
 
@@ -189,12 +183,9 @@ except NameError:
         )
         app.include_router(settings_router)
         app.include_router(avatar_selector_router)
-try:
     _r = globals().get('agents_router')
     if _r:
         app.include_router(_r)
-except NameError:
-    pass
         logger.debug("server.create_app: included avatar settings + selector + agents routes")
     except Exception as e:  # noqa: BLE001
         logger.warning(
