@@ -5,7 +5,6 @@ test_web_mode.py
 Comprehensive test script for validating web mode functionality.
 Tests FastAPI endpoints, WebSocket connections, and frontend integration.
 """
-
 import asyncio
 import json
 import logging
@@ -20,6 +19,7 @@ from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 

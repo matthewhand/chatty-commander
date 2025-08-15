@@ -11,6 +11,7 @@ from chatty_commander.app.state_manager import StateManager
 
 # Import FastAPI app from the source package
 from chatty_commander.web.web_mode import WebModeServer
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 # Minimal app factory matching current constructor signatures

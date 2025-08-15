@@ -3,9 +3,10 @@
 Unit tests for web_mode.py module.
 Tests FastAPI endpoints, WebSocket functionality, and server configuration.
 """
-
 import os
 import sys
+
+from fastapi import FastAPI
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio

@@ -1,4 +1,5 @@
 from chatty_commander.web.web_mode import create_app
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 
