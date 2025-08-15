@@ -37,12 +37,13 @@ export async function sse(url: string, body: any, handlers: SSEHandlers) {
           if (line.startsWith('event:')) event = line.replace('event:', '').trim();
           if (line.startsWith('data:')) data += line.replace('data:', '').trim();
         }
+        const json = data ? JSON.parse(data) : {};
         if (event === 'chunk') {
-          handlers.chunk?.(JSON.parse(data));
+          handlers.chunk?.(json);
         } else if (event === 'tool_call') {
-          handlers.tool_call?.(JSON.parse(data));
+          handlers.tool_call?.(json);
         } else if (event === 'tool_result') {
-          handlers.tool_result?.(JSON.parse(data));
+          handlers.tool_result?.(json);
         } else if (event === 'done') {
           handlers.done?.();
         }
