@@ -48,4 +48,3 @@ def test_handles_empty_commands_safely(tmp_path: Path):
     cfg = Config.load(str(cfg_file))
     assert isinstance(cfg.model_actions, dict)
     assert cfg.model_actions == {}
-

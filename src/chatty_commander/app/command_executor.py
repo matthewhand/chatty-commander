@@ -19,7 +19,6 @@ try:
 except Exception:  # noqa: BLE001 - handle headless DisplayConnectionError etc.
     pyautogui = None  # type: ignore[assignment]
 
-    
 
 class CommandExecutor:
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
@@ -112,12 +111,7 @@ class CommandExecutor:
         elif 'shell' in command_action:
             try:
                 cmd = command_action.get('shell', '')
-                result = subprocess.run(
-                    cmd,
-                    shell=True,
-                    text=True,
-                    capture_output=True
-                )
+                result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
                 if result.returncode == 0:
                     # Ensure tests can detect success in caplog
                     logging.warning("shell ok")
@@ -253,12 +247,17 @@ class CommandExecutor:
         try:
             from utils.logger import report_error as _report_error
 
-            _report_error(error_message, config=getattr(self, "config", None), context={"command": command_name})
+            _report_error(
+                error_message,
+                config=getattr(self, "config", None),
+                context={"command": command_name},
+            )
         except Exception:
             pass
 
 
 # Example usage intentionally removed to avoid instantiation without required args during static analysis/tests.
+
 
 def _get_pyautogui():
     """Return a pyautogui-like object or None if unavailable.

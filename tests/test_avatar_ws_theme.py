@@ -1,7 +1,8 @@
 import json
 
-from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router, manager
 from chatty_commander.avatars.thinking_state import get_thinking_manager, reset_thinking_manager
+from chatty_commander.web.routes.avatar_ws import manager
+from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
 
 
 def test_avatar_ws_includes_theme_in_snapshot():

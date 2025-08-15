@@ -1,7 +1,12 @@
 from __future__ import annotations
-import json, sys, pathlib
+
+import json
+import pathlib
+import sys
 
 CFG = pathlib.Path("config.json")
+
+
 def main() -> int:
     if not CFG.exists():
         print("config.json not found", file=sys.stderr)
@@ -20,6 +25,7 @@ def main() -> int:
         return 1
     print("Config validation: OK")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

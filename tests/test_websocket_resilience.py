@@ -2,7 +2,6 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
-
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
@@ -35,4 +34,3 @@ async def test_broadcast_message_tolerates_send_errors():
     # Retry path: flaky called twice, ok called once
     assert flaky_ws.send_text.call_count >= 1
     assert ok_ws.send_text.call_count == 1
-

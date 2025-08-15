@@ -3,6 +3,7 @@ import logging
 import pytest
 from chatty_commander.app.model_manager import ModelManager
 
+
 class DummyError(Exception):
     pass
 

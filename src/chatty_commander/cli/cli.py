@@ -413,7 +413,9 @@ def build_parser() -> argparse.ArgumentParser:
             # Resolve CommandExecutor in a way that allows tests to patch via 'cli.CommandExecutor'
             CommandExecutorRT = globals().get("CommandExecutor")
             if CommandExecutorRT is None:
-                from chatty_commander.app.command_executor import CommandExecutor as CommandExecutorRT  # type: ignore
+                from chatty_commander.app.command_executor import (
+                    CommandExecutor as CommandExecutorRT,  # type: ignore
+                )
             executor = CommandExecutorRT(cfg, None, None)  # type: ignore
             executor.execute_command(args.name)
             return 0

@@ -1,7 +1,5 @@
 """Compat shim: prefer :mod:`chatty_commander.web.web_mode`"""
 
-from .compat import expose
-
 _w.warn(
     "web_mode.py is deprecated; use chatty_commander.web.web_mode",
     DeprecationWarning,

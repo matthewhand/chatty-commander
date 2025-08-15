@@ -31,6 +31,7 @@ class DummyConfig(Config):
             },
         }
 
+
 def build_server(cfg, *, no_auth: bool = True):
     with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
         mock_provider = MagicMock()
@@ -106,5 +107,3 @@ def test_advisors_message_authentication():
         headers={"X-API-Key": cfg.auth["api_key"]},
     )
     assert resp.status_code == 200
-
-

@@ -19,13 +19,13 @@ from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
+    Security,
     WebSocket,
     WebSocketDisconnect,
-    Security,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -100,7 +100,9 @@ class WebModeServer:
         self.app = self._create_app()
         self.state_manager.add_state_change_callback(self._on_state_change)
 
-    async def _require_api_key(self, api_key: str = Security(APIKeyHeader(name="X-API-Key", auto_error=False))):
+    async def _require_api_key(
+        self, api_key: str = Security(APIKeyHeader(name="X-API-Key", auto_error=False))
+    ):
         if self.no_auth:
             return
         expected = self._expected_api_key
@@ -116,7 +118,13 @@ class WebModeServer:
             redoc_url="/redoc" if self.no_auth else None,
         )
 
-        origins = ["*"] if self.no_auth else getattr(self.config_manager, "auth", {}).get("allowed_origins", ["http://localhost:3000"])
+        origins = (
+            ["*"]
+            if self.no_auth
+            else getattr(self.config_manager, "auth", {}).get(
+                "allowed_origins", ["http://localhost:3000"]
+            )
+        )
         app.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
@@ -171,7 +179,12 @@ class WebModeServer:
                         save()
                     except TypeError:
                         save(cfg)  # type: ignore[arg-type]
-                await self._broadcast_message(WebSocketMessage(type="config_updated", data={"message": "Configuration updated successfully"}))
+                await self._broadcast_message(
+                    WebSocketMessage(
+                        type="config_updated",
+                        data={"message": "Configuration updated successfully"},
+                    )
+                )
                 return {"message": "Configuration updated successfully"}
             except Exception as e:
                 logger.error(f"Failed to update configuration: {e}")
@@ -195,7 +208,11 @@ class WebModeServer:
                 await self._broadcast_message(
                     WebSocketMessage(
                         type="state_change",
-                        data={"old_state": old_state, "new_state": request.state, "timestamp": self.last_state_change.isoformat()},
+                        data={
+                            "old_state": old_state,
+                            "new_state": request.state,
+                            "timestamp": self.last_state_change.isoformat(),
+                        },
                     )
                 )
                 return {"message": f"State changed to {request.state}"}
@@ -208,9 +225,13 @@ class WebModeServer:
             start_time = time.time()
             try:
                 config_dict = getattr(self.config_manager, "config", {})
-                model_actions = config_dict.get("model_actions", {}) if isinstance(config_dict, dict) else {}
+                model_actions = (
+                    config_dict.get("model_actions", {}) if isinstance(config_dict, dict) else {}
+                )
                 if request.command not in model_actions:
-                    raise HTTPException(status_code=404, detail=f"Command '{request.command}' not found")
+                    raise HTTPException(
+                        status_code=404, detail=f"Command '{request.command}' not found"
+                    )
 
                 success = bool(self.command_executor.execute_command(request.command))
                 execution_time = (time.time() - start_time) * 1000
@@ -218,16 +239,31 @@ class WebModeServer:
                 await self._broadcast_message(
                     WebSocketMessage(
                         type="command_executed",
-                        data={"command": request.command, "success": success, "execution_time": execution_time, "parameters": request.parameters},
+                        data={
+                            "command": request.command,
+                            "success": success,
+                            "execution_time": execution_time,
+                            "parameters": request.parameters,
+                        },
                     )
                 )
-                return CommandResponse(success=success, message=("Command executed successfully" if success else "Command execution failed"), execution_time=execution_time)
+                return CommandResponse(
+                    success=success,
+                    message=(
+                        "Command executed successfully" if success else "Command execution failed"
+                    ),
+                    execution_time=execution_time,
+                )
             except HTTPException:
                 raise
             except Exception as e:
                 execution_time = (time.time() - start_time) * 1000
                 logger.error(f"Command execution failed: {e}")
-                return CommandResponse(success=False, message=f"Command execution failed: {str(e)}", execution_time=execution_time)
+                return CommandResponse(
+                    success=False,
+                    message=f"Command execution failed: {str(e)}",
+                    execution_time=execution_time,
+                )
 
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
@@ -239,7 +275,11 @@ class WebModeServer:
             await websocket.accept()
             self.active_connections.add(websocket)
             try:
-                await websocket.send_text(json.dumps({"type": "connection_established", "timestamp": datetime.now().isoformat()}))
+                await websocket.send_text(
+                    json.dumps(
+                        {"type": "connection_established", "timestamp": datetime.now().isoformat()}
+                    )
+                )
                 while True:
                     try:
                         data = await websocket.receive_text()
@@ -277,7 +317,14 @@ class WebModeServer:
             if loop.is_running():
                 asyncio.create_task(
                     self._broadcast_message(
-                        WebSocketMessage(type="state_change", data={"old_state": old, "new_state": new, "timestamp": datetime.now().isoformat()})
+                        WebSocketMessage(
+                            type="state_change",
+                            data={
+                                "old_state": old,
+                                "new_state": new,
+                                "timestamp": datetime.now().isoformat(),
+                            },
+                        )
                     )
                 )
         except RuntimeError:
@@ -290,7 +337,10 @@ class WebModeServer:
             if loop.is_running():
                 asyncio.create_task(
                     self._broadcast_message(
-                        WebSocketMessage(type="command_detected", data={"command": command, "confidence": confidence})
+                        WebSocketMessage(
+                            type="command_detected",
+                            data={"command": command, "confidence": confidence},
+                        )
                     )
                 )
         except RuntimeError:
@@ -302,7 +352,14 @@ class WebModeServer:
             if loop.is_running():
                 asyncio.create_task(
                     self._broadcast_message(
-                        WebSocketMessage(type="system_event", data={"event": event, "details": details, "timestamp": datetime.now().isoformat()})
+                        WebSocketMessage(
+                            type="system_event",
+                            data={
+                                "event": event,
+                                "details": details,
+                                "timestamp": datetime.now().isoformat(),
+                            },
+                        )
                     )
                 )
         except RuntimeError:
@@ -322,7 +379,9 @@ def create_web_server(
     command_executor: CommandExecutor,
     no_auth: bool = False,
 ) -> WebModeServer:
-    return WebModeServer(config_manager, state_manager, model_manager, command_executor, no_auth=no_auth)
+    return WebModeServer(
+        config_manager, state_manager, model_manager, command_executor, no_auth=no_auth
+    )
 
 
 if __name__ == "__main__":
@@ -330,6 +389,7 @@ if __name__ == "__main__":
     state_manager = StateManager()
     model_manager = ModelManager(config_manager)
     command_executor = CommandExecutor(config_manager, model_manager, state_manager)
-    server = create_web_server(config_manager, state_manager, model_manager, command_executor, no_auth=True)
+    server = create_web_server(
+        config_manager, state_manager, model_manager, command_executor, no_auth=True
+    )
     server.run(host="0.0.0.0", port=8100, log_level="info")
-

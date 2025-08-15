@@ -1,4 +1,5 @@
 """Tests for LLM integration components."""
+
 import os
 from unittest.mock import MagicMock, Mock, patch
 
@@ -82,9 +83,7 @@ class TestOllamaBackend:
         # Mock successful response with model available
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "models": [{"name": "gpt-oss:20b"}]
-        }
+        mock_response.json.return_value = {"models": [{"name": "gpt-oss:20b"}]}
         mock_get.return_value = mock_response
 
         backend = OllamaBackend()
@@ -177,10 +176,7 @@ class TestCommandProcessor:
 
     def test_command_processor_initialization(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=self.mock_config
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
 
         status = processor.get_processor_status()
         assert status["llm_available"] is True
@@ -189,10 +185,7 @@ class TestCommandProcessor:
 
     def test_simple_command_matching(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=self.mock_config
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
 
         # Direct name match
         command, confidence, explanation = processor.process_command("hello there")
@@ -207,10 +200,7 @@ class TestCommandProcessor:
 
     def test_command_suggestions(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=self.mock_config
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
 
         suggestions = processor.get_command_suggestions("hel")
         assert len(suggestions) > 0
@@ -218,10 +208,7 @@ class TestCommandProcessor:
 
     def test_command_explanation(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=self.mock_config
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
 
         explanation = processor.explain_command("hello")
         assert explanation["command"] == "hello"
@@ -240,22 +227,18 @@ class TestCommandProcessor:
         }
         '''
 
-        processor = CommandProcessor(
-            llm_manager=mock_llm,
-            config_manager=self.mock_config
-        )
+        processor = CommandProcessor(llm_manager=mock_llm, config_manager=self.mock_config)
 
-        command, confidence, explanation = processor.process_command("please turn on the illumination")
+        command, confidence, explanation = processor.process_command(
+            "please turn on the illumination"
+        )
         assert command == "lights"
         assert confidence == 0.8
         assert "user wants to control lights" in explanation
 
     def test_empty_input_handling(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=self.mock_config
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
 
         command, confidence, explanation = processor.process_command("")
         assert command is None
@@ -264,12 +247,11 @@ class TestCommandProcessor:
 
     def test_no_match_handling(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=self.mock_config
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
 
-        command, confidence, explanation = processor.process_command("completely unknown command xyz")
+        command, confidence, explanation = processor.process_command(
+            "completely unknown command xyz"
+        )
         # Should either return None or attempt LLM interpretation
         assert command is None or isinstance(command, str)
 
@@ -286,17 +268,10 @@ class TestLLMIntegrationE2E:
 
         # Create LLM manager and processor
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=config
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=config)
 
         # Test command processing
-        test_inputs = [
-            "hello world",
-            "turn on the lights",
-            "unknown command"
-        ]
+        test_inputs = ["hello world", "turn on the lights", "unknown command"]
 
         results = []
         for user_input in test_inputs:
@@ -316,11 +291,10 @@ class TestLLMIntegrationE2E:
 
     def test_llm_manager_environment_variables(self):
         """Test LLM manager respects environment variables."""
-        with patch.dict(os.environ, {
-            "LLM_BACKEND": "mock",
-            "OPENAI_API_KEY": "test-key",
-            "OLLAMA_HOST": "localhost:11434"
-        }):
+        with patch.dict(
+            os.environ,
+            {"LLM_BACKEND": "mock", "OPENAI_API_KEY": "test-key", "OLLAMA_HOST": "localhost:11434"},
+        ):
             manager = LLMManager()
             # Should respect LLM_BACKEND preference
             # Note: actual backend selection depends on availability
@@ -331,16 +305,16 @@ class TestLLMIntegrationE2E:
         config.model_actions = {"test": {"keypress": {"keys": "t"}}}
 
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=config
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=config)
 
         status = processor.get_processor_status()
 
         required_fields = [
-            "llm_available", "llm_backend", "available_commands",
-            "commands_count", "llm_info"
+            "llm_available",
+            "llm_backend",
+            "available_commands",
+            "commands_count",
+            "llm_info",
         ]
 
         for field in required_fields:

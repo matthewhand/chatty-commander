@@ -131,4 +131,3 @@ def test_dynamic_registry_override_and_lifecycle():
     assert all(getattr(a, "_started", False) is True for a in orch.adapters)
     orch.stop()
     assert all(getattr(a, "_started", False) is False for a in orch.adapters)
-

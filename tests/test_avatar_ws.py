@@ -1,8 +1,8 @@
 import json
 import time
 
-from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
 from chatty_commander.avatars.thinking_state import get_thinking_manager, reset_thinking_manager
+from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
 
 
 def test_avatar_ws_broadcasts_state_changes():

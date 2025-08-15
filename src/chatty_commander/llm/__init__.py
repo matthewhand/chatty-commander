@@ -23,5 +23,5 @@ __all__ = [
     "OllamaBackend",
     "LocalTransformersBackend",
     "LLMManager",
-    "CommandProcessor"
+    "CommandProcessor",
 ]
