@@ -1,3 +1,5 @@
+from typing import Dict
+
 """Compatibility helpers for legacy module paths.
 
 This module provides a central alias table that maps old module names to their
@@ -13,7 +15,7 @@ from collections.abc import Iterable
 from types import ModuleType
 
 # Map legacy module names to their modern implementation paths.
-ALIASES: Dict[str, str] = {
+ALIASES: dict[str, str] = {
     "config": "chatty_commander.app.config",
     "model_manager": "chatty_commander.app.model_manager",
     "web_mode": "chatty_commander.web.web_mode",

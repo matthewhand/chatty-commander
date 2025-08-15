@@ -1,3 +1,5 @@
+import warnings as _w
+
 """Compat shim: prefer :mod:`chatty_commander.web.web_mode`"""
 
 _w.warn(

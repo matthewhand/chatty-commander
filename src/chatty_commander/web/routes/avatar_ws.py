@@ -1,3 +1,4 @@
+import asyncio
 """
 WebSocket routes for Avatar UI to receive agent state updates.
 

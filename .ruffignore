@@ -1,0 +1,10 @@
+.worktrees/
+reports/
+dist/
+build/
+.eggs/
+.pytype/
+.mypy_cache/
+.pytest_cache/
+htmlcov/
+docs/_build/
