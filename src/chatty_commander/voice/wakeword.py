@@ -40,7 +40,7 @@ class WakeWordDetector:
         if not VOICE_DEPS_AVAILABLE:
             raise ImportError(
                 "Voice dependencies not available. Install with: "
-                "pip install openwakeword pyaudio numpy"
+                "uv sync --group voice  # or pip install openwakeword pyaudio numpy"
             )
 
         self.wake_words = wake_words or ["hey_jarvis", "alexa"]

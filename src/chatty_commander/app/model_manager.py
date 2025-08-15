@@ -17,9 +17,8 @@ from typing import Any
 try:  # pragma: no cover - optional dependency
     from wakewords.model import Model  # type: ignore
 except ModuleNotFoundError:  # pragma: no cover - exercised via fallback
-    logging.warning(
-        "Dependency 'wakewords' not found. Using dummy Model. Some functionality may be limited."
-    )
+    # Silently use dummy Model - this is expected in most setups
+    pass
 
     class Model:  # type: ignore[no-redef]
         def __init__(self, path: str):

@@ -178,7 +178,6 @@ class VoiceTranscriber:
         **backend_kwargs,
     ):
         if not AUDIO_DEPS_AVAILABLE:
-            logger.warning("Audio dependencies not available. Using mock backend.")
             backend = "mock"
 
         self.chunk_size = chunk_size
