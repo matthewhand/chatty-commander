@@ -212,3 +212,37 @@ data/
 !data/.gitkeep
 data/advisors_memory.jsonl
 
+# >>> chatty-commander housekeeping >>>
+# Caches & builds
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+build/
+dist/
+htmlcov/
+logs/
+coverage.*
+*.log
+
+# uv caches (prefer .uv-cache canonical)
+.uv-cache/
+.uv_cache/
+.uvcache/
+
+# Virtualenvs (not committed)
+.venv/
+.venv_prmerge/
+
+# Node artifacts
+webui/frontend/node_modules/
+webui/node_modules/
+webui/frontend/node_modules/.cache/
+
+# Python packaging noise
+src/chatty_commander.egg-info/
+chatty_commander.egg-info/
+
+# Test/result artifacts
+test_results_*.txt
+reports/*.tmp
+# <<< chatty-commander housekeeping <<<
