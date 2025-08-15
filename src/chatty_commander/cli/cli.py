@@ -7,7 +7,7 @@ import sys
 from typing import Any
 
 # Re-export CommandExecutor so tests can patch cli.CommandExecutor
-from chatty_commander.app.command_executor import CommandExecutor  # noqa: F401
+from chatty_commander.app import CommandExecutor  # noqa: F401
 
 # Re-export run_app and ConfigCLI at module level so tests can patch cli.run_app and cli.ConfigCLI
 try:
