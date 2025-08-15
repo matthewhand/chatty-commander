@@ -3,6 +3,7 @@ import json
 import sys
 
 import pytest
+
 from chatty_commander.cli.cli import cli_main
 
 
@@ -18,7 +19,7 @@ def replace_config_with_dummy(monkeypatch):
         def _dummy_config_ctor():
             return DummyConfigDirect(actions)
 
-        # Patch where cli imports Config inside functions: chatty_commander.app.config.Config
+        # Patch where cli imports Config inside functions: config.Config
         import chatty_commander.app.config as config_module
 
         monkeypatch.setattr(
@@ -142,7 +143,9 @@ def test_cli_exec_timeout_flag_passthrough_no_error(monkeypatch, replace_config_
         def execute_command(self, name):
             return
 
-    monkeypatch.setattr('chatty_commander.cli.cli.CommandExecutor', NoopExecutor)
+    monkeypatch.setattr(
+        'chatty_commander.app.command_executor.CommandExecutor', NoopExecutor
+    )
 
     code, out, err = run_cli_main_with_args(["exec", "hello", "--timeout", "5"], monkeypatch)
     assert code == 0

@@ -1,5 +1,5 @@
 import pytest
-from chatty_commander.app.config import Config
+
 from chatty_commander.app.state_manager import StateManager
 
 

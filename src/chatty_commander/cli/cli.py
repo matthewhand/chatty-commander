@@ -364,9 +364,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def list_func(args: argparse.Namespace) -> int:
         try:
-            # Use patchable Config resolver
-            ConfigRT = _resolve_Config()
-            cfg = ConfigRT()
+            from chatty_commander.app.config import Config  # noqa
+
+            cfg = Config()
             actions = _get_model_actions_from_config(cfg)
             if args.json:
                 _print_actions_json(actions)
@@ -402,9 +402,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def exec_func(args: argparse.Namespace) -> int:
         try:
-            # Use patchable Config resolver
-            ConfigRT = _resolve_Config()
-            cfg = ConfigRT()
+            from chatty_commander.app.config import Config  # noqa
+
+            cfg = Config()
             actions = _get_model_actions_from_config(cfg)
             action_entry = actions.get(args.name)
             if action_entry is None:
@@ -416,9 +416,7 @@ def build_parser() -> argparse.ArgumentParser:
             # Resolve CommandExecutor in a way that allows tests to patch via 'cli.CommandExecutor'
             CommandExecutorRT = globals().get("CommandExecutor")
             if CommandExecutorRT is None:
-                from chatty_commander.app.command_executor import (
-                    CommandExecutor as CommandExecutorRT,
-                )
+                from chatty_commander.app.command_executor import CommandExecutor as CommandExecutorRT  # type: ignore
             executor = CommandExecutorRT(cfg, None, None)  # type: ignore
             executor.execute_command(args.name)
             return 0
@@ -486,9 +484,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def system_func(args: argparse.Namespace) -> int:
         # Integrate with config.Config methods as tests expect
-        # Use patchable Config resolver
-        ConfigRT = _resolve_Config()
-        cfg = ConfigRT()
+        from chatty_commander.app.config import Config  # lazy import
+
+        cfg = Config()
         if args.system_command == "start-on-boot":
             if args.boot_action == "enable":
                 try:

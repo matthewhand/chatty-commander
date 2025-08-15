@@ -1,11 +1,11 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from src.chatty_commander.avatars.avatar_gui import run_avatar_gui
+from chatty_commander.avatars.avatar_gui import run_avatar_gui
 
 
 class TestAvatarGUI(unittest.TestCase):
-    @patch('src.chatty_commander.avatars.avatar_gui.webview')
+    @patch('chatty_commander.avatars.avatar_gui.webview')
     def test_run_avatar_gui_creates_correct_window(self, mock_webview: MagicMock):
         """Ensure run_avatar_gui configures a transparent, frameless, always-on-top window."""
         mock_webview.create_window = MagicMock()
@@ -23,27 +23,23 @@ class TestAvatarGUI(unittest.TestCase):
         assert isinstance(url, str) and url.startswith('file://') and url.endswith('index.html')
         mock_webview.start.assert_called_once()
 
-    @patch('src.chatty_commander.avatars.avatar_gui.webview', None)
+    @patch('chatty_commander.avatars.avatar_gui.webview', None)
     def test_run_avatar_gui_missing_pywebview(self):
         """If pywebview is not installed, we return code 2 and do not crash."""
         rc = run_avatar_gui(debug=False)
         self.assertEqual(rc, 2)
 
-    @patch('src.chatty_commander.avatars.avatar_gui.webview')
+    @patch('chatty_commander.avatars.avatar_gui.webview')
     def test_run_avatar_gui_missing_index(self, mock_webview: MagicMock):
         """If the index.html cannot be found, we return 2 and do not call webview APIs."""
         from pathlib import Path
-
-        with patch(
-            'src.chatty_commander.avatars.avatar_gui._avatar_index_path',
-            return_value=Path('does/not/exist.html'),
-        ):
+        with patch('chatty_commander.avatars.avatar_gui._avatar_index_path', return_value=Path('does/not/exist.html')):
             rc = run_avatar_gui(debug=False)
             self.assertEqual(rc, 2)
             mock_webview.create_window.assert_not_called()
             mock_webview.start.assert_not_called()
 
-    @patch('src.chatty_commander.avatars.avatar_gui.webview')
+    @patch('chatty_commander.avatars.avatar_gui.webview')
     def test_run_avatar_gui_transparency_fallback_then_success(self, mock_webview: MagicMock):
         """If transparent window fails, we retry without transparency and succeed."""
         # First call raises, second call succeeds
@@ -62,7 +58,7 @@ class TestAvatarGUI(unittest.TestCase):
         assert mock_webview.create_window.call_count == 2
         mock_webview.start.assert_called_once()
 
-    @patch('src.chatty_commander.avatars.avatar_gui.webview')
+    @patch('chatty_commander.avatars.avatar_gui.webview')
     def test_run_avatar_gui_total_failure(self, mock_webview: MagicMock):
         """If both attempts to create a window fail, we return 2."""
         mock_webview.create_window = MagicMock(side_effect=RuntimeError('boom'))

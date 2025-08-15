@@ -19,20 +19,23 @@ _root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
 
-from chatty_commander.app.command_executor import (  # noqa: E402, type: ignore
-    CommandExecutor,
-)
-from chatty_commander.app.config import Config  # noqa: E402, type: ignore
-from chatty_commander.app.default_config import (  # noqa: E402, type: ignore
-    generate_default_config_if_needed,
-)
-from chatty_commander.app.model_manager import ModelManager  # noqa: E402, type: ignore
-from chatty_commander.app.orchestrator import (  # noqa: E402, type: ignore
+# Support both package and repo-root execution without PYTHONPATH tweaks.
+from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
+from chatty_commander.app.model_manager import ModelManager  # type: ignore
+from chatty_commander.app.orchestrator import (  # type: ignore
     ModeOrchestrator,
     OrchestratorFlags,
 )
-from chatty_commander.app.state_manager import StateManager  # noqa: E402, type: ignore
-from chatty_commander.utils.logger import setup_logger  # noqa: E402, type: ignore
+from chatty_commander.app.state_manager import StateManager  # type: ignore
+from chatty_commander.app.config import Config  # type: ignore
+from chatty_commander.utils.logger import setup_logger  # type: ignore
+
+try:
+    from default_config import generate_default_config_if_needed
+except ImportError:
+
+    def generate_default_config_if_needed() -> bool:
+        return False
 
 
 def run_cli_mode(config, model_manager, state_manager, command_executor, logger):

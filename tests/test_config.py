@@ -2,9 +2,8 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from chatty_commander.app.config import Config
-from chatty_commander.tools.builder import build_openapi_schema
-from jsonschema import ValidationError, validate
 
 
 @pytest.fixture
