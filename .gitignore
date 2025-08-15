@@ -180,3 +180,19 @@ chatty_commander.egg-info/
 test_results_*.txt
 reports/*.tmp
 # <<< chatty-commander housekeeping <<<
+# >>> hygiene-managed >>>
+.worktrees/
+# python / build / test outputs
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.pytype/
+coverage.xml
+htmlcov/
+.coverage*
+dist/
+build/
+.eggs/
+*.egg-info/
+reports/
+# <<< hygiene-managed <<<
