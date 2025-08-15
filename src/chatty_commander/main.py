@@ -18,6 +18,10 @@ _pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
 _root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
+<<<<<<< HEAD
+=======
+
+>>>>>>> update/pr-51
 from chatty_commander.app.command_executor import CommandExecutor  # type: ignore
 from chatty_commander.app.model_manager import ModelManager  # type: ignore
 from chatty_commander.app.orchestrator import (  # type: ignore
