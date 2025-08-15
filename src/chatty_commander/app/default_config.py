@@ -179,6 +179,15 @@ class DefaultConfigGenerator:
                 "start_on_boot": False,
                 "check_for_updates": True,
             },
+            "logging": {
+                "level": "INFO",
+                "format": "plain",
+                "handlers": ["console", "file"],
+                "file": "logs/chattycommander.log",
+                "telemetry_url": "",
+                "external_url": "",
+                "diagnostics_file": "logs/diagnostics.jsonl",
+            },
         }
 
         with open(self.config_file, 'w') as f:

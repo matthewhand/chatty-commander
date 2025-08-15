@@ -490,30 +490,15 @@ def main():
         # Align with tests expecting SystemExit on main invocation path.
         raise SystemExit(0)
 
-    # Ensure logger is created with the expected name for tests
-    logger = setup_logger('main', 'logs/chattycommander.log')
+    # Load configuration settings first so logging can honor user preferences
+    config = Config()
+    logger = setup_logger('main', config=config)
     logger.info("Starting ChattyCommander application")
 
-    # Generate default configuration if needed
+    # Generate default configuration if needed and reload config to pick up defaults
     if generate_default_config_if_needed():
         logger.info("Default configuration generated")
-
-    # Load configuration settings
-    config = Config()
-    # Apply CLI overrides to web server settings
-    web_cfg = getattr(config, "web_server", {}) or {}
-    if args.host is not None:
-        web_cfg["host"] = args.host
-    if args.port is not None:
-        web_cfg["port"] = args.port
-    if args.no_auth:
-        web_cfg["auth_enabled"] = False
-    if web_cfg:
-        config.web_server = web_cfg
-        try:
-            config.config["web_server"] = web_cfg
-        except Exception:
-            pass
+        config = Config()
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:

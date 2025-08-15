@@ -62,30 +62,215 @@ class Config:
         if "HOME_ASSISTANT_ENDPOINT" in os.environ:
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
 
-    def _apply_web_server_config(self) -> None:
-        """Expose web server settings with defaults."""
-        web_cfg = self.config_data.get("web_server", {})
-        host = web_cfg.get("host", "0.0.0.0")
-        port = web_cfg.get("port", 8100)
-        auth = web_cfg.get("auth_enabled", True)
-        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
-        self.web_host = host
-        self.web_port = port
-        self.web_auth_enabled = auth
+    @property
+    def mic_chunk_size(self) -> int:
+        return self.audio_settings.mic_chunk_size
+
+    @property
+    def sample_rate(self) -> int:
+        return self.audio_settings.sample_rate
+
+    @property
+    def audio_format(self) -> str:
+        return self.audio_settings.audio_format
+
+    @property
+    def debug_mode(self) -> bool:
+        return self.general_settings.debug_mode
+
+    @property
+    def default_state(self) -> str:
+        return self.general_settings.default_state
+
+    @property
+    def inference_framework(self) -> str:
+        return self.general_settings.inference_framework
+
+    @property
+    def start_on_boot(self) -> bool:
+        return self.general_settings.start_on_boot
+
+    @start_on_boot.setter
+    def start_on_boot(self, value: bool) -> None:
+        self.general_settings.start_on_boot = value
+
+    @property
+    def check_for_updates(self) -> bool:
+        return self.general_settings.check_for_updates
+
+    @check_for_updates.setter
+    def check_for_updates(self, value: bool) -> None:
+        self.general_settings.check_for_updates = value
+
+    # ------------------------------------------------------------------
+    # Serialization helpers
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a JSON serialisable dict of the configuration."""
+        data = asdict(self)
+        # ``config_file`` is an internal detail and should not be persisted
+        data.pop("config_file", None)
+        return data
+
+    # ------------------------------------------------------------------
+    # Loading helpers
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any], config_file: str = "config.json") -> "Config":
+        """Create a ``Config`` instance from a raw dictionary."""
+        model_paths = ModelPaths(**data.get("model_paths", {}))
+        api_endpoints = ApiEndpoints(**data.get("api_endpoints", {}))
+        audio_settings = AudioSettings(**data.get("audio_settings", {}))
+        general_settings = GeneralSettings(**data.get("general_settings", {}))
+        advisors_data = data.get("advisors", {})
+        advisors = AdvisorsConfig(
+            enabled=advisors_data.get("enabled", False),
+            llm_api_mode=advisors_data.get("llm_api_mode", "completion"),
+            model=advisors_data.get("model", "gpt-oss20b"),
+            provider=AdvisorsProvider(**advisors_data.get("provider", {})),
+            bridge=AdvisorsBridge(**advisors_data.get("bridge", {})),
+            memory=AdvisorsMemory(**advisors_data.get("memory", {})),
+            platforms=advisors_data.get("platforms", ["discord", "slack"]),
+            personas=advisors_data.get("personas", {"default": "philosophy_advisor"}),
+            features=advisors_data.get(
+                "features", {"browser_analyst": True, "avatar_talkinghead": False}
+            ),
+        )
+
+        return cls(
+            model_paths=model_paths,
+            api_endpoints=api_endpoints,
+            model_actions=data.get("model_actions", {}),
+            state_models=data.get("state_models")
+            or {
+                "idle": ["hey_chat_tee", "hey_khum_puter"],
+                "computer": ["oh_kay_screenshot"],
+                "chatty": ["wax_poetic"],
+            },
+            audio_settings=audio_settings,
+            general_settings=general_settings,
+            keybindings=data.get("keybindings", {}),
+            commands=data.get("commands", {}),
+            command_sequences=data.get("command_sequences", {}),
+            advisors=advisors,
+            listen_for=data.get("listen_for", {}),
+            modes=data.get("modes", {}),
+            config_file=config_file,
+        )
+
+        # Audio settings
+        audio_settings = self.config_data.get("audio_settings", {})
+        self.mic_chunk_size = audio_settings.get("mic_chunk_size", 1024)
+        self.sample_rate = audio_settings.get("sample_rate", 16000)
+        self.audio_format = audio_settings.get("audio_format", "int16")
+
+        # General settings
+        general_settings = self.config_data.get("general_settings", {})
+        self.debug_mode = general_settings.get("debug_mode", True)
+        self.default_state = general_settings.get("default_state", "idle")
+        self.inference_framework = general_settings.get("inference_framework", "onnx")
+        self.start_on_boot = general_settings.get("start_on_boot", False)
+        # Ensure we're using ONNX runtime for ONNX models
+        self.check_for_updates = general_settings.get("check_for_updates", True)
+
+        # Logging configuration
+        logging_settings = self.config_data.get("logging", {})
+        self.log_level = logging_settings.get("level", "INFO")
+        self.log_format = logging_settings.get("format", "plain")
+        self.log_handlers = logging_settings.get("handlers", ["console"])
+        self.log_file = logging_settings.get("file", "logs/chattycommander.log")
+        self.log_external_url = logging_settings.get("external_url", "")
+        self.telemetry_url = logging_settings.get("telemetry_url", "")
+        self.diagnostics_file = logging_settings.get("diagnostics_file", "logs/diagnostics.jsonl")
+        self.logging = {
+            "level": self.log_level,
+            "format": self.log_format,
+            "handlers": self.log_handlers,
+            "file": self.log_file,
+            "external_url": self.log_external_url or None,
+            "telemetry_url": self.telemetry_url or None,
+            "diagnostics_file": self.diagnostics_file,
+        }
+
+        # Keybindings
+        self.keybindings = self.config_data.get("keybindings", {})
+
+        # Commands
+        self.commands = self.config_data.get("commands", {})
+
+        # Command sequences
+        self.command_sequences = self.config_data.get("command_sequences", {})
+
+        # Advisors (OpenAI-Agents advisor) settings
+        advisors_cfg = self.config_data.get("advisors", {})
+        provider_cfg = advisors_cfg.get("provider", {})
+        # Environment overrides
+        provider_base_url = os.environ.get("ADVISORS_PROVIDER_BASE_URL", provider_cfg.get("base_url", ""))
+        provider_api_key = os.environ.get("ADVISORS_PROVIDER_API_KEY", provider_cfg.get("api_key", ""))
+
+        self.advisors = {
+            "enabled": advisors_cfg.get("enabled", False),
+            "llm_api_mode": advisors_cfg.get("llm_api_mode", "completion"),
+            "model": advisors_cfg.get("model", "gpt-oss20b"),
+            "provider": {
+                "base_url": provider_base_url,
+                "api_key": provider_api_key,
+            },
+            "bridge": {
+                "token": os.environ.get(
+                    "ADVISORS_BRIDGE_TOKEN", advisors_cfg.get("bridge", {}).get("token", "")
+                ),
+                "url": os.environ.get(
+                    "ADVISORS_BRIDGE_URL", advisors_cfg.get("bridge", {}).get("url", "")
+                ),
+            },
+            "memory": {
+                "persistence_enabled": bool(
+                    os.environ.get("ADVISORS_MEMORY_PERSIST", str(advisors_cfg.get("memory", {}).get("persistence_enabled", False))).lower()
+                    in ["1", "true", "yes"]
+                ),
+                "persistence_path": os.environ.get(
+                    "ADVISORS_MEMORY_PATH",
+                    advisors_cfg.get("memory", {}).get("persistence_path", "data/advisors_memory.jsonl"),
+                ),
+            },
+            "platforms": advisors_cfg.get("platforms", ["discord", "slack"]),
+            "personas": advisors_cfg.get("personas", {"default": "philosophy_advisor"}),
+            "features": advisors_cfg.get(
+                "features",
+                {"browser_analyst": True, "avatar_talkinghead": False},
+            ),
+        }
+
+    def _load_config(self):
+        """Load configuration from JSON file with fallbacks and environment overrides."""
+        import json
+        import logging
+        import os
+
+        # 1) Candidate paths: explicit file, CHATCOMM_CONFIG, default_config.json, config.json
+        candidates = []
+        if self.config_file:
+            candidates.append(self.config_file)
+        env_path = os.environ.get("CHATCOMM_CONFIG")
+        
+    @classmethod
+    def load(cls, config_file: str = "config.json") -> "Config":
+        """Load configuration from JSON using the search rules of the old class."""
+        data = cls._read_config(config_file)
+        return cls.from_dict(data, config_file=config_file)
 
     @staticmethod
-    def _get_int_env(var_name: str, fallback: int) -> int:
-        """Return an integer from the environment or the provided fallback."""
-        value = os.environ.get(var_name)
-        if value is not None:
-            try:
-                parsed = int(value)
-                if parsed <= 0:
-                    raise ValueError
-                return parsed
-            except ValueError:
-                logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
-        return fallback
+    def _read_config(config_file: str) -> Dict[str, Any]:
+        """Read configuration data from ``config_file`` with fallbacks."""
+        candidates: List[str] = []
+        if config_file:
+            candidates.append(config_file)
+        env_path = os.getenv("CHATCOMM_CONFIG")
+        
+        if env_path:
+            candidates.append(env_path)
+        candidates.extend(["default_config.json", "config.json"])
 
     def save_config(self, config_data: dict | None = None) -> None:
         """Save configuration to file."""

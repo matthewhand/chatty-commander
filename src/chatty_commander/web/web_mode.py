@@ -7,8 +7,6 @@ Provides REST API endpoints and WebSocket support for web interface.
 
 import asyncio
 import json
-import logging
-import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -31,8 +29,11 @@ from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.routes.version import router as version_router
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+import logging
+
+from chatty_commander.utils.logger import setup_logger
+
+# Logger will be configured when WebModeServer is instantiated
 logger = logging.getLogger(__name__)
 
 
@@ -98,6 +99,10 @@ class WebModeServer:
         command_executor: CommandExecutor,
         no_auth: bool = False,
     ) -> None:
+        # Configure module logger based on user settings
+        global logger
+        logger = setup_logger(__name__, config=config_manager)
+
         self.config_manager = config_manager
         self.state_manager = state_manager
         self.model_manager = model_manager
