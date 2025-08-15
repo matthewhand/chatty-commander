@@ -3,106 +3,203 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class Config:
-    def __init__(self, config_file="config.json"):
-
-        # Load configuration from JSON file (with fallbacks and env overrides)
+    def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
-        self.config_data = self._load_config()
-        # Expose raw config under .config for web routers expecting a dict
-        self.config: dict = self.config_data
+        self.config_data: dict[str, Any] = self._load_config()
+        # Expose the raw dict for web handlers/tests that expect it
+        self.config: dict[str, Any] = self.config_data
 
-        # Extract commonly used config values as properties
-        self.default_state = self.config_data.get("default_state", "idle")
-        self.general_models_path = self.config_data.get("general_models_path", "models/general")
-        self.system_models_path = self.config_data.get("system_models_path", "models/system")
-        self.chat_models_path = self.config_data.get("chat_models_path", "models/chat")
-        self.model_actions = self.config_data.get("model_actions", {})
-        self.state_models = self.config_data.get("state_models", {})
-        self.api_endpoints = self.config_data.get("api_endpoints", {})
-        self.wakeword_state_map = self.config_data.get("wakeword_state_map", {})
-        self.state_transitions = self.config_data.get("state_transitions", {})
-        self.commands = self.config_data.get("commands", {})
+        # Core values with repo-defaults aligned to tests
+        self.default_state: str = self.config_data.get("default_state", "idle")
+        self.general_models_path: str = self.config_data.get("general_models_path", "models-idle")
+        self.system_models_path: str = self.config_data.get("system_models_path", "models-computer")
+        self.chat_models_path: str = self.config_data.get("chat_models_path", "models-chatty")
+
+        self.model_actions: dict[str, Any] = self.config_data.get("model_actions", {})
+        self.state_models: dict[str, list[str]] = self.config_data.get("state_models", {})
+        self.api_endpoints: dict[str, str] = self.config_data.get(
+            "api_endpoints",
+            {
+                "home_assistant": "http://homeassistant.domain.home:8123/api",
+                "chatbot_endpoint": "http://localhost:3100/",
+            },
+        )
+        self.wakeword_state_map: dict[str, str] = self.config_data.get("wakeword_state_map", {})
+        self.state_transitions: dict[str, dict[str, str]] = self.config_data.get("state_transitions", {})
+        self.commands: dict[str, Any] = self.config_data.get("commands", {})
 
         # Voice/GUI behaviour
-        self.voice_only = self.config_data.get("voice_only", False)
+        self.voice_only: bool = bool(self.config_data.get("voice_only", False))
 
-        # Create general_settings object for backward compatibility
-        class GeneralSettings:
-            def __init__(self, config):
-                self._config = config
+        # Back-compat general settings wrapper with property-based access
+        class _GeneralSettings:
+            def __init__(self, outer: "Config") -> None:
+                self._cfg = outer
 
             @property
-            def default_state(self):
-                return self._config.default_state
+            def default_state(self) -> str:
+                return self._cfg.default_state
 
             @default_state.setter
-            def default_state(self, value):
-                self._config.default_state = value
-                self._config.config_data["default_state"] = value
+            def default_state(self, v: str) -> None:
+                self._cfg.default_state = v
+                self._cfg.config_data["default_state"] = v
 
-        self.general_settings = GeneralSettings(self)
+            @property
+            def debug_mode(self) -> bool:
+                return bool(self._cfg.config_data.get("general", {}).get("debug_mode", True))
 
-        # Apply environment variable overrides
+            @debug_mode.setter
+            def debug_mode(self, v: bool) -> None:
+                self._cfg._update_general_setting("debug_mode", bool(v))
+
+            @property
+            def inference_framework(self) -> str:
+                return str(self._cfg.config_data.get("general", {}).get("inference_framework", "onnx"))
+
+            @inference_framework.setter
+            def inference_framework(self, v: str) -> None:
+                self._cfg._update_general_setting("inference_framework", v)
+
+            @property
+            def start_on_boot(self) -> bool:
+                return bool(self._cfg.config_data.get("general", {}).get("start_on_boot", False))
+
+            @start_on_boot.setter
+            def start_on_boot(self, v: bool) -> None:
+                self._cfg._update_general_setting("start_on_boot", bool(v))
+
+            @property
+            def check_for_updates(self) -> bool:
+                return bool(self._cfg.config_data.get("general", {}).get("check_for_updates", True))
+
+            @check_for_updates.setter
+            def check_for_updates(self, v: bool) -> None:
+                self._cfg._update_general_setting("check_for_updates", bool(v))
+
+        self.general_settings = _GeneralSettings(self)
+
+        # Apply env overrides and compute web server config
         self._apply_env_overrides()
-
-        # Apply web server configuration
         self._apply_web_server_config()
-        # Load general settings with possible environment overrides
         self._load_general_settings()
 
-    def _apply_env_overrides(self):
-        """Apply environment variable overrides to API endpoints."""
-        if "CHATBOT_ENDPOINT" in os.environ:
+    # ------------------------------------------------------------------
+    # Helpers
+    def _apply_env_overrides(self) -> None:
+        if os.environ.get("CHATBOT_ENDPOINT"):
             self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
-        if "HOME_ASSISTANT_ENDPOINT" in os.environ:
+        if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
+    
+    def _apply_web_server_config(self) -> None:
+        web_cfg = self.config_data.get("web_server", {})
+        host = web_cfg.get("host", "0.0.0.0")
+        port = int(web_cfg.get("port", 8100))
+        auth = bool(web_cfg.get("auth_enabled", True))
+        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
+        self.web_host = host
+        self.web_port = port
+        self.web_auth_enabled = auth
 
-    @property
-    def mic_chunk_size(self) -> int:
-        return self.audio_settings.mic_chunk_size
+    @staticmethod
+    def _get_int_env(var_name: str, fallback: int) -> int:
+        value = os.environ.get(var_name)
+        if value is not None:
+            try:
+                parsed = int(value)
+                if parsed <= 0:
+                    raise ValueError
+                return parsed
+            except ValueError:
+                logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
+        return fallback
 
-    @property
-    def sample_rate(self) -> int:
-        return self.audio_settings.sample_rate
+    def _load_config(self) -> dict[str, Any]:
+        try:
+            with open(self.config_file, encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            logger.warning("Config file %s not found. Using defaults.", self.config_file)
+            return {}
+        except json.JSONDecodeError:
+            logger.error("Config file %s is not valid JSON. Using defaults.", self.config_file)
+            return {}
 
-    @property
-    def audio_format(self) -> str:
-        return self.audio_settings.audio_format
-
-    @property
-    def debug_mode(self) -> bool:
-        return self.general_settings.debug_mode
-
-    @property
-    def default_state(self) -> str:
-        return self.general_settings.default_state
-
-    @property
-    def inference_framework(self) -> str:
-        return self.general_settings.inference_framework
-
-    @property
-    def start_on_boot(self) -> bool:
-        return self.general_settings.start_on_boot
-
-    @start_on_boot.setter
-    def start_on_boot(self, value: bool) -> None:
-        self.general_settings.start_on_boot = value
-
-    @property
-    def check_for_updates(self) -> bool:
-        return self.general_settings.check_for_updates
-
-    @check_for_updates.setter
-    def check_for_updates(self, value: bool) -> None:
-        self.general_settings.check_for_updates = value
+    def _load_general_settings(self) -> None:
+        general = self.config_data.get("general", {})
+        self.default_state = general.get("default_state", self.default_state)
 
     # ------------------------------------------------------------------
+    # Public API
+    def save_config(self, config_data: dict | None = None) -> None:
+        if config_data is not None:
+            self.config_data.update(config_data)
+            self.config = self.config_data
+        # Persist web server config and voice_only
+        self._apply_web_server_config()
+        self.config_data["web_server"] = self.web_server
+        self.config_data["voice_only"] = self.voice_only
+        with open(self.config_file, "w", encoding="utf-8") as f:
+            json.dump(self.config_data, f, indent=2)
+
+    def validate(self) -> None:
+        if not self.model_actions:
+            raise ValueError("Model actions configuration is empty.")
+        for path in [self.general_models_path, self.system_models_path, self.chat_models_path]:
+            if not os.path.exists(path):
+                logging.warning(f"Model directory {path} does not exist.")
+            elif not os.listdir(path):
+                logging.warning(f"Model directory {path} is empty.")
+
+    # Start-on-boot and update checks
+    def set_start_on_boot(self, enabled: bool) -> None:
+        self.general_settings.start_on_boot = enabled
+
+    def set_check_for_updates(self, enabled: bool) -> None:
+        self._update_general_setting("check_for_updates", bool(enabled))
+
+    def _update_general_setting(self, key: str, value: Any) -> None:
+        if "general" not in self.config_data:
+            self.config_data["general"] = {}
+        self.config_data["general"][key] = value
+        self.save_config(self.config_data)
+
+    def perform_update_check(self) -> dict[str, Any] | None:
+        if not self.general_settings.check_for_updates:
+            return None
+        try:
+            result = subprocess.run(["git", "rev-parse", "--git-dir"], capture_output=True, text=True, check=False)
+            if result.returncode != 0:
+                logging.warning("Not in a git repository, cannot check for updates")
+                return None
+            subprocess.run(["git", "fetch", "origin"], capture_output=True, check=True)
+            result = subprocess.run(
+                ["git", "rev-list", "HEAD..origin/main", "--count"], capture_output=True, text=True, check=True
+            )
+            update_count = int((result.stdout or "0").strip())
+            if update_count > 0:
+                result = subprocess.run(
+                    ["git", "log", "origin/main", "-1", "--pretty=format:%s"], capture_output=True, text=True, check=True
+                )
+                latest_commit = (result.stdout or "").strip()
+                return {"updates_available": True, "update_count": update_count, "latest_commit": latest_commit}
+            else:
+                return {"updates_available": False, "update_count": 0}
+        except Exception as e:  # pragma: no cover
+            logging.error(f"Failed to check for updates: {e}")
+            return None
+
+    @classmethod
+    def load(cls, config_file: str = "config.json") -> "Config":
+        return cls(config_file)
     # Serialization helpers
 
     def to_dict(self) -> Dict[str, Any]:
@@ -316,14 +413,118 @@ class Config:
         # Configuration for model actions (derived from commands)
         self.model_actions = self._build_model_actions()
 
-        # Configuration for different states and their associated models
-        self.state_models = self.config_data.get(
-            "state_models",
-            {
-                "idle": ["hey_chat_tee", "hey_khum_puter", "okay_stop"],
-                "computer": ["oh_kay_screenshot", "okay_stop"],
-                "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"],
+    # --- Convenience attribute accessors ---------------------------------
+
+    @property
+    def general_models_path(self) -> str:
+        return self.model_paths.idle
+
+    @general_models_path.setter
+    def general_models_path(self, value: str) -> None:
+        self.model_paths.idle = value
+
+    @property
+    def system_models_path(self) -> str:
+        return self.model_paths.computer
+
+    @system_models_path.setter
+    def system_models_path(self, value: str) -> None:
+        self.model_paths.computer = value
+
+    @property
+    def chat_models_path(self) -> str:
+        return self.model_paths.chatty
+
+    @chat_models_path.setter
+    def chat_models_path(self, value: str) -> None:
+        self.model_paths.chatty = value
+
+    @property
+    def mic_chunk_size(self) -> int:
+        return self.audio_settings.mic_chunk_size
+
+    @property
+    def sample_rate(self) -> int:
+        return self.audio_settings.sample_rate
+
+    @property
+    def audio_format(self) -> str:
+        return self.audio_settings.audio_format
+
+    @property
+    def debug_mode(self) -> bool:
+        return self.general_settings.debug_mode
+
+    @property
+    def default_state(self) -> str:
+        return self.general_settings.default_state
+
+    @property
+    def inference_framework(self) -> str:
+        return self.general_settings.inference_framework
+
+    @property
+    def start_on_boot(self) -> bool:
+        return self.general_settings.start_on_boot
+
+    @start_on_boot.setter
+    def start_on_boot(self, value: bool) -> None:
+        self.general_settings.start_on_boot = value
+
+    @property
+    def check_for_updates(self) -> bool:
+        return self.general_settings.check_for_updates
+
+    @check_for_updates.setter
+    def check_for_updates(self, value: bool) -> None:
+        self.general_settings.check_for_updates = value
+
+    # ------------------------------------------------------------------
+    # Serialization helpers
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON serialisable dict of the configuration."""
+        data = asdict(self)
+        # ``config_file`` is an internal detail and should not be persisted
+        data.pop("config_file", None)
+        return data
+
+    # ------------------------------------------------------------------
+    # Loading helpers
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], config_file: str = "config.json") -> Config:
+        """Create a ``Config`` instance from a raw dictionary."""
+        model_paths = ModelPaths(**data.get("model_paths", {}))
+        api_endpoints = ApiEndpoints(**data.get("api_endpoints", {}))
+        audio_settings = AudioSettings(**data.get("audio_settings", {}))
+        general_settings = GeneralSettings(**data.get("general_settings", {}))
+        advisors_data = data.get("advisors", {})
+        advisors = AdvisorsConfig(
+            enabled=advisors_data.get("enabled", False),
+            llm_api_mode=advisors_data.get("llm_api_mode", "completion"),
+            model=advisors_data.get("model", "gpt-oss20b"),
+            provider=AdvisorsProvider(**advisors_data.get("provider", {})),
+            bridge=AdvisorsBridge(**advisors_data.get("bridge", {})),
+            memory=AdvisorsMemory(**advisors_data.get("memory", {})),
+            platforms=advisors_data.get("platforms", ["discord", "slack"]),
+            personas=advisors_data.get("personas", {"default": "philosophy_advisor"}),
+            features=advisors_data.get(
+                "features", {"browser_analyst": True, "avatar_talkinghead": False}
+            ),
+        )
+
+        return cls(
+            model_paths=model_paths,
+            api_endpoints=api_endpoints,
+            model_actions=data.get("model_actions", {}),
+            state_models=data.get("state_models")
+            or {
+                "idle": ["hey_chat_tee", "hey_khum_puter"],
+                "computer": ["oh_kay_screenshot"],
+                "chatty": ["wax_poetic"],
             },
+<<<<<<< HEAD
         )
 
         # Flexible modes configuration (optional)
@@ -409,102 +610,118 @@ class Config:
                 "personas",
                 {
                     "chatty": "You are Chatty, a friendly multimodal avatar with 3D talking head, continuous TTS/STT. Be concise and engaging."
+=======
+            state_transitions=data.get("state_transitions")
+            or {
+                "idle": {
+                    "hey_chat_tee": "chatty",
+                    "hey_khum_puter": "computer",
+                    "toggle_mode": "computer",
                 },
-            ),
-            "provider": {
-                "base_url": provider_base_url,
-                "api_key": provider_api_key,
+                "chatty": {
+                    "hey_khum_puter": "computer",
+                    "okay_stop": "idle",
+                    "thanks_chat_tee": "idle",
+                    "toggle_mode": "idle",
+                },
+                "computer": {
+                    "hey_chat_tee": "chatty",
+                    "okay_stop": "idle",
+                    "that_ill_do": "idle",
+                    "toggle_mode": "chatty",
+>>>>>>> update/pr-52
+                },
             },
-            "bridge": {
-                "token": os.environ.get(
-                    "ADVISORS_BRIDGE_TOKEN", advisors_cfg.get("bridge", {}).get("token", "")
-                ),
-                "url": os.environ.get(
-                    "ADVISORS_BRIDGE_URL", advisors_cfg.get("bridge", {}).get("url", "")
-                ),
-            },
-            "memory": {
-                "persistence_enabled": bool(
-                    os.environ.get(
-                        "ADVISORS_MEMORY_PERSIST",
-                        str(advisors_cfg.get("memory", {}).get("persistence_enabled", False)),
-                    ).lower()
-                    in ["1", "true", "yes"]
-                ),
-                "persistence_path": os.environ.get(
-                    "ADVISORS_MEMORY_PATH",
-                    advisors_cfg.get("memory", {}).get(
-                        "persistence_path", "data/advisors_memory.jsonl"
-                    ),
-                ),
-            },
-            "platforms": advisors_cfg.get("platforms", ["discord", "slack"]),
-            "features": advisors_cfg.get(
-                "features",
-                {"browser_analyst": True, "avatar_talkinghead": False},
-            ),
-        }
-
-        # Advisors: directives configuration
-        self.advisors_directives = advisors_cfg.get(
-            "directives",
-            {
-                "parse_models": True,
-                "parse_tools": True,
-                "parse_mode_switch": True,
-            },
+            audio_settings=audio_settings,
+            general_settings=general_settings,
+            keybindings=data.get("keybindings", {}),
+            commands=data.get("commands", {}),
+            command_sequences=data.get("command_sequences", {}),
+            advisors=advisors,
+            listen_for=data.get("listen_for", {}),
+            modes=data.get("modes", {}),
+            config_file=config_file,
         )
 
-        # Advisors: tools configuration
-        self.tools = self.config_data.get(
-            "tools",
-            {
-                "fs_enabled": True,
-                "browser_enabled": True,
-            },
-        )
+    @classmethod
+    def load(cls, config_file: str = "config.json") -> Config:
+        """Load configuration from JSON using the search rules of the old class."""
+        data = cls._read_config(config_file)
+        return cls.from_dict(data, config_file=config_file)
 
-    def _load_config(self):
-        """Load configuration from file or defaults."""
-        try:
-            with open(self.config_file, encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            logger.warning(f"Config file {self.config_file} not found. Using defaults.")
-            return {}
-        except json.JSONDecodeError:
-            logger.error(f"Config file {self.config_file} is not a valid JSON. Using defaults.")
-            return {}
+    @staticmethod
+    def _read_config(config_file: str) -> dict[str, Any]:
+        """Read configuration data from ``config_file`` with fallbacks."""
+        candidates: list[str] = []
+        if config_file:
+            candidates.append(config_file)
+        env_path = os.getenv("CHATCOMM_CONFIG")
+        if env_path:
+            candidates.append(env_path)
+        candidates.extend(["default_config.json", "config.json"])
 
-    def _build_model_actions(self):
-        """Create model action mappings from commands config."""
-        commands_cfg = self.config_data.get(
-            "commands",
-            {
-                "that_ill_do": {
-                    "idle": "thanks_chat_tee",
-                    "computer": "okay_stop",
-                }
-            },
-        )
-        return {"computer": commands_cfg}
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for p in candidates:
+            if p and p not in seen:
+                ordered.append(p)
+                seen.add(p)
 
-    def _load_general_settings(self) -> None:
-        general = self.config_data.get("general", {})
-        self.default_state = general.get("default_state", self.default_state)
+        for path in ordered:
+            if os.path.exists(path):
+                try:
+                    with open(path) as f:  # noqa: PTH123 - user provided path
+                        data = json.load(f)
+                    logging.info(f"Loaded configuration from {path}")
+                    return data
+                except (json.JSONDecodeError, OSError) as e:  # pragma: no cover - log only
+                    logging.warning(f"Could not load config file {path}: {e}")
 
-    def validate(self):
-        # Validate modes structure if present
-        if self.modes:
-            if not isinstance(self.modes, dict):
-                raise ValueError("'modes' must be a dict of mode configs")
-            for name, cfg in self.modes.items():
-                if not isinstance(cfg, dict):
-                    raise ValueError(f"mode '{name}' must be a dict")
-                if 'wakewords' in cfg and not isinstance(cfg['wakewords'], list):
-                    raise ValueError(f"mode '{name}'.wakewords must be a list")
+        logging.warning("No valid configuration found; falling back to empty config")
+        return {}
 
-    def set_start_on_boot(self, enabled):
+    # ------------------------------------------------------------------
+    # Behavioural helpers (largely ported from previous implementation)
+
+    def _build_model_actions(self) -> dict[str, dict[str, str]]:
+        """Build model actions from commands configuration."""
+        actions: dict[str, dict[str, str]] = {}
+        for command_name, command_config in self.commands.items():
+            action_type = command_config.get("action")
+            if action_type == "keypress":
+                keys = command_config.get("keys")
+                if keys and keys in self.keybindings:
+                    actions[command_name] = {"keypress": self.keybindings[keys]}
+                else:
+                    actions[command_name] = {"keypress": keys}
+            elif action_type == "url":
+                url = command_config.get("url", "")
+                for endpoint_name, endpoint_url in asdict(self.api_endpoints).items():
+                    url = url.replace(f"{{{endpoint_name}}}", endpoint_url)
+                actions[command_name] = {"url": url}
+            elif action_type == "custom_message":
+                actions[command_name] = {"message": command_config.get("message", "")}
+        return actions
+
+    # --- Public API ----------------------------------------------------
+
+    def validate(self) -> None:
+        """Validate configuration values."""
+        if not self.model_actions:
+            raise ValueError("Model actions configuration is empty.")
+
+        paths = [self.general_models_path, self.system_models_path, self.chat_models_path]
+        for path in paths:
+            if not os.path.exists(path):  # noqa: PTH110
+                logging.warning(f"Model directory {path} does not exist.")
+            elif not os.listdir(path):
+                logging.warning(f"Model directory {path} is empty.")
+
+    # --- Start on boot / update checks ---------------------------------
+
+    def set_start_on_boot(self, enabled: bool) -> None:
+        """Enable or disable start on boot."""
+        self.start_on_boot = enabled
         self._update_general_setting("start_on_boot", enabled)
 
     def set_check_for_updates(self, enabled):
@@ -539,13 +756,42 @@ class Config:
             logger.error(f"Failed to disable start on boot: {e}")
             raise
 
-    def perform_update_check(self):
-        update_check_config = self.config_data.get("update_check", {})
-
-        enabled = update_check_config.get("enabled", False)
-        interval_hours = update_check_config.get("interval_hours", 24)
-
-        if not enabled:
+    def perform_update_check(self) -> dict[str, Any] | None:
+        """Check for updates from the repository."""
+        if not self.check_for_updates:
+            return None
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--git-dir"], capture_output=True, text=True, check=False
+            )
+            if result.returncode != 0:
+                logging.warning("Not in a git repository, cannot check for updates")
+                return None
+            subprocess.run(["git", "fetch", "origin"], capture_output=True, check=True)
+            result = subprocess.run(
+                ["git", "rev-list", "HEAD..origin/main", "--count"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            update_count = int(result.stdout.strip())
+            if update_count > 0:
+                result = subprocess.run(
+                    ["git", "log", "origin/main", "-1", "--pretty=format:%s"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                latest_commit = result.stdout.strip()
+                return {
+                    "updates_available": True,
+                    "update_count": update_count,
+                    "latest_commit": latest_commit,
+                }
+            else:
+                return {"updates_available": False, "update_count": 0}
+        except Exception as e:  # pragma: no cover - log only
+            logging.error(f"Failed to check for updates: {e}")
             return None
 
         # Check last check time and see if it's time to check again

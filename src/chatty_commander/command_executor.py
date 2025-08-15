@@ -27,7 +27,7 @@ try:
 except Exception:
     requests = None  # type: ignore
 
-# Lazy attribute loader to avoid import-order issues (and E402)
+__all__ = ["pyautogui", "requests"]
 
 
 def __getattr__(name: str):  # type: ignore[override]
