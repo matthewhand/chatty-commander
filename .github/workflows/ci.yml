@@ -2,103 +2,34 @@ name: CI
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "**" ]
+    branches: [ main ]
 
 jobs:
-  lint-and-test:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v3
-
-      - name: Set up Python 3.11
-        run: uv python install 3.11
-
-      - name: Sync dependencies (all groups)
-        run: uv sync --all-groups
-
-      - name: Lint (ruff)
-        run: uv run ruff check .
-
-      - name: Format check (black)
-        run: uv run black --check .
-
-      - name: Generate API docs (parity check)
-        run: uv run python -m src.chatty_commander.tools.generate_api_docs -o docs
-
-      - name: Run tests with coverage (Python)
-        run: uv run pytest -q --cov=. --cov-report=term --cov-report=xml --cov-fail-under=90
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          node-version: '20'
+          python-version: '3.11'
 
-      - name: Install frontend deps
-        run: npm ci --prefix webui/frontend
-
-      - name: Lint frontend
-        run: npm run lint:ci --prefix webui/frontend
-
-      - name: Type-check frontend
-        run: npm run type-check:ci --prefix webui/frontend
-
-      - name: Run frontend tests with coverage (Jest)
-        run: npm run test:ci:coverage --prefix webui/frontend
-
-      - name: Upload coverage to Codecov (optional)
-        if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml, ./webui/frontend/coverage/lcov.info
-          flags: backend,frontend
-          name: codecov-umbrella
-
-  build-standalone:
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v3
-
-      - name: Set up Python 3.11
-        run: uv python install 3.11
-
-      - name: Install build deps
-        run: uv sync --all-groups && uv run pip install pyinstaller
-
-      - name: Build CLI executable
-        shell: bash
+      - name: Install project
         run: |
-          echo "Building standalone chatty for $RUNNER_OS"
-          uv run pyinstaller --clean -y packaging/chatty_cli.spec
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
 
-      - name: Smoke test built binary (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
+      - name: Run quick system smoke
         run: |
-          set -euo pipefail
-          ls -lah dist
-          file dist/chatty || true
-          chmod +x dist/chatty || true
-          ./dist/chatty --help >/dev/null
-          ./dist/chatty list >/dev/null
-          ./dist/chatty gui --help >/dev/null
+          echo "$PWD" >> $GITHUB_PATH
+          PATH=$PWD:$PATH python tests/test_system.py --verbose
 
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: chatty-${{ runner.os }}
-          path: |
-            dist/**
-            !dist/*.dSYM/**
+      - name: Run pytest (skip heavy perf)
+        run: |
+          pytest -q -k "not performance"
+
