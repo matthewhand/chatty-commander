@@ -17,7 +17,6 @@ from fastapi.testclient import TestClient
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
-
 from chatty_commander.app.command_executor import CommandExecutor
 
 

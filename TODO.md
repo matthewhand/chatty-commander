@@ -486,7 +486,7 @@ Phased Plan
   - Then set: chatty-commander = "chatty_commander.cli.cli:cli_main".
   - Keep root cli.py as a shim forwarding to the package entry.
 - Remove argparse dependency from project dependencies (stdlib).
-- Add DeprecationWarning to shims: config.py, command_executor.py, utils/logger.py.
+- Add DeprecationWarning to shims: config.py, utils/logger.py. Remove command_executor.py shim.
 
 2) Logger consolidation
 - Keep src/chatty_commander/utils/logger.py as real implementation.

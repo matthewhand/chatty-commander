@@ -158,15 +158,11 @@ class CommandExecutor:
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
 
-        Tests patch ``chatty_commander.app.command_executor.pyautogui``. We must fetch the
-        patched object via ``_get_pyautogui()`` instead of relying on a static import.
-        
-        # Special-case early return when pyautogui is explicitly None (tests patch this module's pyautogui)
-        Tests patch this module's ``pyautogui`` via the canonical import path.
-        We fetch the possibly patched object through ``_get_pyautogui()`` instead
-        of relying on a static import.
+        Tests may patch pyautogui at runtime. Always fetch via _get_pyautogui()
+        instead of relying on the import-time module variable.
         """
-        # Special-case early return when pyautogui is explicitly None (tests patch command_executor.pyautogui)
+        # Special-case early return when pyautogui is explicitly None (tests patch
+        # chatty_commander.app.command_executor.pyautogui)
         if _get_pyautogui() is None:
             # Emit exactly the messages tests assert, using root-level logging functions so patch('logging.critical') catches them
             logging.error("pyautogui is not installed")
