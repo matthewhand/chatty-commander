@@ -112,6 +112,34 @@ class ModelManager:
             return self.models['chat']
         return {}
 
+    def _load_model_with_retry(self, model_path: str) -> Model | None:
+        import traceback
+        from datetime import datetime
+
+        max_retries = 3
+        retries = 0
+        while True:
+            try:
+                ModelClass = _get_patchable_model_class()
+                return ModelClass(model_path)  # type: ignore[call-arg]
+            except Exception as e:  # pragma: no cover - diagnostics handled below
+                retries += 1
+                diagnostics = {
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "model_path": model_path,
+                    "exception": traceback.format_exc(),
+                    "retry": retries,
+                }
+                logging.error("Model loading failure: %s", diagnostics)
+                if retries > max_retries:
+                    try:
+                        from chatty_commander.utils.logger import report_error
+
+                        report_error(e)
+                    except Exception as report_exc:
+                        logging.error("Error reporting failed: %s", report_exc)
+                    return None
+
     def load_model_set(self, path: str) -> dict[str, Model]:
         """
         Load all .onnx models from the given path.

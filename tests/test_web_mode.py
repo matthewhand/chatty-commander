@@ -15,10 +15,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 import websockets
-import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
-from unittest.mock import MagicMock, patch
 
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config

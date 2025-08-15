@@ -33,7 +33,6 @@ except Exception:  # noqa: BLE001 - handle headless DisplayConnectionError etc.
     pyautogui = None  # type: ignore[assignment]
 
 
-
 class CommandExecutor:
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
         self.config: Any = config
@@ -159,8 +158,13 @@ class CommandExecutor:
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
 
-        Tests patch 'command_executor.pyautogui' (root-level shim). We must fetch the
-        patched object via _get_pyautogui() instead of relying on a static import.
+        Tests patch ``chatty_commander.app.command_executor.pyautogui``. We must fetch the
+        patched object via ``_get_pyautogui()`` instead of relying on a static import.
+        
+        # Special-case early return when pyautogui is explicitly None (tests patch this module's pyautogui)
+        Tests patch this module's ``pyautogui`` via the canonical import path.
+        We fetch the possibly patched object through ``_get_pyautogui()`` instead
+        of relying on a static import.
         """
         # Special-case early return when pyautogui is explicitly None (tests patch command_executor.pyautogui)
         if _get_pyautogui() is None:
@@ -282,10 +286,7 @@ class CommandExecutor:
 # Example usage intentionally removed to avoid instantiation without required args during static analysis/tests.
 
 
-def _get_pyautogui():
-    # Prefer root-level shim attribute so tests can patch command_executor.pyautogui
-    try:
-        import importlib
+    """Return pyautogui or ``None`` if unavailable.
 
         _shim_ce = importlib.import_module("command_executor")
         pg = getattr(_shim_ce, "pyautogui", None)

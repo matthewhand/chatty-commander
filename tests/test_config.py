@@ -5,6 +5,8 @@ import pytest
 
 from chatty_commander.app.config import Config
 
+from src.chatty_commander.app.config import Config
+from src.chatty_commander.tools.builder import build_openapi_schema
 
 @pytest.fixture
 def config():
