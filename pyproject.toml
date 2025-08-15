@@ -98,7 +98,26 @@ quote-style = "preserve"
 indent-style = "space"
 docstring-code-format = true
 skip-magic-trailing-comma = false
+[tool.pydocstyle]
+convention = "google"
+add-ignore = [
+  "D100", # Missing docstring in public module
+  "D101", # Missing docstring in public class
+  "D102", # Missing docstring in public method
+  "D103", # Missing docstring in public function
+  "D104", # Missing docstring in public package
+  "D105", # Missing docstring in magic method
+  "D107", # Missing docstring in __init__
+  "D200", # One-line docstring should fit on one line
+  "D205", # 1 blank line required between summary line and description
+  "D212", # Multi-line docstring summary should start at the first line
+  "D403", # First word of the first line should be properly capitalized
+  "D415", # First line should end with punctuation
+]
 
+[tool.doc8]
+max-line-length = 100
+ignore = ["D001"]
 [tool.setuptools]
 package-dir = {"" = "src"}
 packages = ["chatty_commander"]

@@ -1,5 +1,6 @@
-"""
-Root-level shim to expose Config for tests importing `from config import Config`.
+"""Compat shim: prefer :mod:`chatty_commander.app.config`"""
+
+from .compat import expose
 
 Primary source of truth lives in src/chatty_commander/app/config.py.
 We attempt, in order:

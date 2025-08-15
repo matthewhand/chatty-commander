@@ -713,4 +713,75 @@ if __name__ == "__main__":
         no_auth=True,
     )
 
+<<<<<<< HEAD
     server.run()
+=======
+    env_host = os.getenv("CHATCOMM_HOST", "0.0.0.0")
+    env_port = int(os.getenv("CHATCOMM_PORT", "8100"))
+    env_log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
+
+    server.run(host=env_host, port=env_port, log_level=env_log_level)
+
+
+# Minimal, stateless FastAPI app factory for tests
+
+
+def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
+    """Create a minimal FastAPI app used in unit tests.
+
+    Parameters
+    ----------
+    no_auth:
+        When ``True`` the server behaves in development/no-auth mode and CORS
+        is fully permissive. When ``False`` the app applies the same CORS
+        restrictions as production.
+    config:
+        Optional :class:`~chatty_commander.app.config.Config` instance.  If
+        supplied and ``no_auth`` is ``False`` the ``web.allowed_origins`` value
+        from the config is used for CORS.  When not provided, the comma-separated
+        ``CHATCOMM_ALLOWED_ORIGINS`` environment variable is consulted.  This
+        mirrors the behaviour of the production server and allows tests to
+        supply custom origins without modifying global state.
+    """
+
+    if no_auth:
+        allowed_origins = ["*"]
+    else:
+        origins: list[str] | None = None
+        # Prefer config-provided origins when available
+        if config is not None:
+            web_cfg = getattr(config, "config", {}).get("web", {})  # type: ignore[arg-type]
+            cfg_origins = web_cfg.get("allowed_origins") if isinstance(web_cfg, dict) else None
+            if isinstance(cfg_origins, str):
+                origins = [cfg_origins]
+            elif isinstance(cfg_origins, list | tuple):
+                origins = [str(o) for o in cfg_origins]
+        # Fall back to environment variable
+        if origins is None:
+            env_origins = os.environ.get("CHATCOMM_ALLOWED_ORIGINS")
+            if env_origins:
+                origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+        if not origins:
+            origins = ["http://localhost:3000"]
+        allowed_origins = origins
+
+    app = FastAPI(
+        title="ChattyCommander API",
+        version="0.2.0",
+        docs_url="/docs" if no_auth else None,
+        redoc_url="/redoc" if no_auth else None,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/api/v1/health")
+    async def health_check():
+        return {"status": "healthy"}
+
+    return app
+>>>>>>> update/pr-38

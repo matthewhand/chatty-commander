@@ -18,11 +18,7 @@ except ModuleNotFoundError:
         "Dependency 'wakewords' not found. Using dummy Model. Some functionality may be limited."
     )
 
-<<<<<<< HEAD
     class Model:  # type: ignore[no-redef]
-=======
-    class Model:
->>>>>>> update/pr-6
         def __init__(self, path):
             self.path = path
 
@@ -97,7 +93,6 @@ class ModelManager:
             logging.error(f"Model directory {path} does not exist.")
             return model_set
 
-<<<<<<< HEAD
         try:
             entries = os.listdir(path)
         except Exception as e:
@@ -125,24 +120,6 @@ class ModelManager:
                 )
                 # do not add on failure
                 continue
-
-=======
-        for model_file in os.listdir(path):
-            if model_file.endswith('.onnx'):
-                model_path = os.path.join(path, model_file)
-                model_name = os.path.splitext(model_file)[0]
-                if not os.path.exists(model_path):
-                    logging.warning(f"Model file '{model_path}' does not exist. Skipping.")
-                    continue
-                try:
-                    model_instance = Model(model_path)
-                    model_set[model_name] = model_instance
-                    logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
-                except Exception as e:
-                    logging.error(
-                        f"Failed to load model '{model_name}' from '{model_path}'. Error details: {str(e)}. Continuing with other models."
-                    )
->>>>>>> update/pr-6
         return model_set
 
     async def async_listen_for_commands(self) -> str | None:
