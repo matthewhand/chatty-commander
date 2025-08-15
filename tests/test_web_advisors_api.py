@@ -15,6 +15,7 @@ class DummyConfig(Config):
         self.system_models_path = "models-computer"
         self.chat_models_path = "models-chatty"
         self.config = {"model_actions": {}}
+        self.auth = {"enabled": True, "api_key": "secret", "allowed_origins": ["*"]}
         self.advisors = {
             "enabled": True,
             "providers": {
@@ -30,8 +31,7 @@ class DummyConfig(Config):
             },
         }
 
-
-def build_server(cfg):
+def build_server(cfg, *, no_auth: bool = True):
     with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
         mock_provider = MagicMock()
         mock_provider.model = "test-model"
@@ -40,7 +40,7 @@ def build_server(cfg):
         sm = StateManager()
         mm = ModelManager(cfg)
         ce = CommandExecutor(cfg, mm, sm)
-        return WebModeServer(cfg, sm, mm, ce, no_auth=True)
+        return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth)
 
 
 def test_advisors_message_endpoint_echo():
@@ -81,3 +81,30 @@ def test_advisors_message_endpoint_summarize():
     assert resp.status_code == 200
     data = resp.json()
     assert data["reply"] is not None
+
+
+def test_advisors_message_authentication():
+    cfg = DummyConfig()
+    server = build_server(cfg, no_auth=False)
+    client = TestClient(server.app)
+
+    payload = {
+        "platform": "discord",
+        "channel": "c1",
+        "user": "u1",
+        "text": "hello advisors",
+    }
+
+    # Missing API key should be unauthorized
+    resp = client.post("/api/v1/advisors/message", json=payload)
+    assert resp.status_code == 401
+
+    # Providing correct key should succeed
+    resp = client.post(
+        "/api/v1/advisors/message",
+        json=payload,
+        headers={"X-API-Key": cfg.auth["api_key"]},
+    )
+    assert resp.status_code == 200
+
+

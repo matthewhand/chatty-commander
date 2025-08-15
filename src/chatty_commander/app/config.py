@@ -376,6 +376,19 @@ class Config:
         # Command sequences
         self.command_sequences = self.config_data.get("command_sequences", {})
 
+        # Authentication settings
+        auth_cfg = self.config_data.get("auth", {})
+        self.auth = {
+            "enabled": auth_cfg.get("enabled", False),
+            # Environment variable override for API key
+            "api_key": os.environ.get(
+                "CHATCOMM_API_KEY", auth_cfg.get("api_key", "")
+            ),
+            "allowed_origins": auth_cfg.get(
+                "allowed_origins", ["http://localhost:3000"]
+            ),
+        }
+
         # Advisors (OpenAI-Agents advisor) settings
         advisors_cfg = self.config_data.get("advisors", {})
         provider_cfg = advisors_cfg.get("provider", {})

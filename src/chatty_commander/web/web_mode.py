@@ -13,8 +13,16 @@ from pathlib import Path
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    Security,
+)
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -108,6 +116,9 @@ class WebModeServer:
         self.model_manager = model_manager
         self.command_executor = command_executor
         self.no_auth = no_auth
+        self._expected_api_key = getattr(
+            self.config_manager, "auth", {}
+        ).get("api_key", "")
         self.start_time = time.time()
         self.last_command: str | None = None
         self.last_state_change = datetime.now()
@@ -123,6 +134,14 @@ class WebModeServer:
         # Setup state change callback
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+    async def _require_api_key(self, api_key: str = Security(APIKeyHeader(name="X-API-Key", auto_error=False))):
+        """Dependency to validate API key if authentication is enabled."""
+        if self.no_auth:
+            return
+        expected = self._expected_api_key
+        if not expected or api_key != expected:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
     def _create_app(self) -> FastAPI:
         """Create and configure FastAPI application."""
         app = FastAPI(
@@ -134,9 +153,16 @@ class WebModeServer:
         )
 
         # Add CORS middleware
+        origins = (
+            ["*"]
+            if self.no_auth
+            else getattr(self.config_manager, "auth", {}).get(
+                "allowed_origins", ["http://localhost:3000"]
+            )
+        )
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"] if self.no_auth else ["http://localhost:3000"],
+            allow_origins=origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
@@ -181,8 +207,9 @@ class WebModeServer:
 
     def _register_routes(self, app: FastAPI) -> None:
         """Register API routes."""
+        deps = [] if self.no_auth else [Depends(self._require_api_key)]
 
-        @app.get("/api/v1/status", response_model=SystemStatus)
+        @app.get("/api/v1/status", response_model=SystemStatus, dependencies=deps)
         async def get_status():
             """Get system status."""
             uptime_seconds = time.time() - self.start_time
@@ -195,13 +222,13 @@ class WebModeServer:
                 uptime=uptime_str,
             )
 
-        @app.get("/api/v1/config")
+        @app.get("/api/v1/config", dependencies=deps)
         async def get_config():
             """Get current configuration."""
             # Access config dict attribute for compatibility with tests/mocks
             return getattr(self.config_manager, "config", {})
 
-        @app.put("/api/v1/config")
+        @app.put("/api/v1/config", dependencies=deps)
         async def update_config(config_data: dict[str, Any]):
             """Update configuration."""
             try:
@@ -232,7 +259,7 @@ class WebModeServer:
                 logger.error(f"Failed to update configuration: {e}")
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
-        @app.get("/api/v1/state", response_model=StateInfo)
+        @app.get("/api/v1/state", response_model=StateInfo, dependencies=deps)
         async def get_state():
             """Get current state information."""
             return StateInfo(
@@ -242,7 +269,7 @@ class WebModeServer:
                 timestamp=self.last_state_change.isoformat(),
             )
 
-        @app.post("/api/v1/state")
+        @app.post("/api/v1/state", dependencies=deps)
         async def change_state(request: StateChangeRequest):
             """Change system state."""
             try:
@@ -267,7 +294,7 @@ class WebModeServer:
                 logger.error(f"Failed to change state: {e}")
                 raise HTTPException(status_code=400, detail=str(e)) from e
 
-        @app.post("/api/v1/command", response_model=CommandResponse)
+        @app.post("/api/v1/command", response_model=CommandResponse, dependencies=deps)
         async def execute_command(request: CommandRequest):
             """Execute a command programmatically."""
             start_time = time.time()
@@ -349,7 +376,11 @@ class WebModeServer:
             persistence_enabled: bool
             persistence_path: str
 
-        @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
+        @app.post(
+            "/api/v1/advisors/message",
+            response_model=AdvisorOutbound,
+            dependencies=deps,
+        )
         async def advisor_message(message: AdvisorInbound):
             """Process a message through the advisor service."""
             try:
@@ -373,7 +404,8 @@ class WebModeServer:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
-        @app.post("/api/v1/advisors/context/switch")
+
+        @app.post("/api/v1/advisors/context/switch", dependencies=deps)
         async def switch_persona(context_key: str, persona_id: str):
             """Switch persona for a specific context."""
             try:
@@ -386,7 +418,11 @@ class WebModeServer:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
-        @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
+        @app.get(
+            "/api/v1/advisors/context/stats",
+            response_model=ContextStats,
+            dependencies=deps,
+        )
         async def get_context_stats():
             """Get statistics about current contexts."""
             try:
@@ -395,35 +431,9 @@ class WebModeServer:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
-        @app.get("/api/v1/advisors/personas")
-        async def get_personas():
-            """Get available personas."""
-            try:
-                # Access personas from the advisors config
-                advisors_config = getattr(self.config_manager, "advisors", {})
-                context_config = advisors_config.get("context", {})
-                personas = context_config.get("personas", {})
-                default_persona = context_config.get("default_persona", "general")
-
-                # Format personas for the UI
-                personas_list = []
-                for persona_id, persona_config in personas.items():
-                    personas_list.append({
-                        "id": persona_id,
-                        "name": persona_id.replace("_", " ").title(),
-                        "system_prompt": persona_config.get("system_prompt", ""),
-                        "is_default": persona_id == default_persona
-                    })
-
-                return {
-                    "personas": personas_list,
-                    "default_persona": default_persona,
-                    "total_count": len(personas_list)
-                }
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        @app.delete("/api/v1/advisors/context/{context_key}")
+        @app.delete(
+            "/api/v1/advisors/context/{context_key}", dependencies=deps
+        )
         async def clear_context(context_key: str):
             """Clear a specific context."""
             try:
@@ -441,7 +451,11 @@ class WebModeServer:
             content: str
             timestamp: str
 
-        @app.get("/api/v1/advisors/memory", response_model=list[AdvisorMemoryItem])
+        @app.get(
+            "/api/v1/advisors/memory",
+            response_model=list[AdvisorMemoryItem],
+            dependencies=deps,
+        )
         async def advisors_memory(platform: str, channel: str, user: str, limit: int = 20):
             if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors feature disabled")
@@ -451,7 +465,7 @@ class WebModeServer:
                 for i in items
             ]
 
-        @app.delete("/api/v1/advisors/memory")
+        @app.delete("/api/v1/advisors/memory", dependencies=deps)
         async def advisors_memory_clear(platform: str, channel: str, user: str):
             if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors feature disabled")
@@ -460,7 +474,7 @@ class WebModeServer:
 
         from fastapi import Request
 
-        @app.post("/bridge/event")
+        @app.post("/bridge/event", dependencies=deps)
         async def bridge_event(event: dict[str, Any], request: Request):
             # Auth: shared secret header must match config token
             token_expected = (
@@ -488,7 +502,14 @@ class WebModeServer:
 
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
-            """Websocket endpoint for real-time updates."""
+            """WebSocket endpoint for real-time updates."""
+            if not self.no_auth:
+                token = websocket.headers.get("X-API-Key") or websocket.headers.get(
+                    "x-api-key"
+                )
+                if not self._expected_api_key or token != self._expected_api_key:
+                    await websocket.close(code=4401)
+                    return
             await websocket.accept()
             self.active_connections.add(websocket)
 
@@ -543,7 +564,7 @@ class WebModeServer:
             finally:
                 self.active_connections.discard(websocket)
 
-        @app.get("/api/v1/health")
+        @app.get("/api/v1/health", dependencies=deps)
         async def health_check():
             """Simple health check endpoint."""
             return {
