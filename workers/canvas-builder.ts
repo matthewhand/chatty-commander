@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import { assertASCII } from '@shared/ascii';
 
 /**
  * Build a browser bundle for a given entry file.
@@ -16,6 +17,7 @@ export async function buildCanvas(entry: string) {
   await fs.mkdir(outDir, { recursive: true });
 
   const absEntry = path.isAbsolute(entry) ? entry : path.join(root, entry);
+  assertASCII(absEntry);
   const tmpOut = path.join(outDir, 'bundle.js');
 
   await build({
