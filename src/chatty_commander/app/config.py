@@ -22,7 +22,6 @@ class Config:
         self.system_models_path: str = self.config_data.get("system_models_path", "models-computer")
         self.chat_models_path: str = self.config_data.get("chat_models_path", "models-chatty")
 
-        self.model_actions: dict[str, Any] = self.config_data.get("model_actions", {})
         self.state_models: dict[str, list[str]] = self.config_data.get("state_models", {})
         self.api_endpoints: dict[str, str] = self.config_data.get(
             "api_endpoints",
@@ -37,6 +36,9 @@ class Config:
 
         # Voice/GUI behaviour
         self.voice_only: bool = bool(self.config_data.get("voice_only", False))
+
+        # Build model_actions from commands and keybindings
+        self.model_actions: dict[str, Any] = self._build_model_actions()
 
         # Back-compat general settings wrapper with property-based access
         class _GeneralSettings:
@@ -136,6 +138,33 @@ class Config:
     def _load_general_settings(self) -> None:
         general = self.config_data.get("general", {})
         self.default_state = general.get("default_state", self.default_state)
+
+    # Build model_actions from the high-level 'commands' section
+    def _build_model_actions(self) -> dict[str, dict[str, str]]:
+        actions: dict[str, dict[str, str]] = {}
+        commands_cfg = self.config_data.get("commands", {}) or {}
+        keybindings = self.config_data.get("keybindings", {}) or {}
+        for name, cfg in commands_cfg.items():
+            action_type = cfg.get("action")
+            if action_type == "keypress":
+                keys = cfg.get("keys")
+                mapped = keybindings.get(keys, keys)
+                if mapped:
+                    actions[name] = {"keypress": mapped}
+            elif action_type == "url":
+                url = cfg.get("url", "")
+                url = url.replace("{home_assistant}", self.api_endpoints.get("home_assistant", ""))
+                url = url.replace("{chatbot_endpoint}", self.api_endpoints.get("chatbot_endpoint", ""))
+                actions[name] = {"url": url}
+            elif action_type == "custom_message":
+                msg = cfg.get("message", "")
+                actions[name] = {"shell": f"echo {msg}"}
+        return actions
+
+    # Convenience property for tests expecting top-level 'debug_mode'
+    @property
+    def debug_mode(self) -> bool:
+        return bool(self.config_data.get("general_settings", {}).get("debug_mode", True))
 
     # ------------------------------------------------------------------
     # Public API
