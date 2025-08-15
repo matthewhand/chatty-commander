@@ -165,14 +165,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run without avatar GUI; responses are spoken via TTS.",
     )
 
-    def run_func(args: argparse.Namespace) -> None:
+    def run_func() -> None:
         try:
             func = globals().get("run_app")
             if callable(func):
-                if "voice_only" in getattr(func, "__code__", {}).co_varnames:
-                    func(voice_only=args.voice_only)
-                else:
-                    func()
+                func()
         except Exception:
             return
 

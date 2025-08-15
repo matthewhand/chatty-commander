@@ -285,8 +285,15 @@ class CommandExecutor:
 
 # Example usage intentionally removed to avoid instantiation without required args during static analysis/tests.
 
+def _get_pyautogui():
+    """Return a pyautogui-like object or None if unavailable.
 
-    """Return pyautogui or ``None`` if unavailable.
+    Checks the legacy root-level shim module first so tests that patch
+    ``command_executor.pyautogui`` are respected, then falls back to this
+    module's variable, and finally tries importing the real library.
+    """
+    try:  # Prefer patched shim if available
+        import importlib
 
         _shim_ce = importlib.import_module("command_executor")
         pg = getattr(_shim_ce, "pyautogui", None)
@@ -294,13 +301,11 @@ class CommandExecutor:
             return pg
     except Exception:
         pass
-    # Fall back to local module variable first (may have been overridden by earlier bridge)
-    try:
+    try:  # Local module variable (may be patched in tests)
         return pyautogui  # type: ignore[name-defined]
     except Exception:
         pass
-    # Finally, try importing real library
-    try:
+    try:  # Last resort import
         import pyautogui as _real_pg  # type: ignore
 
         return _real_pg
@@ -309,4 +314,17 @@ class CommandExecutor:
 
 
 def _get_requests():
-    return requests
+    """Return the requests-like object, honoring the legacy shim if patched."""
+    try:
+        import importlib
+
+        _shim_ce = importlib.import_module("command_executor")
+        req = getattr(_shim_ce, "requests", None)
+        if req is not None:
+            return req
+    except Exception:
+        pass
+    try:
+        return requests  # type: ignore[name-defined]
+    except Exception:
+        return None

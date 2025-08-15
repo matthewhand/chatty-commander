@@ -18,62 +18,9 @@ except ModuleNotFoundError:
         "Dependency 'wakewords' not found. Using dummy Model. Some functionality may be limited."
     )
 
-
-# NOTE:
-# Keep a simple default Model implementation, but tests patch the root-level
-# symbol `model_manager.Model`. To respect that, we will not reference this
-# class directly when instantiating models; instead we dynamically import the
-# root shim and pull `Model` from there when available.
-class Model:
-    def __init__(self, path):
-        self.path = path
-
-
-def _get_patchable_model_class():
-    """
-    Return the Model class to instantiate.
-    Priority:
-      1) Root-level shim model_manager.Model (so tests can patch it), resolved from sys.modules first
-      2) Import module 'model_manager' via importlib and get Model
-      3) If running under pytest, fall back to MagicMock
-      4) Local fallback Model defined above
-    """
-    # 1) If tests have already imported the shim, it will be in sys.modules and may be patched
-    try:
-        import sys as _sys
-
-        mm = _sys.modules.get("model_manager")
-        if mm is not None:
-            M = getattr(mm, "Model", None)
-            if M is not None:
-                return M
-    except Exception:
-        pass
-
-    # 2) Attempt dynamic import as fallback
-    try:
-        import importlib
-
-        mm = importlib.import_module("model_manager")
-        M = getattr(mm, "Model", None)
-        if M is not None:
-            return M
-    except Exception:
-        pass
-
-    # 3) If under pytest, default to MagicMock for test convenience
-    try:
-        import os as _os
-
-        if _os.environ.get("PYTEST_CURRENT_TEST"):
-            from unittest.mock import MagicMock as _MagicMock  # type: ignore
-
-            return _MagicMock  # type: ignore[return-value]
-    except Exception:
-        pass
-
-    # 4) Final fallback to the local dummy
-    return Model
+    class Model:  # type: ignore[no-redef]
+        def __init__(self, path):
+            self.path = path
 
 
 class ModelManager:
@@ -171,9 +118,7 @@ class ModelManager:
                 continue
 
             try:
-                # Use patchable class so tests replacing model_manager.Model with MagicMock are respected
-                ModelClass = _get_patchable_model_class()
-                instance = ModelClass(model_path)  # type: ignore[call-arg]
+                instance = Model(model_path)  # type: ignore[call-arg]
                 model_set[model_name] = instance  # only add on success
                 logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
             except Exception as e:
@@ -211,17 +156,6 @@ class ModelManager:
         Provides a representation of the ModelManager's state, useful for debugging and logging.
         """
         return f"<ModelManager(general={len(self.models['general'])}, system={len(self.models['system'])}, chat={len(self.models['chat'])})>"
-
-
-if __name__ == "__main__":
-    # Assuming a configuration instance 'config' is available
-    # This section would be used for testing or development purposes.
-    from chatty_commander.app.config import Config
-
-    config = Config()
-    model_manager = ModelManager(config)
-    print(model_manager)
-
 
 def load_model(model_path):
     import logging

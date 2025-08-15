@@ -1,6 +1,9 @@
 import pytest
 
+<<<<<<< HEAD
 from chatty_commander.app.config import Config
+=======
+>>>>>>> update/pr-45
 from chatty_commander.app.state_manager import StateManager
 
 
