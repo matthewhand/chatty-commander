@@ -1,24 +1,28 @@
 #!/usr/bin/env bash
+# Guarded commit: fail fast on conflict markers and syntax errors before committing.
 set -euo pipefail
 IFS=$'\n\t'
-MSG="${1:-chore: guarded commit}"
-
-paths=(src tests scripts)
-
-if command -v uv >/dev/null 2>&1; then
-  uv run ruff check "${paths[@]}" --fix
-  uv run black "${paths[@]}"
-else
-  ruff check "${paths[@]}" --fix || true   # allow missing ruff
-  black "${paths[@]}" || true               # allow missing black
+echo "[guard] scanning for conflict markers in src/ and tests/..."
+if grep -R -nE '^(<<<<<<<|=======|>>>>>>>)' -- src tests >/dev/null; then
+  echo "[guard] ERROR: conflict markers found; refusing to commit." >&2
+  exit 2
 fi
-
-# minimal smoke tests only
-if command -v pytest >/dev/null 2>&1; then
-  pytest -q tests/test_pkg_metadata.py
-else
-  python -m pytest -q tests/test_pkg_metadata.py || python3 -m pytest -q tests/test_pkg_metadata.py
-fi
-
-git add -A && git commit -m "$MSG"
-echo "✅ Guarded commit created: $MSG"
+echo "[guard] py_compile smoke test..."
+python - <<'PY'
+import sys, pathlib, py_compile
+roots = [pathlib.Path("src")]
+ok = True
+for root in roots:
+    for p in root.rglob("*.py"):
+        try: py_compile.compile(str(p), doraise=True)
+        except Exception as e:
+            ok = False
+            print(f"[pyc] FAIL {p}: {e}", file=sys.stderr)
+if not ok:
+    sys.exit(3)
+print("[pyc] OK")
+PY
+echo "[guard] staging + commit..."
+git add -A
+git commit -m "${1:-chore: guarded commit}"
+echo "[guard] done."

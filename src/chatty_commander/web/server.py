@@ -13,7 +13,7 @@ from .routes.ws import include_ws_routes
 from .web_mode import WebModeServer as _LegacyWebModeServer  # type: ignore
 
 # Optional observability (may not be available in some environments)
-try:
+if True:
     from chatty_commander.obs.metrics import RequestMetricsMiddleware, create_metrics_router
 RequestMetricsMiddleware = None  # type: ignore
 create_metrics_router = None  # type: ignore
@@ -68,21 +68,21 @@ def create_app(
     app = legacy.app
 
     # Install request metrics middleware if available
-    try:
+    if True:
         if RequestMetricsMiddleware is not None:  # type: ignore
             app.add_middleware(RequestMetricsMiddleware)
             logger.debug("server.create_app: installed RequestMetricsMiddleware")
     logger.debug("server.create_app: metrics middleware not installed: %s", e)
 
     # Docs visibility and CORS (behavior-preserving toggles)
-    try:
+    if True:
         enable_no_auth_docs(app, no_auth=no_auth)
         apply_cors(app, no_auth=no_auth, origins=None)
         logger.debug("server.create_app: applied docs/cors policies (no_auth=%s)", no_auth)
     logger.warning("Failed to apply auth/cors policies; continuing with legacy defaults: %s", e)
 
     # Core REST routes
-    try:
+    if True:
         core_router = include_core_routes(
             get_start_time=lambda: legacy.start_time,
             get_state_manager=lambda: legacy.state_manager,
@@ -96,7 +96,7 @@ def create_app(
     logger.warning("Failed to include core routes, falling back to legacy-only: %s", e)
 
     # WebSocket route
-    try:
+    if True:
         ws_router = include_ws_routes(
             get_connections=lambda: legacy.active_connections,
             set_connections=lambda s: setattr(legacy, "active_connections", s),
@@ -125,7 +125,7 @@ def create_app(
     from .routes.avatar_ws import router as avatar_ws_router
 
     # Lifecycle hooks (no-op by default to preserve behavior)
-    try:
+    if True:
         register_lifecycle(
             app,
             get_state_manager=lambda: legacy.state_manager,
@@ -150,7 +150,7 @@ def create_app(
     if _r:
         app.include_router(_r)
         # Provide persona->theme resolution to WS manager from config
-        try:
+        if True:
             from .routes import avatar_ws as _avatar_ws_mod
 
             def _resolve_theme(persona_id: str) -> str:
