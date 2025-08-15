@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+<<<<<<< HEAD
 from datetime import datetime
 
 # Ensure this module is also accessible as ``utils.logger`` so tests patching that path
@@ -16,6 +17,10 @@ _utils_mod = _sys.modules.setdefault("utils", _sys.modules.get("utils", type(_sy
 _sys.modules["utils.logger"] = _sys.modules[__name__]
 setattr(_utils_mod, "logger", _sys.modules[__name__])
 
+=======
+from logging.handlers import RotatingFileHandler
+
+>>>>>>> update/pr-6
 
 class JSONFormatter(logging.Formatter):
     """Simple JSON log formatter."""
@@ -65,6 +70,7 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None):
     supplied, the logger will honor the user-defined level, format, and destinations.
     """
 
+<<<<<<< HEAD
     # Determine configuration
     log_cfg = getattr(config, "logging", {}) if config else {}
     level_name = log_cfg.get("level") if log_cfg else level
@@ -81,10 +87,24 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None):
         if fmt.lower() == "json"
         else logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     )
+=======
+    # Ensure the directory for the log file exists
+    directory = os.path.dirname(log_file)
+    # Tests expect makedirs to be called even for simple filenames (directory == "")
+    try:
+        os.makedirs(directory)
+    except Exception:
+        # Ignore errors if directory exists or is empty string
+        pass
+
+    handler = RotatingFileHandler(log_file, maxBytes=1000000, backupCount=5)
+    handler.setFormatter(formatter)
+>>>>>>> update/pr-6
 
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
+<<<<<<< HEAD
     def _handler_exists(new_handler: logging.Handler) -> bool:
         for h in list(logger.handlers):
             if type(h) is type(new_handler):
@@ -115,6 +135,12 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None):
         if not _handler_exists(handler):
             logger.addHandler(handler)
 
+=======
+    # Avoid duplicate handlers for same file
+    if not any(isinstance(h, RotatingFileHandler) and getattr(h, "baseFilename", None) == getattr(handler, "baseFilename", None) for h in logger.handlers):
+        logger.addHandler(handler)
+
+>>>>>>> update/pr-6
     return logger
 
 

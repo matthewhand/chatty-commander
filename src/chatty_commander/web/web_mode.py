@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""web_mode.py.
+"""
+web_mode.py
 
 FastAPI web server implementation for ChattyCommander.
 Provides REST API endpoints and WebSocket support for web interface.
@@ -7,6 +8,10 @@ Provides REST API endpoints and WebSocket support for web interface.
 
 import asyncio
 import json
+<<<<<<< HEAD
+=======
+import logging
+>>>>>>> update/pr-6
 import time
 from datetime import datetime
 from pathlib import Path
@@ -27,15 +32,12 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
 from chatty_commander.app.command_executor import CommandExecutor
 
 # Import our core modules from src package
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.web.routes.core import include_core_routes
-from chatty_commander.web.routes.version import router as version_router
 
 import logging
 
@@ -122,8 +124,6 @@ class WebModeServer:
         self.start_time = time.time()
         self.last_command: str | None = None
         self.last_state_change = datetime.now()
-        # Advisors service (optional)
-        self.advisors_service = AdvisorsService(config=config_manager)
 
         # WebSocket connection management
         self.active_connections: set[WebSocket] = set()
@@ -185,24 +185,6 @@ class WebModeServer:
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
 
-        # Serve avatar UI (TalkingHead placeholder) if available
-        avatar_path = Path("src/chatty_commander/webui/avatar")
-        if avatar_path.exists():
-            try:
-                app.mount("/avatar-ui", StaticFiles(directory=str(avatar_path)), name="avatar")
-
-                @app.get("/avatar", response_class=HTMLResponse)
-                async def serve_avatar_ui():
-                    index_file = avatar_path / "index.html"
-                    if index_file.exists():
-                        return FileResponse(str(index_file))
-                    return HTMLResponse(
-                        "<h1>Avatar UI</h1><p>Avatar UI not found. Ensure index.html exists under src/chatty_commander/webui/avatar/</p>"
-                    )
-
-            except Exception as e:  # noqa: BLE001
-                logger.warning(f"Failed to mount avatar UI static files: {e}")
-
         return app
 
     def _register_routes(self, app: FastAPI) -> None:
@@ -257,7 +239,9 @@ class WebModeServer:
                 return {"message": "Configuration updated successfully"}
             except Exception as e:
                 logger.error(f"Failed to update configuration: {e}")
-                raise HTTPException(status_code=500, detail=str(e)) from e
+                raise HTTPException(
+                    status_code=500, detail=str(e)
+                )  # noqa: B904 - preserving current exception behavior
 
         @app.get("/api/v1/state", response_model=StateInfo, dependencies=deps)
         async def get_state():
@@ -292,7 +276,9 @@ class WebModeServer:
                 return {"message": f"State changed to {request.state}"}
             except Exception as e:
                 logger.error(f"Failed to change state: {e}")
-                raise HTTPException(status_code=400, detail=str(e)) from e
+                raise HTTPException(
+                    status_code=400, detail=str(e)
+                )  # noqa: B904 - preserve current error handling
 
         @app.post("/api/v1/command", response_model=CommandResponse, dependencies=deps)
         async def execute_command(request: CommandRequest):
@@ -302,9 +288,7 @@ class WebModeServer:
             try:
                 # Check if command exists in configuration
                 config_dict = getattr(self.config_manager, "config", {})
-                model_actions = (
-                    config_dict.get('model_actions', {}) if isinstance(config_dict, dict) else {}
-                )
+                model_actions = config_dict.get('model_actions', {}) if isinstance(config_dict, dict) else {}
                 if request.command not in model_actions:
                     raise HTTPException(
                         status_code=404, detail=f"Command '{request.command}' not found"
@@ -343,6 +327,7 @@ class WebModeServer:
                     ),
                     execution_time=execution_time,
                 )
+
             except HTTPException:
                 raise
             except Exception as e:
@@ -354,6 +339,7 @@ class WebModeServer:
                     execution_time=execution_time,
                 )
 
+<<<<<<< HEAD
         class AdvisorInbound(BaseModel):
             platform: str
             channel: str
@@ -510,6 +496,11 @@ class WebModeServer:
                 if not self._expected_api_key or token != self._expected_api_key:
                     await websocket.close(code=4401)
                     return
+=======
+        @app.websocket("/ws")
+        async def websocket_endpoint(websocket: WebSocket):
+            """WebSocket endpoint for real-time updates."""
+>>>>>>> update/pr-6
             await websocket.accept()
             self.active_connections.add(websocket)
 
@@ -674,48 +665,11 @@ class WebModeServer:
             # No event loop running, skip broadcast
             pass
 
-    def run(
-        self,
-        host: str | None = None,
-        port: int | None = None,
-        log_level: str = "info",
-    ) -> None:
-        """Run the web server, honoring environment and config defaults."""
-#     def run(self, host: str | None = None, port: int | None = None, log_level: str = "info") -> None:
-        """Run the web server, honoring config and environment overrides."""
-        env_host = os.getenv("CHATCOMM_HOST")
-        env_port = os.getenv("CHATCOMM_PORT")
-        env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
-
-        # Prefer configuration defaults when explicit host/port not provided
-        if host is None and getattr(self.config_manager, "web_server", None):
-            host = self.config_manager.web_server.get("host", "0.0.0.0")
-        if port is None and getattr(self.config_manager, "web_server", None):
-            port = self.config_manager.web_server.get("port", 8100)
-
-        if env_host:
-            host = env_host
-        if env_port:
-            try:
-                port = int(env_port)
-            except ValueError:
-                logger.warning("Invalid CHATCOMM_PORT '%s'; falling back to %s", env_port, port)
-        if env_log_level:
-            log_level = env_log_level
-
-        logger.info(
-            "🚀 Starting ChattyCommander web server on %s:%s (auth %s)",
-            host,
-            port,
-            "disabled" if self.no_auth else "enabled",
-        )
-#         if host is None:
-#             host = "0.0.0.0"
-#         if port is None:
-#             port = 8100
-
+    def run(self, host: str = "0.0.0.0", port: int = 8100, log_level: str = "info") -> None:
+        """Run the web server."""
         logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
         logger.info(f"📖 API documentation: http://{host}:{port}/docs")
+        logger.info(f"🔧 Authentication: {'Disabled' if self.no_auth else 'Enabled'}")
 
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, access_log=True)
 
@@ -759,122 +713,4 @@ if __name__ == "__main__":
         no_auth=True,
     )
 
-    env_host = os.getenv("CHATCOMM_HOST", "0.0.0.0")
-    env_port = int(os.getenv("CHATCOMM_PORT", "8100"))
-    env_log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
-
-    server.run(host=env_host, port=env_port, log_level=env_log_level)
-
-
-# Minimal, stateless FastAPI app factory for tests
-
-
-def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
-    """Create a minimal FastAPI app used in unit tests.
-
-    Parameters
-    ----------
-    no_auth:
-        When ``True`` the server behaves in development/no-auth mode and CORS
-        is fully permissive. When ``False`` the app applies the same CORS
-        restrictions as production.
-    config:
-        Optional :class:`~chatty_commander.app.config.Config` instance.  If
-        supplied and ``no_auth`` is ``False`` the ``web.allowed_origins`` value
-        from the config is used for CORS.  When not provided, the comma-separated
-        ``CHATCOMM_ALLOWED_ORIGINS`` environment variable is consulted.  This
-        mirrors the behaviour of the production server and allows tests to
-        supply custom origins without modifying global state.
-    """
-
-    if no_auth:
-        allowed_origins = ["*"]
-    else:
-        origins: list[str] | None = None
-        # Prefer config-provided origins when available
-        if config is not None:
-            web_cfg = getattr(config, "config", {}).get("web", {})  # type: ignore[arg-type]
-            cfg_origins = web_cfg.get("allowed_origins") if isinstance(web_cfg, dict) else None
-            if isinstance(cfg_origins, str):
-                origins = [cfg_origins]
-            elif isinstance(cfg_origins, list | tuple):
-                origins = [str(o) for o in cfg_origins]
-        # Fall back to environment variable
-        if origins is None:
-            env_origins = os.environ.get("CHATCOMM_ALLOWED_ORIGINS")
-            if env_origins:
-                origins = [o.strip() for o in env_origins.split(",") if o.strip()]
-        if not origins:
-            origins = ["http://localhost:3000"]
-        allowed_origins = origins
-
-    app = FastAPI(
-        title="ChattyCommander API",
-        version="0.2.0",
-        docs_url="/docs" if no_auth else None,
-        redoc_url="/redoc" if no_auth else None,
-    )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # Include version endpoint for minimal factory
-    app.include_router(version_router)
-
-    # Minimal core routes for tests (status/config/state/command)
-    start_time = time.time()
-
-    class _MiniState:
-        def __init__(self):
-            from datetime import datetime as _dt
-
-            self.current_state = "idle"
-            self._active_models: list[str] = []
-            self._last_change = _dt.now()
-
-        def get_active_models(self) -> list[str]:
-            return list(self._active_models)
-
-        def change_state(self, state: str) -> None:
-            from datetime import datetime as _dt
-
-            self.current_state = state
-            self._last_change = _dt.now()
-
-    state_mgr = _MiniState()
-
-    class _MiniConfig:
-        def __init__(self):
-            # Provide minimal model_actions so /api/v1/command is available
-            self.config: dict[str, object] = {
-                "model_actions": {
-                    "hello": {"shell": {"cmd": "true"}},
-                }
-            }
-
-        def save_config(self, *_args, **_kwargs) -> None:  # matches both signatures
-            return None
-
-    cfg_mgr = config if config is not None else _MiniConfig()
-
-    last_cmd: dict[str, str | None] = {"value": None}
-
-    def _exec_command(cmd: str) -> bool:
-        last_cmd["value"] = cmd
-        return True
-
-    core_router = include_core_routes(
-        get_start_time=lambda: start_time,
-        get_state_manager=lambda: state_mgr,
-        get_config_manager=lambda: cfg_mgr,
-        get_last_command=lambda: last_cmd["value"],
-        get_last_state_change=lambda: state_mgr._last_change,  # noqa: SLF001
-        execute_command_fn=_exec_command,
-    )
-    app.include_router(core_router)
-
-    return app
+    server.run()
