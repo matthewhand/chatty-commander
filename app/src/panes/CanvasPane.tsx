@@ -57,7 +57,8 @@ export default function CanvasPane() {
     if (!doc) return;
     const script = doc.createElement('script');
     script.textContent = `
-      Object.defineProperty(window, 'localStorage', { value: undefined });
+      Object.defineProperty(window, 'localStorage', { get: () => undefined });
+      Object.defineProperty(window, 'sessionStorage', { get: () => undefined });
       Object.defineProperty(window, 'indexedDB', { value: undefined });
     `;
     doc.head.appendChild(script);
