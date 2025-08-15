@@ -47,24 +47,24 @@ describe('useAuth Hook', () => {
     // useAuth.login expects authService.login to return { access_token }
     authService.login.mockResolvedValueOnce({ access_token: 'test-token' });
     authService.getCurrentUser.mockResolvedValueOnce(mockUser);
-    
+
     const { result } = renderHook(() => useAuth());
-    
+
     await act(async () => {
       await result.current.login('testuser', 'password');
     });
-    
+
     expect(result.current.user).toEqual(mockUser);
     expect(result.current.isAuthenticated).toBe(true);
   });
 
   test('handles logout', async () => {
     const { result } = renderHook(() => useAuth());
-    
+
     await act(async () => {
       result.current.logout();
     });
-    
+
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
   });

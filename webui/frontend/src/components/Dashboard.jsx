@@ -66,11 +66,11 @@ const Dashboard = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // WebSocket connection
-  const { 
-    isConnected, 
-    lastMessage, 
-    sendMessage, 
-    connectionStatus 
+  const {
+    isConnected,
+    lastMessage,
+    sendMessage,
+    connectionStatus
   } = useWebSocket('ws://localhost:8100/ws');
 
   // Load initial data
@@ -78,18 +78,18 @@ const Dashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const [statusResponse, stateResponse, configResponse] = await Promise.all([
         apiService.getStatus(),
         apiService.getState(),
         apiService.getConfig()
       ]);
-      
+
       setSystemStatus(statusResponse);
       setCurrentState(stateResponse.current_state);
       setActiveModels(stateResponse.active_models);
       setConfig(configResponse);
-      
+
     } catch (err) {
       setError(`Failed to load system data: ${err.message}`);
     } finally {
@@ -101,7 +101,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (lastMessage) {
       const message = JSON.parse(lastMessage.data);
-      
+
       // Add to real-time events
       setRealTimeEvents(prev => [
         {
@@ -112,7 +112,7 @@ const Dashboard = () => {
         },
         ...prev.slice(0, 49) // Keep last 50 events
       ]);
-      
+
       // Handle specific message types
       switch (message.type) {
         case 'state_change':
@@ -465,9 +465,9 @@ const Dashboard = () => {
               <Typography variant="body2">General Models: {config.general_models_path || 'Not set'}</Typography>
               <Typography variant="body2">System Models: {config.system_models_path || 'Not set'}</Typography>
               <Typography variant="body2">Chat Models: {config.chat_models_path || 'Not set'}</Typography>
-              
+
               <Divider sx={{ my: 2 }} />
-              
+
               <Typography variant="h6" gutterBottom>Available Commands</Typography>
               {config.model_actions && Object.keys(config.model_actions).length > 0 ? (
                 Object.entries(config.model_actions).map(([command, action]) => (
@@ -526,8 +526,8 @@ const Dashboard = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCommandDialog(false)}>Cancel</Button>
-          <Button 
-            onClick={handleExecuteCommand} 
+          <Button
+            onClick={handleExecuteCommand}
             variant="contained"
             disabled={!newCommand.command.trim()}
           >

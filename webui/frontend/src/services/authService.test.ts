@@ -32,22 +32,22 @@ describe('AuthService', () => {
       token_type: 'bearer',
       expires_in: 3600
     };
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockResponse)
     } as Response);
 
     const result = await authService.login('testuser', 'password');
-    
+
     expect(result).toEqual(mockResponse);
   });
 
   test('logout removes token from storage', () => {
     localStorage.setItem('auth_token', 'test-token');
-    
+
     authService.logout();
-    
+
     expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token');
   });
 
@@ -55,14 +55,14 @@ describe('AuthService', () => {
     const userData = { username: 'testuser', is_active: true, roles: ['user'] };
     // Ensure token exists before calling
     (localStorage.getItem as jest.Mock).mockReturnValueOnce('valid-token');
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(userData)
     } as Response);
 
     const user = await authService.getCurrentUser();
-    
+
     expect(user).toEqual(userData);
   });
 

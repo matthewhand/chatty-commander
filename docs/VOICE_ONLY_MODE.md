@@ -38,4 +38,3 @@ uv add pyttsx3 --group voice
 When the dependency is missing Chatty Commander falls back to a mock backend,
 allowing tests and headless environments to run without additional
 requirements.
-

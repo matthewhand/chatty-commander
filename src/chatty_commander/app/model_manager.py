@@ -182,6 +182,7 @@ def load_model(model_path):
                     logging.error("Error reporting failed: %s", report_exc)
                 raise Exception("Max retries exceeded") from e
 
+
 # --- fallback for tests/linters when dynamic backend is unavailable ---
 def _get_patchable_model_class():
     """Return a model class; fall back to a tiny dummy.
@@ -190,10 +191,13 @@ def _get_patchable_model_class():
     """
     try:
         from ..llm.manager import ModelManager as _ModelClass  # type: ignore
+
         return _ModelClass
     except Exception:
+
         class _Dummy:
             def __init__(self, *args, **kwargs):  # noqa: D401, ANN001
                 """No-op stub."""
                 pass
+
         return _Dummy

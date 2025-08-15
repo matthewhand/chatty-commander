@@ -63,14 +63,14 @@ class ModelManager:
         """
         Simulates listening for voice commands using the loaded models.
         In a real implementation, this would process audio input and detect wake words.
-        
+
         Returns:
             str or None: The detected command name if a command is recognized, None otherwise.
         """
         # This is a simplified simulation for demonstration purposes
         # In a real implementation, this would process audio and use the models to detect commands
         time.sleep(1)  # Simulate processing time
-        
+
         # Demo mode: randomly return a command from active models occasionally
         if self.active_models and random.random() < 0.05:  # 5% chance of detecting a command
             return random.choice(list(self.active_models.keys()))

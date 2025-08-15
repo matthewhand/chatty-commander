@@ -121,7 +121,7 @@ describe('useWebSocket Hook', () => {
     );
 
     expect(typeof result.current.sendMessage).toBe('function');
-    
+
     // Should not throw when called (even if not connected)
     expect(() => {
       result.current.sendMessage({ type: 'test' });
@@ -136,7 +136,7 @@ describe('useWebSocket Hook', () => {
     );
 
     expect(typeof result.current.disconnect).toBe('function');
-    
+
     // Should not throw when called
     expect(() => {
       result.current.disconnect();

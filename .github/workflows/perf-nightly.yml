@@ -25,4 +25,3 @@ jobs:
       - name: Run performance tests
         run: |
           pytest -q -k performance -s
-

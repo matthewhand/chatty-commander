@@ -2,6 +2,7 @@
 
 Prefer importing from ``chatty_commander.app.config``.
 """
+
 from __future__ import annotations
 
 try:

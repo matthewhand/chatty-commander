@@ -64,7 +64,7 @@ class TestModelLoading(unittest.TestCase):
         with (
             patch('os.path.exists', return_value=True),
             patch('os.listdir', return_value=['invalid.onnx']),
-patch(
+            patch(
                 'chatty_commander.app.model_manager._get_patchable_model_class',
                 side_effect=Exception('Load error'),
             ),

@@ -10,18 +10,18 @@ global.WebSocket = class MockWebSocket {
     this.onclose = null;
     this.onmessage = null;
     this.onerror = null;
-    
+
     // Simulate connection after a short delay
     setTimeout(() => {
       this.readyState = WebSocket.OPEN;
       if (this.onopen) this.onopen();
     }, 100);
   }
-  
+
   send(data) {
     // Mock send method
   }
-  
+
   close() {
     this.readyState = WebSocket.CLOSED;
     if (this.onclose) this.onclose();

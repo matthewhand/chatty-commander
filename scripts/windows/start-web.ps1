@@ -34,4 +34,3 @@ function Start-With-UvOrPython {
 Start-With-UvOrPython
 
 Write-Host "Server should be reachable at http://localhost:$Port/docs"
-

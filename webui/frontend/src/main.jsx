@@ -42,12 +42,12 @@ class ErrorBoundary extends React.Component {
             ChattyCommander UI Error
           </h1>
           <p style={{ color: '#666', marginBottom: '20px', maxWidth: '600px' }}>
-            Something went wrong with the ChattyCommander web interface. 
+            Something went wrong with the ChattyCommander web interface.
             Please check the browser console for more details.
           </p>
-          <details style={{ 
-            backgroundColor: '#fff', 
-            padding: '15px', 
+          <details style={{
+            backgroundColor: '#fff',
+            padding: '15px',
             borderRadius: '5px',
             border: '1px solid #ddd',
             maxWidth: '800px',
@@ -57,8 +57,8 @@ class ErrorBoundary extends React.Component {
             <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' }}>
               Error Details
             </summary>
-            <pre style={{ 
-              fontSize: '12px', 
+            <pre style={{
+              fontSize: '12px',
               overflow: 'auto',
               backgroundColor: '#f8f8f8',
               padding: '10px',
@@ -69,7 +69,7 @@ class ErrorBoundary extends React.Component {
               {this.state.errorInfo.componentStack}
             </pre>
           </details>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             style={{
               marginTop: '20px',
@@ -129,7 +129,7 @@ window.addEventListener('unhandledrejection', (event) => {
 if (import.meta.env.DEV) {
   // Add development-specific code here
   console.log('ChattyCommander Web UI - Development Mode');
-  
+
   // Enable React DevTools
   if (typeof window !== 'undefined') {
     window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.__REACT_DEVTOOLS_GLOBAL_HOOK__ || {};

@@ -66,7 +66,7 @@ function App() {
         styleOverrides: {
           root: {
             borderRadius: 12,
-            boxShadow: darkMode 
+            boxShadow: darkMode
               ? '0 4px 6px rgba(0, 0, 0, 0.3)'
               : '0 2px 4px rgba(0, 0, 0, 0.1)',
           },
@@ -113,7 +113,7 @@ function App() {
     try {
       const reachable = await apiService.isServerReachable();
       setServerReachable(reachable);
-      
+
       if (reachable) {
         const version = await apiService.getVersion();
         setAppVersion(version);
@@ -130,7 +130,7 @@ function App() {
   // Initial server check
   useEffect(() => {
     checkServerConnectivity();
-    
+
     // Check connectivity every 30 seconds
     const interval = setInterval(checkServerConnectivity, 30000);
     return () => clearInterval(interval);
@@ -151,7 +151,7 @@ function App() {
         localStorage.removeItem('chatty-commander-was-disconnected');
       }
     }
-    
+
     // Store disconnection state
     if (serverReachable === false) {
       localStorage.setItem('chatty-commander-was-disconnected', 'true');
@@ -163,23 +163,23 @@ function App() {
       <CssBaseline />
       <Box sx={{ flexGrow: 1, minHeight: '100vh' }}>
         {/* App Bar */}
-        <AppBar position="static" elevation={0} sx={{ 
+        <AppBar position="static" elevation={0} sx={{
           backgroundColor: theme.palette.background.paper,
           borderBottom: `1px solid ${theme.palette.divider}`
         }}>
           <Toolbar>
-            <Typography 
-              variant="h6" 
-              component="div" 
-              sx={{ 
-                flexGrow: 1, 
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                flexGrow: 1,
                 color: theme.palette.text.primary,
                 fontWeight: 600
               }}
             >
               ChattyCommander Web UI
             </Typography>
-            
+
             {/* Server Status Indicator */}
             <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
               <Box
@@ -187,7 +187,7 @@ function App() {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  backgroundColor: 
+                  backgroundColor:
                     serverReachable === null ? theme.palette.warning.main :
                     serverReachable ? theme.palette.success.main : theme.palette.error.main,
                   mr: 1
@@ -213,8 +213,8 @@ function App() {
             />
 
             <Tooltip title={`Switch to ${darkMode ? 'light' : 'dark'} mode`}>
-              <IconButton 
-                onClick={toggleDarkMode} 
+              <IconButton
+                onClick={toggleDarkMode}
                 color="inherit"
                 sx={{ color: theme.palette.text.primary }}
               >
@@ -223,7 +223,7 @@ function App() {
             </Tooltip>
 
             <Tooltip title="Settings">
-              <IconButton 
+              <IconButton
                 color="inherit"
                 sx={{ color: theme.palette.text.primary }}
                 onClick={() => showNotification('Settings panel coming soon!', 'info')}
@@ -233,7 +233,7 @@ function App() {
             </Tooltip>
 
             <Tooltip title="About">
-              <IconButton 
+              <IconButton
                 color="inherit"
                 sx={{ color: theme.palette.text.primary }}
                 onClick={() => showNotification(`ChattyCommander Web UI v${appVersion}`, 'info')}
@@ -243,7 +243,7 @@ function App() {
             </Tooltip>
 
             <Tooltip title="View on GitHub">
-              <IconButton 
+              <IconButton
                 color="inherit"
                 component="a"
                 href="https://github.com/your-username/chatty-commander"
@@ -261,8 +261,8 @@ function App() {
         <Container maxWidth="xl" sx={{ mt: 0, pb: 4 }}>
           {serverReachable === false ? (
             <Box sx={{ mt: 4 }}>
-              <Alert 
-                severity="error" 
+              <Alert
+                severity="error"
                 sx={{ mb: 2 }}
                 action={
                   <IconButton
@@ -297,8 +297,8 @@ function App() {
           onClose={closeNotification}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         >
-          <Alert 
-            onClose={closeNotification} 
+          <Alert
+            onClose={closeNotification}
             severity={notification.severity}
             variant="filled"
             sx={{ width: '100%' }}

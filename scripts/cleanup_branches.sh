@@ -122,19 +122,19 @@ IFS=',' read -ra KEEP_ARRAY <<< "$KEEP_BRANCHES"
 # Function to check if branch should be kept
 should_keep_branch() {
     local branch=$1
-    
+
     # Always keep current branch
     if [[ "$branch" == "$CURRENT_BRANCH" ]]; then
         return 0
     fi
-    
+
     # Check against keep list
     for keep in "${KEEP_ARRAY[@]}"; do
         if [[ "$branch" == "$keep" ]]; then
             return 0
         fi
     done
-    
+
     return 1
 }
 
@@ -142,18 +142,18 @@ should_keep_branch() {
 get_branch_age_days() {
     local branch=$1
     local last_commit_date
-    
+
     last_commit_date=$(git log -1 --format="%ct" "$branch" 2>/dev/null || echo "0")
     if [[ "$last_commit_date" == "0" ]]; then
         echo "999999"  # Very old if we can't determine
         return
     fi
-    
+
     local current_date
     current_date=$(date +%s)
     local age_seconds=$((current_date - last_commit_date))
     local age_days=$((age_seconds / 86400))
-    
+
     echo "$age_days"
 }
 
@@ -161,7 +161,7 @@ get_branch_age_days() {
 is_branch_merged() {
     local branch=$1
     local target_branch=${2:-"$CURRENT_BRANCH"}
-    
+
     # Check if branch is merged into target
     git merge-base --is-ancestor "$branch" "$target_branch" 2>/dev/null
 }
@@ -186,7 +186,7 @@ while IFS= read -r branch; do
         [[ "$VERBOSE" == "true" ]] && log "INFO" "Keeping branch: $branch (protected)"
         continue
     fi
-    
+
     # Check age
     age_days=$(get_branch_age_days "$branch")
     if [[ "$age_days" -lt "$DAYS_OLD" ]]; then
@@ -194,7 +194,7 @@ while IFS= read -r branch; do
         [[ "$VERBOSE" == "true" ]] && log "INFO" "Keeping branch: $branch (only $age_days days old)"
         continue
     fi
-    
+
     # Check if merged
     if is_branch_merged "$branch"; then
         local_branches_to_delete+=("$branch:merged:$age_days")
@@ -219,13 +219,13 @@ while IFS= read -r branch; do
     # Extract remote and branch name
     remote=$(echo "$branch" | cut -d'/' -f1)
     branch_name=$(echo "$branch" | cut -d'/' -f2-)
-    
+
     # Skip if should be kept
     if should_keep_branch "$branch_name"; then
         [[ "$VERBOSE" == "true" ]] && log "INFO" "Keeping remote branch: $branch (protected)"
         continue
     fi
-    
+
     # Check if remote branch still exists
     if ! git ls-remote --exit-code --heads "$remote" "$branch_name" >/dev/null 2>&1; then
         remote_branches_to_delete+=("$branch")
@@ -297,7 +297,7 @@ else
             fi
         fi
     done
-    
+
     # Delete remote tracking branches
     for branch in "${remote_branches_to_delete[@]}"; do
         if git branch -dr "$branch" 2>/dev/null; then

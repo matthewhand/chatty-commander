@@ -29,12 +29,12 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.detail || 
-          errorData.message || 
+          errorData.detail ||
+          errorData.message ||
           `HTTP ${response.status}: ${response.statusText}`
         );
       }
@@ -43,7 +43,7 @@ class ApiService {
       if (contentType && contentType.includes('application/json')) {
         return await response.json();
       }
-      
+
       return await response.text();
     } catch (error) {
       if (error.name === 'TypeError' && error.message.includes('fetch')) {

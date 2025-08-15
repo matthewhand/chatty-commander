@@ -41,4 +41,3 @@
 - Continue migrating imports in internal modules from root shims to package paths.
 - Consider optional dependencies grouping for web/gui/wakeword.
 - Move `main.py` logic under `src/chatty_commander/main.py` and keep a root shim.
-

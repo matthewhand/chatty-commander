@@ -565,7 +565,9 @@ Detailed Results:
                     status_icon = (
                         "✓"
                         if result['status'] == "PASS"
-                        else "✗" if result['status'] == "FAIL" else "⚠"
+                        else "✗"
+                        if result['status'] == "FAIL"
+                        else "⚠"
                     )
                     report += f"  {status_icon} [{result['status']}] {result['message']}\n"
 

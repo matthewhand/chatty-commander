@@ -267,4 +267,3 @@ cp .env.template .env
 Be respectful, inclusive, and constructive. We're all here to build something great together.
 
 Thank you for contributing to Chatty Commander! 🚀
-

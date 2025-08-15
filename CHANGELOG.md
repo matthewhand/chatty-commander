@@ -5,7 +5,7 @@
 ### Added
 - **E2E Testing**: Comprehensive end-to-end test suite with 90% coverage gate
 - **Observability**: Metrics middleware with JSON and Prometheus endpoints (`/metrics/json`, `/metrics/prom`)
-- **API Endpoints**: 
+- **API Endpoints**:
   - `GET /api/v1/version` - Application version and git SHA
   - `GET /api/v1/health` - Health check with uptime
   - `GET /api/v1/metrics` - Legacy metrics endpoint
@@ -13,7 +13,7 @@
 - **Avatar System**: WebSocket-based avatar state broadcasting with animation selection
 - **CLI Improvements**: Rich help text with examples, dry-run mode, interactive shell
 - **Packaging**: PyInstaller spec with CI artifacts for Linux/macOS/Windows
-- **Documentation**: 
+- **Documentation**:
   - WebUI connectivity guide
   - Standalone install instructions
   - Example workflows and E2E smoke script

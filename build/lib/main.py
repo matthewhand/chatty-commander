@@ -48,17 +48,17 @@ def main():
             command = model_manager.listen_for_commands()
             if command:
                 logger.info(f"Command detected: {command}")
-                
+
                 # Update system state based on command
                 new_state = state_manager.update_state(command)
                 if new_state:
                     logger.info(f"Transitioning to new state: {new_state}")
                     model_manager.reload_models(new_state)
-                
+
                 # Execute the detected command if it's actionable
                 if command in config.model_actions:
                     command_executor.execute_command(command)
-    
+
     except KeyboardInterrupt:
         logger.info("Shutting down the ChattyCommander application")
         sys.exit()

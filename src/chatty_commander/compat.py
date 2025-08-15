@@ -9,6 +9,7 @@ ALIASES: dict[str, str] = {
     "web_mode": "chatty_commander.web.web_mode",
 }
 
+
 def expose(name: str):
     """Return imported module for a legacy short-name (or pass through)."""
     target = ALIASES.get(name, name)

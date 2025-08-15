@@ -41,7 +41,7 @@ export const useWebSocket = (url, options = {}) => {
     try {
       setConnectionStatus('CONNECTING');
       setError(null);
-      
+
       // Close existing connection if any
       if (ws.current) {
         ws.current.close();
@@ -56,7 +56,7 @@ export const useWebSocket = (url, options = {}) => {
         setConnectionStatus('OPEN');
         setReconnectAttempts(0);
         setError(null);
-        
+
         if (onOpen) {
           onOpen(event);
         }
@@ -66,7 +66,7 @@ export const useWebSocket = (url, options = {}) => {
         console.log('WebSocket disconnected:', event?.code ?? 1000, event?.reason ?? '');
         setIsConnected(false);
         setConnectionStatus('CLOSED');
-        
+
         if (onClose) {
           onClose(event);
         }
@@ -75,7 +75,7 @@ export const useWebSocket = (url, options = {}) => {
         if (autoReconnect && shouldReconnect.current && reconnectAttempts < maxReconnectAttempts) {
           setConnectionStatus('reconnecting');
           setReconnectAttempts((prev) => prev + 1);
-          
+
           reconnectTimeoutId.current = setTimeout(() => {
             connect();
           }, reconnectInterval);
@@ -89,7 +89,7 @@ export const useWebSocket = (url, options = {}) => {
         console.error('WebSocket error:', event);
         setError('WebSocket connection error');
         setConnectionStatus('error');
-        
+
         if (onError) {
           onError(event);
         }
@@ -102,9 +102,9 @@ export const useWebSocket = (url, options = {}) => {
             timestamp: new Date().toISOString(),
             type: 'message'
           };
-          
+
           setLastMessage(message);
-          
+
           if (onMessage) {
             onMessage(message);
           }
@@ -144,11 +144,11 @@ export const useWebSocket = (url, options = {}) => {
   const disconnect = useCallback(() => {
     shouldReconnect.current = false;
     clearReconnectTimeout();
-    
+
     if (ws.current) {
       ws.current.close(1000, 'Manual disconnect');
     }
-    
+
     setIsConnected(false);
     setConnectionStatus('CLOSED');
   }, [clearReconnectTimeout]);
@@ -212,11 +212,11 @@ export const useWebSocket = (url, options = {}) => {
     connectionStatus,
     reconnectAttempts,
     error,
-    
+
     // Message handling
     lastMessage,
     sendMessage,
-    
+
     // Connection control
     connect,
     disconnect,

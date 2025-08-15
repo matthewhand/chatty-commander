@@ -25,5 +25,3 @@ else
 fi
 
 echo "Server should be reachable at http://localhost:${PORT}/docs"
-
-
