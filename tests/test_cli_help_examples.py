@@ -10,7 +10,7 @@ def run_cmd(args, timeout=10):
 
 
 def test_cli_help_includes_examples_section():
-    rc, out, err = run_cmd([PYTHON, 'src/chatty_commander/main.py', '--help'])
+    rc, out, err = run_cmd([PYTHON, '-m', 'chatty_commander.main', '--help'])
     assert rc == 0
     text = (out or '') + (err or '')
     assert 'Examples:' in text

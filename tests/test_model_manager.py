@@ -31,7 +31,7 @@ class TestModelManager:
         config = Config()
         mm = ModelManager(config)
         with patch("asyncio.sleep", new_callable=AsyncMock):
-            result = asyncio.run(mm.listen_for_commands())
+            result = mm.listen_for_commands()
         assert result is None or isinstance(result, str)
 
         #     def test_hot_reload(self, tmp_path):

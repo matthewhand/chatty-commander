@@ -54,6 +54,15 @@ def test_modes_wakeword_mapping_custom_mode(tmp_path, monkeypatch):
         "focus": {"wakewords": ["focus_on"], "persona": "analyst", "tools": ["browser"]},
     }
     data["state_models"]["focus"] = ["okay_stop"]
+    data["state_transitions"] = {
+        "idle": {
+            "hey_chat_tee": "chatty",
+            "hey_khum_puter": "computer",
+            "focus_on": "focus",
+            "toggle_mode": "computer",
+        },
+        "focus": {"okay_stop": "idle"},
+    }
 
     cfg_path = make_temp_config(tmp_path, data)
     cfg = Config(config_file=cfg_path)

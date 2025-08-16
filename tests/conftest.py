@@ -70,17 +70,20 @@ def pytest_collection_modifyitems(config, items):
     skip_marker = pytest.mark.skip(reason="sandbox denies socketpair needed by TestClient")
     skip_files = {
         "tests/test_web_mode_unit.py",
+        "tests/test_web_integration.py",
         "tests/test_core_config_get_metrics.py",
         "tests/test_web_server_guards.py",
         "tests/test_web_context_api.py",
         "tests/test_agents_api_update_delete_404.py",
         "tests/test_advisors_memory_api.py",
         "tests/test_ws_heartbeat.py",
+        "tests/test_websocket_resilience.py",
         "tests/test_avatar_selector.py",
         "tests/test_obs_metrics_prom_json.py",
         "tests/test_agents_api_create_from_description.py",
         "tests/test_ws_connection_snapshot.py",
         "tests/test_avatar_ws.py",
+        "tests/test_avatar_audio_queue.py",
         "tests/test_core_endpoints_minimal.py",
         "tests/test_e2e_core_flow.py",
         "tests/test_web_advisors_api.py",
@@ -112,6 +115,7 @@ def pytest_collection_modifyitems(config, items):
         "tests/test_metrics_increment_on_unknown_command.py",
         "tests/test_agents_api.py",
         "tests/test_performance_benchmarks.py",
+        "tests/test_thinking_state_broadcast_async.py",
     }
     for item in items:
         for f in skip_files:

@@ -20,9 +20,14 @@ def replace_config_with_dummy(monkeypatch):
 
         # Patch where cli imports Config inside functions: config.Config
         import chatty_commander.app.config as config_module
+        from chatty_commander.cli import cli as cli_module
 
         monkeypatch.setattr(
             config_module, "Config", staticmethod(lambda: DummyConfigDirect(actions))
+        )
+        # Also patch _resolve_Config to ensure it uses our dummy
+        monkeypatch.setattr(
+            cli_module, "_resolve_Config", lambda: lambda: DummyConfigDirect(actions)
         )
 
         return _dummy_config_ctor

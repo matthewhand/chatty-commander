@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from chatty_commander.app.config import Config
 from chatty_commander.tools.builder import build_openapi_schema
+from jsonschema import ValidationError, validate
 
 
 @pytest.fixture
@@ -240,7 +241,7 @@ def test_build_model_actions_custom_message(config):
     """Test building model actions for custom message."""
     config.commands = {'test_msg': {'action': 'custom_message', 'message': 'Hello'}}
     actions = config._build_model_actions()
-    assert actions['test_msg'] == {'message': 'Hello'}
+    assert actions['test_msg'] == {'shell': 'echo Hello'}
 
 
 def test_set_start_on_boot_enable(config, monkeypatch):

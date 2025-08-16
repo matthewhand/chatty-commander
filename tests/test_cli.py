@@ -12,7 +12,9 @@ from unittest.mock import patch  # noqa: E402 - import after test setup
 
 import pytest  # noqa: E402 - import after test setup
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))  # noqa: E402 - path manipulation before imports
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+)  # noqa: E402 - path manipulation before imports
 
 from chatty_commander.cli.cli import cli_main  # noqa: E402 - imported after path setup
 
@@ -56,7 +58,7 @@ def test_cli_set_listen_for(monkeypatch):
 
 def test_cli_set_mode(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'config', '--set-mode', 'mode1', 'option1'])
-    with patch('chatty_commander.cli.cli.ConfigCLI.set_mode'):
+    with patch('chatty_commander.cli.cli.ConfigCLI.set_mode') as mock_set:
         with pytest.raises(SystemExit):
             cli_main()
         mock_set.assert_not_called()
@@ -218,6 +220,10 @@ def test_cli_exec_known_command_dry_run(monkeypatch, capsys):
         model_actions = {'say': {'shell': 'echo hi'}}
 
     monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
+    # Also patch _resolve_Config to ensure it uses our dummy
+    from chatty_commander.cli import cli as cli_module
+
+    monkeypatch.setattr(cli_module, '_resolve_Config', lambda: DummyConfig)
 
     # Dry-run should not invoke executor
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 'say', '--dry-run'])
@@ -245,6 +251,10 @@ def test_cli_exec_unknown_command(monkeypatch, capsys):
         model_actions = {'known': {'shell': 'echo ok'}}
 
     monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
+    # Also patch _resolve_Config to ensure it uses our dummy
+    from chatty_commander.cli import cli as cli_module
+
+    monkeypatch.setattr(cli_module, '_resolve_Config', lambda: DummyConfig)
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 'unknown'])
     from chatty_commander.cli.cli import cli_main  # noqa: E402
@@ -269,6 +279,10 @@ def test_cli_exec_timeout_flag_passthrough(monkeypatch):
         model_actions = {'t': {'shell': 'sleep 5'}}
 
     monkeypatch.setattr('chatty_commander.app.config.Config', lambda: DummyConfig())
+    # Also patch _resolve_Config to ensure it uses our dummy
+    from chatty_commander.cli import cli as cli_module
+
+    monkeypatch.setattr(cli_module, '_resolve_Config', lambda: DummyConfig)
 
     monkeypatch.setattr(sys, 'argv', ['cli.py', 'exec', 't', '--timeout', '2'])
     # Ensure we call CommandExecutor and pass through timeout; we won't actually sleep in tests

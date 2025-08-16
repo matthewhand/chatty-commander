@@ -92,23 +92,28 @@ def test_adapter_lifecycle():
 def test_dynamic_registry_override_and_lifecycle():
     """Adapters can be swapped via the registry and respect lifecycle hooks."""
 
-    original_cls = InputAdapter.registry["gui"]
+    original_factory = InputAdapter.registry["gui"]
 
-    class TestGUIAdapter(InputAdapter):
+    class TestGUIAdapter:
         name = "gui"
 
         def __init__(self) -> None:
-            super().__init__()
             self.started = False
             self.stopped = False
+            self._started = False
 
-        def on_start(self) -> None:
+        def start(self) -> None:
+            self._started = True
             self.started = True
 
-        def on_stop(self) -> None:
+        def stop(self) -> None:
+            self._started = False
             self.stopped = True
 
     try:
+        # Register the test adapter factory
+        InputAdapter.registry["gui"] = lambda: TestGUIAdapter()
+
         sink = DummyCommandSink()
         orch = ModeOrchestrator(
             config=DummyConfig(),
@@ -123,7 +128,7 @@ def test_dynamic_registry_override_and_lifecycle():
         orch.stop()
         assert orch.adapters[0].stopped
     finally:
-        InputAdapter.registry["gui"] = original_cls
+        InputAdapter.registry["gui"] = original_factory
 
     orch.select_adapters()
     assert all(getattr(a, "_started", False) is False for a in orch.adapters)

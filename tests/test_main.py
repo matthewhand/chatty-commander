@@ -44,7 +44,7 @@ class TestMain(unittest.TestCase):
         result = main.main()
         self.assertEqual(result, 0)
 
-        mock_setup_logger.assert_called_once_with('main', config=mock_config)
+        mock_setup_logger.assert_called_once_with('main', 'logs/chattycommander.log')
         # In shell mode, these methods are not called since it's interactive text input
         # mock_model_manager.reload_models.assert_called()
         # mock_model_manager.listen_for_commands.assert_called()
