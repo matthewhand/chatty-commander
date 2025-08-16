@@ -1,7 +1,6 @@
-
 # ChattyCommander API Documentation
 
-*Generated on 2025-08-12 10:42:16*
+_Generated on 2025-08-12 10:42:16_
 
 ## Overview
 
@@ -32,6 +31,7 @@ The API supports optional authentication. When running in development mode with 
 Returns the current system status including active state and loaded models.
 
 **Response Example:**
+
 ```json
 {
   "status": "running",
@@ -49,6 +49,7 @@ Returns the current system status including active state and loaded models.
 Retrieves the current system configuration.
 
 **Response Example:**
+
 ```json
 {
   "general_models_path": "./models-idle",
@@ -79,6 +80,7 @@ Updates the system configuration. Some changes may require a restart.
 Returns the current operational state.
 
 **Response Example:**
+
 ```json
 {
   "current_state": "idle",
@@ -93,6 +95,7 @@ Returns the current operational state.
 Manually changes the system state.
 
 **Request Body:**
+
 ```json
 {
   "state": "computer"
@@ -108,6 +111,7 @@ Manually changes the system state.
 Executes a voice command programmatically.
 
 **Request Body:**
+
 ```json
 {
   "command": "lights_on",
@@ -118,6 +122,7 @@ Executes a voice command programmatically.
 ```
 
 **Response Example:**
+
 ```json
 {
   "success": true,
@@ -141,6 +146,7 @@ ws://localhost:8100/ws
 The WebSocket sends JSON messages with the following types:
 
 #### State Change
+
 ```json
 {
   "type": "state_change",
@@ -153,6 +159,7 @@ The WebSocket sends JSON messages with the following types:
 ```
 
 #### Command Detection
+
 ```json
 {
   "type": "command_detected",
@@ -165,6 +172,7 @@ The WebSocket sends JSON messages with the following types:
 ```
 
 #### System Event
+
 ```json
 {
   "type": "system_event",
@@ -238,26 +246,26 @@ async def websocket_client():
 
 ```javascript
 // Fetch system status
-fetch('http://localhost:8100/api/v1/status')
-  .then(response => response.json())
-  .then(data => console.log('Status:', data));
+fetch("http://localhost:8100/api/v1/status")
+  .then((response) => response.json())
+  .then((data) => console.log("Status:", data));
 
 // Execute command
-fetch('http://localhost:8100/api/v1/command', {
-  method: 'POST',
+fetch("http://localhost:8100/api/v1/command", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({command: 'lights_on'})
+  body: JSON.stringify({ command: "lights_on" }),
 })
-.then(response => response.json())
-.then(data => console.log('Command result:', data));
+  .then((response) => response.json())
+  .then((data) => console.log("Command result:", data));
 
 // WebSocket connection
-const ws = new WebSocket('ws://localhost:8100/ws');
-ws.onmessage = function(event) {
+const ws = new WebSocket("ws://localhost:8100/ws");
+ws.onmessage = function (event) {
   const data = JSON.parse(event.data);
-  console.log('WebSocket message:', data);
+  console.log("WebSocket message:", data);
 };
 ```
 
@@ -289,12 +297,14 @@ curl http://localhost:8100/api/v1/status
 ## Changelog
 
 ### Version 0.2.0
+
 - Added comprehensive API endpoints
 - Implemented WebSocket support
 - Added state management
 - Enhanced error handling
 
 ### Version 0.1.0
+
 - Initial API implementation
 - Basic command execution
 - Configuration management

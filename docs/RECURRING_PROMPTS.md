@@ -5,6 +5,7 @@
 A Recurring Prompt is a small, versioned definition that can be triggered on a schedule (cron), via webhook, or manually. Store as JSON/YAML and feed to a scheduler.
 
 Fields:
+
 - id, name, description
 - schedule (cron), trigger (cron|webhook|manual)
 - context (system pre-prompt)
@@ -14,6 +15,7 @@ Fields:
 - metadata (tags, owner)
 
 Example:
+
 ```json
 {
   "id": "advisor-daily-summary",
@@ -24,8 +26,12 @@ Example:
   "context": "You are a helpful assistant. Use the provided context.",
   "prompt": "Summarise the following {{messages}}.",
   "variables": { "messages": "<ALL_MESSAGES>" },
-  "response_handler": { "type": "post", "action": "sendToDiscord", "channel": "#daily-summary" },
-  "metadata": { "tags": ["daily","summary"], "owner": "alice" }
+  "response_handler": {
+    "type": "post",
+    "action": "sendToDiscord",
+    "channel": "#daily-summary"
+  },
+  "metadata": { "tags": ["daily", "summary"], "owner": "alice" }
 }
 ```
 

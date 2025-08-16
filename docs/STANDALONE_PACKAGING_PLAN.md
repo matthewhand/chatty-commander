@@ -1,9 +1,11 @@
 # Standalone Packaging Plan
 
 Goal
+
 - Provide cross-platform standalone executables for ChattyCommander so end users can run `chatty` without Python preinstalled.
 
 Deliverables
+
 - Single-file (one EXE/app) and single-folder builds for:
   - Windows (x64)
   - macOS (x64/arm64)
@@ -11,17 +13,20 @@ Deliverables
 - Artifacts published from CI for tagged releases.
 
 Primary toolchain
+
 - PyInstaller (primary) for broad compatibility and ease of setup.
 - Alternatives to evaluate (optional):
   - Nuitka (performance-focused)
   - PyOxidizer (smaller size, faster startup, more complex)
 
 Entrypoints
+
 - CLI: `chatty_commander.cli.cli:cli_main` (console application)
 - Optional GUI wrapper: `chatty_commander.gui:main` (if a GUI entry becomes first-class)
 - Web server entry (if packaged separately): `chatty_commander.web.server:main`
 
 Packaging considerations
+
 - Hidden imports: ensure dynamic imports are listed if needed (e.g., for FastAPI/Uvicorn, websockets).
 - Data files:
   - Include minimal static assets if required at runtime (webui HTML, CSS/JS for local demo only). Production web frontend is separate.
@@ -30,6 +35,7 @@ Packaging considerations
 - Versioning: embed version info from `pyproject.toml`.
 
 Sample PyInstaller spec (CLI)
+
 ```
 # file: packaging/chatty_cli.spec
 # Generate baseline with: pyinstaller --name chatty --onefile -F -p src -c -i icon.ico -s run_cli.py
@@ -68,6 +74,7 @@ exe = EXE(
 ```
 
 Wrapper script for CLI (run_cli.py)
+
 ```
 # packaging/run_cli.py
 from chatty_commander.cli.cli import cli_main
@@ -77,30 +84,35 @@ if __name__ == '__main__':
 ```
 
 Makefile targets (proposed)
+
 - `make build-exe` (current OS)
 - `make build-exe-all` (matrix via CI)
 - `make dist-clean` (remove build artifacts)
 
 CI/CD plan
+
 - GitHub Actions matrix: {ubuntu-latest, windows-latest, macos-latest}
 - Steps:
-  1) Checkout
-  2) Setup Python 3.11
-  3) pip install .[dev] pyinstaller
-  4) Build using spec
-  5) Upload artifacts on push tags
+  1. Checkout
+  2. Setup Python 3.11
+  3. pip install .[dev] pyinstaller
+  4. Build using spec
+  5. Upload artifacts on push tags
 - Optional: code signing and notarization (macOS), Authenticode (Windows)
 
 Smoke tests for artifacts
+
 - Run `chatty --help` and `chatty gui --help`
 - Run a minimal CLI command: `chatty list`
 - Ensure exit codes correct and no missing imports.
 
 Documentation updates
+
 - README: Installation via pip vs standalone binaries
 - docs/DEVELOPER_SETUP.md: developer flow for building local executables
 
 Open questions / future enhancements
+
 - Add Nuitka recipe for performance-sensitive users
 - Bundle minimal models or fetch on first run?
 - Optional plugin system to reduce bundled size

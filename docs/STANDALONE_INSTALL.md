@@ -9,6 +9,7 @@ uv run pyinstaller --clean -y packaging/chatty_cli.spec
 ```
 
 Artifacts are produced under `dist/`:
+
 - Linux/macOS: `dist/chatty`
 - Windows: `dist/chatty.exe`
 
@@ -20,5 +21,6 @@ Artifacts are produced under `dist/`:
 ```
 
 ## Notes
+
 - Use the Python packaging build in CI for tagged releases (prebuilt artifacts uploaded per OS).
 - For advanced packaging (size optimization, data files), extend `packaging/chatty_cli.spec`.
