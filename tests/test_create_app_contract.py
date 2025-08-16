@@ -133,3 +133,17 @@ class TestCreateAppContract:
         # Should return JSON error response
         data = response.json()
         assert "detail" in data
+
+    def test_create_app_idempotency(self):
+        """Test that create_app() executed twice does not increase route count."""
+        app1 = create_app()
+        initial_route_count = len(app1.routes)
+
+        app2 = create_app()
+        second_route_count = len(app2.routes)
+
+        # Both apps should have the same number of routes
+        assert initial_route_count == second_route_count, (
+            f"Route count changed: {initial_route_count} -> {second_route_count}. "
+            "create_app() should be idempotent."
+        )
