@@ -10,6 +10,6 @@ def test_version_endpoint_ok():
     assert resp.status_code == 200
     data = resp.json()
     assert isinstance(data, dict)
-    assert data.get("version") == "0.1.0"
+    assert data.get("version") == "0.2.0"
     # git_sha may be None if git is unavailable in the environment
     assert "git_sha" in data

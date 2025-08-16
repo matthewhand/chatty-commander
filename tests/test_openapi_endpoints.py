@@ -1,9 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from chatty_commander.app import CommandExecutor
-
-# Import FastAPI app from the source package
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
@@ -36,15 +33,16 @@ def client():
         # Mock the AdvisorsService to avoid OpenAI API key requirement
         mock_service = MagicMock()
         mock_advisors_service.return_value = mock_service
+        return TestClient(app)
 
 
-def test_swagger_ui_docs_available():
+def test_swagger_ui_docs_available(client):
     resp = client.get("/docs")
     assert resp.status_code == 200
     assert "text/html" in resp.headers.get("content-type", "")
 
 
-def test_openapi_json_available_and_has_paths():
+def test_openapi_json_available_and_has_paths(client):
     resp = client.get("/openapi.json")
     assert resp.status_code == 200
     assert "application/json" in resp.headers.get("content-type", "")
