@@ -110,15 +110,18 @@ class ModelManager:
                 logging.warning(f"Model file '{model_path}' does not exist. Skipping.")
                 continue
 
-            try:
-                instance = Model(model_path)  # type: ignore[call-arg]
+            # Use retrying constructor that is patchable in tests
+            instance = self._load_model_with_retry(model_path)
+            if instance is not None:
                 model_set[model_name] = instance  # only add on success
-                logging.info(f"Successfully loaded model '{model_name}' from '{model_path}'.")
-            except Exception as e:
+                logging.info("Successfully loaded model '%s' from '%s'.", model_name, model_path)
+            else:
+                # Already logged with diagnostics and error reporting in retry helper
                 logging.error(
-                    f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models."
+                    "Failed to load model '%s' from '%s'. Continuing with other models.",
+                    model_name,
+                    model_path,
                 )
-                # do not add on failure
                 continue
         return model_set
 

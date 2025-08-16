@@ -19,20 +19,21 @@ _root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
 
-from chatty_commander.app.command_executor import (  # noqa: E402, type: ignore
-    CommandExecutor,
-)
-from chatty_commander.app.config import Config  # noqa: E402, type: ignore
-from chatty_commander.app.default_config import (  # noqa: E402, type: ignore
-    generate_default_config_if_needed,
-)
-from chatty_commander.app.model_manager import ModelManager  # noqa: E402, type: ignore
-from chatty_commander.app.orchestrator import (  # noqa: E402, type: ignore
-    ModeOrchestrator,
-    OrchestratorFlags,
-)
-from chatty_commander.app.state_manager import StateManager  # noqa: E402, type: ignore
-from chatty_commander.utils.logger import setup_logger  # noqa: E402, type: ignore
+# NOTE: Intentionally avoid importing heavy modules at import time.
+# Any imports of internal components are done lazily inside functions
+# after we know we are not just answering --help. This keeps
+# `python -m chatty_commander.main --help` lightweight and reliable in CI.
+
+# Expose patchable module-level names that tests expect; they are populated
+# lazily inside main() unless patched by tests.
+Config = None  # type: ignore[assignment]
+ModelManager = None  # type: ignore[assignment]
+StateManager = None  # type: ignore[assignment]
+CommandExecutor = None  # type: ignore[assignment]
+generate_default_config_if_needed = None  # type: ignore[assignment]
+
+# setup_logger is safe/lightweight to import at import time so tests can patch it
+from chatty_commander.utils.logger import setup_logger  # noqa: E402
 
 
 def run_cli_mode(config, model_manager, state_manager, command_executor, logger):
@@ -431,6 +432,12 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
 
 def run_orchestrator_mode(config, model_manager, state_manager, command_executor, logger, args):
     """Run orchestrator-driven mode; adapters route to the same command sink."""
+    # Lazy import to avoid heavy imports in --help path
+    from chatty_commander.app.orchestrator import (
+        ModeOrchestrator,
+        OrchestratorFlags,
+    )
+
     flags = OrchestratorFlags(
         enable_text=bool(getattr(args, "enable_text", False)),
         enable_gui=bool(getattr(args, "gui", False)),
@@ -490,10 +497,23 @@ def main():
     logger.info("Starting ChattyCommander application")
 
     # Generate default configuration if needed
+    global generate_default_config_if_needed
+    if generate_default_config_if_needed is None:  # Resolve lazily unless patched
+        from chatty_commander.app.default_config import (
+            generate_default_config_if_needed as _gdfin,
+        )
+
+        generate_default_config_if_needed = _gdfin
+
     if generate_default_config_if_needed():
         logger.info("Default configuration generated")
 
     # Load configuration settings
+    global Config
+    if Config is None:  # Resolve lazily unless patched
+        from chatty_commander.app.config import Config as _Config
+
+        Config = _Config
     config = Config()
     # Apply CLI overrides to web server settings
     web_cfg = getattr(config, "web_server", {}) or {}
@@ -533,6 +553,22 @@ def main():
 
     web_cfg.update({"host": host, "port": port, "auth_enabled": auth_enabled})
     config.web_server = web_cfg
+
+    global ModelManager, StateManager, CommandExecutor
+    if ModelManager is None:
+        from chatty_commander.app.model_manager import ModelManager as _ModelManager
+
+        ModelManager = _ModelManager
+    if StateManager is None:
+        from chatty_commander.app.state_manager import StateManager as _StateManager
+
+        StateManager = _StateManager
+    if CommandExecutor is None:
+        from chatty_commander.app.command_executor import (
+            CommandExecutor as _CommandExecutor,
+        )
+
+        CommandExecutor = _CommandExecutor
 
     model_manager = ModelManager(config)
     state_manager = StateManager()
