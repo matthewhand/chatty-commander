@@ -36,11 +36,44 @@ class Config:
         )
         self.commands: dict[str, Any] = self.config_data.get("commands", {})
 
+        # Advisors configuration
+        advisors_cfg = self.config_data.get("advisors", {})
+        self.advisors = {
+            'enabled': advisors_cfg.get("enabled", False),
+            'llm_api_mode': advisors_cfg.get("llm_api_mode", "completion"),
+            'model': advisors_cfg.get("model", "gpt-oss20b"),
+        }
+
         # Voice/GUI behaviour
         self.voice_only: bool = bool(self.config_data.get("voice_only", False))
 
+        # Audio configuration
+        self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
+        self.sample_rate: int = self.config_data.get("sample_rate", 16000)
+        self.audio_format: str = self.config_data.get("audio_format", "int16")
+
+        # Direct access to general settings
+        self.check_for_updates: bool = bool(
+            self.config_data.get("general", {}).get("check_for_updates", True)
+        )
+        self.inference_framework: str = str(
+            self.config_data.get("general", {}).get("inference_framework", "onnx")
+        )
+
+        # Commands for model actions
+        self.commands: dict = self.config_data.get("commands", {})
+
+        # Start on boot setting
+        self.start_on_boot: bool = bool(
+            self.config_data.get("general", {}).get("start_on_boot", False)
+        )
+
         # Build model_actions from commands and keybindings
         self.model_actions: dict[str, Any] = self._build_model_actions()
+
+        # Additional attributes for config CLI compatibility
+        self.listen_for: dict[str, Any] = self.config_data.get("listen_for", {})
+        self.modes: dict[str, Any] = self.config_data.get("modes", {})
 
         # Back-compat general settings wrapper with property-based access
         class _GeneralSettings:
@@ -100,10 +133,34 @@ class Config:
     # ------------------------------------------------------------------
     # Helpers
     def _apply_env_overrides(self) -> None:
+        # API endpoint overrides
         if os.environ.get("CHATBOT_ENDPOINT"):
             self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
         if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
+
+        # General settings overrides
+        if os.environ.get("CHATCOMM_DEBUG"):
+            debug_val = os.environ["CHATCOMM_DEBUG"].lower()
+            self.config_data.setdefault("general", {})["debug_mode"] = debug_val in (
+                "true",
+                "yes",
+                "1",
+            )
+
+        if os.environ.get("CHATCOMM_DEFAULT_STATE"):
+            self.default_state = os.environ["CHATCOMM_DEFAULT_STATE"]
+
+        if os.environ.get("CHATCOMM_INFERENCE_FRAMEWORK"):
+            self.inference_framework = os.environ["CHATCOMM_INFERENCE_FRAMEWORK"]
+
+        if os.environ.get("CHATCOMM_START_ON_BOOT"):
+            boot_val = os.environ["CHATCOMM_START_ON_BOOT"].lower()
+            self.start_on_boot = boot_val in ("true", "yes", "1")
+
+        if os.environ.get("CHATCOMM_CHECK_FOR_UPDATES"):
+            update_val = os.environ["CHATCOMM_CHECK_FOR_UPDATES"].lower()
+            self.check_for_updates = update_val not in ("false", "no", "0")
 
     def _apply_web_server_config(self) -> None:
         web_cfg = self.config_data.get("web_server", {})
@@ -146,7 +203,7 @@ class Config:
     # Build model_actions from the high-level 'commands' section
     def _build_model_actions(self) -> dict[str, dict[str, str]]:
         actions: dict[str, dict[str, str]] = {}
-        commands_cfg = self.config_data.get("commands", {}) or {}
+        commands_cfg = self.commands or {}
         keybindings = self.config_data.get("keybindings", {}) or {}
         for name, cfg in commands_cfg.items():
             action_type = cfg.get("action")
@@ -170,7 +227,7 @@ class Config:
     # Convenience property for tests expecting top-level 'debug_mode'
     @property
     def debug_mode(self) -> bool:
-        return bool(self.config_data.get("general_settings", {}).get("debug_mode", True))
+        return bool(self.config_data.get("general", {}).get("debug_mode", True))
 
     # ------------------------------------------------------------------
     # Public API
@@ -182,8 +239,11 @@ class Config:
         self._apply_web_server_config()
         self.config_data["web_server"] = self.web_server
         self.config_data["voice_only"] = self.voice_only
-        with open(self.config_file, "w", encoding="utf-8") as f:
-            json.dump(self.config_data, f, indent=2)
+        try:
+            with open(self.config_file, "w", encoding="utf-8") as f:
+                json.dump(self.config_data, f, indent=2)
+        except (TypeError, ValueError) as e:
+            logger.error(f"Could not save config file: {e}")
 
     def validate(self) -> None:
         if not self.model_actions:
@@ -196,10 +256,24 @@ class Config:
 
     # Start-on-boot and update checks
     def set_start_on_boot(self, enabled: bool) -> None:
-        self.general_settings.start_on_boot = enabled
+        self._update_general_setting("start_on_boot", bool(enabled))
+        self.start_on_boot = bool(enabled)
+        if enabled:
+            self._enable_start_on_boot()
+        else:
+            self._disable_start_on_boot()
+
+    def _enable_start_on_boot(self) -> None:
+        """Enable start on boot functionality."""
+        pass
+
+    def _disable_start_on_boot(self) -> None:
+        """Disable start on boot functionality."""
+        pass
 
     def set_check_for_updates(self, enabled: bool) -> None:
         self._update_general_setting("check_for_updates", bool(enabled))
+        self.check_for_updates = bool(enabled)
 
     def _update_general_setting(self, key: str, value: Any) -> None:
         if "general" not in self.config_data:
@@ -208,7 +282,7 @@ class Config:
         self.save_config(self.config_data)
 
     def perform_update_check(self) -> dict[str, Any] | None:
-        if not self.general_settings.check_for_updates:
+        if not self.check_for_updates:
             return None
         try:
             result = subprocess.run(
@@ -247,3 +321,75 @@ class Config:
     @classmethod
     def load(cls, config_file: str = "config.json") -> Config:
         return cls(config_file)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], config_file: str = "config.json") -> Config:
+        """Create a Config instance from a dictionary."""
+        # Create a new instance and set the config data directly
+        instance = cls.__new__(cls)
+        instance.config_file = config_file
+        instance.config_data = data.copy()
+
+        # Set basic attributes first
+        instance.default_state = instance.config_data.get("default_state", "idle")
+        instance.general_models_path = instance.config_data.get("general", {}).get(
+            "models_path", "models"
+        )
+        instance.state_models = instance.config_data.get("state_models", {})
+        instance.api_endpoints = instance.config_data.get("api_endpoints", {})
+        instance.wakeword_state_map = instance.config_data.get("wakeword_state_map", {})
+        instance.state_transitions = instance.config_data.get("state_transitions", {})
+        instance.commands = instance.config_data.get("commands", {})
+        instance.advisors = instance.config_data.get("advisors", {})
+        instance.voice_only = bool(instance.config_data.get("general", {}).get("voice_only", False))
+        instance.mic_chunk_size = int(
+            instance.config_data.get("general", {}).get("mic_chunk_size", 1024)
+        )
+        instance.sample_rate = int(
+            instance.config_data.get("general", {}).get("sample_rate", 16000)
+        )
+        instance.audio_format = instance.config_data.get("general", {}).get("audio_format", "int16")
+        instance.check_for_updates = bool(
+            instance.config_data.get("general", {}).get("check_for_updates", True)
+        )
+        instance.inference_framework = instance.config_data.get("general", {}).get(
+            "inference_framework", "onnx"
+        )
+        instance.start_on_boot = bool(
+            instance.config_data.get("general", {}).get("start_on_boot", False)
+        )
+        instance.listen_for = instance.config_data.get("listen_for", {})
+        instance.modes = instance.config_data.get("modes", {})
+
+        # Initialize methods that depend on attributes being set
+        instance._load_general_settings()
+        instance._apply_env_overrides()
+        instance._apply_web_server_config()
+        instance.model_actions = instance._build_model_actions()
+
+        return instance
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the config back to a dictionary for serialization."""
+        result = self.config_data.copy()
+
+        # Update with current attribute values that might have changed
+        result["model_actions"] = self.model_actions
+        result["state_models"] = self.state_models
+        result["listen_for"] = self.listen_for
+        result["modes"] = self.modes
+        result["default_state"] = self.default_state
+
+        # Update general settings
+        if "general" not in result:
+            result["general"] = {}
+        result["general"]["models_path"] = self.general_models_path
+        result["general"]["voice_only"] = self.voice_only
+        result["general"]["mic_chunk_size"] = self.mic_chunk_size
+        result["general"]["sample_rate"] = self.sample_rate
+        result["general"]["audio_format"] = self.audio_format
+        result["general"]["check_for_updates"] = self.check_for_updates
+        result["general"]["inference_framework"] = self.inference_framework
+        result["general"]["start_on_boot"] = self.start_on_boot
+
+        return result

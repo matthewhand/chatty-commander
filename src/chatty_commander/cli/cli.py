@@ -399,8 +399,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def exec_func(args: argparse.Namespace) -> int:
         try:
-            from chatty_commander.app.config import Config  # noqa
-
+            Config = _resolve_Config()
             cfg = Config()
             actions = _get_model_actions_from_config(cfg)
             action_entry = actions.get(args.name)
@@ -408,7 +407,7 @@ def build_parser() -> argparse.ArgumentParser:
                 print(f"Unknown command: {args.name}", file=sys.stderr)
                 return 1
             if args.dry_run:
-                print(f"DRY RUN: would execute command '{args.name}' with action {action_entry}")
+                print(f"DRY RUN: would execute command '{args.name}'")
                 return 0
             # Resolve CommandExecutor in a way that allows tests to patch via 'cli.CommandExecutor'
             CommandExecutorRT = globals().get("CommandExecutor")

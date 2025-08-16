@@ -10,12 +10,12 @@ and more complex state dependencies.
 import logging
 from collections.abc import Callable
 
-from config import Config
+from .config import Config
 
 
 class StateManager:
-    def __init__(self) -> None:
-        self.config: Config = Config()
+    def __init__(self, config: Config | None = None) -> None:
+        self.config: Config = config if config is not None else Config()
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         self.current_state: str = self.config.default_state
@@ -29,16 +29,23 @@ class StateManager:
         Returns the new state if a transition occurred, otherwise None.
         """
         new_state: str | None = None
-        if command == 'hey_chat_tee':
-            new_state = 'chatty'
-        elif command == 'hey_khum_puter':
-            new_state = 'computer'
-        elif command in ['okay_stop', 'thanks_chat_tee', 'that_ill_do']:
-            new_state = 'idle'
-        elif command == 'toggle_mode':
-            states = ['idle', 'computer', 'chatty']
-            current_index = states.index(self.current_state)
-            new_state = states[(current_index + 1) % len(states)]
+
+        # Check if we have state_transitions in config
+        if hasattr(self.config, 'state_transitions') and self.config.state_transitions:
+            current_transitions = self.config.state_transitions.get(self.current_state, {})
+            new_state = current_transitions.get(command)
+        else:
+            # Fallback to hardcoded logic for backward compatibility
+            if command == 'hey_chat_tee':
+                new_state = 'chatty'
+            elif command == 'hey_khum_puter':
+                new_state = 'computer'
+            elif command in ['okay_stop', 'thanks_chat_tee', 'that_ill_do']:
+                new_state = 'idle'
+            elif command == 'toggle_mode':
+                states = ['idle', 'computer', 'chatty']
+                current_index = states.index(self.current_state)
+                new_state = states[(current_index + 1) % len(states)]
 
         if new_state and new_state != self.current_state:
             self.change_state(new_state)

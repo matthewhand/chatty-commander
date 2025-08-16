@@ -17,6 +17,7 @@ class AdvisorSink(Protocol):
 
 class InputAdapter(Protocol):
     name: str
+    registry: dict[str, type[InputAdapter]] = {}
 
     def start(self) -> None:  # pragma: no cover - protocol
         ...
@@ -71,6 +72,16 @@ class DummyAdapter:
         self._started = False
 
 
+# Initialize the registry with default adapters
+InputAdapter.registry = {
+    "gui": lambda: DummyAdapter("gui"),
+    "web": lambda: DummyAdapter("web"),
+    "openwakeword": lambda: DummyAdapter("openwakeword"),
+    "computer_vision": lambda: DummyAdapter("computer_vision"),
+    "discord_bridge": lambda: DummyAdapter("discord_bridge"),
+}
+
+
 class ModeOrchestrator:
     """Unifies multiple operating modes by selecting and starting adapters.
 
@@ -103,21 +114,31 @@ class ModeOrchestrator:
             selected.append(TextInputAdapter(on_command=self._dispatch_command))
 
         if self.flags.enable_gui:
-            selected.append(DummyAdapter("gui"))
+            adapter_factory = InputAdapter.registry.get("gui")
+            if adapter_factory:
+                selected.append(adapter_factory())
 
         if self.flags.enable_web:
-            selected.append(DummyAdapter("web"))
+            adapter_factory = InputAdapter.registry.get("web")
+            if adapter_factory:
+                selected.append(adapter_factory())
 
         if self.flags.enable_openwakeword:
-            selected.append(DummyAdapter("openwakeword"))
+            adapter_factory = InputAdapter.registry.get("openwakeword")
+            if adapter_factory:
+                selected.append(adapter_factory())
 
         if self.flags.enable_computer_vision:
-            selected.append(DummyAdapter("computer_vision"))
+            adapter_factory = InputAdapter.registry.get("computer_vision")
+            if adapter_factory:
+                selected.append(adapter_factory())
 
         if self.flags.enable_discord_bridge and getattr(self.config, "advisors", {}).get(
             "enabled", False
         ):
-            selected.append(DummyAdapter("discord_bridge"))
+            adapter_factory = InputAdapter.registry.get("discord_bridge")
+            if adapter_factory:
+                selected.append(adapter_factory())
 
         self.adapters = selected
         return [a.name for a in selected]
