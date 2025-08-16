@@ -24,7 +24,7 @@ const renderNavigation = () => {
 describe('Navigation Component', () => {
   test('renders navigation links', () => {
     renderNavigation();
-    
+
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Configuration')).toBeInTheDocument();
     expect(screen.getByText('Audio Settings')).toBeInTheDocument();
@@ -32,13 +32,13 @@ describe('Navigation Component', () => {
 
   test('renders logout button', () => {
     renderNavigation();
-    
+
     expect(screen.getByText('Logout')).toBeInTheDocument();
   });
 
   test('calls logout when logout button is clicked', () => {
     renderNavigation();
-    
+
     fireEvent.click(screen.getByText('Logout'));
     expect(mockLogout).toHaveBeenCalled();
   });

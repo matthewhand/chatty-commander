@@ -40,5 +40,3 @@ Example:
 - Add endpoint to accept recurring config upload/listing (optional)
 - Add simple runner `python -m ... advisors.run_recurring --file config.json`
 - Docs: example Node.js `node-cron` snippet
-
-

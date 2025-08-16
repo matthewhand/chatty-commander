@@ -37,7 +37,7 @@ describe('App Component', () => {
     await act(async () => {
       renderApp();
     });
-    
+
     // Check that we don't see the server error message
     expect(screen.queryByText(/Unable to connect to ChattyCommander server/i)).not.toBeInTheDocument();
   });

@@ -3,6 +3,7 @@ CLI commands for LLM integration.
 
 Provides LLM-related subcommands for testing and configuration.
 """
+
 import logging
 
 from .manager import LLMManager
@@ -18,7 +19,7 @@ def add_llm_subcommands(subparsers) -> None:
     llm_parser = subparsers.add_parser(
         "llm",
         help="LLM integration commands",
-        description="Test and configure LLM features including natural language command processing."
+        description="Test and configure LLM features including natural language command processing.",
     )
 
     llm_subparsers = llm_parser.add_subparsers(dest="llm_command", help="LLM commands")
@@ -27,14 +28,12 @@ def add_llm_subcommands(subparsers) -> None:
     llm_subparsers.add_parser(
         "status",
         help="Show LLM system status",
-        description="Display status of LLM backends and availability."
+        description="Display status of LLM backends and availability.",
     )
 
     # Test command
     test_parser = llm_subparsers.add_parser(
-        "test",
-        help="Test LLM backends",
-        description="Test LLM backends with sample prompts."
+        "test", help="Test LLM backends", description="Test LLM backends with sample prompts."
     )
     test_parser.add_argument("--backend", help="Specific backend to test")
     test_parser.add_argument("--prompt", default="Hello, how are you?", help="Test prompt")
@@ -44,7 +43,7 @@ def add_llm_subcommands(subparsers) -> None:
     process_parser = llm_subparsers.add_parser(
         "process",
         help="Process natural language command",
-        description="Test command processing with natural language input."
+        description="Test command processing with natural language input.",
     )
     process_parser.add_argument("text", help="Natural language command to process")
     process_parser.add_argument("--mock", action="store_true", help="Use mock backend only")
@@ -53,7 +52,7 @@ def add_llm_subcommands(subparsers) -> None:
     llm_subparsers.add_parser(
         "backends",
         help="List available backends",
-        description="Show information about all LLM backends."
+        description="Show information about all LLM backends.",
     )
 
 
@@ -115,22 +114,20 @@ def _handle_llm_status(args) -> None:
 
             available = info.get("available", False)
             status_icon = "✅" if available else "❌"
-            print(f"   {status_icon} {backend_name}: {'Available' if available else 'Not available'}")
+            print(
+                f"   {status_icon} {backend_name}: {'Available' if available else 'Not available'}"
+            )
 
             if "error" in info:
                 print(f"      Error: {info['error']}")
 
         # Environment variables
         print("\n🔧 Environment:")
-        env_vars = [
-            "OPENAI_API_KEY",
-            "OPENAI_API_BASE",
-            "OLLAMA_HOST",
-            "LLM_BACKEND"
-        ]
+        env_vars = ["OPENAI_API_KEY", "OPENAI_API_BASE", "OLLAMA_HOST", "LLM_BACKEND"]
 
         for var in env_vars:
             import os
+
             value = os.getenv(var)
             if value:
                 # Mask API keys
@@ -193,10 +190,7 @@ def _handle_llm_process(args, config_manager=None) -> None:
     try:
         # Create LLM manager and processor
         llm_manager = LLMManager(use_mock=args.mock)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=config_manager
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=config_manager)
 
         # Show available commands
         status = processor.get_processor_status()
@@ -280,10 +274,7 @@ def demo_llm_integration(config_manager=None) -> None:
     try:
         # Create LLM manager and processor
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(
-            llm_manager=llm_manager,
-            config_manager=config_manager
-        )
+        processor = CommandProcessor(llm_manager=llm_manager, config_manager=config_manager)
 
         # Show status
         status = processor.get_processor_status()
@@ -296,7 +287,7 @@ def demo_llm_integration(config_manager=None) -> None:
             "turn on the lights please",
             "I want to play some music",
             "what's the weather like?",
-            "completely unknown command"
+            "completely unknown command",
         ]
 
         print("\n🔄 Processing Demo Commands:")

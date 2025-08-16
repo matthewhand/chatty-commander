@@ -3,7 +3,6 @@ import json
 import sys
 
 import pytest
-
 from chatty_commander.cli.cli import cli_main
 
 

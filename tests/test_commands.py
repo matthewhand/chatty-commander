@@ -2,10 +2,10 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
+from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.app.command_executor import CommandExecutor
 
 
 @pytest.fixture
@@ -79,7 +79,10 @@ class TestCommandExecution:
 
     def test_missing_pyautogui(self, command_executor):
         """Test behavior when pyautogui is not available."""
-        with patch('chatty_commander.app.command_executor.pyautogui', None), patch('logging.critical') as mock_log:
+        with (
+            patch('chatty_commander.app.command_executor.pyautogui', None),
+            patch('logging.critical') as mock_log,
+        ):
             command_executor.execute_command('test_key')
             mock_log.assert_called_once_with("Error in test_key: pyautogui not available")
         logging.debug("Handled missing pyautogui")

@@ -13,19 +13,19 @@ import pytest
 
 # Import modules to test
 try:
+    from chatty_commander.app.command_executor import CommandExecutor
     from chatty_commander.app.config import Config
     from chatty_commander.app.model_manager import ModelManager
     from chatty_commander.app.state_manager import StateManager
-    from chatty_commander.app.command_executor import CommandExecutor
 except ImportError:
     # Handle headless environment
     import os
 
     os.environ['DISPLAY'] = ':0'  # Set dummy display for headless testing
+    from chatty_commander.app.command_executor import CommandExecutor
     from chatty_commander.app.config import Config
     from chatty_commander.app.model_manager import ModelManager
     from chatty_commander.app.state_manager import StateManager
-    from chatty_commander.app.command_executor import CommandExecutor
 
 
 class TestPerformanceBenchmarks:
@@ -219,9 +219,7 @@ class TestPerformanceBenchmarks:
         ):
             model_manager = ModelManager(config)
 
-        command_executor = CommandExecutor(
-            config, model_manager, state_manager
-        )  # noqa: F841 - constructed to validate init path; not used further in timing
+        command_executor = CommandExecutor(config, model_manager, state_manager)  # noqa: F841 - constructed to validate init path; not used further in timing
 
         end_time = time.perf_counter()
         startup_time = end_time - start_time

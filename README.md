@@ -1,7 +1,7 @@
 # ChattyCommander
 
-[![CI](https://github.com/your-org/chatty-commander/workflows/CI/badge.svg)](https://github.com/your-org/chatty-commander/actions)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](https://github.com/your-org/chatty-commander)
+[![CI](https://github.com/matthewhand/chatty-commander/actions/workflows/ci.yml/badge.svg)](https://github.com/matthewhand/chatty-commander/actions)
+[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](https://github.com/matthewhand/chatty-commander)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
 
 ChattyCommander is a multi-mode assistant that turns voice and typed commands into useful actions across your system. It ships with:

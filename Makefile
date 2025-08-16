@@ -49,6 +49,28 @@ build-exe:
 build-exe-all:
 	@echo "Build matrix is handled in CI. Use 'make build-exe' locally."
 
+# Development gate and guard commands
+.PHONY: gate guard guard-tests
+
+# Run development gate (ruff, compile, smoke tests)
+gate:
+	@if [ -x scripts/dev_gate.sh ]; then \
+		scripts/dev_gate.sh "make gate"; \
+	else \
+		echo "Running manual gate checks..."; \
+		uv run ruff check src tests && \
+		python -c "import py_compile; py_compile.compile('src/chatty_commander/web/server.py', doraise=True)" && \
+		uv run pytest -q tests/test_pkg_metadata.py; \
+	fi
+
+# Run guard tests (import safety, syntax safety, web server guards)
+guard:
+	@echo "Running guard tests..."
+	uv run pytest -q tests/test_web_server_guards.py tests/test_syntax_safety.py
+
+# Alias for guard
+guard-tests: guard
+
 # Smoke test built binary (Linux/macOS)
 smoke-exe:
 	@echo "Smoking built CLI in dist/ ..."

@@ -26,3 +26,7 @@ How to update imports
 Timeline
 - These shims will remain for at least one minor release. Warnings are enabled so you can update in advance.
 
+
+## Console entry reality note (2025-08)
+- Primary console entry: `chatty_commander.cli.cli:main`
+- Backward-compatible alias: `cli_main()` remains available for older references.

@@ -2,8 +2,8 @@ import asyncio
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
 
 
 class TestModelManager:

@@ -15,4 +15,3 @@ echo "Tcpdump capture completed. File saved as /home/matthewh/chatty-commander/t
 
 # Run keybindings demo script
 /home/matthewh/chatty-commander/keybindings_demo.sh
-

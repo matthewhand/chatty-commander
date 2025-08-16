@@ -2,7 +2,6 @@ import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from chatty_commander.app.command_executor import CommandExecutor
 
 
@@ -98,7 +97,9 @@ class TestKeybindingExecution:
 
     def test_keypress_single_key(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
-        monkeypatch.setattr('chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False)
+        monkeypatch.setattr(
+            'chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False
+        )
         executor.config.model_actions = {'kp': {'keypress': 'a'}}
 
         executor.execute_command('kp')
@@ -113,7 +114,9 @@ class TestKeybindingExecution:
 
     def test_keypress_combo_plus_syntax(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
-        monkeypatch.setattr('chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False)
+        monkeypatch.setattr(
+            'chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False
+        )
         executor.config.model_actions = {'kp': {'keypress': 'ctrl+alt+t'}}
 
         executor.execute_command('kp')
@@ -129,7 +132,9 @@ class TestKeybindingExecution:
 
     def test_keypress_list_hotkey(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
-        monkeypatch.setattr('chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False)
+        monkeypatch.setattr(
+            'chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False
+        )
         executor.config.model_actions = {'kp': {'keypress': ['ctrl', 'shift', ';']}}
 
         executor.execute_command('kp')
@@ -144,7 +149,9 @@ class TestKeybindingExecution:
     def test_keypress_runtime_error_logged(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
         mock_pg.press.side_effect = RuntimeError('kb fail')
-        monkeypatch.setattr('chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False)
+        monkeypatch.setattr(
+            'chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False
+        )
         executor.config.model_actions = {'kp': {'keypress': 'x'}}
 
         executor.execute_command('kp')

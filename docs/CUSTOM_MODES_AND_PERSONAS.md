@@ -75,22 +75,57 @@ You should see the state change to `focus`.
 - In a real `openai-agents` setup, this function would be registered as an `as_tool` callable.
 
 7) CLI examples (real outputs)
-- Show system command help:
+- Main help:
 ```
-$ chatty system --help
-usage: chatty-commander system [-h] {start-on-boot,updates} ...
+$ chatty --help
+usage: chatty-commander [-h] {run,gui,config,list,exec,system,voice} ...
+
+ChattyCommander CLI — control, configure, and test. Examples: chatty-commander
+list chatty-commander exec hello --dry-run chatty-commander config --list
+chatty-commander system updates check
+
+positional arguments:
+  {run,gui,config,list,exec,system,voice}
+    run                 Run the main application.
+    gui                 Launch GUI mode.
+    config              Configuration utilities.
+    list                List available configured commands.
+    exec                Execute a configured command by name.
+    system              System management commands (start on boot, updates,
+                        etc).
+    voice               Voice integration commands
+
+options:
+  -h, --help            show this help message and exit
 ```
-- Start‑on‑boot help:
+
+- System management:
 ```
 $ chatty system start-on-boot --help
-usage: chatty-commander system start-on-boot [-h] {enable,disable,status}
+usage: chatty-commander system start-on-boot [-h] {enable,disable,status} ...
+
+Enable, disable, or check the status of automatic startup on system boot.
+
+positional arguments:
+  {enable,disable,status}
+                        Action to perform for start-on-boot.
+    enable              Enable ChattyCommander to start automatically on
+                        system boot.
+    disable             Disable automatic start on boot for ChattyCommander.
+    status              Show whether start on boot is currently enabled or
+                        disabled.
+
+options:
+  -h, --help            show this help message and exit
+
+$ chatty system start-on-boot status
+Start on boot status: disabled
+
+$ chatty system updates check
+No updates available.
 ```
-- Config help:
-```
-$ chatty config --help
-usage: chatty-commander config [-h] [--interactive] [--list] [--set-listen-for KEY VALUE] [--set-mode MODE VALUE] [--set-model-action MODEL ACTION] [--set-state-model STATE MODELS] [--show] [--validate] [--export PATH] {wizard} ...
-```
-- List commands (example):
+
+- List commands:
 ```
 $ chatty list
 Available commands:

@@ -33,7 +33,11 @@ class TestAvatarGUI(unittest.TestCase):
     def test_run_avatar_gui_missing_index(self, mock_webview: MagicMock):
         """If the index.html cannot be found, we return 2 and do not call webview APIs."""
         from pathlib import Path
-        with patch('chatty_commander.avatars.avatar_gui._avatar_index_path', return_value=Path('does/not/exist.html')):
+
+        with patch(
+            'chatty_commander.avatars.avatar_gui._avatar_index_path',
+            return_value=Path('does/not/exist.html'),
+        ):
             rc = run_avatar_gui(debug=False)
             self.assertEqual(rc, 2)
             mock_webview.create_window.assert_not_called()

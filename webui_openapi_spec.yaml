@@ -5,7 +5,7 @@ info:
     RESTful API for ChattyCommander web interface providing complete configuration
     and service management capabilities. This API mirrors all desktop GUI functionality
     and adds real-time monitoring through WebSocket connections.
-    
+
     ## Features
     - Complete configuration management (commands, states, models)
     - Real-time service monitoring and control
@@ -13,7 +13,7 @@ info:
     - Multi-user authentication and authorization
     - Live audio level monitoring
     - WebSocket integration for real-time updates
-    
+
     ## Authentication
     All endpoints require JWT authentication except for login and health checks.
     Include the JWT token in the Authorization header: `Bearer <token>`
@@ -101,7 +101,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Configuration'
-    
+
     put:
       tags: [Configuration]
       summary: Update configuration
@@ -152,7 +152,7 @@ paths:
                   total:
                     type: integer
                     example: 15
-    
+
     post:
       tags: [Commands]
       summary: Add new command
@@ -199,7 +199,7 @@ paths:
                 $ref: '#/components/schemas/Command'
         '404':
           description: Command not found
-    
+
     put:
       tags: [Commands]
       summary: Update command
@@ -222,7 +222,7 @@ paths:
           description: Command updated successfully
         '404':
           description: Command not found
-    
+
     delete:
       tags: [Commands]
       summary: Delete command
@@ -266,7 +266,7 @@ paths:
                       idle: ["hey_chat_tee", "hey_khum_puter", "okay_stop"]
                       computer: ["oh_kay_screenshot", "okay_stop"]
                       chatty: ["wax_poetic", "thanks_chat_tee", "okay_stop"]
-    
+
     put:
       tags: [States]
       summary: Update state models
@@ -454,7 +454,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AudioSettings'
-    
+
     put:
       tags: [Audio]
       summary: Update audio settings

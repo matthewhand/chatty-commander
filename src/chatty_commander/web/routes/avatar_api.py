@@ -54,7 +54,9 @@ def _infer_category(name: str) -> str:
 
 @router.get("/avatar/animations")
 async def list_animations(
-    dir: str | None = Query(default=None, description="Directory to scan for animations (optional)")
+    dir: str | None = Query(
+        default=None, description="Directory to scan for animations (optional)"
+    ),
 ) -> dict[str, Any]:
     try:
         root = Path(dir) if dir else _default_animations_dir()

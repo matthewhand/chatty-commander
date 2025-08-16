@@ -2,28 +2,32 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from chatty_commander.app import CommandExecutor
-from chatty_commander.app.config import Config
-from chatty_commander.app.model_manager import ModelManager
-from chatty_commander.app.state_manager import StateManager
 
 # Import FastAPI app from the source package
-from chatty_commander.web.web_mode import WebModeServer
-from fastapi.testclient import TestClient
-
-# Import FastAPI app from the source package
-from chatty_commander.web.web_mode import WebModeServer
-from chatty_commander.app.config import Config
-from chatty_commander.app.state_manager import StateManager
-from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+
+# Import FastAPI app from the source package
+from chatty_commander.web.web_mode import WebModeServer
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 # Minimal app factory matching current constructor signatures
 _config = Config()
 _state = StateManager()
 _models = ModelManager(_config)
 _executor = CommandExecutor(_config, _models, _state)
-_server = WebModeServer(config_manager=_config, state_manager=_state, model_manager=_models, command_executor=_executor, no_auth=True)
+_server = WebModeServer(
+    config_manager=_config,
+    state_manager=_state,
+    model_manager=_models,
+    command_executor=_executor,
+    no_auth=True,
+)
 app = _server.app
+
 
 @pytest.fixture
 def client():

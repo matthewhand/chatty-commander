@@ -5,15 +5,16 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sys as _sys
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-import sys as _sys
 
 # Ensure this module is also accessible as ``utils.logger`` so tests patching that path
 # affect the same module object. This creates an alias in :mod:`sys.modules`.
 _utils_mod = _sys.modules.setdefault("utils", _sys.modules.get("utils", type(_sys)("utils")))
 _sys.modules["utils.logger"] = _sys.modules[__name__]
-setattr(_utils_mod, "logger", _sys.modules[__name__])
+_utils_mod.logger = _sys.modules[__name__]
+
 
 class JSONFormatter(logging.Formatter):
     """Simple JSON log formatter."""
@@ -86,8 +87,12 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None):
     def _handler_exists(new_handler: logging.Handler) -> bool:
         for h in list(logger.handlers):
             if type(h) is type(new_handler):
-                if isinstance(h, RotatingFileHandler) and isinstance(new_handler, RotatingFileHandler):
-                    if getattr(h, "baseFilename", None) == getattr(new_handler, "baseFilename", None):
+                if isinstance(h, RotatingFileHandler) and isinstance(
+                    new_handler, RotatingFileHandler
+                ):
+                    if getattr(h, "baseFilename", None) == getattr(
+                        new_handler, "baseFilename", None
+                    ):
                         return True
                 else:
                     return True

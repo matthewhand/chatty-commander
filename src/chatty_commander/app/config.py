@@ -31,7 +31,9 @@ class Config:
             },
         )
         self.wakeword_state_map: dict[str, str] = self.config_data.get("wakeword_state_map", {})
-        self.state_transitions: dict[str, dict[str, str]] = self.config_data.get("state_transitions", {})
+        self.state_transitions: dict[str, dict[str, str]] = self.config_data.get(
+            "state_transitions", {}
+        )
         self.commands: dict[str, Any] = self.config_data.get("commands", {})
 
         # Voice/GUI behaviour
@@ -42,7 +44,7 @@ class Config:
 
         # Back-compat general settings wrapper with property-based access
         class _GeneralSettings:
-            def __init__(self, outer: "Config") -> None:
+            def __init__(self, outer: Config) -> None:
                 self._cfg = outer
 
             @property
@@ -64,7 +66,9 @@ class Config:
 
             @property
             def inference_framework(self) -> str:
-                return str(self._cfg.config_data.get("general", {}).get("inference_framework", "onnx"))
+                return str(
+                    self._cfg.config_data.get("general", {}).get("inference_framework", "onnx")
+                )
 
             @inference_framework.setter
             def inference_framework(self, v: str) -> None:
@@ -154,7 +158,9 @@ class Config:
             elif action_type == "url":
                 url = cfg.get("url", "")
                 url = url.replace("{home_assistant}", self.api_endpoints.get("home_assistant", ""))
-                url = url.replace("{chatbot_endpoint}", self.api_endpoints.get("chatbot_endpoint", ""))
+                url = url.replace(
+                    "{chatbot_endpoint}", self.api_endpoints.get("chatbot_endpoint", "")
+                )
                 actions[name] = {"url": url}
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
@@ -205,21 +211,33 @@ class Config:
         if not self.general_settings.check_for_updates:
             return None
         try:
-            result = subprocess.run(["git", "rev-parse", "--git-dir"], capture_output=True, text=True, check=False)
+            result = subprocess.run(
+                ["git", "rev-parse", "--git-dir"], capture_output=True, text=True, check=False
+            )
             if result.returncode != 0:
                 logging.warning("Not in a git repository, cannot check for updates")
                 return None
             subprocess.run(["git", "fetch", "origin"], capture_output=True, check=True)
             result = subprocess.run(
-                ["git", "rev-list", "HEAD..origin/main", "--count"], capture_output=True, text=True, check=True
+                ["git", "rev-list", "HEAD..origin/main", "--count"],
+                capture_output=True,
+                text=True,
+                check=True,
             )
             update_count = int((result.stdout or "0").strip())
             if update_count > 0:
                 result = subprocess.run(
-                    ["git", "log", "origin/main", "-1", "--pretty=format:%s"], capture_output=True, text=True, check=True
+                    ["git", "log", "origin/main", "-1", "--pretty=format:%s"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
                 )
                 latest_commit = (result.stdout or "").strip()
-                return {"updates_available": True, "update_count": update_count, "latest_commit": latest_commit}
+                return {
+                    "updates_available": True,
+                    "update_count": update_count,
+                    "latest_commit": latest_commit,
+                }
             else:
                 return {"updates_available": False, "update_count": 0}
         except Exception as e:  # pragma: no cover
@@ -227,5 +245,5 @@ class Config:
             return None
 
     @classmethod
-    def load(cls, config_file: str = "config.json") -> "Config":
+    def load(cls, config_file: str = "config.json") -> Config:
         return cls(config_file)

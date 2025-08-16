@@ -63,4 +63,3 @@ pactl info
 
 echo -e "
 Audio troubleshooting completed."
-

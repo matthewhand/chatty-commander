@@ -19,7 +19,7 @@ describe('ApiService', () => {
 });
 
     const result = await apiService.get('/test');
-    
+
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8100/test',
       expect.objectContaining({
@@ -35,7 +35,7 @@ describe('ApiService', () => {
   test('makes POST requests with data', async () => {
     const mockResponse = { id: 1, created: true };
     const postData = { name: 'test' };
-    
+
     fetch.mockResolvedValueOnce({
   ok: true,
   json: () => Promise.resolve(mockResponse),
@@ -44,7 +44,7 @@ describe('ApiService', () => {
 });
 
     const result = await apiService.post('/create', postData);
-    
+
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8100/create',
       expect.objectContaining({
@@ -79,7 +79,7 @@ describe('ApiService', () => {
 
   test('includes authorization header when token is present', async () => {
     localStorage.setItem('auth_token', 'test-token');
-    
+
     fetch.mockResolvedValueOnce({
   ok: true,
   json: () => Promise.resolve({}),
@@ -88,7 +88,7 @@ describe('ApiService', () => {
 });
 
     await apiService.get('/protected');
-    
+
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8100/protected',
       expect.objectContaining({
@@ -110,7 +110,7 @@ localStorage.removeItem('auth_token');
 });
 
     const result = await apiService.healthCheck();
-    
+
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8100/health',
       expect.any(Object)

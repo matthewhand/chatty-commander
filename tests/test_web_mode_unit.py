@@ -7,13 +7,15 @@ Tests FastAPI endpoints, WebSocket functionality, and server configuration.
 import os
 import sys
 
+from fastapi import FastAPI
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
-from fastapi.testclient import TestClient
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import (
@@ -22,8 +24,7 @@ from chatty_commander.web.web_mode import (
     SystemStatus,
     WebModeServer,
 )
-
-from chatty_commander.app.command_executor import CommandExecutor
+from fastapi.testclient import TestClient
 
 
 class TestWebModeServer:

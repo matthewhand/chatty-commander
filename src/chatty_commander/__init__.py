@@ -1,13 +1,9 @@
-"""ChattyCommander package.
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _version
 
-Legacy modules previously lived at the repository root (e.g. ``from config
-import Config``). Those shims have been removed; import from the package
-namespace instead. For convenience, common classes are re-exported here.
-"""
+try:
+    __version__ = _version("chatty-commander")
+except PackageNotFoundError:
+    __version__ = "0.0.0+dev"
 
-from .app.command_executor import CommandExecutor
-from .app.config import Config
-from .app.model_manager import ModelManager
-from .app.state_manager import StateManager
-
-__all__ = ["CommandExecutor", "Config", "ModelManager", "StateManager"]
+__all__ = ["__version__"]

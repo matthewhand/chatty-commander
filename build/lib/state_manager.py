@@ -35,7 +35,7 @@ class StateManager:
             states = ['idle', 'computer', 'chatty']
             current_index = states.index(self.current_state)
             new_state = states[(current_index + 1) % len(states)]
-        
+
         if new_state and new_state != self.current_state:
             self.change_state(new_state)
             return new_state

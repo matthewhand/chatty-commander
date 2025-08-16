@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  
+
   // Always call hooks at the top level
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ export const useAuth = (): AuthContextType => {
       setLoading(true);
       const response = await authService.login(username, password);
       localStorage.setItem('auth_token', response.access_token);
-      
+
       const userData = await authService.getCurrentUser();
       setUser(userData);
       return true;

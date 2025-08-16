@@ -1,3 +1,5 @@
+import asyncio
+
 """
 WebSocket routes for Avatar UI to receive agent state updates.
 
@@ -195,9 +197,7 @@ class AvatarAudioQueue:
         await self.queue.put((agent_id, message, audio))
         self._ensure_processor()
 
-    async def interrupt(
-        self, agent_id: str, message: str, audio: bytes | None = None
-    ) -> None:
+    async def interrupt(self, agent_id: str, message: str, audio: bytes | None = None) -> None:
         """Interrupt current playback and play a priority message immediately."""
 
         # Clear any pending messages
@@ -233,9 +233,7 @@ async def queue_avatar_message(agent_id: str, message: str, audio: bytes | None 
     await audio_queue.enqueue(agent_id, message, audio)
 
 
-async def interrupt_avatar_queue(
-    agent_id: str, message: str, audio: bytes | None = None
-) -> None:
+async def interrupt_avatar_queue(agent_id: str, message: str, audio: bytes | None = None) -> None:
     """Public helper to interrupt current avatar speech with a priority message."""
 
     await audio_queue.interrupt(agent_id, message, audio)
