@@ -124,6 +124,25 @@
     "start_on_boot": false,
     "check_for_updates": true
   },
+  "state_transitions": {
+    "idle": {
+      "hey_chat_tee": "chatty",
+      "hey_khum_puter": "computer",
+      "toggle_mode": "computer"
+    },
+    "computer": {
+      "okay_stop": "idle",
+      "that_ill_do": "idle",
+      "toggle_mode": "chatty"
+    },
+    "chatty": {
+      "okay_stop": "idle",
+      "hey_khum_puter": "computer",
+      "thanks_chat_tee": "idle",
+      "that_ill_do": "idle",
+      "toggle_mode": "idle"
+    }
+  },
   "foo": {
     "bar": 1
   },
