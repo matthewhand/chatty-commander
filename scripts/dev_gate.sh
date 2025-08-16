@@ -7,7 +7,7 @@ MSG="${1:-chore: fast smoke pass (lint/compile/tests green)}"
 
 echo "[prep] visual reset"; reset || true
 
-RUFF_PATHS="src/chatty_commander/web/server.py src/chatty_commander/compat.py"
+RUFF_PATHS="src/chatty_commander/web/server.py src/chatty_commander/web/web_mode.py src/chatty_commander/compat.py"
 [ -f tests/test_web_server_guards.py ] && RUFF_PATHS="$RUFF_PATHS tests/test_web_server_guards.py"
 
 echo "[1/3] ruff hot paths"
@@ -24,7 +24,7 @@ python - <<PY
 import py_compile, sys, pathlib
 rc = 0
 try:
-    py_compile.compile("src/chatty_commander/web/server.py", doraise=True)
+    py_compile.compile("src/chatty_commander/web/server.py src/chatty_commander/web/web_mode.py", doraise=True)
 except py_compile.PyCompileError as e:
     rc = 1
 print(rc, file=open("${tmp_rc_dir}/server_compile.rc","w"))

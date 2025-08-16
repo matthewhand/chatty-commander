@@ -38,9 +38,9 @@ def test_optional_router_includes_are_guarded():
     violations = []
     for i, ln in enumerate(lines):
         if danger.search(ln):
-            window = "\n".join(lines[max(0, i-6):i+1])
+            window = "\n".join(lines[max(0, i - 6) : i + 1])
             if "globals().get(" not in window or "_r =" not in window:
-                violations.append((i+1, ln.strip()))
+                violations.append((i + 1, ln.strip()))
     assert not violations, f"unguarded router includes: {violations}"
 
 
@@ -114,6 +114,7 @@ class TestRouterInclusion:
             # First, ensure we have a real FastAPI instance
             try:
                 from fastapi import FastAPI as RealFastAPI
+
                 app = RealFastAPI()
                 initial_route_count = len(app.routes)
 
@@ -162,6 +163,7 @@ class TestRouterInclusion:
             # Try to use real FastAPI if available
             try:
                 from fastapi import FastAPI as RealFastAPI
+
                 app = RealFastAPI()
                 initial_route_count = len(app.routes)
 
@@ -284,8 +286,7 @@ class TestStaticSafety:
 
         class IncludeRouterVisitor(ast.NodeVisitor):
             def visit_Call(self, node):
-                if (isinstance(node.func, ast.Attribute) and
-                    node.func.attr == "include_router"):
+                if isinstance(node.func, ast.Attribute) and node.func.attr == "include_router":
                     include_router_calls.append(node)
                 self.generic_visit(node)
 
@@ -313,7 +314,9 @@ class TestStaticSafety:
         content = server_file.read_text()
 
         # Check for except NameError patterns
-        assert "except NameError:" not in content, "Found 'except NameError:' pattern in server code"
+        assert (
+            "except NameError:" not in content
+        ), "Found 'except NameError:' pattern in server code"
 
         # Parse AST to check for NameError in exception handlers
         tree = ast.parse(content)
@@ -345,6 +348,7 @@ class TestContractCompliance:
         # Try to use TestClient only if we have real FastAPI
         try:
             from fastapi import FastAPI as RealFastAPI
+
             if isinstance(app, RealFastAPI):
                 client = TestClient(app)
 
@@ -377,6 +381,7 @@ class TestContractCompliance:
         # Try TestClient only if we have real FastAPI
         try:
             from fastapi import FastAPI as RealFastAPI
+
             if isinstance(app_with_auth, RealFastAPI) and isinstance(app_without_auth, RealFastAPI):
                 client_with_auth = TestClient(app_with_auth)
                 client_without_auth = TestClient(app_without_auth)

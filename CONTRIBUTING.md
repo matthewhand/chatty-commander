@@ -195,6 +195,48 @@ uv run ruff format
 uv run ruff check --select I
 ```
 
+## Optional Router Pattern
+
+When adding optional web routers (like metrics, version, or agents endpoints), use the guarded inclusion pattern to prevent import errors:
+
+### Required Pattern
+
+```python
+# REQUIRED pattern for OPTIONAL routers:
+for _name in ("version_router", "metrics_router", "agents_router"):
+    _r = globals().get(_name)
+    if _r:
+        app.include_router(_r)
+```
+
+### What NOT to do
+
+```python
+# BAD: Direct inclusion without guards
+app.include_router(version_router)  # Fails if not imported
+
+# BAD: Using except NameError
+try:
+    app.include_router(version_router)
+except NameError:
+    pass  # Masks real errors
+```
+
+### Why This Pattern?
+
+1. **Import Safety**: Routers can be missing without breaking the app
+2. **Test Resilience**: Tests work even when optional dependencies are unavailable
+3. **Clean Fallbacks**: Minimal endpoints are provided when routers are missing
+4. **Static Analysis**: No undefined variable references
+
+### Testing
+
+The pattern is enforced by `tests/test_web_server_guards.py`. Run these tests to verify compliance:
+
+```bash
+uv run pytest tests/test_web_server_guards.py
+```
+
 ## Documentation Standards
 
 Ensure documentation stays consistent and links remain valid:

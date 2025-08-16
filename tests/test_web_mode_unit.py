@@ -3,6 +3,7 @@
 Unit tests for web_mode.py module.
 Tests FastAPI endpoints, WebSocket functionality, and server configuration.
 """
+
 import os
 import sys
 

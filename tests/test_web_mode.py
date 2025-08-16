@@ -5,6 +5,7 @@ test_web_mode.py
 Comprehensive test script for validating web mode functionality.
 Tests FastAPI endpoints, WebSocket connections, and frontend integration.
 """
+
 import asyncio
 import json
 import logging
