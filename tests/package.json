@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --import tsx --test"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.4"
   }
 }

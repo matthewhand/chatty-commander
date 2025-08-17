@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { encodeASCII, isASCII } from '../../app/src/lib/ascii.js';
+import { encodeASCII, isASCII } from '../../app/src/lib/ascii.ts';
 
 test('encodeASCII replaces non-ascii', () => {
   assert.strictEqual(encodeASCII('hello'), 'hello');
