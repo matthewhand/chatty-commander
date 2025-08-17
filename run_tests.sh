@@ -14,6 +14,9 @@ export DISPLAY=${DISPLAY:-:0}
 # Ensure local repo root is on PATH so the 'chatty' dev wrapper is discoverable
 export PATH="${PWD}:$PATH"
 
+# Ensure Python can locate the project sources
+export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
+
 # Run the comprehensive test suite
 python tests/test_system.py --verbose --output-file "test_results_$(date +%Y%m%d_%H%M%S).txt"
 

@@ -18,18 +18,33 @@ class Config:
 
         # Extract commonly used config values as properties
         self.default_state = self.config_data.get("default_state", "idle")
-        self.general_models_path = self.config_data.get("general_models_path", "models/general")
-        self.system_models_path = self.config_data.get("system_models_path", "models/system")
-        self.chat_models_path = self.config_data.get("chat_models_path", "models/chat")
-        self.model_actions = self.config_data.get("model_actions", {})
+        model_paths = self.config_data.get("model_paths", {})
+        self.general_models_path = model_paths.get("idle", "models-idle")
+        self.system_models_path = model_paths.get("computer", "models-computer")
+        self.chat_models_path = model_paths.get("chatty", "models-chatty")
+        self.commands = self.config_data.get("commands", {})
+        self.model_actions = self._build_model_actions()
         self.state_models = self.config_data.get("state_models", {})
         self.api_endpoints = self.config_data.get("api_endpoints", {})
-        self.wakeword_state_map = self.config_data.get("wakeword_state_map", {})
         self.state_transitions = self.config_data.get("state_transitions", {})
-        self.commands = self.config_data.get("commands", {})
+        self.modes: dict = self.config_data.get("modes", {})
+        self.wakeword_state_map: dict[str, str] = {}
+        for mode_name, cfg in self.modes.items():
+            for ww in (cfg or {}).get("wakewords", []) or []:
+                self.wakeword_state_map[str(ww)] = mode_name
+        legacy_map = {
+            "hey_chat_tee": "chatty",
+            "hey_khum_puter": "computer",
+            "okay_stop": "idle",
+            "thanks_chat_tee": "idle",
+            "that_ill_do": "idle",
+        }
+        for k, v in legacy_map.items():
+            self.wakeword_state_map.setdefault(k, v)
 
         # Voice/GUI behaviour
         self.voice_only = self.config_data.get("voice_only", False)
+        self.debug_mode: bool = False
 
         # Create general_settings object for backward compatibility
         class GeneralSettings:
@@ -280,20 +295,12 @@ class Config:
 
     def _build_model_actions(self):
         """Create model action mappings from commands config."""
-        commands_cfg = self.config_data.get(
-            "commands",
-            {
-                "that_ill_do": {
-                    "idle": "thanks_chat_tee",
-                    "computer": "okay_stop",
-                }
-            },
-        )
-        return {"computer": commands_cfg}
+        return self.config_data.get("commands", {})
 
     def _load_general_settings(self) -> None:
-        general = self.config_data.get("general", {})
+        general = self.config_data.get("general_settings", self.config_data.get("general", {}))
         self.default_state = general.get("default_state", self.default_state)
+        self.debug_mode = general.get("debug_mode", self.debug_mode)
 
     def validate(self):
         # Validate modes structure if present
@@ -319,7 +326,9 @@ class Config:
         self.save_config(self.config_data)
 
     def _enable_start_on_boot(self):
-        config_file_path = os.path.join(os.path.expanduser("~"), ".config", "autostart", "chatty-commander.desktop")
+        config_file_path = os.path.join(
+            os.path.expanduser("~"), ".config", "autostart", "chatty-commander.desktop"
+        )
         try:
             os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
             with open(config_file_path, "w") as f:
@@ -333,7 +342,9 @@ class Config:
             raise
 
     def _disable_start_on_boot(self):
-        config_file_path = os.path.join(os.path.expanduser("~"), ".config", "autostart", "chatty-commander.desktop")
+        config_file_path = os.path.join(
+            os.path.expanduser("~"), ".config", "autostart", "chatty-commander.desktop"
+        )
         try:
             if os.path.exists(config_file_path):
                 os.remove(config_file_path)
@@ -353,6 +364,7 @@ class Config:
         # Check last check time and see if it's time to check again
         last_check_time = update_check_config.get("last_check_time", 0)
         import time
+
         current_time = time.time()
         if current_time - last_check_time < interval_hours * 3600:
             return {
