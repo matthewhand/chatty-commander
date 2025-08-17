@@ -33,7 +33,7 @@ def config_func(args):
 def system_func(args):
     """Handle system management commands."""
     config = Config()
-    
+
     if args.system_command == 'start-on-boot':
         if args.boot_action == 'enable':
             try:
@@ -52,7 +52,7 @@ def system_func(args):
         elif args.boot_action == 'status':
             status = "enabled" if config.start_on_boot else "disabled"
             print(f"Start on boot is {status}.")
-    
+
     elif args.system_command == 'updates':
         if args.update_action == 'check':
             print("Checking for updates...")
@@ -109,25 +109,25 @@ def cli_main():
     config_parser.add_argument('--set-mode', nargs=2, metavar=('MODE', 'VALUE'), help='Set mode options')
     config_parser.add_argument('--interactive', action='store_true', help='Run in interactive mode')
     config_parser.set_defaults(func=config_func)
-    
+
     # System management subcommands
     system_parser = subparsers.add_parser('system', help='System management commands')
     system_subparsers = system_parser.add_subparsers(dest='system_command', required=True)
-    
+
     # Start on boot commands
     boot_parser = system_subparsers.add_parser('start-on-boot', help='Manage start on boot')
     boot_subparsers = boot_parser.add_subparsers(dest='boot_action', required=True)
     boot_subparsers.add_parser('enable', help='Enable start on boot')
     boot_subparsers.add_parser('disable', help='Disable start on boot')
     boot_subparsers.add_parser('status', help='Check start on boot status')
-    
+
     # Update commands
     update_parser = system_subparsers.add_parser('updates', help='Manage updates')
     update_subparsers = update_parser.add_subparsers(dest='update_action', required=True)
     update_subparsers.add_parser('check', help='Check for updates')
     update_subparsers.add_parser('enable-auto-check', help='Enable automatic update checking')
     update_subparsers.add_parser('disable-auto-check', help='Disable automatic update checking')
-    
+
     system_parser.set_defaults(func=system_func)
 
     if len(sys.argv) == 1:

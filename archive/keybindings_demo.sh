@@ -27,4 +27,3 @@ sleep 5
 
 echo "Clicking at (900, 400)"
 xdotool mousemove 900 400 click 1
-

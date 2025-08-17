@@ -16,18 +16,11 @@ class Config:
         # Expose the raw dict for web handlers/tests that expect it
         self.config: dict[str, Any] = self.config_data
 
-        # Core values with repo-defaults aligned to tests, plus legacy model_paths
+        # Core values with repo-defaults aligned to tests
         self.default_state: str = self.config_data.get("default_state", "idle")
-        model_paths = self.config_data.get("model_paths", {})
-        self.general_models_path: str = self.config_data.get(
-            "general_models_path", model_paths.get("idle", "models-idle")
-        )
-        self.system_models_path: str = self.config_data.get(
-            "system_models_path", model_paths.get("computer", "models-computer")
-        )
-        self.chat_models_path: str = self.config_data.get(
-            "chat_models_path", model_paths.get("chatty", "models-chatty")
-        )
+        self.general_models_path: str = self.config_data.get("general_models_path", "models-idle")
+        self.system_models_path: str = self.config_data.get("system_models_path", "models-computer")
+        self.chat_models_path: str = self.config_data.get("chat_models_path", "models-chatty")
 
         self.state_models: dict[str, list[str]] = self.config_data.get("state_models", {})
         self.api_endpoints: dict[str, str] = self.config_data.get(
@@ -81,19 +74,6 @@ class Config:
         # Additional attributes for config CLI compatibility
         self.listen_for: dict[str, Any] = self.config_data.get("listen_for", {})
         self.modes: dict[str, Any] = self.config_data.get("modes", {})
-
-        for mode_name, cfg in self.modes.items():
-            for ww in (cfg or {}).get("wakewords", []) or []:
-                self.wakeword_state_map.setdefault(str(ww), mode_name)
-        legacy_map = {
-            "hey_chat_tee": "chatty",
-            "hey_khum_puter": "computer",
-            "okay_stop": "idle",
-            "thanks_chat_tee": "idle",
-            "that_ill_do": "idle",
-        }
-        for k, v in legacy_map.items():
-            self.wakeword_state_map.setdefault(k, v)
 
         # Back-compat general settings wrapper with property-based access
         class _GeneralSettings:

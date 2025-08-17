@@ -40,13 +40,13 @@ class ConfigCLI:
         except json.JSONDecodeError:
             print(f"Error: Invalid JSON in {self.config_path}", file=sys.stderr)
         # Fallback to empty config on error
-        return Config(
-            model_actions={},
-            state_models={},
-            listen_for={},
-            modes={},
-            config_file=self.config_path,
-        )
+        empty_data = {
+            "model_actions": {},
+            "state_models": {},
+            "listen_for": {},
+            "modes": {},
+        }
+        return Config.from_dict(empty_data, config_file=self.config_path)
 
     def save_config(self) -> None:
         with open(self.config_path, "w") as f:  # noqa: PTH123 - user path
@@ -135,7 +135,6 @@ class ConfigCLI:
         Returns:
             int: ``0`` on success.
         """
-
         self.interactive_mode()
         return 0
 

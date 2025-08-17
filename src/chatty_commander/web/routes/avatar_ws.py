@@ -1,5 +1,4 @@
-"""
-WebSocket routes for Avatar UI to receive agent state updates.
+"""WebSocket routes for Avatar UI to receive agent state updates.
 
 This endpoint broadcasts agent thinking/responding states and supports minimal
 control messages from the avatar client.
@@ -107,13 +106,8 @@ class AvatarWSConnectionManager:
             loop = asyncio.get_running_loop()
             loop.create_task(_broadcast())
         except RuntimeError:
-            # No running loop in this thread; run synchronously
-            try:
-                asyncio.run(_broadcast())
-            except RuntimeError:
-                # If already in an event loop in a different framework context, fall back to task creation
-                loop = asyncio.get_event_loop()
-                loop.create_task(_broadcast())
+            # Not in a thread capable context; best effort
+            asyncio.create_task(_broadcast())
 
 
 manager = AvatarWSConnectionManager()
@@ -140,7 +134,6 @@ class AvatarAudioQueue:
     @property
     def is_speaking(self) -> bool:
         """Return ``True`` if audio is currently being played."""
-
         return self._current_play_task is not None and not self._current_play_task.done()
 
     async def _play_audio(self, audio: bytes | None) -> None:
@@ -149,7 +142,6 @@ class AvatarAudioQueue:
         In production this would stream audio to an output device. For testing
         we simply sleep for a duration based on the audio length if provided.
         """
-
         if audio:
             # Rough heuristic: 1000 bytes ~= 1 second
             await asyncio.sleep(max(len(audio) / 1000.0, 0))
@@ -195,15 +187,11 @@ class AvatarAudioQueue:
 
     async def enqueue(self, agent_id: str, message: str, audio: bytes | None = None) -> None:
         """Add a message to the queue for playback."""
-
         await self.queue.put((agent_id, message, audio))
         self._ensure_processor()
 
-    async def interrupt(
-        self, agent_id: str, message: str, audio: bytes | None = None
-    ) -> None:
+    async def interrupt(self, agent_id: str, message: str, audio: bytes | None = None) -> None:
         """Interrupt current playback and play a priority message immediately."""
-
         # Clear any pending messages
         while not self.queue.empty():
             try:
@@ -233,15 +221,11 @@ audio_queue = AvatarAudioQueue(manager)
 
 async def queue_avatar_message(agent_id: str, message: str, audio: bytes | None = None) -> None:
     """Public helper to queue avatar speech."""
-
     await audio_queue.enqueue(agent_id, message, audio)
 
 
-async def interrupt_avatar_queue(
-    agent_id: str, message: str, audio: bytes | None = None
-) -> None:
+async def interrupt_avatar_queue(agent_id: str, message: str, audio: bytes | None = None) -> None:
     """Public helper to interrupt current avatar speech with a priority message."""
-
     await audio_queue.interrupt(agent_id, message, audio)
 
 

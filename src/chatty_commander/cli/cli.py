@@ -7,7 +7,7 @@ import sys
 from typing import Any
 
 # Re-export CommandExecutor so tests can patch cli.CommandExecutor
-from chatty_commander.app.command_executor import CommandExecutor  # noqa: F401
+from chatty_commander.app import CommandExecutor  # noqa: F401
 
 # Re-export run_app and ConfigCLI at module level so tests can patch cli.run_app and cli.ConfigCLI
 try:
@@ -165,14 +165,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run without avatar GUI; responses are spoken via TTS.",
     )
 
-    def run_func(args: argparse.Namespace) -> None:
+    def run_func() -> None:
         try:
             func = globals().get("run_app")
             if callable(func):
-                if "voice_only" in getattr(func, "__code__", {}).co_varnames:
-                    func(voice_only=args.voice_only)
-                else:
-                    func()
+                func()
         except Exception:
             return
 
@@ -364,9 +361,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def list_func(args: argparse.Namespace) -> int:
         try:
-            # Use patchable Config resolver
-            ConfigRT = _resolve_Config()
-            cfg = ConfigRT()
+            from chatty_commander.app.config import Config  # noqa
+
+            cfg = Config()
             actions = _get_model_actions_from_config(cfg)
             if args.json:
                 _print_actions_json(actions)
@@ -402,22 +399,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     def exec_func(args: argparse.Namespace) -> int:
         try:
-            # Use patchable Config resolver
-            ConfigRT = _resolve_Config()
-            cfg = ConfigRT()
+            Config = _resolve_Config()
+            cfg = Config()
             actions = _get_model_actions_from_config(cfg)
             action_entry = actions.get(args.name)
             if action_entry is None:
                 print(f"Unknown command: {args.name}", file=sys.stderr)
                 return 1
             if args.dry_run:
-                print(f"DRY RUN: would execute command '{args.name}' with action {action_entry}")
+                print(f"DRY RUN: would execute command '{args.name}'")
                 return 0
             # Resolve CommandExecutor in a way that allows tests to patch via 'cli.CommandExecutor'
             CommandExecutorRT = globals().get("CommandExecutor")
             if CommandExecutorRT is None:
                 from chatty_commander.app.command_executor import (
-                    CommandExecutor as CommandExecutorRT,
+                    CommandExecutor as CommandExecutorRT,  # type: ignore
                 )
             executor = CommandExecutorRT(cfg, None, None)  # type: ignore
             executor.execute_command(args.name)
@@ -486,9 +482,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def system_func(args: argparse.Namespace) -> int:
         # Integrate with config.Config methods as tests expect
-        # Use patchable Config resolver
-        ConfigRT = _resolve_Config()
-        cfg = ConfigRT()
+        from chatty_commander.app.config import Config  # lazy import
+
+        cfg = Config()
         if args.system_command == "start-on-boot":
             if args.boot_action == "enable":
                 try:

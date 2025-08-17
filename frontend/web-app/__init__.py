@@ -1,0 +1,1 @@
+"""ChattyCommander WebUI package."""

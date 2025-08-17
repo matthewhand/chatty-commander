@@ -212,3 +212,5 @@ data/
 !data/.gitkeep
 data/advisors_memory.jsonl
 
+# Git worktrees
+.worktrees/

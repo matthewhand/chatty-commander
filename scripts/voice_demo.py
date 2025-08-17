@@ -11,6 +11,7 @@ Demonstrates the complete voice pipeline:
 Usage:
     python scripts/voice_demo.py [--mock] [--duration 30]
 """
+
 import argparse
 import sys
 import time

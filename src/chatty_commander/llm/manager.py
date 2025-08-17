@@ -7,6 +7,7 @@ Tries backends in order:
 3. Local transformers (if dependencies available)
 4. Mock (always available)
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,7 +37,7 @@ class LLMManager:
         ollama_host: str | None = None,
         ollama_model: str = "gpt-oss:20b",
         local_model: str = "microsoft/DialoGPT-medium",
-        use_mock: bool = False
+        use_mock: bool = False,
     ):
         self.preferred_backend = preferred_backend or os.getenv("LLM_BACKEND")
         self.use_mock = use_mock
@@ -44,9 +45,7 @@ class LLMManager:
         # Initialize all backends
         self.backends: dict[str, LLMBackend] = {}
         self._initialize_backends(
-            openai_api_key, openai_base_url,
-            ollama_host, ollama_model,
-            local_model
+            openai_api_key, openai_base_url, ollama_host, ollama_model, local_model
         )
 
         # Select active backend
@@ -61,7 +60,7 @@ class LLMManager:
         openai_base_url: str | None,
         ollama_host: str | None,
         ollama_model: str,
-        local_model: str
+        local_model: str,
     ):
         """Initialize all available backends."""
 
@@ -75,18 +74,14 @@ class LLMManager:
         # OpenAI backend
         try:
             self.backends["openai"] = OpenAIBackend(
-                api_key=openai_api_key,
-                base_url=openai_base_url
+                api_key=openai_api_key, base_url=openai_base_url
             )
         except Exception as e:
             logger.debug(f"Failed to initialize OpenAI backend: {e}")
 
         # Ollama backend
         try:
-            self.backends["ollama"] = OllamaBackend(
-                host=ollama_host,
-                model=ollama_model
-            )
+            self.backends["ollama"] = OllamaBackend(host=ollama_host, model=ollama_model)
         except Exception as e:
             logger.debug(f"Failed to initialize Ollama backend: {e}")
 
@@ -107,7 +102,9 @@ class LLMManager:
                 logger.info(f"Using preferred backend: {self.preferred_backend}")
                 return
             else:
-                logger.warning(f"Preferred backend {self.preferred_backend} not available, falling back")
+                logger.warning(
+                    f"Preferred backend {self.preferred_backend} not available, falling back"
+                )
 
         # Try backends in priority order
         priority_order = ["openai", "ollama", "local", "mock"]
@@ -153,7 +150,7 @@ class LLMManager:
         fallback_order = ["openai", "ollama", "local", "mock"]
         try:
             current_index = fallback_order.index(current_backend)
-            candidates = fallback_order[current_index + 1:]
+            candidates = fallback_order[current_index + 1 :]
         except ValueError:
             candidates = fallback_order
 
@@ -249,14 +246,11 @@ class LLMManager:
                 "success": True,
                 "response": response,
                 "response_time": end_time - start_time,
-                "backend_info": backend.get_backend_info()
+                "backend_info": backend.get_backend_info(),
             }
 
         except Exception as e:
-            return {
-                "error": str(e),
-                "backend_info": backend.get_backend_info()
-            }
+            return {"error": str(e), "backend_info": backend.get_backend_info()}
 
 
 # Convenience function for quick LLM access
@@ -267,6 +261,7 @@ def get_default_llm_manager(**kwargs) -> LLMManager:
 
 # Global instance for easy access (optional)
 _default_manager: LLMManager | None = None
+
 
 def get_global_llm_manager(**kwargs) -> LLMManager:
     """Get or create global LLM manager instance."""

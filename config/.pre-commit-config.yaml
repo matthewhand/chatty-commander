@@ -1,0 +1,20 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.8
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: compile-server
+        name: compile server.py
+        entry: python - <<'PY'\nimport py_compile; py_compile.compile('src/chatty_commander/web/server.py', doraise=True)\nPY
+        language: system
+        pass_filenames: false
+        stages: [commit, push]

@@ -78,6 +78,24 @@
     "home_assistant": "http://homeassistant.domain.home:8123/api",
     "chatbot_endpoint": "https://ubuntu-gtx.domain.home/"
   },
+  "modes": {
+    "_notes": "Modes are flexible: define wakewords, persona (OpenAI-Agents), and tools per mode",
+    "idle": {
+      "wakewords": ["hey_chat_tee", "hey_khum_puter", "okay_stop"],
+      "persona": null,
+      "tools": ["keypress", "http"]
+    },
+    "computer": {
+      "wakewords": ["oh_kay_screenshot", "okay_stop"],
+      "persona": null,
+      "tools": ["keypress"]
+    },
+    "chatty": {
+      "wakewords": [],
+      "persona": "chatty",
+      "tools": ["avatar_talkinghead", "tts", "stt"]
+    }
+  },
   "state_models": {
     "idle": [
       "hey_chat_tee",
@@ -86,16 +104,8 @@
       "lights_on",
       "lights_off"
     ],
-    "computer": [
-      "oh_kay_screenshot",
-      "okay_stop"
-    ],
-    "chatty": [
-      "wax_poetic",
-      "thanks_chat_tee",
-      "that_ill_do",
-      "okay_stop"
-    ]
+    "computer": ["oh_kay_screenshot", "okay_stop"],
+    "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"]
   },
   "model_paths": {
     "idle": "models-idle",
@@ -114,7 +124,31 @@
     "start_on_boot": false,
     "check_for_updates": true
   },
+  "state_transitions": {
+    "idle": {
+      "hey_chat_tee": "chatty",
+      "hey_khum_puter": "computer",
+      "toggle_mode": "computer"
+    },
+    "computer": {
+      "okay_stop": "idle",
+      "that_ill_do": "idle",
+      "toggle_mode": "chatty"
+    },
+    "chatty": {
+      "okay_stop": "idle",
+      "hey_khum_puter": "computer",
+      "thanks_chat_tee": "idle",
+      "that_ill_do": "idle",
+      "toggle_mode": "idle"
+    }
+  },
   "foo": {
     "bar": 1
+  },
+  "web_server": {
+    "host": "0.0.0.0",
+    "port": 8100,
+    "auth_enabled": true
   }
 }

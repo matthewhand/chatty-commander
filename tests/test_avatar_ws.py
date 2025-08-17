@@ -1,11 +1,10 @@
 import json
 import time
 
+from chatty_commander.avatars.thinking_state import get_thinking_manager, reset_thinking_manager
+from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from src.chatty_commander.avatars.thinking_state import get_thinking_manager, reset_thinking_manager
-from src.chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
 
 
 def test_avatar_ws_broadcasts_state_changes():

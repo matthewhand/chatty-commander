@@ -247,7 +247,9 @@ DEFAULT_REGISTRY = MetricsRegistry()
 class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
     """Starlette middleware to collect per-request metrics."""
 
-    def __init__(self, app, registry: MetricsRegistry | None = None, service: str = "chatty") -> None:  # type: ignore[no-untyped-def]
+    def __init__(
+        self, app, registry: MetricsRegistry | None = None, service: str = "chatty"
+    ) -> None:  # type: ignore[no-untyped-def]
         super().__init__(app)
         self.registry = registry or DEFAULT_REGISTRY
         self.service = service

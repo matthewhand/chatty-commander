@@ -1,9 +1,7 @@
 import logging
 
 import pytest
-from chatty_commander.app.model_manager import load_model
-
-from src.chatty_commander.model_manager import ModelManager
+from chatty_commander.app.model_manager import ModelManager
 
 
 class DummyError(Exception):
@@ -33,7 +31,7 @@ def test_model_loading_logging_retry(monkeypatch, caplog, tmp_path):
     def fake_report_error(exc):
         error_reported["called"] = True
 
-    monkeypatch.setattr("utils.logger.report_error", fake_report_error)
+    monkeypatch.setattr("chatty_commander.utils.logger.report_error", fake_report_error)
 
     # Prevent __init__ from preloading models.
     monkeypatch.setattr(ModelManager, "reload_models", lambda *args, **kwargs: {})

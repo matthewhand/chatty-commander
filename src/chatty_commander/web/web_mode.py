@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -28,6 +28,8 @@ from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.routes.agents import router as agents_router
+from chatty_commander.web.routes.avatar_api import router as avatar_router
 from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.routes.version import router as version_router
 
@@ -98,6 +100,7 @@ class WebModeServer:
         command_executor: CommandExecutor,
         no_auth: bool = False,
     ) -> None:
+        """Initialize the WebModeServer with required components."""
         self.config_manager = config_manager
         self.state_manager = state_manager
         self.model_manager = model_manager
@@ -137,8 +140,15 @@ class WebModeServer:
             allow_headers=["*"],
         )
 
+        # Add authentication middleware
+        from .middleware.auth import AuthMiddleware
+
+        app.add_middleware(AuthMiddleware, config_manager=self.config_manager, no_auth=self.no_auth)
+
         # Register routes
         self._register_routes(app)
+        app.include_router(agents_router)
+        app.include_router(avatar_router)
 
         # Serve static files if frontend exists
         frontend_path = Path("webui/frontend/dist")
@@ -212,7 +222,6 @@ class WebModeServer:
                     except TypeError:
                         # Some implementations may require passing the cfg
                         save(cfg)  # type: ignore[arg-type]
-                return {"message": "Configuration updated successfully"}
 
                 # Broadcast configuration change
                 await self._broadcast_message(
@@ -344,6 +353,8 @@ class WebModeServer:
             persistence_enabled: bool
             persistence_path: str
 
+        print("DEBUG: About to register advisors endpoints")
+
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(message: AdvisorInbound):
             """Process a message through the advisor service."""
@@ -374,8 +385,10 @@ class WebModeServer:
             try:
                 success = self.advisors_service.switch_persona(context_key, persona_id)
                 if not success:
-                    raise HTTPException(status_code=400, detail="Invalid persona or context")
-                return {"success": True, "context_key": context_key, "persona_id": persona_id}
+                    raise HTTPException(
+                        status_code=400, detail="Invalid persona or context not found"
+                    )
+                return {"success": success, "context_key": context_key, "persona_id": persona_id}
             except HTTPException:
                 raise
             except Exception as e:
@@ -384,39 +397,8 @@ class WebModeServer:
         @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
         async def get_context_stats():
             """Get statistics about current contexts."""
-            try:
-                stats = self.advisors_service.get_context_stats()
-                return ContextStats(**stats)
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        @app.get("/api/v1/advisors/personas")
-        async def get_personas():
-            """Get available personas."""
-            try:
-                # Access personas from the advisors config
-                advisors_config = getattr(self.config_manager, "advisors", {})
-                context_config = advisors_config.get("context", {})
-                personas = context_config.get("personas", {})
-                default_persona = context_config.get("default_persona", "general")
-
-                # Format personas for the UI
-                personas_list = []
-                for persona_id, persona_config in personas.items():
-                    personas_list.append({
-                        "id": persona_id,
-                        "name": persona_id.replace("_", " ").title(),
-                        "system_prompt": persona_config.get("system_prompt", ""),
-                        "is_default": persona_id == default_persona
-                    })
-
-                return {
-                    "personas": personas_list,
-                    "default_persona": default_persona,
-                    "total_count": len(personas_list)
-                }
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e)) from e
+            stats = self.advisors_service.get_context_stats()
+            return ContextStats(**stats)
 
         @app.delete("/api/v1/advisors/context/{context_key}")
         async def clear_context(context_key: str):
@@ -425,7 +407,7 @@ class WebModeServer:
                 success = self.advisors_service.clear_context(context_key)
                 if not success:
                     raise HTTPException(status_code=404, detail="Context not found")
-                return {"success": True, "context_key": context_key}
+                return {"success": success, "context_key": context_key}
             except HTTPException:
                 raise
             except Exception as e:
@@ -438,29 +420,25 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/memory", response_model=list[AdvisorMemoryItem])
         async def advisors_memory(platform: str, channel: str, user: str, limit: int = 20):
-            if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
+            if not self.config_manager.advisors.get("enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors feature disabled")
-            items = self.advisors_service.memory.get(platform, channel, user, limit)
+            memory_items = self.advisors_service.memory.get(platform, channel, user, limit)
             return [
-                AdvisorMemoryItem(role=i.role, content=i.content, timestamp=i.timestamp)
-                for i in items
+                AdvisorMemoryItem(role=item.role, content=item.content, timestamp=item.timestamp)
+                for item in memory_items
             ]
 
         @app.delete("/api/v1/advisors/memory")
         async def advisors_memory_clear(platform: str, channel: str, user: str):
-            if not getattr(self.config_manager, "advisors", {}).get("enabled", False):
+            if not self.config_manager.advisors.get("enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors feature disabled")
-            count = self.advisors_service.memory.clear(platform, channel, user)
-            return {"cleared": count}
-
-        from fastapi import Request
+            cleared_count = self.advisors_service.memory.clear(platform, channel, user)
+            return {"cleared": cleared_count}
 
         @app.post("/bridge/event")
         async def bridge_event(event: dict[str, Any], request: Request):
             # Auth: shared secret header must match config token
-            token_expected = (
-                getattr(self.config_manager, "advisors", {}).get("bridge", {}).get("token", "")
-            )
+            token_expected = self.config_manager.advisors.get("bridge", {}).get("token", "")
             token_header = request.headers.get("X-Bridge-Token", "")
             if not token_expected or token_header != token_expected:
                 raise HTTPException(status_code=401, detail="Unauthorized bridge request")
@@ -484,6 +462,14 @@ class WebModeServer:
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
             """Websocket endpoint for real-time updates."""
+            # Check authentication if not in no-auth mode
+            if not self.no_auth:
+                api_key = websocket.headers.get("X-API-Key")
+                expected_key = getattr(self.config_manager, "auth", {}).get("api_key")
+                if not api_key or api_key != expected_key:
+                    await websocket.close(code=1008, reason="Authentication required")
+                    return
+
             await websocket.accept()
             self.active_connections.add(websocket)
 
@@ -540,7 +526,7 @@ class WebModeServer:
 
         @app.get("/api/v1/health")
         async def health_check():
-            """Simple health check endpoint."""
+            """Return health status of the server."""
             return {
                 "status": "healthy",
                 "timestamp": datetime.now().isoformat(),
@@ -579,7 +565,7 @@ class WebModeServer:
         self.active_connections -= disconnected
 
     def _on_state_change(self, old_state: str, new_state: str) -> None:
-        """Callback for state changes."""
+        """Handle state changes and broadcast to connected clients."""
         self.last_state_change = datetime.now()
 
         # Schedule broadcast (since this might be called from a different thread)
@@ -655,13 +641,16 @@ class WebModeServer:
         log_level: str = "info",
     ) -> None:
         """Run the web server, honoring environment and config defaults."""
-#     def run(self, host: str | None = None, port: int | None = None, log_level: str = "info") -> None:
+        #     def run(self, host: str | None = None, port: int | None = None, log_level: str = "info") -> None:
         """Run the web server, honoring config and environment overrides."""
         env_host = os.getenv("CHATCOMM_HOST")
         env_port = os.getenv("CHATCOMM_PORT")
         env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
 
-        # Prefer configuration defaults when explicit host/port not provided
+        #         if host is None:
+        #             host = cfg.get("host", "0.0.0.0")
+        #         if port is None:
+        #             port = int(cfg.get("port", 8100))
         if host is None and getattr(self.config_manager, "web_server", None):
             host = self.config_manager.web_server.get("host", "0.0.0.0")
         if port is None and getattr(self.config_manager, "web_server", None):
@@ -683,10 +672,10 @@ class WebModeServer:
             port,
             "disabled" if self.no_auth else "enabled",
         )
-#         if host is None:
-#             host = "0.0.0.0"
-#         if port is None:
-#             port = 8100
+        #         if host is None:
+        #             host = "0.0.0.0"
+        #         if port is None:
+        #             port = 8100
 
         logger.info(f"🚀 Starting ChattyCommander web server on {host}:{port}")
         logger.info(f"📖 API documentation: http://{host}:{port}/docs")
@@ -701,7 +690,7 @@ def create_web_server(
     command_executor: CommandExecutor,
     no_auth: bool = False,
 ) -> WebModeServer:
-    """Factory function to create web server instance."""
+    """Create and return a new web server instance."""
     return WebModeServer(
         config_manager=config_manager,
         state_manager=state_manager,
@@ -760,7 +749,6 @@ def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
         mirrors the behaviour of the production server and allows tests to
         supply custom origins without modifying global state.
     """
-
     if no_auth:
         allowed_origins = ["*"]
     else:
@@ -798,6 +786,8 @@ def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
 
     # Include version endpoint for minimal factory
     app.include_router(version_router)
+    app.include_router(agents_router)
+    app.include_router(avatar_router)
 
     # Minimal core routes for tests (status/config/state/command)
     start_time = time.time()

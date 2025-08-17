@@ -10,6 +10,7 @@ dependencies = [
     "pytest>=8.4.1",
     "pytest-mock>=3.12.0",
     "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
     "watchdog>=3.0.0",
     "requests>=2.32.4",
     "psutil>=7.0.0",
@@ -29,16 +30,7 @@ dependencies = [
 ]
 
 [project.scripts]
-chatty-commander = "chatty_commander.cli.cli:cli_main"
-chatty = "chatty_commander.cli.cli:cli_main"
-
-[project.entry-points."chatty_commander.adapters"]
-text = "chatty_commander.app.orchestrator:TextInputAdapter"
-gui = "chatty_commander.app.orchestrator:GUIAdapter"
-web = "chatty_commander.app.orchestrator:WebServerAdapter"
-openwakeword = "chatty_commander.app.orchestrator:WakeWordAdapter"
-computer_vision = "chatty_commander.app.orchestrator:ComputerVisionAdapter"
-discord_bridge = "chatty_commander.app.orchestrator:DiscordBridgeAdapter"
+chatty-commander = "chatty_commander.cli.cli:main"
 
 [dependency-groups]
 dev = [
@@ -46,16 +38,9 @@ dev = [
     "black>=23.0.0",
     "doc8>=1.1.1",
     "pydocstyle>=6.0.0",
+    "jsonschema>=4.0.0",
     "pytest-check-links>=0.5.0",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-cache_dir = ".pytest_cache"
-addopts = "--cov=. --cov-report=term --cov-report=html --cache-clear"
 
 [tool.coverage.run]
 source = [
@@ -107,7 +92,6 @@ quote-style = "preserve"
 indent-style = "space"
 docstring-code-format = true
 skip-magic-trailing-comma = false
-
 [tool.pydocstyle]
 convention = "google"
 add-ignore = [
@@ -118,40 +102,22 @@ add-ignore = [
   "D104", # Missing docstring in public package
   "D105", # Missing docstring in magic method
   "D107", # Missing docstring in __init__
+  "D200", # One-line docstring should fit on one line
+  "D205", # 1 blank line required between summary line and description
+  "D212", # Multi-line docstring summary should start at the first line
+  "D403", # First word of the first line should be properly capitalized
+  "D415", # First line should end with punctuation
 ]
 
 [tool.doc8]
 max-line-length = 100
 ignore = ["D001"]
-
 [tool.setuptools]
 package-dir = {"" = "src"}
+packages = ["chatty_commander"]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["chatty_commander*"]
+[tool.setuptools.package-data]
+chatty_commander = ["py.typed"]
 
-voice = [
-    "openwakeword>=0.4.0",
-    "pyaudio>=0.2.11",
-    "openai-whisper>=20231117",
-    "openai>=1.0.0",
-    "numpy>=1.24.0",
-    "pyttsx3>=2.90",
-]
-llm = [
-    "openai>=1.0.0",
-    "requests>=2.25.0",
-    "transformers>=4.20.0",
-    "torch>=1.12.0",
-]
-full = [
-    "openwakeword>=0.4.0",
-    "pyaudio>=0.2.11", 
-    "openai-whisper>=20231117",
-    "openai>=1.0.0",
-    "numpy>=1.24.0",
-    "requests>=2.25.0",
-    "transformers>=4.20.0",
-    "torch>=1.12.0",
-]
+[tool.uv]
+package = true

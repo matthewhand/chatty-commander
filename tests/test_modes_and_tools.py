@@ -54,16 +54,21 @@ def test_modes_wakeword_mapping_custom_mode(tmp_path, monkeypatch):
         "focus": {"wakewords": ["focus_on"], "persona": "analyst", "tools": ["browser"]},
     }
     data["state_models"]["focus"] = ["okay_stop"]
+    data["state_transitions"] = {
+        "idle": {
+            "hey_chat_tee": "chatty",
+            "hey_khum_puter": "computer",
+            "focus_on": "focus",
+            "toggle_mode": "computer",
+        },
+        "focus": {"okay_stop": "idle"},
+    }
 
     cfg_path = make_temp_config(tmp_path, data)
     cfg = Config(config_file=cfg_path)
 
-    # Patch the Config inside StateManager to use our instance
-    from src.chatty_commander.app import state_manager as sm_mod
-
-    monkeypatch.setattr(sm_mod, "Config", lambda: cfg)
-
-    sm = RealStateManager()
+    # Create StateManager with the custom config directly
+    sm = RealStateManager(config=cfg)
     assert sm.current_state == "idle"
 
     # Trigger the custom wakeword

@@ -4,6 +4,11 @@ Exposes ``pyautogui`` and ``requests`` symbols for tests to patch before the
 real implementation is imported.
 """
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    pass
+
 try:  # pragma: no cover - best effort import
     import pyautogui  # type: ignore
 except Exception:  # noqa: BLE001 - optional dependency

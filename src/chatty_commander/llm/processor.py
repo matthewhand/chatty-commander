@@ -3,6 +3,7 @@ Command processor that uses LLM to interpret natural language commands.
 
 Converts voice/text input into structured commands that can be executed.
 """
+
 from __future__ import annotations
 
 import json
@@ -18,12 +19,7 @@ logger = logging.getLogger(__name__)
 class CommandProcessor:
     """Processes natural language commands using LLM."""
 
-    def __init__(
-        self,
-        llm_manager: LLMManager | None = None,
-        config_manager=None,
-        **llm_kwargs
-    ):
+    def __init__(self, llm_manager: LLMManager | None = None, config_manager=None, **llm_kwargs):
         self.llm_manager = llm_manager or LLMManager(**llm_kwargs)
         self.config_manager = config_manager
 
@@ -108,7 +104,7 @@ class CommandProcessor:
             response = self.llm_manager.generate_response(
                 prompt,
                 max_tokens=100,
-                temperature=0.3  # Lower temperature for more consistent results
+                temperature=0.3,  # Lower temperature for more consistent results
             )
 
             return self._parse_llm_response(response, user_input)
@@ -146,7 +142,9 @@ Response:"""
 
         return prompt
 
-    def _parse_llm_response(self, response: str, original_input: str) -> tuple[str | None, float, str]:
+    def _parse_llm_response(
+        self, response: str, original_input: str
+    ) -> tuple[str | None, float, str]:
         """Parse LLM response to extract command information."""
         try:
             # Try to extract JSON from response
@@ -186,12 +184,14 @@ Response:"""
         for cmd_name, cmd_config in self._available_commands.items():
             if cmd_name.lower().startswith(partial_lower):
                 action_type = list(cmd_config.keys())[0] if cmd_config else "unknown"
-                suggestions.append({
-                    "command": cmd_name,
-                    "type": action_type,
-                    "confidence": 0.9,
-                    "match_type": "name"
-                })
+                suggestions.append(
+                    {
+                        "command": cmd_name,
+                        "type": action_type,
+                        "confidence": 0.9,
+                        "match_type": "name",
+                    }
+                )
 
         # Keyword matches
         keyword_map = {
@@ -205,12 +205,14 @@ Response:"""
             if cmd_name in keyword_map:
                 for desc in keyword_map[cmd_name]:
                     if partial_lower in desc.lower():
-                        suggestions.append({
-                            "command": cmd_name,
-                            "description": desc,
-                            "confidence": 0.7,
-                            "match_type": "keyword"
-                        })
+                        suggestions.append(
+                            {
+                                "command": cmd_name,
+                                "description": desc,
+                                "confidence": 0.7,
+                                "match_type": "keyword",
+                            }
+                        )
 
         # Remove duplicates and sort by confidence
         seen = set()

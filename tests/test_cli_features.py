@@ -18,11 +18,16 @@ def replace_config_with_dummy(monkeypatch):
         def _dummy_config_ctor():
             return DummyConfigDirect(actions)
 
-        # Patch where cli imports Config inside functions: chatty_commander.app.config.Config
+        # Patch where cli imports Config inside functions: config.Config
         import chatty_commander.app.config as config_module
+        from chatty_commander.cli import cli as cli_module
 
         monkeypatch.setattr(
             config_module, "Config", staticmethod(lambda: DummyConfigDirect(actions))
+        )
+        # Also patch _resolve_Config to ensure it uses our dummy
+        monkeypatch.setattr(
+            cli_module, "_resolve_Config", lambda: lambda: DummyConfigDirect(actions)
         )
 
         return _dummy_config_ctor
@@ -142,7 +147,7 @@ def test_cli_exec_timeout_flag_passthrough_no_error(monkeypatch, replace_config_
         def execute_command(self, name):
             return
 
-    monkeypatch.setattr('chatty_commander.cli.cli.CommandExecutor', NoopExecutor)
+    monkeypatch.setattr('chatty_commander.app.command_executor.CommandExecutor', NoopExecutor)
 
     code, out, err = run_cli_main_with_args(["exec", "hello", "--timeout", "5"], monkeypatch)
     assert code == 0

@@ -6,13 +6,17 @@ from src.chatty_commander.cli.cli import cli_main
 
 def test_cli_exec_dry_run_prints_action(monkeypatch):
     # Patch Config to return a known model_actions mapping
-    import config as config_module
+    import chatty_commander.app.config as config_module
+
+    from src.chatty_commander.cli import cli as cli_module
 
     class DummyCfg:
         def __init__(self):
             self.model_actions = {"hello": {"shell": {"cmd": "echo hi"}}}
 
+    # Patch both the config module and the _resolve_Config function
     monkeypatch.setattr(config_module, "Config", DummyCfg)
+    monkeypatch.setattr(cli_module, "_resolve_Config", lambda: DummyCfg)
 
     # Simulate CLI invocation
     monkeypatch.setattr(sys, "argv", ["chatty-commander", "exec", "hello", "--dry-run"])

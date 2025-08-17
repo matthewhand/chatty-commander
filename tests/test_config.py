@@ -241,7 +241,7 @@ def test_build_model_actions_custom_message(config):
     """Test building model actions for custom message."""
     config.commands = {'test_msg': {'action': 'custom_message', 'message': 'Hello'}}
     actions = config._build_model_actions()
-    assert actions['test_msg'] == {'message': 'Hello'}
+    assert actions['test_msg'] == {'shell': 'echo Hello'}
 
 
 def test_set_start_on_boot_enable(config, monkeypatch):

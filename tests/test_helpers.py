@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from chatty_commander.app.helpers import (
+from chatty_commander.helpers import (
     ensure_directory_exists,
     format_command_output,
     parse_model_keybindings,

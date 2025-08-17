@@ -1,6 +1,6 @@
 # ChattyCommander TODO
 
-Last updated: 2025-08-13 by OpenAI Assistant
+Last updated: 2025-08-15 by OpenAI Assistant
 
 Legend:
 - [x] Completed
@@ -8,6 +8,15 @@ Legend:
 - Now = Current sprint focus (max 7 items)
 - Next = Upcoming, ready to pull
 - Later = Backlog, not yet scheduled
+
+## Distribution & Installers (Ambitious Plan)
+
+Goal: deliver easy-to-install packages across environments.
+
+### Tasks
+- [ ] **Pinokio Ecosystem Installer** – set up an installer compatible with the Pinokio computer ecosystem.
+- [ ] **Docker & Compose** – provide Docker images and a docker-compose configuration for deployment.
+- [ ] **Native Installers** – experiment with PyInstaller, cx_Freeze, Electron-builder, pkg, and similar tools to generate platform-specific binaries.
 
 ## Background Docker Task Runner & Summaries
 
@@ -477,7 +486,7 @@ Phased Plan
   - Then set: chatty-commander = "chatty_commander.cli.cli:cli_main".
   - Keep root cli.py as a shim forwarding to the package entry.
 - Remove argparse dependency from project dependencies (stdlib).
-- Add DeprecationWarning to shims: config.py, command_executor.py, utils/logger.py.
+- Add DeprecationWarning to shims: config.py, utils/logger.py. Remove command_executor.py shim.
 
 2) Logger consolidation
 - Keep src/chatty_commander/utils/logger.py as real implementation.

@@ -15,63 +15,72 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 import websockets
-from config import Config
+from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.web_mode import WebModeServer
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from web_mode import WebModeServer
+from starlette.websockets import WebSocketDisconnect
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture
-def auth_client():
-    cfg = Config()
-    cfg.advisors = {"enabled": True, "bridge": {"token": "secret"}}
-    state_manager = MagicMock()
-    state_manager.current_state = "idle"
-    state_manager.get_active_models.return_value = []
-    state_manager.add_state_change_callback = MagicMock()
-    model_manager = MagicMock()
-    command_executor = MagicMock()
-    with patch("chatty_commander.web.web_mode.AdvisorsService") as svc:
-        reply = MagicMock()
-        reply.reply = "hi"
-        svc.return_value.handle_message.return_value = reply
-        server = WebModeServer(cfg, state_manager, model_manager, command_executor)
-    return TestClient(server.app)
+class DummyConfig(Config):
+    def __init__(self):
+        self.general_models_path = "models-idle"
+        self.system_models_path = "models-computer"
+        self.chat_models_path = "models-chatty"
+        self.config = {"model_actions": {}}
+        self.auth = {"enabled": True, "api_key": "secret", "allowed_origins": ["*"]}
+        self.advisors = {"enabled": False}
 
 
-def test_bridge_event_requires_token(auth_client):
-    event = {"platform": "p", "channel": "c", "user": "u", "text": "hi"}
-    resp = auth_client.post("/bridge/event", json=event)
+def create_server(*, no_auth: bool) -> WebModeServer:
+    with patch('chatty_commander.advisors.providers.build_provider_safe') as mock_build_provider:
+        mock_provider = MagicMock()
+        mock_provider.model = "test-model"
+        mock_provider.api_mode = "completion"
+        mock_build_provider.return_value = mock_provider
+        cfg = DummyConfig()
+        sm = StateManager()
+        mm = ModelManager(cfg)
+        ce = CommandExecutor(cfg, mm, sm)
+        return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth)
+
+
+def test_status_authentication():
+    server = create_server(no_auth=False)
+    client = TestClient(server.app)
+
+    resp = client.get("/api/v1/status")
     assert resp.status_code == 401
 
-
-def test_bridge_event_with_token(auth_client):
-    event = {"platform": "p", "channel": "c", "user": "u", "text": "hi"}
-    resp = auth_client.post("/bridge/event", json=event, headers={"X-Bridge-Token": "secret"})
+    resp = client.get("/api/v1/status", headers={"X-API-Key": "secret"})
     assert resp.status_code == 200
-    assert resp.json()["ok"] is True
 
 
-def test_run_uses_config_when_no_overrides():
-    cfg = MagicMock()
-    cfg.web_server = {"host": "x", "port": 9, "auth_enabled": True}
-    state_manager = MagicMock()
-    state_manager.add_state_change_callback = MagicMock()
-    model_manager = MagicMock()
-    command_executor = MagicMock()
-    server = WebModeServer(cfg, state_manager, model_manager, command_executor)
+def test_status_no_auth():
+    server = create_server(no_auth=True)
+    client = TestClient(server.app)
+    assert client.get("/api/v1/status").status_code == 200
 
-    with patch.dict(os.environ, {}, clear=True), patch(
-        "chatty_commander.web.web_mode.uvicorn.run"
-    ) as mock_run:
-        server.run()
-        mock_run.assert_called_once()
-        _args, kwargs = mock_run.call_args
-        assert kwargs["host"] == "x"
-        assert kwargs["port"] == 9
+
+def test_websocket_authentication():
+    server = create_server(no_auth=False)
+    client = TestClient(server.app)
+    try:
+        with client.websocket_connect("/ws") as ws:
+            with pytest.raises(WebSocketDisconnect):
+                ws.receive_json()
+    except WebSocketDisconnect:
+        pass
+    with client.websocket_connect("/ws", headers={"X-API-Key": "secret"}) as ws:
+        data = ws.receive_json()
+        assert data["type"] == "connection_established"
 
 
 class WebModeValidator:

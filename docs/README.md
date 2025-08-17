@@ -4,7 +4,6 @@
 
 - [API Documentation](API.md) - Comprehensive API reference
 - [OpenAPI Specification](openapi.json) - Machine-readable API spec
-- [Background Task Runner & Summaries](BACKGROUND_TASK_RUNNER.md) - Planned queue and live-summary system
 
 ## Quick Start
 
@@ -15,5 +14,6 @@
 ## Interactive Documentation
 
 When the server is running, you can access interactive API documentation at:
+
 - Swagger UI: [http://localhost:8100/docs](http://localhost:8100/docs)
 - ReDoc: [http://localhost:8100/redoc](http://localhost:8100/redoc)

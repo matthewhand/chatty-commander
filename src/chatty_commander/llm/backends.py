@@ -1,6 +1,7 @@
 """
 LLM backend implementations with automatic fallback strategy.
 """
+
 from __future__ import annotations
 
 import logging
@@ -47,10 +48,8 @@ class OpenAIBackend(LLMBackend):
 
         try:
             import openai
-            self._client = openai.OpenAI(
-                api_key=self.api_key,
-                base_url=self.base_url
-            )
+
+            self._client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
         except ImportError:
             logger.warning("OpenAI library not available. Install with: pip install openai")
@@ -65,9 +64,7 @@ class OpenAIBackend(LLMBackend):
         try:
             # Test with a minimal request
             self._client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "test"}],
-                max_tokens=1
+                model="gpt-3.5-turbo", messages=[{"role": "user", "content": "test"}], max_tokens=1
             )
             return True
         except Exception as e:
@@ -88,7 +85,7 @@ class OpenAIBackend(LLMBackend):
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
-                temperature=temperature
+                temperature=temperature,
             )
 
             return response.choices[0].message.content.strip()
@@ -136,10 +133,15 @@ class OllamaBackend(LLMBackend):
                     self._available = True
                     logger.info(f"Ollama model {self.model} is available")
                 else:
-                    logger.info(f"Ollama server running but model {self.model} not found. Available: {model_names}")
+                    logger.info(
+                        f"Ollama server running but model {self.model} not found. Available: {model_names}"
+                    )
                     # Try to pull the model
                     self._try_pull_model()
-                    self._available = self.model in [m.get("name", "") for m in requests.get(f"{self.base_url}/api/tags").json().get("models", [])]
+                    self._available = self.model in [
+                        m.get("name", "")
+                        for m in requests.get(f"{self.base_url}/api/tags").json().get("models", [])
+                    ]
             else:
                 self._available = False
                 logger.debug(f"Ollama server not responding: {response.status_code}")
@@ -162,7 +164,7 @@ class OllamaBackend(LLMBackend):
             response = requests.post(
                 f"{self.base_url}/api/pull",
                 json={"name": self.model},
-                timeout=300  # 5 minutes timeout for model download
+                timeout=300,  # 5 minutes timeout for model download
             )
 
             if response.status_code == 200:
@@ -193,9 +195,9 @@ class OllamaBackend(LLMBackend):
                     "options": {
                         "num_predict": max_tokens,
                         "temperature": temperature,
-                    }
+                    },
                 },
-                timeout=30
+                timeout=30,
             )
 
             if response.status_code == 200:
@@ -247,7 +249,7 @@ class LocalTransformersBackend(LLMBackend):
             self._model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
                 torch_dtype=torch.float16 if self._device == "cuda" else torch.float32,
-                device_map="auto" if self._device == "cuda" else None
+                device_map="auto" if self._device == "cuda" else None,
             )
 
             if self._device == "cpu":
@@ -291,11 +293,11 @@ class LocalTransformersBackend(LLMBackend):
                     temperature=temperature,
                     do_sample=True,
                     pad_token_id=self._tokenizer.eos_token_id,
-                    attention_mask=torch.ones_like(inputs)
+                    attention_mask=torch.ones_like(inputs),
                 )
 
             # Decode response (skip the input tokens)
-            response_tokens = outputs[0][inputs.shape[1]:]
+            response_tokens = outputs[0][inputs.shape[1] :]
             response = self._tokenizer.decode(response_tokens, skip_special_tokens=True)
 
             return response.strip()
@@ -323,7 +325,7 @@ class MockLLMBackend(LLMBackend):
             "Based on your request, I'll trigger the appropriate action.",
             "Processing your voice command now.",
             "Command received and understood.",
-            "I'll execute that action for you."
+            "I'll execute that action for you.",
         ]
         self.call_count = 0
 

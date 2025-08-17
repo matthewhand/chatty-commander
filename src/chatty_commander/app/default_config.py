@@ -139,24 +139,6 @@ class DefaultConfigGenerator:
                 "home_assistant": "http://homeassistant.domain.home:8123/api",
                 "chatbot_endpoint": "http://localhost:3100/",
             },
-            "modes": {
-                "_notes": "Modes are flexible: define wakewords, persona (OpenAI-Agents), and tools per mode",
-                "idle": {
-                    "wakewords": ["hey_chat_tee", "hey_khum_puter", "okay_stop"],
-                    "persona": None,
-                    "tools": ["keypress", "http"],
-                },
-                "computer": {
-                    "wakewords": ["oh_kay_screenshot", "okay_stop"],
-                    "persona": None,
-                    "tools": ["keypress"],
-                },
-                "chatty": {
-                    "wakewords": [],
-                    "persona": "chatty",
-                    "tools": ["avatar_talkinghead", "tts", "stt"],
-                },
-            },
             "state_models": {
                 "idle": ["hey_chat_tee", "hey_khum_puter", "okay_stop", "lights_on", "lights_off"],
                 "computer": ["oh_kay_screenshot", "okay_stop"],
@@ -178,6 +160,15 @@ class DefaultConfigGenerator:
                 "inference_framework": "onnx",
                 "start_on_boot": False,
                 "check_for_updates": True,
+            },
+            "logging": {
+                "level": "INFO",
+                "format": "plain",
+                "handlers": ["console", "file"],
+                "file": "logs/chattycommander.log",
+                "telemetry_url": "",
+                "external_url": "",
+                "diagnostics_file": "logs/diagnostics.jsonl",
             },
         }
 
