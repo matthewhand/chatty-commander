@@ -297,7 +297,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
         return reg.to_json()
 
     @router.get("/metrics/prom")
-    async def metrics_prom() -> str:  # type: ignore[override]
+    async def metrics_prom() -> Response:  # type: ignore[override]
         lines: list[str] = []
         # Counters
         for name, c in reg.counters.items():
@@ -342,7 +342,8 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
                 lines.append(f"{name}_bucket{{{_lbl(lbl)}}} {counts[-1] if counts else 0}")
                 lines.append(f"{name}_sum{{{_lbl(labels)}}} {sum_val}")
                 lines.append(f"{name}_count{{{_lbl(labels)}}} {count_val}")
-        return "\n".join(lines) + "\n"
+        content = "\n".join(lines) + "\n"
+        return Response(content=content, media_type="text/plain")
 
     return router
 

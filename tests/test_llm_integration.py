@@ -5,6 +5,7 @@ import sys
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
 from chatty_commander.llm import CommandProcessor, LLMManager
 from chatty_commander.llm.backends import (
     LocalTransformersBackend,

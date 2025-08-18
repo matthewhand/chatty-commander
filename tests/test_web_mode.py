@@ -15,14 +15,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 import websockets
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
+
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from starlette.websockets import WebSocketDisconnect
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

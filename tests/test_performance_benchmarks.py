@@ -12,12 +12,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import psutil
 import pytest
+from fastapi.testclient import TestClient
+
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
-from fastapi.testclient import TestClient
 
 
 class PerformanceMonitor:
@@ -151,7 +152,9 @@ class TestPerformanceBenchmarks:
         def make_requests(thread_id):
             """Make multiple requests from a single thread."""
             thread_times = []
-            for i in range(requests_per_thread):  # noqa: B007 - loop index not used; measuring throughput only
+            for i in range(
+                requests_per_thread
+            ):  # noqa: B007 - loop index not used; measuring throughput only
                 start_time = time.perf_counter()
                 response = test_client.get(endpoint)
                 end_time = time.perf_counter()
@@ -277,7 +280,9 @@ class TestPerformanceBenchmarks:
         num_connections = 50
         mock_connections = []
 
-        for i in range(num_connections):  # noqa: B007 - loop index not used; creating mock connections
+        for i in range(
+            num_connections
+        ):  # noqa: B007 - loop index not used; creating mock connections
             mock_ws = AsyncMock()
             mock_connections.append(mock_ws)
             web_server.active_connections.add(mock_ws)
@@ -298,7 +303,7 @@ class TestPerformanceBenchmarks:
             print("\nWebSocket broadcast performance:")
             print(f"  Connections: {num_connections}")
             print(f"  Broadcast time: {broadcast_time:.2f}ms")
-            print(f"  Time per connection: {broadcast_time/num_connections:.2f}ms")
+            print(f"  Time per connection: {broadcast_time / num_connections:.2f}ms")
 
             # Verify all connections received the message
             for mock_ws in mock_connections:
@@ -308,7 +313,7 @@ class TestPerformanceBenchmarks:
             assert broadcast_time < 100, f"Broadcast time too high: {broadcast_time:.2f}ms"
             assert (
                 broadcast_time / num_connections < 2
-            ), f"Per-connection time too high: {broadcast_time/num_connections:.2f}ms"
+            ), f"Per-connection time too high: {broadcast_time / num_connections:.2f}ms"
         finally:
             loop.close()
 
@@ -336,7 +341,7 @@ class TestPerformanceBenchmarks:
                 response_times.append((end_time - start_time) * 1000)
 
             mean_time = statistics.mean(response_times)
-            print(f"\nConfig update performance (size {i+1}):")
+            print(f"\nConfig update performance (size {i + 1}):")
             print(f"  Config keys: {len(config_data)}")
             print(f"  Mean time: {mean_time:.2f}ms")
 

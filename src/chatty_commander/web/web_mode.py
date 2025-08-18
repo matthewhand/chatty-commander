@@ -784,10 +784,27 @@ def create_app(no_auth: bool = True, config: Config | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Add metrics middleware
+    try:
+        from ..obs.metrics import RequestMetricsMiddleware
+
+        app.add_middleware(RequestMetricsMiddleware)
+    except ImportError:
+        pass
+
     # Include version endpoint for minimal factory
     app.include_router(version_router)
     app.include_router(agents_router)
     app.include_router(avatar_router)
+
+    # Include metrics router
+    try:
+        from ..obs.metrics import create_metrics_router
+
+        metrics_router = create_metrics_router()
+        app.include_router(metrics_router)
+    except ImportError:
+        pass
 
     # Minimal core routes for tests (status/config/state/command)
     start_time = time.time()

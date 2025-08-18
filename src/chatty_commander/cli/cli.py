@@ -154,8 +154,7 @@ def build_parser() -> argparse.ArgumentParser:
         "run",
         help="Run the main application.",
         description=(
-            "Launch ChattyCommander core runtime.\n\n"
-            "Example:\n  chatty-commander run --display :0"
+            "Launch ChattyCommander core runtime.\n\nExample:\n  chatty-commander run --display :0"
         ),
     )
     run_parser.add_argument("--display", help="Override DISPLAY for GUI features.")
@@ -179,7 +178,7 @@ def build_parser() -> argparse.ArgumentParser:
     gui_parser = subparsers.add_parser(
         "gui",
         help="Launch GUI mode.",
-        description=("Open the graphical user interface.\n\n" "Example:\n  chatty-commander gui"),
+        description=("Open the graphical user interface.\n\nExample:\n  chatty-commander gui"),
     )
 
     def gui_func(args: argparse.Namespace) -> None:

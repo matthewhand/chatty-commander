@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
 from chatty_commander.voice import VoicePipeline, VoiceTranscriber, WakeWordDetector
 from chatty_commander.voice.transcription import MockTranscriptionBackend
 from chatty_commander.voice.wakeword import MockWakeWordDetector

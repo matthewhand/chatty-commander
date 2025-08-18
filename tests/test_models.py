@@ -16,7 +16,7 @@ class TestModelLoading(unittest.TestCase):
     def setUp(self):
         """Setup configuration and model manager for testing."""
         self._model_patch = patch(
-            'chatty_commander.app.model_manager.Model', return_value=MagicMock()
+            'chatty_commander.app.model_manager._get_patchable_model_class', return_value=MagicMock
         )
         self._model_patch.start()
         self.config = Config()
@@ -63,7 +63,7 @@ class TestModelLoading(unittest.TestCase):
             patch('os.path.exists', return_value=True),
             patch('os.listdir', return_value=['invalid.onnx']),
             patch(
-                'chatty_commander.app.model_manager.Model',
+                'chatty_commander.app.model_manager._get_patchable_model_class',
                 side_effect=Exception('Load error'),
             ),
         ):

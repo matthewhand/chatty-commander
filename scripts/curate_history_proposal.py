@@ -44,7 +44,7 @@ def sh(cmd: str) -> str:
 
 def parse_git_log() -> list[Commit]:
     # We print commit header lines then changed file paths; commits separated by blank lines
-    cmd = "git log --reverse --date=short " "--pretty=format:%H\t%ad\t%s --name-only"
+    cmd = "git log --reverse --date=short --pretty=format:%H\t%ad\t%s --name-only"
     out = sh(cmd)
     commits: list[Commit] = []
     sha = date = subj = None

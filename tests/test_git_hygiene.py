@@ -16,7 +16,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 
@@ -150,9 +150,7 @@ class TestGitHygiene:
 
         if result.returncode != 0:
             # Config not set, check if we can set it (this is informational)
-            pytest.skip(
-                "fetch.prune not configured. Consider running: " "git config fetch.prune true"
-            )
+            pytest.skip("fetch.prune not configured. Consider running: git config fetch.prune true")
 
         prune_setting = result.stdout.strip().lower()
         assert prune_setting == "true", (

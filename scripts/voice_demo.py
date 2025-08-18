@@ -116,7 +116,7 @@ def main():
 
             for i, (wake_word, command) in enumerate(demo_commands):
                 time.sleep(3)
-                print(f"\n🧪 Demo {i+1}/{len(demo_commands)}: Wake word '{wake_word}'")
+                print(f"\n🧪 Demo {i + 1}/{len(demo_commands)}: Wake word '{wake_word}'")
                 pipeline.trigger_mock_wake_word(wake_word)
                 time.sleep(1)
                 print(f"🧪 Processing command: '{command}'")
