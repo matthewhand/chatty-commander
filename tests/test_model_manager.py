@@ -34,25 +34,6 @@ class TestModelManager:
             result = mm.listen_for_commands()
         assert result is None or isinstance(result, str)
 
-        #     def test_hot_reload(self, tmp_path):
-        #         config = Config()
-        #         config.general_models_path = os.path.join(tmp_path, "general")
-        #         config.system_models_path = os.path.join(tmp_path, "system")
-        #         config.chat_models_path = os.path.join(tmp_path, "chat")
-        #         for p in [config.general_models_path, config.system_models_path, config.chat_models_path]:
-        #             os.makedirs(p, exist_ok=True)
-        #         mm = ModelManager(config)
-        #         with patch("model_manager.Model", return_value=MagicMock()):
-        #             async def run():
-        #                 await mm.start_watching()
-        #                 model_file = os.path.join(config.general_models_path, "new.onnx")
-        #                 open(model_file, "w").close()
-        #                 await asyncio.sleep(0.2)
-        #                 assert "new" in mm.models["general"]
-        #                 await mm.stop_watching()
-
-        #             asyncio.run(run())
-
         # Should not raise, but returns None or str
         result = asyncio.run(mm.async_listen_for_commands())
         assert result is None or isinstance(result, str)
@@ -75,3 +56,21 @@ class TestModelManager:
 
         asyncio.run(_run())
         assert "second" in mm.models["general"]
+
+    def test_repr(self):
+        """Test __repr__ method"""
+        config = Config()
+        mm = ModelManager(config)
+
+        # Mock some models
+        mm.models = {
+            "general": {"model1": MagicMock(), "model2": MagicMock()},
+            "system": {"model3": MagicMock()},
+            "chat": {},
+        }
+
+        repr_str = repr(mm)
+        assert "ModelManager" in repr_str
+        assert "general=2" in repr_str
+        assert "system=1" in repr_str
+        assert "chat=0" in repr_str

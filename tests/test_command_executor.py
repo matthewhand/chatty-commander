@@ -36,3 +36,24 @@ class TestCommandExecutor:
     def test_execute_command_missing(self, setup):
         with pytest.raises(ValueError):
             setup.execute_command('not_found')
+
+    def test_validate_command_success(self, setup):
+        """Test validate_command with valid command"""
+        setup.config.model_actions['valid_cmd'] = {'keypress': 'space'}
+        assert setup.validate_command('valid_cmd') is True
+
+    def test_validate_command_missing(self, setup):
+        """Test validate_command with missing command"""
+        with pytest.raises(ValueError, match="Invalid command"):
+            setup.validate_command('missing_cmd')
+
+    def test_report_error(self, setup):
+        """Test report_error method"""
+        with patch('logging.critical') as mock_log:
+            setup.report_error('test_cmd', 'Test error')
+            mock_log.assert_called()
+
+        # Test with error reporting utility
+        with patch('chatty_commander.utils.logger.report_error') as mock_report:
+            setup.report_error('test_cmd', 'Test error')
+            mock_report.assert_called()

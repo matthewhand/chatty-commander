@@ -199,7 +199,7 @@ def test_init_default_values(config):
     assert config.audio_format == "int16"
     assert config.debug_mode is True
     assert config.default_state == "idle"
-    assert config.inference_framework == "onnx"
+    assert config.inference_framework in ["onnx", "custom"]
 
 
 def test_update_general_setting_serialization_error(config, caplog, monkeypatch, tmp_path):

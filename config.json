@@ -150,5 +150,21 @@
     "host": "0.0.0.0",
     "port": 8100,
     "auth_enabled": true
-  }
+  },
+  "general": {
+    "check_for_updates": true,
+    "test_key": "test_value",
+    "git_test": true,
+    "debug_mode": true,
+    "custom_setting": "custom_value",
+    "another_key": "another_value",
+    "inference_framework": "custom",
+    "start_on_boot": true,
+    "test_bool": true,
+    "test_int": 42,
+    "test": "value",
+    "final_test": true
+  },
+  "voice_only": false,
+  "default_state": "idle"
 }
