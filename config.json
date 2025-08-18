@@ -113,12 +113,12 @@
     "chatty": "models-chatty"
   },
   "audio_settings": {
-    "mic_chunk_size": 1024,
+    "mic_chunk_size": 2048,
     "sample_rate": 16000,
     "audio_format": "int16"
   },
   "general_settings": {
-    "debug_mode": true,
+    "debug_mode": false,
     "default_state": "idle",
     "inference_framework": "onnx",
     "start_on_boot": false,
@@ -149,7 +149,7 @@
   "web_server": {
     "host": "0.0.0.0",
     "port": 8100,
-    "auth_enabled": true
+    "auth_enabled": false
   },
   "general": {
     "check_for_updates": true,
