@@ -2,6 +2,7 @@ import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from chatty_commander.app.command_executor import CommandExecutor
 
 

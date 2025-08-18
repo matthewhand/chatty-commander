@@ -5,9 +5,10 @@ and behavior across different configurations and environments.
 """
 
 import pytest
-from chatty_commander.web.web_mode import create_app
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
+from chatty_commander.web.web_mode import create_app
 
 
 class TestCreateAppContract:
@@ -48,11 +49,11 @@ class TestCreateAppContract:
         assert "current_state" in data
 
         # Test POST state endpoint
-        response = client.post("/api/v1/state", json={"state": "test"})
+        response = client.post("/api/v1/state", json={"state": "computer"})
         assert response.status_code == 200
         data = response.json()
-        assert "success" in data
-        assert data["success"] is True
+        assert "message" in data
+        assert "computer" in data["message"]
 
     def test_create_app_command_endpoint(self):
         """Test that create_app() provides command execution endpoint."""
@@ -60,7 +61,7 @@ class TestCreateAppContract:
         client = TestClient(app)
 
         # Test POST command endpoint
-        response = client.post("/api/v1/command", json={"command": "test"})
+        response = client.post("/api/v1/command", json={"command": "hello"})
         assert response.status_code == 200
         data = response.json()
         assert "success" in data

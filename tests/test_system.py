@@ -58,10 +58,10 @@ class SystemTester:
         # Backup original config
         self.backup_config()
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("ChattyCommander System Testing Suite")
         print(f"Started at: {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
     def backup_config(self):
         """Backup original configuration before testing"""
@@ -531,23 +531,23 @@ class SystemTester:
         errors = len([r for r in self.test_results if r['status'] == 'ERROR'])
 
         report = f"""
-{'='*60}
+{'=' * 60}
 ChattyCommander System Test Report
-{'='*60}
+{'=' * 60}
 
 Test Summary:
   Total Tests: {total_tests}
   Passed: {passed}
   Failed: {failed}
   Errors: {errors}
-  Success Rate: {(passed/total_tests*100):.1f}% if total_tests > 0 else 0
+  Success Rate: {(passed / total_tests * 100):.1f}% if total_tests > 0 else 0
 
 Duration: {duration.total_seconds():.2f} seconds
 Completed: {end_time.strftime('%Y-%m-%d %H:%M:%S')}
 
-{'='*60}
+{'=' * 60}
 Detailed Results:
-{'='*60}
+{'=' * 60}
 """
 
         # Group results by test name
@@ -565,16 +565,14 @@ Detailed Results:
                     status_icon = (
                         "✓"
                         if result['status'] == "PASS"
-                        else "✗"
-                        if result['status'] == "FAIL"
-                        else "⚠"
+                        else "✗" if result['status'] == "FAIL" else "⚠"
                     )
                     report += f"  {status_icon} [{result['status']}] {result['message']}\n"
 
         # Add failed/error details
         failures = [r for r in self.test_results if r['status'] in ['FAIL', 'ERROR']]
         if failures:
-            report += f"\n{'='*60}\nFailures and Errors:\n{'='*60}\n"
+            report += f"\n{'=' * 60}\nFailures and Errors:\n{'=' * 60}\n"
             for failure in failures:
                 report += f"\n[{failure['status']}] {failure['test_name']}: {failure['message']}\n"
 
@@ -585,7 +583,7 @@ Detailed Results:
             with open(self.output_file, 'w') as f:
                 f.write(report)
                 # Also save raw JSON data
-                f.write(f"\n\n{'='*60}\nRaw Test Data (JSON):\n{'='*60}\n")
+                f.write(f"\n\n{'=' * 60}\nRaw Test Data (JSON):\n{'=' * 60}\n")
                 json.dump(self.test_results, f, indent=2)
             print(f"\nReport saved to: {self.output_file}")
 

@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
 from chatty_commander.app import CommandExecutor
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
-from fastapi.testclient import TestClient
 
 
 class DummyConfig:

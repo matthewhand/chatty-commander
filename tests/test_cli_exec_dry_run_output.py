@@ -7,7 +7,6 @@ from src.chatty_commander.cli.cli import cli_main
 def test_cli_exec_dry_run_prints_action(monkeypatch):
     # Patch Config to return a known model_actions mapping
     import chatty_commander.app.config as config_module
-
     from src.chatty_commander.cli import cli as cli_module
 
     class DummyCfg:

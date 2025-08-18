@@ -1,4 +1,5 @@
 import pytest
+
 from chatty_commander.web.routes.avatar_ws import AvatarWSConnectionManager
 
 

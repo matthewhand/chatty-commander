@@ -1,5 +1,6 @@
-from chatty_commander.web.server import create_app
 from fastapi.testclient import TestClient
+
+from chatty_commander.web.web_mode import create_app
 
 
 def test_e2e_core_health_status_config_state_metrics():

@@ -1,10 +1,11 @@
 import json
 
+from fastapi.testclient import TestClient
+
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
-from fastapi.testclient import TestClient
 
 
 def test_ws_initial_snapshot_contains_state():

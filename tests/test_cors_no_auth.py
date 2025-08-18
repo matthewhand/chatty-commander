@@ -1,7 +1,8 @@
-from chatty_commander.app.config import Config
-from chatty_commander.web.web_mode import create_app
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
+from chatty_commander.app.config import Config
+from chatty_commander.web.web_mode import create_app
 
 
 def test_cors_allows_any_origin_in_no_auth_mode():
