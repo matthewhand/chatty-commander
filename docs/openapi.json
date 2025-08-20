@@ -240,35 +240,6 @@
         }
       }
     },
-    "/api/v1/version": {
-      "get": {
-        "summary": "Get version info",
-        "description": "Returns application semantic version and optional git SHA.",
-        "tags": ["System"],
-        "responses": {
-          "200": {
-            "description": "Version info",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "version": {
-                      "type": "string"
-                    },
-                    "git_sha": {
-                      "type": ["string", "null"],
-                      "description": "Short git SHA if available"
-                    }
-                  },
-                  "required": ["version"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/ws": {
       "get": {
         "summary": "WebSocket connection",

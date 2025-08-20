@@ -1,5 +1,7 @@
 # ChattyCommander Documentation
 
+Generated on 2025-08-21 08:34:10
+
 ## Available Documentation
 
 - [API Documentation](API.md) - Comprehensive API reference
