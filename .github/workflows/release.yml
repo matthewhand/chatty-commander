@@ -38,10 +38,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            arch: amd64
-          - os: ubuntu-latest
-            arch: arm64
+          - os: ubuntu-22.04
+            arch: linux-amd64
+          - os: ubuntu-22.04-arm64
+            arch: linux-arm64
           - os: macos-13
             arch: macos-amd64
           - os: macos-14
