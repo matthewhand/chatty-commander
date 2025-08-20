@@ -38,6 +38,9 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
       - name: Install frontend deps
         run: npm ci --prefix webui/frontend
 
@@ -49,6 +52,12 @@ jobs:
 
       - name: Run frontend tests with coverage (Jest)
         run: npm run test:ci:coverage --prefix webui/frontend
+
+      - name: Install tests package deps (pnpm)
+        run: pnpm -C tests install --no-frozen-lockfile
+
+      - name: Run JS tests (Node test runner)
+        run: pnpm -C tests test
 
       - name: Upload coverage to Codecov (optional)
         if: ${{ env.CODECOV_TOKEN != '' }}

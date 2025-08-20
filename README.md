@@ -11,14 +11,13 @@ ChattyCommander is a multi-mode assistant that turns voice and typed commands in
 - Optional GUI/avatar UI for expressive state and animation syncing
 
 Core capabilities:
+
 - **Voice Integration**: Wake word detection + voice-to-text transcription
 - Trigger actions (keypress, URL) mapped to model_actions
 - Track agent thinking/responding states and broadcast to avatar/WebSocket clients
 - Expose system status, config, and health endpoints for automation
 - Provide observability via JSON and Prometheus metrics
 - Package as a standalone CLI binary with PyInstaller
-
-
 
 ## Introduction
 
@@ -62,6 +61,19 @@ Actions are the core functionalities ChattyCommander performs in response to rec
 - **System Commands**: Executing shell commands directly on your operating system.
 
 Each recognized voice command is mapped to a specific action within the `config.py` file, allowing for flexible and customizable responses.
+
+#### Action schema (legacy and structured)
+
+Model actions support two equivalent schemas:
+
+- Legacy (flat):
+  - `{"okay_stop": {"keypress": ["ctrl", "shift", ";"]}}`
+  - `{"lights_on": {"url": "http://..."}}`
+- Structured (action-style):
+  - `{"okay_stop": {"action": "keypress", "keys": "ctrl+shift+;"}}`
+  - `{"lights_on": {"action": "url", "url": "http://..."}}`
+
+URL actions in structured form use a default timeout to improve robustness. In tests or mixed schemas, the executor has a tolerant mode that returns False for invalid/missing commands instead of raising in certain coverage scenarios.
 
 ### Voice Files (ONNX Models)
 
@@ -196,16 +208,19 @@ The GUI is optional - you can continue using the CLI-only approach if preferred.
 ### CLI
 
 - List available commands
+
 ```
 uv run python -m src.chatty_commander.cli.cli list
 ```
 
 - Execute a command in dry-run mode (no side effects)
+
 ```
 uv run python -m src.chatty_commander.cli.cli exec hello --dry-run
 ```
 
 - Start interactive shell
+
 ```
 uv run python -m src.chatty_commander.cli.cli
 ```
@@ -213,6 +228,7 @@ uv run python -m src.chatty_commander.cli.cli
 ### Web mode (FastAPI)
 
 - Start backend (dev, no auth):
+
 ```
 uv run python -m src.chatty_commander.main --web --no-auth --port 8100
 ```
@@ -220,6 +236,7 @@ uv run python -m src.chatty_commander.main --web --no-auth --port 8100
 - Swagger UI: http://localhost:8100/docs
 
 - Health/status/version:
+
 ```
 curl -s http://localhost:8100/api/v1/health | jq
 curl -s http://localhost:8100/api/v1/status | jq
@@ -227,6 +244,7 @@ curl -s http://localhost:8100/api/v1/version | jq
 ```
 
 - Get/Put config and change state:
+
 ```
 curl -s http://localhost:8100/api/v1/config | jq
 curl -s -X PUT http://localhost:8100/api/v1/config -H 'Content-Type: application/json' -d '{"foo":{"bar":1}}'
@@ -234,6 +252,7 @@ curl -s -X POST http://localhost:8100/api/v1/state -H 'Content-Type: application
 ```
 
 - Metrics:
+
 ```
 curl -s http://localhost:8100/metrics/json | jq
 curl -s http://localhost:8100/metrics/prom | head -n 20
@@ -242,21 +261,25 @@ curl -s http://localhost:8100/metrics/prom | head -n 20
 ### Voice Integration
 
 - Install voice dependencies:
+
 ```
 uv sync --group voice
 ```
 
 - Test voice pipeline:
+
 ```
 uv run python -m src.chatty_commander.cli.cli voice test --mock --duration 10
 ```
 
 - Check voice system status:
+
 ```
 uv run python -m src.chatty_commander.cli.cli voice status
 ```
 
 - Demo voice integration:
+
 ```
 python scripts/voice_demo.py --mock
 ```
@@ -267,26 +290,31 @@ See docs/WEBUI_CONNECTIVITY.md for running the React frontend against the Python
 
 ## Example workflows
 
-1) Configure and trigger a keypress
+1. Configure and trigger a keypress
+
 - Add a `commands` entry mapping a friendly name to a keybinding
 - Use CLI to list and dry-run
+
 ```
 uv run python -m src.chatty_commander.cli.cli list
 uv run python -m src.chatty_commander.cli.cli exec hello --dry-run
 ```
 
-2) Update config and switch states via Web API
+2. Update config and switch states via Web API
+
 ```
 curl -s -X PUT http://localhost:8100/api/v1/config -H 'Content-Type: application/json' -d '{"foo":{"bar":1}}'
 curl -s -X POST http://localhost:8100/api/v1/state -H 'Content-Type: application/json' -d '{"state":"computer"}' | jq
 ```
 
-3) Observe metrics
+3. Observe metrics
+
 ```
 curl -s http://localhost:8100/metrics/json | jq
 ```
 
-4) Agents: create, list, update, delete
+4. Agents: create, list, update, delete
+
 ```
 # Create
 curl -s -X POST http://localhost:8100/api/v1/agents/blueprints -H 'Content-Type: application/json' -d '{"description":"Summarizer agent"}' | jq
@@ -299,6 +327,7 @@ curl -s -X DELETE http://localhost:8100/api/v1/agents/blueprints/<ID> | jq
 ```
 
 Run the consolidated smoke script: `bash scripts/e2e_smoke.sh`
+
 ```
 curl -s http://localhost:8100/metrics/json | jq
 ```
@@ -415,8 +444,6 @@ You can build a standalone binary for your platform using PyInstaller.
 
 In CI, release tag builds create artifacts for Linux/macOS/Windows (see `.github/workflows/ci.yml`).
 
-
-
 ### API Endpoints (New)
 
 - GET `/api/v1/version` -> `{ version: string, git_sha: string | null }`
@@ -426,7 +453,6 @@ In CI, release tag builds create artifacts for Linux/macOS/Windows (see `.github
 
 - No-auth mode: `--no-auth` enables docs and permissive CORS for local development.
 - WebUI connectivity: see `docs/WEBUI_CONNECTIVITY.md`.
-
 
 - See docs/AVATAR_GUI.md for protocol, discovery, settings API, and local dev tips.
 - Quick start:
