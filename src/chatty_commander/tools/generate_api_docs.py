@@ -236,6 +236,30 @@ class APIDocumentationGenerator:
                         },
                     }
                 },
+                "/api/v1/version": {
+                    "get": {
+                        "summary": "Get version info",
+                        "description": "Returns the application version and current git SHA (if available).",
+                        "tags": ["System"],
+                        "responses": {
+                            "200": {
+                                "description": "Version info retrieved successfully",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "version": {"type": "string"},
+                                                "git_sha": {"type": ["string", "null"]},
+                                            },
+                                            "required": ["version"],
+                                        }
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
                 "/ws": {
                     "get": {
                         "summary": "WebSocket connection",
