@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types --test"
+    "test": "node --version | grep -q 'v22' && node --experimental-strip-types --test || node --test --loader tsx"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.2"
   }
 }

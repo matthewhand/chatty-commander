@@ -106,8 +106,11 @@ class AvatarWSConnectionManager:
             loop = asyncio.get_running_loop()
             loop.create_task(_broadcast())
         except RuntimeError:
-            # Not in a thread capable context; best effort
-            asyncio.create_task(_broadcast())
+            # Not in an event loop; run synchronously to avoid un-awaited coroutine warnings
+            try:
+                asyncio.run(_broadcast())
+            except Exception as e:  # pragma: no cover
+                logger.error(f"Broadcast failed: {e}")
 
 
 manager = AvatarWSConnectionManager()
