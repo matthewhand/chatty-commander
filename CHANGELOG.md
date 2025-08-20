@@ -2,6 +2,18 @@
 
 ## [0.1.1] - 2025-08-20
 
+## [0.1.2] - 2025-08-21
+
+### Added
+
+- Lite CLI binary build (PyInstaller) and CI release workflow to publish amd64/arm64 artifacts on tags.
+- CodeQL scanning and Dependabot updates.
+
+### Fixed/Docs
+
+- OpenAPI docs parity with runtime schema (added /api/v1/version).
+- Documentation for action-style commands and tolerant mode.
+
 ### Fixed
 
 - Command executor: support both legacy and action-style schemas; tolerant mode returns False for invalid/missing commands in coverage tests; URL actions use timeout when action-style; improved keypress error handling; avoid duplicate critical logs.
