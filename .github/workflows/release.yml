@@ -64,6 +64,9 @@ jobs:
       - name: Sync deps
         run: uv sync --all-groups
 
+      - name: Install PyInstaller
+        run: uv add pyinstaller
+
       - name: Build CLI (lite)
         env:
           PYINSTALLER_STRIP: "true"
