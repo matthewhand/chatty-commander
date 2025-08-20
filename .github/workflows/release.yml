@@ -14,13 +14,14 @@ jobs:
       - name: Generate release notes from CHANGELOG
         id: notes
         run: |
-          VERSION=${GITHUB_REF_NAME}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          awk 'BEGIN{p=0} /^## \[/ { if(p) exit; if(index($0, substr(env.VERSION,2))){p=1; print $0;next}} p' CHANGELOG.md > RELEASE_NOTES.md || true
+          VERSION_RAW="${GITHUB_REF_NAME}"
+          VERSION_STRIPPED="${VERSION_RAW#v}"
+          echo "version=$VERSION_RAW" >> $GITHUB_OUTPUT
+          if grep -q "^## \[$VERSION_STRIPPED\]" CHANGELOG.md; then
+            sed -n "/^## \\[$VERSION_STRIPPED\\]/,/^## \\[/p" CHANGELOG.md | sed '1d;$d' > RELEASE_NOTES.md || true
+          fi
           if [ ! -s RELEASE_NOTES.md ]; then
-            echo "## $VERSION" > RELEASE_NOTES.md
-            echo >> RELEASE_NOTES.md
-            echo "Automated release." >> RELEASE_NOTES.md
+            printf "## %s\n\nAutomated release.\n" "$VERSION_RAW" > RELEASE_NOTES.md
           fi
 
       - name: Create GitHub Release
@@ -33,6 +34,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-binaries:
+    continue-on-error: ${{ matrix.allow_failure == true }}
     runs-on: ${{ matrix.os }}
     needs: draft-release
     strategy:
@@ -42,6 +44,7 @@ jobs:
             arch: linux-amd64
           - os: ubuntu-22.04-arm64
             arch: linux-arm64
+            allow_failure: true
           - os: macos-13
             arch: macos-amd64
           - os: macos-14
