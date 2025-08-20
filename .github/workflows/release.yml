@@ -31,3 +31,47 @@ jobs:
           body_path: RELEASE_NOTES.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-binaries:
+    runs-on: ${{ matrix.os }}
+    needs: draft-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: amd64
+          - os: ubuntu-latest
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      - name: Sync deps
+        run: uv sync --all-groups
+
+      - name: Build CLI (lite)
+        env:
+          PYINSTALLER_STRIP: "true"
+        run: |
+          uv run pyinstaller --clean -y packaging/chatty_cli_lite.spec
+          ls -lah dist
+
+      - name: Rename artifact per arch
+        shell: bash
+        run: |
+          NAME="chatty-lite-${{ matrix.arch }}"
+          mv dist/chatty-lite "$NAME"
+          echo "ARTIFACT=$NAME" >> $GITHUB_ENV
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ${{ env.ARTIFACT }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

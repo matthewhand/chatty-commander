@@ -46,6 +46,16 @@ api-docs:
 build-exe:
 	uv run pyinstaller --clean -y packaging/chatty_cli.spec
 
+.PHONY: build-exe-lite smoke-exe-lite
+
+build-exe-lite:
+	uv run pyinstaller --clean -y packaging/chatty_cli_lite.spec
+
+smoke-exe-lite:
+	@echo "Smoking built CLI (lite) in dist/ ..."
+	@chmod +x dist/chatty-lite || true
+	@./dist/chatty-lite --help >/dev/null || { echo "lite help failed"; exit 1; }
+
 build-exe-all:
 	@echo "Build matrix is handled in CI. Use 'make build-exe' locally."
 
