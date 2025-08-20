@@ -42,6 +42,10 @@ jobs:
             arch: amd64
           - os: ubuntu-latest
             arch: arm64
+          - os: macos-13
+            arch: macos-amd64
+          - os: macos-14
+            arch: macos-arm64
     steps:
       - uses: actions/checkout@v4
 
