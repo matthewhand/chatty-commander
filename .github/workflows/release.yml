@@ -71,7 +71,7 @@ jobs:
         env:
           PYINSTALLER_STRIP: "true"
         run: |
-          uv run pyinstaller --clean -y packaging/chatty_cli_lite.spec
+          pwd && ls -la packaging/ && uv run pyinstaller --clean -y packaging/chatty_cli_lite.spec
           ls -lah dist
 
       - name: Rename artifact per arch
