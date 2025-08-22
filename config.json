@@ -37,6 +37,10 @@
       "action": "keypress",
       "keys": "take_screenshot"
     },
+    "voice_chat": {
+      "action": "voice_chat",
+      "description": "Start a voice chat session with the AI assistant"
+    },
     "thanks_chat_tee": {
       "action": "custom_message",
       "message": "That'll do, bro"
@@ -166,5 +170,31 @@
     "final_test": true
   },
   "voice_only": false,
-  "default_state": "idle"
+  "default_state": "idle",
+  "model_actions": {
+    "lights_on": {
+      "action": "shell",
+      "shell": "echo 'Lights on' && echo 'Lights would be turned on here'"
+    },
+    "lights_off": {
+      "action": "shell",
+      "shell": "echo 'Lights off' && echo 'Lights would be turned off here'"
+    },
+    "voice_chat": {
+      "action": "voice_chat",
+      "description": "Start a voice chat session with the AI assistant"
+    },
+    "wax_poetic": {
+      "action": "custom_message",
+      "message": "The beauty of code lies not in its complexity, but in its elegance. Like poetry, the best programs speak volumes with minimal words."
+    },
+    "thanks_chat_tee": {
+      "action": "custom_message",
+      "message": "You're very welcome! I'm here to help make your computing experience more enjoyable and efficient."
+    },
+    "that_ill_do": {
+      "action": "custom_message",
+      "message": "Perfect! I've completed that task for you. Is there anything else you'd like me to help with?"
+    }
+  }
 }

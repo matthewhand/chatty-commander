@@ -192,6 +192,149 @@ def build_parser() -> argparse.ArgumentParser:
 
     gui_parser.set_defaults(func=gui_func)
 
+    # voice-chat
+    voice_chat_parser = subparsers.add_parser(
+        "voice-chat",
+        help="Start voice chat mode with GPT-OSS:20B, TTS/STT, and avatar integration.",
+        description=(
+            "Launch voice chat mode with full integration:\n"
+            "- Ollama with GPT-OSS:20B for LLM responses\n"
+            "- Whisper for speech-to-text\n"
+            "- pyttsx3 for text-to-speech\n"
+            "- 3D avatar with lip-sync\n\n"
+            "Example:\n  chatty-commander voice-chat"
+        ),
+    )
+
+    def voice_chat_func(args: argparse.Namespace) -> int:
+        """Start voice chat mode with complete integration."""
+        import logging
+
+        from chatty_commander.app.config import Config
+        from chatty_commander.app.state_manager import StateManager
+        from chatty_commander.avatars.thinking_state import ThinkingStateManager
+        from chatty_commander.llm.manager import LLMManager
+        from chatty_commander.voice.pipeline import VoicePipeline
+
+        # Setup logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+
+        try:
+            logger.info("Initializing voice chat mode...")
+
+            # Load configuration
+            config = Config()
+
+            # Initialize LLM manager with Ollama and GPT-OSS:20B
+            logger.info("Setting up LLM manager with Ollama...")
+            llm_manager = LLMManager(
+                preferred_backend="ollama",
+                ollama_model="gpt-oss:20b",
+                ollama_host="localhost:11434",
+            )
+
+            # Check if Ollama is available
+            if not llm_manager.is_available():
+                logger.error(
+                    "Ollama backend not available. Please ensure Ollama is running with gpt-oss:20b model."
+                )
+                logger.info("To install: ollama pull gpt-oss:20b")
+                return 1
+
+            logger.info(f"LLM backend ready: {llm_manager.get_active_backend_name()}")
+
+            # Initialize voice pipeline
+            logger.info("Setting up voice pipeline...")
+            voice_pipeline = VoicePipeline(
+                transcription_backend="whisper_local", tts_backend="pyttsx3", use_mock=False
+            )
+
+            # Check voice components
+            if not voice_pipeline.transcriber.is_available():
+                logger.warning(
+                    "Voice transcription not available. Install whisper: pip install openai-whisper"
+                )
+
+            if not voice_pipeline.tts.is_available():
+                logger.warning("TTS not available. Install pyttsx3: pip install pyttsx3")
+
+            # Initialize state manager for avatar
+            state_manager = StateManager()
+            thinking_state_manager = ThinkingStateManager()
+
+            # Initialize command executor with all components
+            command_executor = CommandExecutor(config, llm_manager, state_manager)
+
+            # Attach components to config for voice chat action
+            config.llm_manager = llm_manager
+            config.voice_pipeline = voice_pipeline
+            command_executor.state_manager = state_manager
+
+            # Start avatar GUI
+            logger.info("Starting avatar GUI...")
+            try:
+                import threading
+
+                from chatty_commander.avatars.avatar_gui import run_avatar_gui
+
+                # Start avatar in background thread
+                avatar_thread = threading.Thread(target=run_avatar_gui, daemon=True)
+                avatar_thread.start()
+                logger.info("Avatar GUI started")
+            except Exception as e:
+                logger.warning(f"Avatar GUI not available: {e}")
+
+            # Set initial state
+            from chatty_commander.avatars.thinking_state import ThinkingState
+
+            thinking_state_manager.set_agent_state(
+                "voice_chat_agent", ThinkingState.IDLE, "Voice chat ready"
+            )
+
+            logger.info("🎤 Voice chat mode activated!")
+            logger.info("💬 Say 'voice_chat' to start a conversation")
+            logger.info("🤖 The avatar will respond with GPT-OSS:20B")
+            logger.info("🔊 Press Ctrl+C to exit")
+
+            # Main voice chat loop
+            while True:
+                try:
+                    # Execute voice chat command
+                    success = command_executor.execute_command("voice_chat")
+
+                    if success:
+                        logger.info("Voice chat session completed")
+                    else:
+                        logger.warning("Voice chat session failed")
+
+                    # Small delay between sessions
+                    import time
+
+                    time.sleep(1)
+
+                except KeyboardInterrupt:
+                    logger.info("Voice chat mode stopped by user")
+                    break
+                except Exception as e:
+                    logger.error(f"Voice chat error: {e}")
+                    break
+
+            # Cleanup
+            from chatty_commander.avatars.thinking_state import ThinkingState
+
+            thinking_state_manager.set_agent_state(
+                "voice_chat_agent", ThinkingState.IDLE, "Voice chat ended"
+            )
+            logger.info("Voice chat mode ended")
+            return 0
+
+        except Exception as e:
+            logger.error(f"Failed to start voice chat mode: {e}")
+            return 1
+
+    voice_chat_parser.set_defaults(func=voice_chat_func)
+
     # config
     config_parser = subparsers.add_parser(
         "config",

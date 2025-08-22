@@ -222,6 +222,9 @@ class Config:
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
                 actions[name] = {"shell": f"echo {msg}"}
+            elif action_type == "voice_chat":
+                # Voice chat action - pass through the entire config
+                actions[name] = {"action": "voice_chat"}
         return actions
 
     # Convenience property for tests expecting top-level 'debug_mode'

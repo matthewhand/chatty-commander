@@ -231,3 +231,149 @@ class TestCoverageImprovementFocused:
         config = MagicMock()
         with patch('logging.error'):
             report_error(error, config=config)
+
+
+# Test 0% coverage modules
+def test_switch_mode_tool():
+    """Test the switch_mode tool function."""
+    from chatty_commander.advisors.tools.switch_mode import switch_mode
+
+    # Test valid mode
+    result = switch_mode("idle")
+    assert result == "SWITCH_MODE:idle"
+
+    # Test empty string
+    result = switch_mode("")
+    assert result == "SWITCH_MODE:invalid"
+
+    # Test whitespace
+    result = switch_mode("   ")
+    assert result == "SWITCH_MODE:invalid"
+
+    # Test None
+    result = switch_mode(None)
+    assert result == "SWITCH_MODE:invalid"
+
+    # Test complex mode
+    result = switch_mode("voice_assistant")
+    assert result == "SWITCH_MODE:voice_assistant"
+
+
+def test_legacy_cli_shim():
+    """Test the legacy CLI shim module."""
+    import warnings
+
+    from chatty_commander.cli import cli
+
+    # Test that cli_main is available
+    assert hasattr(cli, 'cli_main')
+
+    # Test that it's callable
+    assert callable(cli.cli_main)
+
+
+def test_legacy_command_executor_shim():
+    """Test the legacy command executor shim module."""
+    from chatty_commander import command_executor
+
+    # Test that pyautogui and requests are available (may be None)
+    assert hasattr(command_executor, 'pyautogui')
+    assert hasattr(command_executor, 'requests')
+
+    # Test that CommandExecutor is available via __getattr__
+    CommandExecutor = command_executor.__getattr__('CommandExecutor')
+    assert CommandExecutor is not None
+
+    # Test that invalid attributes raise AttributeError
+    with pytest.raises(AttributeError):
+        command_executor.__getattr__('InvalidName')
+
+
+def test_compat_module():
+    """Test the compat module."""
+    from chatty_commander import compat
+
+    # Test that the module exists and can be imported
+    assert compat is not None
+
+
+def test_legacy_config_modules():
+    """Test legacy config modules."""
+    from chatty_commander import config, default_config
+
+    # Test that modules exist and can be imported
+    assert config is not None
+    assert default_config is not None
+
+
+# Test low coverage areas in existing modules
+def test_command_executor_edge_cases():
+    """Test edge cases in command executor that aren't covered."""
+    from unittest.mock import MagicMock, patch
+
+    from chatty_commander.app.command_executor import CommandExecutor
+
+    # Create mock dependencies
+    mock_config = MagicMock()
+    mock_config.model_actions = {}  # Empty actions
+    mock_model_manager = MagicMock()
+    mock_state_manager = MagicMock()
+
+    executor = CommandExecutor(mock_config, mock_model_manager, mock_state_manager)
+    executor.tolerant_mode = True  # Enable tolerant mode
+
+    # Test with None command
+    result = executor.execute_command(None)
+    assert result is False
+
+    # Test with empty dict
+    result = executor.execute_command({})
+    assert result is False
+
+    # Test with invalid command type
+    result = executor.execute_command({"invalid": "command"})
+    assert result is False
+
+    # Test keypress with missing keys
+    result = executor.execute_command({"action": "keypress"})
+    assert result is False
+
+    # Test URL with missing url
+    result = executor.execute_command({"action": "url"})
+    assert result is False
+
+    # Test shell with missing command
+    result = executor.execute_command({"action": "shell"})
+    assert result is False
+
+
+def test_config_edge_cases():
+    """Test edge cases in config module."""
+    from unittest.mock import MagicMock, patch
+
+    from chatty_commander.app.config import Config
+
+    # Test config with invalid path
+    with patch('builtins.open', side_effect=FileNotFoundError):
+        config = Config("nonexistent.yaml")
+        assert config is not None
+
+    # Test config with invalid YAML - patch json.load to avoid the mock issue
+    with patch('json.load', side_effect=ValueError("Invalid JSON")):
+        config = Config("invalid.yaml")
+        assert config is not None
+
+
+def test_cli_edge_cases():
+    """Test edge cases in CLI module."""
+    from unittest.mock import patch
+
+    from chatty_commander.cli.cli import cli_main
+
+    # Test CLI with invalid arguments
+    with patch('sys.argv', ['chatty-commander', 'invalid-command']):
+        # This should not crash
+        try:
+            cli_main()
+        except SystemExit:
+            pass  # Expected for invalid commands

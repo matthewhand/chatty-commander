@@ -215,17 +215,32 @@ def run_gui_mode(
             rc = run_avatar_gui()
             return 0 if rc is None else int(rc)
         except Exception as e:
-            logger.warning(f"Avatar GUI unavailable ({e}); falling back to tray popup GUI")
+            logger.warning(f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI")
             try:
-                # Installed package path
-                from chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
-            except Exception:
-                # Repo-root execution fallback
-                from src.chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
+                # Try PyQt5-based transparent browser avatar
+                try:
+                    from chatty_commander.gui.pyqt5_avatar import run_pyqt5_avatar  # type: ignore
+                except Exception:
+                    from src.chatty_commander.gui.pyqt5_avatar import (
+                        run_pyqt5_avatar,  # type: ignore
+                    )
+                logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
+                rc = run_pyqt5_avatar(config, logger)
+                return 0 if rc is None else int(rc)
+            except Exception as e2:
+                logger.warning(
+                    f"PyQt5 Avatar GUI unavailable ({e2}); falling back to tray popup GUI"
+                )
+                try:
+                    # Installed package path
+                    from chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
+                except Exception:
+                    # Repo-root execution fallback
+                    from src.chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
 
-            logger.info("Starting GUI tray popup mode")
-            rc = run_tray_popup(config, logger)
-            return 0 if rc is None else int(rc)
+                logger.info("Starting GUI tray popup mode")
+                rc = run_tray_popup(config, logger)
+                return 0 if rc is None else int(rc)
     except Exception as e:
         logger.warning(f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI")
         try:

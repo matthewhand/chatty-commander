@@ -139,6 +139,14 @@ class CommandExecutor:
             message = command_action.get('message', '')
             logging.info(message)
             success = True
+        elif action_type == 'voice_chat':
+            # Handle voice chat with LLM and avatar
+            try:
+                success = self._execute_voice_chat(command_name, command_action)
+            except Exception as e:
+                logging.error("Voice chat execution failed")
+                logging.critical(f"Error in {command_name}: {e}")
+                success = False
         elif 'shell' in command_action:
             try:
                 cmd = command_action.get('shell', '')
@@ -283,6 +291,95 @@ class CommandExecutor:
         except Exception as e:
             logging.error(f"shell execution failed: {e}")
             self.report_error(command_name, str(e))
+
+    def _execute_voice_chat(self, command_name: str, command_action: dict) -> bool:
+        """Execute voice chat with LLM and avatar integration."""
+        try:
+            # Get LLM manager from config
+            llm_manager = getattr(self.config, 'llm_manager', None)
+            if not llm_manager:
+                logging.error("LLM manager not available for voice chat")
+                return False
+
+            # Get voice pipeline from config
+            voice_pipeline = getattr(self.config, 'voice_pipeline', None)
+            if not voice_pipeline:
+                logging.error("Voice pipeline not available for voice chat")
+                return False
+
+            # Get thinking state manager for avatar state updates
+            from chatty_commander.avatars.thinking_state import ThinkingState, get_thinking_manager
+
+            thinking_manager = get_thinking_manager()
+            thinking_manager.set_agent_state(
+                "voice_chat_agent", ThinkingState.LISTENING, "Voice chat activated"
+            )
+
+            # Start voice chat session
+            logging.info(f"Starting voice chat session: {command_name}")
+
+            # Process voice input and get LLM response
+            response = self._process_voice_chat(llm_manager, voice_pipeline)
+
+            if response:
+                # Update avatar state to "responding"
+                from chatty_commander.avatars.thinking_state import (
+                    ThinkingState,
+                    get_thinking_manager,
+                )
+
+                thinking_manager = get_thinking_manager()
+                thinking_manager.set_agent_state(
+                    "voice_chat_agent", ThinkingState.RESPONDING, response
+                )
+
+                # Speak the response
+                if voice_pipeline.tts.is_available():
+                    voice_pipeline.tts.speak(response)
+
+                logging.info(f"Voice chat completed: {command_name}")
+                return True
+            else:
+                logging.warning(f"Voice chat failed to generate response: {command_name}")
+                return False
+
+        except Exception as e:
+            logging.error(f"Voice chat execution failed: {e}")
+            return False
+
+    def _process_voice_chat(self, llm_manager, voice_pipeline) -> str | None:
+        """Process a voice chat session with LLM."""
+        try:
+            # Record and transcribe user input
+            logging.info("Listening for voice input...")
+            user_input = voice_pipeline.transcriber.record_and_transcribe()
+
+            if not user_input.strip():
+                logging.warning("No voice input detected")
+                return None
+
+            logging.info(f"User said: {user_input}")
+
+            # Generate LLM response
+            logging.info("Generating LLM response...")
+
+            # Create a conversational prompt
+            prompt = f"""You are a helpful AI assistant. The user said: "{user_input}"
+
+Please provide a natural, conversational response. Keep it concise but helpful."""
+
+            response = llm_manager.generate_response(prompt, max_tokens=200, temperature=0.7)
+
+            if response:
+                logging.info(f"LLM response: {response}")
+                return response
+            else:
+                logging.warning("LLM failed to generate response")
+                return None
+
+        except Exception as e:
+            logging.error(f"Voice chat processing failed: {e}")
+            return None
 
     def report_error(self, command_name: str, error_message: str) -> None:
         """
