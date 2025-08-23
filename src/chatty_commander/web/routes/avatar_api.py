@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import asyncio
+import logging
+import sys
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 _ALLOWED_EXTS = {
@@ -90,3 +94,48 @@ async def list_animations(
         raise
     except Exception as e:  # pragma: no cover - unexpected
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/avatar/launch")
+async def launch_avatar() -> dict[str, Any]:
+    """Launch the PyQt5 avatar in a separate process."""
+    try:
+        # Get the current Python executable and project root
+        python_exe = sys.executable
+        project_root = Path(__file__).resolve().parents[4]  # Go up to project root
+
+        # Command to launch the avatar
+        cmd = [python_exe, "-m", "src.chatty_commander.main", "--gui"]
+
+        logger.info(f"Launching avatar with command: {' '.join(cmd)}")
+        logger.info(f"Working directory: {project_root}")
+
+        # Launch the process in the background
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            cwd=str(project_root),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            start_new_session=True,  # Detach from parent process
+        )
+
+        # Don't wait for the process to complete, just check if it started
+        await asyncio.sleep(0.1)  # Give it a moment to start
+
+        if process.returncode is None:  # Process is still running
+            logger.info(f"Avatar process started successfully with PID: {process.pid}")
+            return {
+                "status": "success",
+                "message": "Avatar launched successfully",
+                "pid": process.pid,
+            }
+        else:
+            # Process exited immediately, capture error
+            stdout, stderr = await process.communicate()
+            error_msg = stderr.decode() if stderr else "Unknown error"
+            logger.error(f"Avatar process failed to start: {error_msg}")
+            raise HTTPException(status_code=500, detail=f"Avatar failed to start: {error_msg}")
+
+    except Exception as e:
+        logger.error(f"Failed to launch avatar: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to launch avatar: {str(e)}") from e

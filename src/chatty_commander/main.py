@@ -589,6 +589,30 @@ def main():
     state_manager = StateManager()
     command_executor = CommandExecutor(config, model_manager, state_manager)
 
+    # Initialize AI intelligence core for enhanced conversations
+    try:
+        from .ai import create_intelligence_core
+
+        ai_core = create_intelligence_core(config)
+
+        # Set up AI response handling
+        def handle_ai_response(response):
+            print(f"AI: {response.text}")
+            if response.actions:
+                print(f"Actions: {response.actions}")
+
+        ai_core.on_response = handle_ai_response
+        ai_core.on_mode_change = lambda mode: print(f"Mode changed to: {mode}")
+        ai_core.on_error = lambda error: print(f"AI Error: {error}")
+
+        print("🤖 AI Intelligence Core initialized successfully!")
+        print("🎤 Enhanced voice processing available")
+        print("💬 Intelligent conversation engine ready")
+
+    except Exception as e:
+        print(f"⚠️  AI Intelligence Core initialization failed: {e}")
+        ai_core = None
+
     # Route to appropriate mode
     if getattr(args, "config", False):
         from chatty_commander.config_cli import ConfigCLI

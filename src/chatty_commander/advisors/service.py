@@ -5,8 +5,10 @@ from typing import Any
 
 from ..avatars.thinking_state import get_thinking_manager
 from .context import ContextManager, PlatformType
+from .conversation_engine import create_conversation_engine
 from .memory import MemoryStore
-from .prompting import Persona, build_provider_prompt
+
+# from .prompting import build_provider_prompt  # Currently unused
 from .providers import build_provider_safe
 
 
@@ -59,6 +61,9 @@ class AdvisorsService:
         # Check if advisors are enabled
         self.enabled = base_cfg.get('enabled', False)
 
+        # Initialize conversation engine for enhanced AI interactions
+        self.conversation_engine = create_conversation_engine(base_cfg)
+
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
         """Process an incoming message and return an advisor response.
 
@@ -101,9 +106,6 @@ class AdvisorsService:
             )
             combined_user_text = f"{history_text}\n{message.text}" if history_text else message.text
 
-            persona = Persona(name=context.persona_id, system=context.system_prompt)
-            prompt = build_provider_prompt(self.provider.api_mode, persona, combined_user_text)
-
             # Update to processing state
             thinking_manager.start_processing(agent_id, "Generating response...")
 
@@ -118,18 +120,45 @@ class AdvisorsService:
 
             # Generate real LLM response
             try:
-                response = self.provider.generate(prompt)
-                # Lightweight directive handling for tool-like replies
-                if isinstance(response, str) and response.startswith("SWITCH_MODE:"):
-                    _, target = response.split(":", 1)
-                    # Allow advisors to request a mode change via response directive
-                    from ..app.state_manager import StateManager  # local import to avoid cycles
+                # Get persona configuration for enhanced conversation
+                persona_config = self.config.get("personas", {}).get(context.persona_id, {})
+                if isinstance(persona_config, str):
+                    persona_config = {"prompt": persona_config, "name": context.persona_id}
 
-                    try:
-                        sm = StateManager()
-                        sm.change_state(target)
-                    except Exception:
-                        pass
+                # Use conversation engine for enhanced prompt building
+                enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
+                    user_input=combined_user_text,
+                    user_id=f"{message.platform}:{message.channel}:{message.user}",
+                    persona_config=persona_config,
+                    current_mode=getattr(self.config, 'current_mode', 'chatty'),
+                )
+
+                response = self.provider.generate(enhanced_prompt)
+
+                # Enhanced directive handling for tool-like replies
+                if isinstance(response, str) and "SWITCH_MODE:" in response:
+                    lines = response.split('\n')
+                    for line in lines:
+                        if line.strip().startswith("SWITCH_MODE:"):
+                            _, target = line.strip().split(":", 1)
+                            try:
+                                from ..app.state_manager import StateManager
+
+                                sm = StateManager()
+                                sm.change_state(target.strip())
+                                response = response.replace(
+                                    line, f"✓ Switched to {target.strip()} mode"
+                                )
+                            except Exception as e:
+                                response = response.replace(line, f"✗ Mode switch failed: {e}")
+
+                # Record conversation for future context
+                self.conversation_engine.record_conversation_turn(
+                    user_id=f"{message.platform}:{message.channel}:{message.user}",
+                    user_input=message.text,
+                    assistant_response=response,
+                    context={"persona_id": context.persona_id, "platform": message.platform},
+                )
             except Exception as e:
                 # Fallback to echo if LLM fails
                 response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text} (LLM error: {str(e)})"
