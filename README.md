@@ -1,90 +1,7 @@
-# Chatty Commander
+# ChattyCommander
 
-A powerful AI assistant framework with voice control, 3D avatars, and multi-modal interaction capabilities.
-
-## 🎤 Voice Chat with GPT-OSS:20B
-
-Chatty Commander now supports full voice conversation with GPT-OSS:20B through Ollama integration!
-
-### Features
-
-- **🤖 GPT-OSS:20B Integration**: Local LLM via Ollama for uncensored, private conversations
-- **🎙️ Speech-to-Text**: Whisper-based voice transcription
-- **🔊 Text-to-Speech**: Natural voice synthesis with pyttsx3
-- **👤 3D Avatar**: Real-time avatar with lip-sync and state animations
-- **🔄 Real-time Processing**: Continuous voice chat with state management
-
-### Quick Start
-
-1. **Install Ollama and GPT-OSS:20B**:
-
-   ```bash
-   # Install Ollama (https://ollama.ai)
-   curl -fsSL https://ollama.ai/install.sh | sh
-
-   # Pull the GPT-OSS:20B model
-   ollama pull gpt-oss:20b
-   ```
-
-2. **Install Voice Dependencies**:
-
-   ```bash
-   # Install Whisper for speech-to-text
-   pip install openai-whisper
-
-   # Install pyttsx3 for text-to-speech
-   pip install pyttsx3
-   ```
-
-3. **Start Voice Chat**:
-   ```bash
-   # Launch voice chat mode
-   chatty-commander voice-chat
-   ```
-
-### How It Works
-
-1. **Voice Input**: Speak naturally - Whisper transcribes your voice to text
-2. **LLM Processing**: GPT-OSS:20B generates contextual responses
-3. **Avatar Animation**: 3D avatar shows listening/responding states
-4. **Voice Output**: AI response is spoken back to you
-5. **Continuous Loop**: Ready for the next conversation turn
-
-### Avatar States
-
-The 3D avatar responds to different states:
-
-- **🎧 Listening**: When processing your voice input
-- **🤔 Thinking**: When GPT-OSS:20B is generating a response
-- **💬 Responding**: When speaking the AI response
-- **😴 Idle**: Waiting for the next interaction
-
-### Configuration
-
-The voice chat system is configured in `config.json`:
-
-```json
-{
-  "model_actions": {
-    "voice_chat": {
-      "action": "voice_chat",
-      "description": "Start a voice chat session with the AI assistant"
-    }
-  }
-}
-```
-
-### Troubleshooting
-
-- **Ollama not found**: Ensure Ollama is running (`ollama serve`)
-- **Model not available**: Run `ollama pull gpt-oss:20b`
-- **Audio issues**: Check microphone permissions and audio drivers
-- **Avatar not showing**: Install GUI dependencies for your platform
-
-## 🚀 Core Features
-
-[![CI](https://github.com/matthewhand/chatty-commander/actions/workflows/ci.yml/badge.svg)](https://github.com/matthewhand/chatty-commander/actions)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](https://github.com/matthewhand/chatty-commander)
+[![CI](https://github.com/your-org/chatty-commander/workflows/CI/badge.svg)](https://github.com/your-org/chatty-commander/actions)
+[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](https://github.com/your-org/chatty-commander)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
 
 ChattyCommander is a multi-mode assistant that turns voice and typed commands into useful actions across your system. It ships with:
@@ -144,19 +61,6 @@ Actions are the core functionalities ChattyCommander performs in response to rec
 - **System Commands**: Executing shell commands directly on your operating system.
 
 Each recognized voice command is mapped to a specific action within the `config.py` file, allowing for flexible and customizable responses.
-
-#### Action schema (legacy and structured)
-
-Model actions support two equivalent schemas:
-
-- Legacy (flat):
-  - `{"okay_stop": {"keypress": ["ctrl", "shift", ";"]}}`
-  - `{"lights_on": {"url": "http://..."}}`
-- Structured (action-style):
-  - `{"okay_stop": {"action": "keypress", "keys": "ctrl+shift+;"}}`
-  - `{"lights_on": {"action": "url", "url": "http://..."}}`
-
-URL actions in structured form use a default timeout to improve robustness. In tests or mixed schemas, the executor has a tolerant mode that returns False for invalid/missing commands instead of raising in certain coverage scenarios.
 
 ### Voice Files (ONNX Models)
 
@@ -257,11 +161,6 @@ The GUI provides:
 - **Service Control**: Start/stop the ChattyCommander service directly from the GUI
 - **Real-time Monitoring**: View service logs and status in real-time
 - **Configuration Testing**: Validate your configuration before running
-- **Avatar Modes**: Multiple avatar display options with automatic fallback:
-  - **TalkingHead Avatar**: Primary pywebview-based transparent avatar window
-  - **PyQt5 Avatar**: Transparent browser window with system tray support
-  - **Tray Popup**: System tray with popup interface
-  - **Legacy GUI**: Traditional tkinter-based interface
 
 #### GUI Features
 
@@ -416,6 +315,16 @@ curl -s -X DELETE http://localhost:8100/api/v1/agents/blueprints/<ID> | jq
 
 Run the consolidated smoke script: `bash scripts/e2e_smoke.sh`
 
+## Configuration Examples
+
+ChattyCommander supports multiple configuration profiles for different use cases:
+
+- **🎤 Voice-Only**: Minimal setup for controlling external apps like codex-cli with pure voice commands
+- **🤖 Full Assistant**: Complete smart home and productivity assistant with web UI
+- **💻 Developer Tools**: Voice-controlled git, testing, and IDE integration
+
+See [Configuration Examples](docs/CONFIGURATION_EXAMPLES.md) for detailed setup guides and video demonstrations.
+
 ```
 curl -s http://localhost:8100/metrics/json | jq
 ```
@@ -455,34 +364,6 @@ When no configuration is detected, the system automatically generates:
 - `config.json` - Main configuration file containing commands, keybindings, and settings
 - `wakewords/` - Central directory for wakeword ONNX model files
 - Model directories (`models-idle`, `models-computer`, `models-chatty`) - Contains symlinks to wakeword files for different states
-
-#### Avatar Configuration
-
-The PyQt5 avatar mode supports additional configuration options:
-
-```json
-{
-  "gui": {
-    "pyqt5_avatar": {
-      "url": "file:///src/chatty_commander/webui/avatar/index.html",
-      "width": 400,
-      "height": 300,
-      "x": 100,
-      "y": 100,
-      "transparent": true,
-      "always_on_top": true,
-      "system_tray": true
-    }
-  }
-}
-```
-
-- `url`: Path to the avatar HTML interface
-- `width`/`height`: Window dimensions
-- `x`/`y`: Initial window position
-- `transparent`: Enable window transparency
-- `always_on_top`: Keep avatar window above other windows
-- `system_tray`: Enable system tray integration
 
 ChattyCommander can be configured dynamically using the CLI tool via the `chatty` command. This allows you to update `config.json` interactively or non-interactively.
 

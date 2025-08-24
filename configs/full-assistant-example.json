@@ -1,0 +1,89 @@
+{
+  "profile_name": "Full AI Assistant",
+  "description": "Complete ChattyCommander setup with voice, web UI, avatar, and smart home integration",
+  
+  "default_state": "idle",
+  
+  "model_actions": {
+    "hello": {
+      "message": {
+        "text": "Hello! How can I help you today?"
+      }
+    },
+    "lights_on": {
+      "url": {
+        "url": "http://homeassistant.local:8123/api/services/light/turn_on",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer YOUR_HA_TOKEN"
+        },
+        "data": {
+          "entity_id": "light.living_room"
+        }
+      }
+    },
+    "lights_off": {
+      "url": {
+        "url": "http://homeassistant.local:8123/api/services/light/turn_off",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer YOUR_HA_TOKEN"
+        },
+        "data": {
+          "entity_id": "light.living_room"
+        }
+      }
+    },
+    "play_music": {
+      "keypress": {
+        "keys": "cmd+space",
+        "description": "Open Spotlight to search for music app"
+      }
+    },
+    "weather": {
+      "url": {
+        "url": "https://api.openweathermap.org/data/2.5/weather?q=London&appid=YOUR_API_KEY"
+      }
+    },
+    "time": {
+      "message": {
+        "text": "The current time is: ${current_time}"
+      }
+    }
+  },
+
+  "voice": {
+    "enabled": true,
+    "wake_words": ["hey_jarvis", "computer", "assistant"],
+    "transcription_backend": "whisper_local",
+    "confidence_threshold": 0.7,
+    "silence_timeout": 1.5,
+    "record_timeout": 8.0
+  },
+
+  "ui": {
+    "web_enabled": true,
+    "web_port": 8100,
+    "gui_enabled": true,
+    "avatar_enabled": true,
+    "notifications": "full"
+  },
+
+  "integrations": {
+    "home_assistant": {
+      "enabled": true,
+      "url": "http://homeassistant.local:8123",
+      "token": "YOUR_HA_TOKEN"
+    },
+    "openai": {
+      "enabled": true,
+      "api_key": "YOUR_OPENAI_KEY",
+      "model": "gpt-4"
+    }
+  },
+
+  "api_endpoints": {
+    "chatbot_endpoint": "https://api.openai.com/v1/chat/completions",
+    "home_assistant": "http://homeassistant.local:8123/api"
+  }
+}
