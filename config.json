@@ -37,10 +37,6 @@
       "action": "keypress",
       "keys": "take_screenshot"
     },
-    "voice_chat": {
-      "action": "voice_chat",
-      "description": "Start a voice chat session with the AI assistant"
-    },
     "thanks_chat_tee": {
       "action": "custom_message",
       "message": "That'll do, bro"
@@ -80,24 +76,24 @@
   },
   "api_endpoints": {
     "home_assistant": "http://homeassistant.domain.home:8123/api",
-    "chatbot_endpoint": "https://ubuntu-gtx.domain.home/"
+    "chatbot_endpoint": "http://localhost:3100/"
   },
-  "modes": {
-    "_notes": "Modes are flexible: define wakewords, persona (OpenAI-Agents), and tools per mode",
+  "state_transitions": {
     "idle": {
-      "wakewords": ["hey_chat_tee", "hey_khum_puter", "okay_stop"],
-      "persona": null,
-      "tools": ["keypress", "http"]
+      "hey_chat_tee": "chatty",
+      "hey_khum_puter": "computer",
+      "toggle_mode": "computer"
     },
     "computer": {
-      "wakewords": ["oh_kay_screenshot", "okay_stop"],
-      "persona": null,
-      "tools": ["keypress"]
+      "okay_stop": "idle",
+      "that_ill_do": "idle",
+      "toggle_mode": "chatty"
     },
     "chatty": {
-      "wakewords": [],
-      "persona": "chatty",
-      "tools": ["avatar_talkinghead", "tts", "stt"]
+      "okay_stop": "idle",
+      "thanks_chat_tee": "idle",
+      "hey_khum_puter": "computer",
+      "toggle_mode": "idle"
     }
   },
   "state_models": {
@@ -117,84 +113,45 @@
     "chatty": "models-chatty"
   },
   "audio_settings": {
-    "mic_chunk_size": 2048,
+    "mic_chunk_size": 1024,
     "sample_rate": 16000,
     "audio_format": "int16"
   },
   "general_settings": {
-    "debug_mode": false,
+    "debug_mode": true,
     "default_state": "idle",
     "inference_framework": "onnx",
     "start_on_boot": false,
     "check_for_updates": true
   },
-  "state_transitions": {
-    "idle": {
-      "hey_chat_tee": "chatty",
-      "hey_khum_puter": "computer",
-      "toggle_mode": "computer"
-    },
-    "computer": {
-      "okay_stop": "idle",
-      "that_ill_do": "idle",
-      "toggle_mode": "chatty"
-    },
-    "chatty": {
-      "okay_stop": "idle",
-      "hey_khum_puter": "computer",
-      "thanks_chat_tee": "idle",
-      "that_ill_do": "idle",
-      "toggle_mode": "idle"
-    }
-  },
-  "foo": {
-    "bar": 1
-  },
-  "web_server": {
-    "host": "0.0.0.0",
-    "port": 8100,
-    "auth_enabled": false
+  "logging": {
+    "level": "INFO",
+    "format": "plain",
+    "handlers": ["console", "file"],
+    "file": "logs/chattycommander.log",
+    "telemetry_url": "",
+    "external_url": "",
+    "diagnostics_file": "logs/diagnostics.jsonl"
   },
   "general": {
+    "test": "value",
     "check_for_updates": true,
+    "debug_mode": true,
+    "final_test": true,
     "test_key": "test_value",
     "git_test": true,
-    "debug_mode": true,
     "custom_setting": "custom_value",
     "another_key": "another_value",
     "inference_framework": "custom",
     "start_on_boot": true,
     "test_bool": true,
-    "test_int": 42,
-    "test": "value",
-    "final_test": true
+    "test_int": 42
+  },
+  "web_server": {
+    "host": "0.0.0.0",
+    "port": 8100,
+    "auth_enabled": true
   },
   "voice_only": false,
-  "default_state": "idle",
-  "model_actions": {
-    "lights_on": {
-      "action": "shell",
-      "shell": "echo 'Lights on' && echo 'Lights would be turned on here'"
-    },
-    "lights_off": {
-      "action": "shell",
-      "shell": "echo 'Lights off' && echo 'Lights would be turned off here'"
-    },
-    "voice_chat": {
-      "action": "voice_chat",
-      "description": "Start a voice chat session with the AI assistant"
-    },
-    "wax_poetic": {
-      "action": "custom_message",
-      "message": "The beauty of code lies not in its complexity, but in its elegance. Like poetry, the best programs speak volumes with minimal words."
-    },
-    "thanks_chat_tee": {
-      "action": "custom_message",
-      "message": "You're very welcome! I'm here to help make your computing experience more enjoyable and efficient."
-    },
-    "that_ill_do": {
-      "action": "custom_message",
-      "message": "Perfect! I've completed that task for you. Is there anything else you'd like me to help with?"
-    }
-  }
+  "default_state": "idle"
 }

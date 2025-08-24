@@ -131,8 +131,28 @@ class ConversationEngine:
         )
         persona_style = persona_config.get("style", "casual and engaging")
 
-        # Build system prompt
-        system_prompt = f"""You are {persona_name}, an advanced AI assistant with the following characteristics:
+        # Build system prompt - use persona system_prompt if available, otherwise build default
+        if "system_prompt" in persona_config:
+            base_system_prompt = persona_config["system_prompt"]
+            # Add context and analysis to the persona's system prompt
+            system_prompt = f"""{base_system_prompt}
+
+CONVERSATION CONTEXT:
+{context if context else "This is the start of our conversation."}
+
+CURRENT ANALYSIS:
+- User Intent: {intent}
+- Sentiment: {sentiment}
+
+INSTRUCTIONS:
+1. Respond naturally and conversationally
+2. Remember context from our conversation
+3. If asked to switch modes, use: SWITCH_MODE:mode_name
+4. Be helpful but also engaging and personable
+5. Adapt your response style to the user's sentiment"""
+        else:
+            # Fallback to default system prompt
+            system_prompt = f"""You are {persona_name}, an advanced AI assistant with the following characteristics:
 
 PERSONALITY TRAITS: {', '.join(persona_traits)}
 COMMUNICATION STYLE: {persona_style}

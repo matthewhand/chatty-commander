@@ -49,11 +49,11 @@ class TestVoiceChatIntegration:
                     mock_state_manager = Mock()
                     mock_state_manager_class.return_value = mock_state_manager
 
-                    # Initialize components
+                    # Initialize components using the mocked classes
                     config = Config()
-                    llm_manager = LLMManager(preferred_backend="ollama")
-                    voice_pipeline = VoicePipeline()
-                    state_manager = StateManager()
+                    llm_manager = mock_llm_manager_class(preferred_backend="ollama")
+                    voice_pipeline = mock_voice_pipeline_class()
+                    state_manager = mock_state_manager_class()
 
                     # Verify components were created
                     assert llm_manager is not None
@@ -73,8 +73,11 @@ class TestVoiceChatIntegration:
         config.voice_pipeline = Mock()
 
         # Setup voice pipeline mock
-        config.voice_pipeline.record_and_transcribe.return_value = "Hello, how are you?"
+        config.voice_pipeline.transcriber = Mock()
+        config.voice_pipeline.transcriber.record_and_transcribe.return_value = "Hello, how are you?"
+        config.voice_pipeline.tts = Mock()
         config.voice_pipeline.tts.is_available.return_value = True
+        config.voice_pipeline.tts.speak = Mock()
 
         # Setup LLM manager mock
         config.llm_manager.generate_response.return_value = "I'm doing well, thank you for asking!"
@@ -90,7 +93,7 @@ class TestVoiceChatIntegration:
         assert result is True
 
         # Verify voice pipeline was called
-        config.voice_pipeline.record_and_transcribe.assert_called_once()
+        config.voice_pipeline.transcriber.record_and_transcribe.assert_called_once()
 
         # Verify LLM was called
         config.llm_manager.generate_response.assert_called_once()
@@ -141,7 +144,9 @@ class TestVoiceChatIntegration:
         config.voice_pipeline = Mock()
 
         # Setup voice pipeline to return empty input
-        config.voice_pipeline.record_and_transcribe.return_value = ""
+        config.voice_pipeline.transcriber = Mock()
+        config.voice_pipeline.transcriber.record_and_transcribe.return_value = ""
+        config.voice_pipeline.tts = Mock()
         config.voice_pipeline.tts.is_available.return_value = True
 
         # Create command executor

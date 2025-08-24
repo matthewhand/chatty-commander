@@ -121,7 +121,11 @@ class AdvisorsService:
             # Generate real LLM response
             try:
                 # Get persona configuration for enhanced conversation
-                persona_config = self.config.get("personas", {}).get(context.persona_id, {})
+                # Check both direct personas and context.personas for backward compatibility
+                personas_dict = self.config.get("personas", {}) or self.config.get(
+                    "context", {}
+                ).get("personas", {})
+                persona_config = personas_dict.get(context.persona_id, {})
                 if isinstance(persona_config, str):
                     persona_config = {"prompt": persona_config, "name": context.persona_id}
 
