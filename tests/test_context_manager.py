@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import pytest
+
 from chatty_commander.advisors.context import (
     ContextIdentity,
     ContextManager,

@@ -1,6 +1,7 @@
+from fastapi.testclient import TestClient
+
 from chatty_commander.web.routes.agents import AgentBlueprintModel
 from chatty_commander.web.server import create_app
-from fastapi.testclient import TestClient
 
 
 def test_update_blueprint_nonexistent_returns_404():

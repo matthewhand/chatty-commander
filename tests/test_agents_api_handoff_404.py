@@ -1,5 +1,6 @@
-from chatty_commander.web.server import create_app
 from fastapi.testclient import TestClient
+
+from chatty_commander.web.server import create_app
 
 
 def test_handoff_between_missing_agents_returns_404():

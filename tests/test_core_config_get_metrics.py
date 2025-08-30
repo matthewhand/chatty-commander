@@ -1,5 +1,6 @@
-from chatty_commander.web.web_mode import create_app
 from fastapi.testclient import TestClient
+
+from chatty_commander.web.web_mode import create_app
 
 
 def test_config_get_increments_metrics():

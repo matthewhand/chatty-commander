@@ -1,5 +1,6 @@
-from chatty_commander.web.server import create_app
 from fastapi.testclient import TestClient
+
+from chatty_commander.web.server import create_app
 
 
 def test_metrics_json_and_prom_exposed_and_populated():

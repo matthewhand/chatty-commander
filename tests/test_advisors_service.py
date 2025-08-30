@@ -1,4 +1,5 @@
 import pytest
+
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
 
 

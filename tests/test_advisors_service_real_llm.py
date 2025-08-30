@@ -5,6 +5,7 @@ Tests for AdvisorsService with real LLM integration.
 from unittest.mock import Mock, patch
 
 import pytest
+
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorReply, AdvisorsService
 
 

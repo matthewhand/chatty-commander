@@ -1,6 +1,7 @@
 import asyncio
 
 import pytest
+
 from chatty_commander.avatars.thinking_state import ThinkingState, ThinkingStateManager
 
 

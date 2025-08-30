@@ -5,8 +5,9 @@ Integration tests for context-aware web API endpoints.
 from unittest.mock import MagicMock, patch
 
 import pytest
-from chatty_commander.web.web_mode import WebModeServer
 from fastapi.testclient import TestClient
+
+from chatty_commander.web.web_mode import WebModeServer
 
 
 class TestWebContextAPI:

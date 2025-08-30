@@ -5,6 +5,7 @@ Tests for real LLM provider implementations.
 from unittest.mock import Mock, patch
 
 import pytest
+
 from chatty_commander.advisors.providers import (
     CompletionProvider,
     FallbackProvider,

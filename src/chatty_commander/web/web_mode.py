@@ -41,6 +41,22 @@ from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.ws import include_ws_routes
 
+# Avatar routes (optional)
+try:
+    from chatty_commander.web.routes.avatar_api import router as avatar_api_router
+except ImportError:
+    avatar_api_router = None
+
+try:
+    from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
+except ImportError:
+    avatar_ws_router = None
+
+try:
+    from chatty_commander.web.routes.avatar_selector import router as avatar_selector_router
+except ImportError:
+    avatar_selector_router = None
+
 try:
     from .routes.agents import router as agents_router
 except ImportError:
@@ -173,6 +189,18 @@ class WebModeServer:
 
         # Version endpoint
         app.include_router(version_router)
+
+        # Agents endpoints
+        if agents_router:
+            app.include_router(agents_router)
+
+        # Avatar endpoints
+        if avatar_api_router:
+            app.include_router(avatar_api_router)
+        if avatar_ws_router:
+            app.include_router(avatar_ws_router)
+        if avatar_selector_router:
+            app.include_router(avatar_selector_router)
 
         # WebSocket endpoint using extracted router
         ws = include_ws_routes(

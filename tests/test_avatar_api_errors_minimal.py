@@ -1,5 +1,6 @@
-from chatty_commander.web.web_mode import create_app
 from fastapi.testclient import TestClient
+
+from chatty_commander.web.web_mode import create_app
 
 
 def test_avatar_animations_nonexistent_dir_returns_404_minimal():
