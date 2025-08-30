@@ -77,19 +77,32 @@ class TestPerformanceBenchmarks:
         """Create WebModeServer for performance testing."""
         with patch(
             'chatty_commander.advisors.providers.build_provider_safe'
-        ) as mock_build_provider:
+        ) as mock_build_provider, patch(
+            'chatty_commander.web.web_mode.WebModeServer._create_app'
+        ) as mock_create_app:
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
             mock_provider.api_mode = "completion"
             mock_build_provider.return_value = mock_provider
+
             config, state_manager, model_manager, command_executor = mock_managers
-            return WebModeServer(
+
+            # Create server with rate limiting disabled for performance tests
+            server = WebModeServer(
                 config_manager=config,
                 state_manager=state_manager,
                 model_manager=model_manager,
                 command_executor=command_executor,
                 no_auth=True,
             )
+
+            # Mock the app creation to skip rate limiting middleware
+            mock_app = MagicMock()
+            mock_app.get = MagicMock(return_value=MagicMock(status_code=200, json=lambda: {"status": "ok"}))
+            mock_create_app.return_value = mock_app
+            server.app = mock_app
+
+            return server
 
     @pytest.fixture
     def test_client(self, web_server):

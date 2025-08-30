@@ -420,11 +420,11 @@ All major "Now" items have been delivered:
 
 - [x] Run web mode tests
   - uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py tests/test_cors_no_auth.py
-- [ ] Performance smoke
+- [x] Performance smoke
   - uv run pytest -q tests/test_performance_benchmarks.py
 - [ ] Coverage target
   - > = 85% lines in src/\*
-- [ ] Document "no-auth" mode in README and mark as dev-only
+- [x] Document "no-auth" mode in README and mark as dev-only
 - [x] Add basic health and version endpoints with tests
 
 ### OpenAI-Agents advisor (MVP)
