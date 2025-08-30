@@ -20,7 +20,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, WebSocket
+try:
+    import uvicorn
+except ImportError:
+    uvicorn = None
+
+from fastapi import FastAPI, Header, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -35,6 +40,11 @@ from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.ws import include_ws_routes
+
+try:
+    from .routes.agents import router as agents_router
+except ImportError:
+    agents_router = None
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -111,6 +121,24 @@ class WebModeServer:
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+    def run(self, host: str | None = None, port: int | None = None) -> None:
+        """Run the web server."""
+        if uvicorn is None:
+            raise ImportError("uvicorn is not available")
+
+        # Use config values if available
+        if host is None and hasattr(self.config_manager, 'web_server'):
+            host = self.config_manager.web_server.get('host', '0.0.0.0')
+        if host is None:
+            host = '0.0.0.0'
+
+        if port is None and hasattr(self.config_manager, 'web_server'):
+            port = self.config_manager.web_server.get('port', 8100)
+        if port is None:
+            port = 8100
+
+        uvicorn.run(self.app, host=host, port=port)
+
     # --------------------------
     # App and routing
     # --------------------------
@@ -167,6 +195,9 @@ class WebModeServer:
         # Advisors endpoints (if service available)
         self._register_advisors_routes(app)
 
+        # Bridge endpoints for external integrations
+        self._register_bridge_routes(app)
+
         # Serve static web UI (optional)
         frontend_path = Path("webui/frontend/dist")
         if frontend_path.exists():
@@ -203,7 +234,7 @@ class WebModeServer:
 
     def _register_advisors_routes(self, app: FastAPI) -> None:
         """Register advisors REST endpoints backed by AdvisorsService."""
-        # Types for request/response
+
         class AdvisorInbound(BaseModel):
             platform: str
             channel: str
@@ -277,6 +308,22 @@ class WebModeServer:
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             stats = svc.get_context_stats()
             return ContextStats(**stats)
+
+    def _register_bridge_routes(self, app: FastAPI) -> None:
+        """Register bridge endpoints for external integrations."""
+
+        @app.post("/bridge/event")
+        async def bridge_event(
+            event: dict[str, Any],
+            x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
+        ):
+            # Check for bridge token in header
+            expected_token = "secret"  # TODO: Make configurable
+            if not x_bridge_token or x_bridge_token != expected_token:
+                raise HTTPException(status_code=401, detail="Invalid bridge token")
+
+            # For now, just echo back the event
+            return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 
     # --------------------------
     # Broadcast helpers and callbacks
@@ -382,3 +429,22 @@ def create_app(
         mm = model_manager or ModelManager(cfg)
         ce = command_executor or CommandExecutor(cfg, mm, sm)
         return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth).app
+
+
+def run_server(
+    config_manager: Config,
+    state_manager: StateManager,
+    model_manager: ModelManager,
+    command_executor: CommandExecutor,
+    host: str = "0.0.0.0",
+    port: int = 8100,
+    no_auth: bool = False,
+) -> None:
+    """Run the web server with uvicorn."""
+    if uvicorn is None:
+        raise ImportError("uvicorn is not available")
+
+    app = WebModeServer(
+        config_manager, state_manager, model_manager, command_executor, no_auth=no_auth
+    ).app
+    uvicorn.run(app, host=host, port=port)

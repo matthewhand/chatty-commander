@@ -16,8 +16,8 @@ import pytest
 import requests
 import websockets
 from fastapi.testclient import TestClient
-from web_mode import WebModeServer
 
+from chatty_commander.web.web_mode import WebModeServer
 from config import Config
 
 # Configure logging
