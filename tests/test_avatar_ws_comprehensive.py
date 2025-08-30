@@ -26,8 +26,10 @@ from src.chatty_commander.web.routes.avatar_ws import (
 class TestAvatarWSConnectionManager:
     """Test AvatarWSConnectionManager functionality."""
 
-    def test_init_without_theme_resolver(self):
+    @patch('src.chatty_commander.web.routes.avatar_ws.get_thinking_manager')
+    def test_init_without_theme_resolver(self, mock_get_thinking_manager):
         """Test manager initialization without theme resolver."""
+        mock_get_thinking_manager.return_value = None
         mgr = AvatarWSConnectionManager()
         assert mgr.active_connections == []
         assert mgr.theme_resolver is None
@@ -61,7 +63,10 @@ class TestAvatarWSConnectionManager:
         new_manager = Mock()
         mock_get_thinking_manager.return_value = new_manager
 
-        mgr = AvatarWSConnectionManager()
+        # Create manager without calling constructor's _ensure_manager
+        mgr = AvatarWSConnectionManager.__new__(AvatarWSConnectionManager)
+        mgr.active_connections = []
+        mgr.theme_resolver = None
         mgr._registered_manager = old_manager
 
         result = mgr._ensure_manager()
@@ -293,12 +298,12 @@ class TestAvatarAudioQueue:
         mock_manager = Mock()
         queue = AvatarAudioQueue(mock_manager)
 
-        audio_data = b"fake audio data" * 100  # 1600 bytes
+        audio_data = b"fake audio data" * 100  # 1500 bytes
 
         with patch('asyncio.sleep') as mock_sleep:
             await queue._play_audio(audio_data)
-            # Should sleep for roughly 1.6 seconds (1600 bytes / 1000)
-            mock_sleep.assert_called_once_with(1.6)
+            # Should sleep for 1.5 seconds (1500 bytes / 1000)
+            mock_sleep.assert_called_once_with(1.5)
 
     @pytest.mark.asyncio
     async def test_play_audio_without_audio(self):
@@ -333,6 +338,9 @@ class TestAvatarAudioQueue:
         # Mock current playing task
         mock_task = AsyncMock()
         mock_task.done.return_value = False
+        mock_task.cancel = Mock()
+        # Make awaiting the cancelled task raise CancelledError
+        mock_task.side_effect = asyncio.CancelledError()
         queue._current_play_task = mock_task
 
         with patch.object(queue, '_ensure_processor') as mock_ensure:

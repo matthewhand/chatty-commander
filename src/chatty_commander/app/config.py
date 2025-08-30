@@ -13,6 +13,7 @@ class Config:
     def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
+        self._validate_config()
         # Expose the raw dict for web handlers/tests that expect it
         self.config: dict[str, Any] = self.config_data
 
@@ -48,6 +49,49 @@ class Config:
         self.voice_only: bool = bool(self.config_data.get("voice_only", False))
 
         # Audio configuration
+
+    def _validate_config(self) -> None:
+        """Validate configuration data and log warnings for potential issues."""
+        # Validate state models
+        if not isinstance(self.state_models, dict):
+            logger.warning("state_models should be a dictionary")
+            self.state_models = {}
+
+        # Validate API endpoints
+        if not isinstance(self.api_endpoints, dict):
+            logger.warning("api_endpoints should be a dictionary")
+            self.api_endpoints = {}
+
+        # Validate commands
+        if not isinstance(self.commands, dict):
+            logger.warning("commands should be a dictionary")
+            self.commands = {}
+
+        # Check for deprecated or invalid configurations
+        if "deprecated_field" in self.config_data:
+            logger.warning("Found deprecated configuration field: deprecated_field")
+
+        # Validate model paths exist
+        for path_attr in ['general_models_path', 'system_models_path', 'chat_models_path']:
+            path = getattr(self, path_attr)
+            if path and not os.path.exists(path):
+                logger.info(f"Model path does not exist: {path}")
+
+    def reload_config(self) -> bool:
+        """Reload configuration from file. Returns True if successful."""
+        try:
+            new_config = self._load_config()
+            if new_config != self.config_data:
+                self.config_data = new_config
+                self.config = new_config
+                self._validate_config()
+                logger.info("Configuration reloaded successfully")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Failed to reload configuration: {e}")
+            return False
+
         self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
         self.sample_rate: int = self.config_data.get("sample_rate", 16000)
         self.audio_format: str = self.config_data.get("audio_format", "int16")

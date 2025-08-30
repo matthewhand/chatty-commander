@@ -20,9 +20,21 @@ _sys.modules["utils.logger"] = _sys.modules[__name__]
 
 
 class JSONFormatter(logging.Formatter):
-    """JSON formatter for log records."""
+    """JSON formatter for log records.
+
+    Formats log records as JSON objects with structured data including
+    timestamp, logger name, level, message, and exception information.
+    """
 
     def format(self, record):
+        """Format a log record as a JSON string.
+
+        Args:
+            record: The log record to format
+
+        Returns:
+            str: JSON-formatted log entry
+        """
         log_entry = {
             "time": self.formatTime(record),
             "name": record.name,
@@ -35,9 +47,23 @@ class JSONFormatter(logging.Formatter):
 
 
 class HTTPLogHandler(logging.Handler):
-    """Log handler that POSTs logs to an HTTP endpoint."""
+    """Log handler that POSTs logs to an HTTP endpoint.
+
+    This handler sends log records to a remote HTTP endpoint via POST requests.
+    Useful for centralized logging or log aggregation services.
+
+    Args:
+        url: The HTTP endpoint URL to send logs to
+        timeout: Request timeout in seconds (default: 5)
+    """
 
     def __init__(self, url: str, timeout: int = 5):
+        """Initialize the HTTP log handler.
+
+        Args:
+            url: HTTP endpoint URL
+            timeout: Request timeout in seconds
+        """
         super().__init__()
         self.url = url
         self.timeout = timeout
@@ -50,6 +76,11 @@ class HTTPLogHandler(logging.Handler):
             pass
 
     def emit(self, record):
+        """Send a log record to the HTTP endpoint.
+
+        Args:
+            record: The log record to send
+        """
         if self._requests is None:
             return
         try:

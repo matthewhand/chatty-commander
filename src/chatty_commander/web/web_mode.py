@@ -122,6 +122,12 @@ class WebModeServer:
         self.last_command: str | None = None
         self.last_state_change = datetime.now()
 
+        # Performance optimizations
+        self._command_cache: dict[str, Any] = {}
+        self._state_cache: dict[str, Any] = {}
+        self._cache_timeout = 30.0  # 30 seconds cache
+        self._last_cache_clear = time.time()
+
         # Optional advisors service (enabled via config)
         try:
             self.advisors_service = AdvisorsService(config=config_manager)
@@ -136,6 +142,31 @@ class WebModeServer:
         self.app = self._create_app()
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
+
+    def _clear_expired_cache(self) -> None:
+        """Clear expired cache entries to prevent memory leaks."""
+        current_time = time.time()
+        if current_time - self._last_cache_clear > self._cache_timeout:
+            self._command_cache.clear()
+            self._state_cache.clear()
+            self._last_cache_clear = current_time
+
+    def _get_cached_command_result(self, command: str) -> Any | None:
+        """Get cached command result if available and not expired."""
+        self._clear_expired_cache()
+        cache_key = f"cmd:{command}"
+        if cache_key in self._command_cache:
+            cached_time, result = self._command_cache[cache_key]
+            if time.time() - cached_time < self._cache_timeout:
+                return result
+            else:
+                del self._command_cache[cache_key]
+        return None
+
+    def _cache_command_result(self, command: str, result: Any) -> None:
+        """Cache command result for future use."""
+        cache_key = f"cmd:{command}"
+        self._command_cache[cache_key] = (time.time(), result)
 
     def run(self, host: str | None = None, port: int | None = None) -> None:
         """Run the web server."""
