@@ -2,28 +2,40 @@ version: '3.8'
 
 services:
   chatty-commander:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
     ports:
-      - "8100:8100"
+      - "8000:8000"
     environment:
       - PYTHONPATH=/app/src
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - ADVISORS_ENABLED=true
-      - ADVISORS_MODEL=gpt-3.5-turbo
-      - ADVISORS_API_MODE=completion
+      - CHATTY_ENV=production
+      - CHATTY_CONFIG=/app/config.json
     volumes:
-      - ./data:/app/data
       - ./logs:/app/logs
+      - ./data:/app/data
+      - ./models:/app/models
       - ./config.json:/app/config.json:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8100/api/v1/status"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - chatty-network
+    depends_on:
+      - redis
+      - postgres
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
 
-  # Optional: Redis for session management (future enhancement)
+  # Redis for caching and session management
   redis:
     image: redis:7-alpine
     ports:
@@ -31,28 +43,128 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
-    profiles:
-      - with-redis
+    command: redis-server --appendonly yes
+    networks:
+      - chatty-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Optional: PostgreSQL for persistent storage (future enhancement)
+  # PostgreSQL for data persistence
   postgres:
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: chatty_commander
       POSTGRES_USER: chatty
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chatty123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     restart: unless-stopped
-    profiles:
-      - with-database
+    networks:
+      - chatty-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatty -d chatty_commander"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    restart: unless-stopped
+    networks:
+      - chatty-network
+    depends_on:
+      - chatty-commander
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - chatty-network
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    networks:
+      - chatty-network
+    depends_on:
+      - prometheus
+
+  # Log aggregation with Loki
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - chatty-network
+
+  # Log shipping with Promtail
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - ./logs:/var/log/chatty:ro
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    networks:
+      - chatty-network
+    depends_on:
+      - loki
 
 volumes:
   redis_data:
   postgres_data:
+  prometheus_data:
+  grafana_data:
+  nginx_logs:
+  loki_data:
 
 networks:
-  default:
-    name: chatty-commander-network
+  chatty-network:
+    driver: bridge

@@ -39,6 +39,25 @@ class StateInfo(BaseModel):
     timestamp: str = Field(..., description="Timestamp of last state change")
 
 
+class HealthStatus(BaseModel):
+    status: str = Field(..., description="Health status")
+    uptime: str = Field(..., description="System uptime")
+    version: str = Field(..., description="Application version")
+    database: str = Field(default="unknown", description="Database status")
+    memory_usage: str = Field(default="unknown", description="Memory usage")
+    cpu_usage: str = Field(default="unknown", description="CPU usage")
+    last_health_check: str = Field(..., description="Last health check timestamp")
+
+
+class MetricsData(BaseModel):
+    total_requests: int = Field(..., description="Total API requests")
+    uptime_seconds: float = Field(..., description="Uptime in seconds")
+    active_connections: int = Field(default=0, description="Active WebSocket connections")
+    cache_size: int = Field(default=0, description="Cache entries count")
+    error_rate: float = Field(default=0.0, description="Error rate percentage")
+    response_time_avg: float = Field(default=0.0, description="Average response time in ms")
+
+
 def include_core_routes(
     *,
     get_start_time: Callable[[], float],
@@ -47,6 +66,8 @@ def include_core_routes(
     get_last_command: Callable[[], str | None],
     get_last_state_change: Callable[[], datetime],
     execute_command_fn: Callable[[str], Any],
+    get_active_connections: Callable[[], int] | None = None,
+    get_cache_size: Callable[[], int] | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -74,6 +95,71 @@ def include_core_routes(
             current_state=getattr(sm, "current_state", "idle"),
             active_models=sm.get_active_models() if hasattr(sm, "get_active_models") else [],
             uptime=uptime_str,
+        )
+
+    @router.get("/health", response_model=HealthStatus)
+    async def health_check():
+        """Comprehensive health check endpoint."""
+        uptime_seconds = time.time() - get_start_time()
+        uptime_str = _format_uptime(uptime_seconds)
+
+        # Basic system checks
+        memory_usage = "unknown"
+        cpu_usage = "unknown"
+
+        try:
+            import psutil
+
+            memory = psutil.virtual_memory()
+            memory_usage = ".1f"
+            cpu_usage = ".1f"
+        except ImportError:
+            pass  # psutil not available
+
+        # Database check (placeholder for future database integration)
+        database_status = "not_configured"
+
+        return HealthStatus(
+            status="healthy",
+            uptime=uptime_str,
+            version="0.2.0",
+            database=database_status,
+            memory_usage=memory_usage,
+            cpu_usage=cpu_usage,
+            last_health_check=datetime.now().isoformat(),
+        )
+
+    @router.get("/metrics", response_model=MetricsData)
+    async def get_metrics():
+        """Get application metrics and performance data."""
+        uptime_seconds = time.time() - get_start_time()
+        total_requests = sum(counters.values())
+
+        active_connections = 0
+        if get_active_connections:
+            try:
+                active_connections = get_active_connections()
+            except Exception:
+                pass
+
+        cache_size = 0
+        if get_cache_size:
+            try:
+                cache_size = get_cache_size()
+            except Exception:
+                pass
+
+        # Calculate error rate (simplified)
+        error_count = counters.get("errors", 0)
+        error_rate = (error_count / max(total_requests, 1)) * 100
+
+        return MetricsData(
+            total_requests=total_requests,
+            uptime_seconds=uptime_seconds,
+            active_connections=active_connections,
+            cache_size=cache_size,
+            error_rate=round(error_rate, 2),
+            response_time_avg=0.0,  # Placeholder for future implementation
         )
 
     @router.get("/api/v1/config")

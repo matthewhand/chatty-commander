@@ -25,11 +25,14 @@ try:
 except ImportError:
     uvicorn = None
 
-from fastapi import FastAPI, Header, HTTPException, WebSocket
+from collections import defaultdict
+
+from fastapi import FastAPI, Header, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Advisors (optional feature set used by tests)
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
@@ -64,6 +67,57 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Middleware to add security headers to all responses."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+        # Remove server header for security
+        response.headers.pop("server", None)
+
+        return response
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Simple rate limiting middleware."""
+
+    def __init__(self, app, requests_per_minute: int = 60):
+        super().__init__(app)
+        self.requests_per_minute = requests_per_minute
+        self.requests = defaultdict(list)
+
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+
+        # Clean old requests
+        current_time = time.time()
+        self.requests[client_ip] = [
+            req_time for req_time in self.requests[client_ip] if current_time - req_time < 60
+        ]
+
+        # Check rate limit
+        if len(self.requests[client_ip]) >= self.requests_per_minute:
+            return HTMLResponse(
+                content="Rate limit exceeded. Please try again later.",
+                status_code=429,
+                headers={"Retry-After": "60"},
+            )
+
+        # Add current request
+        self.requests[client_ip].append(current_time)
+
+        response = await call_next(request)
+        return response
 
 
 class SystemStatus(BaseModel):
@@ -198,6 +252,10 @@ class WebModeServer:
             redoc_url="/redoc" if self.no_auth else None,
         )
 
+        # Security middleware
+        app.add_middleware(SecurityHeadersMiddleware)
+        app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+
         # CORS policy
         app.add_middleware(
             CORSMiddleware,
@@ -215,6 +273,8 @@ class WebModeServer:
             get_last_command=lambda: self.last_command,
             get_last_state_change=lambda: self.last_state_change,
             execute_command_fn=lambda cmd: self.command_executor.execute_command(cmd),
+            get_active_connections=lambda: len(self.active_connections),
+            get_cache_size=lambda: len(self._command_cache) + len(self._state_cache),
         )
         app.include_router(core)
 

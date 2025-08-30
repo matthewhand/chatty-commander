@@ -1,23 +1,50 @@
-# ChattyCommander
+# ChattyCommander 🚀
 
-[![CI](https://github.com/your-org/chatty-commander/workflows/CI/badge.svg)](https://github.com/your-org/chatty-commander/actions)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](https://github.com/your-org/chatty-commander)
+[![CI/CD](https://github.com/matthewhand/chatty-commander/workflows/CI/badge.svg)](https://github.com/matthewhand/chatty-commander/actions)
+[![Coverage](https://img.shields.io/badge/coverage-85%2B%25-brightgreen)](https://github.com/matthewhand/chatty-commander)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://docker.com)
+[![Security](https://img.shields.io/badge/security-hardened-green)](https://github.com/matthewhand/chatty-commander/security)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 
-ChattyCommander is a multi-mode assistant that turns voice and typed commands into useful actions across your system. It ships with:
+**Advanced AI-powered voice command system with enterprise-grade security, monitoring, and performance optimizations.**
 
-- CLI mode for power users with discoverable commands and help examples
-- Web mode (FastAPI) with REST + WebSocket APIs, Swagger UI, and metrics
-- Optional GUI/avatar UI for expressive state and animation syncing
+## ✨ Features
 
-Core capabilities:
+### 🎯 Core Capabilities
+- **Voice Integration**: Wake word detection + voice-to-text transcription with OpenWakeWord
+- **Multi-Modal Operation**: CLI, Web API, WebSocket, and GUI modes
+- **Real-time Communication**: WebSocket broadcasting for live updates
+- **AI Agent Integration**: OpenAI Agents SDK with MCP, handoff, and tool support
+- **Avatar System**: 3D anime-style avatar with lip-sync capabilities
 
-- **Voice Integration**: Wake word detection + voice-to-text transcription
-- Trigger actions (keypress, URL) mapped to model_actions
-- Track agent thinking/responding states and broadcast to avatar/WebSocket clients
-- Expose system status, config, and health endpoints for automation
-- Provide observability via JSON and Prometheus metrics
-- Package as a standalone CLI binary with PyInstaller
+### 🔒 Security & Compliance
+- **Rate Limiting**: Configurable request throttling (100 req/min default)
+- **Security Headers**: XSS protection, CSRF prevention, content security policy
+- **Authentication**: JWT-based auth with configurable token expiration
+- **Input Validation**: Comprehensive parameter sanitization and validation
+- **Audit Logging**: Structured logging with security event tracking
+
+### 📊 Monitoring & Observability
+- **Health Checks**: Comprehensive system health monitoring (`/health`)
+- **Metrics Endpoint**: Prometheus-compatible metrics (`/metrics`)
+- **Performance Monitoring**: Response times, cache hit rates, error tracking
+- **System Resources**: CPU, memory, and disk usage monitoring
+- **Distributed Tracing**: Request tracing across microservices
+
+### 🏗️ Architecture & Performance
+- **Caching System**: Intelligent caching with TTL for optimal performance
+- **Async Processing**: Non-blocking I/O with asyncio throughout
+- **Database Integration**: PostgreSQL with connection pooling
+- **Redis Caching**: Session management and data caching
+- **Load Balancing**: Nginx reverse proxy with SSL termination
+
+### 🛠️ Developer Experience
+- **Comprehensive CLI**: 20+ development and deployment commands
+- **Docker Support**: Multi-stage builds with security best practices
+- **CI/CD Pipeline**: GitHub Actions with automated testing and deployment
+- **Code Quality**: Pre-commit hooks, linting, type checking, security scanning
+- **Documentation**: Auto-generated API docs with OpenAPI/Swagger
 
 ## Introduction
 

@@ -40,6 +40,113 @@ format-fix:
 api-docs:
 	uv run python -m src.chatty_commander.tools.generate_api_docs -o docs
 
+# Development server with auto-reload
+dev:
+	uv run python main.py --web --no-auth --reload
+
+# Production server
+serve:
+	uv run python main.py --web
+
+# Run with debug logging
+debug:
+	uv run python main.py --web --no-auth --debug
+
+# Health check
+health:
+	curl -f http://localhost:8000/health || echo "Server not responding"
+
+# Database migrations (if applicable)
+migrate:
+	@echo "No migrations needed for this project"
+
+# Security audit
+audit:
+	uv run pip-audit || echo "pip-audit not installed, run: uv add pip-audit"
+
+# Dependency updates
+update-deps:
+	uv lock --upgrade
+
+# Clean all artifacts
+clean-all: clean
+	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage
+	find . -name "*.pyc" -delete
+	find . -name "__pycache__" -type d -exec rm -rf {} +
+	find . -name "*.egg-info" -type d -exec rm -rf {} +
+
+# Setup development environment
+setup-dev: install
+	@echo "Development environment setup complete"
+	@echo "Run 'make dev' to start development server"
+	@echo "Run 'make test' to run tests"
+	@echo "Run 'make lint' to check code quality"
+
+# Quick test run (no timeout)
+test-quick:
+	uv run pytest -x --tb=short
+
+# Integration tests
+test-integration:
+	uv run pytest -k "integration" -v
+
+# Performance tests
+test-perf:
+	uv run pytest -k "perf" -v --durations=10
+
+# Generate test coverage report
+coverage-html:
+	uv run pytest --cov=src --cov-report=html
+	@echo "Coverage report generated in htmlcov/index.html"
+
+# Type checking
+type-check:
+	uv run mypy src/ || echo "mypy not configured, install with: uv add mypy"
+
+# Security linting
+security-check:
+	uv run bandit -r src/ || echo "bandit not installed, install with: uv add bandit"
+
+# Pre-commit checks
+pre-commit:
+	pre-commit run --all-files
+
+# Docker build
+docker-build:
+	docker build -t chatty-commander .
+
+# Docker run
+docker-run:
+	docker run -p 8000:8000 chatty-commander
+
+# Help
+help:
+	@echo "Available targets:"
+	@echo "  install       - Install dependencies"
+	@echo "  test          - Run full test suite"
+	@echo "  test-quick    - Run tests without timeout"
+	@echo "  test-cov      - Run tests with coverage"
+	@echo "  test-web      - Run web-specific tests"
+	@echo "  test-cli      - Run CLI-specific tests"
+	@echo "  lint          - Check code style"
+	@echo "  format        - Check code formatting"
+	@echo "  format-fix    - Auto-fix formatting issues"
+	@echo "  dev           - Start development server"
+	@echo "  serve         - Start production server"
+	@echo "  debug         - Start server with debug logging"
+	@echo "  health        - Check server health"
+	@echo "  clean         - Clean build artifacts"
+	@echo "  clean-all     - Clean all artifacts and caches"
+	@echo "  setup-dev     - Setup development environment"
+	@echo "  api-docs      - Generate API documentation"
+	@echo "  coverage-html - Generate HTML coverage report"
+	@echo "  type-check    - Run type checking"
+	@echo "  security-check- Run security analysis"
+	@echo "  pre-commit    - Run pre-commit checks"
+	@echo "  docker-build  - Build Docker image"
+	@echo "  docker-run    - Run Docker container"
+	@echo "  help          - Show this help message"
+
 # Build standalone CLI with PyInstaller
 .PHONY: build-exe build-exe-all dist-clean smoke-exe
 
