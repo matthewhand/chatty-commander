@@ -83,6 +83,5 @@
     "@types/jest": "^29.5.12",
     "eslint": "^8.53.0",
     "eslint-plugin-react-hooks": "^4.6.0"
-  },
-  "proxy": "http://localhost:8100"
+  }
 }

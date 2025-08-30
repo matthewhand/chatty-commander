@@ -500,12 +500,19 @@ def main():
         parser.error("--no-auth only applicable in web mode")
 
     # If user only asked for help (--help), we would have already returned.
-    # If no args other than program name, print intro and exit 0 per tests expecting non-crash and intro visibility.
-    if len(sys.argv) <= 1 or '--help' in sys.argv or '-h' in sys.argv:
+    # If no args other than program name, launch interactive shell
+    if len(sys.argv) <= 1:
+        print("ChattyCommander - Voice Command System")
+        print("Starting interactive shell... (type 'exit' to quit)")
+        # We'll launch the interactive shell after initialization
+        interactive_mode = True
+    elif '--help' in sys.argv or '-h' in sys.argv:
         print("ChattyCommander - Voice Command System")
         print("Use --help for available options")
         # Align with tests expecting SystemExit on main invocation path.
         raise SystemExit(0)
+    else:
+        interactive_mode = False
 
     # Ensure logger is created with the expected name for tests
     logger = setup_logger('main', 'logs/chattycommander.log')
@@ -666,6 +673,10 @@ def main():
         return run_orchestrator_mode(
             config, model_manager, state_manager, command_executor, logger, args
         )
+    elif interactive_mode:
+        # Launch interactive shell when no arguments provided
+        run_interactive_shell(config, model_manager, state_manager, command_executor, logger)
+        return 0
     else:
         run_cli_mode(config, model_manager, state_manager, command_executor, logger)
         return 0

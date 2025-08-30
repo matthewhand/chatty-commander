@@ -4,12 +4,13 @@
  */
 
 class ApiService {
-  constructor(baseURL = '') {
-    this.baseURL = baseURL;
-    this.defaultHeaders = {
-      'Content-Type': 'application/json',
-    };
-  }
+   constructor(baseURL = '') {
+     // Use environment variable or default to localhost:8100 for direct backend connection
+     this.baseURL = baseURL || process.env.REACT_APP_API_URL || 'http://localhost:8100';
+     this.defaultHeaders = {
+       'Content-Type': 'application/json',
+     };
+   }
 
   /**
    * Make HTTP request with error handling

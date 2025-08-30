@@ -13,7 +13,6 @@ class Config:
     def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
-        self._validate_config()
         # Expose the raw dict for web handlers/tests that expect it
         self.config: dict[str, Any] = self.config_data
 
@@ -47,6 +46,9 @@ class Config:
 
         # Voice/GUI behaviour
         self.voice_only: bool = bool(self.config_data.get("voice_only", False))
+
+        # Validate configuration after all attributes are set
+        self._validate_config()
 
         # Audio configuration
 

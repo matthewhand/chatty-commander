@@ -251,14 +251,14 @@ All major "Now" items have been delivered:
       Acceptance:
   - uv run python cli.py --help exits 0, includes all flags and descriptions
   - uv run pytest -q tests/test_cli_help_and_shell.py::test_help_outputs_usage
-- [ ] Interactive shell when no args
-      Acceptance:
-  - uv run python cli.py enters shell; typing "exit" quits with code 0
-  - uv run pytest -q tests/test_repl_basic.py::test_shell_starts_and_exits
-- [ ] Tab completion for interactive mode
-      Acceptance:
-  - Completions suggest registered commands
-  - uv run pytest -q tests/test_cli_features.py::test_tab_completion_suggests_known_commands
+- [x] Interactive shell when no args
+       Acceptance:
+       - uv run python cli.py enters shell; typing "exit" quits with code 0
+       - uv run pytest -q tests/test_repl_basic.py::test_shell_starts_and_exits
+- [x] Tab completion for interactive mode
+       Acceptance:
+       - Completions suggest registered commands
+       - uv run pytest -q tests/test_cli_features.py::test_tab_completion_suggests_known_commands
 
 3. Test infrastructure unblocked
 
@@ -271,11 +271,11 @@ All major "Now" items have been delivered:
 
 4. WebUI connectivity sanity
 
-- [ ] Frontend connects to Python backend on correct port without Node backend proxy
-      Acceptance:
-  - Dev server: frontend requests succeed against uv run python main.py --web --no-auth
-  - No references to deleted webui/backend
-  - Basic auth disabled when --no-auth is provided
+- [x] Frontend connects to Python backend on correct port without Node backend proxy
+       Acceptance:
+       - Dev server: frontend requests succeed against uv run python main.py --web --no-auth
+       - No references to deleted webui/backend
+       - Basic auth disabled when --no-auth is provided
 
 5. Minimal docs parity
 

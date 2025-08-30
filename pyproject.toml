@@ -118,7 +118,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
-    "@(abc\.)?abstractmethod",
+    "@(abc\\.)?abstractmethod",
 ]
 
 [tool.ruff]
@@ -203,6 +203,7 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
 ]
+norecursedirs = [
     "archive/*",
     "webui/frontend/*",
     "*/__pycache__/*",
@@ -211,68 +212,3 @@ markers = [
 ]
 
 # Removed legacy setuptools block for old flat-layout (py-modules, utils)
-[tool.black]
-line-length = 100
-target-version = ["py311"]
-include = "\\.pyi?$"
-skip-string-normalization = true
-
-[tool.ruff]
-target-version = "py311"
-line-length = 100
-extend-exclude = ["webui/frontend", "node_modules", ".venv", "venv", "build", "dist", ".pytest_cache", "htmlcov"]
-src = ["."]
-fix = true
-
-[tool.ruff.lint]
-select = [
-  "E",   # pycodestyle errors
-  "W",   # pycodestyle warnings
-  "F",   # pyflakes
-  "I",   # isort
-  "B",   # bugbear
-  "UP",  # pyupgrade
-]
-ignore = [
-  "E203",  # whitespace before ':', compatible with Black
-  "E266",  # too many leading '#' for block comment
-  "E501",  # handled by Black
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**" = ["E402", "F401", "F841", "B007"]
-
-[tool.ruff.format]
-quote-style = "preserve"
-indent-style = "space"
-docstring-code-format = true
-skip-magic-trailing-comma = false
-[tool.pydocstyle]
-convention = "google"
-add-ignore = [
-  "D100", # Missing docstring in public module
-  "D101", # Missing docstring in public class
-  "D102", # Missing docstring in public method
-  "D103", # Missing docstring in public function
-  "D104", # Missing docstring in public package
-  "D105", # Missing docstring in magic method
-  "D107", # Missing docstring in __init__
-  "D200", # One-line docstring should fit on one line
-  "D205", # 1 blank line required between summary line and description
-  "D212", # Multi-line docstring summary should start at the first line
-  "D403", # First word of the first line should be properly capitalized
-  "D415", # First line should end with punctuation
-]
-
-[tool.doc8]
-max-line-length = 100
-ignore = ["D001"]
-[tool.setuptools]
-package-dir = {"" = "src"}
-packages = ["chatty_commander"]
-
-[tool.setuptools.package-data]
-chatty_commander = ["py.typed"]
-
-[tool.uv]
-package = true
