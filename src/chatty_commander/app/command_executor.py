@@ -15,29 +15,29 @@ from typing import Any
 
 # Optional deps that may not be present in CI/headless environments
 try:  # pragma: no cover - exercised via tests with patching
-    import pyautogui  # type: ignore
+    import pyautogui
 except (ImportError, OSError, KeyError):  # pragma: no cover - optional
-    pyautogui = None  # type: ignore[assignment]
+    pyautogui = None
 
 try:  # pragma: no cover - optional
-    import requests  # type: ignore
+    import requests
 except Exception:  # pragma: no cover - optional
-    requests = None  # type: ignore[assignment]
+    requests = None
 
 # Allow tests to patch legacy shim module attributes if present
 try:  # pragma: no cover
-    from command_executor import pyautogui as _shim_pg  # type: ignore
+    from command_executor import pyautogui as _shim_pg
 except Exception:  # pragma: no cover - optional
-    _shim_pg = None  # type: ignore
+    _shim_pg = None
 if _shim_pg is not None:  # pragma: no cover - optional
-    pyautogui = _shim_pg  # type: ignore
+    pyautogui = _shim_pg
 
 try:  # pragma: no cover
-    from command_executor import requests as _shim_requests  # type: ignore
+    from command_executor import requests as _shim_requests
 except Exception:  # pragma: no cover - optional
-    _shim_requests = None  # type: ignore
+    _shim_requests = None
 if _shim_requests is not None:  # pragma: no cover - optional
-    requests = _shim_requests  # type: ignore
+    requests = _shim_requests
 
 
 class CommandExecutor:
@@ -112,10 +112,10 @@ class CommandExecutor:
         try:
             # Support either a list of keys (hotkey/chord) or a single key sequence
             if isinstance(keys, list | tuple):
-                pyautogui.hotkey(*keys)  # type: ignore[arg-type]
+                pyautogui.hotkey(*keys)
             else:
                 # For simple cases, press is less invasive than typewrite
-                pyautogui.press(keys)  # type: ignore[arg-type]
+                pyautogui.press(keys)
             logging.info(f"Completed execution of command: {command_name}")
         except Exception as e:  # pragma: no cover - patched in tests
             self.report_error(command_name, str(e))
@@ -132,7 +132,7 @@ class CommandExecutor:
             return
         try:
             # Match tests: do not pass extra kwargs like timeout
-            resp = requests.get(url)  # type: ignore[call-arg]
+            resp = requests.get(url)
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
             else:

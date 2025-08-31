@@ -18,7 +18,7 @@ export PATH="${PWD}:$PATH"
 export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
 
 # Run the comprehensive test suite
-python tests/test_system.py --verbose --output-file "test_results_$(date +%Y%m%d_%H%M%S).txt"
+xvfb-run python tests/test_system.py --verbose --output-file "test_results_$(date +%Y%m%d_%H%M%S).txt"
 
 echo "================================================"
 echo "✅ All tests completed successfully!"

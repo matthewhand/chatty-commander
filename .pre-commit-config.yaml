@@ -30,7 +30,6 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-all]
         exclude: ^(tests/|docs/)
 
   - repo: https://github.com/PyCQA/bandit
@@ -92,7 +91,7 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+        args: ["--baseline", ".secrets.baseline"]
         exclude: ^(tests/|\.github/|docs/)
 
   - repo: https://github.com/Lucas-C/pre-commit-hooks-safety

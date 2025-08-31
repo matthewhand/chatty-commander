@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Manage application state transitions.
 
 This module toggles between different operational states based on detected
@@ -19,7 +41,9 @@ class StateManager:
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         self.current_state: str = self.config.default_state
-        self.active_models: list[str] = self.config.state_models.get(self.current_state, [])
+        self.active_models: list[str] = self.config.state_models.get(
+            self.current_state, []
+        )
         self.callbacks: list[Callable[[str, str], None]] = []
         self.logger.info(f"StateManager initialized with state: {self.current_state}")
 
@@ -29,11 +53,22 @@ class StateManager:
         Returns the new state if a transition occurred, otherwise ``None``.
         """
         new_state: str | None = None
+
+        # Check for state transitions from the current state
+        if (
+            self.current_state in self.config.state_transitions
+            and command in self.config.state_transitions[self.current_state]
+        ):
+            new_state = self.config.state_transitions[self.current_state][command]
         # Flexible resolution via config-defined wakeword mapping
-        if command in self.config.wakeword_state_map:
+        elif command in self.config.wakeword_state_map:
             new_state = self.config.wakeword_state_map[command]
         elif command == "toggle_mode":
-            states = list(self.config.state_models.keys()) or ["idle", "computer", "chatty"]
+            states = list(self.config.state_models.keys()) or [
+                "idle",
+                "computer",
+                "chatty",
+            ]
             if self.current_state in states:
                 current_index = states.index(self.current_state)
             else:
@@ -48,7 +83,9 @@ class StateManager:
     def add_state_change_callback(self, callback: Callable[[str, str], None]) -> None:
         self.callbacks.append(callback)
 
-    def change_state(self, new_state: str, callback: Callable[[str], None] | None = None) -> None:
+    def change_state(
+        self, new_state: str, callback: Callable[[str], None] | None = None
+    ) -> None:
         if new_state in self.config.state_models:
             old_state = self.current_state
             self.current_state = new_state

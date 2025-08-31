@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from __future__ import annotations
 
 import json
@@ -18,11 +40,19 @@ class Config:
 
         # Core values with repo-defaults aligned to tests
         self.default_state: str = self.config_data.get("default_state", "idle")
-        self.general_models_path: str = self.config_data.get("general_models_path", "models-idle")
-        self.system_models_path: str = self.config_data.get("system_models_path", "models-computer")
-        self.chat_models_path: str = self.config_data.get("chat_models_path", "models-chatty")
+        self.general_models_path: str = self.config_data.get(
+            "general_models_path", "models-idle"
+        )
+        self.system_models_path: str = self.config_data.get(
+            "system_models_path", "models-computer"
+        )
+        self.chat_models_path: str = self.config_data.get(
+            "chat_models_path", "models-chatty"
+        )
 
-        self.state_models: dict[str, list[str]] = self.config_data.get("state_models", {})
+        self.state_models: dict[str, list[str]] = self.config_data.get(
+            "state_models", {}
+        )
         self.api_endpoints: dict[str, str] = self.config_data.get(
             "api_endpoints",
             {
@@ -30,7 +60,9 @@ class Config:
                 "chatbot_endpoint": "http://localhost:3100/",
             },
         )
-        self.wakeword_state_map: dict[str, str] = self.config_data.get("wakeword_state_map", {})
+        self.wakeword_state_map: dict[str, str] = self.config_data.get(
+            "wakeword_state_map", {}
+        )
         self.state_transitions: dict[str, dict[str, str]] = self.config_data.get(
             "state_transitions", {}
         )
@@ -39,9 +71,9 @@ class Config:
         # Advisors configuration
         advisors_cfg = self.config_data.get("advisors", {})
         self.advisors = {
-            'enabled': advisors_cfg.get("enabled", False),
-            'llm_api_mode': advisors_cfg.get("llm_api_mode", "completion"),
-            'model': advisors_cfg.get("model", "gpt-oss20b"),
+            "enabled": advisors_cfg.get("enabled", False),
+            "llm_api_mode": advisors_cfg.get("llm_api_mode", "completion"),
+            "model": advisors_cfg.get("model", "gpt-oss20b"),
         }
 
         # Voice/GUI behaviour
@@ -51,49 +83,6 @@ class Config:
         self._validate_config()
 
         # Audio configuration
-
-    def _validate_config(self) -> None:
-        """Validate configuration data and log warnings for potential issues."""
-        # Validate state models
-        if not isinstance(self.state_models, dict):
-            logger.warning("state_models should be a dictionary")
-            self.state_models = {}
-
-        # Validate API endpoints
-        if not isinstance(self.api_endpoints, dict):
-            logger.warning("api_endpoints should be a dictionary")
-            self.api_endpoints = {}
-
-        # Validate commands
-        if not isinstance(self.commands, dict):
-            logger.warning("commands should be a dictionary")
-            self.commands = {}
-
-        # Check for deprecated or invalid configurations
-        if "deprecated_field" in self.config_data:
-            logger.warning("Found deprecated configuration field: deprecated_field")
-
-        # Validate model paths exist
-        for path_attr in ['general_models_path', 'system_models_path', 'chat_models_path']:
-            path = getattr(self, path_attr)
-            if path and not os.path.exists(path):
-                logger.info(f"Model path does not exist: {path}")
-
-    def reload_config(self) -> bool:
-        """Reload configuration from file. Returns True if successful."""
-        try:
-            new_config = self._load_config()
-            if new_config != self.config_data:
-                self.config_data = new_config
-                self.config = new_config
-                self._validate_config()
-                logger.info("Configuration reloaded successfully")
-                return True
-            return False
-        except Exception as e:
-            logger.error(f"Failed to reload configuration: {e}")
-            return False
-
         self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
         self.sample_rate: int = self.config_data.get("sample_rate", 16000)
         self.audio_format: str = self.config_data.get("audio_format", "int16")
@@ -137,7 +126,9 @@ class Config:
 
             @property
             def debug_mode(self) -> bool:
-                return bool(self._cfg.config_data.get("general", {}).get("debug_mode", True))
+                return bool(
+                    self._cfg.config_data.get("general", {}).get("debug_mode", True)
+                )
 
             @debug_mode.setter
             def debug_mode(self, v: bool) -> None:
@@ -146,7 +137,9 @@ class Config:
             @property
             def inference_framework(self) -> str:
                 return str(
-                    self._cfg.config_data.get("general", {}).get("inference_framework", "onnx")
+                    self._cfg.config_data.get("general", {}).get(
+                        "inference_framework", "onnx"
+                    )
                 )
 
             @inference_framework.setter
@@ -155,7 +148,9 @@ class Config:
 
             @property
             def start_on_boot(self) -> bool:
-                return bool(self._cfg.config_data.get("general", {}).get("start_on_boot", False))
+                return bool(
+                    self._cfg.config_data.get("general", {}).get("start_on_boot", False)
+                )
 
             @start_on_boot.setter
             def start_on_boot(self, v: bool) -> None:
@@ -163,7 +158,11 @@ class Config:
 
             @property
             def check_for_updates(self) -> bool:
-                return bool(self._cfg.config_data.get("general", {}).get("check_for_updates", True))
+                return bool(
+                    self._cfg.config_data.get("general", {}).get(
+                        "check_for_updates", True
+                    )
+                )
 
             @check_for_updates.setter
             def check_for_updates(self, v: bool) -> None:
@@ -175,6 +174,52 @@ class Config:
         self._apply_env_overrides()
         self._apply_web_server_config()
         self._load_general_settings()
+
+    def _validate_config(self) -> None:
+        """Validate configuration data and log warnings for potential issues."""
+        # Validate state models
+        if not isinstance(self.state_models, dict):
+            logger.warning("state_models should be a dictionary")
+            self.state_models = {}
+
+        # Validate API endpoints
+        if not isinstance(self.api_endpoints, dict):
+            logger.warning("api_endpoints should be a dictionary")
+            self.api_endpoints = {}
+
+        # Validate commands
+        if not isinstance(self.commands, dict):
+            logger.warning("commands should be a dictionary")
+            self.commands = {}
+
+        # Check for deprecated or invalid configurations
+        if "deprecated_field" in self.config_data:
+            logger.warning("Found deprecated configuration field: deprecated_field")
+
+        # Validate model paths exist
+        for path_attr in [
+            "general_models_path",
+            "system_models_path",
+            "chat_models_path",
+        ]:
+            path = getattr(self, path_attr)
+            if path and not os.path.exists(path):
+                logger.info(f"Model path does not exist: {path}")
+
+    def reload_config(self) -> bool:
+        """Reload configuration from file. Returns True if successful."""
+        try:
+            new_config = self._load_config()
+            if new_config != self.config_data:
+                self.config_data = new_config
+                self.config = new_config
+                self._validate_config()
+                logger.info("Configuration reloaded successfully")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Failed to reload configuration: {e}")
+            return False
 
     # ------------------------------------------------------------------
     # Helpers
@@ -236,10 +281,14 @@ class Config:
             with open(self.config_file, encoding="utf-8") as f:
                 return json.load(f)
         except FileNotFoundError:
-            logger.warning("Config file %s not found. Using defaults.", self.config_file)
+            logger.warning(
+                "Config file %s not found. Using defaults.", self.config_file
+            )
             return {}
         except json.JSONDecodeError:
-            logger.error("Config file %s is not valid JSON. Using defaults.", self.config_file)
+            logger.error(
+                "Config file %s is not valid JSON. Using defaults.", self.config_file
+            )
             return {}
 
     def _load_general_settings(self) -> None:
@@ -260,7 +309,9 @@ class Config:
                     actions[name] = {"keypress": mapped}
             elif action_type == "url":
                 url = cfg.get("url", "")
-                url = url.replace("{home_assistant}", self.api_endpoints.get("home_assistant", ""))
+                url = url.replace(
+                    "{home_assistant}", self.api_endpoints.get("home_assistant", "")
+                )
                 url = url.replace(
                     "{chatbot_endpoint}", self.api_endpoints.get("chatbot_endpoint", "")
                 )
@@ -297,7 +348,11 @@ class Config:
     def validate(self) -> None:
         if not self.model_actions:
             raise ValueError("Model actions configuration is empty.")
-        for path in [self.general_models_path, self.system_models_path, self.chat_models_path]:
+        for path in [
+            self.general_models_path,
+            self.system_models_path,
+            self.chat_models_path,
+        ]:
             if not os.path.exists(path):
                 logging.warning(f"Model directory {path} does not exist.")
             elif not os.listdir(path):
@@ -335,7 +390,10 @@ class Config:
             return None
         try:
             result = subprocess.run(
-                ["git", "rev-parse", "--git-dir"], capture_output=True, text=True, check=False
+                ["git", "rev-parse", "--git-dir"],
+                capture_output=True,
+                text=True,
+                check=False,
             )
             if result.returncode != 0:
                 logging.warning("Not in a git repository, cannot check for updates")
@@ -372,7 +430,9 @@ class Config:
         return cls(config_file)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], config_file: str = "config.json") -> Config:
+    def from_dict(
+        cls, data: dict[str, Any], config_file: str = "config.json"
+    ) -> Config:
         """Create a Config instance from a dictionary."""
         # Create a new instance and set the config data directly
         instance = cls.__new__(cls)
@@ -390,14 +450,18 @@ class Config:
         instance.state_transitions = instance.config_data.get("state_transitions", {})
         instance.commands = instance.config_data.get("commands", {})
         instance.advisors = instance.config_data.get("advisors", {})
-        instance.voice_only = bool(instance.config_data.get("general", {}).get("voice_only", False))
+        instance.voice_only = bool(
+            instance.config_data.get("general", {}).get("voice_only", False)
+        )
         instance.mic_chunk_size = int(
             instance.config_data.get("general", {}).get("mic_chunk_size", 1024)
         )
         instance.sample_rate = int(
             instance.config_data.get("general", {}).get("sample_rate", 16000)
         )
-        instance.audio_format = instance.config_data.get("general", {}).get("audio_format", "int16")
+        instance.audio_format = instance.config_data.get("general", {}).get(
+            "audio_format", "int16"
+        )
         instance.check_for_updates = bool(
             instance.config_data.get("general", {}).get("check_for_updates", True)
         )
