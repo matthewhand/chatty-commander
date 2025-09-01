@@ -108,8 +108,16 @@
       "lights_on",
       "lights_off"
     ],
-    "computer": ["oh_kay_screenshot", "okay_stop"],
-    "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"]
+    "computer": [
+      "oh_kay_screenshot",
+      "okay_stop"
+    ],
+    "chatty": [
+      "wax_poetic",
+      "thanks_chat_tee",
+      "that_ill_do",
+      "okay_stop"
+    ]
   },
   "model_paths": {
     "idle": "models-idle",
@@ -131,7 +139,10 @@
   "logging": {
     "level": "INFO",
     "format": "plain",
-    "handlers": ["console", "file"],
+    "handlers": [
+      "console",
+      "file"
+    ],
     "file": "logs/chattycommander.log",
     "telemetry_url": "",
     "external_url": "",
