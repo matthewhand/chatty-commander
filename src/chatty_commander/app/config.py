@@ -87,6 +87,14 @@ class Config:
         self.sample_rate: int = self.config_data.get("sample_rate", 16000)
         self.audio_format: str = self.config_data.get("audio_format", "int16")
 
+        # Wake word configuration
+        self.wake_words: list[str] = self.config_data.get(
+            "wake_words", ["hey_jarvis", "alexa"]
+        )
+        self.wake_word_threshold: float = self.config_data.get(
+            "wake_word_threshold", 0.5
+        )
+
         # Direct access to general settings
         self.check_for_updates: bool = bool(
             self.config_data.get("general", {}).get("check_for_updates", True)

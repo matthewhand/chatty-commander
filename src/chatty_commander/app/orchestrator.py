@@ -1,8 +1,37 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol
+
+try:
+    from chatty_commander.voice.wakeword import MockWakeWordDetector, WakeWordDetector
+
+    VOICE_AVAILABLE = True
+except ImportError:
+    VOICE_AVAILABLE = False
 
 
 class CommandSink(Protocol):
@@ -72,11 +101,68 @@ class DummyAdapter:
         self._started = False
 
 
+class OpenWakeWordAdapter:
+    """Adapter for OpenWakeWord wake word detection."""
+
+    name = "openwakeword"
+
+    def __init__(
+        self, on_wake_word: Callable[[str, float], None], config: Any = None
+    ) -> None:
+        self._on_wake_word = on_wake_word
+        self._config = config
+        self._detector = None
+        self._started = False
+
+    def start(self) -> None:
+        if not VOICE_AVAILABLE:
+            raise ImportError("Voice dependencies not available. Install with: uv sync")
+
+        if self._started:
+            return
+
+        # Get wake word configuration from config
+        wake_words = getattr(self._config, "wake_words", None) or [
+            "hey_jarvis",
+            "alexa",
+        ]
+        threshold = getattr(self._config, "wake_word_threshold", 0.5)
+
+        # Use MockWakeWordDetector if no audio hardware available
+        try:
+            self._detector = WakeWordDetector(
+                wake_words=wake_words, threshold=threshold
+            )
+        except Exception:
+            # Fallback to mock detector
+            self._detector = MockWakeWordDetector()
+
+        # Add callback for wake word detection
+        self._detector.add_callback(self._handle_wake_word)
+
+        # Start listening
+        self._detector.start_listening()
+        self._started = True
+
+    def stop(self) -> None:
+        if self._detector and self._started:
+            self._detector.stop_listening()
+        self._started = False
+
+    def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
+        """Handle wake word detection by calling the callback."""
+        self._on_wake_word(wake_word, confidence)
+
+
 # Initialize the registry with default adapters
 InputAdapter.registry = {
     "gui": lambda: DummyAdapter("gui"),
     "web": lambda: DummyAdapter("web"),
-    "openwakeword": lambda: DummyAdapter("openwakeword"),
+    "openwakeword": lambda config=None, on_wake_word=None: (
+        OpenWakeWordAdapter(on_wake_word, config)
+        if VOICE_AVAILABLE
+        else DummyAdapter("openwakeword")
+    ),
     "computer_vision": lambda: DummyAdapter("computer_vision"),
     "discord_bridge": lambda: DummyAdapter("discord_bridge"),
 }
@@ -126,16 +212,20 @@ class ModeOrchestrator:
         if self.flags.enable_openwakeword:
             adapter_factory = InputAdapter.registry.get("openwakeword")
             if adapter_factory:
-                selected.append(adapter_factory())
+                selected.append(
+                    adapter_factory(
+                        config=self.config, on_wake_word=self._handle_wake_word
+                    )
+                )
 
         if self.flags.enable_computer_vision:
             adapter_factory = InputAdapter.registry.get("computer_vision")
             if adapter_factory:
                 selected.append(adapter_factory())
 
-        if self.flags.enable_discord_bridge and getattr(self.config, "advisors", {}).get(
-            "enabled", False
-        ):
+        if self.flags.enable_discord_bridge and getattr(
+            self.config, "advisors", {}
+        ).get("enabled", False):
             adapter_factory = InputAdapter.registry.get("discord_bridge")
             if adapter_factory:
                 selected.append(adapter_factory())
@@ -160,3 +250,18 @@ class ModeOrchestrator:
     # Routing
     def _dispatch_command(self, command_name: str) -> Any:
         return self.command_sink.execute_command(command_name)
+
+    def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
+        """Handle wake word detection."""
+        # For now, treat wake word as a command trigger
+        # In the future, this could activate voice input or advisor mode
+        command_name = f"wake_word_{wake_word}"
+        try:
+            self._dispatch_command(command_name)
+        except Exception:
+            # If no specific wake word command, try a generic wake command
+            try:
+                self._dispatch_command("wake")
+            except Exception:
+                # If no wake command, log the detection
+                pass  # Could add logging here if needed

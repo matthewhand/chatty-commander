@@ -56,6 +56,10 @@
     "wax_poetic": {
       "action": "url",
       "url": "{chatbot_endpoint}"
+    },
+    "wake": {
+      "action": "custom_message",
+      "message": "Wake word detected! ChattyCommander is now active."
     }
   },
   "command_sequences": {
