@@ -143,8 +143,8 @@ def include_core_routes(
             import psutil
 
             memory = psutil.virtual_memory()
-            memory_usage = ".1f"
-            cpu_usage = ".1f"
+            memory_usage = f"{memory.percent:.1f}%"
+            cpu_usage = f"{psutil.cpu_percent():.1f}%"
         except ImportError:
             pass  # psutil not available
 
@@ -293,7 +293,7 @@ def include_core_routes(
     }
 
     @router.get("/api/v1/health", operation_id="health_check_core")
-    async def health_check():
+    async def health_check_core():
         counters["status"] += 1
         return {
             "status": "healthy",

@@ -93,6 +93,32 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+# Advisor API models
+class AdvisorInbound(BaseModel):
+    platform: str
+    channel: str
+    user: str
+    text: str
+    username: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class AdvisorOutbound(BaseModel):
+    reply: str
+    context_key: str
+    persona_id: str
+    model: str
+    api_mode: str
+
+
+class ContextStats(BaseModel):
+    total_contexts: int
+    platform_distribution: dict[str, int]
+    persona_distribution: dict[str, int]
+    persistence_enabled: bool
+    persistence_path: str
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
@@ -367,6 +393,13 @@ class WebModeServer:
                 return HTMLResponse(
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
+        else:
+            # Fallback route when frontend is not built
+            @app.get("/", response_class=HTMLResponse)
+            async def _serve_frontend_fallback():  # pragma: no cover - exercised in integration
+                return HTMLResponse(
+                    "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
+                )
 
         # Optional avatar UI
         avatar_path = Path("src/chatty_commander/webui/avatar")
@@ -392,28 +425,6 @@ class WebModeServer:
 
     def _register_advisors_routes(self, app: FastAPI) -> None:
         """Register advisors REST endpoints backed by AdvisorsService."""
-
-        class AdvisorInbound(BaseModel):
-            platform: str
-            channel: str
-            user: str
-            text: str
-            username: str | None = None
-            metadata: dict[str, Any] | None = None
-
-        class AdvisorOutbound(BaseModel):
-            reply: str
-            context_key: str
-            persona_id: str
-            model: str
-            api_mode: str
-
-        class ContextStats(BaseModel):
-            total_contexts: int
-            platform_distribution: dict[str, int]
-            persona_distribution: dict[str, int]
-            persistence_enabled: bool
-            persistence_path: str
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(message: AdvisorInbound):
