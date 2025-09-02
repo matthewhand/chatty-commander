@@ -71,7 +71,17 @@ def browser_analyst_tool(url: str, max_length: Optional[int] = 500) -> str:
 browser_analyst_tool_instance = None
 if AGENTS_AVAILABLE:
     browser_analyst_tool_instance = FunctionTool(
-        browser_analyst_tool,
         name="browser_analyst",
         description="Analyze and summarize web content from URLs. Useful for getting quick overviews of web pages, documentation, or articles.",
+        params_json_schema={
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "The URL to analyze and summarize",
+                }
+            },
+            "required": ["url"],
+        },
+        on_invoke_tool=browser_analyst_tool,
     )
