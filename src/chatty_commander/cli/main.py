@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Entry point for the ChattyCommander application.
 
 This module coordinates model loading, manages state transitions based on
@@ -109,7 +131,9 @@ def run_web_mode(
         )
         sys.exit(1)
 
-    logger.info(f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}")
+    logger.info(
+        f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
+    )
 
     # Create web server instance
     web_server = create_web_server(
@@ -208,18 +232,26 @@ def run_gui_mode(
         # Prefer avatar GUI if available (pywebview + local index.html)
         try:
             try:
-                from chatty_commander.avatars.avatar_gui import run_avatar_gui  # type: ignore
+                from chatty_commander.avatars.avatar_gui import (
+                    run_avatar_gui,  # type: ignore
+                )
             except Exception:
-                from src.chatty_commander.avatars.avatar_gui import run_avatar_gui  # type: ignore
+                from src.chatty_commander.avatars.avatar_gui import (
+                    run_avatar_gui,  # type: ignore
+                )
             logger.info("Starting Avatar GUI (TalkingHead)")
             rc = run_avatar_gui()
             return 0 if rc is None else int(rc)
         except Exception as e:
-            logger.warning(f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI")
+            logger.warning(
+                f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI"
+            )
             try:
                 # Try PyQt5-based transparent browser avatar
                 try:
-                    from chatty_commander.gui.pyqt5_avatar import run_pyqt5_avatar  # type: ignore
+                    from chatty_commander.gui.pyqt5_avatar import (
+                        run_pyqt5_avatar,  # type: ignore
+                    )
                 except Exception:
                     from src.chatty_commander.gui.pyqt5_avatar import (
                         run_pyqt5_avatar,  # type: ignore
@@ -233,16 +265,22 @@ def run_gui_mode(
                 )
                 try:
                     # Installed package path
-                    from chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
+                    from chatty_commander.gui.tray_popup import (
+                        run_tray_popup,  # type: ignore
+                    )
                 except Exception:
                     # Repo-root execution fallback
-                    from src.chatty_commander.gui.tray_popup import run_tray_popup  # type: ignore
+                    from src.chatty_commander.gui.tray_popup import (
+                        run_tray_popup,  # type: ignore
+                    )
 
                 logger.info("Starting GUI tray popup mode")
                 rc = run_tray_popup(config, logger)
                 return 0 if rc is None else int(rc)
     except Exception as e:
-        logger.warning(f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI")
+        logger.warning(
+            f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
+        )
         try:
             from chatty_commander.gui import main as gui_main
 
@@ -367,7 +405,10 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         help="Avoid launching the GUI even if --gui is provided; useful in CI/headless.",
     )
     parser.add_argument(
-        "--display", type=str, default=None, help="Override DISPLAY value for GUI mode (e.g., :0)."
+        "--display",
+        type=str,
+        default=None,
+        help="Override DISPLAY value for GUI mode (e.g., :0).",
     )
 
     # Advisors convenience flag
@@ -380,7 +421,9 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     return parser
 
 
-def run_interactive_shell(config, model_manager, state_manager, command_executor, logger):
+def run_interactive_shell(
+    config, model_manager, state_manager, command_executor, logger
+):
     """Run interactive text-based shell mode with tab completion."""
     import readline
 
@@ -388,14 +431,16 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
     print("ChattyCommander Interactive Shell")
     print("Type 'help' for commands, 'exit' to quit")
 
-    commands = ['help', 'exit', 'state', 'models', 'execute']
+    commands = ["help", "exit", "state", "models", "execute"]
     model_actions = list(config.model_actions.keys())
 
     def completer(text, state):
         options = [cmd for cmd in commands if cmd.startswith(text)]
-        if text.startswith('execute '):
+        if text.startswith("execute "):
             subtext = text[8:]
-            suboptions = [f'execute {act}' for act in model_actions if act.startswith(subtext)]
+            suboptions = [
+                f"execute {act}" for act in model_actions if act.startswith(subtext)
+            ]
             try:
                 return suboptions[state]
             except IndexError:
@@ -406,25 +451,27 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
             return None
 
     readline.set_completer(completer)
-    readline.parse_and_bind('tab: complete')
+    readline.parse_and_bind("tab: complete")
 
     while True:
         try:
             input_str = input("> ").strip()
             if not input_str:
                 continue
-            if input_str.lower() == 'exit':
+            if input_str.lower() == "exit":
                 break
-            if input_str.lower() == 'help':
-                print("Available commands: help, exit, state, models, execute <command>")
+            if input_str.lower() == "help":
+                print(
+                    "Available commands: help, exit, state, models, execute <command>"
+                )
                 continue
-            if input_str.lower() == 'state':
+            if input_str.lower() == "state":
                 print(f"Current state: {state_manager.current_state}")
                 continue
-            if input_str.lower() == 'models':
+            if input_str.lower() == "models":
                 print("Loaded models: " + ", ".join(model_manager.get_models()))
                 continue
-            if input_str.startswith('execute '):
+            if input_str.startswith("execute "):
                 command = input_str[8:].strip()
                 if command in config.model_actions:
                     command_executor.execute_command(command)
@@ -445,7 +492,9 @@ def run_interactive_shell(config, model_manager, state_manager, command_executor
     logger.info("Exiting interactive shell")
 
 
-def run_orchestrator_mode(config, model_manager, state_manager, command_executor, logger, args):
+def run_orchestrator_mode(
+    config, model_manager, state_manager, command_executor, logger, args
+):
     """Run orchestrator-driven mode; adapters route to the same command sink."""
     # Lazy import to avoid heavy imports in --help path
     from chatty_commander.app.orchestrator import (
@@ -506,7 +555,7 @@ def main():
         print("Starting interactive shell... (type 'exit' to quit)")
         # We'll launch the interactive shell after initialization
         interactive_mode = True
-    elif '--help' in sys.argv or '-h' in sys.argv:
+    elif "--help" in sys.argv or "-h" in sys.argv:
         print("ChattyCommander - Voice Command System")
         print("Use --help for available options")
         # Align with tests expecting SystemExit on main invocation path.
@@ -515,7 +564,7 @@ def main():
         interactive_mode = False
 
     # Ensure logger is created with the expected name for tests
-    logger = setup_logger('main', 'logs/chattycommander.log')
+    logger = setup_logger("main", "logs/chattycommander.log")
     logger.info("Starting ChattyCommander application")
 
     # Generate default configuration if needed
@@ -633,7 +682,9 @@ def main():
             config.web_server = {}
         host = getattr(args, "host", None) or config.web_server.get("host", "0.0.0.0")
         port = getattr(args, "port", None) or config.web_server.get("port", 8100)
-        config.web_server.update({"host": host, "port": port, "auth_enabled": not args.no_auth})
+        config.web_server.update(
+            {"host": host, "port": port, "auth_enabled": not args.no_auth}
+        )
         run_web_mode(
             config,
             model_manager,
@@ -667,7 +718,9 @@ def main():
             return rc
         return 0
     elif args.shell:
-        run_interactive_shell(config, model_manager, state_manager, command_executor, logger)
+        run_interactive_shell(
+            config, model_manager, state_manager, command_executor, logger
+        )
         return 0
     elif getattr(args, "orchestrate", False):
         return run_orchestrator_mode(
@@ -675,7 +728,9 @@ def main():
         )
     elif interactive_mode:
         # Launch interactive shell when no arguments provided
-        run_interactive_shell(config, model_manager, state_manager, command_executor, logger)
+        run_interactive_shell(
+            config, model_manager, state_manager, command_executor, logger
+        )
         return 0
     else:
         run_cli_mode(config, model_manager, state_manager, command_executor, logger)

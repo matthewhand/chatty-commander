@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Specific tests for static file serving functionality.
 Tests edge cases, error handling, and different file types.
@@ -9,8 +31,6 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.testclient import TestClient
 
 from chatty_commander.app.command_executor import CommandExecutor
@@ -44,7 +64,7 @@ class TestStaticFileServing:
     def web_server(self, mock_managers):
         """Create WebModeServer instance for testing."""
         with patch(
-            'chatty_commander.advisors.providers.build_provider_safe'
+            "chatty_commander.advisors.providers.build_provider_safe"
         ) as mock_build_provider:
             mock_provider = Mock()
             mock_provider.model = "test-model"
@@ -66,7 +86,7 @@ class TestStaticFileServing:
 
     def test_frontend_index_fallback_no_build(self, test_client):
         """Test frontend index fallback when build directory doesn't exist."""
-        with patch('pathlib.Path.exists') as mock_exists:
+        with patch("pathlib.Path.exists") as mock_exists:
             # Mock that frontend build directory doesn't exist
             mock_exists.return_value = False
 
@@ -78,7 +98,7 @@ class TestStaticFileServing:
 
     def test_frontend_index_with_build_directory(self, test_client):
         """Test frontend index serving when build directory exists but no index.html."""
-        with patch('pathlib.Path.exists', return_value=False):
+        with patch("pathlib.Path.exists", return_value=False):
             # Mock that neither build directory nor index.html exist
             response = test_client.get("/")
             assert response.status_code == 200
@@ -88,8 +108,8 @@ class TestStaticFileServing:
     def test_avatar_ui_mount_failure_handling(self, test_client):
         """Test avatar UI mount failure handling."""
         with (
-            patch('pathlib.Path.exists', return_value=True),
-            patch('fastapi.FastAPI.mount', side_effect=Exception("Mount failed")),
+            patch("pathlib.Path.exists", return_value=True),
+            patch("fastapi.FastAPI.mount", side_effect=Exception("Mount failed")),
         ):
             # This tests the exception handling in avatar UI mounting
             # The server should still start even if avatar UI mounting fails
@@ -117,7 +137,7 @@ class TestStaticFileServing:
     def test_frontend_path_resolution(self, test_client):
         """Test frontend path resolution logic."""
         # Test that the correct paths are being checked
-        with patch('pathlib.Path') as mock_path_class:
+        with patch("pathlib.Path") as mock_path_class:
             mock_path = Mock()
             mock_path.exists.return_value = True
             mock_path.__truediv__ = Mock(return_value=mock_path)
@@ -130,7 +150,7 @@ class TestStaticFileServing:
     def test_avatar_path_resolution(self, test_client):
         """Test avatar UI path resolution logic."""
         # Test that the correct avatar paths are being checked
-        with patch('pathlib.Path') as mock_path_class:
+        with patch("pathlib.Path") as mock_path_class:
             mock_path = Mock()
             mock_path.exists.return_value = False
             mock_path_class.return_value = mock_path
@@ -231,7 +251,7 @@ class TestStaticFileServing:
     def test_frontend_build_detection_logic(self, test_client):
         """Test the logic for detecting if frontend is built."""
         # Test the specific logic used to determine if frontend is available
-        with patch('pathlib.Path.exists') as mock_exists:
+        with patch("pathlib.Path.exists") as mock_exists:
             # Test various combinations of existing/missing files
             mock_exists.return_value = True
             response = test_client.get("/api/v1/status")

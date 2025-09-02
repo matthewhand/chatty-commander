@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Voice-controlled codex-cli demo script.
 
@@ -50,7 +72,9 @@ def validate_email(email: str) -> bool:
             return code
 
     # Default response
-    return f'# Generated code for: {transcription}\nprint("Code generated successfully!")'
+    return (
+        f'# Generated code for: {transcription}\nprint("Code generated successfully!")'
+    )
 
 
 def demo_voice_to_code():
@@ -77,7 +101,9 @@ def demo_voice_to_code():
 
     # Create voice pipeline with mock components
     pipeline = VoicePipeline(
-        config_manager=config, use_mock=True, wake_words=["hey_coder", "start_transcription"]
+        config_manager=config,
+        use_mock=True,
+        wake_words=["hey_coder", "start_transcription"],
     )
 
     # Demo commands to test
@@ -108,7 +134,9 @@ def demo_voice_to_code():
             # Simulate pasting code (this would be automatic with real keybindings)
             print(f"[{timestamp}] ⌨️  Code pasted to editor")
 
-            results.append({'input': transcription, 'code': generated_code, 'timestamp': timestamp})
+            results.append(
+                {"input": transcription, "code": generated_code, "timestamp": timestamp}
+            )
 
     pipeline.add_command_callback(demo_callback)
 

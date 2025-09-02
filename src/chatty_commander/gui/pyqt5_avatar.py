@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 PyQt5-based transparent browser implementation for popup avatar.
 
@@ -75,7 +97,9 @@ class TransparentBrowser(QMainWindow):
         """Configure the main window properties."""
         # Window flags for frameless, transparent, always on top
         self.setWindowFlags(
-            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool  # Prevents taskbar entry
+            Qt.FramelessWindowHint
+            | Qt.WindowStaysOnTopHint
+            | Qt.Tool  # Prevents taskbar entry
         )
 
         # Enable transparency
@@ -83,10 +107,10 @@ class TransparentBrowser(QMainWindow):
         self.setAttribute(Qt.WA_NoSystemBackground, True)
 
         # Set window size and position
-        width = self.config.get('width', 400)
-        height = self.config.get('height', 600)
-        x = self.config.get('x', 100)
-        y = self.config.get('y', 100)
+        width = self.config.get("width", 400)
+        height = self.config.get("height", 600)
+        x = self.config.get("x", 100)
+        y = self.config.get("y", 100)
 
         self.setGeometry(x, y, width, height)
         self.setWindowTitle("Chatty Commander Avatar")
@@ -111,15 +135,17 @@ class TransparentBrowser(QMainWindow):
         self.setCentralWidget(central_widget)
 
         # Load the avatar page
-        url = self.config.get('url', 'file:///src/chatty_commander/webui/avatar/index.html')
-        if url.startswith('file://') and not url.startswith('file:///'):
+        url = self.config.get(
+            "url", "file:///src/chatty_commander/webui/avatar/index.html"
+        )
+        if url.startswith("file://") and not url.startswith("file:///"):
             # Convert relative file paths to absolute
             file_path = url[7:]  # Remove 'file://'
-            if not file_path.startswith('/'):
+            if not file_path.startswith("/"):
                 # Relative path, make it absolute
                 base_path = Path(__file__).parent.parent.parent.parent
                 file_path = str(base_path / file_path)
-            url = f'file:///{file_path}'
+            url = f"file:///{file_path}"
 
         logger.info(f"Loading avatar URL: {url}")
         self.web_view.load(QUrl(url))
@@ -164,7 +190,9 @@ class TransparentBrowser(QMainWindow):
             self.tray_icon.setIcon(QIcon(str(icon_path)))
         else:
             # Fallback to default icon
-            self.tray_icon.setIcon(self.style().standardIcon(self.style().SP_ComputerIcon))
+            self.tray_icon.setIcon(
+                self.style().standardIcon(self.style().SP_ComputerIcon)
+            )
 
         # Create context menu
         tray_menu = QMenu()
@@ -271,12 +299,12 @@ def _load_settings() -> dict[str, Any]:
         config = Config.load()
 
         # Get PyQt5 avatar settings
-        pyqt5_config = getattr(config, 'pyqt5_avatar', {})
+        pyqt5_config = getattr(config, "pyqt5_avatar", {})
         if isinstance(pyqt5_config, dict):
             return pyqt5_config
 
         # Fallback to general avatar settings
-        avatar_config = getattr(config, 'avatar', {})
+        avatar_config = getattr(config, "avatar", {})
         if isinstance(avatar_config, dict):
             return avatar_config
 
@@ -285,14 +313,14 @@ def _load_settings() -> dict[str, Any]:
 
     # Default settings
     return {
-        'url': 'file:///src/chatty_commander/webui/avatar/index.html',
-        'width': 400,
-        'height': 600,
-        'x': 100,
-        'y': 100,
-        'transparent': True,
-        'always_on_top': True,
-        'frameless': True,
+        "url": "file:///src/chatty_commander/webui/avatar/index.html",
+        "width": 400,
+        "height": 600,
+        "x": 100,
+        "y": 100,
+        "transparent": True,
+        "always_on_top": True,
+        "frameless": True,
     }
 
 
@@ -304,7 +332,9 @@ def run_pyqt5_avatar() -> bool:
         bool: True if successful, False if failed or PyQt5 not available
     """
     if not PYQT5_AVAILABLE:
-        logger.warning("PyQt5 is not available. Install with: pip install PyQt5 PyQtWebEngine")
+        logger.warning(
+            "PyQt5 is not available. Install with: pip install PyQt5 PyQtWebEngine"
+        )
         return False
 
     try:

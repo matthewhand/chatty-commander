@@ -53,7 +53,7 @@ paths:
                   example: password123
               required: [username, password]
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
@@ -69,7 +69,7 @@ paths:
                   expires_in:
                     type: integer
                     example: 3600
-        '401':
+        "401":
           description: Invalid credentials
 
   /auth/refresh:
@@ -79,12 +79,12 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Token refreshed successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenResponse'
+                $ref: "#/components/schemas/TokenResponse"
 
   # Configuration Management
   /config:
@@ -95,12 +95,12 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Configuration retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Configuration'
+                $ref: "#/components/schemas/Configuration"
 
     put:
       tags: [Configuration]
@@ -113,13 +113,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Configuration'
+              $ref: "#/components/schemas/Configuration"
       responses:
-        '200':
+        "200":
           description: Configuration updated successfully
-        '400':
+        "400":
           description: Invalid configuration data
-        '422':
+        "422":
           description: Validation error
 
   # Commands Management
@@ -138,7 +138,7 @@ paths:
             type: string
             enum: [keypress, url, system]
       responses:
-        '200':
+        "200":
           description: Commands retrieved successfully
           content:
             application/json:
@@ -148,7 +148,7 @@ paths:
                   commands:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Command'
+                      $ref: "#/components/schemas/Command"
                   total:
                     type: integer
                     example: 15
@@ -164,17 +164,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CommandCreate'
+              $ref: "#/components/schemas/CommandCreate"
       responses:
-        '201':
+        "201":
           description: Command created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Command'
-        '400':
+                $ref: "#/components/schemas/Command"
+        "400":
           description: Invalid command data
-        '409':
+        "409":
           description: Command already exists
 
   /config/commands/{command_id}:
@@ -191,13 +191,13 @@ paths:
             type: string
             example: take_screenshot
       responses:
-        '200':
+        "200":
           description: Command retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Command'
-        '404':
+                $ref: "#/components/schemas/Command"
+        "404":
           description: Command not found
 
     put:
@@ -216,11 +216,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CommandUpdate'
+              $ref: "#/components/schemas/CommandUpdate"
       responses:
-        '200':
+        "200":
           description: Command updated successfully
-        '404':
+        "404":
           description: Command not found
 
     delete:
@@ -235,9 +235,9 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Command deleted successfully
-        '404':
+        "404":
           description: Command not found
 
   # States Management
@@ -249,7 +249,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: States retrieved successfully
           content:
             application/json:
@@ -289,9 +289,9 @@ paths:
                     type: string
                   example: ["hey_chat_tee", "hey_khum_puter"]
       responses:
-        '200':
+        "200":
           description: State models updated successfully
-        '400':
+        "400":
           description: Invalid state or models
 
   # Service Management
@@ -303,12 +303,12 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Service status retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceStatus'
+                $ref: "#/components/schemas/ServiceStatus"
 
   /service/start:
     post:
@@ -328,7 +328,7 @@ paths:
                   default: false
                   description: Enable debug logging
       responses:
-        '200':
+        "200":
           description: Service started successfully
           content:
             application/json:
@@ -341,7 +341,7 @@ paths:
                   pid:
                     type: integer
                     example: 12345
-        '409':
+        "409":
           description: Service already running
 
   /service/stop:
@@ -351,9 +351,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Service stopped successfully
-        '404':
+        "404":
           description: Service not running
 
   /service/restart:
@@ -363,7 +363,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Service restarted successfully
 
   # Models Management
@@ -382,7 +382,7 @@ paths:
             type: string
             enum: [idle, computer, chatty]
       responses:
-        '200':
+        "200":
           description: Models retrieved successfully
           content:
             application/json:
@@ -392,7 +392,7 @@ paths:
                   models:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Model'
+                      $ref: "#/components/schemas/Model"
 
   /models/test:
     post:
@@ -418,7 +418,7 @@ paths:
                   type: boolean
                   default: false
       responses:
-        '200':
+        "200":
           description: Recognition test completed
           content:
             application/json:
@@ -448,12 +448,12 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Audio settings retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AudioSettings'
+                $ref: "#/components/schemas/AudioSettings"
 
     put:
       tags: [Audio]
@@ -465,9 +465,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AudioSettings'
+              $ref: "#/components/schemas/AudioSettings"
       responses:
-        '200':
+        "200":
           description: Audio settings updated successfully
 
   /audio/devices:
@@ -478,7 +478,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Audio devices retrieved successfully
           content:
             application/json:
@@ -488,11 +488,11 @@ paths:
                   microphones:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AudioDevice'
+                      $ref: "#/components/schemas/AudioDevice"
                   speakers:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AudioDevice'
+                      $ref: "#/components/schemas/AudioDevice"
 
   /audio/level:
     get:
@@ -502,7 +502,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Audio level retrieved successfully
           content:
             application/json:
@@ -527,12 +527,12 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: System information retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SystemInfo'
+                $ref: "#/components/schemas/SystemInfo"
 
   /health:
     get:
@@ -540,7 +540,7 @@ paths:
       summary: Health check
       description: Check API health status (no authentication required)
       responses:
-        '200':
+        "200":
           description: API is healthy
           content:
             application/json:
@@ -599,7 +599,7 @@ components:
               type: string
               format: uri
         audio_settings:
-          $ref: '#/components/schemas/AudioSettings'
+          $ref: "#/components/schemas/AudioSettings"
         general_settings:
           type: object
           properties:
@@ -835,7 +835,6 @@ components:
         details:
           type: object
           additionalProperties: true
-
 # WebSocket Events (documented for reference)
 # WebSocket endpoint: /ws/status
 # Events:

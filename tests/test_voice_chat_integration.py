@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Test voice chat integration with GPT-OSS:20B, TTS/STT, and avatar.
 
@@ -8,17 +30,13 @@ This test verifies that the voice chat system can:
 4. Update avatar states correctly
 """
 
-import logging
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
-from chatty_commander.app.state_manager import StateManager
 from chatty_commander.avatars.thinking_state import ThinkingState, ThinkingStateManager
-from chatty_commander.llm.manager import LLMManager
-from chatty_commander.voice.pipeline import VoicePipeline
 
 
 class TestVoiceChatIntegration:
@@ -27,14 +45,13 @@ class TestVoiceChatIntegration:
     def test_voice_chat_components_initialization(self):
         """Test that all voice chat components can be initialized."""
         # Mock the components to avoid actual dependencies
-        with patch('chatty_commander.llm.manager.LLMManager') as mock_llm_manager_class:
+        with patch("chatty_commander.llm.manager.LLMManager") as mock_llm_manager_class:
             with patch(
-                'chatty_commander.voice.pipeline.VoicePipeline'
+                "chatty_commander.voice.pipeline.VoicePipeline"
             ) as mock_voice_pipeline_class:
                 with patch(
-                    'chatty_commander.app.state_manager.StateManager'
+                    "chatty_commander.app.state_manager.StateManager"
                 ) as mock_state_manager_class:
-
                     # Setup mocks
                     mock_llm_manager = Mock()
                     mock_llm_manager.is_available.return_value = True
@@ -74,13 +91,17 @@ class TestVoiceChatIntegration:
 
         # Setup voice pipeline mock
         config.voice_pipeline.transcriber = Mock()
-        config.voice_pipeline.transcriber.record_and_transcribe.return_value = "Hello, how are you?"
+        config.voice_pipeline.transcriber.record_and_transcribe.return_value = (
+            "Hello, how are you?"
+        )
         config.voice_pipeline.tts = Mock()
         config.voice_pipeline.tts.is_available.return_value = True
         config.voice_pipeline.tts.speak = Mock()
 
         # Setup LLM manager mock
-        config.llm_manager.generate_response.return_value = "I'm doing well, thank you for asking!"
+        config.llm_manager.generate_response.return_value = (
+            "I'm doing well, thank you for asking!"
+        )
 
         # Create command executor
         command_executor = CommandExecutor(config, Mock(), Mock())
@@ -110,7 +131,9 @@ class TestVoiceChatIntegration:
         thinking_state_manager.set_agent_state(
             "test_agent", ThinkingState.RESPONDING, "AI response"
         )
-        thinking_state_manager.set_agent_state("test_agent", ThinkingState.IDLE, "Voice chat ended")
+        thinking_state_manager.set_agent_state(
+            "test_agent", ThinkingState.IDLE, "Voice chat ended"
+        )
 
         # Verify states were set correctly
         agent_state = thinking_state_manager.get_agent_state("test_agent")
@@ -174,12 +197,12 @@ class TestVoiceChatIntegration:
         }
 
         # Check that voice_chat action exists in model_actions
-        assert 'voice_chat' in config.model_actions
+        assert "voice_chat" in config.model_actions
 
         # Check action configuration
-        voice_chat_action = config.model_actions['voice_chat']
-        assert voice_chat_action['action'] == 'voice_chat'
-        assert 'description' in voice_chat_action
+        voice_chat_action = config.model_actions["voice_chat"]
+        assert voice_chat_action["action"] == "voice_chat"
+        assert "description" in voice_chat_action
 
 
 if __name__ == "__main__":

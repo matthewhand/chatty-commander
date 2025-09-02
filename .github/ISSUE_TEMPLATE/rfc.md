@@ -1,7 +1,7 @@
 ---
 name: RFC
 about: Propose a major change or enhancement
-title: "[RFC] "
+title: '[RFC] '
 labels: [rfc]
 assignees: []
 ---

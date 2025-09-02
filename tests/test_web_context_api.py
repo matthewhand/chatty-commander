@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Integration tests for context-aware web API endpoints.
 """
@@ -28,23 +50,25 @@ class TestWebContextAPI:
                 self.chat_models_path = "models-chatty"
                 self.config = {"model_actions": {}}
                 self.advisors = {
-                    'enabled': True,
-                    'context': {
-                        'personas': {
-                            'general': {'system_prompt': 'You are helpful.'},
-                            'philosopher': {'system_prompt': 'You are philosophical.'},
-                            'discord_default': {'system_prompt': 'You are a Discord bot.'},
-                            'slack_default': {'system_prompt': 'You are a Slack app.'},
+                    "enabled": True,
+                    "context": {
+                        "personas": {
+                            "general": {"system_prompt": "You are helpful."},
+                            "philosopher": {"system_prompt": "You are philosophical."},
+                            "discord_default": {
+                                "system_prompt": "You are a Discord bot."
+                            },
+                            "slack_default": {"system_prompt": "You are a Slack app."},
                         },
-                        'default_persona': 'general',
-                        'persistence_enabled': False,
+                        "default_persona": "general",
+                        "persistence_enabled": False,
                     },
-                    'providers': {'llm_api_mode': 'completion', 'model': 'gpt-oss20b'},
-                    'memory': {'persistence_enabled': False},
+                    "providers": {"llm_api_mode": "completion", "model": "gpt-oss20b"},
+                    "memory": {"persistence_enabled": False},
                 }
 
         with patch(
-            'chatty_commander.advisors.providers.build_provider_safe'
+            "chatty_commander.advisors.providers.build_provider_safe"
         ) as mock_build_provider:
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
@@ -122,7 +146,12 @@ class TestWebContextAPI:
         # Create context first
         response = client.post(
             "/api/v1/advisors/message",
-            json={"platform": "web", "channel": "chat", "user": "user789", "text": "Hello"},
+            json={
+                "platform": "web",
+                "channel": "chat",
+                "user": "user789",
+                "text": "Hello",
+            },
         )
 
         assert response.status_code == 200
@@ -147,7 +176,12 @@ class TestWebContextAPI:
         # Create context first
         response = client.post(
             "/api/v1/advisors/message",
-            json={"platform": "discord", "channel": "test", "user": "user123", "text": "Hello"},
+            json={
+                "platform": "discord",
+                "channel": "test",
+                "user": "user123",
+                "text": "Hello",
+            },
         )
 
         assert response.status_code == 200
@@ -168,17 +202,32 @@ class TestWebContextAPI:
         # Create some contexts
         client.post(
             "/api/v1/advisors/message",
-            json={"platform": "discord", "channel": "channel1", "user": "user1", "text": "Hello"},
+            json={
+                "platform": "discord",
+                "channel": "channel1",
+                "user": "user1",
+                "text": "Hello",
+            },
         )
 
         client.post(
             "/api/v1/advisors/message",
-            json={"platform": "discord", "channel": "channel2", "user": "user2", "text": "Hello"},
+            json={
+                "platform": "discord",
+                "channel": "channel2",
+                "user": "user2",
+                "text": "Hello",
+            },
         )
 
         client.post(
             "/api/v1/advisors/message",
-            json={"platform": "slack", "channel": "general", "user": "user3", "text": "Hello"},
+            json={
+                "platform": "slack",
+                "channel": "general",
+                "user": "user3",
+                "text": "Hello",
+            },
         )
 
         # Get stats
@@ -199,7 +248,12 @@ class TestWebContextAPI:
         # Create context
         response = client.post(
             "/api/v1/advisors/message",
-            json={"platform": "web", "channel": "test", "user": "user123", "text": "Hello"},
+            json={
+                "platform": "web",
+                "channel": "test",
+                "user": "user123",
+                "text": "Hello",
+            },
         )
 
         assert response.status_code == 200

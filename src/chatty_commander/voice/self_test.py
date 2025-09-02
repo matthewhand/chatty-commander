@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Self-testing voice system using TTS→STT→LLM judge loop.
 
@@ -64,16 +86,19 @@ class VoiceSelfTester:
         try:
             self._tts_engine = pyttsx3.init()
             # Configure for clear speech
-            self._tts_engine.setProperty('rate', 150)  # Slower for clarity
-            self._tts_engine.setProperty('volume', 0.9)
+            self._tts_engine.setProperty("rate", 150)  # Slower for clarity
+            self._tts_engine.setProperty("volume", 0.9)
 
             # Try to use a good quality voice
-            voices = self._tts_engine.getProperty('voices')
+            voices = self._tts_engine.getProperty("voices")
             if voices:
                 # Prefer female voices (often clearer for TTS)
                 for voice in voices:
-                    if 'female' in voice.name.lower() or 'samantha' in voice.name.lower():
-                        self._tts_engine.setProperty('voice', voice.id)
+                    if (
+                        "female" in voice.name.lower()
+                        or "samantha" in voice.name.lower()
+                    ):
+                        self._tts_engine.setProperty("voice", voice.id)
                         break
 
         except Exception as e:
@@ -122,7 +147,7 @@ class VoiceSelfTester:
                 self._tts_engine.runAndWait()
 
                 # Read the generated audio file
-                with open(tmp_file.name, 'rb') as f:
+                with open(tmp_file.name, "rb") as f:
                     audio_data = f.read()
 
                 return audio_data
@@ -166,7 +191,9 @@ class VoiceSelfTester:
 
         return len(intersection) / len(union)
 
-    def llm_judge_transcription(self, original: str, transcribed: str) -> dict[str, any]:
+    def llm_judge_transcription(
+        self, original: str, transcribed: str
+    ) -> dict[str, any]:
         """Use LLM to judge transcription quality and provide feedback."""
         if not self.openai_client:
             return {
@@ -199,7 +226,9 @@ class VoiceSelfTester:
 
         try:
             response = self.openai_client.chat.completions.create(
-                model="gpt-4", messages=[{"role": "user", "content": prompt}], temperature=0.1
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
             )
 
             result = json.loads(response.choices[0].message.content)
@@ -227,7 +256,9 @@ class VoiceSelfTester:
             },
         }
 
-        logger.info(f"Starting comprehensive voice self-test with {len(self.test_phrases)} phrases")
+        logger.info(
+            f"Starting comprehensive voice self-test with {len(self.test_phrases)} phrases"
+        )
 
         category_scores = {}
         all_suggestions = []
@@ -275,8 +306,12 @@ class VoiceSelfTester:
             cat: sum(scores) / len(scores) for cat, scores in category_scores.items()
         }
         if category_averages:
-            results["summary"]["best_category"] = max(category_averages, key=category_averages.get)
-            results["summary"]["worst_category"] = min(category_averages, key=category_averages.get)
+            results["summary"]["best_category"] = max(
+                category_averages, key=category_averages.get
+            )
+            results["summary"]["worst_category"] = min(
+                category_averages, key=category_averages.get
+            )
 
         # Aggregate improvement suggestions
         suggestion_counts = {}
@@ -285,7 +320,9 @@ class VoiceSelfTester:
 
         results["summary"]["improvement_suggestions"] = [
             {"suggestion": s, "frequency": c}
-            for s, c in sorted(suggestion_counts.items(), key=lambda x: x[1], reverse=True)
+            for s, c in sorted(
+                suggestion_counts.items(), key=lambda x: x[1], reverse=True
+            )
         ]
 
         logger.info(
@@ -297,11 +334,19 @@ class VoiceSelfTester:
         """Categorize phrase for analysis."""
         phrase_lower = phrase.lower()
 
-        if any(word in phrase_lower for word in ["function", "class", "import", "def", "async"]):
+        if any(
+            word in phrase_lower
+            for word in ["function", "class", "import", "def", "async"]
+        ):
             return "programming"
-        elif any(word in phrase_lower for word in ["hey", "turn", "set", "play", "what's"]):
+        elif any(
+            word in phrase_lower for word in ["hey", "turn", "set", "play", "what's"]
+        ):
             return "voice_commands"
-        elif any(word in phrase_lower for word in ["create", "write", "implement", "generate"]):
+        elif any(
+            word in phrase_lower
+            for word in ["create", "write", "implement", "generate"]
+        ):
             return "creation_commands"
         elif len(phrase.split()) <= 3:
             return "simple"
@@ -316,7 +361,9 @@ class VoiceSelfTester:
         avg_accuracy = summary.get("average_accuracy", 0.0)
 
         if avg_accuracy < 0.7:
-            suggestions.append("Consider switching to a higher-quality transcription backend")
+            suggestions.append(
+                "Consider switching to a higher-quality transcription backend"
+            )
             suggestions.append("Improve audio preprocessing and noise reduction")
 
         if avg_accuracy < 0.9:
@@ -326,7 +373,9 @@ class VoiceSelfTester:
         # Analyze category performance
         worst_category = summary.get("worst_category")
         if worst_category:
-            suggestions.append(f"Focus improvement efforts on '{worst_category}' category phrases")
+            suggestions.append(
+                f"Focus improvement efforts on '{worst_category}' category phrases"
+            )
 
         # Extract LLM suggestions
         llm_suggestions = summary.get("improvement_suggestions", [])
@@ -349,7 +398,9 @@ class VoiceSelfTester:
 
         # Suggest backend changes
         if avg_accuracy < 0.8:
-            tuning_recommendations["transcription_backend"] = "whisper_api"  # Higher quality
+            tuning_recommendations[
+                "transcription_backend"
+            ] = "whisper_api"  # Higher quality
 
         # Analyze timing issues
         individual_results = test_results.get("individual_results", [])
@@ -357,7 +408,9 @@ class VoiceSelfTester:
             r for r in individual_results if "timeout" in r.get("feedback", "").lower()
         ]
 
-        if len(timeout_issues) > len(individual_results) * 0.2:  # More than 20% timeout issues
+        if (
+            len(timeout_issues) > len(individual_results) * 0.2
+        ):  # More than 20% timeout issues
             tuning_recommendations["record_timeout"] = "increase"
             tuning_recommendations["silence_timeout"] = "increase"
 
@@ -441,7 +494,9 @@ def add_self_test_commands(subparsers):
         description="Use TTS→STT→LLM judge loop to test and improve voice recognition",
     )
 
-    test_subparsers = test_parser.add_subparsers(dest="test_command", help="Self-test commands")
+    test_subparsers = test_parser.add_subparsers(
+        dest="test_command", help="Self-test commands"
+    )
 
     # Basic test
     basic_parser = test_subparsers.add_parser("run", help="Run basic self-test")
@@ -449,22 +504,28 @@ def add_self_test_commands(subparsers):
     basic_parser.add_argument("--phrases", nargs="+", help="Custom test phrases")
 
     # Improvement loop
-    improve_parser = test_subparsers.add_parser("improve", help="Run self-improvement loop")
+    improve_parser = test_subparsers.add_parser(
+        "improve", help="Run self-improvement loop"
+    )
     improve_parser.add_argument(
         "--iterations", type=int, default=3, help="Number of improvement iterations"
     )
     improve_parser.add_argument("--openai-key", help="OpenAI API key for LLM judge")
 
     # Benchmark
-    benchmark_parser = test_subparsers.add_parser("benchmark", help="Run comprehensive benchmark")
+    benchmark_parser = test_subparsers.add_parser(
+        "benchmark", help="Run comprehensive benchmark"
+    )
     benchmark_parser.add_argument("--openai-key", help="OpenAI API key for LLM judge")
-    benchmark_parser.add_argument("--save-results", help="File to save detailed results")
+    benchmark_parser.add_argument(
+        "--save-results", help="File to save detailed results"
+    )
 
 
 def handle_self_test_command(args):
     """Handle self-test CLI commands."""
 
-    if not hasattr(args, 'test_command') or not args.test_command:
+    if not hasattr(args, "test_command") or not args.test_command:
         print("No self-test command specified. Use --help for available commands.")
         return
 
@@ -477,8 +538,8 @@ def handle_self_test_command(args):
         print("🧪 Running voice self-test...")
 
         tester = VoiceSelfTester(
-            openai_api_key=getattr(args, 'openai_key', None),
-            test_phrases=getattr(args, 'phrases', None),
+            openai_api_key=getattr(args, "openai_key", None),
+            test_phrases=getattr(args, "phrases", None),
         )
 
         results = tester.run_comprehensive_test()
@@ -501,8 +562,8 @@ def handle_self_test_command(args):
 
         results = create_self_improvement_loop(
             transcriber=transcriber,
-            openai_api_key=getattr(args, 'openai_key', None),
-            iterations=getattr(args, 'iterations', 3),
+            openai_api_key=getattr(args, "openai_key", None),
+            iterations=getattr(args, "iterations", 3),
         )
 
         print("📈 Improvement Results:")
@@ -512,12 +573,14 @@ def handle_self_test_command(args):
     elif args.test_command == "benchmark":
         print("📏 Running comprehensive benchmark...")
 
-        tester = VoiceSelfTester(openai_api_key=getattr(args, 'openai_key', None))
+        tester = VoiceSelfTester(openai_api_key=getattr(args, "openai_key", None))
         results = tester.run_comprehensive_test()
 
-        if hasattr(args, 'save_results') and args.save_results:
-            with open(args.save_results, 'w') as f:
+        if hasattr(args, "save_results") and args.save_results:
+            with open(args.save_results, "w") as f:
                 json.dump(results, f, indent=2)
             print(f"💾 Detailed results saved to {args.save_results}")
 
-        print(f"🏆 Benchmark complete: {results['summary']['average_accuracy']:.2%} accuracy")
+        print(
+            f"🏆 Benchmark complete: {results['summary']['average_accuracy']:.2%} accuracy"
+        )

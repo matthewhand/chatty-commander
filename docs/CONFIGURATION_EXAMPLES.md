@@ -9,12 +9,14 @@ Perfect for controlling external applications like codex-cli with pure voice com
 **Use Case**: Voice-controlled coding assistant that integrates with existing tools without any UI overhead.
 
 ### Features
+
 - No web UI or GUI popups
 - Keybinding-based transcription control
 - Minimal resource usage
 - Perfect for IDE integration
 
 ### Setup
+
 ```bash
 cp configs/voice-only-example.json config.json
 chatty-commander run --voice-only
@@ -23,30 +25,33 @@ chatty-commander run --voice-only
 ### Workflow Example: Voice-Controlled Codex-CLI
 
 **🎬 VIDEO PLACEHOLDER: Voice-Controlled Codex-CLI Demo**
-> *[Insert video here showing the complete workflow: wake word → voice command → codex-cli interaction → code generation]*
+
+> _\[Insert video here showing the complete workflow: wake word → voice command → codex-cli interaction → code generation\]_
 
 The voice-only configuration enables this powerful workflow:
 
 1. **Say wake word**: "Hey coder" or press `Ctrl+Shift+V`
-2. **Speak your request**: "Create a Python function that validates email addresses"
-3. **Automatic processing**: 
+1. **Speak your request**: "Create a Python function that validates email addresses"
+1. **Automatic processing**:
    - Voice transcribed locally using Whisper
    - Text automatically pasted and sent to codex-cli
    - Generated code appears in your editor
-4. **Seamless integration**: No UI interruptions, pure voice-to-code workflow
+1. **Seamless integration**: No UI interruptions, pure voice-to-code workflow
 
 #### Key Bindings (Customizable)
+
 - `Ctrl+Shift+V`: Start voice transcription
 - `Ctrl+Shift+Enter`: End transcription, paste, and execute
 - `Ctrl+Alt+C`: Trigger codex-cli with voice input
 
 #### Benefits
+
 - **Hands-free coding**: Keep hands on keyboard while describing code
 - **Natural language**: Describe what you want in plain English
 - **IDE agnostic**: Works with any text editor or terminal
 - **Offline capable**: Local Whisper transcription, no internet required
 
----
+______________________________________________________________________
 
 ## 🤖 Full AI Assistant Configuration
 
@@ -55,6 +60,7 @@ Complete smart home and productivity assistant with web UI and avatar.
 **Use Case**: Comprehensive voice assistant for home automation, productivity, and entertainment.
 
 ### Features
+
 - Voice control with wake words
 - Web dashboard at http://localhost:8100
 - Avatar animations and visual feedback
@@ -62,6 +68,7 @@ Complete smart home and productivity assistant with web UI and avatar.
 - OpenAI GPT integration for natural language
 
 ### Setup
+
 ```bash
 cp configs/full-assistant-example.json config.json
 # Configure your API keys and Home Assistant details
@@ -69,12 +76,13 @@ chatty-commander run --web --avatar
 ```
 
 ### Available Commands
+
 - **Smart Home**: "Turn on the lights", "Set temperature to 72"
 - **Weather**: "What's the weather like?"
 - **Entertainment**: "Play some music", "Turn on the TV"
 - **Productivity**: "What time is it?", "Set a reminder"
 
----
+______________________________________________________________________
 
 ## 💻 Developer Tools Configuration
 
@@ -83,6 +91,7 @@ Voice-controlled development workflow with git, testing, and IDE integration.
 **Use Case**: Streamline development tasks with voice commands for git, testing, and code formatting.
 
 ### Features
+
 - Git command integration
 - Test execution with voice
 - Code formatting automation
@@ -90,6 +99,7 @@ Voice-controlled development workflow with git, testing, and IDE integration.
 - Terminal command execution
 
 ### Setup
+
 ```bash
 cp configs/developer-tools-example.json config.json
 chatty-commander run --dev-mode
@@ -98,33 +108,36 @@ chatty-commander run --dev-mode
 ### Workflow Examples
 
 #### Git Workflow
+
 1. "Hey dev, check git status"
-2. "Add all changes"
-3. "Create commit" (opens IDE commit dialog)
+1. "Add all changes"
+1. "Create commit" (opens IDE commit dialog)
 
 #### Testing & Quality
-1. "Hey dev, format code"
-2. "Run tests"
-3. "Check test results"
 
----
+1. "Hey dev, format code"
+1. "Run tests"
+1. "Check test results"
+
+______________________________________________________________________
 
 ## Configuration Comparison
 
-| Feature | Voice-Only | Full Assistant | Developer Tools |
-|---------|------------|----------------|-----------------|
-| Voice Control | ✅ | ✅ | ✅ |
-| Web UI | ❌ | ✅ | ✅ |
-| Avatar | ❌ | ✅ | ❌ |
-| Smart Home | ❌ | ✅ | ❌ |
-| IDE Integration | ✅ | ❌ | ✅ |
-| Git Commands | ❌ | ❌ | ✅ |
-| Resource Usage | Minimal | High | Medium |
-| Best For | External Tools | Home Assistant | Development |
+| Feature         | Voice-Only     | Full Assistant | Developer Tools |
+| --------------- | -------------- | -------------- | --------------- |
+| Voice Control   | ✅             | ✅             | ✅              |
+| Web UI          | ❌             | ✅             | ✅              |
+| Avatar          | ❌             | ✅             | ❌              |
+| Smart Home      | ❌             | ✅             | ❌              |
+| IDE Integration | ✅             | ❌             | ✅              |
+| Git Commands    | ❌             | ❌             | ✅              |
+| Resource Usage  | Minimal        | High           | Medium          |
+| Best For        | External Tools | Home Assistant | Development     |
 
 ## Creating Custom Configurations
 
 ### Basic Structure
+
 ```json
 {
   "profile_name": "My Custom Profile",
@@ -151,6 +164,7 @@ chatty-commander run --dev-mode
 ### Action Types
 
 #### Keypress Actions
+
 ```json
 "action_name": {
   "keypress": {
@@ -161,6 +175,7 @@ chatty-commander run --dev-mode
 ```
 
 #### Shell Commands
+
 ```json
 "action_name": {
   "shell": {
@@ -172,6 +187,7 @@ chatty-commander run --dev-mode
 ```
 
 #### HTTP Requests
+
 ```json
 "action_name": {
   "url": {
@@ -184,6 +200,7 @@ chatty-commander run --dev-mode
 ```
 
 #### Messages/Notifications
+
 ```json
 "action_name": {
   "message": {
@@ -195,18 +212,21 @@ chatty-commander run --dev-mode
 ## Tips for Configuration
 
 ### Voice-Only Optimization
+
 - Use simple, distinct wake words
 - Configure appropriate silence timeouts
 - Test keybindings don't conflict with your apps
 - Use local Whisper for privacy and offline operation
 
 ### Performance Tuning
+
 - Disable unused features (web UI, avatar, etc.)
 - Adjust transcription timeouts based on your speaking pace
 - Use shorter wake words for faster activation
 - Configure silence detection threshold for your environment
 
 ### Integration Best Practices
+
 - Map voice commands to existing hotkeys when possible
 - Use descriptive command names that are easy to remember
 - Group related commands with similar prefixes
@@ -231,29 +251,32 @@ chatty-commander exec command_name --dry-run --config your-config.json
 ## Troubleshooting
 
 ### Voice Recognition Issues
+
 - Check microphone permissions
 - Adjust silence timeout settings
 - Test with mock transcription first
 - Verify wake word pronunciation
 
 ### Keybinding Conflicts
+
 - Test bindings don't conflict with system shortcuts
 - Use unique modifier combinations
 - Check application-specific hotkeys
 
 ### Performance Issues
+
 - Disable unused UI components
 - Use local transcription instead of API calls
 - Reduce wake word sensitivity if getting false positives
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 1. **Choose a configuration** that matches your use case
-2. **Customize the commands** to fit your specific workflow
-3. **Test incrementally** - start with basic commands and expand
-4. **Create workflows** by chaining multiple commands together
-5. **Share your config** - contribute back useful configurations to the community!
+1. **Customize the commands** to fit your specific workflow
+1. **Test incrementally** - start with basic commands and expand
+1. **Create workflows** by chaining multiple commands together
+1. **Share your config** - contribute back useful configurations to the community!
 
 For more advanced configuration options, see the [API Documentation](API.md) and [Architecture Overview](ARCHITECTURE_OVERVIEW.md).

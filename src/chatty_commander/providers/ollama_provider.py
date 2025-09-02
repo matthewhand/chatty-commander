@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Ollama Provider for ChattyCommander Advisors
 
@@ -25,25 +47,27 @@ class OllamaProvider(LLMProvider):
         super().__init__(config)
 
         # Ollama-specific configuration
-        self.ollama_host = config.get('ollama_host', 'http://localhost:11434')
-        self.model = config.get('model', 'gpt-oss:20b')
+        self.ollama_host = config.get("ollama_host", "http://localhost:11434")
+        self.model = config.get("model", "gpt-oss:20b")
 
         # Override base_url for Ollama compatibility
         self.base_url = f"{self.ollama_host}/api"
 
         # Ollama-specific parameters
-        self.stream = config.get('stream', False)
-        self.keep_alive = config.get('keep_alive', '5m')
-        self.num_ctx = config.get('num_ctx', 2048)
-        self.num_predict = config.get('num_predict', self.max_tokens)
+        self.stream = config.get("stream", False)
+        self.keep_alive = config.get("keep_alive", "5m")
+        self.num_ctx = config.get("num_ctx", 2048)
+        self.num_predict = config.get("num_predict", self.max_tokens)
 
         # Session for connection pooling
         self.session = requests.Session()
         self.session.headers.update(
-            {'Content-Type': 'application/json', 'User-Agent': 'chatty-commander/1.0'}
+            {"Content-Type": "application/json", "User-Agent": "chatty-commander/1.0"}
         )
 
-    def _make_request(self, endpoint: str, payload: dict[str, Any]) -> requests.Response:
+    def _make_request(
+        self, endpoint: str, payload: dict[str, Any]
+    ) -> requests.Response:
         """Make HTTP request to Ollama API with retries."""
         url = f"{self.base_url}/{endpoint}"
 
@@ -60,29 +84,31 @@ class OllamaProvider(LLMProvider):
                     raise
                 time.sleep(2**attempt)  # Exponential backoff
 
-        raise RuntimeError(f"Failed to connect to Ollama after {self.max_retries} attempts")
+        raise RuntimeError(
+            f"Failed to connect to Ollama after {self.max_retries} attempts"
+        )
 
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate response from Ollama model."""
         payload = {
-            'model': self.model,
-            'prompt': prompt,
-            'stream': False,  # Non-streaming for this method
-            'options': {
-                'temperature': kwargs.get('temperature', self.temperature),
-                'top_p': kwargs.get('top_p', self.top_p),
-                'num_ctx': kwargs.get('num_ctx', self.num_ctx),
-                'num_predict': kwargs.get('num_predict', self.num_predict),
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,  # Non-streaming for this method
+            "options": {
+                "temperature": kwargs.get("temperature", self.temperature),
+                "top_p": kwargs.get("top_p", self.top_p),
+                "num_ctx": kwargs.get("num_ctx", self.num_ctx),
+                "num_predict": kwargs.get("num_predict", self.num_predict),
             },
-            'keep_alive': self.keep_alive,
+            "keep_alive": self.keep_alive,
         }
 
         try:
-            response = self._make_request('generate', payload)
+            response = self._make_request("generate", payload)
             result = response.json()
 
-            if 'response' in result:
-                return result['response'].strip()
+            if "response" in result:
+                return result["response"].strip()
             else:
                 logger.error(f"Unexpected Ollama response format: {result}")
                 return "Error: Invalid response from Ollama"
@@ -94,30 +120,32 @@ class OllamaProvider(LLMProvider):
     def generate_stream(self, prompt: str, **kwargs) -> Generator[str, None, None]:
         """Generate streaming response from Ollama model."""
         payload = {
-            'model': self.model,
-            'prompt': prompt,
-            'stream': True,
-            'options': {
-                'temperature': kwargs.get('temperature', self.temperature),
-                'top_p': kwargs.get('top_p', self.top_p),
-                'num_ctx': kwargs.get('num_ctx', self.num_ctx),
-                'num_predict': kwargs.get('num_predict', self.num_predict),
+            "model": self.model,
+            "prompt": prompt,
+            "stream": True,
+            "options": {
+                "temperature": kwargs.get("temperature", self.temperature),
+                "top_p": kwargs.get("top_p", self.top_p),
+                "num_ctx": kwargs.get("num_ctx", self.num_ctx),
+                "num_predict": kwargs.get("num_predict", self.num_predict),
             },
-            'keep_alive': self.keep_alive,
+            "keep_alive": self.keep_alive,
         }
 
         try:
             url = f"{self.base_url}/generate"
-            response = self.session.post(url, json=payload, timeout=self.timeout, stream=True)
+            response = self.session.post(
+                url, json=payload, timeout=self.timeout, stream=True
+            )
             response.raise_for_status()
 
             for line in response.iter_lines():
                 if line:
                     try:
-                        data = json.loads(line.decode('utf-8'))
-                        if 'response' in data:
-                            yield data['response']
-                        if data.get('done', False):
+                        data = json.loads(line.decode("utf-8"))
+                        if "response" in data:
+                            yield data["response"]
+                        if data.get("done", False):
                             break
                     except json.JSONDecodeError:
                         continue
@@ -130,7 +158,7 @@ class OllamaProvider(LLMProvider):
         """Generate streaming response and return as concatenated string."""
         try:
             chunks = list(self.generate_stream(prompt, **kwargs))
-            return ''.join(chunks)
+            return "".join(chunks)
         except Exception as e:
             logger.error(f"Ollama streaming generation failed: {e}")
             return f"Error: Failed to generate streaming response - {e}"
@@ -142,18 +170,22 @@ class OllamaProvider(LLMProvider):
             response = self.session.get(f"{self.ollama_host}/api/tags", timeout=5)
             response.raise_for_status()
 
-            models = response.json().get('models', [])
-            model_names = [model.get('name', '') for model in models]
+            models = response.json().get("models", [])
+            model_names = [model.get("name", "") for model in models]
 
             # Check if our model is available
             if self.model not in model_names:
-                logger.warning(f"Model {self.model} not found in Ollama. Available: {model_names}")
+                logger.warning(
+                    f"Model {self.model} not found in Ollama. Available: {model_names}"
+                )
                 return False
 
             # Test simple generation
             test_response = self.generate("Hello")
             return bool(
-                test_response and len(test_response) > 0 and not test_response.startswith("Error:")
+                test_response
+                and len(test_response) > 0
+                and not test_response.startswith("Error:")
             )
 
         except Exception as e:
@@ -165,8 +197,8 @@ class OllamaProvider(LLMProvider):
         try:
             response = self.session.get(f"{self.ollama_host}/api/tags", timeout=5)
             response.raise_for_status()
-            models = response.json().get('models', [])
-            return [model.get('name', '') for model in models]
+            models = response.json().get("models", [])
+            return [model.get("name", "") for model in models]
         except Exception as e:
             logger.error(f"Failed to list Ollama models: {e}")
             return []
@@ -176,17 +208,17 @@ class OllamaProvider(LLMProvider):
         target_model = model_name or self.model
 
         try:
-            payload = {'name': target_model}
-            response = self._make_request('pull', payload)
+            payload = {"name": target_model}
+            response = self._make_request("pull", payload)
 
             # Handle streaming pull response
             for line in response.iter_lines():
                 if line:
                     try:
-                        data = json.loads(line.decode('utf-8'))
-                        if data.get('status'):
+                        data = json.loads(line.decode("utf-8"))
+                        if data.get("status"):
                             logger.info(f"Pulling {target_model}: {data['status']}")
-                        if data.get('error'):
+                        if data.get("error"):
                             logger.error(f"Pull error: {data['error']}")
                             return False
                     except json.JSONDecodeError:

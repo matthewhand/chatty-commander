@@ -5,12 +5,12 @@ Welcome! This guide covers our development workflow, coding standards, and Git h
 ## Quick Start
 
 1. Fork the repository and clone your fork
-2. Set up your development environment: `uv sync --all-groups`
-3. Create a feature branch: `git checkout -b feature/your-feature-name`
-4. Make your changes following our coding standards
-5. Run tests and linting: `uv run pytest && uv run ruff check`
-6. Commit using conventional commits
-7. Push and create a pull request
+1. Set up your development environment: `uv sync --all-groups`
+1. Create a feature branch: `git checkout -b feature/your-feature-name`
+1. Make your changes following our coding standards
+1. Run tests and linting: `uv run pytest && uv run ruff check`
+1. Commit using conventional commits
+1. Push and create a pull request
 
 ## Git Workflow and Branch Management
 
@@ -230,9 +230,9 @@ except NameError:
 ### Why This Pattern?
 
 1. **Import Safety**: Routers can be missing without breaking the app
-2. **Test Resilience**: Tests work even when optional dependencies are unavailable
-3. **Clean Fallbacks**: Minimal endpoints are provided when routers are missing
-4. **Static Analysis**: No undefined variable references
+1. **Test Resilience**: Tests work even when optional dependencies are unavailable
+1. **Clean Fallbacks**: Minimal endpoints are provided when routers are missing
+1. **Static Analysis**: No undefined variable references
 
 ### Testing
 
@@ -285,11 +285,11 @@ cp .env.template .env
 ## Pull Request Process
 
 1. **Create descriptive PR title** using conventional commit format
-2. **Fill out PR template** with context and testing notes
-3. **Ensure CI passes** - all checks must be green
-4. **Request review** from maintainers
-5. **Address feedback** promptly and professionally
-6. **Squash commits** if requested before merge
+1. **Fill out PR template** with context and testing notes
+1. **Ensure CI passes** - all checks must be green
+1. **Request review** from maintainers
+1. **Address feedback** promptly and professionally
+1. **Squash commits** if requested before merge
 
 ### PR Checklist
 

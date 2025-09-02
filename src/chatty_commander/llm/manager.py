@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 LLM Manager with automatic backend selection and fallback.
 
@@ -52,7 +74,9 @@ class LLMManager:
         self.active_backend: LLMBackend | None = None
         self._select_backend()
 
-        logger.info(f"LLM Manager initialized with backend: {self.get_active_backend_name()}")
+        logger.info(
+            f"LLM Manager initialized with backend: {self.get_active_backend_name()}"
+        )
 
     def _initialize_backends(
         self,
@@ -81,7 +105,9 @@ class LLMManager:
 
         # Ollama backend
         try:
-            self.backends["ollama"] = OllamaBackend(host=ollama_host, model=ollama_model)
+            self.backends["ollama"] = OllamaBackend(
+                host=ollama_host, model=ollama_model
+            )
         except Exception as e:
             logger.debug(f"Failed to initialize Ollama backend: {e}")
 
@@ -133,7 +159,9 @@ class LLMManager:
         try:
             return self.active_backend.generate_response(prompt, **kwargs)
         except Exception as e:
-            logger.error(f"Generation failed with {self.get_active_backend_name()}: {e}")
+            logger.error(
+                f"Generation failed with {self.get_active_backend_name()}: {e}"
+            )
 
             # Try to fallback to next available backend
             if self._try_fallback():
@@ -220,14 +248,16 @@ class LLMManager:
 
         # Reset availability cache for backends that support it
         for backend in self.backends.values():
-            if hasattr(backend, '_available'):
+            if hasattr(backend, "_available"):
                 backend._available = None
 
         # Reselect best backend
         self._select_backend()
         logger.info(f"Active backend after refresh: {self.get_active_backend_name()}")
 
-    def test_backend(self, backend_name: str, test_prompt: str = "Hello") -> dict[str, Any]:
+    def test_backend(
+        self, backend_name: str, test_prompt: str = "Hello"
+    ) -> dict[str, Any]:
         """Test a specific backend with a simple prompt."""
         if backend_name not in self.backends:
             return {"error": f"Backend {backend_name} not found"}

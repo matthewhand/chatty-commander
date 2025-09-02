@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -8,9 +30,15 @@ from pydantic import BaseModel, Field
 
 
 class AvatarConfigModel(BaseModel):
-    animations_dir: str | None = Field(default=None, description="Directory to scan for animations")
-    enabled: bool = Field(default=True, description="Whether avatar animations are enabled")
-    defaults: dict[str, Any] | None = Field(default=None, description="Default settings for avatar")
+    animations_dir: str | None = Field(
+        default=None, description="Directory to scan for animations"
+    )
+    enabled: bool = Field(
+        default=True, description="Whether avatar animations are enabled"
+    )
+    defaults: dict[str, Any] | None = Field(
+        default=None, description="Default settings for avatar"
+    )
     state_map: dict[str, str] | None = Field(
         default=None, description="Mapping of state -> animation name"
     )
@@ -54,7 +82,9 @@ def _get_avatar_cfg(cfg_mgr: Any) -> dict[str, Any]:
     return avatar
 
 
-def include_avatar_settings_routes(*, get_config_manager: Callable[[], Any]) -> APIRouter:
+def include_avatar_settings_routes(
+    *, get_config_manager: Callable[[], Any]
+) -> APIRouter:
     router = APIRouter()
 
     @router.get("/avatar/config", response_model=AvatarConfigModel)

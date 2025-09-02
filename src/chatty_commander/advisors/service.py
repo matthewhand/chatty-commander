@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Advisor service for handling AI advisor interactions."""
 
 from dataclasses import dataclass
@@ -49,17 +71,17 @@ class AdvisorsService:
         self.config = base_cfg
 
         # Initialize memory store using mapped config keys
-        mem_cfg = base_cfg.get('memory', {}) or {}
+        mem_cfg = base_cfg.get("memory", {}) or {}
         self.memory = MemoryStore(
-            max_items_per_context=mem_cfg.get('max_items_per_context', 100),
-            persist=mem_cfg.get('persistence_enabled', mem_cfg.get('persist', False)),
-            persist_path=mem_cfg.get('persistence_path') or mem_cfg.get('persist_path'),
+            max_items_per_context=mem_cfg.get("max_items_per_context", 100),
+            persist=mem_cfg.get("persistence_enabled", mem_cfg.get("persist", False)),
+            persist_path=mem_cfg.get("persistence_path") or mem_cfg.get("persist_path"),
         )
-        self.provider = build_provider_safe(base_cfg.get('providers', {}))
-        self.context_manager = ContextManager(base_cfg.get('context', {}))
+        self.provider = build_provider_safe(base_cfg.get("providers", {}))
+        self.context_manager = ContextManager(base_cfg.get("context", {}))
 
         # Check if advisors are enabled
-        self.enabled = base_cfg.get('enabled', False)
+        self.enabled = base_cfg.get("enabled", False)
 
         # Initialize conversation engine for enhanced AI interactions
         self.conversation_engine = create_conversation_engine(base_cfg)
@@ -98,13 +120,17 @@ class AdvisorsService:
 
         try:
             # Build prompt using context-aware persona and recent memory
-            memory_items = self.memory.get(platform.value, message.channel, message.user)
+            memory_items = self.memory.get(
+                platform.value, message.channel, message.user
+            )
             history_text = (
                 "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items])
                 if memory_items
                 else ""
             )
-            combined_user_text = f"{history_text}\n{message.text}" if history_text else message.text
+            combined_user_text = (
+                f"{history_text}\n{message.text}" if history_text else message.text
+            )
 
             # Update to processing state
             thinking_manager.start_processing(agent_id, "Generating response...")
@@ -116,7 +142,9 @@ class AdvisorsService:
                     # In real flows this would be the as_tool/MCP call
                     pass
                 finally:
-                    thinking_manager.end_tool_call(agent_id, tool_name="browser_analyst")
+                    thinking_manager.end_tool_call(
+                        agent_id, tool_name="browser_analyst"
+                    )
 
             # Generate real LLM response
             try:
@@ -127,21 +155,24 @@ class AdvisorsService:
                 ).get("personas", {})
                 persona_config = personas_dict.get(context.persona_id, {})
                 if isinstance(persona_config, str):
-                    persona_config = {"prompt": persona_config, "name": context.persona_id}
+                    persona_config = {
+                        "prompt": persona_config,
+                        "name": context.persona_id,
+                    }
 
                 # Use conversation engine for enhanced prompt building
                 enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
                     user_input=combined_user_text,
                     user_id=f"{message.platform}:{message.channel}:{message.user}",
                     persona_config=persona_config,
-                    current_mode=getattr(self.config, 'current_mode', 'chatty'),
+                    current_mode=getattr(self.config, "current_mode", "chatty"),
                 )
 
                 response = self.provider.generate(enhanced_prompt)
 
                 # Enhanced directive handling for tool-like replies
                 if isinstance(response, str) and "SWITCH_MODE:" in response:
-                    lines = response.split('\n')
+                    lines = response.split("\n")
                     for line in lines:
                         if line.strip().startswith("SWITCH_MODE:"):
                             _, target = line.strip().split(":", 1)
@@ -154,14 +185,19 @@ class AdvisorsService:
                                     line, f"✓ Switched to {target.strip()} mode"
                                 )
                             except Exception as e:
-                                response = response.replace(line, f"✗ Mode switch failed: {e}")
+                                response = response.replace(
+                                    line, f"✗ Mode switch failed: {e}"
+                                )
 
                 # Record conversation for future context
                 self.conversation_engine.record_conversation_turn(
                     user_id=f"{message.platform}:{message.channel}:{message.user}",
                     user_input=message.text,
                     assistant_response=response,
-                    context={"persona_id": context.persona_id, "platform": message.platform},
+                    context={
+                        "persona_id": context.persona_id,
+                        "platform": message.platform,
+                    },
                 )
             except Exception as e:
                 # Fallback to echo if LLM fails
@@ -171,8 +207,12 @@ class AdvisorsService:
             thinking_manager.start_responding(agent_id, "Finalizing response...")
 
             # Add to memory using tri-key (platform, channel, user)
-            self.memory.add(platform.value, message.channel, message.user, "user", message.text)
-            self.memory.add(platform.value, message.channel, message.user, "assistant", response)
+            self.memory.add(
+                platform.value, message.channel, message.user, "user", message.text
+            )
+            self.memory.add(
+                platform.value, message.channel, message.user, "assistant", response
+            )
 
             reply = AdvisorReply(
                 reply=response,

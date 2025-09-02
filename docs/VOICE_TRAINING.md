@@ -13,11 +13,12 @@ ChattyCommander uses ONNX models for voice recognition, powered by the openwakew
 ## Steps to Train a Custom Model
 
 1. **Prepare Dataset**:
+
    - Collect positive audio clips saying your command.
    - Gather negative clips (background noise, other speech).
    - Organize in directories: positives/ and negatives/.
 
-2. **Train the Model**:
+1. **Train the Model**:
    Use openwakeword's training script:
 
    ```python
@@ -28,10 +29,11 @@ ChattyCommander uses ONNX models for voice recognition, powered by the openwakew
 
    Note: This is a simplified example. Refer to openwakeword docs for full parameters.
 
-3. **Export to ONNX**:
+1. **Export to ONNX**:
    Ensure the model is exported in ONNX format.
 
-4. **Integrate with ChattyCommander**:
+1. **Integrate with ChattyCommander**:
+
    - Place the .onnx file in the appropriate directory (e.g., models-idle/ for idle state).
    - Update config.json to map the model to an action.
      Example:
@@ -42,7 +44,7 @@ ChattyCommander uses ONNX models for voice recognition, powered by the openwakew
    }
    ```
 
-5. **Test the Model**:
+1. **Test the Model**:
    Run the app and test your new command.
 
 ## Best Practices

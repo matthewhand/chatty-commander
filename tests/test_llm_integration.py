@@ -1,9 +1,29 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Tests for LLM integration components."""
 
 import os
-from unittest.mock import MagicMock, Mock, patch
-
-import pytest
+from unittest.mock import Mock, patch
 
 from chatty_commander.llm import CommandProcessor, LLMManager
 from chatty_commander.llm.backends import (
@@ -57,7 +77,10 @@ class TestOpenAIBackend:
         info = backend.get_backend_info()
         assert info["has_api_key"] is True
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key", "OPENAI_API_BASE": "http://custom.api"})
+    @patch.dict(
+        os.environ,
+        {"OPENAI_API_KEY": "test-key", "OPENAI_API_BASE": "http://custom.api"},
+    )
     def test_openai_backend_custom_base_url(self):
         backend = OpenAIBackend()
         info = backend.get_backend_info()
@@ -177,7 +200,9 @@ class TestCommandProcessor:
 
     def test_command_processor_initialization(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
+        processor = CommandProcessor(
+            llm_manager=llm_manager, config_manager=self.mock_config
+        )
 
         status = processor.get_processor_status()
         assert status["llm_available"] is True
@@ -186,7 +211,9 @@ class TestCommandProcessor:
 
     def test_simple_command_matching(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
+        processor = CommandProcessor(
+            llm_manager=llm_manager, config_manager=self.mock_config
+        )
 
         # Direct name match
         command, confidence, explanation = processor.process_command("hello there")
@@ -195,13 +222,17 @@ class TestCommandProcessor:
         assert "Keyword match" in explanation
 
         # Keyword match
-        command, confidence, explanation = processor.process_command("turn on the lights")
+        command, confidence, explanation = processor.process_command(
+            "turn on the lights"
+        )
         assert command == "lights"
         assert confidence >= 0.7
 
     def test_command_suggestions(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
+        processor = CommandProcessor(
+            llm_manager=llm_manager, config_manager=self.mock_config
+        )
 
         suggestions = processor.get_command_suggestions("hel")
         assert len(suggestions) > 0
@@ -209,7 +240,9 @@ class TestCommandProcessor:
 
     def test_command_explanation(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
+        processor = CommandProcessor(
+            llm_manager=llm_manager, config_manager=self.mock_config
+        )
 
         explanation = processor.explain_command("hello")
         assert explanation["command"] == "hello"
@@ -220,15 +253,17 @@ class TestCommandProcessor:
         # Mock LLM response
         mock_llm = Mock()
         mock_llm.is_available.return_value = True
-        mock_llm.generate_response.return_value = '''
+        mock_llm.generate_response.return_value = """
         {
             "command": "lights",
             "confidence": 0.8,
             "reasoning": "user wants to control lights"
         }
-        '''
+        """
 
-        processor = CommandProcessor(llm_manager=mock_llm, config_manager=self.mock_config)
+        processor = CommandProcessor(
+            llm_manager=mock_llm, config_manager=self.mock_config
+        )
 
         command, confidence, explanation = processor.process_command(
             "please turn on the illumination"
@@ -239,7 +274,9 @@ class TestCommandProcessor:
 
     def test_empty_input_handling(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
+        processor = CommandProcessor(
+            llm_manager=llm_manager, config_manager=self.mock_config
+        )
 
         command, confidence, explanation = processor.process_command("")
         assert command is None
@@ -248,7 +285,9 @@ class TestCommandProcessor:
 
     def test_no_match_handling(self):
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(llm_manager=llm_manager, config_manager=self.mock_config)
+        processor = CommandProcessor(
+            llm_manager=llm_manager, config_manager=self.mock_config
+        )
 
         command, confidence, explanation = processor.process_command(
             "completely unknown command xyz"
@@ -294,7 +333,11 @@ class TestLLMIntegrationE2E:
         """Test LLM manager respects environment variables."""
         with patch.dict(
             os.environ,
-            {"LLM_BACKEND": "mock", "OPENAI_API_KEY": "test-key", "OLLAMA_HOST": "localhost:11434"},
+            {
+                "LLM_BACKEND": "mock",
+                "OPENAI_API_KEY": "test-key",
+                "OLLAMA_HOST": "localhost:11434",
+            },
         ):
             manager = LLMManager()
             # Should respect LLM_BACKEND preference

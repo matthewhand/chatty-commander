@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 ChattyCommander Desktop GUI
 
@@ -13,11 +35,11 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 # Check for DISPLAY environment variable. If missing, print a warning and assign a dummy fallback.
-if 'DISPLAY' not in os.environ or not os.environ['DISPLAY'].strip():
+if "DISPLAY" not in os.environ or not os.environ["DISPLAY"].strip():
     print(
         "Warning: DISPLAY environment variable not set. Running in headless mode. Using dummy display ':0'."
     )
-    os.environ['DISPLAY'] = ':0'
+    os.environ["DISPLAY"] = ":0"
 
 from chatty_commander.app.config import Config
 
@@ -56,17 +78,17 @@ class ChattyCommanderGUI:
         """Save current configuration to file."""
         try:
             config_dict = {
-                'model_paths': self.config.model_paths,
-                'api_endpoints': self.config.api_endpoints,
-                'model_actions': self.config.model_actions,
-                'state_models': self.config.state_models,
-                'audio_settings': self.config.audio_settings,
-                'debug_settings': self.config.debug_settings,
-                'default_state': self.config.default_state,
-                'inference_framework': self.config.inference_framework,
+                "model_paths": self.config.model_paths,
+                "api_endpoints": self.config.api_endpoints,
+                "model_actions": self.config.model_actions,
+                "state_models": self.config.state_models,
+                "audio_settings": self.config.audio_settings,
+                "debug_settings": self.config.debug_settings,
+                "default_state": self.config.default_state,
+                "inference_framework": self.config.inference_framework,
             }
 
-            with open(self.config_file, 'w') as f:
+            with open(self.config_file, "w") as f:
                 json.dump(config_dict, f, indent=2)
 
             messagebox.showinfo("Success", "Configuration saved successfully!")
@@ -91,15 +113,15 @@ class ChattyCommanderGUI:
         self.bottom_frame.pack(fill=tk.X, padx=10, pady=5)
 
         # Save and Load buttons
-        ttk.Button(self.bottom_frame, text="Save Config", command=self.save_config).pack(
-            side=tk.LEFT, padx=5
-        )
-        ttk.Button(self.bottom_frame, text="Load Config", command=self.load_config_file).pack(
-            side=tk.LEFT, padx=5
-        )
-        ttk.Button(self.bottom_frame, text="Reset to Defaults", command=self.reset_config).pack(
-            side=tk.LEFT, padx=5
-        )
+        ttk.Button(
+            self.bottom_frame, text="Save Config", command=self.save_config
+        ).pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            self.bottom_frame, text="Load Config", command=self.load_config_file
+        ).pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            self.bottom_frame, text="Reset to Defaults", command=self.reset_config
+        ).pack(side=tk.LEFT, padx=5)
 
     def create_commands_tab(self):
         """Create the commands configuration tab."""
@@ -127,20 +149,24 @@ class ChattyCommanderGUI:
 
     def create_url_commands_section(self):
         """Create URL commands configuration section."""
-        ttk.Label(self.url_frame, text="URL Commands", font=('Arial', 12, 'bold')).pack(pady=5)
+        ttk.Label(self.url_frame, text="URL Commands", font=("Arial", 12, "bold")).pack(
+            pady=5
+        )
 
         # Frame for URL commands list
         list_frame = ttk.Frame(self.url_frame)
         list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Treeview for URL commands
-        self.url_tree = ttk.Treeview(list_frame, columns=('URL',), show='tree headings')
-        self.url_tree.heading('#0', text='Command')
-        self.url_tree.heading('URL', text='URL')
+        self.url_tree = ttk.Treeview(list_frame, columns=("URL",), show="tree headings")
+        self.url_tree.heading("#0", text="Command")
+        self.url_tree.heading("URL", text="URL")
         self.url_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Scrollbar
-        url_scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.url_tree.yview)
+        url_scroll = ttk.Scrollbar(
+            list_frame, orient=tk.VERTICAL, command=self.url_tree.yview
+        )
         url_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.url_tree.configure(yscrollcommand=url_scroll.set)
 
@@ -148,32 +174,34 @@ class ChattyCommanderGUI:
         url_btn_frame = ttk.Frame(self.url_frame)
         url_btn_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        ttk.Button(url_btn_frame, text="Add URL Command", command=self.add_url_command).pack(
-            side=tk.LEFT, padx=5
-        )
-        ttk.Button(url_btn_frame, text="Edit Selected", command=self.edit_url_command).pack(
-            side=tk.LEFT, padx=5
-        )
-        ttk.Button(url_btn_frame, text="Delete Selected", command=self.delete_url_command).pack(
-            side=tk.LEFT, padx=5
-        )
+        ttk.Button(
+            url_btn_frame, text="Add URL Command", command=self.add_url_command
+        ).pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            url_btn_frame, text="Edit Selected", command=self.edit_url_command
+        ).pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            url_btn_frame, text="Delete Selected", command=self.delete_url_command
+        ).pack(side=tk.LEFT, padx=5)
 
         self.populate_url_commands()
 
     def create_keypress_commands_section(self):
         """Create keypress commands configuration section."""
-        ttk.Label(self.keypress_frame, text="Keypress Commands", font=('Arial', 12, 'bold')).pack(
-            pady=5
-        )
+        ttk.Label(
+            self.keypress_frame, text="Keypress Commands", font=("Arial", 12, "bold")
+        ).pack(pady=5)
 
         # Frame for keypress commands list
         list_frame = ttk.Frame(self.keypress_frame)
         list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Treeview for keypress commands
-        self.keypress_tree = ttk.Treeview(list_frame, columns=('Keys',), show='tree headings')
-        self.keypress_tree.heading('#0', text='Command')
-        self.keypress_tree.heading('Keys', text='Key Combination')
+        self.keypress_tree = ttk.Treeview(
+            list_frame, columns=("Keys",), show="tree headings"
+        )
+        self.keypress_tree.heading("#0", text="Command")
+        self.keypress_tree.heading("Keys", text="Key Combination")
         self.keypress_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Scrollbar
@@ -188,31 +216,37 @@ class ChattyCommanderGUI:
         keypress_btn_frame.pack(fill=tk.X, padx=5, pady=5)
 
         ttk.Button(
-            keypress_btn_frame, text="Add Keypress Command", command=self.add_keypress_command
+            keypress_btn_frame,
+            text="Add Keypress Command",
+            command=self.add_keypress_command,
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             keypress_btn_frame, text="Edit Selected", command=self.edit_keypress_command
         ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
-            keypress_btn_frame, text="Delete Selected", command=self.delete_keypress_command
+            keypress_btn_frame,
+            text="Delete Selected",
+            command=self.delete_keypress_command,
         ).pack(side=tk.LEFT, padx=5)
 
         self.populate_keypress_commands()
 
     def create_system_commands_section(self):
         """Create system commands configuration section."""
-        ttk.Label(self.system_frame, text="System Commands", font=('Arial', 12, 'bold')).pack(
-            pady=5
-        )
+        ttk.Label(
+            self.system_frame, text="System Commands", font=("Arial", 12, "bold")
+        ).pack(pady=5)
 
         # Frame for system commands list
         list_frame = ttk.Frame(self.system_frame)
         list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Treeview for system commands
-        self.system_tree = ttk.Treeview(list_frame, columns=('Command',), show='tree headings')
-        self.system_tree.heading('#0', text='Name')
-        self.system_tree.heading('Command', text='System Command')
+        self.system_tree = ttk.Treeview(
+            list_frame, columns=("Command",), show="tree headings"
+        )
+        self.system_tree.heading("#0", text="Name")
+        self.system_tree.heading("Command", text="System Command")
         self.system_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Scrollbar
@@ -229,9 +263,9 @@ class ChattyCommanderGUI:
         ttk.Button(
             system_btn_frame, text="Add System Command", command=self.add_system_command
         ).pack(side=tk.LEFT, padx=5)
-        ttk.Button(system_btn_frame, text="Edit Selected", command=self.edit_system_command).pack(
-            side=tk.LEFT, padx=5
-        )
+        ttk.Button(
+            system_btn_frame, text="Edit Selected", command=self.edit_system_command
+        ).pack(side=tk.LEFT, padx=5)
         ttk.Button(
             system_btn_frame, text="Delete Selected", command=self.delete_system_command
         ).pack(side=tk.LEFT, padx=5)
@@ -243,9 +277,9 @@ class ChattyCommanderGUI:
         self.states_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.states_frame, text="States")
 
-        ttk.Label(self.states_frame, text="State Configuration", font=('Arial', 12, 'bold')).pack(
-            pady=5
-        )
+        ttk.Label(
+            self.states_frame, text="State Configuration", font=("Arial", 12, "bold")
+        ).pack(pady=5)
 
         # Default state selection
         default_frame = ttk.Frame(self.states_frame)
@@ -256,15 +290,15 @@ class ChattyCommanderGUI:
         default_combo = ttk.Combobox(
             default_frame,
             textvariable=self.default_state_var,
-            values=['idle', 'chatty', 'computer'],
-            state='readonly',
+            values=["idle", "chatty", "computer"],
+            state="readonly",
         )
         default_combo.pack(side=tk.LEFT, padx=5)
 
         # State models configuration
-        ttk.Label(self.states_frame, text="State Models", font=('Arial', 10, 'bold')).pack(
-            pady=(20, 5)
-        )
+        ttk.Label(
+            self.states_frame, text="State Models", font=("Arial", 10, "bold")
+        ).pack(pady=(20, 5))
 
         # Frame for state models
         models_frame = ttk.Frame(self.states_frame)
@@ -272,10 +306,10 @@ class ChattyCommanderGUI:
 
         # Treeview for state models
         self.state_models_tree = ttk.Treeview(
-            models_frame, columns=('Models',), show='tree headings'
+            models_frame, columns=("Models",), show="tree headings"
         )
-        self.state_models_tree.heading('#0', text='State')
-        self.state_models_tree.heading('Models', text='Model Paths')
+        self.state_models_tree.heading("#0", text="State")
+        self.state_models_tree.heading("Models", text="Model Paths")
         self.state_models_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Scrollbar
@@ -289,9 +323,9 @@ class ChattyCommanderGUI:
         models_btn_frame = ttk.Frame(self.states_frame)
         models_btn_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        ttk.Button(models_btn_frame, text="Edit State Models", command=self.edit_state_models).pack(
-            side=tk.LEFT, padx=5
-        )
+        ttk.Button(
+            models_btn_frame, text="Edit State Models", command=self.edit_state_models
+        ).pack(side=tk.LEFT, padx=5)
 
         self.populate_state_models()
 
@@ -300,9 +334,9 @@ class ChattyCommanderGUI:
         self.models_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.models_frame, text="Models")
 
-        ttk.Label(self.models_frame, text="Model Configuration", font=('Arial', 12, 'bold')).pack(
-            pady=5
-        )
+        ttk.Label(
+            self.models_frame, text="Model Configuration", font=("Arial", 12, "bold")
+        ).pack(pady=5)
 
         # Model paths
         paths_frame = ttk.LabelFrame(self.models_frame, text="Model Paths")
@@ -312,19 +346,25 @@ class ChattyCommanderGUI:
         chatty_frame = ttk.Frame(paths_frame)
         chatty_frame.pack(fill=tk.X, padx=5, pady=2)
         ttk.Label(chatty_frame, text="Chatty Models:").pack(side=tk.LEFT)
-        self.chatty_path_var = tk.StringVar(value=self.config.model_paths.get('chatty', ''))
+        self.chatty_path_var = tk.StringVar(
+            value=self.config.model_paths.get("chatty", "")
+        )
         ttk.Entry(chatty_frame, textvariable=self.chatty_path_var, width=40).pack(
             side=tk.LEFT, padx=5
         )
         ttk.Button(
-            chatty_frame, text="Browse", command=lambda: self.browse_directory(self.chatty_path_var)
+            chatty_frame,
+            text="Browse",
+            command=lambda: self.browse_directory(self.chatty_path_var),
         ).pack(side=tk.LEFT)
 
         # Computer models path
         computer_frame = ttk.Frame(paths_frame)
         computer_frame.pack(fill=tk.X, padx=5, pady=2)
         ttk.Label(computer_frame, text="Computer Models:").pack(side=tk.LEFT)
-        self.computer_path_var = tk.StringVar(value=self.config.model_paths.get('computer', ''))
+        self.computer_path_var = tk.StringVar(
+            value=self.config.model_paths.get("computer", "")
+        )
         ttk.Entry(computer_frame, textvariable=self.computer_path_var, width=40).pack(
             side=tk.LEFT, padx=5
         )
@@ -338,10 +378,14 @@ class ChattyCommanderGUI:
         idle_frame = ttk.Frame(paths_frame)
         idle_frame.pack(fill=tk.X, padx=5, pady=2)
         ttk.Label(idle_frame, text="Idle Models:").pack(side=tk.LEFT)
-        self.idle_path_var = tk.StringVar(value=self.config.model_paths.get('idle', ''))
-        ttk.Entry(idle_frame, textvariable=self.idle_path_var, width=40).pack(side=tk.LEFT, padx=5)
+        self.idle_path_var = tk.StringVar(value=self.config.model_paths.get("idle", ""))
+        ttk.Entry(idle_frame, textvariable=self.idle_path_var, width=40).pack(
+            side=tk.LEFT, padx=5
+        )
         ttk.Button(
-            idle_frame, text="Browse", command=lambda: self.browse_directory(self.idle_path_var)
+            idle_frame,
+            text="Browse",
+            command=lambda: self.browse_directory(self.idle_path_var),
         ).pack(side=tk.LEFT)
 
         # Inference framework
@@ -353,7 +397,10 @@ class ChattyCommanderGUI:
             framework_frame, text="ONNX", variable=self.framework_var, value="onnx"
         ).pack(side=tk.LEFT, padx=10)
         ttk.Radiobutton(
-            framework_frame, text="OpenVINO", variable=self.framework_var, value="openvino"
+            framework_frame,
+            text="OpenVINO",
+            variable=self.framework_var,
+            value="openvino",
         ).pack(side=tk.LEFT, padx=10)
 
     def create_audio_tab(self):
@@ -361,7 +408,9 @@ class ChattyCommanderGUI:
         self.audio_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.audio_frame, text="Audio")
 
-        ttk.Label(self.audio_frame, text="Audio Settings", font=('Arial', 12, 'bold')).pack(pady=5)
+        ttk.Label(
+            self.audio_frame, text="Audio Settings", font=("Arial", 12, "bold")
+        ).pack(pady=5)
 
         # Audio settings frame
         settings_frame = ttk.LabelFrame(self.audio_frame, text="Recording Settings")
@@ -372,7 +421,7 @@ class ChattyCommanderGUI:
         rate_frame.pack(fill=tk.X, padx=5, pady=2)
         ttk.Label(rate_frame, text="Sample Rate:").pack(side=tk.LEFT)
         self.sample_rate_var = tk.StringVar(
-            value=str(self.config.audio_settings.get('sample_rate', 16000))
+            value=str(self.config.audio_settings.get("sample_rate", 16000))
         )
         ttk.Entry(rate_frame, textvariable=self.sample_rate_var, width=10).pack(
             side=tk.LEFT, padx=5
@@ -382,7 +431,9 @@ class ChattyCommanderGUI:
         channels_frame = ttk.Frame(settings_frame)
         channels_frame.pack(fill=tk.X, padx=5, pady=2)
         ttk.Label(channels_frame, text="Channels:").pack(side=tk.LEFT)
-        self.channels_var = tk.StringVar(value=str(self.config.audio_settings.get('channels', 1)))
+        self.channels_var = tk.StringVar(
+            value=str(self.config.audio_settings.get("channels", 1))
+        )
         ttk.Entry(channels_frame, textvariable=self.channels_var, width=10).pack(
             side=tk.LEFT, padx=5
         )
@@ -392,7 +443,7 @@ class ChattyCommanderGUI:
         chunk_frame.pack(fill=tk.X, padx=5, pady=2)
         ttk.Label(chunk_frame, text="Chunk Size:").pack(side=tk.LEFT)
         self.chunk_size_var = tk.StringVar(
-            value=str(self.config.audio_settings.get('chunk_size', 1024))
+            value=str(self.config.audio_settings.get("chunk_size", 1024))
         )
         ttk.Entry(chunk_frame, textvariable=self.chunk_size_var, width=10).pack(
             side=tk.LEFT, padx=5
@@ -403,16 +454,16 @@ class ChattyCommanderGUI:
         self.service_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.service_frame, text="Service")
 
-        ttk.Label(self.service_frame, text="Service Control", font=('Arial', 12, 'bold')).pack(
-            pady=5
-        )
+        ttk.Label(
+            self.service_frame, text="Service Control", font=("Arial", 12, "bold")
+        ).pack(pady=5)
 
         # Service status
         status_frame = ttk.LabelFrame(self.service_frame, text="Status")
         status_frame.pack(fill=tk.X, padx=5, pady=5)
 
         self.status_label = ttk.Label(
-            status_frame, text="Service Status: Stopped", font=('Arial', 10)
+            status_frame, text="Service Status: Stopped", font=("Arial", 10)
         )
         self.status_label.pack(pady=10)
 
@@ -426,13 +477,16 @@ class ChattyCommanderGUI:
         self.start_btn.pack(side=tk.LEFT, padx=5)
 
         self.stop_btn = ttk.Button(
-            controls_frame, text="Stop Service", command=self.stop_service, state=tk.DISABLED
+            controls_frame,
+            text="Stop Service",
+            command=self.stop_service,
+            state=tk.DISABLED,
         )
         self.stop_btn.pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(controls_frame, text="Test Configuration", command=self.test_config).pack(
-            side=tk.LEFT, padx=5
-        )
+        ttk.Button(
+            controls_frame, text="Test Configuration", command=self.test_config
+        ).pack(side=tk.LEFT, padx=5)
 
         # System settings
         system_frame = ttk.LabelFrame(self.service_frame, text="System Settings")
@@ -442,7 +496,9 @@ class ChattyCommanderGUI:
         boot_frame = ttk.Frame(system_frame)
         boot_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        self.start_on_boot_var = tk.BooleanVar(value=getattr(self.config, 'start_on_boot', False))
+        self.start_on_boot_var = tk.BooleanVar(
+            value=getattr(self.config, "start_on_boot", False)
+        )
         ttk.Checkbutton(
             boot_frame,
             text="Start on boot",
@@ -455,7 +511,7 @@ class ChattyCommanderGUI:
         update_frame.pack(fill=tk.X, padx=5, pady=5)
 
         self.check_updates_var = tk.BooleanVar(
-            value=getattr(self.config, 'check_for_updates', True)
+            value=getattr(self.config, "check_for_updates", True)
         )
         ttk.Checkbutton(
             update_frame,
@@ -473,7 +529,9 @@ class ChattyCommanderGUI:
         log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         self.log_text = tk.Text(log_frame, height=8, wrap=tk.WORD)
-        log_scroll = ttk.Scrollbar(log_frame, orient=tk.VERTICAL, command=self.log_text.yview)
+        log_scroll = ttk.Scrollbar(
+            log_frame, orient=tk.VERTICAL, command=self.log_text.yview
+        )
         self.log_text.configure(yscrollcommand=log_scroll.set)
 
         self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -485,28 +543,28 @@ class ChattyCommanderGUI:
         for item in self.url_tree.get_children():
             self.url_tree.delete(item)
 
-        url_commands = getattr(self.config, 'url_commands', {})
+        url_commands = getattr(self.config, "url_commands", {})
         for cmd, url in url_commands.items():
-            self.url_tree.insert('', 'end', text=cmd, values=(url,))
+            self.url_tree.insert("", "end", text=cmd, values=(url,))
 
     def populate_keypress_commands(self):
         """Populate the keypress commands tree."""
         for item in self.keypress_tree.get_children():
             self.keypress_tree.delete(item)
 
-        keypress_commands = getattr(self.config, 'keypress_commands', {})
+        keypress_commands = getattr(self.config, "keypress_commands", {})
         for cmd, keys in keypress_commands.items():
-            key_str = '+'.join(keys) if isinstance(keys, list) else str(keys)
-            self.keypress_tree.insert('', 'end', text=cmd, values=(key_str,))
+            key_str = "+".join(keys) if isinstance(keys, list) else str(keys)
+            self.keypress_tree.insert("", "end", text=cmd, values=(key_str,))
 
     def populate_system_commands(self):
         """Populate the system commands tree."""
         for item in self.system_tree.get_children():
             self.system_tree.delete(item)
 
-        system_commands = getattr(self.config, 'system_commands', {})
+        system_commands = getattr(self.config, "system_commands", {})
         for cmd, command in system_commands.items():
-            self.system_tree.insert('', 'end', text=cmd, values=(command,))
+            self.system_tree.insert("", "end", text=cmd, values=(command,))
 
     def populate_state_models(self):
         """Populate the state models tree."""
@@ -514,28 +572,30 @@ class ChattyCommanderGUI:
             self.state_models_tree.delete(item)
 
         for state, models in self.config.state_models.items():
-            models_str = ', '.join(models) if isinstance(models, list) else str(models)
-            self.state_models_tree.insert('', 'end', text=state, values=(models_str,))
+            models_str = ", ".join(models) if isinstance(models, list) else str(models)
+            self.state_models_tree.insert("", "end", text=state, values=(models_str,))
 
     def add_url_command(self):
         """Add a new URL command."""
         dialog = CommandDialog(self.root, "Add URL Command", "URL")
         if dialog.result:
             name, value = dialog.result
-            if not hasattr(self.config, 'url_commands'):
+            if not hasattr(self.config, "url_commands"):
                 self.config.url_commands = {}
             self.config.url_commands[name] = value
             self.populate_url_commands()
 
     def add_keypress_command(self):
         """Add a new keypress command."""
-        dialog = CommandDialog(self.root, "Add Keypress Command", "Key Combination (e.g., ctrl+c)")
+        dialog = CommandDialog(
+            self.root, "Add Keypress Command", "Key Combination (e.g., ctrl+c)"
+        )
         if dialog.result:
             name, value = dialog.result
-            if not hasattr(self.config, 'keypress_commands'):
+            if not hasattr(self.config, "keypress_commands"):
                 self.config.keypress_commands = {}
             # Convert key combination string to list
-            keys = [key.strip() for key in value.split('+')]
+            keys = [key.strip() for key in value.split("+")]
             self.config.keypress_commands[name] = keys
             self.populate_keypress_commands()
 
@@ -544,7 +604,7 @@ class ChattyCommanderGUI:
         dialog = CommandDialog(self.root, "Add System Command", "System Command")
         if dialog.result:
             name, value = dialog.result
-            if not hasattr(self.config, 'system_commands'):
+            if not hasattr(self.config, "system_commands"):
                 self.config.system_commands = {}
             self.config.system_commands[name] = value
             self.populate_system_commands()
@@ -557,13 +617,13 @@ class ChattyCommanderGUI:
             return
 
         item = selection[0]
-        name = self.url_tree.item(item, 'text')
-        url = self.url_tree.item(item, 'values')[0]
+        name = self.url_tree.item(item, "text")
+        url = self.url_tree.item(item, "values")[0]
 
         dialog = CommandDialog(self.root, "Edit URL Command", "URL", name, url)
         if dialog.result:
             new_name, new_url = dialog.result
-            if hasattr(self.config, 'url_commands'):
+            if hasattr(self.config, "url_commands"):
                 if new_name != name:
                     del self.config.url_commands[name]
                 self.config.url_commands[new_name] = new_url
@@ -577,10 +637,13 @@ class ChattyCommanderGUI:
             return
 
         item = selection[0]
-        name = self.url_tree.item(item, 'text')
+        name = self.url_tree.item(item, "text")
 
         if messagebox.askyesno("Confirm", f"Delete command '{name}'?"):
-            if hasattr(self.config, 'url_commands') and name in self.config.url_commands:
+            if (
+                hasattr(self.config, "url_commands")
+                and name in self.config.url_commands
+            ):
                 del self.config.url_commands[name]
                 self.populate_url_commands()
 
@@ -592,16 +655,18 @@ class ChattyCommanderGUI:
             return
 
         item = selection[0]
-        name = self.keypress_tree.item(item, 'text')
-        keys = self.keypress_tree.item(item, 'values')[0]
+        name = self.keypress_tree.item(item, "text")
+        keys = self.keypress_tree.item(item, "values")[0]
 
-        dialog = CommandDialog(self.root, "Edit Keypress Command", "Key Combination", name, keys)
+        dialog = CommandDialog(
+            self.root, "Edit Keypress Command", "Key Combination", name, keys
+        )
         if dialog.result:
             new_name, new_keys = dialog.result
-            if hasattr(self.config, 'keypress_commands'):
+            if hasattr(self.config, "keypress_commands"):
                 if new_name != name:
                     del self.config.keypress_commands[name]
-                key_list = [key.strip() for key in new_keys.split('+')]
+                key_list = [key.strip() for key in new_keys.split("+")]
                 self.config.keypress_commands[new_name] = key_list
                 self.populate_keypress_commands()
 
@@ -613,10 +678,13 @@ class ChattyCommanderGUI:
             return
 
         item = selection[0]
-        name = self.keypress_tree.item(item, 'text')
+        name = self.keypress_tree.item(item, "text")
 
         if messagebox.askyesno("Confirm", f"Delete command '{name}'?"):
-            if hasattr(self.config, 'keypress_commands') and name in self.config.keypress_commands:
+            if (
+                hasattr(self.config, "keypress_commands")
+                and name in self.config.keypress_commands
+            ):
                 del self.config.keypress_commands[name]
                 self.populate_keypress_commands()
 
@@ -628,13 +696,15 @@ class ChattyCommanderGUI:
             return
 
         item = selection[0]
-        name = self.system_tree.item(item, 'text')
-        command = self.system_tree.item(item, 'values')[0]
+        name = self.system_tree.item(item, "text")
+        command = self.system_tree.item(item, "values")[0]
 
-        dialog = CommandDialog(self.root, "Edit System Command", "System Command", name, command)
+        dialog = CommandDialog(
+            self.root, "Edit System Command", "System Command", name, command
+        )
         if dialog.result:
             new_name, new_command = dialog.result
-            if hasattr(self.config, 'system_commands'):
+            if hasattr(self.config, "system_commands"):
                 if new_name != name:
                     del self.config.system_commands[name]
                 self.config.system_commands[new_name] = new_command
@@ -648,10 +718,13 @@ class ChattyCommanderGUI:
             return
 
         item = selection[0]
-        name = self.system_tree.item(item, 'text')
+        name = self.system_tree.item(item, "text")
 
         if messagebox.askyesno("Confirm", f"Delete command '{name}'?"):
-            if hasattr(self.config, 'system_commands') and name in self.config.system_commands:
+            if (
+                hasattr(self.config, "system_commands")
+                and name in self.config.system_commands
+            ):
                 del self.config.system_commands[name]
                 self.populate_system_commands()
 
@@ -671,7 +744,8 @@ class ChattyCommanderGUI:
     def load_config_file(self):
         """Load configuration from file dialog."""
         filename = filedialog.askopenfilename(
-            title="Load Configuration", filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            title="Load Configuration",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
         )
         if filename:
             self.config_file = filename
@@ -693,26 +767,28 @@ class ChattyCommanderGUI:
 
         # Update variables
         self.default_state_var.set(self.config.default_state)
-        self.chatty_path_var.set(self.config.model_paths.get('chatty', ''))
-        self.computer_path_var.set(self.config.model_paths.get('computer', ''))
-        self.idle_path_var.set(self.config.model_paths.get('idle', ''))
+        self.chatty_path_var.set(self.config.model_paths.get("chatty", ""))
+        self.computer_path_var.set(self.config.model_paths.get("computer", ""))
+        self.idle_path_var.set(self.config.model_paths.get("idle", ""))
         self.framework_var.set(self.config.inference_framework)
-        self.sample_rate_var.set(str(self.config.audio_settings.get('sample_rate', 16000)))
-        self.channels_var.set(str(self.config.audio_settings.get('channels', 1)))
-        self.chunk_size_var.set(str(self.config.audio_settings.get('chunk_size', 1024)))
+        self.sample_rate_var.set(
+            str(self.config.audio_settings.get("sample_rate", 16000))
+        )
+        self.channels_var.set(str(self.config.audio_settings.get("channels", 1)))
+        self.chunk_size_var.set(str(self.config.audio_settings.get("chunk_size", 1024)))
 
         # Update system settings
-        if hasattr(self, 'start_on_boot_var'):
-            self.start_on_boot_var.set(getattr(self.config, 'start_on_boot', False))
-        if hasattr(self, 'check_updates_var'):
-            self.check_updates_var.set(getattr(self.config, 'check_for_updates', True))
+        if hasattr(self, "start_on_boot_var"):
+            self.start_on_boot_var.set(getattr(self.config, "start_on_boot", False))
+        if hasattr(self, "check_updates_var"):
+            self.check_updates_var.set(getattr(self.config, "check_for_updates", True))
 
     def update_config_from_gui(self):
         """Update config object from GUI values."""
         # Update model paths
-        self.config.model_paths['chatty'] = self.chatty_path_var.get()
-        self.config.model_paths['computer'] = self.computer_path_var.get()
-        self.config.model_paths['idle'] = self.idle_path_var.get()
+        self.config.model_paths["chatty"] = self.chatty_path_var.get()
+        self.config.model_paths["computer"] = self.computer_path_var.get()
+        self.config.model_paths["idle"] = self.idle_path_var.get()
 
         # Update other settings
         self.config.default_state = self.default_state_var.get()
@@ -720,11 +796,13 @@ class ChattyCommanderGUI:
 
         # Update audio settings
         try:
-            self.config.audio_settings['sample_rate'] = int(self.sample_rate_var.get())
-            self.config.audio_settings['channels'] = int(self.channels_var.get())
-            self.config.audio_settings['chunk_size'] = int(self.chunk_size_var.get())
+            self.config.audio_settings["sample_rate"] = int(self.sample_rate_var.get())
+            self.config.audio_settings["channels"] = int(self.channels_var.get())
+            self.config.audio_settings["chunk_size"] = int(self.chunk_size_var.get())
         except ValueError:
-            messagebox.showerror("Error", "Invalid audio settings. Please enter valid numbers.")
+            messagebox.showerror(
+                "Error", "Invalid audio settings. Please enter valid numbers."
+            )
             return False
 
         return True
@@ -739,7 +817,7 @@ class ChattyCommanderGUI:
         try:
             # Start the service using the CLI
             self.service_process = subprocess.Popen(
-                ['python', 'cli.py', 'run', '--config', self.config_file],
+                ["python", "cli.py", "run", "--config", self.config_file],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 universal_newlines=True,
@@ -759,7 +837,7 @@ class ChattyCommanderGUI:
 
     def stop_service(self):
         """Stop the ChattyCommander service."""
-        if hasattr(self, 'service_process') and self.service_process:
+        if hasattr(self, "service_process") and self.service_process:
             self.service_process.terminate()
             self.service_process = None
 
@@ -770,7 +848,11 @@ class ChattyCommanderGUI:
 
     def monitor_service(self):
         """Monitor service output and update log."""
-        if hasattr(self, 'service_process') and self.service_process and self.service_running:
+        if (
+            hasattr(self, "service_process")
+            and self.service_process
+            and self.service_running
+        ):
             try:
                 line = self.service_process.stdout.readline()
                 if line:
@@ -797,7 +879,9 @@ class ChattyCommanderGUI:
             self.config.validate()
             messagebox.showinfo("Success", "Configuration is valid!")
         except Exception as e:
-            messagebox.showerror("Configuration Error", f"Configuration validation failed: {e}")
+            messagebox.showerror(
+                "Configuration Error", f"Configuration validation failed: {e}"
+            )
 
     def toggle_start_on_boot(self):
         """Toggle start on boot setting."""
@@ -835,11 +919,14 @@ class ChattyCommanderGUI:
             update_info = self.config.check_for_updates()
             if update_info is None:
                 self.log_text.insert(tk.END, "Could not check for updates.\n")
-            elif update_info['updates_available']:
+            elif update_info["updates_available"]:
                 self.log_text.insert(
-                    tk.END, f"Updates available: {update_info['update_count']} commits\n"
+                    tk.END,
+                    f"Updates available: {update_info['update_count']} commits\n",
                 )
-                self.log_text.insert(tk.END, f"Latest: {update_info['latest_commit']}\n")
+                self.log_text.insert(
+                    tk.END, f"Latest: {update_info['latest_commit']}\n"
+                )
                 messagebox.showinfo(
                     "Updates Available",
                     f"Updates available: {update_info['update_count']} commits\n"
@@ -870,7 +957,9 @@ class CommandDialog:
         self.dialog.grab_set()
 
         # Center the dialog
-        self.dialog.geometry(f"+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}")
+        self.dialog.geometry(
+            f"+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}"
+        )
 
         # Name field
         ttk.Label(self.dialog, text="Command Name:").pack(pady=5)
@@ -886,8 +975,12 @@ class CommandDialog:
         btn_frame = ttk.Frame(self.dialog)
         btn_frame.pack(pady=10)
 
-        ttk.Button(btn_frame, text="OK", command=self.ok_clicked).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Cancel", command=self.cancel_clicked).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="OK", command=self.ok_clicked).pack(
+            side=tk.LEFT, padx=5
+        )
+        ttk.Button(btn_frame, text="Cancel", command=self.cancel_clicked).pack(
+            side=tk.LEFT, padx=5
+        )
 
         # Focus on name field
         self.dialog.focus_set()
@@ -924,30 +1017,38 @@ class StateModelsDialog:
         self.dialog.grab_set()
 
         # Center the dialog
-        self.dialog.geometry(f"+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}")
+        self.dialog.geometry(
+            f"+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}"
+        )
 
         # Create interface for each state
         self.model_vars = {}
 
-        for state in ['idle', 'chatty', 'computer']:
+        for state in ["idle", "chatty", "computer"]:
             frame = ttk.LabelFrame(self.dialog, text=f"{state.title()} State Models")
             frame.pack(fill=tk.X, padx=10, pady=5)
 
             models = self.state_models.get(state, [])
-            models_str = ', '.join(models) if isinstance(models, list) else str(models)
+            models_str = ", ".join(models) if isinstance(models, list) else str(models)
 
             self.model_vars[state] = tk.StringVar(value=models_str)
-            ttk.Entry(frame, textvariable=self.model_vars[state], width=70).pack(padx=5, pady=5)
-            ttk.Label(frame, text="(Comma-separated list of model paths)", font=('Arial', 8)).pack(
-                padx=5
+            ttk.Entry(frame, textvariable=self.model_vars[state], width=70).pack(
+                padx=5, pady=5
             )
+            ttk.Label(
+                frame, text="(Comma-separated list of model paths)", font=("Arial", 8)
+            ).pack(padx=5)
 
         # Buttons
         btn_frame = ttk.Frame(self.dialog)
         btn_frame.pack(pady=10)
 
-        ttk.Button(btn_frame, text="OK", command=self.ok_clicked).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Cancel", command=self.cancel_clicked).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="OK", command=self.ok_clicked).pack(
+            side=tk.LEFT, padx=5
+        )
+        ttk.Button(btn_frame, text="Cancel", command=self.cancel_clicked).pack(
+            side=tk.LEFT, padx=5
+        )
 
         # Wait for dialog to close
         self.dialog.wait_window()
@@ -957,7 +1058,9 @@ class StateModelsDialog:
         for state, var in self.model_vars.items():
             models_str = var.get().strip()
             if models_str:
-                models = [model.strip() for model in models_str.split(',') if model.strip()]
+                models = [
+                    model.strip() for model in models_str.split(",") if model.strip()
+                ]
                 result[state] = models
             else:
                 result[state] = []

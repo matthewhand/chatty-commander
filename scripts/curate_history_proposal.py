@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Produce a dry-run proposal for curating/squashing history into readable batches.
 
@@ -54,17 +76,21 @@ def parse_git_log() -> list[Commit]:
             # end of block
             if sha and date and subj is not None:
                 tp = Counter(_top_path(p) for p in files if p)
-                commits.append(Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp))
+                commits.append(
+                    Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp)
+                )
             sha = date = subj = None
             files = []
             continue
-        if '\t' in line:
+        if "\t" in line:
             # new commit header
             if sha and date and subj is not None:
                 tp = Counter(_top_path(p) for p in files if p)
-                commits.append(Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp))
+                commits.append(
+                    Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp)
+                )
                 files = []
-            parts = line.split('\t', 2)
+            parts = line.split("\t", 2)
             if len(parts) == 3:
                 sha, date, subj = parts
             else:
@@ -77,7 +103,9 @@ def parse_git_log() -> list[Commit]:
     # Final flush
     if sha and date and subj is not None:
         tp = Counter(_top_path(p) for p in files if p)
-        commits.append(Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp))
+        commits.append(
+            Commit(sha=sha, date=_parse_date(date), subject=subj, top_paths=tp)
+        )
     return commits
 
 
@@ -162,7 +190,9 @@ def build_batches(
         grouped[period_key(c.date, granularity)].append(c)
 
     # Sort periods chronologically by first commit date
-    periods = sorted(grouped.keys(), key=lambda p: grouped[p][0].date if grouped[p] else boundary)
+    periods = sorted(
+        grouped.keys(), key=lambda p: grouped[p][0].date if grouped[p] else boundary
+    )
 
     # Build initial monthly/quarterly batches
     batches: list[Batch] = []
@@ -219,8 +249,12 @@ def render_markdown(batches: list[Batch], post_count: int, boundary: dt.date) ->
     lines.append("")
     # Summary table
     lines.append("## Summary\n")
-    lines.append("| Batch | Periods | Date Range | Commits | Top Areas | Suggested Title |")
-    lines.append("|------:|---------|------------|--------:|-----------|------------------|")
+    lines.append(
+        "| Batch | Periods | Date Range | Commits | Top Areas | Suggested Title |"
+    )
+    lines.append(
+        "|------:|---------|------------|--------:|-----------|------------------|"
+    )
     for idx, b in enumerate(batches, 1):
         top_areas = ", ".join([a for a, _ in b.areas.most_common(3)]) or "-"
         lines.append(
@@ -256,15 +290,21 @@ def render_markdown(batches: list[Batch], post_count: int, boundary: dt.date) ->
 
 
 def main(argv: list[str]) -> int:
-    ap = argparse.ArgumentParser(description="Dry-run proposal for curated history batches")
+    ap = argparse.ArgumentParser(
+        description="Dry-run proposal for curated history batches"
+    )
     ap.add_argument(
         "--boundary",
         required=False,
         default="2025-08-05",
         help="Boundary date YYYY-MM-DD; keep commits on/after this date intact",
     )
-    ap.add_argument("--granularity", choices=["monthly", "quarterly"], default="monthly")
-    ap.add_argument("--smart", type=lambda s: s.lower() in {"1", "true", "yes", "y"}, default=True)
+    ap.add_argument(
+        "--granularity", choices=["monthly", "quarterly"], default="monthly"
+    )
+    ap.add_argument(
+        "--smart", type=lambda s: s.lower() in {"1", "true", "yes", "y"}, default=True
+    )
     ap.add_argument(
         "--max-commits-per-batch",
         type=int,

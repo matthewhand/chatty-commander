@@ -1,8 +1,27 @@
-import json
-import os
-from types import SimpleNamespace
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-import pytest
+import json
+from types import SimpleNamespace
 
 from src.chatty_commander.app.config import Config
 from src.chatty_commander.app.state_manager import StateManager as RealStateManager
@@ -50,8 +69,15 @@ def test_modes_wakeword_mapping_custom_mode(tmp_path, monkeypatch):
     data = base_config_dict()
     # Add a custom mode with its own wakeword
     data["modes"] = {
-        "idle": {"wakewords": ["hey_chat_tee", "hey_khum_puter", "okay_stop"], "persona": None},
-        "focus": {"wakewords": ["focus_on"], "persona": "analyst", "tools": ["browser"]},
+        "idle": {
+            "wakewords": ["hey_chat_tee", "hey_khum_puter", "okay_stop"],
+            "persona": None,
+        },
+        "focus": {
+            "wakewords": ["focus_on"],
+            "persona": "analyst",
+            "tools": ["browser"],
+        },
     }
     data["state_models"]["focus"] = ["okay_stop"]
     data["state_transitions"] = {
@@ -100,7 +126,9 @@ def test_advisors_switch_mode_directive(monkeypatch):
     # Patch AdvisorsService provider builder to return DummyProvider
     import src.chatty_commander.advisors.service as svc_mod
 
-    monkeypatch.setattr(svc_mod, "build_provider_safe", lambda cfg: DummyProvider(), raising=False)
+    monkeypatch.setattr(
+        svc_mod, "build_provider_safe", lambda cfg: DummyProvider(), raising=False
+    )
 
     # Patch StateManager inside AdvisorsService to observe change_state calls
     calls = SimpleNamespace(count=0, last=None)

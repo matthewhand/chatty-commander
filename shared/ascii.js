@@ -1,7 +1,7 @@
 const NON_ASCII = /[^\x00-\x7F]/g;
 
 export function encodeASCII(s) {
-  return String(s).replace(NON_ASCII, '?');
+  return String(s).replace(NON_ASCII, "?");
 }
 
 export function isASCII(s) {
@@ -11,7 +11,7 @@ export function isASCII(s) {
 
 export function assertASCII(s) {
   if (!isASCII(s)) {
-    throw new Error('Non-ASCII input');
+    throw new Error("Non-ASCII input");
   }
 }
 

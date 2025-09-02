@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.1.1] - 2025-08-20
+## \[0.1.1\] - 2025-08-20
 
-## [0.1.2] - 2025-08-21
+## \[0.1.2\] - 2025-08-21
 
 ### Added
 
@@ -22,9 +22,9 @@
 ### Tests
 
 - Added focused coverage tests; ensured Python suite passes via `make test`.
-- JS tests: allow running on Node <22 via `tsx` loader; added ESM `shared/ascii.mjs` and updated unit test import.
+- JS tests: allow running on Node \<22 via `tsx` loader; added ESM `shared/ascii.mjs` and updated unit test import.
 
-## [0.2.0] - 2024-12-19
+## \[0.2.0\] - 2024-12-19
 
 ### Added
 
@@ -58,7 +58,7 @@
 - Isolated test stores for deterministic agent testing
 - OpenAPI schema parity validation
 
-## [0.1.0] - Initial Release
+## \[0.1.0\] - Initial Release
 
 - Basic CLI and web mode functionality
 - Configuration management

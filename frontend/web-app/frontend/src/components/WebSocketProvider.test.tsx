@@ -1,18 +1,18 @@
-import React from 'react';
-import { render } from '@testing-library/react';
-import { WebSocketProvider } from './WebSocketProvider';
+import React from "react";
+import { render } from "@testing-library/react";
+import { WebSocketProvider } from "./WebSocketProvider";
 
 jest.useFakeTimers();
 
 // Mock useAuth to authenticate
-jest.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({ isAuthenticated: true })
+jest.mock("../hooks/useAuth", () => ({
+  useAuth: () => ({ isAuthenticated: true }),
 }));
 
 // Mock localStorage for token
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: {
-    getItem: (k: string) => (k === 'auth_token' ? 'token' : null)
+    getItem: (k: string) => (k === "auth_token" ? "token" : null),
   },
 });
 
@@ -23,20 +23,22 @@ class MockWS {
   public url: string;
   constructor(url: string) {
     this.url = url;
-    setTimeout(() => this.onopen && this.onopen({ type: 'open' }), 0);
-    setTimeout(() => this.onclose && this.onclose({ type: 'close' }), 5);
+    setTimeout(() => this.onopen && this.onopen({ type: "open" }), 0);
+    setTimeout(() => this.onclose && this.onclose({ type: "close" }), 5);
   }
-  close() { /* noop */ }
+  close() {
+    /* noop */
+  }
 }
 
 // @ts-ignore
 global.WebSocket = MockWS;
 
-it('connects and then closes (reconnect handled by component lifecycle)', () => {
+it("connects and then closes (reconnect handled by component lifecycle)", () => {
   const { unmount } = render(
     <WebSocketProvider>
       <div>Child</div>
-    </WebSocketProvider>
+    </WebSocketProvider>,
   );
   jest.runOnlyPendingTimers();
   unmount();

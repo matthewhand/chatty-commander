@@ -12,6 +12,7 @@
 ## ✨ Features
 
 ### 🎯 Core Capabilities
+
 - **Voice Integration**: Wake word detection + voice-to-text transcription with OpenWakeWord
 - **Multi-Modal Operation**: CLI, Web API, WebSocket, and GUI modes
 - **Real-time Communication**: WebSocket broadcasting for live updates
@@ -19,6 +20,7 @@
 - **Avatar System**: 3D anime-style avatar with lip-sync capabilities
 
 ### 🔒 Security & Compliance
+
 - **Rate Limiting**: Configurable request throttling (100 req/min default)
 - **Security Headers**: XSS protection, CSRF prevention, content security policy
 - **Authentication**: JWT-based auth with configurable token expiration
@@ -26,6 +28,7 @@
 - **Audit Logging**: Structured logging with security event tracking
 
 ### 📊 Monitoring & Observability
+
 - **Health Checks**: Comprehensive system health monitoring (`/health`)
 - **Metrics Endpoint**: Prometheus-compatible metrics (`/metrics`)
 - **Performance Monitoring**: Response times, cache hit rates, error tracking
@@ -33,6 +36,7 @@
 - **Distributed Tracing**: Request tracing across microservices
 
 ### 🏗️ Architecture & Performance
+
 - **Caching System**: Intelligent caching with TTL for optimal performance
 - **Async Processing**: Non-blocking I/O with asyncio throughout
 - **Database Integration**: PostgreSQL with connection pooling
@@ -40,6 +44,7 @@
 - **Load Balancing**: Nginx reverse proxy with SSL termination
 
 ### 🛠️ Developer Experience
+
 - **Comprehensive CLI**: 20+ development and deployment commands
 - **Docker Support**: Multi-stage builds with security best practices
 - **CI/CD Pipeline**: GitHub Actions with automated testing and deployment
@@ -108,10 +113,10 @@ Quickstart
 - Run web server: uv run python main.py --web --no-auth
 
 1. **Prerequisites**: Ensure you have Python 3.11+ and `uv` installed for dependency management.
-2. **Clone the Repository**: `git clone https://github.com/your-repo/chatty-commander.git`
-3. **Navigate to Directory**: `cd chatty-commander`
-4. **Install Dependencies**: Run `uv sync` to install all required packages. This will also make the `chatty` command available in `.venv/bin/`.
-5. **Model Setup**: Place your ONNX models in the appropriate directories: `models-idle`, `models-computer`, `models-chatty`.
+1. **Clone the Repository**: `git clone https://github.com/your-repo/chatty-commander.git`
+1. **Navigate to Directory**: `cd chatty-commander`
+1. **Install Dependencies**: Run `uv sync` to install all required packages. This will also make the `chatty` command available in `.venv/bin/`.
+1. **Model Setup**: Place your ONNX models in the appropriate directories: `models-idle`, `models-computer`, `models-chatty`.
 
 ### Quickstart (Windows/macOS)
 
@@ -476,10 +481,13 @@ In CI, release tag builds create artifacts for Linux/macOS/Windows (see `.github
 ### Development Tips
 
 - No-auth mode: `--no-auth` enables docs and permissive CORS for local development.
+
 - WebUI connectivity: see `docs/WEBUI_CONNECTIVITY.md`.
 
 - See docs/AVATAR_GUI.md for protocol, discovery, settings API, and local dev tips.
+
 - Quick start:
+
   - Run backend: `uv run python -m src.chatty_commander.main --web --no-auth`
   - Launch avatar GUI: `uv run python -m src.chatty_commander.main --gui`
   - Dev client will attempt to connect to ws://localhost:8100/avatar/ws
@@ -492,7 +500,7 @@ Start interactive REPL:
 
 Example session (stdin-driven):
 
-This flow is covered by automated tests: see [tests.test_repl_basic.test_repl_quick_session_executes_and_exits_cleanly():1].
+This flow is covered by automated tests: see \[tests.test_repl_basic.test_repl_quick_session_executes_and_exits_cleanly():1\].
 
 ## Contributing
 

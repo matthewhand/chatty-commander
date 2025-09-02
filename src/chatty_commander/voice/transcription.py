@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Voice-to-text transcription with multiple backend support.
 
@@ -59,7 +81,9 @@ class WhisperLocalBackend(TranscriptionBackend):
             self._model = whisper.load_model(self.model_size)
             logger.info(f"Loaded Whisper model: {self.model_size}")
         except ImportError:
-            logger.warning("Whisper not available. Install with: pip install openai-whisper")
+            logger.warning(
+                "Whisper not available. Install with: pip install openai-whisper"
+            )
         except Exception as e:
             logger.error(f"Failed to load Whisper model: {e}")
 
@@ -70,7 +94,9 @@ class WhisperLocalBackend(TranscriptionBackend):
 
         try:
             # Convert audio bytes to numpy array
-            audio_array = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+            audio_array = (
+                np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+            )
 
             # Transcribe
             result = self._model.transcribe(audio_array)
@@ -103,7 +129,9 @@ class WhisperAPIBackend(TranscriptionBackend):
             self._client = openai.OpenAI(api_key=self.api_key)
             logger.info("Initialized OpenAI Whisper API client")
         except ImportError:
-            logger.warning("OpenAI library not available. Install with: pip install openai")
+            logger.warning(
+                "OpenAI library not available. Install with: pip install openai"
+            )
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e}")
 
@@ -116,14 +144,14 @@ class WhisperAPIBackend(TranscriptionBackend):
             # Create temporary WAV file
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
                 # Write WAV header and data
-                with wave.open(tmp_file.name, 'wb') as wav_file:
+                with wave.open(tmp_file.name, "wb") as wav_file:
                     wav_file.setnchannels(1)
                     wav_file.setsampwidth(2)  # 16-bit
                     wav_file.setframerate(sample_rate)
                     wav_file.writeframes(audio_data)
 
                 # Transcribe using OpenAI API
-                with open(tmp_file.name, 'rb') as audio_file:
+                with open(tmp_file.name, "rb") as audio_file:
                     transcript = self._client.audio.transcriptions.create(
                         model="whisper-1", file=audio_file
                     )
@@ -246,7 +274,9 @@ class VoiceTranscriber:
 
             while True:
                 try:
-                    data = self._stream.read(self.chunk_size, exception_on_overflow=False)
+                    data = self._stream.read(
+                        self.chunk_size, exception_on_overflow=False
+                    )
                     frames.append(data)
 
                     # Check for silence (simple volume-based detection)
@@ -272,7 +302,7 @@ class VoiceTranscriber:
                     break
 
             # Convert frames to bytes
-            audio_data = b''.join(frames)
+            audio_data = b"".join(frames)
             logger.info(f"Recorded {len(audio_data)} bytes of audio")
             return audio_data
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Card,
@@ -27,8 +27,8 @@ import {
   IconButton,
   Tooltip,
   Switch,
-  FormControlLabel
-} from '@mui/material';
+  FormControlLabel,
+} from "@mui/material";
 import {
   PlayArrow,
   Stop,
@@ -45,15 +45,15 @@ import {
   Send,
   History,
   Code,
-  Api
-} from '@mui/icons-material';
-import { useWebSocket } from '../hooks/useWebSocket';
-import { apiService } from '../services/apiService';
+  Api,
+} from "@mui/icons-material";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { apiService } from "../services/apiService";
 
 const Dashboard = () => {
   // State management
   const [systemStatus, setSystemStatus] = useState(null);
-  const [currentState, setCurrentState] = useState('idle');
+  const [currentState, setCurrentState] = useState("idle");
   const [activeModels, setActiveModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,16 +62,12 @@ const Dashboard = () => {
   const [commandHistory, setCommandHistory] = useState([]);
   const [realTimeEvents, setRealTimeEvents] = useState([]);
   const [config, setConfig] = useState(null);
-  const [newCommand, setNewCommand] = useState({ command: '', parameters: {} });
+  const [newCommand, setNewCommand] = useState({ command: "", parameters: {} });
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // WebSocket connection
-  const {
-    isConnected,
-    lastMessage,
-    sendMessage,
-    connectionStatus
-  } = useWebSocket('ws://localhost:8100/ws');
+  const { isConnected, lastMessage, sendMessage, connectionStatus } =
+    useWebSocket("ws://localhost:8100/ws");
 
   // Load initial data
   const loadSystemData = useCallback(async () => {
@@ -79,17 +75,14 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
 
-      const [statusResponse, stateResponse, configResponse] = await Promise.all([
-        apiService.getStatus(),
-        apiService.getState(),
-        apiService.getConfig()
-      ]);
+      const [statusResponse, stateResponse, configResponse] = await Promise.all(
+        [apiService.getStatus(), apiService.getState(), apiService.getConfig()],
+      );
 
       setSystemStatus(statusResponse);
       setCurrentState(stateResponse.current_state);
       setActiveModels(stateResponse.active_models);
       setConfig(configResponse);
-
     } catch (err) {
       setError(`Failed to load system data: ${err.message}`);
     } finally {
@@ -103,36 +96,36 @@ const Dashboard = () => {
       const message = JSON.parse(lastMessage.data);
 
       // Add to real-time events
-      setRealTimeEvents(prev => [
+      setRealTimeEvents((prev) => [
         {
           id: Date.now(),
           timestamp: new Date().toLocaleTimeString(),
           type: message.type,
-          data: message.data
+          data: message.data,
         },
-        ...prev.slice(0, 49) // Keep last 50 events
+        ...prev.slice(0, 49), // Keep last 50 events
       ]);
 
       // Handle specific message types
       switch (message.type) {
-        case 'state_change':
+        case "state_change":
           setCurrentState(message.data.new_state);
           break;
-        case 'command_detected':
-        case 'command_executed':
-          setCommandHistory(prev => [
+        case "command_detected":
+        case "command_executed":
+          setCommandHistory((prev) => [
             {
               id: Date.now(),
               command: message.data.command,
               timestamp: new Date().toLocaleTimeString(),
               type: message.type,
               success: message.data.success,
-              executionTime: message.data.execution_time
+              executionTime: message.data.execution_time,
             },
-            ...prev.slice(0, 19) // Keep last 20 commands
+            ...prev.slice(0, 19), // Keep last 20 commands
           ]);
           break;
-        case 'config_updated':
+        case "config_updated":
           loadSystemData(); // Reload data when config changes
           break;
       }
@@ -165,21 +158,24 @@ const Dashboard = () => {
   // Handle command execution
   const handleExecuteCommand = async () => {
     try {
-      const result = await apiService.executeCommand(newCommand.command, newCommand.parameters);
-      setCommandHistory(prev => [
+      const result = await apiService.executeCommand(
+        newCommand.command,
+        newCommand.parameters,
+      );
+      setCommandHistory((prev) => [
         {
           id: Date.now(),
           command: newCommand.command,
           timestamp: new Date().toLocaleTimeString(),
-          type: 'manual_execution',
+          type: "manual_execution",
           success: result.success,
           executionTime: result.execution_time,
-          message: result.message
+          message: result.message,
         },
-        ...prev.slice(0, 19)
+        ...prev.slice(0, 19),
       ]);
       setCommandDialog(false);
-      setNewCommand({ command: '', parameters: {} });
+      setNewCommand({ command: "", parameters: {} });
     } catch (err) {
       setError(`Failed to execute command: ${err.message}`);
     }
@@ -188,27 +184,27 @@ const Dashboard = () => {
   // Get state color and icon
   const getStateInfo = (state) => {
     switch (state) {
-      case 'idle':
-        return { color: 'default', icon: <Home />, label: 'Idle' };
-      case 'computer':
-        return { color: 'primary', icon: <Computer />, label: 'Computer' };
-      case 'chatty':
-        return { color: 'secondary', icon: <Chat />, label: 'Chatty' };
+      case "idle":
+        return { color: "default", icon: <Home />, label: "Idle" };
+      case "computer":
+        return { color: "primary", icon: <Computer />, label: "Computer" };
+      case "chatty":
+        return { color: "secondary", icon: <Chat />, label: "Chatty" };
       default:
-        return { color: 'default', icon: <Home />, label: 'Unknown' };
+        return { color: "default", icon: <Home />, label: "Unknown" };
     }
   };
 
   // Get event icon
   const getEventIcon = (type) => {
     switch (type) {
-      case 'state_change':
+      case "state_change":
         return <Settings color="primary" />;
-      case 'command_detected':
+      case "command_detected":
         return <VolumeUp color="success" />;
-      case 'command_executed':
+      case "command_executed":
         return <PlayArrow color="info" />;
-      case 'system_event':
+      case "system_event":
         return <Info color="warning" />;
       default:
         return <Info />;
@@ -217,9 +213,16 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress size={60} />
-        <Typography variant="h6" sx={{ ml: 2 }}>Loading Dashboard...</Typography>
+        <Typography variant="h6" sx={{ ml: 2 }}>
+          Loading Dashboard...
+        </Typography>
       </Box>
     );
   }
@@ -229,7 +232,12 @@ const Dashboard = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4" component="h1">
           ChattyCommander Dashboard
         </Typography>
@@ -284,13 +292,13 @@ const Dashboard = () => {
                 <Typography variant="h6">System Status</Typography>
               </Box>
               <Typography variant="h4" color="success.main">
-                {systemStatus?.status || 'Unknown'}
+                {systemStatus?.status || "Unknown"}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Uptime: {systemStatus?.uptime || 'Unknown'}
+                Uptime: {systemStatus?.uptime || "Unknown"}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Version: {systemStatus?.version || 'Unknown'}
+                Version: {systemStatus?.version || "Unknown"}
               </Typography>
             </CardContent>
           </Card>
@@ -302,35 +310,37 @@ const Dashboard = () => {
             <CardContent>
               <Box display="flex" alignItems="center" mb={2}>
                 {stateInfo.icon}
-                <Typography variant="h6" sx={{ ml: 1 }}>Current State</Typography>
+                <Typography variant="h6" sx={{ ml: 1 }}>
+                  Current State
+                </Typography>
               </Box>
               <Chip
                 label={stateInfo.label}
                 color={stateInfo.color}
                 size="large"
-                sx={{ fontSize: '1.1rem', height: 40 }}
+                sx={{ fontSize: "1.1rem", height: 40 }}
               />
               <Box mt={2}>
                 <Button
                   size="small"
-                  onClick={() => handleStateChange('idle')}
-                  disabled={currentState === 'idle'}
+                  onClick={() => handleStateChange("idle")}
+                  disabled={currentState === "idle"}
                   sx={{ mr: 1, mb: 1 }}
                 >
                   Idle
                 </Button>
                 <Button
                   size="small"
-                  onClick={() => handleStateChange('computer')}
-                  disabled={currentState === 'computer'}
+                  onClick={() => handleStateChange("computer")}
+                  disabled={currentState === "computer"}
                   sx={{ mr: 1, mb: 1 }}
                 >
                   Computer
                 </Button>
                 <Button
                   size="small"
-                  onClick={() => handleStateChange('chatty')}
-                  disabled={currentState === 'chatty'}
+                  onClick={() => handleStateChange("chatty")}
+                  disabled={currentState === "chatty"}
                   sx={{ mb: 1 }}
                 >
                   Chatty
@@ -370,14 +380,14 @@ const Dashboard = () => {
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" mb={2}>
-                <Api color={isConnected ? 'success' : 'error'} sx={{ mr: 1 }} />
+                <Api color={isConnected ? "success" : "error"} sx={{ mr: 1 }} />
                 <Typography variant="h6">Connection</Typography>
               </Box>
               <Chip
-                label={isConnected ? 'Connected' : 'Disconnected'}
-                color={isConnected ? 'success' : 'error'}
+                label={isConnected ? "Connected" : "Disconnected"}
+                color={isConnected ? "success" : "error"}
                 size="large"
-                sx={{ fontSize: '1.1rem', height: 40 }}
+                sx={{ fontSize: "1.1rem", height: 40 }}
               />
               <Typography variant="body2" color="text.secondary" mt={1}>
                 Status: {connectionStatus}
@@ -396,20 +406,21 @@ const Dashboard = () => {
               <Typography variant="h6" mb={2}>
                 Real-time Events
               </Typography>
-              <Paper sx={{ maxHeight: 400, overflow: 'auto' }}>
+              <Paper sx={{ maxHeight: 400, overflow: "auto" }}>
                 <List dense>
                   {realTimeEvents.length === 0 ? (
                     <ListItem>
-                      <ListItemText primary="No events yet" secondary="Events will appear here in real-time" />
+                      <ListItemText
+                        primary="No events yet"
+                        secondary="Events will appear here in real-time"
+                      />
                     </ListItem>
                   ) : (
                     realTimeEvents.map((event) => (
                       <ListItem key={event.id}>
-                        <ListItemIcon>
-                          {getEventIcon(event.type)}
-                        </ListItemIcon>
+                        <ListItemIcon>{getEventIcon(event.type)}</ListItemIcon>
                         <ListItemText
-                          primary={event.type.replace('_', ' ').toUpperCase()}
+                          primary={event.type.replace("_", " ").toUpperCase()}
                           secondary={`${event.timestamp} - ${JSON.stringify(event.data).substring(0, 100)}...`}
                         />
                       </ListItem>
@@ -429,21 +440,28 @@ const Dashboard = () => {
                 <History sx={{ mr: 1 }} />
                 <Typography variant="h6">Command History</Typography>
               </Box>
-              <Paper sx={{ maxHeight: 400, overflow: 'auto' }}>
+              <Paper sx={{ maxHeight: 400, overflow: "auto" }}>
                 <List dense>
                   {commandHistory.length === 0 ? (
                     <ListItem>
-                      <ListItemText primary="No commands yet" secondary="Command history will appear here" />
+                      <ListItemText
+                        primary="No commands yet"
+                        secondary="Command history will appear here"
+                      />
                     </ListItem>
                   ) : (
                     commandHistory.map((cmd) => (
                       <ListItem key={cmd.id}>
                         <ListItemIcon>
-                          {cmd.success ? <CheckCircle color="success" /> : <Error color="error" />}
+                          {cmd.success ? (
+                            <CheckCircle color="success" />
+                          ) : (
+                            <Error color="error" />
+                          )}
                         </ListItemIcon>
                         <ListItemText
                           primary={cmd.command}
-                          secondary={`${cmd.timestamp} - ${cmd.type} ${cmd.executionTime ? `(${cmd.executionTime}ms)` : ''}`}
+                          secondary={`${cmd.timestamp} - ${cmd.type} ${cmd.executionTime ? `(${cmd.executionTime}ms)` : ""}`}
                         />
                       </ListItem>
                     ))
@@ -456,31 +474,53 @@ const Dashboard = () => {
       </Grid>
 
       {/* Configuration Dialog */}
-      <Dialog open={configDialog} onClose={() => setConfigDialog(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={configDialog}
+        onClose={() => setConfigDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>System Configuration</DialogTitle>
         <DialogContent>
           {config ? (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" gutterBottom>Model Paths</Typography>
-              <Typography variant="body2">General Models: {config.general_models_path || 'Not set'}</Typography>
-              <Typography variant="body2">System Models: {config.system_models_path || 'Not set'}</Typography>
-              <Typography variant="body2">Chat Models: {config.chat_models_path || 'Not set'}</Typography>
+              <Typography variant="h6" gutterBottom>
+                Model Paths
+              </Typography>
+              <Typography variant="body2">
+                General Models: {config.general_models_path || "Not set"}
+              </Typography>
+              <Typography variant="body2">
+                System Models: {config.system_models_path || "Not set"}
+              </Typography>
+              <Typography variant="body2">
+                Chat Models: {config.chat_models_path || "Not set"}
+              </Typography>
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="h6" gutterBottom>Available Commands</Typography>
-              {config.model_actions && Object.keys(config.model_actions).length > 0 ? (
-                Object.entries(config.model_actions).map(([command, action]) => (
-                  <Box key={command} sx={{ mb: 1 }}>
-                    <Typography variant="body2" fontWeight="bold">{command}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {action.keypress ? `Keypress: ${action.keypress}` : ''}
-                      {action.url ? `URL: ${action.url}` : ''}
-                    </Typography>
-                  </Box>
-                ))
+              <Typography variant="h6" gutterBottom>
+                Available Commands
+              </Typography>
+              {config.model_actions &&
+              Object.keys(config.model_actions).length > 0 ? (
+                Object.entries(config.model_actions).map(
+                  ([command, action]) => (
+                    <Box key={command} sx={{ mb: 1 }}>
+                      <Typography variant="body2" fontWeight="bold">
+                        {command}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {action.keypress ? `Keypress: ${action.keypress}` : ""}
+                        {action.url ? `URL: ${action.url}` : ""}
+                      </Typography>
+                    </Box>
+                  ),
+                )
               ) : (
-                <Typography variant="body2" color="text.secondary">No commands configured</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  No commands configured
+                </Typography>
               )}
             </Box>
           ) : (
@@ -493,7 +533,12 @@ const Dashboard = () => {
       </Dialog>
 
       {/* Command Execution Dialog */}
-      <Dialog open={commandDialog} onClose={() => setCommandDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={commandDialog}
+        onClose={() => setCommandDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Execute Command</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
@@ -501,7 +546,9 @@ const Dashboard = () => {
               fullWidth
               label="Command"
               value={newCommand.command}
-              onChange={(e) => setNewCommand(prev => ({ ...prev, command: e.target.value }))}
+              onChange={(e) =>
+                setNewCommand((prev) => ({ ...prev, command: e.target.value }))
+              }
               margin="normal"
               helperText="Enter the command name to execute"
             />
@@ -511,8 +558,8 @@ const Dashboard = () => {
               value={JSON.stringify(newCommand.parameters)}
               onChange={(e) => {
                 try {
-                  const params = JSON.parse(e.target.value || '{}');
-                  setNewCommand(prev => ({ ...prev, parameters: params }));
+                  const params = JSON.parse(e.target.value || "{}");
+                  setNewCommand((prev) => ({ ...prev, parameters: params }));
                 } catch {
                   // Invalid JSON, ignore
                 }

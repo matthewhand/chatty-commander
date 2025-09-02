@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import io
 import json
 import sys
@@ -52,7 +74,9 @@ def run_cli_main_with_args(args_list, monkeypatch):
     return code, stdout.getvalue(), stderr.getvalue()
 
 
-def test_cli_list_respects_monkeypatched_config_text(monkeypatch, replace_config_with_dummy):
+def test_cli_list_respects_monkeypatched_config_text(
+    monkeypatch, replace_config_with_dummy
+):
     actions = {
         "hello": {"shell": {"cmd": "echo hello"}},
         "web": {"url": {"url": "https://example.com"}},
@@ -70,7 +94,9 @@ def test_cli_list_respects_monkeypatched_config_text(monkeypatch, replace_config
     assert err == ""
 
 
-def test_cli_list_respects_monkeypatched_config_json(monkeypatch, replace_config_with_dummy):
+def test_cli_list_respects_monkeypatched_config_json(
+    monkeypatch, replace_config_with_dummy
+):
     actions = {
         "cmd1": {"shell": {"cmd": "true"}},
         "cmd2": {"url": {"url": "https://x"}},
@@ -95,7 +121,9 @@ def test_cli_list_empty_config(monkeypatch, replace_config_with_dummy):
     assert err == ""
 
 
-def test_cli_exec_unknown_command_exit_and_stderr(monkeypatch, replace_config_with_dummy):
+def test_cli_exec_unknown_command_exit_and_stderr(
+    monkeypatch, replace_config_with_dummy
+):
     replace_config_with_dummy({"known": {"shell": {"cmd": "echo ok"}}})
     code, out, err = run_cli_main_with_args(["exec", "missing"], monkeypatch)
     # unknown should exit with code 1 and write to stderr
@@ -127,7 +155,7 @@ def test_cli_exec_invokes_executor(monkeypatch, replace_config_with_dummy):
             called["count"] += 1
             called["last"] = name
 
-    monkeypatch.setattr('chatty_commander.cli.cli.CommandExecutor', FakeExecutor)
+    monkeypatch.setattr("chatty_commander.cli.cli.CommandExecutor", FakeExecutor)
 
     code, out, err = run_cli_main_with_args(["exec", "hello"], monkeypatch)
     assert code == 0
@@ -136,7 +164,9 @@ def test_cli_exec_invokes_executor(monkeypatch, replace_config_with_dummy):
     assert err == ""
 
 
-def test_cli_exec_timeout_flag_passthrough_no_error(monkeypatch, replace_config_with_dummy):
+def test_cli_exec_timeout_flag_passthrough_no_error(
+    monkeypatch, replace_config_with_dummy
+):
     # The timeout flag is accepted by CLI; per-command handling occurs inside executor.
     actions = {"hello": {"shell": {"cmd": "sleep 0"}}}
     replace_config_with_dummy(actions)
@@ -148,9 +178,13 @@ def test_cli_exec_timeout_flag_passthrough_no_error(monkeypatch, replace_config_
         def execute_command(self, name):
             return
 
-    monkeypatch.setattr('chatty_commander.app.command_executor.CommandExecutor', NoopExecutor)
+    monkeypatch.setattr(
+        "chatty_commander.app.command_executor.CommandExecutor", NoopExecutor
+    )
 
-    code, out, err = run_cli_main_with_args(["exec", "hello", "--timeout", "5"], monkeypatch)
+    code, out, err = run_cli_main_with_args(
+        ["exec", "hello", "--timeout", "5"], monkeypatch
+    )
     assert code == 0
     # No specific stdout expected in non-dry-run success
     assert err == ""

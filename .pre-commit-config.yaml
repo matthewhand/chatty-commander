@@ -69,26 +69,26 @@ repos:
       - id: prettier
         exclude: package-lock.json
 
-  # Temporarily disabled pytest-check due to timeout issues
-  # - repo: local
-  #   hooks:
-  #     - id: pytest-check
-  #       name: pytest-check
-  #       entry: python -m pytest
-  #       language: system
-  #       pass_filenames: false
-  #       args: [-x, --tb=short]
-  #       files: ^(src/|tests/)
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: python -m pytest
+        language: system
+        pass_filenames: false
+        args: [-x, --tb=short, --timeout=60]
+        files: ^(src/|tests/)
+        stages: [commit]
 
   - repo: local
     hooks:
       - id: safety-check
         name: safety-check
-        entry: safety
+        entry: uv run safety
         language: system
         pass_filenames: false
         args: [check, --full-report]
-        files: ^requirements.*\.txt$
+        files: ^pyproject\.toml$
 
   # Temporarily disabled detect-secrets due to missing baseline file
   # - repo: https://github.com/Yelp/detect-secrets
@@ -98,11 +98,12 @@ repos:
   #       args: ["--baseline", ".secrets.baseline"]
   #       exclude: ^(tests/|\.github/|docs/)
 
-  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-    rev: v1.3.2
-    hooks:
-      - id: python-safety-dependencies-check
-        files: ^(pyproject\.toml|requirements.*\.txt|setup\.py)$
+  # Disabled - requires Poetry which we don't use
+  # - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+  #   rev: v1.3.2
+  #   hooks:
+  #     - id: python-safety-dependencies-check
+  #       files: ^(pyproject\.toml|requirements.*\.txt|setup\.py)$
 
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 3.0.0

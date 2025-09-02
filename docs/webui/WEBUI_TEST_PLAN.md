@@ -908,11 +908,11 @@ jobs:
 
 ### Performance Testing
 
-- [ ] API response time < 200ms (95th percentile)
-- [ ] Frontend load time < 3 seconds
-- [ ] WebSocket latency < 50ms
+- [ ] API response time \< 200ms (95th percentile)
+- [ ] Frontend load time \< 3 seconds
+- [ ] WebSocket latency \< 50ms
 - [ ] Support for 100+ concurrent users
-- [ ] Memory usage < 512MB per instance
+- [ ] Memory usage \< 512MB per instance
 
 ### Security Testing
 
@@ -924,7 +924,7 @@ jobs:
 
 ### User Experience
 
-- [ ] Intuitive navigation (< 3 clicks to any feature)
+- [ ] Intuitive navigation (\< 3 clicks to any feature)
 - [ ] Clear error messages and feedback
 - [ ] Consistent UI/UX across all pages
 - [ ] Offline capability for cached data

@@ -22,9 +22,9 @@ All modes are unified by the `ModeOrchestrator` which selects and starts adapter
 ## Module interactions and state transitions
 
 1. **Adapters** feed recognized text into the shared `CommandExecutor`.
-2. `StateManager.update_state()` reacts to wake words and toggles between `idle`, `computer`, and `chatty`.
-3. `ModelManager` activates the model list provided by `StateManager` for the new state.
-4. `CommandExecutor` performs the configured action for the command.
+1. `StateManager.update_state()` reacts to wake words and toggles between `idle`, `computer`, and `chatty`.
+1. `ModelManager` activates the model list provided by `StateManager` for the new state.
+1. `CommandExecutor` performs the configured action for the command.
 
 ### State transition map
 
@@ -53,7 +53,7 @@ Adapters implement a tiny protocol (`start`/`stop` and a `name`) and are registe
 ## Data flow (high level)
 
 1. Input (voice/text/web/bridge) → Adapter → `StateManager` (optional) → `CommandExecutor` (actions)
-2. Advisors input (web/bridge) → `AdvisorsService` → tools/LLM → reply + memory → Web/bridge
+1. Advisors input (web/bridge) → `AdvisorsService` → tools/LLM → reply + memory → Web/bridge
 
 ## References
 

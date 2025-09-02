@@ -1,14 +1,18 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 type WebSocketContextType = {
   ws: WebSocket | null;
   isConnected: boolean;
 };
 
-const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
+const WebSocketContext = createContext<WebSocketContextType | undefined>(
+  undefined,
+);
 
-export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { isAuthenticated } = useAuth();
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -17,7 +21,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
     if (!token) return;
 
     const socket = new WebSocket(`ws://localhost:8001/ws?token=${token}`);
@@ -25,8 +29,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     socket.onopen = () => setIsConnected(true);
     socket.onclose = () => setIsConnected(false);
     socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setConnectionError('Connection error');
+      console.error("WebSocket error:", error);
+      setConnectionError("Connection error");
       setIsConnected(false);
     };
 
@@ -47,7 +51,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
   if (!context) {
-    throw new Error('useWebSocket must be used within WebSocketProvider');
+    throw new Error("useWebSocket must be used within WebSocketProvider");
   }
   return context;
 };

@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router } from "express";
 
 const router = Router();
 
-router.get('/file', (req, res) => {
+router.get("/file", (req, res) => {
   res.status(404).end();
 });
 

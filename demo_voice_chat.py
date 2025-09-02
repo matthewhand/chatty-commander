@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Voice Chat Demo with GPT-OSS:20B
 
@@ -31,7 +53,8 @@ def main():
     """Run the voice chat demo."""
     # Setup logging
     logging.basicConfig(
-        level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     logger = logging.getLogger(__name__)
 
@@ -47,14 +70,18 @@ def main():
         # Step 2: Initialize LLM manager with Ollama
         logger.info("🤖 Setting up LLM manager with Ollama...")
         llm_manager = LLMManager(
-            preferred_backend="ollama", ollama_model="gpt-oss:20b", ollama_host="localhost:11434"
+            preferred_backend="ollama",
+            ollama_model="gpt-oss:20b",
+            ollama_host="localhost:11434",
         )
 
         # Check if Ollama is available
         if not llm_manager.is_available():
             logger.error("❌ Ollama backend not available!")
             logger.info("💡 To fix this:")
-            logger.info("   1. Install Ollama: curl -fsSL https://ollama.ai/install.sh | sh")
+            logger.info(
+                "   1. Install Ollama: curl -fsSL https://ollama.ai/install.sh | sh"
+            )
             logger.info("   2. Pull the model: ollama pull gpt-oss:20b")
             logger.info("   3. Start Ollama: ollama serve")
             return 1

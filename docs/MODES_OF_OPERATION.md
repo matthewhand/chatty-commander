@@ -236,11 +236,11 @@ curl -X POST http://localhost:8100/api/v1/advisors/message \
 ## Key Benefits
 
 1. **Unified Logic**: All modes share the same core business logic
-2. **Flexible Input**: Multiple ways to interact (voice, web, GUI, text)
-3. **Optional Features**: Enable only what you need
-4. **Consistent State**: State management works across all modes
-5. **Extensible**: Easy to add new modes or features
-6. **Testable**: Each mode can be tested independently
+1. **Flexible Input**: Multiple ways to interact (voice, web, GUI, text)
+1. **Optional Features**: Enable only what you need
+1. **Consistent State**: State management works across all modes
+1. **Extensible**: Easy to add new modes or features
+1. **Testable**: Each mode can be tested independently
 
 ## Next Steps
 

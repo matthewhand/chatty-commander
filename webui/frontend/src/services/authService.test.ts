@@ -1,4 +1,4 @@
-import { authService } from './authService';
+import { authService } from "./authService";
 
 // Mock fetch globally
 const mockFetch = jest.fn();
@@ -6,7 +6,7 @@ global.fetch = mockFetch as any;
 
 // Mock localStorage methods
 beforeAll(() => {
-  Object.defineProperty(global, 'localStorage', {
+  Object.defineProperty(global, "localStorage", {
     value: {
       getItem: jest.fn(),
       setItem: jest.fn(),
@@ -17,7 +17,7 @@ beforeAll(() => {
   });
 });
 
-describe('AuthService', () => {
+describe("AuthService", () => {
   beforeEach(() => {
     localStorage.clear();
     mockFetch.mockClear();
@@ -26,39 +26,39 @@ describe('AuthService', () => {
     (localStorage.removeItem as jest.Mock).mockClear();
   });
 
-  test('login returns token response', async () => {
+  test("login returns token response", async () => {
     const mockResponse = {
-      access_token: 'test-token',
-      token_type: 'bearer',
-      expires_in: 3600
+      access_token: "test-token",
+      token_type: "bearer",
+      expires_in: 3600,
     };
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockResponse)
+      json: () => Promise.resolve(mockResponse),
     } as Response);
 
-    const result = await authService.login('testuser', 'password');
+    const result = await authService.login("testuser", "password");
 
     expect(result).toEqual(mockResponse);
   });
 
-  test('logout removes token from storage', () => {
-    localStorage.setItem('auth_token', 'test-token');
+  test("logout removes token from storage", () => {
+    localStorage.setItem("auth_token", "test-token");
 
     authService.logout();
 
-    expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token');
+    expect(localStorage.removeItem).toHaveBeenCalledWith("auth_token");
   });
 
-  test('getCurrentUser returns user data when token exists', async () => {
-    const userData = { username: 'testuser', is_active: true, roles: ['user'] };
+  test("getCurrentUser returns user data when token exists", async () => {
+    const userData = { username: "testuser", is_active: true, roles: ["user"] };
     // Ensure token exists before calling
-    (localStorage.getItem as jest.Mock).mockReturnValueOnce('valid-token');
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce("valid-token");
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(userData)
+      json: () => Promise.resolve(userData),
     } as Response);
 
     const user = await authService.getCurrentUser();
@@ -66,32 +66,35 @@ describe('AuthService', () => {
     expect(user).toEqual(userData);
   });
 
-  test('getCurrentUser throws error when no token', async () => {
-    await expect(authService.getCurrentUser())
-      .rejects.toThrow('No token available');
+  test("getCurrentUser throws error when no token", async () => {
+    await expect(authService.getCurrentUser()).rejects.toThrow(
+      "No token available",
+    );
   });
 
-  test('handles login errors', async () => {
+  test("handles login errors", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
-      statusText: 'Unauthorized'
+      statusText: "Unauthorized",
     } as Response);
 
-    await expect(authService.login('wrong', 'credentials'))
-      .rejects.toThrow('Login failed');
+    await expect(authService.login("wrong", "credentials")).rejects.toThrow(
+      "Login failed",
+    );
   });
 
-  test('getCurrentUser handles API errors', async () => {
+  test("getCurrentUser handles API errors", async () => {
     // Ensure token is present so we exercise the fetch error path
-    (localStorage.getItem as jest.Mock).mockReturnValueOnce('invalid-token');
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce("invalid-token");
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
-      statusText: 'Unauthorized'
+      statusText: "Unauthorized",
     } as Response);
 
-    await expect(authService.getCurrentUser())
-       .rejects.toThrow('Failed to get user info');
-   });
+    await expect(authService.getCurrentUser()).rejects.toThrow(
+      "Failed to get user info",
+    );
+  });
 });

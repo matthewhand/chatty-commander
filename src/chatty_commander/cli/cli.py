@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import argparse
 import json
 import os
@@ -19,7 +41,9 @@ except Exception:
 
 
 try:
-    from chatty_commander.config_cli import ConfigCLI as ConfigCLI  # type: ignore # noqa: F401
+    from chatty_commander.config_cli import (
+        ConfigCLI as ConfigCLI,  # type: ignore # noqa: F401
+    )
 except Exception:
 
     class ConfigCLI:  # type: ignore
@@ -178,7 +202,9 @@ def build_parser() -> argparse.ArgumentParser:
     gui_parser = subparsers.add_parser(
         "gui",
         help="Launch GUI mode.",
-        description=("Open the graphical user interface.\n\nExample:\n  chatty-commander gui"),
+        description=(
+            "Open the graphical user interface.\n\nExample:\n  chatty-commander gui"
+        ),
     )
 
     def gui_func(args: argparse.Namespace) -> None:
@@ -247,7 +273,9 @@ def build_parser() -> argparse.ArgumentParser:
             # Initialize voice pipeline
             logger.info("Setting up voice pipeline...")
             voice_pipeline = VoicePipeline(
-                transcription_backend="whisper_local", tts_backend="pyttsx3", use_mock=False
+                transcription_backend="whisper_local",
+                tts_backend="pyttsx3",
+                use_mock=False,
             )
 
             # Check voice components
@@ -257,7 +285,9 @@ def build_parser() -> argparse.ArgumentParser:
                 )
 
             if not voice_pipeline.tts.is_available():
-                logger.warning("TTS not available. Install pyttsx3: pip install pyttsx3")
+                logger.warning(
+                    "TTS not available. Install pyttsx3: pip install pyttsx3"
+                )
 
             # Initialize state manager for avatar
             state_manager = StateManager()
@@ -351,10 +381,14 @@ def build_parser() -> argparse.ArgumentParser:
     config_parser.add_argument(
         "--interactive", action="store_true", help="Run interactive config tool."
     )
-    config_parser.add_argument("--list", action="store_true", help="List configuration.")
+    config_parser.add_argument(
+        "--list", action="store_true", help="List configuration."
+    )
     config_parser.add_argument("--set-listen-for", nargs=2, metavar=("KEY", "VALUE"))
     config_parser.add_argument("--set-mode", nargs=2, metavar=("MODE", "VALUE"))
-    config_parser.add_argument("--set-model-action", nargs=2, metavar=("MODEL", "ACTION"))
+    config_parser.add_argument(
+        "--set-model-action", nargs=2, metavar=("MODEL", "ACTION")
+    )
     # Additional legacy flag required by tests
     config_parser.add_argument(
         "--set-state-model",
@@ -363,11 +397,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Map a state to comma-separated models. Ex: --set-state-model idle model1,model2",
     )
     # Rich flags still supported
-    config_parser.add_argument("--show", action="store_true", help="Print current configuration.")
     config_parser.add_argument(
-        "--validate", action="store_true", help="Validate configuration and exit non-zero."
+        "--show", action="store_true", help="Print current configuration."
     )
-    config_parser.add_argument("--export", metavar="PATH", help="Export configuration to PATH.")
+    config_parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Validate configuration and exit non-zero.",
+    )
+    config_parser.add_argument(
+        "--export", metavar="PATH", help="Export configuration to PATH."
+    )
 
     config_subparsers = config_parser.add_subparsers(
         dest="config_subcommand", required=False, help="Config subcommand to execute."
@@ -499,7 +539,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Example:\n  chatty-commander list --json"
         ),
     )
-    list_parser.add_argument("--json", action="store_true", help="Output the list in JSON format.")
+    list_parser.add_argument(
+        "--json", action="store_true", help="Output the list in JSON format."
+    )
 
     def list_func(args: argparse.Namespace) -> int:
         try:
@@ -536,7 +578,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run", action="store_true", help="Print what would run without executing."
     )
     exec_parser.add_argument(
-        "--timeout", type=int, default=None, help="Optional timeout (seconds) for shell commands."
+        "--timeout",
+        type=int,
+        default=None,
+        help="Optional timeout (seconds) for shell commands.",
     )
 
     def exec_func(args: argparse.Namespace) -> int:
@@ -589,7 +634,9 @@ def build_parser() -> argparse.ArgumentParser:
     except ImportError:
         pass  # Voice integration not available
     system_subparsers = system_parser.add_subparsers(
-        dest="system_command", required=True, help="System management command to execute."
+        dest="system_command",
+        required=True,
+        help="System management command to execute.",
     )
     # start-on-boot
     boot_parser = system_subparsers.add_parser(
@@ -620,7 +667,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     update_subparsers.add_parser("check", help="Check for available updates.")
     update_subparsers.add_parser("enable-auto", help="Enable automatic update checks.")
-    update_subparsers.add_parser("disable-auto", help="Disable automatic update checks.")
+    update_subparsers.add_parser(
+        "disable-auto", help="Disable automatic update checks."
+    )
 
     def system_func(args: argparse.Namespace) -> int:
         # Integrate with config.Config methods as tests expect
@@ -814,7 +863,11 @@ def cli_main() -> None:
                             if "args" in args.func.__code__.co_varnames
                             else args.func()
                         )
-                        if isinstance(ret, int) and ret != 0 and args.command in ("list", "exec"):
+                        if (
+                            isinstance(ret, int)
+                            and ret != 0
+                            and args.command in ("list", "exec")
+                        ):
                             # For shell mode, only error-exit behavior is relevant; continue loop.
                             print(f"Command exited with code {ret}", file=sys.stderr)
                 except SystemExit:

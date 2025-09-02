@@ -26,7 +26,7 @@ orch.start()
 ## Writing a custom adapter
 
 1. Subclass the protocol and implement `start`/`stop` plus any input loop.
-2. Pass a callback that dispatches recognised commands to the orchestrator.
+1. Pass a callback that dispatches recognised commands to the orchestrator.
 
 ```python
 class MQTTAdapter:

@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Node.js Bridge Generator for Discord/Slack Integration
 
@@ -64,7 +86,7 @@ LOG_FILE=bridge.log
 
 def generate_index_js() -> str:
     """Generate the main index.js file for the bridge application."""
-    return '''const express = require('express');
+    return """const express = require('express');
 const { Client, GatewayIntentBits } = require('discord.js');
 const { App } = require('@slack/bolt');
 const axios = require('axios');
@@ -218,12 +240,12 @@ async function start() {
 }
 
 start();
-'''
+"""
 
 
 def generate_readme() -> str:
     """Generate README.md for the Node.js bridge application."""
-    return '''# ChattyCommander Bridge
+    return """# ChattyCommander Bridge
 
 Node.js bridge application for connecting Discord and Slack to the ChattyCommander advisor API.
 
@@ -293,12 +315,12 @@ npm test     # Run tests
 
 The bridge can be deployed to any Node.js hosting platform (Heroku, Railway, etc.).
 Ensure all environment variables are configured in your deployment environment.
-'''
+"""
 
 
 def generate_dockerfile() -> str:
     """Generate Dockerfile for containerized deployment."""
-    return '''FROM node:18-alpine
+    return """FROM node:18-alpine
 
 WORKDIR /app
 
@@ -328,12 +350,12 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \\
 
 # Start the application
 CMD ["npm", "start"]
-'''
+"""
 
 
 def generate_docker_compose() -> str:
     """Generate docker-compose.yml for local development."""
-    return '''version: '3.8'
+    return """version: '3.8'
 
 services:
   bridge:
@@ -351,7 +373,7 @@ services:
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
-'''
+"""
 
 
 def generate_bridge_app(output_dir: str = "bridge") -> None:
@@ -376,7 +398,7 @@ def generate_bridge_app(output_dir: str = "bridge") -> None:
 
     for filename, content in files.items():
         file_path = output_path / filename
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             f.write(content)
         print(f"Generated: {file_path}")
 

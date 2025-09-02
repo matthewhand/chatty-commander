@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Git hygiene tests for chatty-commander.
 
@@ -14,9 +36,7 @@ Run with: uv run pytest tests/test_git_hygiene.py -v
 
 import os
 import subprocess
-import tempfile
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -54,7 +74,9 @@ class TestGitHygiene:
         if result.returncode != 0:
             pytest.skip("Not in a Git repository or Git command failed")
 
-        tracked_files = result.stdout.strip().split("\n") if result.stdout.strip() else []
+        tracked_files = (
+            result.stdout.strip().split("\n") if result.stdout.strip() else []
+        )
         worktree_files = [f for f in tracked_files if f.startswith(".worktrees/")]
 
         assert not worktree_files, (
@@ -74,7 +96,9 @@ class TestGitHygiene:
         # Check for .worktrees/ pattern (with or without trailing slash)
         worktree_patterns = [".worktrees/", ".worktrees", "/.worktrees/", "/.worktrees"]
 
-        has_worktree_ignore = any(pattern in gitignore_content for pattern in worktree_patterns)
+        has_worktree_ignore = any(
+            pattern in gitignore_content for pattern in worktree_patterns
+        )
 
         assert has_worktree_ignore, (
             ".gitignore does not include .worktrees/ pattern. "
@@ -89,7 +113,9 @@ class TestGitHygiene:
         if result.returncode != 0:
             pytest.skip("Not in a Git repository or Git command failed")
 
-        tracked_files = result.stdout.strip().split("\n") if result.stdout.strip() else []
+        tracked_files = (
+            result.stdout.strip().split("\n") if result.stdout.strip() else []
+        )
 
         # Check for conflict markers in text files
         files_with_conflicts = []
@@ -132,7 +158,9 @@ class TestGitHygiene:
                         import re
 
                         if re.match(pattern, line):
-                            files_with_conflicts.append((file_path, f"line {i}: {line.strip()}"))
+                            files_with_conflicts.append(
+                                (file_path, f"line {i}: {line.strip()}")
+                            )
                             break
 
             except (UnicodeDecodeError, PermissionError):
@@ -146,11 +174,15 @@ class TestGitHygiene:
 
     def test_git_fetch_prune_configured(self, repo_root: Path):
         """Test that Git is configured to prune remote branches on fetch."""
-        result = self._run_git_command(["config", "--get", "fetch.prune"], cwd=repo_root)
+        result = self._run_git_command(
+            ["config", "--get", "fetch.prune"], cwd=repo_root
+        )
 
         if result.returncode != 0:
             # Config not set, check if we can set it (this is informational)
-            pytest.skip("fetch.prune not configured. Consider running: git config fetch.prune true")
+            pytest.skip(
+                "fetch.prune not configured. Consider running: git config fetch.prune true"
+            )
 
         prune_setting = result.stdout.strip().lower()
         assert prune_setting == "true", (
@@ -166,7 +198,9 @@ class TestGitHygiene:
         if result.returncode != 0:
             pytest.skip("Could not list remote branches")
 
-        remote_branches = result.stdout.strip().split("\n") if result.stdout.strip() else []
+        remote_branches = (
+            result.stdout.strip().split("\n") if result.stdout.strip() else []
+        )
 
         # Look for obviously ephemeral branch patterns
         ephemeral_patterns = [
@@ -221,7 +255,9 @@ class TestProjectStructure:
                 assert script_path.is_file(), f"{script} should be a file"
                 # Check if executable (on Unix systems)
                 if os.name != "nt":  # Not Windows
-                    assert os.access(script_path, os.X_OK), f"{script} should be executable"
+                    assert os.access(
+                        script_path, os.X_OK
+                    ), f"{script} should be executable"
 
     def test_contributing_md_exists(self):
         """Test that CONTRIBUTING.md exists and has required content."""
@@ -239,7 +275,9 @@ class TestProjectStructure:
         ]
 
         for section in required_sections:
-            assert section in content, f"CONTRIBUTING.md should contain '{section}' section"
+            assert (
+                section in content
+            ), f"CONTRIBUTING.md should contain '{section}' section"
 
     def test_precommit_config_exists(self):
         """Test that pre-commit configuration exists and is valid."""
@@ -249,7 +287,12 @@ class TestProjectStructure:
         content = precommit_path.read_text(encoding="utf-8")
 
         # Check for key hooks
-        required_hooks = ["ruff", "trailing-whitespace", "end-of-file-fixer", "compile-server"]
+        required_hooks = [
+            "ruff",
+            "trailing-whitespace",
+            "end-of-file-fixer",
+            "compile-server",
+        ]
 
         for hook in required_hooks:
             assert hook in content, f"Pre-commit config should include '{hook}' hook"
@@ -261,11 +304,15 @@ class TestGitConfiguration:
     def test_git_repository_exists(self):
         """Test that we're in a Git repository."""
         git_dir = Path(".git")
-        assert git_dir.exists(), "Should be in a Git repository (.git directory not found)"
+        assert (
+            git_dir.exists()
+        ), "Should be in a Git repository (.git directory not found)"
 
     def test_main_branch_exists(self):
         """Test that main branch exists."""
-        result = subprocess.run(["git", "branch", "-a"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            ["git", "branch", "-a"], capture_output=True, text=True, timeout=10
+        )
 
         if result.returncode != 0:
             pytest.skip("Could not list Git branches")
@@ -310,7 +357,9 @@ class TestGitConfiguration:
             ]
 
             if suspicious_files:
-                pytest.skip(f"Found large files that might need Git LFS: {suspicious_files}")
+                pytest.skip(
+                    f"Found large files that might need Git LFS: {suspicious_files}"
+                )
 
 
 if __name__ == "__main__":

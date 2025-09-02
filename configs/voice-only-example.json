@@ -1,9 +1,9 @@
 {
   "profile_name": "Voice-Only Assistant",
   "description": "Minimal voice-only configuration with keybinding-based transcription for controlling external apps like codex-cli",
-  
+
   "default_state": "voice_listening",
-  
+
   "model_actions": {
     "start_transcription": {
       "keypress": {

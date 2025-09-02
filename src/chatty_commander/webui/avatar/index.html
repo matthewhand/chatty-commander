@@ -1,142 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ChattyCommander Avatar</title>
     <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: white;
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        color: white;
+      }
+      .avatar-container {
+        text-align: center;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 40px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+      }
+      .avatar {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        margin: 0 auto 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 60px;
+        transition: all 0.3s ease;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+      }
+      .avatar.thinking {
+        background: rgba(255, 193, 7, 0.3);
+        border-color: rgba(255, 193, 7, 0.6);
+        animation: pulse 2s infinite;
+      }
+      .avatar.tool_calling {
+        background: rgba(40, 167, 69, 0.3);
+        border-color: rgba(40, 167, 69, 0.6);
+        animation: spin 1s linear infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
         }
-        .avatar-container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
+        50% {
+          transform: scale(1.05);
         }
-        .avatar {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 60px;
-            transition: all 0.3s ease;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
         }
-        .avatar.thinking {
-            background: rgba(255, 193, 7, 0.3);
-            border-color: rgba(255, 193, 7, 0.6);
-            animation: pulse 2s infinite;
+        to {
+          transform: rotate(360deg);
         }
-        .avatar.tool_calling {
-            background: rgba(40, 167, 69, 0.3);
-            border-color: rgba(40, 167, 69, 0.6);
-            animation: spin 1s linear infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .status {
-            font-size: 18px;
-            margin-top: 20px;
-            opacity: 0.9;
-        }
-        .instructions {
-            font-size: 14px;
-            margin-top: 20px;
-            opacity: 0.8;
-            line-height: 1.5;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            text-align: left;
-        }
-        .instructions h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #ffd700;
-        }
-        .instructions code {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-        }
-        .connection-status {
-            font-size: 12px;
-            margin-top: 15px;
-            padding: 8px;
-            border-radius: 6px;
-            background: rgba(0, 0, 0, 0.3);
-        }
-        .connection-status.connected {
-            background: rgba(40, 167, 69, 0.3);
-        }
-        .connection-status.disconnected {
-            background: rgba(220, 53, 69, 0.3);
-        }
-        h1 {
-             margin-bottom: 10px;
-             font-size: 28px;
-         }
+      }
+      .status {
+        font-size: 18px;
+        margin-top: 20px;
+        opacity: 0.9;
+      }
+      .instructions {
+        font-size: 14px;
+        margin-top: 20px;
+        opacity: 0.8;
+        line-height: 1.5;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        border-radius: 10px;
+        text-align: left;
+      }
+      .instructions h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: #ffd700;
+      }
+      .instructions code {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+      }
+      .connection-status {
+        font-size: 12px;
+        margin-top: 15px;
+        padding: 8px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+      .connection-status.connected {
+        background: rgba(40, 167, 69, 0.3);
+      }
+      .connection-status.disconnected {
+        background: rgba(220, 53, 69, 0.3);
+      }
+      h1 {
+        margin-bottom: 10px;
+        font-size: 28px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="avatar-container">
-        <h1>ChattyCommander Avatar</h1>
-        <div class="avatar" id="avatar">🤖</div>
-        <div class="status" id="status">Ready</div>
-        <div class="connection-status" id="connectionStatus">Connecting to WebSocket...</div>
-        <div class="instructions">
-            <h3>Instructions:</h3>
-            <p>This avatar connects to the ChattyCommander WebSocket at <code>ws://localhost:8100/avatar/ws</code></p>
-            <p>The avatar will change colors and animations based on the AI agent's state:</p>
-            <ul>
-                <li><strong>Blue:</strong> Idle/Ready</li>
-                <li><strong>Yellow:</strong> Thinking/Processing</li>
-                <li><strong>Green:</strong> Tool Calling</li>
-                <li><strong>Magenta:</strong> Handoff in progress</li>
-            </ul>
-            <p>Make sure the ChattyCommander server is running on port 8100.</p>
-        </div>
+      <h1>ChattyCommander Avatar</h1>
+      <div class="avatar" id="avatar">🤖</div>
+      <div class="status" id="status">Ready</div>
+      <div class="connection-status" id="connectionStatus">
+        Connecting to WebSocket...
+      </div>
+      <div class="instructions">
+        <h3>Instructions:</h3>
+        <p>
+          This avatar connects to the ChattyCommander WebSocket at
+          <code>ws://localhost:8100/avatar/ws</code>
+        </p>
+        <p>
+          The avatar will change colors and animations based on the AI agent's
+          state:
+        </p>
+        <ul>
+          <li><strong>Blue:</strong> Idle/Ready</li>
+          <li><strong>Yellow:</strong> Thinking/Processing</li>
+          <li><strong>Green:</strong> Tool Calling</li>
+          <li><strong>Magenta:</strong> Handoff in progress</li>
+        </ul>
+        <p>Make sure the ChattyCommander server is running on port 8100.</p>
+      </div>
     </div>
     <script>
       // Minimal dev client to consume /avatar/ws and toggle CSS classes for state
-      (function(){
+      (function () {
         function applyState(state) {
-          const avatar = document.getElementById('avatar');
+          const avatar = document.getElementById("avatar");
           if (!avatar) return;
-          avatar.className = 'avatar';
-          if (state === 'thinking' || state === 'processing') {
-            avatar.classList.add('thinking');
-          } else if (state === 'tool_calling') {
-            avatar.classList.add('tool_calling');
-          } else if (state === 'handoff') {
-            avatar.classList.add('handoff');
+          avatar.className = "avatar";
+          if (state === "thinking" || state === "processing") {
+            avatar.classList.add("thinking");
+          } else if (state === "tool_calling") {
+            avatar.classList.add("tool_calling");
+          } else if (state === "handoff") {
+            avatar.classList.add("handoff");
           }
         }
         // Styling hints
-        const style = document.createElement('style');
+        const style = document.createElement("style");
         style.textContent = `
           .avatar.handoff {
             background: rgba(255, 0, 255, 0.3) !important;
@@ -146,8 +163,8 @@
         `;
         document.head.appendChild(style);
 
-        const statusEl = document.getElementById('status');
-        const connectionEl = document.getElementById('connectionStatus');
+        const statusEl = document.getElementById("status");
+        const connectionEl = document.getElementById("connectionStatus");
 
         function updateStatus(text) {
           if (statusEl) statusEl.textContent = text;
@@ -156,67 +173,71 @@
         function updateConnection(text, connected = false) {
           if (connectionEl) {
             connectionEl.textContent = text;
-            connectionEl.className = 'connection-status ' + (connected ? 'connected' : 'disconnected');
+            connectionEl.className =
+              "connection-status " + (connected ? "connected" : "disconnected");
           }
         }
 
-        applyState('idle');
-        updateStatus('Ready');
+        applyState("idle");
+        updateStatus("Ready");
 
-        function wsUrl(){
+        function wsUrl() {
           const port = 8100;
-          return 'ws://localhost:' + port + '/avatar/ws';
+          return "ws://localhost:" + port + "/avatar/ws";
         }
 
         function connectWebSocket() {
           try {
-            updateConnection('Connecting...', false);
+            updateConnection("Connecting...", false);
             const ws = new WebSocket(wsUrl());
 
             ws.onopen = () => {
-              console.log('Avatar WS connected');
-              updateConnection('Connected to ChattyCommander', true);
-              updateStatus('Connected - Waiting for agent activity');
+              console.log("Avatar WS connected");
+              updateConnection("Connected to ChattyCommander", true);
+              updateStatus("Connected - Waiting for agent activity");
             };
 
             ws.onmessage = (ev) => {
               try {
                 const msg = JSON.parse(ev.data);
-                if (msg.type === 'agent_state_change' && msg.data && msg.data.state){
+                if (
+                  msg.type === "agent_state_change" &&
+                  msg.data &&
+                  msg.data.state
+                ) {
                   applyState(msg.data.state);
-                  updateStatus('Agent State: ' + msg.data.state);
-                } else if (msg.type === 'tool_call_start'){
-                  applyState('tool_calling');
-                  updateStatus('Calling tool...');
-                } else if (msg.type === 'tool_call_end'){
-                  applyState('processing');
-                  updateStatus('Processing tool result...');
-                } else if (msg.type === 'handoff_start'){
-                  applyState('handoff');
-                  updateStatus('Handoff in progress...');
-                } else if (msg.type === 'handoff_complete'){
-                  applyState('idle');
-                  updateStatus('Handoff complete - Ready');
+                  updateStatus("Agent State: " + msg.data.state);
+                } else if (msg.type === "tool_call_start") {
+                  applyState("tool_calling");
+                  updateStatus("Calling tool...");
+                } else if (msg.type === "tool_call_end") {
+                  applyState("processing");
+                  updateStatus("Processing tool result...");
+                } else if (msg.type === "handoff_start") {
+                  applyState("handoff");
+                  updateStatus("Handoff in progress...");
+                } else if (msg.type === "handoff_complete") {
+                  applyState("idle");
+                  updateStatus("Handoff complete - Ready");
                 }
               } catch {}
             };
 
             ws.onerror = (e) => {
-              console.warn('Avatar WS error', e);
-              updateConnection('Connection error', false);
-              updateStatus('Connection error');
+              console.warn("Avatar WS error", e);
+              updateConnection("Connection error", false);
+              updateStatus("Connection error");
             };
 
             ws.onclose = () => {
-              updateConnection('Disconnected - Retrying in 3s...', false);
-              updateStatus('Disconnected');
+              updateConnection("Disconnected - Retrying in 3s...", false);
+              updateStatus("Disconnected");
               setTimeout(connectWebSocket, 3000);
             };
-
           } catch (e) {
-            console.warn('WS init failed', e);
-            updateConnection('Failed to connect - Retrying in 5s...', false);
-            updateStatus('Connection failed');
+            console.warn("WS init failed", e);
+            updateConnection("Failed to connect - Retrying in 5s...", false);
+            updateStatus("Connection failed");
             setTimeout(connectWebSocket, 5000);
           }
         }

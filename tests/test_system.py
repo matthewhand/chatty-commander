@@ -1,11 +1,33 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import sys
 import types
 
 # Patch sys.modules to mock openwakeword and openwakeword.model for test imports
-sys.modules['openwakeword'] = types.ModuleType('openwakeword')
-mock_model_mod = types.ModuleType('openwakeword.model')
-mock_model_mod.Model = type('Model', (), {})
-sys.modules['openwakeword.model'] = mock_model_mod
+sys.modules["openwakeword"] = types.ModuleType("openwakeword")
+mock_model_mod = types.ModuleType("openwakeword.model")
+mock_model_mod.Model = type("Model", (), {})
+sys.modules["openwakeword.model"] = mock_model_mod
 #!/usr/bin/env python3
 """
 Comprehensive System Testing Script for ChattyCommander
@@ -33,13 +55,17 @@ import sys  # noqa: E402 - imports after test setup
 from datetime import datetime  # noqa: E402 - imports after test setup
 
 # Add project root to path (parent of tests dir)
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 from chatty_commander.app.command_executor import (
     CommandExecutor,  # noqa: E402 - imported after path manipulation
 )
-from chatty_commander.app.config import Config  # noqa: E402 - imported after path manipulation
+from chatty_commander.app.config import (
+    Config,
+)
+
+# noqa: E402 - imported after path manipulation
 from chatty_commander.app.model_manager import (
     ModelManager,  # noqa: E402 - imported after path manipulation
 )
@@ -65,32 +91,32 @@ class SystemTester:
 
     def backup_config(self):
         """Backup original configuration before testing"""
-        if os.path.exists('config.json'):
+        if os.path.exists("config.json"):
             import shutil
 
-            shutil.copy('config.json', 'config.json.backup')
+            shutil.copy("config.json", "config.json.backup")
             self.log("✓ Configuration backed up")
 
     def restore_config(self):
         """Restore original configuration after testing"""
-        if os.path.exists('config.json.backup'):
+        if os.path.exists("config.json.backup"):
             import shutil
 
-            shutil.move('config.json.backup', 'config.json')
+            shutil.move("config.json.backup", "config.json")
             self.log("✓ Configuration restored")
 
     def log(self, message, test_name=None, status=None):
         """Log test results and optionally print to console"""
-        timestamp = datetime.now().strftime('%H:%M:%S')
+        timestamp = datetime.now().strftime("%H:%M:%S")
         log_entry = {
-            'timestamp': timestamp,
-            'test_name': test_name,
-            'message': message,
-            'status': status,
+            "timestamp": timestamp,
+            "test_name": test_name,
+            "message": message,
+            "status": status,
         }
         self.test_results.append(log_entry)
 
-        if self.verbose or status in ['FAIL', 'ERROR']:
+        if self.verbose or status in ["FAIL", "ERROR"]:
             status_prefix = f"[{status}] " if status else ""
             print(f"[{timestamp}] {status_prefix}{message}")
 
@@ -103,40 +129,46 @@ class SystemTester:
 
             success = result.returncode == expected_exit_code
             return {
-                'success': success,
-                'returncode': result.returncode,
-                'stdout': result.stdout,
-                'stderr': result.stderr,
-                'cmd': cmd,
+                "success": success,
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "cmd": cmd,
             }
         except subprocess.TimeoutExpired:
             return {
-                'success': False,
-                'returncode': -1,
-                'stdout': '',
-                'stderr': f'Command timed out after {timeout}s',
-                'cmd': cmd,
+                "success": False,
+                "returncode": -1,
+                "stdout": "",
+                "stderr": f"Command timed out after {timeout}s",
+                "cmd": cmd,
             }
         except Exception as e:
-            return {'success': False, 'returncode': -1, 'stdout': '', 'stderr': str(e), 'cmd': cmd}
+            return {
+                "success": False,
+                "returncode": -1,
+                "stdout": "",
+                "stderr": str(e),
+                "cmd": cmd,
+            }
 
     def test_cli_help(self):
         """Test CLI help functionality"""
         self.log("Testing CLI help commands...", "CLI Help")
 
         tests = [
-            ('chatty --help', 'Main help'),
-            ('chatty run --help', 'Run command help'),
-            ('chatty gui --help', 'GUI command help'),
-            ('chatty config --help', 'Config command help'),
-            ('chatty system --help', 'System command help'),
-            ('chatty system start-on-boot --help', 'Start-on-boot help'),
-            ('chatty system updates --help', 'Updates help'),
+            ("chatty --help", "Main help"),
+            ("chatty run --help", "Run command help"),
+            ("chatty gui --help", "GUI command help"),
+            ("chatty config --help", "Config command help"),
+            ("chatty system --help", "System command help"),
+            ("chatty system start-on-boot --help", "Start-on-boot help"),
+            ("chatty system updates --help", "Updates help"),
         ]
 
         for cmd, desc in tests:
             result = self.run_command(cmd)
-            if result['success'] and 'usage:' in result['stdout']:
+            if result["success"] and "usage:" in result["stdout"]:
                 self.log(f"✓ {desc}: Help displayed correctly", "CLI Help", "PASS")
             else:
                 self.log(f"✗ {desc}: {result['stderr']}", "CLI Help", "FAIL")
@@ -146,19 +178,25 @@ class SystemTester:
         self.log("Testing configuration management...", "Config Management")
 
         # Test config listing
-        result = self.run_command('chatty config --list')
-        if result['success']:
+        result = self.run_command("chatty config --list")
+        if result["success"]:
             self.log("✓ Config listing works", "Config Management", "PASS")
         else:
-            self.log(f"✗ Config listing failed: {result['stderr']}", "Config Management", "FAIL")
+            self.log(
+                f"✗ Config listing failed: {result['stderr']}",
+                "Config Management",
+                "FAIL",
+            )
 
         # Test setting model action
-        result = self.run_command('chatty config --set-model-action test_model test_action')
-        if result['success']:
+        result = self.run_command(
+            "chatty config --set-model-action test_model test_action"
+        )
+        if result["success"]:
             self.log("✓ Model action setting works", "Config Management", "PASS")
         else:
             # Acceptable failure if error message is correct
-            if "Invalid model name" in result['stderr']:
+            if "Invalid model name" in result["stderr"]:
                 self.log(
                     "✓ Model action setting fails as expected for invalid model name",
                     "Config Management",
@@ -172,12 +210,14 @@ class SystemTester:
                 )
 
         # Test setting state model
-        result = self.run_command('chatty config --set-state-model test_state "model1,model2"')
-        if result['success']:
+        result = self.run_command(
+            'chatty config --set-state-model test_state "model1,model2"'
+        )
+        if result["success"]:
             self.log("✓ State model setting works", "Config Management", "PASS")
         else:
             # Acceptable failure if error message is correct
-            if "Invalid state" in result['stderr']:
+            if "Invalid state" in result["stderr"]:
                 self.log(
                     "✓ State model setting fails as expected for invalid state",
                     "Config Management",
@@ -195,54 +235,68 @@ class SystemTester:
         self.log("Testing system management...", "System Management")
 
         # Test start-on-boot status
-        result = self.run_command('chatty system start-on-boot status')
-        if result['success']:
+        result = self.run_command("chatty system start-on-boot status")
+        if result["success"]:
             self.log("✓ Start-on-boot status check works", "System Management", "PASS")
         else:
             self.log(
-                f"✗ Start-on-boot status failed: {result['stderr']}", "System Management", "FAIL"
+                f"✗ Start-on-boot status failed: {result['stderr']}",
+                "System Management",
+                "FAIL",
             )
 
         # Test enabling start-on-boot
-        result = self.run_command('chatty system start-on-boot enable')
-        if result['success']:
+        result = self.run_command("chatty system start-on-boot enable")
+        if result["success"]:
             self.log("✓ Start-on-boot enable works", "System Management", "PASS")
         else:
             self.log(
-                f"✗ Start-on-boot enable failed: {result['stderr']}", "System Management", "FAIL"
+                f"✗ Start-on-boot enable failed: {result['stderr']}",
+                "System Management",
+                "FAIL",
             )
 
         # Test disabling start-on-boot
-        result = self.run_command('chatty system start-on-boot disable')
-        if result['success']:
+        result = self.run_command("chatty system start-on-boot disable")
+        if result["success"]:
             self.log("✓ Start-on-boot disable works", "System Management", "PASS")
         else:
             self.log(
-                f"✗ Start-on-boot disable failed: {result['stderr']}", "System Management", "FAIL"
+                f"✗ Start-on-boot disable failed: {result['stderr']}",
+                "System Management",
+                "FAIL",
             )
 
         # Test update checking
-        result = self.run_command('chatty system updates check')
-        if result['success']:
+        result = self.run_command("chatty system updates check")
+        if result["success"]:
             self.log("✓ Update checking works", "System Management", "PASS")
         else:
-            self.log(f"✗ Update checking failed: {result['stderr']}", "System Management", "FAIL")
+            self.log(
+                f"✗ Update checking failed: {result['stderr']}",
+                "System Management",
+                "FAIL",
+            )
 
         # Test auto-update settings
-        result = self.run_command('chatty system updates enable-auto')
-        if result['success']:
+        result = self.run_command("chatty system updates enable-auto")
+        if result["success"]:
             self.log("✓ Auto-update enable works", "System Management", "PASS")
         else:
             self.log(
-                f"✗ Auto-update enable failed: {result['stderr']}", "System Management", "FAIL"
+                f"✗ Auto-update enable failed: {result['stderr']}",
+                "System Management",
+                "FAIL",
             )
 
-        result = self.run_command('chatty system updates disable-auto')
-        if result['success']:
+        result = self.run_command("chatty system updates disable-auto")
+        if result["success"]:
             self.log("✓ Auto-update disable works", "System Management", "PASS")
         else:
             self.log(
-                f"✗ Auto-update disable failed: {result['stderr']}", "System Management", "FAIL"
+                f"✗ Auto-update disable failed: {result['stderr']}",
+                "System Management",
+                "FAIL",
             )
 
     def test_state_transitions(self):
@@ -253,7 +307,7 @@ class SystemTester:
             state_manager = StateManager()
 
             # Test initial state
-            if state_manager.current_state == 'idle':
+            if state_manager.current_state == "idle":
                 self.log("✓ Initial state is 'idle'", "State Transitions", "PASS")
             else:
                 self.log(
@@ -264,10 +318,10 @@ class SystemTester:
 
             # Test state transitions
             transitions = [
-                ('hey_chat_tee', 'chatty'),
-                ('hey_khum_puter', 'computer'),
-                ('okay_stop', 'idle'),
-                ('toggle_mode', 'computer'),  # From idle
+                ("hey_chat_tee", "chatty"),
+                ("hey_khum_puter", "computer"),
+                ("okay_stop", "idle"),
+                ("toggle_mode", "computer"),  # From idle
             ]
 
             for command, expected_state in transitions:
@@ -287,9 +341,11 @@ class SystemTester:
 
             # Test invalid state
             try:
-                state_manager.change_state('invalid_state')
+                state_manager.change_state("invalid_state")
                 self.log(
-                    "✗ Invalid state change should raise ValueError", "State Transitions", "FAIL"
+                    "✗ Invalid state change should raise ValueError",
+                    "State Transitions",
+                    "FAIL",
                 )
             except ValueError:
                 self.log(
@@ -299,7 +355,11 @@ class SystemTester:
                 )
 
         except Exception as e:
-            self.log(f"✗ State transition testing failed: {str(e)}", "State Transitions", "ERROR")
+            self.log(
+                f"✗ State transition testing failed: {str(e)}",
+                "State Transitions",
+                "ERROR",
+            )
 
     def test_config_loading(self):
         """Test configuration loading and validation"""
@@ -310,26 +370,32 @@ class SystemTester:
 
             # Test required attributes
             required_attrs = [
-                'model_actions',
-                'state_models',
-                'api_endpoints',
-                'general_models_path',
-                'system_models_path',
-                'chat_models_path',
-                'debug_mode',
-                'default_state',
+                "model_actions",
+                "state_models",
+                "api_endpoints",
+                "general_models_path",
+                "system_models_path",
+                "chat_models_path",
+                "debug_mode",
+                "default_state",
             ]
 
             for attr in required_attrs:
                 if hasattr(config, attr):
-                    self.log(f"✓ Config has required attribute '{attr}'", "Config Loading", "PASS")
+                    self.log(
+                        f"✓ Config has required attribute '{attr}'",
+                        "Config Loading",
+                        "PASS",
+                    )
                 else:
                     self.log(
-                        f"✗ Config missing required attribute '{attr}'", "Config Loading", "FAIL"
+                        f"✗ Config missing required attribute '{attr}'",
+                        "Config Loading",
+                        "FAIL",
                     )
 
             # Test state models configuration
-            expected_states = ['idle', 'computer', 'chatty']
+            expected_states = ["idle", "computer", "chatty"]
             for state in expected_states:
                 if state in config.state_models:
                     self.log(
@@ -338,28 +404,36 @@ class SystemTester:
                         "PASS",
                     )
                 else:
-                    self.log(f"✗ State '{state}' not configured", "Config Loading", "FAIL")
+                    self.log(
+                        f"✗ State '{state}' not configured", "Config Loading", "FAIL"
+                    )
 
             # Test model actions
             expected_commands = [
-                'take_screenshot',
-                'paste',
-                'submit',
-                'cycle_window',
-                'oh_kay_screenshot',
-                'wax_poetic',
-                'lights_on',
-                'lights_off',
+                "take_screenshot",
+                "paste",
+                "submit",
+                "cycle_window",
+                "oh_kay_screenshot",
+                "wax_poetic",
+                "lights_on",
+                "lights_off",
             ]
 
             for command in expected_commands:
                 if command in config.model_actions:
                     action = config.model_actions[command]
                     self.log(
-                        f"✓ Command '{command}' configured: {action}", "Config Loading", "PASS"
+                        f"✓ Command '{command}' configured: {action}",
+                        "Config Loading",
+                        "PASS",
                     )
                 else:
-                    self.log(f"✗ Command '{command}' not configured", "Config Loading", "FAIL")
+                    self.log(
+                        f"✗ Command '{command}' not configured",
+                        "Config Loading",
+                        "FAIL",
+                    )
 
         except Exception as e:
             self.log(f"✗ Config loading failed: {str(e)}", "Config Loading", "ERROR")
@@ -386,10 +460,12 @@ class SystemTester:
                     self.log(f"✗ Model path missing: {path}", "Model Manager", "FAIL")
 
             # Test model loading for each state
-            for state in ['idle', 'computer', 'chatty']:
+            for state in ["idle", "computer", "chatty"]:
                 try:
                     model_manager.reload_models(state)
-                    self.log(f"✓ Models loaded for state '{state}'", "Model Manager", "PASS")
+                    self.log(
+                        f"✓ Models loaded for state '{state}'", "Model Manager", "PASS"
+                    )
                 except Exception as e:
                     self.log(
                         f"✗ Failed to load models for state '{state}': {str(e)}",
@@ -398,7 +474,9 @@ class SystemTester:
                     )
 
         except Exception as e:
-            self.log(f"✗ Model manager testing failed: {str(e)}", "Model Manager", "ERROR")
+            self.log(
+                f"✗ Model manager testing failed: {str(e)}", "Model Manager", "ERROR"
+            )
 
     def test_command_executor(self):
         """Test command executor functionality"""
@@ -429,11 +507,19 @@ class SystemTester:
 
             # Test invalid command
             try:
-                is_valid = executor.validate_command('invalid_command')
+                is_valid = executor.validate_command("invalid_command")
                 if not is_valid:
-                    self.log("✓ Invalid command correctly rejected", "Command Executor", "PASS")
+                    self.log(
+                        "✓ Invalid command correctly rejected",
+                        "Command Executor",
+                        "PASS",
+                    )
                 else:
-                    self.log("✗ Invalid command incorrectly accepted", "Command Executor", "FAIL")
+                    self.log(
+                        "✗ Invalid command incorrectly accepted",
+                        "Command Executor",
+                        "FAIL",
+                    )
             except Exception:
                 # This is expected behavior - invalid commands should be rejected
                 self.log(
@@ -443,33 +529,41 @@ class SystemTester:
                 )
 
         except Exception as e:
-            self.log(f"✗ Command executor testing failed: {str(e)}", "Command Executor", "ERROR")
+            self.log(
+                f"✗ Command executor testing failed: {str(e)}",
+                "Command Executor",
+                "ERROR",
+            )
 
     def test_gui_launch(self):
         """Test GUI application launch"""
         self.log("Testing GUI launch...", "GUI Launch")
 
         # Test GUI command with short timeout to simulate successful launch
-        result = self.run_command('chatty gui --help')
-        if result['success'] and 'usage:' in result['stdout']:
+        result = self.run_command("chatty gui --help")
+        if result["success"] and "usage:" in result["stdout"]:
             self.log("✓ GUI command help works", "GUI Launch", "PASS")
         else:
             # Try a quick non-blocking test
-            result = self.run_command('timeout 2 chatty gui || true', timeout=5)
-            if result['returncode'] in [0, 124]:  # Success or timeout
+            result = self.run_command("timeout 2 chatty gui || true", timeout=5)
+            if result["returncode"] in [0, 124]:  # Success or timeout
                 self.log(
-                    "✓ GUI command accepts launch (terminated as expected)", "GUI Launch", "PASS"
+                    "✓ GUI command accepts launch (terminated as expected)",
+                    "GUI Launch",
+                    "PASS",
                 )
             else:
-                self.log(f"✗ GUI launch failed: {result['stderr']}", "GUI Launch", "FAIL")
+                self.log(
+                    f"✗ GUI launch failed: {result['stderr']}", "GUI Launch", "FAIL"
+                )
 
     def test_installation(self):
         """Test package installation and CLI availability"""
         self.log("Testing installation...", "Installation")
 
         # Test if chatty command is available
-        result = self.run_command('which chatty')
-        if result['success'] and result['stdout'].strip():
+        result = self.run_command("which chatty")
+        if result["success"] and result["stdout"].strip():
             self.log(
                 f"✓ 'chatty' command available at: {result['stdout'].strip()}",
                 "Installation",
@@ -480,19 +574,25 @@ class SystemTester:
 
         # Test Python module imports
         modules = [
-            'chatty_commander.app.config',
-            'chatty_commander.app.state_manager',
-            'chatty_commander.app.model_manager',
-            'chatty_commander.app.command_executor',
-            'chatty_commander.cli.cli',
+            "chatty_commander.app.config",
+            "chatty_commander.app.state_manager",
+            "chatty_commander.app.model_manager",
+            "chatty_commander.app.command_executor",
+            "chatty_commander.cli.cli",
         ]
         for module in modules:
-            result = self.run_command(f'python -c "import {module}; print(\'OK\')"; echo')
-            if result['success'] and 'OK' in result['stdout']:
-                self.log(f"✓ Module '{module}' imports successfully", "Installation", "PASS")
+            result = self.run_command(
+                f"python -c \"import {module}; print('OK')\"; echo"
+            )
+            if result["success"] and "OK" in result["stdout"]:
+                self.log(
+                    f"✓ Module '{module}' imports successfully", "Installation", "PASS"
+                )
             else:
                 self.log(
-                    f"✗ Module '{module}' import failed: {result['stderr']}", "Installation", "FAIL"
+                    f"✗ Module '{module}' import failed: {result['stderr']}",
+                    "Installation",
+                    "FAIL",
                 )
 
     def run_all_tests(self):
@@ -525,10 +625,10 @@ class SystemTester:
         duration = end_time - self.start_time
 
         # Count results
-        total_tests = len([r for r in self.test_results if r['status']])
-        passed = len([r for r in self.test_results if r['status'] == 'PASS'])
-        failed = len([r for r in self.test_results if r['status'] == 'FAIL'])
-        errors = len([r for r in self.test_results if r['status'] == 'ERROR'])
+        total_tests = len([r for r in self.test_results if r["status"]])
+        passed = len([r for r in self.test_results if r["status"] == "PASS"])
+        failed = len([r for r in self.test_results if r["status"] == "FAIL"])
+        errors = len([r for r in self.test_results if r["status"] == "ERROR"])
 
         report = f"""
 {'=' * 60}
@@ -553,24 +653,28 @@ Detailed Results:
         # Group results by test name
         test_groups = {}
         for result in self.test_results:
-            if result['test_name']:
-                if result['test_name'] not in test_groups:
-                    test_groups[result['test_name']] = []
-                test_groups[result['test_name']].append(result)
+            if result["test_name"]:
+                if result["test_name"] not in test_groups:
+                    test_groups[result["test_name"]] = []
+                test_groups[result["test_name"]].append(result)
 
         for test_name, results in test_groups.items():
             report += f"\n{test_name}:\n"
             for result in results:
-                if result['status']:
+                if result["status"]:
                     status_icon = (
                         "✓"
-                        if result['status'] == "PASS"
-                        else "✗" if result['status'] == "FAIL" else "⚠"
+                        if result["status"] == "PASS"
+                        else "✗"
+                        if result["status"] == "FAIL"
+                        else "⚠"
                     )
-                    report += f"  {status_icon} [{result['status']}] {result['message']}\n"
+                    report += (
+                        f"  {status_icon} [{result['status']}] {result['message']}\n"
+                    )
 
         # Add failed/error details
-        failures = [r for r in self.test_results if r['status'] in ['FAIL', 'ERROR']]
+        failures = [r for r in self.test_results if r["status"] in ["FAIL", "ERROR"]]
         if failures:
             report += f"\n{'=' * 60}\nFailures and Errors:\n{'=' * 60}\n"
             for failure in failures:
@@ -580,7 +684,7 @@ Detailed Results:
 
         # Save to file if specified
         if self.output_file:
-            with open(self.output_file, 'w') as f:
+            with open(self.output_file, "w") as f:
                 f.write(report)
                 # Also save raw JSON data
                 f.write(f"\n\n{'=' * 60}\nRaw Test Data (JSON):\n{'=' * 60}\n")
@@ -591,33 +695,33 @@ Detailed Results:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='ChattyCommander System Testing Suite')
+    parser = argparse.ArgumentParser(description="ChattyCommander System Testing Suite")
     parser.add_argument(
-        '--mode',
-        choices=['all', 'cli', 'config', 'states', 'system', 'gui'],
-        default='all',
-        help='Test mode to run',
+        "--mode",
+        choices=["all", "cli", "config", "states", "system", "gui"],
+        default="all",
+        help="Test mode to run",
     )
-    parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--output-file', '-o', help='Save report to file')
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--output-file", "-o", help="Save report to file")
 
     args = parser.parse_args()
 
     tester = SystemTester(verbose=args.verbose, output_file=args.output_file)
 
     try:
-        if args.mode == 'all':
+        if args.mode == "all":
             tester.run_all_tests()
-        elif args.mode == 'cli':
+        elif args.mode == "cli":
             tester.test_cli_help()
-        elif args.mode == 'config':
+        elif args.mode == "config":
             tester.test_config_loading()
             tester.test_config_management()
-        elif args.mode == 'states':
+        elif args.mode == "states":
             tester.test_state_transitions()
-        elif args.mode == 'system':
+        elif args.mode == "system":
             tester.test_system_management()
-        elif args.mode == 'gui':
+        elif args.mode == "gui":
             tester.test_gui_launch()
 
         passed, failed, errors = tester.generate_report()
@@ -634,5 +738,5 @@ def main():
         tester.restore_config()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

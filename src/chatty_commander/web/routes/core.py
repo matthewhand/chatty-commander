@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from __future__ import annotations
 
 import time
@@ -18,12 +40,16 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
-    state: str = Field(..., description="Target state", pattern="^(idle|computer|chatty)$")
+    state: str = Field(
+        ..., description="Target state", pattern="^(idle|computer|chatty)$"
+    )
 
 
 class CommandRequest(BaseModel):
     command: str = Field(..., description="Command name to execute")
-    parameters: dict[str, Any] | None = Field(default=None, description="Optional parameters")
+    parameters: dict[str, Any] | None = Field(
+        default=None, description="Optional parameters"
+    )
 
 
 class CommandResponse(BaseModel):
@@ -52,10 +78,14 @@ class HealthStatus(BaseModel):
 class MetricsData(BaseModel):
     total_requests: int = Field(..., description="Total API requests")
     uptime_seconds: float = Field(..., description="Uptime in seconds")
-    active_connections: int = Field(default=0, description="Active WebSocket connections")
+    active_connections: int = Field(
+        default=0, description="Active WebSocket connections"
+    )
     cache_size: int = Field(default=0, description="Cache entries count")
     error_rate: float = Field(default=0.0, description="Error rate percentage")
-    response_time_avg: float = Field(default=0.0, description="Average response time in ms")
+    response_time_avg: float = Field(
+        default=0.0, description="Average response time in ms"
+    )
 
 
 def include_core_routes(
@@ -93,7 +123,9 @@ def include_core_routes(
         return SystemStatus(
             status="running",
             current_state=getattr(sm, "current_state", "idle"),
-            active_models=sm.get_active_models() if hasattr(sm, "get_active_models") else [],
+            active_models=sm.get_active_models()
+            if hasattr(sm, "get_active_models")
+            else [],
             uptime=uptime_str,
         )
 
@@ -193,7 +225,9 @@ def include_core_routes(
         sm = get_state_manager()
         return StateInfo(
             current_state=getattr(sm, "current_state", "idle"),
-            active_models=sm.get_active_models() if hasattr(sm, "get_active_models") else [],
+            active_models=sm.get_active_models()
+            if hasattr(sm, "get_active_models")
+            else [],
             last_command=get_last_command(),
             timestamp=get_last_state_change().isoformat(),
         )
@@ -217,7 +251,9 @@ def include_core_routes(
             cfg_mgr = get_config_manager()
             config_dict = getattr(cfg_mgr, "config", {})
             model_actions = (
-                config_dict.get("model_actions", {}) if isinstance(config_dict, dict) else {}
+                config_dict.get("model_actions", {})
+                if isinstance(config_dict, dict)
+                else {}
             )
             if request.command not in model_actions:
                 raise HTTPException(
@@ -230,7 +266,9 @@ def include_core_routes(
             return CommandResponse(
                 success=success,
                 message=(
-                    "Command executed successfully" if success else "Command execution failed"
+                    "Command executed successfully"
+                    if success
+                    else "Command execution failed"
                 ),
                 execution_time=execution_time,
             )

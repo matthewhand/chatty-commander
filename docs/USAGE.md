@@ -166,12 +166,12 @@ _Video placeholder: Demonstrates the complete workflow of setting up Chatty Comm
 **Video Contents** (Planned):
 
 1. **Introduction** (0:00-0:30): Overview of Chatty Commander capabilities
-2. **Persona Setup** (0:30-2:00): Creating and configuring AI advisor personas
-3. **Tool Assignment** (2:00-3:30): Assigning specific tools and capabilities
-4. **Avatar Configuration** (3:30-5:00): Setting up 3D avatars and themes
-5. **Voice Setup** (5:00-6:30): Configuring TTS and STT settings
-6. **Live Demonstration** (6:30-8:00): Real-time interaction with configured system
-7. **Advanced Features** (8:00-9:00): Team orchestration and agent handoffs
+1. **Persona Setup** (0:30-2:00): Creating and configuring AI advisor personas
+1. **Tool Assignment** (2:00-3:30): Assigning specific tools and capabilities
+1. **Avatar Configuration** (3:30-5:00): Setting up 3D avatars and themes
+1. **Voice Setup** (5:00-6:30): Configuring TTS and STT settings
+1. **Live Demonstration** (6:30-8:00): Real-time interaction with configured system
+1. **Advanced Features** (8:00-9:00): Team orchestration and agent handoffs
 
 ## Implementation Status Summary
 
@@ -207,9 +207,9 @@ chatty exec hello --dry-run
 Based on the current implementation status:
 
 1. **Immediate**: Use existing persona and tool configuration via `config.json`
-2. **Short-term**: Avatar GUI development and animation system
-3. **Medium-term**: TTS/STT integration and voice interaction
-4. **Long-term**: Complete web UI for all configuration and agent blueprint management
+1. **Short-term**: Avatar GUI development and animation system
+1. **Medium-term**: TTS/STT integration and voice interaction
+1. **Long-term**: Complete web UI for all configuration and agent blueprint management
 
 For detailed implementation plans, see:
 

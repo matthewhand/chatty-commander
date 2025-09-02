@@ -211,7 +211,7 @@ chatty-commander/
    source venv/bin/activate
    ```
 
-2. **Dependencies** (`requirements.txt`)
+1. **Dependencies** (`requirements.txt`)
 
    ```
    fastapi==0.104.1
@@ -228,7 +228,7 @@ chatty-commander/
    httpx==0.25.2
    ```
 
-3. **Core FastAPI Application** (`app/main.py`)
+1. **Core FastAPI Application** (`app/main.py`)
 
    ```python
    from fastapi import FastAPI, WebSocket
@@ -272,7 +272,7 @@ chatty-commander/
    npm install react-router-dom @types/react-router-dom
    ```
 
-2. **Basic App Structure** (`src/App.tsx`)
+1. **Basic App Structure** (`src/App.tsx`)
 
    ```typescript
    import React from 'react';
@@ -313,96 +313,99 @@ chatty-commander/
 #### Backend Authentication
 
 1. **JWT Authentication** (`app/core/auth.py`)
-2. **User Management** (`app/models/user.py`)
-3. **Auth Endpoints** (`app/api/v1/auth.py`)
-4. **Protected Routes** (`app/dependencies.py`)
+1. **User Management** (`app/models/user.py`)
+1. **Auth Endpoints** (`app/api/v1/auth.py`)
+1. **Protected Routes** (`app/dependencies.py`)
 
 #### Frontend Authentication
 
 1. **Auth Context** (`src/components/auth/AuthProvider.tsx`)
-2. **Login Form** (`src/components/auth/LoginForm.tsx`)
-3. **Protected Routes** (`src/components/auth/ProtectedRoute.tsx`)
-4. **API Client** (`src/services/api.ts`)
+1. **Login Form** (`src/components/auth/LoginForm.tsx`)
+1. **Protected Routes** (`src/components/auth/ProtectedRoute.tsx`)
+1. **API Client** (`src/services/api.ts`)
 
 ### Phase 3: Configuration Management (Week 5-6)
 
 #### Backend Config API
 
 1. **Config Schemas** (`app/schemas/config.py`)
-2. **Config Service** (`app/services/config_service.py`)
-3. **Config Endpoints** (`app/api/v1/config.py`)
-4. **Commands Management** (`app/api/v1/commands.py`)
+1. **Config Service** (`app/services/config_service.py`)
+1. **Config Endpoints** (`app/api/v1/config.py`)
+1. **Commands Management** (`app/api/v1/commands.py`)
 
 #### Frontend Config UI
 
 1. **Config Manager** (`src/components/config/ConfigManager.tsx`)
-2. **Commands List** (`src/components/config/CommandsList.tsx`)
-3. **Command Editor** (`src/components/config/CommandEditor.tsx`)
-4. **State Manager** (`src/components/config/StateManager.tsx`)
+1. **Commands List** (`src/components/config/CommandsList.tsx`)
+1. **Command Editor** (`src/components/config/CommandEditor.tsx`)
+1. **State Manager** (`src/components/config/StateManager.tsx`)
 
 ### Phase 4: Service Control & Monitoring (Week 7-8)
 
 #### Backend Service API
 
 1. **Service Integration** (`app/services/chatty_service.py`)
-2. **Process Management** (`app/utils/process_utils.py`)
-3. **Service Endpoints** (`app/api/v1/service.py`)
-4. **System Info** (`app/api/v1/system.py`)
+1. **Process Management** (`app/utils/process_utils.py`)
+1. **Service Endpoints** (`app/api/v1/service.py`)
+1. **System Info** (`app/api/v1/system.py`)
 
 #### Frontend Service UI
 
 1. **Service Control** (`src/components/service/ServiceControl.tsx`)
-2. **Process Monitor** (`src/components/service/ProcessMonitor.tsx`)
-3. **System Info** (`src/components/system/SystemInfo.tsx`)
-4. **Dashboard** (`src/components/dashboard/Dashboard.tsx`)
+1. **Process Monitor** (`src/components/service/ProcessMonitor.tsx`)
+1. **System Info** (`src/components/system/SystemInfo.tsx`)
+1. **Dashboard** (`src/components/dashboard/Dashboard.tsx`)
 
 ### Phase 5: Real-time Features (Week 9-10)
 
 #### Backend WebSocket
 
 1. **WebSocket Service** (`app/services/websocket_service.py`)
-2. **WebSocket Handlers** (`app/api/v1/websocket.py`)
-3. **Real-time Events** (service status, audio levels, logs)
+1. **WebSocket Handlers** (`app/api/v1/websocket.py`)
+1. **Real-time Events** (service status, audio levels, logs)
 
 #### Frontend WebSocket
 
 1. **WebSocket Hook** (`src/hooks/useWebSocket.ts`)
-2. **Real-time Components** (status updates, audio meter)
-3. **Log Viewer** (`src/components/service/LogViewer.tsx`)
-4. **Audio Level Meter** (`src/components/audio/AudioLevelMeter.tsx`)
+1. **Real-time Components** (status updates, audio meter)
+1. **Log Viewer** (`src/components/service/LogViewer.tsx`)
+1. **Audio Level Meter** (`src/components/audio/AudioLevelMeter.tsx`)
 
 ### Phase 6: Audio & Voice Features (Week 11-12)
 
 #### Backend Audio API
 
 1. **Audio Service** (`app/services/audio_service.py`)
-2. **Audio Endpoints** (`app/api/v1/audio.py`)
-3. **Voice Testing** (file upload, live testing)
-4. **Model Management** (`app/api/v1/models.py`)
+1. **Audio Endpoints** (`app/api/v1/audio.py`)
+1. **Voice Testing** (file upload, live testing)
+1. **Model Management** (`app/api/v1/models.py`)
 
 #### Frontend Audio UI
 
 1. **Audio Settings** (`src/components/audio/AudioSettings.tsx`)
-2. **Device Selector** (`src/components/audio/DeviceSelector.tsx`)
-3. **Voice Test** (`src/components/audio/VoiceTest.tsx`)
-4. **Model Manager** (`src/components/config/ModelManager.tsx`)
+1. **Device Selector** (`src/components/audio/DeviceSelector.tsx`)
+1. **Voice Test** (`src/components/audio/VoiceTest.tsx`)
+1. **Model Manager** (`src/components/config/ModelManager.tsx`)
 
 ## Testing Strategy
 
 ### Backend Testing
 
 1. **Unit Tests** (pytest)
+
    - API endpoints
    - Service classes
    - Authentication
    - Data validation
 
-2. **Integration Tests**
+1. **Integration Tests**
+
    - Database operations
    - External service calls
    - WebSocket connections
 
-3. **API Tests**
+1. **API Tests**
+
    - OpenAPI spec validation
    - Request/response testing
    - Error handling
@@ -410,16 +413,19 @@ chatty-commander/
 ### Frontend Testing
 
 1. **Unit Tests** (Jest + React Testing Library)
+
    - Component rendering
    - Hook functionality
    - Utility functions
 
-2. **Integration Tests**
+1. **Integration Tests**
+
    - API integration
    - WebSocket connections
    - Form submissions
 
-3. **E2E Tests** (Playwright)
+1. **E2E Tests** (Playwright)
+
    - User workflows
    - Cross-browser testing
    - Mobile responsiveness
@@ -427,11 +433,13 @@ chatty-commander/
 ### Performance Testing
 
 1. **Load Testing** (Locust)
+
    - API endpoint performance
    - WebSocket connection limits
    - Concurrent user handling
 
-2. **Frontend Performance**
+1. **Frontend Performance**
+
    - Bundle size optimization
    - Rendering performance
    - Memory usage
@@ -453,12 +461,13 @@ npm run dev
 ### Production Deployment
 
 1. **Docker Containers**
+
    - Backend: FastAPI + Uvicorn
    - Frontend: Nginx + React build
    - Database: PostgreSQL
    - Reverse Proxy: Nginx
 
-2. **Docker Compose**
+1. **Docker Compose**
 
    ```yaml
    version: '3.8'
@@ -494,22 +503,26 @@ npm run dev
 ## Security Considerations
 
 1. **Authentication**
+
    - JWT tokens with expiration
    - Refresh token rotation
    - Rate limiting on auth endpoints
 
-2. **Authorization**
+1. **Authorization**
+
    - Role-based access control
    - API endpoint permissions
    - Resource-level security
 
-3. **Data Protection**
+1. **Data Protection**
+
    - HTTPS enforcement
    - Input validation
    - SQL injection prevention
    - XSS protection
 
-4. **Network Security**
+1. **Network Security**
+
    - CORS configuration
    - CSP headers
    - Secure WebSocket connections
@@ -517,21 +530,25 @@ npm run dev
 ## Success Metrics
 
 1. **Functionality**
+
    - 100% feature parity with desktop GUI
    - All API endpoints functional
    - Real-time updates working
 
-2. **Performance**
-   - API response time < 200ms
-   - WebSocket latency < 50ms
-   - Frontend load time < 3s
+1. **Performance**
 
-3. **Quality**
+   - API response time \< 200ms
+   - WebSocket latency \< 50ms
+   - Frontend load time \< 3s
+
+1. **Quality**
+
    - 90%+ test coverage
    - Zero critical security issues
    - Cross-browser compatibility
 
-4. **User Experience**
+1. **User Experience**
+
    - Intuitive interface
    - Mobile responsive
    - Accessibility compliant

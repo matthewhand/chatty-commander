@@ -1,5 +1,5 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { useWebSocket } from './useWebSocket';
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { useWebSocket } from "./useWebSocket";
 
 type WSHandler = ((ev?: any) => void) | null;
 
@@ -22,27 +22,29 @@ class ControlledWebSocket {
 
   triggerOpen() {
     this.readyState = 1; // OPEN
-    this.onopen && this.onopen({ type: 'open' });
+    this.onopen && this.onopen({ type: "open" });
   }
 
-  triggerError(err: any = new Error('boom')) {
+  triggerError(err: any = new Error("boom")) {
     // Do not auto-close on error
     this.onerror && this.onerror(err);
   }
 
-  triggerClose(code = 1000, reason = 'Component unmounting') {
+  triggerClose(code = 1000, reason = "Component unmounting") {
     this.readyState = 3; // CLOSED
-    this.onclose && this.onclose({ code, reason, type: 'close' });
+    this.onclose && this.onclose({ code, reason, type: "close" });
   }
 
   triggerMessage(data: any) {
-    this.onmessage && this.onmessage({ data, type: 'message' });
+    this.onmessage && this.onmessage({ data, type: "message" });
   }
 
   send(data: any) {
-    if (this.readyState !== 1) throw new Error('WebSocket not open');
+    if (this.readyState !== 1) throw new Error("WebSocket not open");
     this.sent.push(data);
-    Promise.resolve().then(() => this.onmessage && this.onmessage({ data, type: 'message' }));
+    Promise.resolve().then(
+      () => this.onmessage && this.onmessage({ data, type: "message" }),
+    );
   }
 
   close(code?: number, reason?: string) {
@@ -68,13 +70,13 @@ function installWSMock() {
     // - ws://test-open and ws://test-send should OPEN automatically on next tick
     // - ws://test-error should emit ERROR automatically on next tick
     setTimeout(() => {
-      if (url.includes('test-open') || url.includes('test-send')) {
+      if (url.includes("test-open") || url.includes("test-send")) {
         // Ensure the instance is still in CONNECTING before opening
         if (ws.readyState === 0) ws.triggerOpen();
-      } else if (url.includes('test-error')) {
+      } else if (url.includes("test-error")) {
         // Emit error, then close
-        ws.triggerError(new Error('boom'));
-        ws.triggerClose(1006, 'test error');
+        ws.triggerError(new Error("boom"));
+        ws.triggerClose(1006, "test error");
       }
     }, 0);
     return ws;
@@ -101,41 +103,41 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('useWebSocket Hook', () => {
-  test('initializes with correct default state', () => {
+describe("useWebSocket Hook", () => {
+  test("initializes with correct default state", () => {
     const { result, unmount } = renderHook(() =>
-      useWebSocket('ws://test', { autoReconnect: false })
+      useWebSocket("ws://test", { autoReconnect: false }),
     );
 
     expect(result.current.isConnected).toBe(false);
-    expect(result.current.connectionStatus).toBe('CONNECTING');
+    expect(result.current.connectionStatus).toBe("CONNECTING");
     expect(result.current.sendMessage).toBeInstanceOf(Function);
     expect(result.current.disconnect).toBeInstanceOf(Function);
 
     unmount();
   });
 
-  test('provides sendMessage function', () => {
+  test("provides sendMessage function", () => {
     const { result, unmount } = renderHook(() =>
-      useWebSocket('ws://test', { autoReconnect: false })
+      useWebSocket("ws://test", { autoReconnect: false }),
     );
 
-    expect(typeof result.current.sendMessage).toBe('function');
+    expect(typeof result.current.sendMessage).toBe("function");
 
     // Should not throw when called (even if not connected)
     expect(() => {
-      result.current.sendMessage({ type: 'test' });
+      result.current.sendMessage({ type: "test" });
     }).not.toThrow();
 
     unmount();
   });
 
-  test('provides disconnect function', () => {
+  test("provides disconnect function", () => {
     const { result, unmount } = renderHook(() =>
-      useWebSocket('ws://test', { autoReconnect: false })
+      useWebSocket("ws://test", { autoReconnect: false }),
     );
 
-    expect(typeof result.current.disconnect).toBe('function');
+    expect(typeof result.current.disconnect).toBe("function");
 
     // Should not throw when called
     expect(() => {

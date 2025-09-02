@@ -1,10 +1,30 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Tests for voice integration components."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
-import pytest
-
-from chatty_commander.voice import VoicePipeline, VoiceTranscriber, WakeWordDetector
+from chatty_commander.voice import VoicePipeline, VoiceTranscriber
 from chatty_commander.voice.transcription import MockTranscriptionBackend
 from chatty_commander.voice.wakeword import MockWakeWordDetector
 
@@ -112,7 +132,9 @@ class TestVoicePipeline:
 
     def test_pipeline_start_stop(self):
         pipeline = VoicePipeline(
-            config_manager=self.mock_config, command_executor=self.mock_executor, use_mock=True
+            config_manager=self.mock_config,
+            command_executor=self.mock_executor,
+            use_mock=True,
         )
 
         pipeline.start()
@@ -123,7 +145,9 @@ class TestVoicePipeline:
 
     def test_command_matching(self):
         pipeline = VoicePipeline(
-            config_manager=self.mock_config, command_executor=self.mock_executor, use_mock=True
+            config_manager=self.mock_config,
+            command_executor=self.mock_executor,
+            use_mock=True,
         )
 
         # Test direct name match
@@ -140,7 +164,9 @@ class TestVoicePipeline:
 
     def test_text_command_processing(self):
         pipeline = VoicePipeline(
-            config_manager=self.mock_config, command_executor=self.mock_executor, use_mock=True
+            config_manager=self.mock_config,
+            command_executor=self.mock_executor,
+            use_mock=True,
         )
 
         result = pipeline.process_text_command("hello world")
@@ -149,7 +175,9 @@ class TestVoicePipeline:
 
     def test_command_callbacks(self):
         pipeline = VoicePipeline(
-            config_manager=self.mock_config, command_executor=self.mock_executor, use_mock=True
+            config_manager=self.mock_config,
+            command_executor=self.mock_executor,
+            use_mock=True,
         )
 
         callback_calls = []
@@ -165,7 +193,9 @@ class TestVoicePipeline:
 
     def test_mock_wake_word_trigger(self):
         pipeline = VoicePipeline(
-            config_manager=self.mock_config, command_executor=self.mock_executor, use_mock=True
+            config_manager=self.mock_config,
+            command_executor=self.mock_executor,
+            use_mock=True,
         )
 
         # Should not raise an error

@@ -16,45 +16,45 @@ interface User {
 }
 
 class AuthService {
-  private baseUrl = '/api/v1';
+  private baseUrl = "/api/v1";
 
   async login(username: string, password: string): Promise<TokenResponse> {
     const response = await fetch(`${this.baseUrl}/auth/login`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
     });
 
     if (!response.ok) {
-      throw new Error('Login failed');
+      throw new Error("Login failed");
     }
 
     return response.json();
   }
 
   async getCurrentUser(): Promise<User> {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
     if (!token) {
-      throw new Error('No token available');
+      throw new Error("No token available");
     }
 
     const response = await fetch(`${this.baseUrl}/auth/me`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get user info');
+      throw new Error("Failed to get user info");
     }
 
     return response.json();
   }
 
   logout(): void {
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem("auth_token");
   }
 }
 

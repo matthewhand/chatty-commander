@@ -14,7 +14,9 @@ html {
 
 body {
   margin: 0;
-  font-family: 'Roboto', 'Segoe UI', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family:
+    "Roboto", "Segoe UI", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
+    "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   height: 100%;
@@ -28,7 +30,9 @@ body {
 
 /* Code styling */
 code {
-  font-family: 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Courier New', monospace;
+  font-family:
+    "Fira Code", "Monaco", "Cascadia Code", "Roboto Mono", "Courier New",
+    monospace;
   background-color: rgba(0, 0, 0, 0.1);
   padding: 2px 4px;
   border-radius: 3px;
@@ -36,7 +40,9 @@ code {
 }
 
 pre {
-  font-family: 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Courier New', monospace;
+  font-family:
+    "Fira Code", "Monaco", "Cascadia Code", "Roboto Mono", "Courier New",
+    monospace;
   background-color: rgba(0, 0, 0, 0.05);
   padding: 12px;
   border-radius: 6px;
@@ -153,23 +159,52 @@ pre {
 }
 
 /* Utility classes */
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
-.full-width { width: 100%; }
-.full-height { height: 100%; }
-.flex { display: flex; }
-.flex-column { flex-direction: column; }
-.flex-center { justify-content: center; align-items: center; }
-.flex-between { justify-content: space-between; }
-.flex-grow { flex-grow: 1; }
-.no-select { user-select: none; }
-.pointer { cursor: pointer; }
-.hidden { display: none; }
+.text-center {
+  text-align: center;
+}
+.text-left {
+  text-align: left;
+}
+.text-right {
+  text-align: right;
+}
+.full-width {
+  width: 100%;
+}
+.full-height {
+  height: 100%;
+}
+.flex {
+  display: flex;
+}
+.flex-column {
+  flex-direction: column;
+}
+.flex-center {
+  justify-content: center;
+  align-items: center;
+}
+.flex-between {
+  justify-content: space-between;
+}
+.flex-grow {
+  flex-grow: 1;
+}
+.no-select {
+  user-select: none;
+}
+.pointer {
+  cursor: pointer;
+}
+.hidden {
+  display: none;
+}
 
 /* Custom Material-UI overrides */
 .MuiCard-root {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
 }
 
 .MuiCard-root:hover {

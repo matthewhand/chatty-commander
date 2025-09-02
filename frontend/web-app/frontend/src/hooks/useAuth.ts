@@ -1,5 +1,5 @@
-import { useState, useEffect, createContext, useContext } from 'react';
-import { authService } from '../services/authService';
+import { useState, useEffect, createContext, useContext } from "react";
+import { authService } from "../services/authService";
 
 interface User {
   username: string;
@@ -28,14 +28,15 @@ export const useAuth = (): AuthContextType => {
     // Only run if context is not available
     if (!context) {
       // Check for existing token on mount
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem("auth_token");
       if (token) {
-        authService.getCurrentUser()
-          .then(userData => {
+        authService
+          .getCurrentUser()
+          .then((userData) => {
             setUser(userData);
           })
           .catch(() => {
-            localStorage.removeItem('auth_token');
+            localStorage.removeItem("auth_token");
           })
           .finally(() => {
             setLoading(false);
@@ -46,17 +47,20 @@ export const useAuth = (): AuthContextType => {
     }
   }, [context]);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (
+    username: string,
+    password: string,
+  ): Promise<boolean> => {
     try {
       setLoading(true);
       const response = await authService.login(username, password);
-      localStorage.setItem('auth_token', response.access_token);
+      localStorage.setItem("auth_token", response.access_token);
 
       const userData = await authService.getCurrentUser();
       setUser(userData);
       return true;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
       return false;
     } finally {
       setLoading(false);
@@ -64,7 +68,7 @@ export const useAuth = (): AuthContextType => {
   };
 
   const logout = () => {
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem("auth_token");
     setUser(null);
   };
 
@@ -78,7 +82,7 @@ export const useAuth = (): AuthContextType => {
     isAuthenticated: !!user,
     login,
     logout,
-    loading
+    loading,
   };
 };
 

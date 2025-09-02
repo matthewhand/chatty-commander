@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 state_manager.py
 
@@ -9,6 +31,7 @@ and more complex state dependencies.
 
 import logging
 from config import Config
+
 
 class StateManager:
     def __init__(self):
@@ -25,14 +48,14 @@ class StateManager:
         Returns the new state if a transition occurred, otherwise None.
         """
         new_state = None
-        if command == 'hey_chat_tee':
-            new_state = 'chatty'
-        elif command == 'hey_khum_puter':
-            new_state = 'computer'
-        elif command in ['okay_stop', 'thanks_chat_tee', 'that_ill_do']:
-            new_state = 'idle'
-        elif command == 'toggle_mode':
-            states = ['idle', 'computer', 'chatty']
+        if command == "hey_chat_tee":
+            new_state = "chatty"
+        elif command == "hey_khum_puter":
+            new_state = "computer"
+        elif command in ["okay_stop", "thanks_chat_tee", "that_ill_do"]:
+            new_state = "idle"
+        elif command == "toggle_mode":
+            states = ["idle", "computer", "chatty"]
             current_index = states.index(self.current_state)
             new_state = states[(current_index + 1) % len(states)]
 
@@ -45,7 +68,9 @@ class StateManager:
         if new_state in self.config.state_models:
             self.current_state = new_state
             self.active_models = self.config.state_models[new_state]
-            self.logger.info(f"Transitioned to {new_state} state. Active models: {self.active_models}")
+            self.logger.info(
+                f"Transitioned to {new_state} state. Active models: {self.active_models}"
+            )
             self.post_state_change_hook(new_state)
             if callback:
                 callback(new_state)
@@ -61,10 +86,11 @@ class StateManager:
     def __repr__(self):
         return f"<StateManager(current_state={self.current_state}, active_models={len(self.active_models)})>"
 
+
 # Example usage:
 if __name__ == "__main__":
     state_manager = StateManager()
     print(state_manager)
-    state_manager.change_state('computer')
+    state_manager.change_state("computer")
     print(state_manager.get_active_models())
-    state_manager.change_state('undefined_state')  # This should trigger error handling
+    state_manager.change_state("undefined_state")  # This should trigger error handling

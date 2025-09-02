@@ -88,10 +88,10 @@ When creating the demonstration video:
 As features are implemented and the UI becomes more complete:
 
 1. **Phase 1**: Record basic configuration and setup workflows
-2. **Phase 2**: Add avatar and animation demonstrations
-3. **Phase 3**: Include voice interaction and TTS/STT setup
-4. **Phase 4**: Show advanced features and team orchestration
-5. **Phase 5**: Create polished, final demonstration video
+1. **Phase 2**: Add avatar and animation demonstrations
+1. **Phase 3**: Include voice interaction and TTS/STT setup
+1. **Phase 4**: Show advanced features and team orchestration
+1. **Phase 5**: Create polished, final demonstration video
 
 ## Alternative Formats
 

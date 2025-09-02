@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Tab-aware context switching for advisors.
 
@@ -48,13 +70,13 @@ class ContextIdentity:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         data = asdict(self)
-        data['platform'] = self.platform.value
+        data["platform"] = self.platform.value
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'ContextIdentity':
+    def from_dict(cls, data: dict[str, Any]) -> "ContextIdentity":
         """Create from dictionary."""
-        data['platform'] = PlatformType(data['platform'])
+        data["platform"] = PlatformType(data["platform"])
         return cls(**data)
 
 
@@ -76,13 +98,13 @@ class ContextState:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         data = asdict(self)
-        data['identity'] = self.identity.to_dict()
+        data["identity"] = self.identity.to_dict()
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'ContextState':
+    def from_dict(cls, data: dict[str, Any]) -> "ContextState":
         """Create from dictionary."""
-        data['identity'] = ContextIdentity.from_dict(data['identity'])
+        data["identity"] = ContextIdentity.from_dict(data["identity"])
         return cls(**data)
 
 
@@ -100,12 +122,14 @@ class ContextManager:
     def __init__(self, config: dict[str, Any]):
         self.config = config
         self.contexts: dict[str, ContextState] = {}
-        self.personas: dict[str, dict[str, Any]] = config.get('personas', {})
-        self.default_persona = config.get('default_persona', 'general')
+        self.personas: dict[str, dict[str, Any]] = config.get("personas", {})
+        self.default_persona = config.get("default_persona", "general")
 
         # Persistence settings
-        self.persistence_enabled = config.get('persistence_enabled', True)
-        self.persistence_path = Path(config.get('persistence_path', 'data/contexts.json'))
+        self.persistence_enabled = config.get("persistence_enabled", True)
+        self.persistence_path = Path(
+            config.get("persistence_path", "data/contexts.json")
+        )
 
         # Load existing contexts
         if self.persistence_enabled:
@@ -133,7 +157,11 @@ class ContextManager:
             ContextState for the identity
         """
         identity = ContextIdentity(
-            platform=platform, channel=channel, user_id=user_id, username=username, **kwargs
+            platform=platform,
+            channel=channel,
+            user_id=user_id,
+            username=username,
+            **kwargs,
         )
 
         context_key = identity.context_key
@@ -141,7 +169,7 @@ class ContextManager:
         if context_key not in self.contexts:
             # Create new context
             persona_id = self._resolve_persona_for_context(identity)
-            system_prompt = self.personas.get(persona_id, {}).get('system_prompt', '')
+            system_prompt = self.personas.get(persona_id, {}).get("system_prompt", "")
             memory_key = f"{context_key}:memory"
 
             context = ContextState(
@@ -191,7 +219,7 @@ class ContextManager:
 
         context = self.contexts[context_key]
         context.persona_id = persona_id
-        context.system_prompt = self.personas[persona_id]['system_prompt']
+        context.system_prompt = self.personas[persona_id]["system_prompt"]
         context.last_activity = time.time()
 
         if self.persistence_enabled:
@@ -298,7 +326,7 @@ class ContextManager:
         for context_key, context in self.contexts.items():
             data[context_key] = context.to_dict()
 
-        with open(self.persistence_path, 'w') as f:
+        with open(self.persistence_path, "w") as f:
             json.dump(data, f, indent=2)
 
     def get_stats(self) -> dict[str, Any]:
@@ -310,12 +338,14 @@ class ContextManager:
             platform = context.identity.platform.value
             platform_counts[platform] = platform_counts.get(platform, 0) + 1
 
-            persona_counts[context.persona_id] = persona_counts.get(context.persona_id, 0) + 1
+            persona_counts[context.persona_id] = (
+                persona_counts.get(context.persona_id, 0) + 1
+            )
 
         return {
-            'total_contexts': len(self.contexts),
-            'platform_distribution': platform_counts,
-            'persona_distribution': persona_counts,
-            'persistence_enabled': self.persistence_enabled,
-            'persistence_path': str(self.persistence_path),
+            "total_contexts": len(self.contexts),
+            "platform_distribution": platform_counts,
+            "persona_distribution": persona_counts,
+            "persistence_enabled": self.persistence_enabled,
+            "persistence_path": str(self.persistence_path),
         }

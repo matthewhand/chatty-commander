@@ -76,8 +76,8 @@
 ### Installation Options
 
 1. **pip install** - Gets both `chatty` and `chatty-commander` commands
-2. **Standalone binary** - No Python required (via CI releases)
-3. **Development setup** - Clone repo, use `./chatty` wrapper
+1. **Standalone binary** - No Python required (via CI releases)
+1. **Development setup** - Clone repo, use `./chatty` wrapper
 
 ### Core Features Working
 

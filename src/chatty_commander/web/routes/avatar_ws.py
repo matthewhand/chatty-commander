@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """WebSocket routes for Avatar UI to receive agent state updates.
 
 This endpoint broadcasts agent thinking/responding states and supports minimal
@@ -35,7 +57,9 @@ class AvatarWSConnectionManager:
             # remove from old, if any
             try:
                 if self._registered_manager is not None:
-                    self._registered_manager.remove_broadcast_callback(self.broadcast_state_change)
+                    self._registered_manager.remove_broadcast_callback(
+                        self.broadcast_state_change
+                    )
             except Exception:
                 pass
             try:
@@ -72,7 +96,9 @@ class AvatarWSConnectionManager:
         except ValueError:
             pass
 
-    async def send_personal_message(self, message: dict[str, Any], websocket: WebSocket):
+    async def send_personal_message(
+        self, message: dict[str, Any], websocket: WebSocket
+    ):
         try:
             await websocket.send_text(json.dumps(message))
         except Exception as e:
@@ -137,7 +163,9 @@ class AvatarAudioQueue:
     @property
     def is_speaking(self) -> bool:
         """Return ``True`` if audio is currently being played."""
-        return self._current_play_task is not None and not self._current_play_task.done()
+        return (
+            self._current_play_task is not None and not self._current_play_task.done()
+        )
 
     async def _play_audio(self, audio: bytes | None) -> None:
         """Placeholder for audio playback.
@@ -188,12 +216,16 @@ class AvatarAudioQueue:
             except RuntimeError:
                 asyncio.run(self._process())
 
-    async def enqueue(self, agent_id: str, message: str, audio: bytes | None = None) -> None:
+    async def enqueue(
+        self, agent_id: str, message: str, audio: bytes | None = None
+    ) -> None:
         """Add a message to the queue for playback."""
         await self.queue.put((agent_id, message, audio))
         self._ensure_processor()
 
-    async def interrupt(self, agent_id: str, message: str, audio: bytes | None = None) -> None:
+    async def interrupt(
+        self, agent_id: str, message: str, audio: bytes | None = None
+    ) -> None:
         """Interrupt current playback and play a priority message immediately."""
         # Clear any pending messages
         while not self.queue.empty():
@@ -222,12 +254,16 @@ class AvatarAudioQueue:
 audio_queue = AvatarAudioQueue(manager)
 
 
-async def queue_avatar_message(agent_id: str, message: str, audio: bytes | None = None) -> None:
+async def queue_avatar_message(
+    agent_id: str, message: str, audio: bytes | None = None
+) -> None:
     """Public helper to queue avatar speech."""
     await audio_queue.enqueue(agent_id, message, audio)
 
 
-async def interrupt_avatar_queue(agent_id: str, message: str, audio: bytes | None = None) -> None:
+async def interrupt_avatar_queue(
+    agent_id: str, message: str, audio: bytes | None = None
+) -> None:
     """Public helper to interrupt current avatar speech with a priority message."""
     await audio_queue.interrupt(agent_id, message, audio)
 
@@ -246,7 +282,9 @@ async def avatar_ws_endpoint(websocket: WebSocket):
             # Handle control messages if needed (e.g., avatar ready)
             msg_type = msg.get("type")
             if msg_type == "avatar_ready":
-                await manager.send_personal_message({"type": "ack", "data": "ok"}, websocket)
+                await manager.send_personal_message(
+                    {"type": "ack", "data": "ok"}, websocket
+                )
             # Future: map avatar_id to agent_id etc
     except WebSocketDisconnect:
         manager.disconnect(websocket)

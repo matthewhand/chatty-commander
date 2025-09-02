@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Web mode server and models.
 
@@ -56,7 +78,9 @@ except ImportError:
     avatar_ws_router = None
 
 try:
-    from chatty_commander.web.routes.avatar_selector import router as avatar_selector_router
+    from chatty_commander.web.routes.avatar_selector import (
+        router as avatar_selector_router,
+    )
 except ImportError:
     avatar_selector_router = None
 
@@ -80,7 +104,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers[
+            "Permissions-Policy"
+        ] = "geolocation=(), microphone=(), camera=()"
 
         # Remove server header for security
         if "server" in response.headers:
@@ -103,7 +129,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Clean old requests
         current_time = time.time()
         self.requests[client_ip] = [
-            req_time for req_time in self.requests[client_ip] if current_time - req_time < 60
+            req_time
+            for req_time in self.requests[client_ip]
+            if current_time - req_time < 60
         ]
 
         # Check rate limit
@@ -130,12 +158,16 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
-    state: str = Field(..., description="Target state", pattern="^(idle|computer|chatty)$")
+    state: str = Field(
+        ..., description="Target state", pattern="^(idle|computer|chatty)$"
+    )
 
 
 class CommandRequest(BaseModel):
     command: str = Field(..., description="Command name to execute")
-    parameters: dict[str, Any] | None = Field(default=None, description="Optional parameters")
+    parameters: dict[str, Any] | None = Field(
+        default=None, description="Optional parameters"
+    )
 
 
 class CommandResponse(BaseModel):
@@ -187,7 +219,9 @@ class WebModeServer:
         try:
             self.advisors_service = AdvisorsService(config=config_manager)
         except Exception as e:  # noqa: BLE001
-            logger.debug("AdvisorsService init failed; continuing without advisors: %s", e)
+            logger.debug(
+                "AdvisorsService init failed; continuing without advisors: %s", e
+            )
             self.advisors_service = None  # type: ignore[assignment]
 
         # WebSocket connection management
@@ -229,13 +263,13 @@ class WebModeServer:
             raise ImportError("uvicorn is not available")
 
         # Use config values if available
-        if host is None and hasattr(self.config_manager, 'web_server'):
-            host = self.config_manager.web_server.get('host', '0.0.0.0')
+        if host is None and hasattr(self.config_manager, "web_server"):
+            host = self.config_manager.web_server.get("host", "0.0.0.0")
         if host is None:
-            host = '0.0.0.0'
+            host = "0.0.0.0"
 
-        if port is None and hasattr(self.config_manager, 'web_server'):
-            port = self.config_manager.web_server.get('port', 8100)
+        if port is None and hasattr(self.config_manager, "web_server"):
+            port = self.config_manager.web_server.get("port", 8100)
         if port is None:
             port = 8100
 
@@ -321,7 +355,9 @@ class WebModeServer:
         # Serve static web UI (optional)
         frontend_path = Path("webui/frontend/dist")
         if frontend_path.exists():
-            app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
+            app.mount(
+                "/static", StaticFiles(directory=str(frontend_path)), name="static"
+            )
 
             @app.get("/", response_class=HTMLResponse)
             async def _serve_frontend():  # pragma: no cover - exercised in integration
@@ -336,7 +372,9 @@ class WebModeServer:
         avatar_path = Path("src/chatty_commander/webui/avatar")
         if avatar_path.exists():
             try:
-                app.mount("/avatar-ui", StaticFiles(directory=str(avatar_path)), name="avatar")
+                app.mount(
+                    "/avatar-ui", StaticFiles(directory=str(avatar_path)), name="avatar"
+                )
 
                 @app.get("/avatar", response_class=HTMLResponse)
                 async def _serve_avatar_ui():  # pragma: no cover - exercised in integration
@@ -405,13 +443,18 @@ class WebModeServer:
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
         @app.get("/api/v1/advisors/memory")
-        async def advisors_memory(platform: str, channel: str, user: str, limit: int = 20):
+        async def advisors_memory(
+            platform: str, channel: str, user: str, limit: int = 20
+        ):
             svc = self.advisors_service
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             items = svc.memory.get(platform, channel, user, limit=limit)
             # Convert dataclasses to serializable dicts
-            return [{"role": i.role, "content": i.content, "timestamp": i.timestamp} for i in items]
+            return [
+                {"role": i.role, "content": i.content, "timestamp": i.timestamp}
+                for i in items
+            ]
 
         @app.delete("/api/v1/advisors/memory")
         async def advisors_memory_clear(platform: str, channel: str, user: str):
@@ -513,7 +556,9 @@ class WebModeServer:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
         loop.create_task(
-            self._broadcast_message(WebSocketMessage(type=event_type, data={"message": details}))
+            self._broadcast_message(
+                WebSocketMessage(type=event_type, data={"message": details})
+            )
         )
 
 

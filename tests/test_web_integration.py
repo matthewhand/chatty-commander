@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 test_web_integration.py
 
@@ -26,12 +48,19 @@ class WebIntegrationTester:
     """Comprehensive web mode integration tester."""
 
     def __init__(
-        self, base_url: str = "http://localhost:8100", ws_url: str = "ws://localhost:8100/ws"
+        self,
+        base_url: str = "http://localhost:8100",
+        ws_url: str = "ws://localhost:8100/ws",
     ) -> None:
         self.base_url = base_url
         self.ws_url = ws_url
         self.server_process: subprocess.Popen | None = None
-        self.test_results: dict[str, Any] = {"passed": 0, "failed": 0, "errors": [], "details": {}}
+        self.test_results: dict[str, Any] = {
+            "passed": 0,
+            "failed": 0,
+            "errors": [],
+            "details": {},
+        }
 
     def start_test_server(self, timeout: int = 30) -> bool:
         """Start the web server for testing."""
@@ -118,7 +147,13 @@ class WebIntegrationTester:
 
             if response.status_code == 200:
                 data = response.json()
-                required_fields = ["status", "current_state", "active_models", "uptime", "version"]
+                required_fields = [
+                    "status",
+                    "current_state",
+                    "active_models",
+                    "uptime",
+                    "version",
+                ]
 
                 for field in required_fields:
                     if field not in data:
@@ -152,7 +187,9 @@ class WebIntegrationTester:
             # Test GET config
             response = requests.get(f"{self.base_url}/api/v1/config")
             if response.status_code != 200:
-                self.test_results["errors"].append(f"Config GET returned {response.status_code}")
+                self.test_results["errors"].append(
+                    f"Config GET returned {response.status_code}"
+                )
                 return False
 
             original_config = response.json()
@@ -172,7 +209,9 @@ class WebIntegrationTester:
                 self.test_results["details"]["config"] = original_config
                 return True
             else:
-                self.test_results["errors"].append(f"Config PUT returned {response.status_code}")
+                self.test_results["errors"].append(
+                    f"Config PUT returned {response.status_code}"
+                )
                 return False
 
         except Exception as e:
@@ -187,7 +226,9 @@ class WebIntegrationTester:
             # Test GET state
             response = requests.get(f"{self.base_url}/api/v1/state")
             if response.status_code != 200:
-                self.test_results["errors"].append(f"State GET returned {response.status_code}")
+                self.test_results["errors"].append(
+                    f"State GET returned {response.status_code}"
+                )
                 return False
 
             state_data = response.json()
@@ -195,7 +236,9 @@ class WebIntegrationTester:
 
             for field in required_fields:
                 if field not in state_data:
-                    self.test_results["errors"].append(f"State endpoint missing field: {field}")
+                    self.test_results["errors"].append(
+                        f"State endpoint missing field: {field}"
+                    )
                     return False
 
             original_state = state_data["current_state"]
@@ -223,7 +266,9 @@ class WebIntegrationTester:
                         self.test_results["errors"].append("State change not reflected")
                         return False
 
-            self.test_results["errors"].append(f"State POST returned {response.status_code}")
+            self.test_results["errors"].append(
+                f"State POST returned {response.status_code}"
+            )
             return False
 
         except Exception as e:
@@ -307,7 +352,9 @@ class WebIntegrationTester:
                     return True
 
                 except TimeoutError:
-                    self.test_results["errors"].append("WebSocket timeout waiting for messages")
+                    self.test_results["errors"].append(
+                        "WebSocket timeout waiting for messages"
+                    )
                     return False
 
         except Exception as e:
@@ -362,7 +409,9 @@ class WebIntegrationTester:
                 logger.info("✅ Static file serving test passed")
                 return True
             else:
-                self.test_results["errors"].append(f"Root endpoint returned {response.status_code}")
+                self.test_results["errors"].append(
+                    f"Root endpoint returned {response.status_code}"
+                )
                 return False
 
         except Exception as e:
@@ -425,7 +474,9 @@ class WebIntegrationTester:
     def print_test_summary(self) -> None:
         """Print a comprehensive test summary."""
         total_tests = self.test_results["passed"] + self.test_results["failed"]
-        success_rate = (self.test_results["passed"] / total_tests * 100) if total_tests > 0 else 0
+        success_rate = (
+            (self.test_results["passed"] / total_tests * 100) if total_tests > 0 else 0
+        )
 
         print("\n" + "=" * 60)
         print("🧪 WEB INTEGRATION TEST SUMMARY")

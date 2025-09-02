@@ -136,12 +136,14 @@
 ### 📋 **MEDIUM PRIORITY (Next Quarter)**
 
 3. **Polish Avatar System**
+
    - Implement proper lip sync
    - Optimize 3D rendering performance
    - Add more avatar customization options
    - **Estimated Effort**: 2-3 weeks
 
-4. **Web UI Improvements**
+1. **Web UI Improvements**
+
    - Enhance user interface design
    - Add more interactive features
    - Improve mobile responsiveness

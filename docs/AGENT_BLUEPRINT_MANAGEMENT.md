@@ -4,7 +4,7 @@ This document outlines the blueprint schema, APIs, and UI integration for managi
 
 ## Blueprint Schema (initial)
 
-- Fields: name, description, persona_prompt, capabilities[], team_role?, handoff_triggers[]
+- Fields: name, description, persona_prompt, capabilities\[\], team_role?, handoff_triggers\[\]
 - Natural language parser: placeholder heuristic parser; will be replaced by LLM-based extractor.
 
 ## API Endpoints

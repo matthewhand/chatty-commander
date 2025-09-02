@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 LLM backend implementations with automatic fallback strategy.
 """
@@ -36,7 +58,9 @@ class OpenAIBackend(LLMBackend):
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.base_url = base_url or os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        self.base_url = base_url or os.getenv(
+            "OPENAI_API_BASE", "https://api.openai.com/v1"
+        )
         self._client = None
         self._initialize_client()
 
@@ -52,7 +76,9 @@ class OpenAIBackend(LLMBackend):
             self._client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
         except ImportError:
-            logger.warning("OpenAI library not available. Install with: pip install openai")
+            logger.warning(
+                "OpenAI library not available. Install with: pip install openai"
+            )
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e}")
 
@@ -64,7 +90,9 @@ class OpenAIBackend(LLMBackend):
         try:
             # Test with a minimal request
             self._client.chat.completions.create(
-                model="gpt-3.5-turbo", messages=[{"role": "user", "content": "test"}], max_tokens=1
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": "test"}],
+                max_tokens=1,
             )
             return True
         except Exception as e:
@@ -140,7 +168,9 @@ class OllamaBackend(LLMBackend):
                     self._try_pull_model()
                     self._available = self.model in [
                         m.get("name", "")
-                        for m in requests.get(f"{self.base_url}/api/tags").json().get("models", [])
+                        for m in requests.get(f"{self.base_url}/api/tags")
+                        .json()
+                        .get("models", [])
                     ]
             else:
                 self._available = False
@@ -170,7 +200,9 @@ class OllamaBackend(LLMBackend):
             if response.status_code == 200:
                 logger.info(f"Successfully pulled model {self.model}")
             else:
-                logger.warning(f"Failed to pull model {self.model}: {response.status_code}")
+                logger.warning(
+                    f"Failed to pull model {self.model}: {response.status_code}"
+                )
 
         except Exception as e:
             logger.warning(f"Error pulling model {self.model}: {e}")
@@ -283,7 +315,9 @@ class LocalTransformersBackend(LLMBackend):
             temperature = kwargs.get("temperature", 0.7)
 
             # Tokenize input
-            inputs = self._tokenizer.encode(prompt, return_tensors="pt").to(self._device)
+            inputs = self._tokenizer.encode(prompt, return_tensors="pt").to(
+                self._device
+            )
 
             # Generate response
             with torch.no_grad():

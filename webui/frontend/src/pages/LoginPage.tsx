@@ -1,34 +1,42 @@
-import React, { useState } from 'react';
-import { Alert, Box, Button, Container, Paper, TextField, Typography } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
-import MicIcon from '@mui/icons-material/Mic';
+import React, { useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Container,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useAuth } from "../hooks/useAuth";
+import MicIcon from "@mui/icons-material/Mic";
 
 const LoginPage: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     const success = await login(username, password);
     setLoading(false);
     if (!success) {
-      setError('Invalid username or password');
+      setError("Invalid username or password");
     }
   };
 
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(to right bottom, #2e3a4d, #1a202c)',
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(to right bottom, #2e3a4d, #1a202c)",
       }}
     >
       <Container component="main" maxWidth="xs">
@@ -36,18 +44,18 @@ const LoginPage: React.FC = () => {
           elevation={6}
           sx={{
             p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             gap: 2,
             borderRadius: 2,
           }}
         >
-          <MicIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+          <MicIcon sx={{ fontSize: 40, color: "primary.main" }} />
           <Typography variant="h5" component="h1">
             Chatty Commander
           </Typography>
-          <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+          <form onSubmit={handleSubmit} style={{ width: "100%" }}>
             <TextField
               label="Username"
               value={username}
@@ -76,12 +84,14 @@ const LoginPage: React.FC = () => {
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
-          <Alert severity="info" sx={{ width: '100%', mt: 2 }}>
+          <Alert severity="info" sx={{ width: "100%", mt: 2 }}>
             <Typography variant="caption">
-              Authentication is configured via the CLI. There is no password reset functionality. To run without authentication, use the <code>--no-auth</code> flag when starting the server.
+              Authentication is configured via the CLI. There is no password
+              reset functionality. To run without authentication, use the{" "}
+              <code>--no-auth</code> flag when starting the server.
             </Typography>
           </Alert>
         </Paper>

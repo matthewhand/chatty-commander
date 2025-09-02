@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Simple tests to boost coverage on key modules."""
 
 import logging
@@ -10,7 +32,12 @@ from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.utils.logger import HTTPLogHandler, JSONFormatter, report_error, setup_logger
+from chatty_commander.utils.logger import (
+    HTTPLogHandler,
+    JSONFormatter,
+    report_error,
+    setup_logger,
+)
 
 
 class TestCoverageBoostSimple:
@@ -28,7 +55,7 @@ class TestCoverageBoostSimple:
 
     def test_command_executor_report_error(self, command_executor):
         """Test command executor error reporting"""
-        with patch('logging.critical') as mock_log:
+        with patch("logging.critical") as mock_log:
             command_executor.report_error("test_cmd", "Test error")
             mock_log.assert_called()
 
@@ -39,8 +66,8 @@ class TestCoverageBoostSimple:
 
     def test_command_executor_validate_success(self, command_executor):
         """Test validate_command with valid command"""
-        command_executor.config.model_actions['valid'] = {'keypress': 'space'}
-        assert command_executor.validate_command('valid') is True
+        command_executor.config.model_actions["valid"] = {"keypress": "space"}
+        assert command_executor.validate_command("valid") is True
 
     def test_logger_setup_basic(self):
         """Test basic logger setup"""
@@ -64,7 +91,7 @@ class TestCoverageBoostSimple:
     def test_report_error_simple(self):
         """Test simple error reporting"""
         error = ValueError("Test error")
-        with patch('logging.error') as mock_log:
+        with patch("logging.error") as mock_log:
             report_error(error)
             mock_log.assert_called()
 
@@ -103,7 +130,7 @@ class TestCoverageBoostSimple:
             exc_info=None,
         )
 
-        with patch('requests.post') as mock_post:
+        with patch("requests.post") as mock_post:
             mock_post.return_value.status_code = 200
             handler.emit(record)
             mock_post.assert_called()
@@ -113,9 +140,9 @@ class TestCoverageBoostSimple:
         config = Config()
 
         # Test basic properties
-        assert hasattr(config, 'model_actions')
-        assert hasattr(config, 'state_models')
-        assert hasattr(config, 'inference_framework')
+        assert hasattr(config, "model_actions")
+        assert hasattr(config, "state_models")
+        assert hasattr(config, "inference_framework")
 
         # Test property access
         framework = config.inference_framework
@@ -138,7 +165,7 @@ class TestCoverageBoostSimple:
         manager = ModelManager(config)
 
         assert manager.config is config
-        assert hasattr(manager, 'models')
+        assert hasattr(manager, "models")
 
     def test_model_manager_load_models(self):
         """Test model manager load_models method"""
@@ -157,12 +184,12 @@ class TestCoverageBoostSimple:
         manager = StateManager()
 
         # Test transition to computer state
-        manager.change_state('computer')
-        assert manager.current_state == 'computer'
+        manager.change_state("computer")
+        assert manager.current_state == "computer"
 
         # Test transition back to idle
-        manager.change_state('idle')
-        assert manager.current_state == 'idle'
+        manager.change_state("idle")
+        assert manager.current_state == "idle"
 
     def test_state_manager_get_active_models(self):
         """Test state manager get_active_models"""
@@ -174,19 +201,19 @@ class TestCoverageBoostSimple:
         """Test state manager post_state_change_hook"""
         manager = StateManager()
         # Should not raise exception
-        manager.post_state_change_hook('idle')
+        manager.post_state_change_hook("idle")
 
     def test_command_executor_execute_invalid_action(self, command_executor):
         """Test execute_command with invalid action type"""
-        command_executor.config.model_actions['invalid'] = {'unknown_type': 'value'}
+        command_executor.config.model_actions["invalid"] = {"unknown_type": "value"}
 
         with pytest.raises(TypeError):
-            command_executor.execute_command('invalid')
+            command_executor.execute_command("invalid")
 
     def test_command_executor_execute_missing_command(self, command_executor):
         """Test execute_command with missing command"""
         with pytest.raises(ValueError):
-            command_executor.execute_command('missing_command')
+            command_executor.execute_command("missing_command")
 
     def test_logger_handler_exists_check(self):
         """Test logger handler existence checking"""
@@ -203,7 +230,7 @@ class TestCoverageBoostSimple:
         config = Config()
 
         # Test git-related properties if they exist
-        if hasattr(config, 'git_sha'):
+        if hasattr(config, "git_sha"):
             git_sha = config.git_sha
             assert git_sha is None or isinstance(git_sha, str)
 
@@ -219,9 +246,15 @@ class TestCoverageBoostSimple:
     def test_logger_multiple_handlers(self):
         """Test logger with multiple handler types"""
         config = MagicMock()
-        config.logging = {"handlers": ["console", "file"], "file": "test.log", "format": "plain"}
+        config.logging = {
+            "handlers": ["console", "file"],
+            "file": "test.log",
+            "format": "plain",
+        }
 
-        with patch('logging.handlers.RotatingFileHandler'), patch('logging.StreamHandler'):
+        with patch("logging.handlers.RotatingFileHandler"), patch(
+            "logging.StreamHandler"
+        ):
             logger = setup_logger("multi_handler", config=config)
             assert isinstance(logger, logging.Logger)
 

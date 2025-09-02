@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 main.py
 
@@ -19,14 +41,17 @@ from model_manager import ModelManager
 from state_manager import StateManager
 from command_executor import CommandExecutor
 from utils.logger import setup_logger
+
 try:
     from default_config import generate_default_config_if_needed
 except ImportError:
+
     def generate_default_config_if_needed():
         return False
 
+
 def main():
-    logger = setup_logger(__name__, 'logs/chattycommander.log')
+    logger = setup_logger(__name__, "logs/chattycommander.log")
     logger.info("Starting ChattyCommander application")
 
     # Generate default configuration if needed
@@ -62,6 +87,7 @@ def main():
     except KeyboardInterrupt:
         logger.info("Shutting down the ChattyCommander application")
         sys.exit()
+
 
 if __name__ == "__main__":
     main()

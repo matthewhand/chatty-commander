@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Enhanced voice processing with improved quality and intelligence."""
 
 import logging
@@ -163,7 +185,7 @@ class EnhancedVoiceProcessor:
         # Simple high-pass filter to remove low-frequency noise
         from scipy import signal
 
-        b, a = signal.butter(4, 300, btype='high', fs=self.config.sample_rate)
+        b, a = signal.butter(4, 300, btype="high", fs=self.config.sample_rate)
         return signal.filtfilt(b, a, audio_data)
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
@@ -242,7 +264,9 @@ class EnhancedVoiceProcessor:
 
         except Exception as e:
             self.logger.error(f"Transcription error: {e}")
-            return VoiceResult(text="", confidence=0.0, duration=0.0, timestamp=start_time)
+            return VoiceResult(
+                text="", confidence=0.0, duration=0.0, timestamp=start_time
+            )
 
     def _process_audio_chunk(self, audio_chunk: bytes) -> VoiceResult | None:
         """Process a single audio chunk."""
@@ -266,7 +290,9 @@ class EnhancedVoiceProcessor:
                     speech_detected = self.vad(audio_chunk)
                 else:
                     # Using webrtcvad
-                    speech_detected = self.vad.is_speech(audio_chunk, self.config.sample_rate)
+                    speech_detected = self.vad.is_speech(
+                        audio_chunk, self.config.sample_rate
+                    )
 
                 if speech_detected:
                     self.silence_counter = 0
@@ -336,7 +362,9 @@ class EnhancedVoiceProcessor:
             while self.is_listening:
                 try:
                     # Read audio chunk
-                    audio_chunk = stream.read(self.config.chunk_size, exception_on_overflow=False)
+                    audio_chunk = stream.read(
+                        self.config.chunk_size, exception_on_overflow=False
+                    )
 
                     # Process the chunk
                     result = self._process_audio_chunk(audio_chunk)
@@ -382,7 +410,9 @@ class EnhancedVoiceProcessor:
 
         except Exception as e:
             self.logger.error(f"File processing error: {e}")
-            return VoiceResult(text="", confidence=0.0, duration=0.0, timestamp=datetime.now())
+            return VoiceResult(
+                text="", confidence=0.0, duration=0.0, timestamp=datetime.now()
+            )
 
 
 def create_enhanced_voice_processor(config: dict[str, Any]) -> EnhancedVoiceProcessor:

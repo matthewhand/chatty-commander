@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from "react";
 
 /**
  * Custom hook for WebSocket connection management
@@ -15,7 +15,7 @@ export const useWebSocket = (url, options = {}) => {
     protocols = [],
     // Testability: allow disabling auto-reconnect and set initial status (helps in tests)
     autoReconnect = true,
-    initialStatus = 'CONNECTING'
+    initialStatus = "CONNECTING",
   } = options;
 
   const [isConnected, setIsConnected] = useState(false);
@@ -39,7 +39,7 @@ export const useWebSocket = (url, options = {}) => {
   // Connect to WebSocket
   const connect = useCallback(() => {
     try {
-      setConnectionStatus('CONNECTING');
+      setConnectionStatus("CONNECTING");
       setError(null);
 
       // Close existing connection if any
@@ -51,9 +51,9 @@ export const useWebSocket = (url, options = {}) => {
       ws.current = new WebSocket(url, protocols);
 
       ws.current.onopen = (event) => {
-        console.log('WebSocket connected:', url);
+        console.log("WebSocket connected:", url);
         setIsConnected(true);
-        setConnectionStatus('OPEN');
+        setConnectionStatus("OPEN");
         setReconnectAttempts(0);
         setError(null);
 
@@ -63,32 +63,40 @@ export const useWebSocket = (url, options = {}) => {
       };
 
       ws.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event?.code ?? 1000, event?.reason ?? '');
+        console.log(
+          "WebSocket disconnected:",
+          event?.code ?? 1000,
+          event?.reason ?? "",
+        );
         setIsConnected(false);
-        setConnectionStatus('CLOSED');
+        setConnectionStatus("CLOSED");
 
         if (onClose) {
           onClose(event);
         }
 
         // Attempt to reconnect if not manually closed
-        if (autoReconnect && shouldReconnect.current && reconnectAttempts < maxReconnectAttempts) {
-          setConnectionStatus('reconnecting');
+        if (
+          autoReconnect &&
+          shouldReconnect.current &&
+          reconnectAttempts < maxReconnectAttempts
+        ) {
+          setConnectionStatus("reconnecting");
           setReconnectAttempts((prev) => prev + 1);
 
           reconnectTimeoutId.current = setTimeout(() => {
             connect();
           }, reconnectInterval);
         } else if (reconnectAttempts >= maxReconnectAttempts) {
-          setConnectionStatus('failed');
-          setError('Maximum reconnection attempts reached');
+          setConnectionStatus("failed");
+          setError("Maximum reconnection attempts reached");
         }
       };
 
       ws.current.onerror = (event) => {
-        console.error('WebSocket error:', event);
-        setError('WebSocket connection error');
-        setConnectionStatus('error');
+        console.error("WebSocket error:", event);
+        setError("WebSocket connection error");
+        setConnectionStatus("error");
 
         if (onError) {
           onError(event);
@@ -100,7 +108,7 @@ export const useWebSocket = (url, options = {}) => {
           const message = {
             data: event.data,
             timestamp: new Date().toISOString(),
-            type: 'message'
+            type: "message",
           };
 
           setLastMessage(message);
@@ -109,33 +117,44 @@ export const useWebSocket = (url, options = {}) => {
             onMessage(message);
           }
         } catch (err) {
-          console.error('Error processing WebSocket message:', err);
-          setError('Error processing message');
+          console.error("Error processing WebSocket message:", err);
+          setError("Error processing message");
         }
       };
-
     } catch (err) {
-      console.error('Error creating WebSocket connection:', err);
-      setError('Failed to create WebSocket connection');
-      setConnectionStatus('error');
+      console.error("Error creating WebSocket connection:", err);
+      setError("Failed to create WebSocket connection");
+      setConnectionStatus("error");
     }
-  }, [url, protocols, onOpen, onClose, onError, onMessage, reconnectAttempts, maxReconnectAttempts, reconnectInterval, autoReconnect]);
+  }, [
+    url,
+    protocols,
+    onOpen,
+    onClose,
+    onError,
+    onMessage,
+    reconnectAttempts,
+    maxReconnectAttempts,
+    reconnectInterval,
+    autoReconnect,
+  ]);
 
   // Send message through WebSocket
   const sendMessage = useCallback((message) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       try {
-        const messageToSend = typeof message === 'string' ? message : JSON.stringify(message);
+        const messageToSend =
+          typeof message === "string" ? message : JSON.stringify(message);
         ws.current.send(messageToSend);
         return true;
       } catch (err) {
-        console.error('Error sending WebSocket message:', err);
-        setError('Failed to send message');
+        console.error("Error sending WebSocket message:", err);
+        setError("Failed to send message");
         return false;
       }
     } else {
-      console.warn('WebSocket is not connected. Cannot send message.');
-      setError('WebSocket not connected');
+      console.warn("WebSocket is not connected. Cannot send message.");
+      setError("WebSocket not connected");
       return false;
     }
   }, []);
@@ -146,11 +165,11 @@ export const useWebSocket = (url, options = {}) => {
     clearReconnectTimeout();
 
     if (ws.current) {
-      ws.current.close(1000, 'Manual disconnect');
+      ws.current.close(1000, "Manual disconnect");
     }
 
     setIsConnected(false);
-    setConnectionStatus('CLOSED');
+    setConnectionStatus("CLOSED");
   }, [clearReconnectTimeout]);
 
   // Manually reconnect
@@ -172,15 +191,15 @@ export const useWebSocket = (url, options = {}) => {
     const readyState = getReadyState();
     switch (readyState) {
       case WebSocket.CONNECTING:
-        return 'CONNECTING';
+        return "CONNECTING";
       case WebSocket.OPEN:
-        return 'OPEN';
+        return "OPEN";
       case WebSocket.CLOSING:
-        return 'CLOSING';
+        return "CLOSING";
       case WebSocket.CLOSED:
-        return 'CLOSED';
+        return "CLOSED";
       default:
-        return 'UNKNOWN';
+        return "UNKNOWN";
     }
   }, [getReadyState]);
 
@@ -194,7 +213,7 @@ export const useWebSocket = (url, options = {}) => {
       shouldReconnect.current = false;
       clearReconnectTimeout();
       if (ws.current) {
-        ws.current.close(1000, 'Component unmounting');
+        ws.current.close(1000, "Component unmounting");
       }
     };
   }, [connect, clearReconnectTimeout]);
@@ -224,6 +243,6 @@ export const useWebSocket = (url, options = {}) => {
 
     // Helpers
     getReadyState,
-    getReadyStateString
+    getReadyStateString,
   };
 };

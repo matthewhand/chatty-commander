@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 test_web_mode.py
 
@@ -51,7 +73,9 @@ def test_bridge_event_requires_token(auth_client):
 
 def test_bridge_event_with_token(auth_client):
     event = {"platform": "p", "channel": "c", "user": "u", "text": "hi"}
-    resp = auth_client.post("/bridge/event", json=event, headers={"X-Bridge-Token": "secret"})
+    resp = auth_client.post(
+        "/bridge/event", json=event, headers={"X-Bridge-Token": "secret"}
+    )
     assert resp.status_code == 200
     assert resp.json()["ok"] is True
 
@@ -114,7 +138,9 @@ class WebModeValidator:
                     response = self.session.get(f"{self.base_url}{endpoint}", timeout=5)
 
                 if response.status_code == 200:
-                    logger.info(f"✅ {method} {endpoint} - Status: {response.status_code}")
+                    logger.info(
+                        f"✅ {method} {endpoint} - Status: {response.status_code}"
+                    )
                     # Validate JSON response
                     try:
                         data = response.json()
@@ -124,7 +150,9 @@ class WebModeValidator:
                     except json.JSONDecodeError:
                         logger.warning(f"   Non-JSON response for {endpoint}")
                 else:
-                    logger.error(f"❌ {method} {endpoint} - Status: {response.status_code}")
+                    logger.error(
+                        f"❌ {method} {endpoint} - Status: {response.status_code}"
+                    )
                     all_passed = False
 
             except Exception as e:
@@ -149,10 +177,14 @@ class WebModeValidator:
                 )
                 return True
             elif response.status_code == 200:
-                logger.info(f"✅ POST /api/v1/command - Success: {response.status_code}")
+                logger.info(
+                    f"✅ POST /api/v1/command - Success: {response.status_code}"
+                )
                 return True
             else:
-                logger.error(f"❌ POST /api/v1/command - Unexpected status: {response.status_code}")
+                logger.error(
+                    f"❌ POST /api/v1/command - Unexpected status: {response.status_code}"
+                )
                 return False
 
         except Exception as e:
@@ -175,7 +207,9 @@ class WebModeValidator:
                     response = await asyncio.wait_for(websocket.recv(), timeout=2.0)
                     logger.info(f"✅ WebSocket response received: {response[:100]}...")
                 except TimeoutError:
-                    logger.info("✅ WebSocket connection stable (no immediate response expected)")
+                    logger.info(
+                        "✅ WebSocket connection stable (no immediate response expected)"
+                    )
 
                 return True
 
@@ -207,7 +241,9 @@ class WebModeValidator:
         try:
             response = self.session.options(f"{self.base_url}/api/v1/status")
             cors_headers = {
-                "access-control-allow-origin": response.headers.get("access-control-allow-origin"),
+                "access-control-allow-origin": response.headers.get(
+                    "access-control-allow-origin"
+                ),
                 "access-control-allow-methods": response.headers.get(
                     "access-control-allow-methods"
                 ),
@@ -268,9 +304,13 @@ class WebModeValidator:
         logger.info(f"\n🎯 Overall: {passed}/{total} tests passed")
 
         if passed == total:
-            logger.info("🎉 All web mode tests passed! The application is ready for use.")
+            logger.info(
+                "🎉 All web mode tests passed! The application is ready for use."
+            )
         else:
-            logger.warning(f"⚠️  {total - passed} test(s) failed. Please check the logs above.")
+            logger.warning(
+                f"⚠️  {total - passed} test(s) failed. Please check the logs above."
+            )
 
 
 async def main():

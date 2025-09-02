@@ -10,8 +10,8 @@ Generated on 2025-08-21 09:00:07
 ## Quick Start
 
 1. Start the server: `python main.py --web --no-auth`
-2. Open the API docs: [http://localhost:8100/docs](http://localhost:8100/docs)
-3. Test the API: `curl http://localhost:8100/api/v1/status`
+1. Open the API docs: [http://localhost:8100/docs](http://localhost:8100/docs)
+1. Test the API: `curl http://localhost:8100/api/v1/status`
 
 ## Interactive Documentation
 

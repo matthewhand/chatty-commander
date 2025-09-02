@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -23,7 +45,9 @@ def build_openapi_schema() -> dict[str, Any]:
             },
             "license": {"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
         },
-        "servers": [{"url": "http://localhost:8100", "description": "Local development server"}],
+        "servers": [
+            {"url": "http://localhost:8100", "description": "Local development server"}
+        ],
         "paths": {
             "/api/v1/status": {
                 "get": {
@@ -35,11 +59,16 @@ def build_openapi_schema() -> dict[str, Any]:
                             "description": "System status retrieved successfully",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/SystemStatus"},
+                                    "schema": {
+                                        "$ref": "#/components/schemas/SystemStatus"
+                                    },
                                     "example": {
                                         "status": "running",
                                         "current_state": "idle",
-                                        "active_models": ["hey_chat_tee", "hey_khum_puter"],
+                                        "active_models": [
+                                            "hey_chat_tee",
+                                            "hey_khum_puter",
+                                        ],
                                         "uptime": "2h 15m 30s",
                                         "version": "0.2.0",
                                     },
@@ -59,7 +88,9 @@ def build_openapi_schema() -> dict[str, Any]:
                             "description": "Configuration retrieved successfully",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/Configuration"}
+                                    "schema": {
+                                        "$ref": "#/components/schemas/Configuration"
+                                    }
                                 }
                             },
                         }
@@ -93,10 +124,15 @@ def build_openapi_schema() -> dict[str, Any]:
                             "description": "Current state retrieved successfully",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/StateInfo"},
+                                    "schema": {
+                                        "$ref": "#/components/schemas/StateInfo"
+                                    },
                                     "example": {
                                         "current_state": "idle",
-                                        "active_models": ["hey_chat_tee", "hey_khum_puter"],
+                                        "active_models": [
+                                            "hey_chat_tee",
+                                            "hey_khum_puter",
+                                        ],
                                         "last_command": "hey_chat_tee",
                                         "timestamp": "2024-01-15T10:30:00Z",
                                     },
@@ -199,7 +235,10 @@ def build_openapi_schema() -> dict[str, Any]:
                                         "type": "object",
                                         "properties": {
                                             "status": {"type": "string"},
-                                            "timestamp": {"type": "string", "format": "date-time"},
+                                            "timestamp": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                            },
                                             "uptime": {"type": "string"},
                                         },
                                     },
@@ -246,7 +285,9 @@ def build_openapi_schema() -> dict[str, Any]:
                     "summary": "WebSocket connection",
                     "description": "Establishes a WebSocket connection for real-time updates including state changes, command detections, and system events.",
                     "tags": ["WebSocket"],
-                    "responses": {"101": {"description": "WebSocket connection established"}},
+                    "responses": {
+                        "101": {"description": "WebSocket connection established"}
+                    },
                 }
             },
         },
@@ -274,7 +315,10 @@ def build_openapi_schema() -> dict[str, Any]:
                             "type": "string",
                             "description": "System uptime in human-readable format",
                         },
-                        "version": {"type": "string", "description": "Application version"},
+                        "version": {
+                            "type": "string",
+                            "description": "Application version",
+                        },
                     },
                     "required": ["status", "current_state", "active_models"],
                 },
@@ -302,7 +346,10 @@ def build_openapi_schema() -> dict[str, Any]:
                                         "type": "string",
                                         "description": "Keyboard shortcut to execute",
                                     },
-                                    "url": {"type": "string", "description": "URL to request"},
+                                    "url": {
+                                        "type": "string",
+                                        "description": "URL to request",
+                                    },
                                 },
                             },
                             "description": "Mapping of voice commands to actions",
@@ -317,7 +364,10 @@ def build_openapi_schema() -> dict[str, Any]:
                 "StateInfo": {
                     "type": "object",
                     "properties": {
-                        "current_state": {"type": "string", "enum": ["idle", "computer", "chatty"]},
+                        "current_state": {
+                            "type": "string",
+                            "enum": ["idle", "computer", "chatty"],
+                        },
                         "active_models": {"type": "array", "items": {"type": "string"}},
                         "last_command": {
                             "type": "string",

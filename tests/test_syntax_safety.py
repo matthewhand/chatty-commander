@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 AST-based syntax safety regression tests.
 
@@ -36,7 +58,7 @@ def check_orphan_try_blocks(file_path: Path):
     An orphan try block is one that has neither handlers nor finalbody.
     """
     try:
-        with open(file_path, encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         tree = ast.parse(content, filename=str(file_path))
@@ -80,7 +102,9 @@ def test_no_orphan_try_blocks():
         error_msg = "Found orphan try blocks (try without except or finally):\n"
         for file_path, lines in all_orphans.items():
             error_msg += f"  {file_path}: lines {', '.join(map(str, lines))}\n"
-        error_msg += "\nOrphan try blocks are invalid Python syntax and should be fixed."
+        error_msg += (
+            "\nOrphan try blocks are invalid Python syntax and should be fixed."
+        )
         pytest.fail(error_msg)
 
 
@@ -95,7 +119,7 @@ def test_python_files_parse_successfully():
 
     for file_path in python_files:
         try:
-            with open(file_path, encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
             ast.parse(content, filename=str(file_path))
         except (SyntaxError, UnicodeDecodeError) as e:

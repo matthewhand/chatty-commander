@@ -1,5 +1,5 @@
 // Jest-dom adds custom jest matchers for asserting on DOM nodes.
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
 
 // Mock WebSocket for testing
 global.WebSocket = class MockWebSocket {
@@ -34,8 +34,8 @@ global.fetch = jest.fn(() =>
     ok: true,
     status: 200,
     json: () => Promise.resolve({}),
-    text: () => Promise.resolve(''),
-  })
+    text: () => Promise.resolve(""),
+  }),
 );
 
 // Mock localStorage
@@ -57,9 +57,9 @@ const sessionStorageMock = {
 global.sessionStorage = sessionStorageMock;
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,

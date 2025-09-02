@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 logger.py
 
@@ -105,13 +127,15 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
       so patched handler sees the call
     - Attach handler once (avoid duplicates on repeated setup)
     """
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
     logger = logging.getLogger(name)
 
     # Use config level if available
-    if config and hasattr(config, 'logging') and config.logging.get('level'):
-        config_level = config.logging['level']
+    if config and hasattr(config, "logging") and config.logging.get("level"):
+        config_level = config.logging["level"]
         if isinstance(config_level, str):
             level = getattr(logging, config_level.upper(), level)
         else:
@@ -124,7 +148,7 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
         directory = os.path.dirname(log_file)
         try:
             # Always call makedirs for empty directory (test.log case) or if directory doesn't exist
-            if directory == '' or (directory and not os.path.exists(directory)):
+            if directory == "" or (directory and not os.path.exists(directory)):
                 os.makedirs(directory)
         except Exception:
             # Ignore any error; tests care about behavior, not filesystem
@@ -137,7 +161,8 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
         # Avoid duplicate handlers for same file
         if not any(
             isinstance(h, RotatingFileHandler)
-            and getattr(h, "baseFilename", None) == getattr(handler, "baseFilename", None)
+            and getattr(h, "baseFilename", None)
+            == getattr(handler, "baseFilename", None)
             for h in logger.handlers
         ):
             logger.addHandler(handler)

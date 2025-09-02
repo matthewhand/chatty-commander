@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Unit tests for tab-aware context switching system.
 """
@@ -49,7 +71,9 @@ class TestContextIdentity:
 
     def test_created_at_default(self):
         """Test that created_at is set automatically."""
-        identity = ContextIdentity(platform=PlatformType.WEB, channel="chat", user_id="user789")
+        identity = ContextIdentity(
+            platform=PlatformType.WEB, channel="chat", user_id="user789"
+        )
 
         assert identity.created_at is not None
         assert isinstance(identity.created_at, float)
@@ -107,14 +131,16 @@ class TestContextManager:
     def config(self):
         """Test configuration."""
         return {
-            'personas': {
-                'general': {'system_prompt': 'You are a helpful assistant.'},
-                'philosopher': {'system_prompt': 'You are a philosophical advisor.'},
-                'discord_default': {'system_prompt': 'You are a Discord bot assistant.'},
-                'slack_default': {'system_prompt': 'You are a Slack app assistant.'},
+            "personas": {
+                "general": {"system_prompt": "You are a helpful assistant."},
+                "philosopher": {"system_prompt": "You are a philosophical advisor."},
+                "discord_default": {
+                    "system_prompt": "You are a Discord bot assistant."
+                },
+                "slack_default": {"system_prompt": "You are a Slack app assistant."},
             },
-            'default_persona': 'general',
-            'persistence_enabled': False,
+            "default_persona": "general",
+            "persistence_enabled": False,
         }
 
     @pytest.fixture
@@ -161,7 +187,9 @@ class TestContextManager:
         )
 
         # Switch to philosopher persona
-        success = context_manager.switch_persona(context.identity.context_key, "philosopher")
+        success = context_manager.switch_persona(
+            context.identity.context_key, "philosopher"
+        )
 
         assert success is True
         assert context.persona_id == "philosopher"
@@ -174,7 +202,9 @@ class TestContextManager:
         )
 
         # Try to switch to non-existent persona
-        success = context_manager.switch_persona(context.identity.context_key, "nonexistent")
+        success = context_manager.switch_persona(
+            context.identity.context_key, "nonexistent"
+        )
 
         assert success is False
         assert context.persona_id == "discord_default"  # Unchanged
@@ -232,21 +262,21 @@ class TestContextManager:
 
         stats = context_manager.get_stats()
 
-        assert stats['total_contexts'] == 3
-        assert stats['platform_distribution']['discord'] == 2
-        assert stats['platform_distribution']['slack'] == 1
-        assert stats['persona_distribution']['discord_default'] == 2
-        assert stats['persona_distribution']['slack_default'] == 1
-        assert stats['persistence_enabled'] is False
+        assert stats["total_contexts"] == 3
+        assert stats["platform_distribution"]["discord"] == 2
+        assert stats["platform_distribution"]["slack"] == 1
+        assert stats["persona_distribution"]["discord_default"] == 2
+        assert stats["persona_distribution"]["slack_default"] == 1
+        assert stats["persistence_enabled"] is False
 
     def test_persistence(self):
         """Test context persistence."""
         with tempfile.TemporaryDirectory() as temp_dir:
             config = {
-                'personas': {'general': {'system_prompt': 'You are helpful.'}},
-                'default_persona': 'general',
-                'persistence_enabled': True,
-                'persistence_path': str(Path(temp_dir) / 'contexts.json'),
+                "personas": {"general": {"system_prompt": "You are helpful."}},
+                "default_persona": "general",
+                "persistence_enabled": True,
+                "persistence_path": str(Path(temp_dir) / "contexts.json"),
             }
 
             # Create manager and add context
@@ -291,7 +321,10 @@ class TestContextManager:
 
         # Update with new username
         updated_context = context_manager.get_or_create_context(
-            platform=PlatformType.DISCORD, channel="test", user_id="user123", username="newusername"
+            platform=PlatformType.DISCORD,
+            channel="test",
+            user_id="user123",
+            username="newusername",
         )
 
         assert updated_context is context  # Same context object

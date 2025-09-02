@@ -59,7 +59,7 @@
 
 2. Run the web/CLI as usual; platform adapters will register when configured.
 
-3. Toggle avatar and personas via settings (to be wired to config/state manager).
+1. Toggle avatar and personas via settings (to be wired to config/state manager).
 
 ### Node.js bridge API (contract preview)
 
@@ -97,6 +97,7 @@ Note: Implementation is tracked in `TODO.md` under “OpenAI‑Agents advisor (M
   ```
 
 - Summarize via API:
+
   ```bash
   curl -s -X POST http://localhost:8100/api/v1/advisors/message \
     -H 'Content-Type: application/json' \

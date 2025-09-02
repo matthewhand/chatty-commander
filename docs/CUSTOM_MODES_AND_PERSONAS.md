@@ -32,7 +32,7 @@ $ chatty config --help
 
 - idle: listens for wakewords like "hey_chat_tee", "hey_khum_puter", and "okay_stop"
 - computer: listens for "oh_kay_screenshot" and "okay_stop"
-- chatty: no wakewords (chatty stops listening), persona "chatty", tools [avatar_talkinghead, tts, stt]
+- chatty: no wakewords (chatty stops listening), persona "chatty", tools \[avatar_talkinghead, tts, stt\]
 
 To view the config file path and contents during development, open `config.json` in the repo root.
 
@@ -103,7 +103,7 @@ You should see the state change to `focus`.
 5. Personas and tools per mode
 
 - Each mode can set a `persona` string key used by the advisors (OpenAI‑Agents) system.
-- `tools` is a logical list of tool tags available in a mode (e.g., ["browser", "avatar_talkinghead"]).
+- `tools` is a logical list of tool tags available in a mode (e.g., \["browser", "avatar_talkinghead"\]).
 - Advisors are enabled/configured via the `advisors` section in `config.json` (see docs/OPENAI_AGENTS_ADVISOR.md).
 
 6. Switching modes from an advisor tool (preview)

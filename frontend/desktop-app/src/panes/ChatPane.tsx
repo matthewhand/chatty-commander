@@ -1,64 +1,72 @@
-import React, { useState, KeyboardEvent } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { useChatStore, ChatMessage } from '../stores/chat';
-import { sse } from '../lib/sse';
+import React, { useState, KeyboardEvent } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { useChatStore, ChatMessage } from "../stores/chat";
+import { sse } from "../lib/sse";
 
 export default function ChatPane() {
-  const messages = useChatStore(s => s.messages);
-  const push = useChatStore(s => s.push);
-  const update = useChatStore(s => s.update);
-  const [text, setText] = useState('');
+  const messages = useChatStore((s) => s.messages);
+  const push = useChatStore((s) => s.push);
+  const update = useChatStore((s) => s.update);
+  const [text, setText] = useState("");
 
   const send = async () => {
     const content = text.trim();
     if (!content) return;
     const userMsg: ChatMessage = {
       id: uuidv4(),
-      role: 'user',
+      role: "user",
       createdAt: new Date().toISOString(),
-      content: [{ type: 'text', text: content }],
+      content: [{ type: "text", text: content }],
     };
     push(userMsg);
-    setText('');
+    setText("");
 
     let assistantId: string | null = null;
 
-    await sse('/api/chat', { messages: [userMsg] }, {
-      chunk: ({ id, delta }) => {
-        if (!assistantId) {
-          assistantId = id;
+    await sse(
+      "/api/chat",
+      { messages: [userMsg] },
+      {
+        chunk: ({ id, delta }) => {
+          if (!assistantId) {
+            assistantId = id;
+            push({
+              id,
+              role: "assistant",
+              createdAt: new Date().toISOString(),
+              content: [{ type: "text", text: "" }],
+            });
+          }
+          update(id, (m) => ({
+            ...m,
+            content: [
+              { type: "text", text: (m.content?.[0]?.text ?? "") + delta },
+            ],
+          }));
+        },
+        tool_call: ({ id }) => {
           push({
             id,
-            role: 'assistant',
+            role: "tool",
             createdAt: new Date().toISOString(),
-            content: [{ type: 'text', text: '' }],
+            content: [{ type: "text", text: "" }],
           });
-        }
-        update(id, m => ({
-          ...m,
-          content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
-        }));
+        },
+        tool_result: ({ id, delta }) => {
+          update(id, (m) => ({
+            ...m,
+            content: [
+              { type: "text", text: (m.content?.[0]?.text ?? "") + delta },
+            ],
+          }));
+        },
+        done: () => {},
       },
-      tool_call: ({ id }) => {
-        push({
-          id,
-          role: 'tool',
-          createdAt: new Date().toISOString(),
-          content: [{ type: 'text', text: '' }],
-        });
-      },
-      tool_result: ({ id, delta }) => {
-        update(id, m => ({
-          ...m,
-          content: [{ type: 'text', text: (m.content?.[0]?.text ?? '') + delta }],
-        }));
-      },
-      done: () => {},
-    });
+    );
   };
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
     }
@@ -67,7 +75,7 @@ export default function ChatPane() {
   return (
     <section className="h-full flex flex-col bg-gray-900" aria-label="Chat">
       <div className="flex-1 overflow-auto p-2">
-        {messages.map(m => (
+        {messages.map((m) => (
           <div key={m.id} className="mb-2">
             <div className="text-xs text-gray-400">{m.role}</div>
             <div>{m.content[0]?.text}</div>
@@ -79,7 +87,7 @@ export default function ChatPane() {
           className="w-full p-2 bg-gray-800 text-gray-100 border border-gray-700"
           placeholder="Type a message"
           value={text}
-          onChange={e => setText(e.target.value)}
+          onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKey}
         />
         <button

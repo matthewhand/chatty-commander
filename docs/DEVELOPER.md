@@ -217,21 +217,25 @@ Our testing approach ensures reliability and maintainability:
 ### Test Categories
 
 1. **🔒 Guard Tests** (`test_web_server_guards.py`)
+
    - Import safety validation
    - Router inclusion verification
    - Idempotency testing
 
-2. **🛡️ Syntax Safety** (`test_syntax_safety.py`)
+1. **🛡️ Syntax Safety** (`test_syntax_safety.py`)
+
    - AST-based regression testing
    - Orphan try/except block detection
    - Code quality enforcement
 
-3. **🔗 Integration Tests**
+1. **🔗 Integration Tests**
+
    - End-to-end workflow validation
    - External service integration
    - API contract testing
 
-4. **⚡ Performance Tests**
+1. **⚡ Performance Tests**
+
    - Voice processing latency
    - Memory usage monitoring
    - Concurrent request handling
@@ -393,9 +397,9 @@ app.include_router(websocket_router, prefix="/ws")
 ### Adding New Voice Models
 
 1. **Train ONNX Model**: Create your wake word detection model
-2. **Model Placement**: Add to appropriate `models-*` directory
-3. **Configuration**: Update `config.json` with model mapping
-4. **Testing**: Add tests for new wake word detection
+1. **Model Placement**: Add to appropriate `models-*` directory
+1. **Configuration**: Update `config.json` with model mapping
+1. **Testing**: Add tests for new wake word detection
 
 ### Creating Custom Actions
 
@@ -516,10 +520,10 @@ spec:
 ### Pull Request Process
 
 1. **🔀 Fork & Branch**: Create feature branch from `main`
-2. **💻 Develop**: Implement changes with tests
-3. **🧪 Test**: Ensure all tests pass (`make gate && make guard`)
-4. **📝 Document**: Update documentation as needed
-5. **🔍 Review**: Submit PR with clear description
+1. **💻 Develop**: Implement changes with tests
+1. **🧪 Test**: Ensure all tests pass (`make gate && make guard`)
+1. **📝 Document**: Update documentation as needed
+1. **🔍 Review**: Submit PR with clear description
 
 ### Code Review Checklist
 
@@ -538,6 +542,6 @@ spec:
 - **🐛 [Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 - **🎯 [Roadmap](docs/DEVELOPMENT_ROADMAP.md)** - Future development plans
 
----
+______________________________________________________________________
 
 **Ready to contribute?** Check out our [Contributing Guide](CONTRIBUTING.md) and join our community of developers building the future of voice-controlled computing! 🚀

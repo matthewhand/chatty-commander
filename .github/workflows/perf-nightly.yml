@@ -2,7 +2,7 @@ name: Perf Nightly
 
 on:
   schedule:
-    - cron: '0 3 * * *'  # daily at 03:00 UTC
+    - cron: "0 3 * * *" # daily at 03:00 UTC
 
 jobs:
   perf:
@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install project
         run: |

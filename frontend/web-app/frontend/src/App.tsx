@@ -1,23 +1,28 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { CssBaseline, Box } from "@mui/material";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Import pages
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import ConfigurationPage from './pages/ConfigurationPage';
-import AudioSettingsPage from './pages/AudioSettingsPage';
-import PersonasPage from './pages/PersonasPage';
+import LoginPage from "./pages/LoginPage";
+import DashboardPage from "./pages/DashboardPage";
+import ConfigurationPage from "./pages/ConfigurationPage";
+import AudioSettingsPage from "./pages/AudioSettingsPage";
+import PersonasPage from "./pages/PersonasPage";
 
 // Import components
-import Navigation from './components/Navigation';
-import ProtectedRoute from './components/ProtectedRoute';
-import { WebSocketProvider } from './components/WebSocketProvider';
+import Navigation from "./components/Navigation";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { WebSocketProvider } from "./components/WebSocketProvider";
 
 // Import hooks
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from "./hooks/useAuth";
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -32,16 +37,16 @@ const queryClient = new QueryClient({
 // Create Material-UI theme
 const darkTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: "dark",
     primary: {
-      main: '#90caf9',
+      main: "#90caf9",
     },
     secondary: {
-      main: '#f48fb1',
+      main: "#f48fb1",
     },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
+      default: "#121212",
+      paper: "#1e1e1e",
     },
   },
   typography: {
@@ -57,14 +62,14 @@ const darkTheme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          backgroundImage: 'none',
+          backgroundImage: "none",
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          textTransform: 'none',
+          textTransform: "none",
         },
       },
     },
@@ -73,26 +78,30 @@ const darkTheme = createTheme({
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
-  const noAuth = process.env.REACT_APP_NO_AUTH === 'true';
+  const noAuth = process.env.REACT_APP_NO_AUTH === "true";
   const showNav = isAuthenticated || noAuth;
 
   return (
     <Router>
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Box sx={{ display: "flex", minHeight: "100vh" }}>
         {showNav && <Navigation />}
         <Box
           component="main"
           sx={{
             flexGrow: 1,
             p: showNav ? 3 : 0,
-            ml: showNav ? '240px' : 0,
+            ml: showNav ? "240px" : 0,
           }}
         >
           <Routes>
             <Route
               path="/login"
               element={
-                (isAuthenticated || noAuth) ? <Navigate to="/dashboard" replace /> : <LoginPage />
+                isAuthenticated || noAuth ? (
+                  <Navigate to="/dashboard" replace />
+                ) : (
+                  <LoginPage />
+                )
               }
             />
             <Route
@@ -130,7 +139,10 @@ function AppContent() {
             <Route
               path="/"
               element={
-                <Navigate to={(isAuthenticated || noAuth) ? '/dashboard' : '/login'} replace />
+                <Navigate
+                  to={isAuthenticated || noAuth ? "/dashboard" : "/login"}
+                  replace
+                />
               }
             />
           </Routes>

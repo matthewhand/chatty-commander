@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Tests for web server router guards and safety patterns.
 
 These tests ensure that:
@@ -11,10 +33,7 @@ import ast
 import pathlib
 import py_compile
 import re
-import sys
 from pathlib import Path
-from typing import Any
-from unittest.mock import patch
 
 import pytest
 from fastapi import APIRouter, FastAPI
@@ -33,7 +52,9 @@ def test_optional_router_includes_are_guarded():
     text = SERVER.read_text()
     # No direct include_router(version_router|metrics_router|agents_router)
     # unless preceded nearby by our globals().get guard.
-    danger = re.compile(r'app\.include_router\((version_router|metrics_router|agents_router)\)')
+    danger = re.compile(
+        r"app\.include_router\((version_router|metrics_router|agents_router)\)"
+    )
     lines = text.splitlines()
     violations = []
     for i, ln in enumerate(lines):
@@ -286,7 +307,10 @@ class TestStaticSafety:
 
         class IncludeRouterVisitor(ast.NodeVisitor):
             def visit_Call(self, node):
-                if isinstance(node.func, ast.Attribute) and node.func.attr == "include_router":
+                if (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "include_router"
+                ):
                     include_router_calls.append(node)
                 self.generic_visit(node)
 
@@ -325,7 +349,9 @@ class TestStaticSafety:
             def visit_ExceptHandler(self, node):
                 if node.type and isinstance(node.type, ast.Name):
                     if node.type.id == "NameError":
-                        pytest.fail(f"Found NameError exception handler at line {node.lineno}")
+                        pytest.fail(
+                            f"Found NameError exception handler at line {node.lineno}"
+                        )
                 self.generic_visit(node)
 
         visitor = ExceptVisitor()
@@ -343,7 +369,7 @@ class TestContractCompliance:
 
         # Basic contract: should return an app-like object
         assert app is not None
-        assert hasattr(app, 'routes')
+        assert hasattr(app, "routes")
 
         # Try to use TestClient only if we have real FastAPI
         try:
@@ -356,14 +382,18 @@ class TestContractCompliance:
                 # FastAPI automatically provides /docs and /openapi.json
                 response = client.get("/docs")
                 # Should not crash (might be 200 or redirect)
-                assert response.status_code in [200, 307, 404]  # 404 is acceptable if docs disabled
+                assert response.status_code in [
+                    200,
+                    307,
+                    404,
+                ]  # 404 is acceptable if docs disabled
 
                 # Test openapi endpoint
                 response = client.get("/openapi.json")
                 assert response.status_code in [200, 404]  # 404 acceptable if disabled
         except ImportError:
             # If FastAPI is not available, just verify the stub works
-            assert hasattr(app, 'include_router')
+            assert hasattr(app, "include_router")
             # Should not crash when calling methods
             app.include_router(None)
 
@@ -382,7 +412,9 @@ class TestContractCompliance:
         try:
             from fastapi import FastAPI as RealFastAPI
 
-            if isinstance(app_with_auth, RealFastAPI) and isinstance(app_without_auth, RealFastAPI):
+            if isinstance(app_with_auth, RealFastAPI) and isinstance(
+                app_without_auth, RealFastAPI
+            ):
                 client_with_auth = TestClient(app_with_auth)
                 client_without_auth = TestClient(app_without_auth)
 
@@ -395,5 +427,5 @@ class TestContractCompliance:
                 assert response2.status_code in [200, 307, 404]
         except ImportError:
             # If FastAPI is not available, just verify both apps work
-            assert hasattr(app_with_auth, 'routes')
-            assert hasattr(app_without_auth, 'routes')
+            assert hasattr(app_with_auth, "routes")
+            assert hasattr(app_without_auth, "routes")

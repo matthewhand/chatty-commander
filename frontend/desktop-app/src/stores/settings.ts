@@ -1,13 +1,13 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface SettingsStore {
-  theme: 'dark';
+  theme: "dark";
   reducedMotion: boolean;
   telemetryOptIn: boolean;
 }
 
 export const useSettingsStore = create<SettingsStore>(() => ({
-  theme: 'dark',
+  theme: "dark",
   reducedMotion: false,
   telemetryOptIn: false,
 }));

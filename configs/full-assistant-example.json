@@ -1,9 +1,9 @@
 {
   "profile_name": "Full AI Assistant",
   "description": "Complete ChattyCommander setup with voice, web UI, avatar, and smart home integration",
-  
+
   "default_state": "idle",
-  
+
   "model_actions": {
     "hello": {
       "message": {

@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Lightweight metrics registry, middleware, and router for ChattyCommander.
 
@@ -109,7 +131,20 @@ class Gauge(Metric):
 @dataclass
 class HistogramBuckets:
     edges: list[float] = field(
-        default_factory=lambda: [0.001, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]
+        default_factory=lambda: [
+            0.001,
+            0.005,
+            0.01,
+            0.02,
+            0.05,
+            0.1,
+            0.2,
+            0.5,
+            1.0,
+            2.0,
+            5.0,
+            10.0,
+        ]
     )  # seconds
 
     def clamp(self, value: float) -> float:
@@ -259,12 +294,15 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
             "Request duration in seconds",
         )
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Response:  # type: ignore[name-defined]
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Any]
+    ) -> Response:  # type: ignore[name-defined]
         # path variable intentionally unused to minimize attribute access overhead
         method = getattr(request, "method", "GET")
         # Measure with unknown route first; route set after call_next
         with Timer(
-            self.h_latency, labels={"route": "unknown", "method": method, "service": self.service}
+            self.h_latency,
+            labels={"route": "unknown", "method": method, "service": self.service},
         ):
             response = await call_next(request)
         status = getattr(response, "status_code", 0)
@@ -339,7 +377,9 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
                         f"{name}_bucket{{{_lbl(lbl)}}} {counts[idx] if idx < len(counts) else 0}"
                     )
                 lbl = {**labels, "le": "+Inf"}
-                lines.append(f"{name}_bucket{{{_lbl(lbl)}}} {counts[-1] if counts else 0}")
+                lines.append(
+                    f"{name}_bucket{{{_lbl(lbl)}}} {counts[-1] if counts else 0}"
+                )
                 lines.append(f"{name}_sum{{{_lbl(labels)}}} {sum_val}")
                 lines.append(f"{name}_count{{{_lbl(labels)}}} {count_val}")
         content = "\n".join(lines) + "\n"
@@ -349,7 +389,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
 
 
 def _quote(v: str) -> str:
-    q = v.replace("\\", "\\\\").replace("\"", "\\\"")
+    q = v.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{q}"'
 
 

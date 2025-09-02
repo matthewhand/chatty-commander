@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Voice processing pipeline that combines wake word detection and transcription.
 
@@ -55,7 +77,9 @@ class VoicePipeline:
         # State
         self._listening = False
         self._processing = False
-        self._callbacks: list[Callable[[str, str], None]] = []  # (command, transcription)
+        self._callbacks: list[
+            Callable[[str, str], None]
+        ] = []  # (command, transcription)
 
         # Setup wake word detection
         self.wake_detector.add_callback(self._on_wake_word_detected)
@@ -201,7 +225,7 @@ class VoicePipeline:
 
         try:
             # Get available commands from config
-            model_actions = getattr(self.config_manager, 'model_actions', {})
+            model_actions = getattr(self.config_manager, "model_actions", {})
             if not model_actions:
                 logger.debug("No model actions available")
                 return None
@@ -261,7 +285,7 @@ class VoicePipeline:
 
     def trigger_mock_wake_word(self, wake_word: str = "hey_jarvis") -> None:
         """Trigger mock wake word detection (for testing)."""
-        if hasattr(self.wake_detector, 'trigger_wake_word'):
+        if hasattr(self.wake_detector, "trigger_wake_word"):
             self.wake_detector.trigger_wake_word(wake_word)
         else:
             logger.warning("Mock wake word trigger not available")
@@ -290,14 +314,14 @@ class VoicePipeline:
             "processing": self._processing,
             "wake_detector_available": (
                 self.wake_detector.is_listening()
-                if hasattr(self.wake_detector, 'is_listening')
+                if hasattr(self.wake_detector, "is_listening")
                 else True
             ),
             "transcriber_available": self.transcriber.is_available(),
             "transcriber_info": self.transcriber.get_backend_info(),
             "available_wake_words": (
                 self.wake_detector.get_available_models()
-                if hasattr(self.wake_detector, 'get_available_models')
+                if hasattr(self.wake_detector, "get_available_models")
                 else []
             ),
         }

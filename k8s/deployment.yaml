@@ -65,61 +65,61 @@ spec:
         app: chatty-commander
     spec:
       containers:
-      - name: chatty-commander
-        image: chatty-commander:latest
-        ports:
-        - containerPort: 8100
-        env:
-        - name: PYTHONPATH
-          value: "/app/src"
-        - name: OPENAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: chatty-commander-secrets
-              key: openai-api-key
-        - name: ADVISORS_ENABLED
-          value: "true"
-        - name: ADVISORS_MODEL
-          value: "gpt-3.5-turbo"
-        - name: ADVISORS_API_MODE
-          value: "completion"
-        volumeMounts:
-        - name: config-volume
-          mountPath: /app/config.json
-          subPath: config.json
-        - name: data-volume
-          mountPath: /app/data
-        - name: logs-volume
-          mountPath: /app/logs
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /api/v1/status
-            port: 8100
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /api/v1/status
-            port: 8100
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - name: chatty-commander
+          image: chatty-commander:latest
+          ports:
+            - containerPort: 8100
+          env:
+            - name: PYTHONPATH
+              value: "/app/src"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: chatty-commander-secrets
+                  key: openai-api-key
+            - name: ADVISORS_ENABLED
+              value: "true"
+            - name: ADVISORS_MODEL
+              value: "gpt-3.5-turbo"
+            - name: ADVISORS_API_MODE
+              value: "completion"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config.json
+              subPath: config.json
+            - name: data-volume
+              mountPath: /app/data
+            - name: logs-volume
+              mountPath: /app/logs
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/status
+              port: 8100
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/status
+              port: 8100
+            initialDelaySeconds: 5
+            periodSeconds: 5
       volumes:
-      - name: config-volume
-        configMap:
-          name: chatty-commander-config
-      - name: data-volume
-        persistentVolumeClaim:
-          claimName: chatty-commander-data
-      - name: logs-volume
-        persistentVolumeClaim:
-          claimName: chatty-commander-logs
+        - name: config-volume
+          configMap:
+            name: chatty-commander-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: chatty-commander-data
+        - name: logs-volume
+          persistentVolumeClaim:
+            claimName: chatty-commander-logs
 ---
 apiVersion: v1
 kind: Service
@@ -129,9 +129,9 @@ spec:
   selector:
     app: chatty-commander
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8100
+    - protocol: TCP
+      port: 80
+      targetPort: 8100
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
@@ -143,20 +143,20 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   rules:
-  - host: chatty-commander.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: chatty-commander-service
-            port:
-              number: 80
+    - host: chatty-commander.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: chatty-commander-service
+                port:
+                  number: 80
   tls:
-  - hosts:
-    - chatty-commander.example.com
-    secretName: chatty-commander-tls
+    - hosts:
+        - chatty-commander.example.com
+      secretName: chatty-commander-tls
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

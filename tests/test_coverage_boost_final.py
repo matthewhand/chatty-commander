@@ -1,10 +1,29 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Final targeted tests to boost coverage on specific modules."""
 
 import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from chatty_commander.voice.tts import MockTTSBackend, Pyttsx3Backend, TextToSpeech
 
@@ -13,7 +32,7 @@ class TestCoverageBoostFinal:
     # Voice TTS Tests - These are working
     def test_pyttsx3_backend_init_failure(self):
         """Test Pyttsx3Backend initialization failure"""
-        with patch('chatty_commander.voice.tts.pyttsx3') as mock_pyttsx3:
+        with patch("chatty_commander.voice.tts.pyttsx3") as mock_pyttsx3:
             mock_pyttsx3.init.side_effect = Exception("Init failed")
 
             backend = Pyttsx3Backend()
@@ -21,7 +40,7 @@ class TestCoverageBoostFinal:
 
     def test_pyttsx3_backend_no_pyttsx3(self):
         """Test Pyttsx3Backend when pyttsx3 is not available"""
-        with patch('chatty_commander.voice.tts.pyttsx3', None):
+        with patch("chatty_commander.voice.tts.pyttsx3", None):
             backend = Pyttsx3Backend()
             assert backend._engine is None
 
@@ -29,7 +48,7 @@ class TestCoverageBoostFinal:
         """Test TextToSpeech speak method with exception"""
         tts = TextToSpeech(backend="mock")
 
-        with patch.object(tts.backend, 'speak', side_effect=Exception("TTS error")):
+        with patch.object(tts.backend, "speak", side_effect=Exception("TTS error")):
             # Should not raise exception, should log error
             tts.speak("Test message")
 
@@ -55,7 +74,7 @@ class TestCoverageBoostFinal:
         executor = CommandExecutor(config, model_manager, state_manager)
 
         # Test error reporting with different scenarios
-        with patch('logging.critical') as mock_log:
+        with patch("logging.critical") as mock_log:
             executor.report_error("test_cmd", "Test error message")
             mock_log.assert_called()
 
@@ -171,8 +190,8 @@ class TestCoverageBoostFinal:
         manager = ModelManager(config)
 
         # Test basic properties
-        assert hasattr(manager, 'config')
-        assert hasattr(manager, 'models')
+        assert hasattr(manager, "config")
+        assert hasattr(manager, "models")
 
         # Test load_models with empty list
         try:
@@ -197,7 +216,7 @@ class TestCoverageBoostFinal:
 
         # Test error reporting with different parameters
         error = ValueError("Test error")
-        with patch('logging.error'):
+        with patch("logging.error"):
             report_error(error, config=config)
 
         # Test logger with file handler
@@ -227,12 +246,12 @@ class TestCoverageBoostFinal:
         executor = CommandExecutor(config, model_manager, state_manager)
 
         # Test with different command configurations
-        config.model_actions['test_url'] = {'url': 'http://example.com'}
+        config.model_actions["test_url"] = {"url": "http://example.com"}
 
-        with patch('requests.get') as mock_get:
+        with patch("requests.get") as mock_get:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_get.return_value = mock_response
 
-            result = executor.execute_command('test_url')
+            result = executor.execute_command("test_url")
             assert isinstance(result, bool)

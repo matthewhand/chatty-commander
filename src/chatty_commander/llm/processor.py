@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Command processor that uses LLM to interpret natural language commands.
 
@@ -19,7 +41,9 @@ logger = logging.getLogger(__name__)
 class CommandProcessor:
     """Processes natural language commands using LLM."""
 
-    def __init__(self, llm_manager: LLMManager | None = None, config_manager=None, **llm_kwargs):
+    def __init__(
+        self, llm_manager: LLMManager | None = None, config_manager=None, **llm_kwargs
+    ):
         self.llm_manager = llm_manager or LLMManager(**llm_kwargs)
         self.config_manager = config_manager
 
@@ -35,9 +59,11 @@ class CommandProcessor:
             return
 
         try:
-            model_actions = getattr(self.config_manager, 'model_actions', {})
+            model_actions = getattr(self.config_manager, "model_actions", {})
             self._available_commands = model_actions.copy()
-            logger.debug(f"Updated available commands: {list(self._available_commands.keys())}")
+            logger.debug(
+                f"Updated available commands: {list(self._available_commands.keys())}"
+            )
         except Exception as e:
             logger.error(f"Failed to update available commands: {e}")
 
@@ -97,7 +123,9 @@ class CommandProcessor:
 
         return None
 
-    def _llm_command_interpretation(self, user_input: str) -> tuple[str | None, float, str]:
+    def _llm_command_interpretation(
+        self, user_input: str
+    ) -> tuple[str | None, float, str]:
         """Use LLM to interpret complex commands."""
         try:
             prompt = self._build_interpretation_prompt(user_input)
@@ -148,7 +176,7 @@ Response:"""
         """Parse LLM response to extract command information."""
         try:
             # Try to extract JSON from response
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            json_match = re.search(r"\{.*\}", response, re.DOTALL)
             if not json_match:
                 return None, 0.0, "No JSON found in LLM response"
 
@@ -175,7 +203,9 @@ Response:"""
             logger.error(f"Failed to parse LLM response: {e}")
             return None, 0.0, f"Response parsing error: {e}"
 
-    def get_command_suggestions(self, partial_input: str, limit: int = 5) -> list[dict[str, Any]]:
+    def get_command_suggestions(
+        self, partial_input: str, limit: int = 5
+    ) -> list[dict[str, Any]]:
         """Get command suggestions for partial input."""
         suggestions = []
         partial_lower = partial_input.lower()

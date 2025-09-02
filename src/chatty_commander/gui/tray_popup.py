@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from __future__ import annotations
 
 import threading
@@ -42,7 +64,9 @@ def _load_settings(config: Any) -> dict[str, Any]:
     # Coerce types
     settings["url"] = str(settings.get("url", defaults["url"]))
     settings["transparent"] = bool(settings.get("transparent", defaults["transparent"]))
-    settings["always_on_top"] = bool(settings.get("always_on_top", defaults["always_on_top"]))
+    settings["always_on_top"] = bool(
+        settings.get("always_on_top", defaults["always_on_top"])
+    )
     try:
         settings["width"] = int(settings.get("width", defaults["width"]))
         settings["height"] = int(settings.get("height", defaults["height"]))
@@ -136,7 +160,9 @@ def run_tray_popup(config: Any, logger) -> int:
     def on_open(_icon, _item):
         # open window on a background thread to avoid blocking the tray loop
         settings = _load_settings(config)
-        threading.Thread(target=_open_window, args=(settings, logger), daemon=True).start()
+        threading.Thread(
+            target=_open_window, args=(settings, logger), daemon=True
+        ).start()
 
     def on_quit(_icon, _item):
         _icon.stop()
@@ -145,7 +171,9 @@ def run_tray_popup(config: Any, logger) -> int:
         MenuItem("Open", on_open, default=True),
         MenuItem("Quit", on_quit),
     )
-    icon = pystray.Icon("chatty_commander", icon=icon_img, title="ChattyCommander", menu=menu)
+    icon = pystray.Icon(
+        "chatty_commander", icon=icon_img, title="ChattyCommander", menu=menu
+    )
 
     # Run tray loop in foreground until quit selected
     icon.run()

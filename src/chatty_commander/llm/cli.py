@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 CLI commands for LLM integration.
 
@@ -33,11 +55,17 @@ def add_llm_subcommands(subparsers) -> None:
 
     # Test command
     test_parser = llm_subparsers.add_parser(
-        "test", help="Test LLM backends", description="Test LLM backends with sample prompts."
+        "test",
+        help="Test LLM backends",
+        description="Test LLM backends with sample prompts.",
     )
     test_parser.add_argument("--backend", help="Specific backend to test")
-    test_parser.add_argument("--prompt", default="Hello, how are you?", help="Test prompt")
-    test_parser.add_argument("--mock", action="store_true", help="Use mock backend only")
+    test_parser.add_argument(
+        "--prompt", default="Hello, how are you?", help="Test prompt"
+    )
+    test_parser.add_argument(
+        "--mock", action="store_true", help="Use mock backend only"
+    )
 
     # Process command
     process_parser = llm_subparsers.add_parser(
@@ -46,7 +74,9 @@ def add_llm_subcommands(subparsers) -> None:
         description="Test command processing with natural language input.",
     )
     process_parser.add_argument("text", help="Natural language command to process")
-    process_parser.add_argument("--mock", action="store_true", help="Use mock backend only")
+    process_parser.add_argument(
+        "--mock", action="store_true", help="Use mock backend only"
+    )
 
     # Backends command
     llm_subparsers.add_parser(
@@ -59,7 +89,7 @@ def add_llm_subcommands(subparsers) -> None:
 def handle_llm_command(args, config_manager=None) -> None:
     """Handle LLM-related CLI commands."""
 
-    if not hasattr(args, 'llm_command') or not args.llm_command:
+    if not hasattr(args, "llm_command") or not args.llm_command:
         print("No LLM command specified. Use --help for available commands.")
         return
 
@@ -190,7 +220,9 @@ def _handle_llm_process(args, config_manager=None) -> None:
     try:
         # Create LLM manager and processor
         llm_manager = LLMManager(use_mock=args.mock)
-        processor = CommandProcessor(llm_manager=llm_manager, config_manager=config_manager)
+        processor = CommandProcessor(
+            llm_manager=llm_manager, config_manager=config_manager
+        )
 
         # Show available commands
         status = processor.get_processor_status()
@@ -217,7 +249,9 @@ def _handle_llm_process(args, config_manager=None) -> None:
         if suggestions:
             print("\n💡 Suggestions:")
             for suggestion in suggestions[:3]:
-                print(f"   - {suggestion['command']} (confidence: {suggestion['confidence']:.2f})")
+                print(
+                    f"   - {suggestion['command']} (confidence: {suggestion['confidence']:.2f})"
+                )
 
     except Exception as e:
         print(f"❌ Command processing failed: {e}")
@@ -274,7 +308,9 @@ def demo_llm_integration(config_manager=None) -> None:
     try:
         # Create LLM manager and processor
         llm_manager = LLMManager(use_mock=True)
-        processor = CommandProcessor(llm_manager=llm_manager, config_manager=config_manager)
+        processor = CommandProcessor(
+            llm_manager=llm_manager, config_manager=config_manager
+        )
 
         # Show status
         status = processor.get_processor_status()

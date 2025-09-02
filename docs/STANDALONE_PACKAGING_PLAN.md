@@ -94,10 +94,10 @@ CI/CD plan
 - GitHub Actions matrix: {ubuntu-latest, windows-latest, macos-latest}
 - Steps:
   1. Checkout
-  2. Setup Python 3.11
-  3. pip install .[dev] pyinstaller
-  4. Build using spec
-  5. Upload artifacts on push tags
+  1. Setup Python 3.11
+  1. pip install .\[dev\] pyinstaller
+  1. Build using spec
+  1. Upload artifacts on push tags
 - Optional: code signing and notarization (macOS), Authenticode (Windows)
 
 Smoke tests for artifacts

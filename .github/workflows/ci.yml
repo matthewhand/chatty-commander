@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
 
 env:
@@ -18,143 +18,143 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install uv
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Cache dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/uv
-        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-uv-
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
 
-    - name: Install dependencies
-      run: uv sync --dev
+      - name: Install dependencies
+        run: uv sync --dev
 
-    - name: Run linting
-      run: |
-        uv run ruff check .
-        uv run black --check .
+      - name: Run linting
+        run: |
+          uv run ruff check .
+          uv run black --check .
 
-    - name: Run type checking
-      run: uv run mypy src/
+      - name: Run type checking
+        run: uv run mypy src/
 
-    - name: Run security audit
-      run: uv run bandit -r src/ -f json -o security-report.json || true
+      - name: Run security audit
+        run: uv run bandit -r src/ -f json -o security-report.json || true
 
-    - name: Run tests with coverage
-      run: uv run pytest --cov=src --cov-report=xml --cov-report=term-missing
+      - name: Run tests with coverage
+        run: uv run pytest --cov=src --cov-report=xml --cov-report=term-missing
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
-    - name: Upload security report
-      uses: actions/upload-artifact@v3
-      with:
-        name: security-report-${{ matrix.python-version }}
-        path: security-report.json
-      if: always()
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report-${{ matrix.python-version }}
+          path: security-report.json
+        if: always()
 
   performance-test:
     runs-on: ubuntu-latest
     needs: test
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install uv
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Install dependencies
-      run: uv sync --dev
+      - name: Install dependencies
+        run: uv sync --dev
 
-    - name: Run performance benchmarks
-      run: uv run pytest -k "perf" --benchmark-only --benchmark-json=benchmark.json
+      - name: Run performance benchmarks
+        run: uv run pytest -k "perf" --benchmark-only --benchmark-json=benchmark.json
 
-    - name: Upload benchmark results
-      uses: actions/upload-artifact@v3
-      with:
-        name: benchmark-results
-        path: benchmark.json
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: benchmark.json
 
   build:
     runs-on: ubuntu-latest
     needs: [test, performance-test]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install uv
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Install dependencies
-      run: uv sync
+      - name: Install dependencies
+        run: uv sync
 
-    - name: Build package
-      run: uv build
+      - name: Build package
+        run: uv build
 
-    - name: Test package installation
-      run: |
-        pip install dist/*.whl
-        python -c "import chatty_commander; print('Package installed successfully')"
+      - name: Test package installation
+        run: |
+          pip install dist/*.whl
+          python -c "import chatty_commander; print('Package installed successfully')"
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: dist
-        path: dist/
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/
 
   docker:
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: false
-        tags: chatty-commander:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: chatty-commander:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Test Docker image
-      run: |
-        docker run --rm chatty-commander --help
+      - name: Test Docker image
+        run: |
+          docker run --rm chatty-commander --help
 
   release:
     runs-on: ubuntu-latest
@@ -162,23 +162,23 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Create GitHub release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.run_number }}
-        release_name: Release v${{ github.run_number }}
-        body: |
-          ## Changes
-          - Automated release from CI/CD pipeline
-          - All tests passed
-          - Security audit completed
-          - Performance benchmarks executed
-        draft: false
-        prerelease: false
+      - name: Create GitHub release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          body: |
+            ## Changes
+            - Automated release from CI/CD pipeline
+            - All tests passed
+            - Security audit completed
+            - Performance benchmarks executed
+          draft: false
+          prerelease: false
 
   deploy-staging:
     runs-on: ubuntu-latest
@@ -187,10 +187,10 @@ jobs:
     environment: staging
 
     steps:
-    - name: Deploy to staging
-      run: |
-        echo "Deploying to staging environment..."
-        # Add your staging deployment commands here
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your staging deployment commands here
 
   notify:
     runs-on: ubuntu-latest
@@ -198,8 +198,8 @@ jobs:
     if: always()
 
     steps:
-    - name: Notify on failure
-      if: failure()
-      run: |
-        echo "Pipeline failed! Check the logs for details."
-        # Add notification logic here (Slack, Discord, etc.)
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Pipeline failed! Check the logs for details."
+          # Add notification logic here (Slack, Discord, etc.)

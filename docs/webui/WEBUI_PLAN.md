@@ -9,11 +9,11 @@ Create a modern web-based interface that mirrors the desktop GUI functionality, 
 ### Core Components
 
 1. **FastAPI Web Server** - RESTful API backend with OpenAPI auto-documentation
-2. **React Frontend** - Modern SPA with real-time updates
-3. **WebSocket Integration** - Live status monitoring and real-time feedback
-4. **Authentication Layer** - JWT-based security for remote access
-5. **Configuration API** - CRUD operations for all settings
-6. **Service Management API** - Start/stop/monitor voice recognition service
+1. **React Frontend** - Modern SPA with real-time updates
+1. **WebSocket Integration** - Live status monitoring and real-time feedback
+1. **Authentication Layer** - JWT-based security for remote access
+1. **Configuration API** - CRUD operations for all settings
+1. **Service Management API** - Start/stop/monitor voice recognition service
 
 ### Technology Stack
 
@@ -175,16 +175,19 @@ test("complete workflow", async ({ page }) => {
 ### Demo Scenarios
 
 1. **Configuration Management**
+
    - Show adding/editing voice commands through web interface
    - Demonstrate state transitions and model assignments
    - Live configuration updates without service restart
 
-2. **Service Monitoring**
+1. **Service Monitoring**
+
    - Real-time service status dashboard
    - Live audio level visualization
    - Voice command recognition testing
 
-3. **Remote Administration**
+1. **Remote Administration**
+
    - Secure login and authentication
    - Multi-user access with different permissions
    - Mobile-responsive interface demonstration
@@ -238,7 +241,7 @@ webui/
 ### Technical Metrics
 
 - [ ] **API Coverage**: 100% of desktop GUI features
-- [ ] **Response Time**: < 200ms for configuration operations
+- [ ] **Response Time**: \< 200ms for configuration operations
 - [ ] **Test Coverage**: > 90% backend, > 85% frontend
 - [ ] **Security Score**: A+ rating on security scanners
 

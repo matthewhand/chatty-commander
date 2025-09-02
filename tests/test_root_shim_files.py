@@ -1,7 +1,29 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Tests for root-level shim files with 0% coverage."""
 
 import warnings
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -15,7 +37,6 @@ class TestConfigShim:
             warnings.simplefilter("always")
 
             # Import the config module (this should trigger the warning)
-            import config
 
             # Verify deprecation warning was issued
             assert len(w) == 1
@@ -91,7 +112,7 @@ class TestOtherRootShimFiles:
         except ImportError:
             pytest.skip("conftest.py not found or not importable")
 
-    @patch('sys.path')
+    @patch("sys.path")
     def test_root_level_imports_with_path_manipulation(self, mock_path):
         """Test importing root-level files with path manipulation."""
         # This tests the scenario where root-level files might need
@@ -122,8 +143,8 @@ class TestRootLevelFileStructure:
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         expected_files = [
-            'config.py',
-            'conftest.py',
+            "config.py",
+            "conftest.py",
         ]
 
         existing_files = []
@@ -133,7 +154,7 @@ class TestRootLevelFileStructure:
                 existing_files.append(filename)
 
         # At least config.py should exist based on our earlier test
-        assert 'config.py' in existing_files
+        assert "config.py" in existing_files
 
     def test_root_level_file_permissions(self):
         """Test that root-level Python files have correct permissions."""
@@ -141,7 +162,7 @@ class TestRootLevelFileStructure:
         import stat
 
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        config_path = os.path.join(project_root, 'config.py')
+        config_path = os.path.join(project_root, "config.py")
 
         if os.path.exists(config_path):
             file_stat = os.stat(config_path)
@@ -155,11 +176,11 @@ class TestRootLevelFileStructure:
         import os
 
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        config_path = os.path.join(project_root, 'config.py')
+        config_path = os.path.join(project_root, "config.py")
 
         if os.path.exists(config_path):
             try:
-                with open(config_path, encoding='utf-8') as f:
+                with open(config_path, encoding="utf-8") as f:
                     content = f.read()
                     # Should be able to read as UTF-8
                     assert isinstance(content, str)
@@ -179,7 +200,7 @@ class TestLegacyFileCompatibility:
             import config
 
             # Test that config module has expected attributes
-            assert hasattr(config, '__name__')
+            assert hasattr(config, "__name__")
         except ImportError:
             # This is expected if the shim is working correctly
             pass
@@ -196,7 +217,9 @@ class TestLegacyFileCompatibility:
 
                 # Should have at least one deprecation warning
                 deprecation_warnings = [
-                    warning for warning in w if issubclass(warning.category, DeprecationWarning)
+                    warning
+                    for warning in w
+                    if issubclass(warning.category, DeprecationWarning)
                 ]
                 assert len(deprecation_warnings) >= 1
 

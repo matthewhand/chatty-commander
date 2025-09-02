@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 command_executor.py
 
@@ -9,12 +31,14 @@ import requests
 import subprocess
 import logging
 import os
+
 try:
     import pyautogui
 except ImportError:
     pyautogui = None
     logging.warning("pyautogui not available. Keybinding commands will be skipped.")
 from config import Config
+
 
 class CommandExecutor:
     def __init__(self, config, model_manager, state_manager):
@@ -30,17 +54,19 @@ class CommandExecutor:
         command_action = self.config.model_actions.get(command_name)
 
         # Set default DISPLAY if not set
-        if 'DISPLAY' not in os.environ:
-            os.environ['DISPLAY'] = ':0'
+        if "DISPLAY" not in os.environ:
+            os.environ["DISPLAY"] = ":0"
 
-        if 'keypress' in command_action:
-            if pyautogui: # Only attempt if pyautogui is available
-                self._execute_keybinding(command_name, command_action['keypress'])
+        if "keypress" in command_action:
+            if pyautogui:  # Only attempt if pyautogui is available
+                self._execute_keybinding(command_name, command_action["keypress"])
             else:
-                logging.error(f"Cannot execute keypress command '{command_name}': pyautogui is not installed or available.")
+                logging.error(
+                    f"Cannot execute keypress command '{command_name}': pyautogui is not installed or available."
+                )
                 self.report_error(command_name, "pyautogui not available")
-        elif 'url' in command_action:
-            self._execute_url(command_name, command_action['url'])
+        elif "url" in command_action:
+            self._execute_url(command_name, command_action["url"])
 
         self.post_execute_hook(command_name)
 
@@ -70,8 +96,8 @@ class CommandExecutor:
         try:
             if isinstance(keys, list):
                 pyautogui.hotkey(*keys)
-            elif '+' in keys:
-                pyautogui.hotkey(*keys.split('+'))
+            elif "+" in keys:
+                pyautogui.hotkey(*keys.split("+"))
             else:
                 pyautogui.press(keys)
             logging.info(f"Executed keybinding for {command_name}: {keys}")
@@ -95,7 +121,8 @@ class CommandExecutor:
         """
         logging.critical(f"Error in {command_name}: {error_message}")
 
+
 # Example usage:
 if __name__ == "__main__":
     executor = CommandExecutor()
-    executor.execute_command('screenshot')  # Assuming a command mapped in config
+    executor.execute_command("screenshot")  # Assuming a command mapped in config

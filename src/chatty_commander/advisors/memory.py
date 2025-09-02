@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from __future__ import annotations
 
 import json
@@ -31,10 +53,16 @@ class MemoryStore:
     def _ctx(self, platform: str, channel: str, user: str) -> str:
         return f"{platform}:{channel}:{user}"
 
-    def add(self, platform: str, channel: str, user: str, role: str, content: str) -> None:
+    def add(
+        self, platform: str, channel: str, user: str, role: str, content: str
+    ) -> None:
         key = self._ctx(platform, channel, user)
         q = self._store.setdefault(key, deque(maxlen=self._max))
-        q.append(MemoryItem(role=role, content=content, timestamp=datetime.utcnow().isoformat()))
+        q.append(
+            MemoryItem(
+                role=role, content=content, timestamp=datetime.utcnow().isoformat()
+            )
+        )
         if self._persist:
             try:
                 with open(self._path, "a", encoding="utf-8") as f:
@@ -52,7 +80,9 @@ class MemoryStore:
             except Exception:
                 pass
 
-    def get(self, platform: str, channel: str, user: str, limit: int = 20) -> list[MemoryItem]:
+    def get(
+        self, platform: str, channel: str, user: str, limit: int = 20
+    ) -> list[MemoryItem]:
         key = self._ctx(platform, channel, user)
         items = list(self._store.get(key, deque()))
         if limit <= 0:

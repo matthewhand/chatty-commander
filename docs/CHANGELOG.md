@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0] - 2024-12-19
+## \[0.2.0\] - 2024-12-19
 
 ### Added
 
@@ -34,7 +34,7 @@
 - Isolated test stores for deterministic agent testing
 - OpenAPI schema parity validation
 
-## [0.1.0] - Initial Release
+## \[0.1.0\] - Initial Release
 
 - Basic CLI and web mode functionality
 - Configuration management

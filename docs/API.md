@@ -274,9 +274,9 @@ ws.onmessage = function (event) {
 ### Common Issues
 
 1. **Connection Refused**: Ensure the server is running with `python main.py --web`
-2. **CORS Errors**: Use `--no-auth` flag for development
-3. **WebSocket Connection Failed**: Check firewall settings and ensure port 8100 is accessible
-4. **Command Not Found**: Verify the command exists in your configuration
+1. **CORS Errors**: Use `--no-auth` flag for development
+1. **WebSocket Connection Failed**: Check firewall settings and ensure port 8100 is accessible
+1. **Command Not Found**: Verify the command exists in your configuration
 
 ### Debug Mode
 
@@ -445,9 +445,9 @@ ws.onmessage = function (event) {
 ### Common Issues
 
 1. **Connection Refused**: Ensure the server is running with `python main.py --web`
-2. **CORS Errors**: Use `--no-auth` flag for development
-3. **WebSocket Connection Failed**: Check firewall settings and ensure port 8100 is accessible
-4. **Command Not Found**: Verify the command exists in your configuration
+1. **CORS Errors**: Use `--no-auth` flag for development
+1. **WebSocket Connection Failed**: Check firewall settings and ensure port 8100 is accessible
+1. **Command Not Found**: Verify the command exists in your configuration
 
 ### Debug Mode
 

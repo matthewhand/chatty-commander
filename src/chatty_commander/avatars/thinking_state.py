@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Thinking State Management for TalkingHead Avatar
 
@@ -49,13 +71,13 @@ class AgentStateInfo:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         data = asdict(self)
-        data['state'] = self.state.value
+        data["state"] = self.state.value
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'AgentStateInfo':
+    def from_dict(cls, data: dict[str, Any]) -> "AgentStateInfo":
         """Create from dictionary."""
-        data['state'] = ThinkingState(data['state'])
+        data["state"] = ThinkingState(data["state"])
         return cls(**data)
 
 
@@ -71,10 +93,15 @@ class ThinkingStateManager:
         self.avatar_mappings: dict[str, str] = {}  # agent_id -> avatar_id
         self.broadcast_callbacks: set[Callable[[dict[str, Any]], None]] = set()
 
-    def register_agent(self, agent_id: str, persona_id: str, avatar_id: str | None = None) -> None:
+    def register_agent(
+        self, agent_id: str, persona_id: str, avatar_id: str | None = None
+    ) -> None:
         """Register a new agent with optional avatar mapping."""
         self.agent_states[agent_id] = AgentStateInfo(
-            agent_id=agent_id, avatar_id=avatar_id, persona_id=persona_id, state=ThinkingState.IDLE
+            agent_id=agent_id,
+            avatar_id=avatar_id,
+            persona_id=persona_id,
+            state=ThinkingState.IDLE,
         )
 
         if avatar_id:
@@ -120,14 +147,16 @@ class ThinkingStateManager:
 
     def add_broadcast_callback(
         self,
-        callback: Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]],
+        callback: Callable[[dict[str, Any]], None]
+        | Callable[[dict[str, Any]], Awaitable[None]],
     ) -> None:
         """Add a callback to receive state change broadcasts."""
         self.broadcast_callbacks.add(callback)
 
     def remove_broadcast_callback(
         self,
-        callback: Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]],
+        callback: Callable[[dict[str, Any]], None]
+        | Callable[[dict[str, Any]], Awaitable[None]],
     ) -> None:
         """Remove a broadcast callback."""
         self.broadcast_callbacks.discard(callback)
@@ -163,7 +192,9 @@ class ThinkingStateManager:
     # Tool calling lifecycle events
     def start_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
         self.set_agent_state(
-            agent_id, ThinkingState.TOOL_CALLING, f"Calling tool {tool_name or ''}".strip()
+            agent_id,
+            ThinkingState.TOOL_CALLING,
+            f"Calling tool {tool_name or ''}".strip(),
         )
         self._broadcast(
             {
@@ -192,7 +223,11 @@ class ThinkingStateManager:
         self._broadcast(
             {
                 "type": "handoff_start",
-                "data": {"agent_id": agent_id, "to_persona": to_agent_persona, "reason": reason},
+                "data": {
+                    "agent_id": agent_id,
+                    "to_persona": to_agent_persona,
+                    "reason": reason,
+                },
                 "timestamp": time.time(),
             }
         )

@@ -1,11 +1,30 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Comprehensive tests for core modules: ModelManager, StateManager, CommandExecutor."""
 
-import asyncio
-import logging
-import os
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -45,11 +64,15 @@ class TestModelManagerComprehensive:
             (system_dir / "model2.onnx").touch()
             (chat_dir / "model3.onnx").touch()
 
-            yield {"general": str(general_dir), "system": str(system_dir), "chat": str(chat_dir)}
+            yield {
+                "general": str(general_dir),
+                "system": str(system_dir),
+                "chat": str(chat_dir),
+            }
 
     def test_model_manager_initialization(self, mock_config):
         """Test ModelManager initialization."""
-        with patch.object(ModelManager, 'reload_models'):
+        with patch.object(ModelManager, "reload_models"):
             manager = ModelManager(mock_config)
 
         assert manager.config == mock_config
@@ -66,8 +89,10 @@ class TestModelManagerComprehensive:
         manager = ModelManager(config)
         assert manager.config == config
 
-    @patch('chatty_commander.app.model_manager.Model')
-    def test_reload_models_success(self, mock_model_class, mock_config, temp_model_dirs):
+    @patch("chatty_commander.app.model_manager.Model")
+    def test_reload_models_success(
+        self, mock_model_class, mock_config, temp_model_dirs
+    ):
         """Test successful model reloading."""
         mock_config.general_models_path = temp_model_dirs["general"]
         mock_config.system_models_path = temp_model_dirs["system"]
@@ -90,7 +115,7 @@ class TestModelManagerComprehensive:
         manager.reload_models("nonexistent")
         assert "nonexistent" not in manager.models
 
-    @patch('chatty_commander.app.model_manager.os.path.exists')
+    @patch("chatty_commander.app.model_manager.os.path.exists")
     def test_reload_models_missing_directory(self, mock_exists, mock_config):
         """Test reloading models when directory doesn't exist."""
         mock_exists.return_value = False
@@ -101,27 +126,29 @@ class TestModelManagerComprehensive:
         # Should handle missing directory gracefully
         assert manager.models["general"] == {}
 
-    @patch('chatty_commander.app.model_manager.Model')
-    def test_reload_models_with_exception(self, mock_model_class, mock_config, temp_model_dirs):
+    @patch("chatty_commander.app.model_manager.Model")
+    def test_reload_models_with_exception(
+        self, mock_model_class, mock_config, temp_model_dirs
+    ):
         """Test model reloading when Model creation fails."""
         mock_config.general_models_path = temp_model_dirs["general"]
         mock_model_class.side_effect = Exception("Model loading failed")
 
-        with patch.object(ModelManager, 'reload_models', return_value=None):
+        with patch.object(ModelManager, "reload_models", return_value=None):
             manager = ModelManager(mock_config)
 
         # Should handle exceptions gracefully
         manager.reload_models("general")
         assert manager.models["general"] == {}
 
-    @patch('chatty_commander.app.model_manager.random.choice')
-    @patch('chatty_commander.app.model_manager.random.random')
+    @patch("chatty_commander.app.model_manager.random.choice")
+    @patch("chatty_commander.app.model_manager.random.random")
     def test_listen_for_commands_demo_mode(self, mock_random, mock_choice, mock_config):
         """Test listen_for_commands in demo mode."""
         mock_choice.return_value = "test_command"
         mock_random.return_value = 0.01  # Less than 0.05 to trigger command return
 
-        with patch.object(ModelManager, 'reload_models'):
+        with patch.object(ModelManager, "reload_models"):
             manager = ModelManager(mock_config)
         # Set up active_models to have some models
         manager.active_models = {"test_command": Mock()}
@@ -134,12 +161,16 @@ class TestModelManagerComprehensive:
     async def test_async_listen_for_commands_demo_mode(self, mock_config):
         """Test async_listen_for_commands in demo mode."""
 
-        with patch('chatty_commander.app.model_manager.random.choice') as mock_choice:
-            with patch('chatty_commander.app.model_manager.random.random') as mock_random:
+        with patch("chatty_commander.app.model_manager.random.choice") as mock_choice:
+            with patch(
+                "chatty_commander.app.model_manager.random.random"
+            ) as mock_random:
                 mock_choice.return_value = "test_command"
-                mock_random.return_value = 0.01  # Less than 0.05 to trigger command return
+                mock_random.return_value = (
+                    0.01  # Less than 0.05 to trigger command return
+                )
 
-                with patch.object(ModelManager, 'reload_models'):
+                with patch.object(ModelManager, "reload_models"):
                     manager = ModelManager(mock_config)
                 # Set up active_models to have some models
                 manager.active_models = {"test_command": Mock()}
@@ -153,13 +184,18 @@ class TestModelManagerComprehensive:
         mock_model = AsyncMock()
         mock_model.predict.return_value = "detected_command"
 
-        with patch.object(ModelManager, 'reload_models'):
+        with patch.object(ModelManager, "reload_models"):
             manager = ModelManager(mock_config)
         manager.models["general"]["test_model"] = mock_model
         manager.active_models = {"test_command": mock_model}
 
-        with patch('chatty_commander.app.model_manager.random.choice', return_value="test_command"):
-            with patch('chatty_commander.app.model_manager.random.random', return_value=0.01):
+        with patch(
+            "chatty_commander.app.model_manager.random.choice",
+            return_value="test_command",
+        ):
+            with patch(
+                "chatty_commander.app.model_manager.random.random", return_value=0.01
+            ):
                 result = await manager.async_listen_for_commands()
 
         # Should return the mocked command
@@ -233,7 +269,7 @@ class TestStateManagerComprehensive:
 
     def test_state_manager_initialization_no_config(self):
         """Test StateManager initialization without config."""
-        with patch('chatty_commander.app.state_manager.Config') as mock_config_class:
+        with patch("chatty_commander.app.state_manager.Config") as mock_config_class:
             mock_config = Mock()
             mock_config.default_state = "idle"
             mock_config.state_models = {"idle": []}
@@ -308,7 +344,7 @@ class TestStateManagerComprehensive:
 
     def test_update_state_toggle_mode(self, mock_config):
         """Test toggle_mode command."""
-        delattr(mock_config, 'state_transitions')
+        delattr(mock_config, "state_transitions")
         manager = StateManager(mock_config)
 
         # Start in idle, toggle should go to computer
@@ -462,26 +498,26 @@ class TestCommandExecutorComprehensive:
         with pytest.raises(TypeError):
             executor.execute_command(None)
 
-    @patch('chatty_commander.app.command_executor.pyautogui')
+    @patch("chatty_commander.app.command_executor.pyautogui")
     def test_execute_keypress_command(self, mock_pyautogui, mock_managers):
         """Test executing keypress command."""
         config, model_manager, state_manager = mock_managers
         executor = CommandExecutor(config, model_manager, state_manager)
 
-        with patch.object(executor, '_execute_keybinding') as mock_keybinding:
+        with patch.object(executor, "_execute_keybinding") as mock_keybinding:
             result = executor.execute_command("keypress_command")
 
             assert result is True
             mock_keybinding.assert_called_once_with("keypress_command", "space")
 
-    @patch('chatty_commander.app.command_executor.requests.get')
+    @patch("chatty_commander.app.command_executor.requests.get")
     def test_execute_url_command(self, mock_get, mock_managers):
         """Test executing URL command."""
         config, model_manager, state_manager = mock_managers
         executor = CommandExecutor(config, model_manager, state_manager)
         mock_get.return_value.status_code = 200
 
-        with patch.object(executor, '_execute_url', return_value=True) as mock_url:
+        with patch.object(executor, "_execute_url", return_value=True) as mock_url:
             result = executor.execute_command("url_command")
 
             assert result is True
@@ -493,7 +529,9 @@ class TestCommandExecutorComprehensive:
         executor = CommandExecutor(config, model_manager, state_manager)
 
         # Custom message commands are not supported by current implementation
-        with pytest.raises(TypeError, match="Command 'custom_message' has an invalid type"):
+        with pytest.raises(
+            TypeError, match="Command 'custom_message' has an invalid type"
+        ):
             executor.execute_command("custom_message")
 
     def test_execute_command_nonexistent(self, mock_managers):
@@ -521,7 +559,7 @@ class TestCommandExecutorComprehensive:
         # Should not raise any errors
         executor.post_execute_hook("test_command")
 
-    @patch('chatty_commander.app.command_executor.pyautogui')
+    @patch("chatty_commander.app.command_executor.pyautogui")
     def test_execute_keypress_string_keys(self, mock_pyautogui, mock_managers):
         """Test _execute_keypress with string keys."""
         config, model_manager, state_manager = mock_managers
@@ -530,7 +568,7 @@ class TestCommandExecutorComprehensive:
         executor._execute_keybinding("test_command", "space")
         mock_pyautogui.press.assert_called_once_with("space")
 
-    @patch('chatty_commander.app.command_executor.pyautogui')
+    @patch("chatty_commander.app.command_executor.pyautogui")
     def test_execute_keypress_hotkey(self, mock_pyautogui, mock_managers):
         """Test _execute_keypress with hotkey combination."""
         config, model_manager, state_manager = mock_managers
@@ -539,7 +577,7 @@ class TestCommandExecutorComprehensive:
         executor._execute_keybinding("test_command", ["ctrl", "c"])
         mock_pyautogui.hotkey.assert_called_once_with("ctrl", "c")
 
-    @patch('chatty_commander.app.command_executor.pyautogui')
+    @patch("chatty_commander.app.command_executor.pyautogui")
     def test_execute_keypress_list_keys(self, mock_pyautogui, mock_managers):
         """Test _execute_keypress with list of keys."""
         config, model_manager, state_manager = mock_managers
@@ -553,7 +591,7 @@ class TestCommandExecutorComprehensive:
         config, model_manager, state_manager = mock_managers
         executor = CommandExecutor(config, model_manager, state_manager)
 
-        with patch('chatty_commander.app.command_executor.pyautogui', None):
+        with patch("chatty_commander.app.command_executor.pyautogui", None):
             # Should not raise, just report error
             executor._execute_keybinding("test_command", "space")
 
@@ -564,21 +602,25 @@ class TestCommandExecutorComprehensive:
 
         # The current implementation doesn't validate key types, it just passes them to pyautogui
         # This test should be removed or modified to test actual error conditions
-        with patch('chatty_commander.app.command_executor.pyautogui') as mock_pyautogui:
+        with patch("chatty_commander.app.command_executor.pyautogui") as mock_pyautogui:
             mock_pyautogui.press.side_effect = Exception("Invalid key")
-            executor._execute_keybinding("test_command", 123)  # Should not raise, just report error
+            executor._execute_keybinding(
+                "test_command", 123
+            )  # Should not raise, just report error
 
     def test_report_error(self, mock_managers):
         """Test report_error method."""
         config, model_manager, state_manager = mock_managers
         executor = CommandExecutor(config, model_manager, state_manager)
 
-        with patch('logging.critical') as mock_log_critical:
+        with patch("logging.critical") as mock_log_critical:
             executor.report_error("test_command", "Test error message")
 
-            mock_log_critical.assert_called_once_with("Error in test_command: Test error message")
+            mock_log_critical.assert_called_once_with(
+                "Error in test_command: Test error message"
+            )
 
-    @patch('chatty_commander.app.command_executor.requests.get')
+    @patch("chatty_commander.app.command_executor.requests.get")
     def test_execute_url_success(self, mock_get, mock_managers):
         """Test _execute_url with successful request."""
         config, model_manager, state_manager = mock_managers
@@ -592,7 +634,7 @@ class TestCommandExecutorComprehensive:
 
         mock_get.assert_called_once_with("https://example.com")
 
-    @patch('chatty_commander.app.command_executor.requests.get')
+    @patch("chatty_commander.app.command_executor.requests.get")
     def test_execute_url_failure(self, mock_get, mock_managers):
         """Test _execute_url with failed request."""
         config, model_manager, state_manager = mock_managers
@@ -603,7 +645,7 @@ class TestCommandExecutorComprehensive:
         executor._execute_url("test_command", "https://example.com")
         # Should handle exception gracefully by reporting error
 
-    @patch('chatty_commander.app.command_executor.subprocess.run')
+    @patch("chatty_commander.app.command_executor.subprocess.run")
     def test_execute_shell_success(self, mock_run, mock_managers):
         """Test _execute_shell with successful command."""
         config, model_manager, state_manager = mock_managers
@@ -620,7 +662,7 @@ class TestCommandExecutorComprehensive:
         assert result is True
         mock_run.assert_called_once()
 
-    @patch('chatty_commander.app.command_executor.subprocess.run')
+    @patch("chatty_commander.app.command_executor.subprocess.run")
     def test_execute_shell_failure(self, mock_run, mock_managers):
         """Test _execute_shell with failed command."""
         config, model_manager, state_manager = mock_managers

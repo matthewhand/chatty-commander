@@ -8,9 +8,9 @@ export interface SSEHandlers {
 
 export async function sse(url: string, body: any, handlers: SSEHandlers) {
   const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
 
   if (!res.body) {
@@ -20,31 +20,33 @@ export async function sse(url: string, body: any, handlers: SSEHandlers) {
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
+  let buffer = "";
 
   try {
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split('\n\n');
-      buffer = parts.pop() || '';
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
       for (const part of parts) {
-        const lines = part.split('\n');
-        let event = '';
-        let data = '';
+        const lines = part.split("\n");
+        let event = "";
+        let data = "";
         for (const line of lines) {
-          if (line.startsWith('event:')) event = line.replace('event:', '').trim();
-          if (line.startsWith('data:')) data += line.replace('data:', '').trim();
+          if (line.startsWith("event:"))
+            event = line.replace("event:", "").trim();
+          if (line.startsWith("data:"))
+            data += line.replace("data:", "").trim();
         }
         const json = data ? JSON.parse(data) : {};
-        if (event === 'chunk') {
+        if (event === "chunk") {
           handlers.chunk?.(json);
-        } else if (event === 'tool_call') {
+        } else if (event === "tool_call") {
           handlers.tool_call?.(json);
-        } else if (event === 'tool_result') {
+        } else if (event === "tool_result") {
           handlers.tool_result?.(json);
-        } else if (event === 'done') {
+        } else if (event === "done") {
           handlers.done?.();
         }
       }

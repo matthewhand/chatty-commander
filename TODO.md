@@ -3,6 +3,7 @@
 Last updated: 2025-08-15 by OpenAI Assistant
 
 Legend:
+
 - [x] Completed
 - [ ] Pending
 - Now = Current sprint focus (max 7 items)
@@ -14,6 +15,7 @@ Legend:
 Goal: deliver easy-to-install packages across environments.
 
 ### Tasks
+
 - [ ] **Pinokio Ecosystem Installer** – set up an installer compatible with the Pinokio computer ecosystem.
 - [ ] **Docker & Compose** – provide Docker images and a docker-compose configuration for deployment.
 - [ ] **Native Installers** – experiment with PyInstaller, cx_Freeze, Electron-builder, pkg, and similar tools to generate platform-specific binaries.
@@ -23,6 +25,7 @@ Goal: deliver easy-to-install packages across environments.
 Goal: allow users to queue `--yolo -p` prompts that spawn Dockerized Codex tasks, surface rolling 3-word summaries, and expose a kill button.
 
 ### Tasks
+
 - [ ] **Scheduler & Queue** – launch container jobs with prompt, model selection (`gpt-oss:20b` default), and persistent metadata.
 - [ ] **Log Tail & Summarizer** – buffer last _N_ lines, invoke LLM to output enforced 3-word summaries at intervals.
 - [ ] **UI Badge & Stop Control** – display rotating summaries and a square-in-circle stop button that terminates the container.
@@ -31,6 +34,7 @@ Goal: allow users to queue `--yolo -p` prompts that spawn Dockerized Codex tasks
 ## Verification Audit (Old TODO → Current Implementation)
 
 Backend Web Mode Implementation
+
 - [x] Add --web flag to main.py to start FastAPI server
   Evidence: main entrypoints and routing in [main.py](main.py:221); web server creation in [src/chatty_commander/web/web_mode.py](src/chatty_commander/web/web_mode.py:1)
 - [x] Remove TypeScript backend in webui/backend
@@ -43,14 +47,16 @@ Backend Web Mode Implementation
   Evidence: existing server scaffolding and callbacks in [main.py](main.py:110)
 
 OpenAPI/Swagger exposure
+
 - [x] Ensure /docs and /openapi.json are exposed with tests
   Evidence:
   - Implementation: [src/chatty_commander/web/web_mode.py](src/chatty_commander/web/web_mode.py:116)
   - Tests (passing): [tests/test_openapi_endpoints.py](tests/test_openapi_endpoints.py:22)
-  Command:
+    Command:
   - uv run pytest -q tests/test_openapi_endpoints.py
 
 CLI Enhancement & User Experience
+
 - [x] Argument validation with helpful errors
   Evidence: custom HelpfulArgumentParser and error flows in [cli.py](cli.py:51)
 - [ ] Add comprehensive --help and detailed descriptions
@@ -59,12 +65,14 @@ CLI Enhancement & User Experience
   Evidence: interactive shell implemented in [main.py](main.py:278), tab-completion present; verify tests in “Now”.
 
 Frontend Integration
+
 - [x] Remove proxy pointing to TS backend; ensure correct backend port
   Evidence: TS backend removed; “WebUI connectivity sanity” tracked in “Now”.
 - [ ] Implement no-auth mode in frontend for dev
   Evidence: backend side present; frontend toggle TBD. Keep in “Next”.
 
 Testing & Quality Assurance
+
 - [x] Add code coverage reporting target and Make targets (planned)
   Evidence: “Testing & QA (Execution Plan)” and Make suggestions; tool in [src/chatty_commander/tools/run_tests_with_coverage.py](src/chatty_commander/tools/run_tests_with_coverage.py:1)
 - [x] Resolve import/test discovery issues
@@ -73,16 +81,19 @@ Testing & Quality Assurance
   Evidence: [tests/test_cors_no_auth.py](tests/test_cors_no_auth.py:1) updated to import chatty_commander.web.web_mode
 
 Model and Executor Refactors
+
 - [x] Use patchable Model in model manager (for tests)
   Evidence: Model() constructor used in [src/chatty_commander/app/model_manager.py](src/chatty_commander/app/model_manager.py:89)
 - [x] Make pyautogui/requests patchable for keybinding and URL actions
-  Evidence: _get_pyautogui/_get_requests in [src/chatty_commander/app/command_executor.py](src/chatty_commander/app/command_executor.py:290)
+  Evidence: \_get_pyautogui/\_get_requests in [src/chatty_commander/app/command_executor.py](src/chatty_commander/app/command_executor.py:290)
 
 Documentation consolidation
+
 - [x] Consolidate documentation planning into actionable items
   Evidence: current “Documentation” section with API parity generation [src/chatty_commander/tools/generate_api_docs.py](src/chatty_commander/tools/generate_api_docs.py:1)
 
 Notes
+
 - Long-horizon roadmap items (analytics, community, business, extensive UI testing plans) were moved out of TODO and should be tracked in WEBUI_ROADMAP.md and WEBUI_TEST_PLAN.md.
 
 ## Design summary: OpenAI-Agents advisor
@@ -100,6 +111,7 @@ Notes
 ### Milestone A — MVP foundations
 
 - [x] SDK integration
+
   - Wire `openai-agents` as a service module; enable MCP, handoff, and `as_tool`
   - Config gate: `advisors.enabled`
   - Acceptance:
@@ -112,6 +124,7 @@ Notes
     - Feature can be toggled on/off via config
 
 - [ ] LLM API mode & providers
+
   - Default to `completion`; optional `responses` via `advisors.llm_api_mode`
   - BYO-LLM provider wiring (OpenAI-compatible base URL + key; local models e.g., GPT-OSS20B)
   - Config keys: `advisors.model`, `advisors.provider.base_url`, `advisors.provider.api_key`
@@ -120,70 +133,83 @@ Notes
     - E2E test prompts a local provider and returns text
 
 - [ ] Tools: MCP, handoff, and as_tool
+
   - Define tool interface; register `browser_analyst` as first tool
   - Acceptance:
     - Tool invocation path exercises MCP/tool-call and returns a structured result
     - Handoff between advisors can be triggered and logged
 
 - [ ] Node.js bridge API (Discord/Slack external adapters)
+
   - Define HTTP/WebSocket contract between Node bridge and Python advisor core
   - Acceptance:
     - Contract documented in `docs/OPENAI_AGENTS_ADVISOR.md` (endpoints, payloads, auth)
     - Local mock verifies end-to-end message flow through the bridge
 
 - [x] Web API entrypoint for advisors
+
   - POST /api/v1/advisors/message accepts platform/channel/user/text
   - Acceptance:
     - Unit test posts message and receives echo with advisor header
 
 - [x] Bridge endpoint auth and echo
+
   - POST /bridge/event requires `X-Bridge-Token`; returns advisor echo reply
   - Acceptance:
     - Unit tests cover 401 without token and 200 with token
 
 - [x] Orchestrator skeleton
+
   - Unifies text/gui/web/cv/wakeword/discord flags and dispatch
   - Acceptance:
     - Unit tests verify adapter selection and text dispatch to command sink
 
 - [x] Advisor context memory (per platform/channel/user)
+
   - In-memory store with get/clear endpoints
   - Acceptance:
     - Unit tests cover memory add/get/clear and API endpoints
 
 - [x] Provider selection (completion vs responses)
+
   - Build provider stub and wire into advisor replies; tests cover both modes
   - Acceptance:
     - Unit tests assert provider type and hint presence in replies
 
 - [ ] Prompt templating
+
   - Build prompt envelope helper and integrate persona prompt
   - Acceptance:
     - Unit test validates envelope; advisor path composes prompt deterministically
 
 - [ ] Recurring prompts (MVP)
+
   - Add `RecurringPrompt` dataclass and renderer; docs + tests
   - Acceptance:
     - JSON example parses; variables render; docs linked in docs/README.md
 
 - [ ] Advisor memory persistence (opt-in)
+
   - JSONL append-only persistence with env/config toggles
   - Acceptance:
     - Unit test writes two lines; config flag toggles persistence
 
 - [ ] Context manager (tab/app-aware)
+
   - Map app/tab identity → persona/system prompt → memory store
   - Persistence layer for identities and conversation state
   - Acceptance:
     - Switching app contexts changes system prompt and preserves per-app memory
 
 - [ ] Browser/analyst tool (basic)
+
   - Safe HTTP fetch + readability extraction + summarize
   - Safety: domain allowlist and timeouts
   - Acceptance:
     - Deterministic test on a snapshot page yields expected summary structure
 
 - [ ] Docs (quickstart)
+
   - `docs/OPENAI_AGENTS_ADVISOR.md` quickstart updated with config keys and run steps
   - Example configs for Discord/Slack
 
@@ -205,6 +231,7 @@ Notes
 ## Completed ✅
 
 All major "Now" items have been delivered:
+
 - ✅ OpenAPI/Swagger exposure and tests
 - ✅ CLI UX hardening (comprehensive help, examples)
 - ✅ Test infrastructure (90% coverage gate, green CI)
@@ -218,7 +245,8 @@ All major "Now" items have been delivered:
 
 ## Now (Sprint Focus)
 
-1) OpenAPI/Swagger exposure and tests
+1. OpenAPI/Swagger exposure and tests
+
 - [x] Ensure API publishes OpenAPI/Swagger at /docs and /openapi.json
   Acceptance:
   - Running: uv run python main.py --web --no-auth exposes Swagger UI at GET /docs (200 OK)
@@ -227,12 +255,13 @@ All major "Now" items have been delivered:
   - Tests:
     - uv run pytest -q tests/test_openapi_endpoints.py::test_openapi_served
     - uv run pytest -q tests/test_openapi_endpoints.py::test_openapi_schema_has_health
-  Tasks:
+      Tasks:
   - Verify FastAPI docs enabled (get_openapi/default docs)
   - Ensure docs/openapi.json generation is consistent with runtime schema
   - Add README note linking /docs and /openapi.json
 
-2) CLI UX hardening
+2. CLI UX hardening
+
 - [x] Comprehensive --help descriptions
   Acceptance:
   - uv run python cli.py --help exits 0, includes all flags and descriptions
@@ -246,39 +275,45 @@ All major "Now" items have been delivered:
   - Completions suggest registered commands
   - uv run pytest -q tests/test_cli_features.py::test_tab_completion_suggests_known_commands
 
-3) Test infrastructure unblocked
+3. Test infrastructure unblocked
+
 - [x] Add pytest.ini with pythonpath=src so chatty_commander package is importable
 - [x] Run full suite and address failures
   Commands:
   - uv run pytest -q
-  Targets:
+    Targets:
   - 0 import errors; progress to functional failures
 
-4) WebUI connectivity sanity
+4. WebUI connectivity sanity
+
 - [ ] Frontend connects to Python backend on correct port without Node backend proxy
   Acceptance:
   - Dev server: frontend requests succeed against uv run python main.py --web --no-auth
   - No references to deleted webui/backend
   - Basic auth disabled when --no-auth is provided
 
-5) Minimal docs parity
+5. Minimal docs parity
+
 - [x] API docs parity automation
   Acceptance:
   - uv run python -m src.chatty_commander.tools.generate_api_docs writes docs/openapi.json
   - Tests assert parity between runtime schema and docs/openapi.json
 
-6) Makefile convenience
-- [x] Add/ensure Make targets:
-  - make test           → uv run pytest -q
-  - make test-cov       → uv run pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing
-  - make test-web       → uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py
-  - make test-cli       → uv run pytest -q tests/test_repl_basic.py tests/test_cli_help_and_shell.py tests/test_cli_features.py
+6. Makefile convenience
 
-7) Clean formatting and references
+- [x] Add/ensure Make targets:
+  - make test → uv run pytest -q
+  - make test-cov → uv run pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing
+  - make test-web → uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py
+  - make test-cli → uv run pytest -q tests/test_repl_basic.py tests/test_cli_help_and_shell.py tests/test_cli_features.py
+
+7. Clean formatting and references
+
 - [x] Remove stray lines and duplicate "References" at file tail
 - [ ] Keep headings sentence case and consistent
 
-8) Cross-platform launch (Windows/macOS)
+8. Cross-platform launch (Windows/macOS)
+
 - [x] Windows: add PowerShell launcher and instructions (uv install, `uv run python main.py --web --no-auth`)
   Acceptance:
   - `./scripts/windows/start-web.ps1` launches server; docs include prerequisites and path notes
@@ -289,14 +324,15 @@ All major "Now" items have been delivered:
   Acceptance:
   - `README.md` and `docs/README.md` show Windows/macOS launch snippets
 
-9) Node.js bridge API implementation (external app for Discord/Slack)
+9. Node.js bridge API implementation (external app for Discord/Slack)
+
 - [x] Create external Node.js application that connects to Python advisor API
   Acceptance:
   - Node.js app can authenticate with Python bridge endpoint using shared secret
   - Discord/Slack webhooks can send messages to Node.js app
   - Node.js app forwards messages to Python advisor API and returns responses
   - Messages are routed back to appropriate Discord/Slack channels
-  Tasks:
+    Tasks:
   - [x] Design Node.js app architecture (Express.js server, Discord.js/Slack SDK)
   - [x] Implement authentication with Python bridge endpoint
   - [x] Add Discord bot integration with slash commands and message handling
@@ -305,14 +341,15 @@ All major "Now" items have been delivered:
   - [x] Add error handling and logging for cross-platform communication
   - [x] Create deployment documentation for Node.js bridge
 
-10) Real LLM provider integrations
+10. Real LLM provider integrations
+
 - [x] Implement actual LLM API calls in CompletionProvider and ResponsesProvider
   Acceptance:
   - CompletionProvider makes real API calls to OpenAI-compatible endpoints
   - ResponsesProvider implements streaming responses for real-time chat
   - Both providers handle authentication, rate limiting, and error recovery
   - Support for local models like GPT-OSS20B via custom base URLs
-  Tasks:
+    Tasks:
   - [x] Add OpenAI SDK integration with configurable base URLs
   - [x] Implement streaming responses for real-time advisor interactions
   - [x] Add retry logic and exponential backoff for API failures
@@ -320,26 +357,28 @@ All major "Now" items have been delivered:
   - [x] Add provider health checks and connection testing
   - [x] Implement fallback providers for high availability
 
-11) Production deployment infrastructure
+11. Production deployment infrastructure
+
 - [x] Docker containerization with multi-stage builds
   Acceptance:
   - Dockerfile builds successfully with Python 3.11-slim base
   - Image includes all dependencies and runs tests
   - Non-root user for security, health checks included
-  Tasks:
+    Tasks:
   - [x] Create multi-stage Dockerfile with builder and production stages
   - [x] Add docker-compose.yml for local development
   - [x] Include optional Redis and PostgreSQL services
   - [x] Add volume mounts for data persistence
   - [x] Implement health checks and resource limits
 
-12) Kubernetes production deployment
+12. Kubernetes production deployment
+
 - [x] Complete Kubernetes manifests for production scaling
   Acceptance:
   - Deployment, Service, Ingress, ConfigMap, Secret manifests
   - Persistent volume claims for data and logs
   - Health checks, resource limits, security best practices
-  Tasks:
+    Tasks:
   - [x] Create comprehensive Kubernetes manifests
   - [x] Add ConfigMap for configuration management
   - [x] Implement Secret for API keys and sensitive data
@@ -347,13 +386,14 @@ All major "Now" items have been delivered:
   - [x] Include ingress configuration with TLS support
   - [x] Add automated deployment script with health checks
 
-13) Advanced voice processing integration
+13. Advanced voice processing integration
+
 - [ ] Integrate OpenWakeWord for voice wake word detection
   Acceptance:
   - Voice wake word triggers advisor interactions
   - Works with CLI mode and advisor system
   - Configurable wake word sensitivity and recognition
-  Tasks:
+    Tasks:
   - [ ] Add OpenWakeWord dependency and configuration
   - [ ] Implement wake word detection in CLI mode
   - [ ] Connect wake word to advisor service
@@ -361,13 +401,14 @@ All major "Now" items have been delivered:
   - [ ] Test with different wake words and environments
   - [ ] Add voice activity detection and noise filtering
 
-14) Computer vision commands
+14. Computer vision commands
+
 - [ ] Implement visual command recognition system
   Acceptance:
   - Camera input can trigger system commands
   - Visual gestures recognized and mapped to actions
   - Works alongside voice and text input modes
-  Tasks:
+    Tasks:
   - [ ] Add OpenCV dependency for computer vision
   - [ ] Implement gesture recognition algorithms
   - [ ] Create visual command mapping system
@@ -375,13 +416,14 @@ All major "Now" items have been delivered:
   - [ ] Test with different lighting conditions
   - [ ] Add visual feedback and status indicators
 
-15) 3D avatar integration (TalkingHead)
+15. 3D avatar integration (TalkingHead)
+
 - [ ] Integrate 3D anime-style avatar with lip-sync
   Acceptance:
   - Optional 3D avatar displays during advisor interactions
   - Lip-sync matches generated speech output
   - Configurable avatar appearance and animations
-  Tasks:
+    Tasks:
   - [ ] Research TalkingHead software integration
   - [ ] Add avatar rendering and animation system
   - [ ] Implement lip-sync with speech synthesis
@@ -396,11 +438,12 @@ All major "Now" items have been delivered:
 - [ ] Performance smoke
   - uv run pytest -q tests/test_performance_benchmarks.py
 - [ ] Coverage target
-  - >= 85% lines in src/*
+  - > = 85% lines in src/\*
 - [ ] Document "no-auth" mode in README and mark as dev-only
 - [x] Add basic health and version endpoints with tests
 
 ### OpenAI-Agents advisor (MVP)
+
 - [ ] Integrate `openai-agents` SDK (local); enable MCP, handoff, and `as_tool` usage
 - [ ] Default model API to `completion` mode; config flag to switch to `responses` if needed
 - [ ] BYO-LLM wiring for local models (e.g., GPT-OSS20B); add model selection config
@@ -424,6 +467,7 @@ All major "Now" items have been delivered:
   - Contributor guide, templates, code of conduct
 
 ### OpenAI-Agents advisor (Enhancements)
+
 - [ ] Optional 3D anime-style avatar via TalkingHead with lip-sync; runtime toggle
 - [ ] Multi-platform polish: richer Discord/Slack features and presence
 - [ ] Local model optimization: prompt templates for uncensored models; safety/policy toggles
@@ -444,6 +488,7 @@ All major "Now" items have been delivered:
 ## Architecture Clarification
 
 What We Want (Correct Architecture)
+
 ```
 Python Backend (main.py)
 ├── CLI Mode (default)
@@ -456,6 +501,7 @@ Python Backend (main.py)
 ```
 
 What We Accidentally Created (Cleaned Up)
+
 ```
 webui/backend/ (TypeScript/Node.js) ← DELETED
 webui/frontend/ (React) ← Keep and connect to Python backend
@@ -472,13 +518,15 @@ webui/frontend/ (React) ← Keep and connect to Python backend
 ## Project Cleanup Roadmap (added by Rovo Dev)
 
 Overview
+
 - Make src/ the single source of truth; keep root-level shims temporarily.
 - Fix console entry point and packaging inconsistencies.
 - Consolidate logging and document migration.
 
 Phased Plan
 
-1) Packaging and CLI entry
+1. Packaging and CLI entry
+
 - Update pyproject entry point to a working target:
   - chatty-commander = "cli:cli_main" (temporary)
 - Create package CLI (preferred longer term):
@@ -488,32 +536,40 @@ Phased Plan
 - Remove argparse dependency from project dependencies (stdlib).
 - Add DeprecationWarning to shims: config.py, utils/logger.py. Remove command_executor.py shim.
 
-2) Logger consolidation
+2. Logger consolidation
+
 - Keep src/chatty_commander/utils/logger.py as real implementation.
 - Keep utils/logger.py as shim but warn on import.
 
-3) Normalize imports & docs
+3. Normalize imports & docs
+
 - Add uniform deprecation notes to all root shims with removal timeline.
 - Add MIGRATING.md mapping old imports to new package paths.
 
-4) CLI consolidation
+4. CLI consolidation
+
 - Move real CLI to src/chatty_commander/cli/cli.py; make root cli.py a shim.
 - Ensure tests that import cli keep working via shim.
 
-5) Main module consolidation
+5. Main module consolidation
+
 - Move real logic to src/chatty_commander/main.py and make root main.py a shim.
 - Keep current shim in src/chatty_commander/main.py during transition.
 
-6) Optional dependencies
+6. Optional dependencies
+
 - Split extras for web/gui/wakeword in pyproject.
 
-7) CI & tooling
+7. CI & tooling
+
 - Add pre-commit config; run ruff/black/pytest in CI.
 
-8) Remove legacy files
+8. Remove legacy files
+
 - After deprecation window, remove root shims and point all imports to the package.
 
 Milestone 1 (implement now)
+
 - pyproject: Fix console entry to cli:cli_main (done)
 - pyproject: Drop argparse dependency (done)
 - Add DeprecationWarnings to root shims (done)
@@ -531,20 +587,22 @@ Milestone 1 (implement now)
 
 - [ ] Promote current draft GUI mode to "GUI Settings" module
   Acceptance:
+
   - Existing draft GUI becomes a dedicated settings/preferences UI for Chatty Commander
   - Settings persist and are reflected in CLI/Web modes
-  Tasks:
+    Tasks:
   - [ ] Extract current draft GUI into a settings-focused module
   - [ ] Wire settings to config/state manager
   - [ ] Tests: ensure settings round-trip and are applied at runtime
 
 - [ ] New GUI mode: transparent simple browser window showing a custom webpage as a popup from the system tray (Windows/macOS)
   Acceptance:
+
   - System tray icon available on Windows and macOS
   - Clicking tray icon opens a frameless/transparent browser window with user-provided URL
   - Window behaves as a popup (focus, auto-dismiss behavior configurable)
   - Works alongside CLI/Web modes; does not require Node backend
-  Tasks:
+    Tasks:
   - [ ] Choose embedded browser approach (e.g., PyWebview/CEF/Electron-lite alternative)
   - [ ] Implement tray integration (platform-specific fallbacks if needed)
   - [ ] Config keys for custom URL, transparency, window size/position
@@ -570,7 +628,7 @@ Milestone 1 (implement now)
   - On platforms with a display/session (e.g., DISPLAY on Linux, user session on Windows/macOS), application defaults to GUI mode
   - If no GUI is detected, fallback to CLI or Web mode based on flags/config
   - --gui flag forces GUI mode and skips detection logic
-  Tasks:
+    Tasks:
   - [ ] Implement cross-platform GUI detection helper
   - [ ] Wire detection into main entrypoint before mode selection
   - [ ] Ensure --gui overrides detection and forces GUI mode
@@ -584,6 +642,7 @@ Milestone 1 (implement now)
 - Docs: docs/API.md, docs/openapi.json, README.md (API docs section)
 
 ## Milestone: Avatar Integration (Completed)
+
 - [x] Integrate TalkingHead 3D avatar as a transparent desktop window.
   - Acceptance Criteria:
     - `uv run python -m src.chatty_commander.main --gui` launches the avatar window.
@@ -594,9 +653,11 @@ Milestone 1 (implement now)
     - Headless-safe: GUI path is skipped or returns a non-crashing code when DISPLAY is not available.
 
 ## Milestone: Avatar Expressive States & Agent Handoff (In Progress)
+
 - Goal: The avatar should reflect LLM/agent lifecycle states and tool usage with distinct animations and support swapping avatars on agent handoff via openai-agents.
 
 - States and animations (server -> UI mapping):
+
   - idle: neutral breathing/idle animation
   - thinking: triggered when LLM emits <thinking>...</thinking> content; subtle "thinking" animation
   - processing: general background processing, light activity animation
@@ -606,6 +667,7 @@ Milestone 1 (implement now)
   - handoff: transition animation when handing off to another agent; then swap avatar theme
 
 - Backend tasks:
+
   - [ ] Extend thinking_state manager with new states: tool_calling, handoff, responding, error
   - [ ] Define unified AgentStateInfo schema: {agent_id, persona_id, state, detail, ts}
   - [ ] Instrument AdvisorsService to:
@@ -624,17 +686,20 @@ Milestone 1 (implement now)
   - [ ] Tests: unit tests for thinking_state transitions, AdvisorsService instrumentation, WS broadcast manager (mock websocket)
 
 - Frontend/UI tasks (TalkingHead):
+
   - [ ] Implement animation presets for: idle, thinking, processing, tool_calling ("hacking"), responding, error, handoff
   - [ ] Map incoming WS messages to animation state machine
   - [ ] Support avatar theme swap on handoff (agent persona -> avatar skin)
   - [ ] Local dev toggle to simulate states for design work
 
 - Agent persona and avatar theming:
+
   - [ ] Define persona->avatar_theme registry (JSON) with default and overrides
   - [ ] Backend includes persona_id and optional avatar_theme in WS messages
   - [ ] UI loads theme assets dynamically (preload and graceful fallback)
 
 - Acceptance Criteria:
+
   - When tools are executed, the avatar plays the "hacking" animation for the duration of the call
   - When LLM emits <thinking>...</thinking>, the avatar shows the "thinking" animation until content switches to normal output
   - On openai-agents handoff, the UI displays a transition animation and swaps to the new agent's avatar theme
@@ -642,10 +707,12 @@ Milestone 1 (implement now)
   - Documentation updated with state/event protocol and theming guide
 
 - Documentation:
+
   - [ ] docs/AVATAR_GUI.md: protocol spec, state machine, theming, dev workflow
   - [ ] README: brief overview and link to AVATAR_GUI.md
 
 ### Settings GUI/WebUI for Animation Configuration
+
 - Goal: Allow users to enable/disable animations and map states/categories to specific animations discovered on disk.
 - Backend/API
   - [ ] Add endpoint GET /avatar/animations to list available animations by scanning a configured directory (e.g., src/chatty_commander/webui/avatar/animations/ or build assets).
@@ -659,11 +726,13 @@ Milestone 1 (implement now)
 ## Milestone: Agent Blueprint Management & Team Orchestration
 
 ### Goal
+
 Implement natural language agent blueprint definition with GUI/WebUI integration for comprehensive persona management, team visualization, and dynamic agent lifecycle management.
 
 ### Core Features
 
 #### Natural Language Agent Blueprint Definition
+
 - [ ] Create agent blueprint schema that accepts natural language descriptions
   - Acceptance:
     - Schema supports: name, description, persona_prompt, capabilities, team_role, handoff_triggers
@@ -677,6 +746,7 @@ Implement natural language agent blueprint definition with GUI/WebUI integration
     - [ ] Tests: parser accuracy, validation edge cases, serialization roundtrip
 
 #### GUI/WebUI Agent Management Interface
+
 - [ ] Implement comprehensive agent management UI in settings
   - Acceptance:
     - Settings page shows all configured agents with personas, prompts, and team relationships
@@ -694,6 +764,7 @@ Implement natural language agent blueprint definition with GUI/WebUI integration
     - [ ] Tests: UI component tests, agent CRUD operations, team visualization rendering
 
 #### Backend API for Agent Management
+
 - [ ] Extend advisor API with agent blueprint management endpoints
   - Acceptance:
     - POST /api/v1/agents/blueprints - create agent from natural language description
@@ -711,6 +782,7 @@ Implement natural language agent blueprint definition with GUI/WebUI integration
     - [ ] Tests: API endpoint coverage, error handling, safety validations
 
 #### Agent Team Orchestration
+
 - [ ] Implement dynamic agent team management with openai-agents integration
   - Acceptance:
     - Agents can be dynamically created/destroyed at runtime
@@ -727,6 +799,7 @@ Implement natural language agent blueprint definition with GUI/WebUI integration
     - [ ] Tests: dynamic agent lifecycle, handoff flows, persistence, error scenarios
 
 #### Animation Setup UI Integration
+
 - [ ] Create dedicated animation configuration interface
   - Acceptance:
     - Separate view/pane/mode for animation setup and testing
@@ -744,6 +817,7 @@ Implement natural language agent blueprint definition with GUI/WebUI integration
     - [ ] Tests: animation UI components, preview functionality, configuration persistence
 
 ### Integration Points
+
 - [ ] Connect agent management to existing avatar WebSocket system
 - [ ] Integrate with thinking_state manager for real-time agent status
 - [ ] Link to openai-agents SDK for actual agent orchestration
@@ -751,6 +825,7 @@ Implement natural language agent blueprint definition with GUI/WebUI integration
 - [ ] Integrate with existing configuration system for persistence
 
 ### Documentation
+
 - [ ] Create docs/AGENT_BLUEPRINT_MANAGEMENT.md with:
   - Natural language blueprint syntax and examples
   - GUI/WebUI usage guide for agent management
@@ -759,6 +834,7 @@ Implement natural language agent blueprint definition with GUI/WebUI integration
   - API reference for agent management endpoints
 
 ### Acceptance Criteria
+
 - Users can describe agents in natural language and have them automatically configured
 - GUI provides intuitive agent creation with "+Create Agent" button
 - Agent destruction requires confirmation and handles dependencies safely
@@ -773,6 +849,7 @@ Implement natural language agent blueprint definition with GUI/WebUI integration
   - Settings persist and are respected by the avatar UI and server broadcasts.
 
 ### Intelligent Animation Selection (LLM-based)
+
 - Goal: Dynamically choose an animation based on the content of the model’s thinking/reply.
 - Backend service
   - [ ] Add AnimationSelector service that classifies text into a constrained set of labels (e.g., excited, calm, curious, warning, success, error, neutral) using a local LLM (e.g., gpt-oss:20b) or configured provider.

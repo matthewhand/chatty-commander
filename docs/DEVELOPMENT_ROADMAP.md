@@ -71,7 +71,7 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 
 ### Performance Metrics
 
-- **Response Time**: < 2s for LLM queries with fallback
+- **Response Time**: \< 2s for LLM queries with fallback
 - **Memory Usage**: 256Mi-512Mi per container
 - **CPU Usage**: 250m-500m per container
 - **Storage**: 10Gi data + 5Gi logs per deployment
@@ -92,16 +92,19 @@ ChattyCommander is a multi-modal AI assistant system with voice, web, GUI, and t
 **Implementation Plan**:
 
 1. **Dependency Integration**
+
    - Add OpenWakeWord to requirements
    - Configure audio input/output devices
    - Set up wake word training and recognition
 
-2. **CLI Mode Enhancement**
+1. **CLI Mode Enhancement**
+
    - Integrate wake word detection in CLI mode
    - Connect wake word events to advisor service
    - Add voice command processing pipeline
 
-3. **Testing & Optimization**
+1. **Testing & Optimization**
+
    - Test with different wake words and environments
    - Add voice activity detection and noise filtering
    - Optimize for low-latency response
@@ -203,25 +206,25 @@ Output (Actions + Responses)
 ### Deployment Process
 
 1. **Local Testing**: `docker-compose up` for development
-2. **CI/CD**: Automated testing and deployment
-3. **Production**: Kubernetes deployment with health checks
-4. **Monitoring**: Logs, metrics, and alerting
+1. **CI/CD**: Automated testing and deployment
+1. **Production**: Kubernetes deployment with health checks
+1. **Monitoring**: Logs, metrics, and alerting
 
 ### Feature Development
 
 1. **Plan**: Update TODO.md with acceptance criteria
-2. **Implement**: Code with comprehensive tests
-3. **Test**: Verify functionality and performance
-4. **Document**: Update relevant documentation
-5. **Deploy**: Production deployment with monitoring
+1. **Implement**: Code with comprehensive tests
+1. **Test**: Verify functionality and performance
+1. **Document**: Update relevant documentation
+1. **Deploy**: Production deployment with monitoring
 
 ## Success Metrics
 
 ### Technical Metrics
 
-- **Response Time**: < 2s for advisor interactions
+- **Response Time**: \< 2s for advisor interactions
 - **Uptime**: >99.9% availability
-- **Error Rate**: <1% for API calls
+- **Error Rate**: \<1% for API calls
 - **Test Coverage**: >85% for all modules
 
 ### User Experience Metrics

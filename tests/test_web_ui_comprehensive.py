@@ -1,10 +1,31 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Comprehensive tests for web UI functionality and static file serving.
 Tests various scenarios including missing files, different UI components, and error handling.
 """
 
-import os
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -43,7 +64,7 @@ class TestWebUIComprehensive:
     def web_server(self, mock_managers):
         """Create WebModeServer instance for testing."""
         with patch(
-            'chatty_commander.advisors.providers.build_provider_safe'
+            "chatty_commander.advisors.providers.build_provider_safe"
         ) as mock_build_provider:
             mock_provider = Mock()
             mock_provider.model = "test-model"
@@ -66,7 +87,7 @@ class TestWebUIComprehensive:
     def test_frontend_not_built_fallback(self, test_client):
         """Test fallback message when frontend is not built."""
         # Ensure frontend path doesn't exist
-        with patch('pathlib.Path.exists', return_value=False):
+        with patch("pathlib.Path.exists", return_value=False):
             response = test_client.get("/")
             assert response.status_code == 200
             assert "ChattyCommander" in response.text
@@ -89,10 +110,14 @@ class TestWebUIComprehensive:
             css_file.write_text("body { color: blue; }")
 
             # Mock the Path.exists and Path operations
-            with patch('pathlib.Path') as mock_path:
+            with patch("pathlib.Path") as mock_path:
                 mock_path.return_value.exists.return_value = True
                 mock_path.return_value.__truediv__ = (
-                    lambda self, other: Path(temp_dir) / "webui" / "frontend" / "build" / other
+                    lambda self, other: Path(temp_dir)
+                    / "webui"
+                    / "frontend"
+                    / "build"
+                    / other
                 )
 
                 # Test would require more complex mocking of FastAPI FileResponse
@@ -101,7 +126,7 @@ class TestWebUIComprehensive:
 
     def test_avatar_ui_not_found_fallback(self, test_client):
         """Test fallback message when avatar UI is not found."""
-        with patch('pathlib.Path.exists', return_value=False):
+        with patch("pathlib.Path.exists", return_value=False):
             response = test_client.get("/avatar")
             # Avatar endpoint might not exist if path doesn't exist
             # This tests the fallback logic in the web_mode.py
@@ -111,7 +136,9 @@ class TestWebUIComprehensive:
         """Test serving avatar UI when files exist."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create mock avatar UI structure
-            avatar_path = Path(temp_dir) / "src" / "chatty_commander" / "webui" / "avatar"
+            avatar_path = (
+                Path(temp_dir) / "src" / "chatty_commander" / "webui" / "avatar"
+            )
             avatar_path.mkdir(parents=True)
 
             index_file = avatar_path / "index.html"
@@ -124,7 +151,7 @@ class TestWebUIComprehensive:
     def test_static_files_content_types(self, test_client):
         """Test that static files are served with correct content types."""
         # Test CSS files
-        with patch('pathlib.Path.exists', return_value=True):
+        with patch("pathlib.Path.exists", return_value=True):
             # This would test that CSS files get text/css content type
             # JS files get application/javascript content type
             # etc.
@@ -140,7 +167,7 @@ class TestWebUIComprehensive:
         """Test that frontend routes fallback to index.html for SPA routing."""
         # Test that routes like /dashboard, /settings etc.
         # fallback to serving index.html for client-side routing
-        with patch('pathlib.Path.exists', return_value=False):
+        with patch("pathlib.Path.exists", return_value=False):
             response = test_client.get("/dashboard")
             # Should return 404 since no catch-all route is implemented
             assert response.status_code == 404
@@ -164,7 +191,10 @@ class TestWebUIComprehensive:
         """Test CORS headers are set for development."""
         response = test_client.options("/api/v1/status")
         # Should include CORS headers for frontend development
-        assert response.status_code in [200, 405]  # Some frameworks return 405 for OPTIONS
+        assert response.status_code in [
+            200,
+            405,
+        ]  # Some frameworks return 405 for OPTIONS
 
     def test_security_headers(self, test_client):
         """Test that appropriate security headers are set."""
@@ -208,7 +238,7 @@ class TestWebUIComprehensive:
         """Test serving of web app manifest and PWA files."""
         # Test manifest.json, service worker, etc.
         # These files are typically in the build directory
-        with patch('pathlib.Path.exists', return_value=False):
+        with patch("pathlib.Path.exists", return_value=False):
             response = test_client.get("/manifest.json")
             # Should return 404 if not found
             assert response.status_code == 404

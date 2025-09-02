@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Default Configuration Generator for ChattyCommander
 
@@ -54,9 +76,11 @@ class DefaultConfigGenerator:
             wakeword_path = self.wakewords_dir / wakeword_file
             if not wakeword_path.exists():
                 # Create a placeholder file (in practice, these would be actual ONNX models)
-                with open(wakeword_path, 'w') as f:
+                with open(wakeword_path, "w") as f:
                     f.write(f"# Placeholder for {wakeword_file}\n")
-                    f.write("# This should be replaced with an actual ONNX model file\n")
+                    f.write(
+                        "# This should be replaced with an actual ONNX model file\n"
+                    )
                 logging.info(f"Created placeholder wakeword file: {wakeword_file}")
 
     def _setup_model_directories(self):
@@ -122,8 +146,14 @@ class DefaultConfigGenerator:
                 "okay_send": {"action": "keypress", "keys": "submit"},
                 "okay_stop": {"action": "keypress", "keys": "stop_typing"},
                 "oh_kay_screenshot": {"action": "keypress", "keys": "take_screenshot"},
-                "thanks_chat_tee": {"action": "custom_message", "message": "That'll do, bro"},
-                "that_ill_do": {"action": "custom_message", "message": "Thanks chatty, dude"},
+                "thanks_chat_tee": {
+                    "action": "custom_message",
+                    "message": "That'll do, bro",
+                },
+                "that_ill_do": {
+                    "action": "custom_message",
+                    "message": "Thanks chatty, dude",
+                },
                 "lights_on": {"action": "url", "url": "{home_assistant}/lights_on"},
                 "lights_off": {"action": "url", "url": "{home_assistant}/lights_off"},
                 "wax_poetic": {"action": "url", "url": "{chatbot_endpoint}"},
@@ -140,7 +170,13 @@ class DefaultConfigGenerator:
                 "chatbot_endpoint": "http://localhost:3100/",
             },
             "state_models": {
-                "idle": ["hey_chat_tee", "hey_khum_puter", "okay_stop", "lights_on", "lights_off"],
+                "idle": [
+                    "hey_chat_tee",
+                    "hey_khum_puter",
+                    "okay_stop",
+                    "lights_on",
+                    "lights_off",
+                ],
                 "computer": ["oh_kay_screenshot", "okay_stop"],
                 "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"],
             },
@@ -172,7 +208,7 @@ class DefaultConfigGenerator:
             },
         }
 
-        with open(self.config_file, 'w') as f:
+        with open(self.config_file, "w") as f:
             json.dump(default_config, f, indent=2)
 
         logging.info(f"Created default config.json at {self.config_file}")
@@ -187,14 +223,14 @@ class DefaultConfigGenerator:
             with open(self.config_file) as f:
                 config = json.load(f)
                 # Check if essential sections exist
-                required_sections = ['commands', 'state_models']
+                required_sections = ["commands", "state_models"]
                 if not all(section in config for section in required_sections):
                     return True
         except (OSError, json.JSONDecodeError):
             return True
 
         # Check if model directories are empty
-        model_dirs = ['models-idle', 'models-computer', 'models-chatty']
+        model_dirs = ["models-idle", "models-computer", "models-chatty"]
         all_empty = True
         for model_dir in model_dirs:
             dir_path = self.base_dir / model_dir
@@ -209,7 +245,9 @@ def generate_default_config_if_needed():
     """Generate default configuration if needed."""
     generator = DefaultConfigGenerator()
     if generator.should_generate_default_config():
-        logging.info("No valid configuration detected. Generating default configuration...")
+        logging.info(
+            "No valid configuration detected. Generating default configuration..."
+        )
         generator.generate_default_config()
         return True
     return False

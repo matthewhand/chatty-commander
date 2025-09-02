@@ -84,7 +84,7 @@ accept `1`, `true` or `yes` (case-insensitive) to enable them.
      }
    }
    ```
-2. Reference it in `commands`:
+1. Reference it in `commands`:
    ```json
    {
      "commands": {
@@ -92,6 +92,6 @@ accept `1`, `true` or `yes` (case-insensitive) to enable them.
      }
    }
    ```
-3. Add the command name to a state's `state_models` list so the model is loaded when active.
+1. Add the command name to a state's `state_models` list so the model is loaded when active.
 
 This typed schema ensures configuration errors are caught early and provides IDE type hints for contributors.

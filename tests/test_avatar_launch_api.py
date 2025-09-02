@@ -1,9 +1,31 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Tests for the avatar launch API endpoint."""
 
 import asyncio
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -27,7 +49,7 @@ class TestAvatarLaunchAPI:
         """Create test client."""
         return TestClient(app)
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_success(self, mock_subprocess, client):
         """Test successful avatar launch."""
         # Mock successful process creation
@@ -60,7 +82,7 @@ class TestAvatarLaunchAPI:
         assert kwargs["start_new_session"] is True
         assert "cwd" in kwargs
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_process_exits_immediately(self, mock_subprocess, client):
         """Test avatar launch when process exits immediately."""
         # Mock process that exits immediately with error
@@ -78,7 +100,7 @@ class TestAvatarLaunchAPI:
         assert "Avatar failed to start" in data["detail"]
         assert "Error: GUI not available" in data["detail"]
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_subprocess_exception(self, mock_subprocess, client):
         """Test avatar launch when subprocess creation fails."""
         # Mock subprocess creation failure
@@ -92,7 +114,7 @@ class TestAvatarLaunchAPI:
         assert "Failed to launch avatar" in data["detail"]
         assert "Permission denied" in data["detail"]
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_working_directory(self, mock_subprocess, client):
         """Test that avatar is launched from correct working directory."""
         # Mock successful process creation
@@ -113,8 +135,8 @@ class TestAvatarLaunchAPI:
         expected_root = Path(__file__).resolve().parents[1]  # Go up to project root
         assert cwd.resolve() == expected_root.resolve()
 
-    @patch('asyncio.create_subprocess_exec')
-    @patch('asyncio.sleep')
+    @patch("asyncio.create_subprocess_exec")
+    @patch("asyncio.sleep")
     def test_launch_avatar_startup_delay(self, mock_sleep, mock_subprocess, client):
         """Test that there's a startup delay to check process status."""
         # Mock successful process creation
@@ -130,7 +152,7 @@ class TestAvatarLaunchAPI:
         # Verify sleep was called to allow process to start
         mock_sleep.assert_called_once_with(0.1)
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_multiple_calls(self, mock_subprocess, client):
         """Test multiple avatar launch calls."""
         # Mock successful process creation
@@ -154,7 +176,7 @@ class TestAvatarLaunchAPI:
         # Verify subprocess was called twice
         assert mock_subprocess.call_count == 2
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_command_construction(self, mock_subprocess, client):
         """Test that the launch command is constructed correctly."""
         # Mock successful process creation
@@ -177,7 +199,7 @@ class TestAvatarLaunchAPI:
         assert command_parts[2] == "src.chatty_commander.main"
         assert command_parts[3] == "--gui"
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_process_detachment(self, mock_subprocess, client):
         """Test that the avatar process is properly detached."""
         # Mock successful process creation
@@ -196,7 +218,7 @@ class TestAvatarLaunchAPI:
         assert kwargs["stdout"] == asyncio.subprocess.PIPE
         assert kwargs["stderr"] == asyncio.subprocess.PIPE
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_error_handling_with_stderr(self, mock_subprocess, client):
         """Test error handling when process fails with stderr output."""
         # Mock process that exits with detailed error
@@ -215,7 +237,7 @@ class TestAvatarLaunchAPI:
         data = response.json()
         assert "No module named 'PyQt5'" in data["detail"]
 
-    @patch('asyncio.create_subprocess_exec')
+    @patch("asyncio.create_subprocess_exec")
     def test_launch_avatar_error_handling_no_stderr(self, mock_subprocess, client):
         """Test error handling when process fails without stderr output."""
         # Mock process that exits without stderr
@@ -238,7 +260,7 @@ class TestAvatarLaunchAPI:
         assert response.status_code == 405  # Method Not Allowed
 
         # Test with correct method
-        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+        with patch("asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = AsyncMock()
             mock_process.pid = 12345
             mock_process.returncode = None

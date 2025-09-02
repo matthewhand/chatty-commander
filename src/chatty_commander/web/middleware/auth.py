@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Authentication middleware for FastAPI."""
 
 import logging
@@ -51,17 +73,19 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Validate API key for protected endpoints
         if path.startswith("/api/"):
             api_key = request.headers.get("X-API-Key")
-            logger.debug(f"API request to {path}, API key present: {api_key is not None}")
+            logger.debug(
+                f"API request to {path}, API key present: {api_key is not None}"
+            )
 
             # Get expected API key from config
             expected_key = None
 
             # Check for DummyConfig pattern (test configs)
-            if hasattr(self.config_manager, 'auth'):
+            if hasattr(self.config_manager, "auth"):
                 expected_key = self.config_manager.auth.get("api_key")
                 logger.debug(f"Found auth config in DummyConfig: {expected_key}")
             # Check for regular Config pattern
-            elif hasattr(self.config_manager, 'config') and self.config_manager.config:
+            elif hasattr(self.config_manager, "config") and self.config_manager.config:
                 auth_config = self.config_manager.config.get("auth", {})
                 expected_key = auth_config.get("api_key")
                 logger.debug(f"Found auth config in regular Config: {expected_key}")
@@ -77,7 +101,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 return await call_next(request)
 
             if not api_key or api_key != expected_key:
-                logger.debug(f"Auth failed - provided: {api_key}, expected: {expected_key}")
+                logger.debug(
+                    f"Auth failed - provided: {api_key}, expected: {expected_key}"
+                )
                 # Return 401 response directly instead of raising exception
                 from fastapi.responses import JSONResponse
 

@@ -31,10 +31,10 @@ This directory contains placeholder references for screenshots that will be adde
 When adding actual screenshots:
 
 1. **Resolution**: Use consistent resolution (1920x1080 recommended)
-2. **Format**: PNG format for crisp UI elements
-3. **Content**: Show realistic but non-sensitive configuration data
-4. **Annotations**: Consider adding callouts or highlights for key features
-5. **Consistency**: Use consistent UI theme and styling across screenshots
+1. **Format**: PNG format for crisp UI elements
+1. **Content**: Show realistic but non-sensitive configuration data
+1. **Annotations**: Consider adding callouts or highlights for key features
+1. **Consistency**: Use consistent UI theme and styling across screenshots
 
 ## Implementation Status
 

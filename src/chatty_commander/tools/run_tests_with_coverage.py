@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 run_tests_with_coverage.py
 
@@ -14,7 +36,9 @@ import time
 from pathlib import Path
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +50,11 @@ class TestRunner:
         self.test_results: list[tuple[str, bool, str]] = []
 
     def run_command(
-        self, command: list[str], description: str, cwd: Path | None = None, timeout: int = 60
+        self,
+        command: list[str],
+        description: str,
+        cwd: Path | None = None,
+        timeout: int = 60,
     ) -> tuple[bool, str]:
         """Run a command and return success status and output. Default timeout reduced to 60s to prevent stalls in CI."""
         try:
@@ -47,7 +75,9 @@ class TestRunner:
             if success:
                 logger.info(f"✅ {description} - PASSED")
             else:
-                logger.error(f"❌ {description} - FAILED (exit code: {result.returncode})")
+                logger.error(
+                    f"❌ {description} - FAILED (exit code: {result.returncode})"
+                )
                 # Show at most last 500 chars to keep logs readable
                 logger.error(f"Output: {output[-500:]}...")
 
@@ -72,11 +102,14 @@ class TestRunner:
 
         # Check if pytest-cov is installed
         success, _ = self.run_command(
-            ["uv", "run", "python", "-c", "import pytest_cov"], "pytest-cov availability"
+            ["uv", "run", "python", "-c", "import pytest_cov"],
+            "pytest-cov availability",
         )
         if not success:
             logger.warning("⚠️  pytest-cov not found. Installing...")
-            install_success, _ = self.run_command(["uv", "add", "pytest-cov"], "Install pytest-cov")
+            install_success, _ = self.run_command(
+                ["uv", "add", "pytest-cov"], "Install pytest-cov"
+            )
             if not install_success:
                 logger.error("❌ Failed to install pytest-cov")
                 return False
@@ -99,19 +132,26 @@ class TestRunner:
             "-q",
         ]
 
-        success, output = self.run_command(command, "Unit tests with coverage", timeout=120)
+        success, output = self.run_command(
+            command, "Unit tests with coverage", timeout=120
+        )
         self.test_results.append(("Unit Tests", success, output))
         return success
 
     def run_integration_tests(self) -> bool:
         """Run integration tests separately."""
-        integration_files = ["tests/test_integration_voice.py", "tests/test_performance.py"]
+        integration_files = [
+            "tests/test_integration_voice.py",
+            "tests/test_performance.py",
+        ]
 
         all_success = True
         for test_file in integration_files:
             if (self.project_root / test_file).exists():
                 command = ["uv", "run", "pytest", test_file, "-v"]
-                success, output = self.run_command(command, f"Integration test: {test_file}")
+                success, output = self.run_command(
+                    command, f"Integration test: {test_file}"
+                )
                 self.test_results.append((f"Integration: {test_file}", success, output))
                 all_success = all_success and success
 
@@ -148,14 +188,18 @@ class TestRunner:
         # Start web server
         server_process = self.start_web_server()
         if not server_process:
-            self.test_results.append(("Web Mode Tests", False, "Failed to start web server"))
+            self.test_results.append(
+                ("Web Mode Tests", False, "Failed to start web server")
+            )
             return False
 
         try:
             # Run web mode tests
             # Run web mode tests using pytest on the correct file path in repo tests/
             command = ["uv", "run", "pytest", "tests/test_web_mode.py", "-q"]
-            success, output = self.run_command(command, "Web mode validation tests", timeout=60)
+            success, output = self.run_command(
+                command, "Web mode validation tests", timeout=60
+            )
             self.test_results.append(("Web Mode Tests", success, output))
             return success
 
@@ -211,7 +255,7 @@ class TestRunner:
             success, output = self.run_command(command, "Coverage summary", timeout=30)
             if success:
                 logger.info("📈 Coverage Summary:")
-                for line in output.split('\n')[-10:]:  # Last 10 lines
+                for line in output.split("\n")[-10:]:  # Last 10 lines
                     if line.strip():
                         logger.info(f"   {line}")
         except Exception:

@@ -1,9 +1,9 @@
 {
   "profile_name": "Developer Tools Assistant",
   "description": "Voice-controlled development workflow with IDE integration and git commands",
-  
+
   "default_state": "coding",
-  
+
   "model_actions": {
     "git_status": {
       "shell": {
@@ -80,18 +80,11 @@
   "workflows": {
     "commit_workflow": {
       "description": "Voice-controlled git commit process",
-      "sequence": [
-        "git_status",
-        "git_add_all", 
-        "git_commit"
-      ]
+      "sequence": ["git_status", "git_add_all", "git_commit"]
     },
     "test_and_format": {
       "description": "Run tests and format code",
-      "sequence": [
-        "format_code",
-        "run_tests"
-      ]
+      "sequence": ["format_code", "run_tests"]
     }
   }
 }

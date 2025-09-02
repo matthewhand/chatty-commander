@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Core AI intelligence module that orchestrates all AI capabilities."""
 
 import logging
@@ -77,7 +99,9 @@ class IntelligenceCore:
         """Handle transcribed voice input."""
         try:
             if voice_result.confidence < 0.5:
-                self.logger.debug(f"Low confidence voice input ignored: {voice_result.text}")
+                self.logger.debug(
+                    f"Low confidence voice input ignored: {voice_result.text}"
+                )
                 return
 
             self.logger.info(
@@ -140,7 +164,10 @@ class IntelligenceCore:
         # Could trigger processing indicator here
 
     def process_input(
-        self, text: str, input_type: str = "text", metadata: dict[str, Any] | None = None
+        self,
+        text: str,
+        input_type: str = "text",
+        metadata: dict[str, Any] | None = None,
     ) -> AIResponse:
         """Process any input through the AI intelligence core."""
         start_time = datetime.now()
@@ -206,34 +233,38 @@ class IntelligenceCore:
 
         # Mode switching
         if (
-            any(word in text_lower for word in ['switch', 'change', 'go to'])
-            and 'mode' in text_lower
+            any(word in text_lower for word in ["switch", "change", "go to"])
+            and "mode" in text_lower
         ):
-            return 'mode_switch'
+            return "mode_switch"
 
         # System commands
-        if any(word in text_lower for word in ['screenshot', 'capture', 'take picture']):
-            return 'screenshot'
+        if any(
+            word in text_lower for word in ["screenshot", "capture", "take picture"]
+        ):
+            return "screenshot"
 
-        if any(word in text_lower for word in ['lights on', 'turn on lights']):
-            return 'lights_on'
+        if any(word in text_lower for word in ["lights on", "turn on lights"]):
+            return "lights_on"
 
-        if any(word in text_lower for word in ['lights off', 'turn off lights']):
-            return 'lights_off'
+        if any(word in text_lower for word in ["lights off", "turn off lights"]):
+            return "lights_off"
 
         # Questions
-        if text.startswith(('what', 'how', 'why', 'when', 'where', 'who')):
-            return 'question'
+        if text.startswith(("what", "how", "why", "when", "where", "who")):
+            return "question"
 
         # Greetings
-        if any(word in text_lower for word in ['hello', 'hi', 'hey', 'good morning']):
-            return 'greeting'
+        if any(word in text_lower for word in ["hello", "hi", "hey", "good morning"]):
+            return "greeting"
 
         # Tasks
-        if any(word in text_lower for word in ['help', 'assist', 'do', 'make', 'create']):
-            return 'task_request'
+        if any(
+            word in text_lower for word in ["help", "assist", "do", "make", "create"]
+        ):
+            return "task_request"
 
-        return 'conversation'
+        return "conversation"
 
     def _extract_actions(self, response_text: str) -> list[dict[str, Any]]:
         """Extract actionable commands from AI response."""
@@ -243,10 +274,14 @@ class IntelligenceCore:
         if "SWITCH_MODE:" in response_text:
             import re
 
-            matches = re.findall(r'SWITCH_MODE:(\w+)', response_text)
+            matches = re.findall(r"SWITCH_MODE:(\w+)", response_text)
             for mode in matches:
                 actions.append(
-                    {"type": "mode_switch", "target_mode": mode.strip(), "priority": "high"}
+                    {
+                        "type": "mode_switch",
+                        "target_mode": mode.strip(),
+                        "priority": "high",
+                    }
                 )
 
         # Look for system commands
@@ -255,9 +290,9 @@ class IntelligenceCore:
 
         # Look for other action patterns
         action_patterns = {
-            r'take.*screenshot': {"type": "screenshot", "priority": "medium"},
-            r'lights.*on': {"type": "lights_on", "priority": "medium"},
-            r'lights.*off': {"type": "lights_off", "priority": "medium"},
+            r"take.*screenshot": {"type": "screenshot", "priority": "medium"},
+            r"lights.*on": {"type": "lights_on", "priority": "medium"},
+            r"lights.*off": {"type": "lights_off", "priority": "medium"},
         }
 
         import re

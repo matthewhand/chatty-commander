@@ -7,8 +7,8 @@ ChattyCommander is a voice-activated command system that allows hands-free contr
 ## Installation
 
 1. Clone the repository: `git clone https://github.com/your-repo/chatty-commander.git`
-2. Install dependencies: `uv sync`
-3. Download models to models-idle/, models-computer/, models-chatty/
+1. Install dependencies: `uv sync`
+1. Download models to models-idle/, models-computer/, models-chatty/
 
 ## Quick Start
 

@@ -1,5 +1,9 @@
 export type BusHandler<T = any> = (payload: T, event: MessageEvent) => void;
-export type AnyBusHandler = (type: string, payload: any, event: MessageEvent) => void;
+export type AnyBusHandler = (
+  type: string,
+  payload: any,
+  event: MessageEvent,
+) => void;
 
 export interface Bus {
   post: (type: string, payload?: any) => void;
@@ -14,7 +18,7 @@ export function createBus(target: Window): Bus {
 
   const listener = (ev: MessageEvent) => {
     const msg = ev.data;
-    if (!msg || typeof msg.type !== 'string') return;
+    if (!msg || typeof msg.type !== "string") return;
     const set = handlers.get(msg.type);
     if (set) set.forEach((h) => h(msg.payload, ev));
     anyHandlers.forEach((h) => h(msg.type, msg.payload, ev));
@@ -22,20 +26,20 @@ export function createBus(target: Window): Bus {
 
   function ensureListener() {
     if (!listening && (handlers.size || anyHandlers.size)) {
-      target.addEventListener('message', listener);
+      target.addEventListener("message", listener);
       listening = true;
     }
   }
 
   function cleanupListener() {
     if (listening && handlers.size === 0 && anyHandlers.size === 0) {
-      target.removeEventListener('message', listener);
+      target.removeEventListener("message", listener);
       listening = false;
     }
   }
 
   function post(type: string, payload?: any) {
-    target.postMessage({ type, payload }, '*');
+    target.postMessage({ type, payload }, "*");
   }
 
   function on(type: string, handler: BusHandler) {

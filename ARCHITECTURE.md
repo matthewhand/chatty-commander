@@ -95,11 +95,11 @@ Deployment configurations support multiple environments:
 ## Data Flow
 
 1. **Voice Input**: Audio captured through frontend applications
-2. **Wake Word Detection**: Processed using models in `models/wakewords/`
-3. **Speech Recognition**: Converted to text using speech models
-4. **Intent Processing**: Analyzed using conversational models in `models/chatty/`
-5. **Task Execution**: Computer tasks executed using `models/computer/`
-6. **Response Generation**: Responses generated and delivered through frontend
+1. **Wake Word Detection**: Processed using models in `models/wakewords/`
+1. **Speech Recognition**: Converted to text using speech models
+1. **Intent Processing**: Analyzed using conversational models in `models/chatty/`
+1. **Task Execution**: Computer tasks executed using `models/computer/`
+1. **Response Generation**: Responses generated and delivered through frontend
 
 ## Technology Stack
 
@@ -114,9 +114,9 @@ Deployment configurations support multiple environments:
 The reorganized structure supports efficient development:
 
 1. **Model Development**: Work in `models/` without affecting application logic
-2. **Frontend Development**: Independent development in `frontend/` subdirectories
-3. **Backend Development**: Server and worker development in `server/`
-4. **Configuration Changes**: Centralized in `config/` directory
-5. **Deployment**: Self-contained in `deploy/` directory
+1. **Frontend Development**: Independent development in `frontend/` subdirectories
+1. **Backend Development**: Server and worker development in `server/`
+1. **Configuration Changes**: Centralized in `config/` directory
+1. **Deployment**: Self-contained in `deploy/` directory
 
 This architecture enables parallel development across different domains while maintaining clear boundaries and dependencies.

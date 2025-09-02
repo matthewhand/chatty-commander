@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 CLI commands for voice integration.
 
@@ -22,7 +44,9 @@ def add_voice_subcommands(subparsers) -> None:
     )
     voice_parser.set_defaults(func=lambda args: handle_voice_command(args))
 
-    voice_subparsers = voice_parser.add_subparsers(dest="voice_command", help="Voice commands")
+    voice_subparsers = voice_parser.add_subparsers(
+        dest="voice_command", help="Voice commands"
+    )
 
     # Test command
     test_parser = voice_subparsers.add_parser(
@@ -31,7 +55,9 @@ def add_voice_subcommands(subparsers) -> None:
         description="Test voice pipeline with mock components or real hardware.",
     )
     test_parser.add_argument("--mock", action="store_true", help="Use mock components")
-    test_parser.add_argument("--duration", type=int, default=30, help="Test duration in seconds")
+    test_parser.add_argument(
+        "--duration", type=int, default=30, help="Test duration in seconds"
+    )
     test_parser.add_argument("--wake-words", nargs="+", help="Wake words to use")
 
     # Status command
@@ -74,7 +100,9 @@ def add_voice_subcommands(subparsers) -> None:
     basic_parser.add_argument("--phrases", nargs="+", help="Custom test phrases")
 
     # Improvement loop
-    improve_parser = selftest_subparsers.add_parser("improve", help="Run self-improvement loop")
+    improve_parser = selftest_subparsers.add_parser(
+        "improve", help="Run self-improvement loop"
+    )
     improve_parser.add_argument(
         "--iterations", type=int, default=3, help="Number of improvement iterations"
     )
@@ -84,7 +112,7 @@ def add_voice_subcommands(subparsers) -> None:
 def handle_voice_command(
     args, config_manager=None, command_executor=None, state_manager=None
 ) -> None:
-    if not hasattr(args, 'voice_command') or not args.voice_command:
+    if not hasattr(args, "voice_command") or not args.voice_command:
         print("No voice command specified. Use --help for available commands.")
         return
 
@@ -98,7 +126,9 @@ def handle_voice_command(
 
             handle_self_test_command(args)
         except ImportError:
-            print("❌ Self-test not available. Install with: pip install pyttsx3 openai")
+            print(
+                "❌ Self-test not available. Install with: pip install pyttsx3 openai"
+            )
     else:
         print(f"Unknown voice command: {args.voice_command}")
 
@@ -122,7 +152,9 @@ def _handle_voice_test(
         # Add callback to show detected commands
         def command_callback(command_name: str, transcription: str):
             if command_name:
-                print(f"✅ Command executed: '{command_name}' (from: '{transcription}')")
+                print(
+                    f"✅ Command executed: '{command_name}' (from: '{transcription}')"
+                )
             else:
                 print(f"❓ No command matched: '{transcription}'")
 
@@ -215,7 +247,9 @@ def _handle_voice_transcribe(args) -> None:
     try:
         from .transcription import VoiceTranscriber
 
-        transcriber = VoiceTranscriber(backend=args.backend, record_timeout=args.timeout)
+        transcriber = VoiceTranscriber(
+            backend=args.backend, record_timeout=args.timeout
+        )
 
         if not transcriber.is_available():
             print(f"❌ Transcription backend '{args.backend}' not available")
@@ -251,11 +285,13 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
     try:
         # Create pipeline with mock components for demo
         pipeline = VoicePipeline(
-            config_manager=config_manager, command_executor=command_executor, use_mock=True
+            config_manager=config_manager,
+            command_executor=command_executor,
+            use_mock=True,
         )
 
         # Show available commands
-        if config_manager and hasattr(config_manager, 'model_actions'):
+        if config_manager and hasattr(config_manager, "model_actions"):
             print("📋 Available commands:")
             for cmd_name in config_manager.model_actions.keys():
                 print(f"   - {cmd_name}")
@@ -274,7 +310,12 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
         print("\n🔊 Voice pipeline active!")
 
         # Demo some commands
-        demo_commands = ["hello world", "turn on the lights", "play some music", "unknown command"]
+        demo_commands = [
+            "hello world",
+            "turn on the lights",
+            "play some music",
+            "unknown command",
+        ]
 
         for cmd in demo_commands:
             print(f"\n🧪 Testing: '{cmd}'")
