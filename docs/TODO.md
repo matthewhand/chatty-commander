@@ -252,13 +252,9 @@ All major "Now" items have been delivered:
   - uv run python cli.py --help exits 0, includes all flags and descriptions
   - uv run pytest -q tests/test_cli_help_and_shell.py::test_help_outputs_usage
 - [x] Interactive shell when no args
-       Acceptance:
-       - uv run python cli.py enters shell; typing "exit" quits with code 0
-       - uv run pytest -q tests/test_repl_basic.py::test_shell_starts_and_exits
+      Acceptance: - uv run python cli.py enters shell; typing "exit" quits with code 0 - uv run pytest -q tests/test_repl_basic.py::test_shell_starts_and_exits
 - [x] Tab completion for interactive mode
-       Acceptance:
-       - Completions suggest registered commands
-       - uv run pytest -q tests/test_cli_features.py::test_tab_completion_suggests_known_commands
+      Acceptance: - Completions suggest registered commands - uv run pytest -q tests/test_cli_features.py::test_tab_completion_suggests_known_commands
 
 3. Test infrastructure unblocked
 
@@ -272,10 +268,7 @@ All major "Now" items have been delivered:
 4. WebUI connectivity sanity
 
 - [x] Frontend connects to Python backend on correct port without Node backend proxy
-       Acceptance:
-       - Dev server: frontend requests succeed against uv run python main.py --web --no-auth
-       - No references to deleted webui/backend
-       - Basic auth disabled when --no-auth is provided
+      Acceptance: - Dev server: frontend requests succeed against uv run python main.py --web --no-auth - No references to deleted webui/backend - Basic auth disabled when --no-auth is provided
 
 5. Minimal docs parity
 
@@ -373,18 +366,18 @@ All major "Now" items have been delivered:
 
 13. Advanced voice processing integration
 
-- [ ] Integrate OpenWakeWord for voice wake word detection
+- [x] Integrate OpenWakeWord for voice wake word detection
       Acceptance:
   - Voice wake word triggers advisor interactions
   - Works with CLI mode and advisor system
   - Configurable wake word sensitivity and recognition
     Tasks:
-  - [ ] Add OpenWakeWord dependency and configuration
-  - [ ] Implement wake word detection in CLI mode
-  - [ ] Connect wake word to advisor service
-  - [ ] Add voice command processing pipeline
-  - [ ] Test with different wake words and environments
-  - [ ] Add voice activity detection and noise filtering
+  - [x] Add OpenWakeWord dependency and configuration
+  - [x] Implement wake word detection in CLI mode
+  - [x] Connect wake word to advisor service
+  - [x] Add voice command processing pipeline
+  - [x] Test with different wake words and environments
+  - [x] Add voice activity detection and noise filtering
 
 14. Computer vision commands
 

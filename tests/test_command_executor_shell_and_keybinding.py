@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import subprocess
 from unittest.mock import MagicMock, patch
 
@@ -29,135 +51,151 @@ def executor():
 
 
 class TestShellExecution:
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_shell_success(self, mock_run, executor, caplog):
-        executor.config.model_actions = {'test_shell': {'shell': 'echo hello'}}
-        mock_run.return_value = MagicMock(returncode=0, stdout='hello\n', stderr='')
+        executor.config.model_actions = {"test_shell": {"shell": "echo hello"}}
+        mock_run.return_value = MagicMock(returncode=0, stdout="hello\n", stderr="")
 
         # Should not raise; should log success
-        executor.execute_command('test_shell')
+        executor.execute_command("test_shell")
 
         mock_run.assert_called_once()
         # Accept either 'shell ok' or 'Completed execution' as success indication
         assert any(
-            ('shell ok' in rec.message)
-            or ('Completed execution of command: test_shell' in rec.message)
+            ("shell ok" in rec.message)
+            or ("Completed execution of command: test_shell" in rec.message)
             for rec in caplog.records
         )
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_shell_nonzero_exit(self, mock_run, executor, caplog):
-        executor.config.model_actions = {'bad_shell': {'shell': 'exit 5'}}
-        mock_run.return_value = MagicMock(returncode=5, stdout='', stderr='boom')
+        executor.config.model_actions = {"bad_shell": {"shell": "exit 5"}}
+        mock_run.return_value = MagicMock(returncode=5, stdout="", stderr="boom")
 
-        executor.execute_command('bad_shell')
+        executor.execute_command("bad_shell")
 
         # Should log error and report_error
-        assert any('shell exit 5' in rec.message for rec in caplog.records)
+        assert any("shell exit 5" in rec.message for rec in caplog.records)
         assert any(
-            rec.levelname == 'CRITICAL' and 'Error in bad_shell' in rec.message
+            rec.levelname == "CRITICAL" and "Error in bad_shell" in rec.message
             for rec in caplog.records
         )
 
-    @patch('subprocess.run', side_effect=subprocess.TimeoutExpired(cmd=['sleep', '10'], timeout=15))
+    @patch(
+        "subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd=["sleep", "10"], timeout=15),
+    )
     def test_shell_timeout(self, mock_run, executor, caplog):
-        executor.config.model_actions = {'timeout_shell': {'shell': 'sleep 10'}}
+        executor.config.model_actions = {"timeout_shell": {"shell": "sleep 10"}}
 
-        executor.execute_command('timeout_shell')
+        executor.execute_command("timeout_shell")
 
-        assert any('timed out' in rec.message for rec in caplog.records)
+        assert any("timed out" in rec.message for rec in caplog.records)
         assert any(
-            rec.levelname == 'CRITICAL' and 'timeout_shell' in rec.message for rec in caplog.records
+            rec.levelname == "CRITICAL" and "timeout_shell" in rec.message
+            for rec in caplog.records
         )
 
-    @patch('subprocess.run', side_effect=RuntimeError('boom'))
+    @patch("subprocess.run", side_effect=RuntimeError("boom"))
     def test_shell_generic_exception(self, mock_run, executor, caplog):
-        executor.config.model_actions = {'explode_shell': {'shell': 'whatever'}}
+        executor.config.model_actions = {"explode_shell": {"shell": "whatever"}}
 
-        executor.execute_command('explode_shell')
+        executor.execute_command("explode_shell")
 
-        assert any('shell execution failed' in rec.message for rec in caplog.records)
+        assert any("shell execution failed" in rec.message for rec in caplog.records)
         assert any(
-            rec.levelname == 'CRITICAL' and 'explode_shell' in rec.message for rec in caplog.records
+            rec.levelname == "CRITICAL" and "explode_shell" in rec.message
+            for rec in caplog.records
         )
 
 
 class TestKeybindingExecution:
     def test_keypress_pyautogui_missing(self, executor, caplog, monkeypatch):
         # Simulate missing pyautogui
-        monkeypatch.setattr('chatty_commander.app.command_executor.pyautogui', None, raising=False)
-        executor.config.model_actions = {'kp': {'keypress': 'a'}}
+        monkeypatch.setattr(
+            "chatty_commander.app.command_executor.pyautogui", None, raising=False
+        )
+        executor.config.model_actions = {"kp": {"keypress": "a"}}
 
-        executor.execute_command('kp')
+        executor.execute_command("kp")
 
         # Should not raise, should log error and report_error
-        assert any('pyautogui is not installed' in rec.message for rec in caplog.records)
         assert any(
-            rec.levelname == 'CRITICAL' and 'Error in kp' in rec.message for rec in caplog.records
+            "pyautogui is not installed" in rec.message for rec in caplog.records
+        )
+        assert any(
+            rec.levelname == "CRITICAL" and "Error in kp" in rec.message
+            for rec in caplog.records
         )
 
     def test_keypress_single_key(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
         monkeypatch.setattr(
-            'chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False
+            "chatty_commander.app.command_executor.pyautogui", mock_pg, raising=False
         )
-        executor.config.model_actions = {'kp': {'keypress': 'a'}}
+        executor.config.model_actions = {"kp": {"keypress": "a"}}
 
-        executor.execute_command('kp')
+        with caplog.at_level("INFO"):
+            executor.execute_command("kp")
 
-        mock_pg.press.assert_called_once_with('a')
+        mock_pg.press.assert_called_once_with("a")
         # Accept either explicit keybinding log or generic post-exec completion
         assert any(
-            ('Executed keybinding for kp' in rec.message)
-            or ('Completed execution of command: kp' in rec.message)
+            ("Executed keybinding for kp" in rec.message)
+            or ("Completed execution of command: kp" in rec.message)
             for rec in caplog.records
         )
 
     def test_keypress_combo_plus_syntax(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
         monkeypatch.setattr(
-            'chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False
+            "chatty_commander.app.command_executor.pyautogui", mock_pg, raising=False
         )
-        executor.config.model_actions = {'kp': {'keypress': 'ctrl+alt+t'}}
+        executor.config.model_actions = {"kp": {"keypress": "ctrl+alt+t"}}
 
-        executor.execute_command('kp')
+        with caplog.at_level("INFO"):
+            executor.execute_command("kp")
 
         mock_pg.hotkey.assert_called_once()
         args, kwargs = mock_pg.hotkey.call_args
-        assert args == ('ctrl', 'alt', 't')
+        assert args == ("ctrl", "alt", "t")
         assert any(
-            ('Executed keybinding for kp' in rec.message)
-            or ('Completed execution of command: kp' in rec.message)
+            ("Executed keybinding for kp" in rec.message)
+            or ("Completed execution of command: kp" in rec.message)
             for rec in caplog.records
         )
 
     def test_keypress_list_hotkey(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
         monkeypatch.setattr(
-            'chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False
+            "chatty_commander.app.command_executor.pyautogui", mock_pg, raising=False
         )
-        executor.config.model_actions = {'kp': {'keypress': ['ctrl', 'shift', ';']}}
+        executor.config.model_actions = {"kp": {"keypress": ["ctrl", "shift", ";"]}}
 
-        executor.execute_command('kp')
+        with caplog.at_level("INFO"):
+            executor.execute_command("kp")
 
-        mock_pg.hotkey.assert_called_once_with('ctrl', 'shift', ';')
+        mock_pg.hotkey.assert_called_once_with("ctrl", "shift", ";")
         assert any(
-            ('Executed keybinding for kp' in rec.message)
-            or ('Completed execution of command: kp' in rec.message)
+            ("Executed keybinding for kp" in rec.message)
+            or ("Completed execution of command: kp" in rec.message)
             for rec in caplog.records
         )
 
     def test_keypress_runtime_error_logged(self, executor, caplog, monkeypatch):
         mock_pg = MagicMock()
-        mock_pg.press.side_effect = RuntimeError('kb fail')
+        mock_pg.press.side_effect = RuntimeError("kb fail")
         monkeypatch.setattr(
-            'chatty_commander.app.command_executor.pyautogui', mock_pg, raising=False
+            "chatty_commander.app.command_executor.pyautogui", mock_pg, raising=False
         )
-        executor.config.model_actions = {'kp': {'keypress': 'x'}}
+        executor.config.model_actions = {"kp": {"keypress": "x"}}
 
-        executor.execute_command('kp')
+        executor.execute_command("kp")
 
-        assert any('Failed to execute keybinding' in rec.message for rec in caplog.records)
         assert any(
-            rec.levelname == 'CRITICAL' and 'Error in kp' in rec.message for rec in caplog.records
+            "Failed to execute keybinding" in rec.message for rec in caplog.records
+        )
+        assert any(
+            rec.levelname == "CRITICAL" and "Error in kp" in rec.message
+            for rec in caplog.records
         )

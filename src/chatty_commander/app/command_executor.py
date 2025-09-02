@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 command_executor.py
 
@@ -107,17 +129,23 @@ class CommandExecutor:
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
         """
         if pyautogui is None:
-            self.report_error(command_name, "pyautogui not available")
+            self.report_error(command_name, "pyautogui is not installed")
             return
         try:
             # Support either a list of keys (hotkey/chord) or a single key sequence
             if isinstance(keys, list | tuple):
                 pyautogui.hotkey(*keys)
+            elif isinstance(keys, str) and "+" in keys:
+                # Parse plus-separated key combinations (e.g., 'ctrl+alt+t')
+                key_parts = [part.strip() for part in keys.split("+")]
+                pyautogui.hotkey(*key_parts)
             else:
                 # For simple cases, press is less invasive than typewrite
                 pyautogui.press(keys)
+            logging.info(f"Executed keybinding for {command_name}")
             logging.info(f"Completed execution of command: {command_name}")
         except Exception as e:  # pragma: no cover - patched in tests
+            logging.error(f"Failed to execute keybinding for {command_name}: {e}")
             self.report_error(command_name, str(e))
 
     def _execute_url(self, command_name: str, url: str) -> None:
@@ -178,6 +206,14 @@ class CommandExecutor:
     def report_error(self, command_name: str, error_message: str) -> None:
         """Reports an error to the logging system or an external monitoring service."""
         logging.critical(f"Error in {command_name}: {error_message}")
+
+        # Also report to the utils logger for test compatibility
+        try:
+            from chatty_commander.utils.logger import report_error as utils_report_error
+
+            utils_report_error(error_message, context=command_name)
+        except ImportError:
+            pass  # Fallback if utils logger not available
 
 
 # Example usage intentionally removed to avoid instantiation without required args during static analysis/tests.

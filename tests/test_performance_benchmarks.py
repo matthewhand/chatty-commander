@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Performance benchmarking tests for ChattyCommander.
 Measures response times, memory usage, and throughput under various conditions.
@@ -76,9 +98,9 @@ class TestPerformanceBenchmarks:
     def web_server(self, mock_managers):
         """Create WebModeServer for performance testing."""
         with patch(
-            'chatty_commander.advisors.providers.build_provider_safe'
+            "chatty_commander.advisors.providers.build_provider_safe"
         ) as mock_build_provider, patch(
-            'chatty_commander.web.web_mode.WebModeServer._create_app'
+            "chatty_commander.web.web_mode.WebModeServer._create_app"
         ) as mock_create_app:
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
@@ -97,8 +119,23 @@ class TestPerformanceBenchmarks:
             )
 
             # Mock the app creation to skip rate limiting middleware
-            mock_app = MagicMock()
-            mock_app.get = MagicMock(return_value=MagicMock(status_code=200, json=lambda: {"status": "ok"}))
+            from starlette.applications import Starlette
+            from starlette.responses import JSONResponse
+            from starlette.routing import Route
+
+            async def mock_endpoint(request):
+                return JSONResponse({"status": "ok"})
+
+            mock_app = Starlette(
+                routes=[
+                    Route("/api/v1/status", mock_endpoint, methods=["GET"]),
+                    Route("/api/v1/config", mock_endpoint, methods=["GET"]),
+                    Route("/api/v1/state", mock_endpoint, methods=["GET"]),
+                    Route("/api/v1/config", mock_endpoint, methods=["PUT"]),
+                    Route("/api/v1/state", mock_endpoint, methods=["POST"]),
+                ]
+            )
+
             mock_create_app.return_value = mock_app
             server.app = mock_app
 
@@ -132,11 +169,13 @@ class TestPerformanceBenchmarks:
                 response_times.append((end_time - start_time) * 1000)  # Convert to ms
 
             results[endpoint] = {
-                'mean': statistics.mean(response_times),
-                'median': statistics.median(response_times),
-                'min': min(response_times),
-                'max': max(response_times),
-                'stdev': statistics.stdev(response_times) if len(response_times) > 1 else 0,
+                "mean": statistics.mean(response_times),
+                "median": statistics.median(response_times),
+                "min": min(response_times),
+                "max": max(response_times),
+                "stdev": statistics.stdev(response_times)
+                if len(response_times) > 1
+                else 0,
             }
 
         # Assert performance requirements
@@ -150,10 +189,10 @@ class TestPerformanceBenchmarks:
 
             # Performance assertions (adjust thresholds as needed)
             assert (
-                stats['mean'] < 100
+                stats["mean"] < 100
             ), f"{endpoint} mean response time too high: {stats['mean']:.2f}ms"
             assert (
-                stats['median'] < 50
+                stats["median"] < 50
             ), f"{endpoint} median response time too high: {stats['median']:.2f}ms"
 
     def test_concurrent_request_throughput(self, test_client):
@@ -165,9 +204,7 @@ class TestPerformanceBenchmarks:
         def make_requests(thread_id):
             """Make multiple requests from a single thread."""
             thread_times = []
-            for i in range(
-                requests_per_thread
-            ):  # noqa: B007 - loop index not used; measuring throughput only
+            for i in range(requests_per_thread):  # noqa: B007 - loop index not used; measuring throughput only
                 start_time = time.perf_counter()
                 response = test_client.get(endpoint)
                 end_time = time.perf_counter()
@@ -207,8 +244,12 @@ class TestPerformanceBenchmarks:
 
         # Performance assertions
         assert throughput > 50, f"Throughput too low: {throughput:.2f} req/s"
-        assert avg_response_time < 200, f"Average response time too high: {avg_response_time:.2f}ms"
-        assert monitor.memory_delta < 50, f"Memory usage too high: {monitor.memory_delta:.2f}MB"
+        assert (
+            avg_response_time < 200
+        ), f"Average response time too high: {avg_response_time:.2f}ms"
+        assert (
+            monitor.memory_delta < 50
+        ), f"Memory usage too high: {monitor.memory_delta:.2f}MB"
 
     def test_memory_usage_stability(self, test_client):
         """Test memory usage stability over extended operation."""
@@ -234,7 +275,9 @@ class TestPerformanceBenchmarks:
         final_memory = process.memory_info().rss / 1024 / 1024
         memory_growth = final_memory - baseline_memory
         max_memory = max(memory_samples)
-        memory_variance = statistics.variance(memory_samples) if len(memory_samples) > 1 else 0
+        memory_variance = (
+            statistics.variance(memory_samples) if len(memory_samples) > 1 else 0
+        )
 
         print("\nMemory stability test results:")
         print(f"  Baseline memory: {baseline_memory:.2f}MB")
@@ -293,9 +336,7 @@ class TestPerformanceBenchmarks:
         num_connections = 50
         mock_connections = []
 
-        for i in range(
-            num_connections
-        ):  # noqa: B007 - loop index not used; creating mock connections
+        for i in range(num_connections):  # noqa: B007 - loop index not used; creating mock connections
             mock_ws = AsyncMock()
             mock_connections.append(mock_ws)
             web_server.active_connections.add(mock_ws)
@@ -323,7 +364,9 @@ class TestPerformanceBenchmarks:
                 mock_ws.send_text.assert_called_once()
 
             # Performance assertions
-            assert broadcast_time < 100, f"Broadcast time too high: {broadcast_time:.2f}ms"
+            assert (
+                broadcast_time < 100
+            ), f"Broadcast time too high: {broadcast_time:.2f}ms"
             assert (
                 broadcast_time / num_connections < 2
             ), f"Per-connection time too high: {broadcast_time / num_connections:.2f}ms"

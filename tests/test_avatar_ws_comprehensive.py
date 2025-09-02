@@ -1,8 +1,30 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Comprehensive tests for avatar WebSocket functionality."""
 
 import asyncio
 import json
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -26,7 +48,7 @@ from src.chatty_commander.web.routes.avatar_ws import (
 class TestAvatarWSConnectionManager:
     """Test AvatarWSConnectionManager functionality."""
 
-    @patch('src.chatty_commander.web.routes.avatar_ws.get_thinking_manager')
+    @patch("src.chatty_commander.web.routes.avatar_ws.get_thinking_manager")
     def test_init_without_theme_resolver(self, mock_get_thinking_manager):
         """Test manager initialization without theme resolver."""
         mock_get_thinking_manager.return_value = None
@@ -41,7 +63,7 @@ class TestAvatarWSConnectionManager:
         mgr = AvatarWSConnectionManager(theme_resolver=theme_resolver)
         assert mgr.theme_resolver == theme_resolver
 
-    @patch('src.chatty_commander.web.routes.avatar_ws.get_thinking_manager')
+    @patch("src.chatty_commander.web.routes.avatar_ws.get_thinking_manager")
     def test_ensure_manager_first_time(self, mock_get_thinking_manager):
         """Test _ensure_manager when called for the first time."""
         mock_thinking_manager = Mock()
@@ -56,7 +78,7 @@ class TestAvatarWSConnectionManager:
         )
         assert mgr._registered_manager == mock_thinking_manager
 
-    @patch('src.chatty_commander.web.routes.avatar_ws.get_thinking_manager')
+    @patch("src.chatty_commander.web.routes.avatar_ws.get_thinking_manager")
     def test_ensure_manager_with_existing_registration(self, mock_get_thinking_manager):
         """Test _ensure_manager when manager changes."""
         old_manager = Mock()
@@ -72,15 +94,21 @@ class TestAvatarWSConnectionManager:
         result = mgr._ensure_manager()
 
         # Should remove from old manager and add to new
-        old_manager.remove_broadcast_callback.assert_called_once_with(mgr.broadcast_state_change)
-        new_manager.add_broadcast_callback.assert_called_once_with(mgr.broadcast_state_change)
+        old_manager.remove_broadcast_callback.assert_called_once_with(
+            mgr.broadcast_state_change
+        )
+        new_manager.add_broadcast_callback.assert_called_once_with(
+            mgr.broadcast_state_change
+        )
         assert mgr._registered_manager == new_manager
 
-    @patch('src.chatty_commander.web.routes.avatar_ws.get_thinking_manager')
+    @patch("src.chatty_commander.web.routes.avatar_ws.get_thinking_manager")
     def test_ensure_manager_with_exception(self, mock_get_thinking_manager):
         """Test _ensure_manager handles exceptions gracefully."""
         mock_thinking_manager = Mock()
-        mock_thinking_manager.add_broadcast_callback.side_effect = Exception("Test error")
+        mock_thinking_manager.add_broadcast_callback.side_effect = Exception(
+            "Test error"
+        )
         mock_get_thinking_manager.return_value = mock_thinking_manager
 
         mgr = AvatarWSConnectionManager()
@@ -95,11 +123,13 @@ class TestAvatarWSConnectionManager:
         mock_websocket = AsyncMock(spec=WebSocket)
         mock_thinking_manager = Mock()
         mock_thinking_manager.get_all_states.return_value = {
-            "agent1": Mock(to_dict=Mock(return_value={"state": "thinking", "persona_id": "chatty"}))
+            "agent1": Mock(
+                to_dict=Mock(return_value={"state": "thinking", "persona_id": "chatty"})
+            )
         }
 
         with patch(
-            'src.chatty_commander.web.routes.avatar_ws.get_thinking_manager',
+            "src.chatty_commander.web.routes.avatar_ws.get_thinking_manager",
             return_value=mock_thinking_manager,
         ):
             mgr = AvatarWSConnectionManager()
@@ -122,11 +152,13 @@ class TestAvatarWSConnectionManager:
         theme_resolver = Mock(return_value="dark")
         mock_thinking_manager = Mock()
         mock_thinking_manager.get_all_states.return_value = {
-            "agent1": Mock(to_dict=Mock(return_value={"state": "thinking", "persona_id": "chatty"}))
+            "agent1": Mock(
+                to_dict=Mock(return_value={"state": "thinking", "persona_id": "chatty"})
+            )
         }
 
         with patch(
-            'src.chatty_commander.web.routes.avatar_ws.get_thinking_manager',
+            "src.chatty_commander.web.routes.avatar_ws.get_thinking_manager",
             return_value=mock_thinking_manager,
         ):
             mgr = AvatarWSConnectionManager(theme_resolver=theme_resolver)
@@ -147,7 +179,7 @@ class TestAvatarWSConnectionManager:
         mock_thinking_manager.get_all_states.return_value = {}
 
         with patch(
-            'src.chatty_commander.web.routes.avatar_ws.get_thinking_manager',
+            "src.chatty_commander.web.routes.avatar_ws.get_thinking_manager",
             return_value=mock_thinking_manager,
         ):
             mgr = AvatarWSConnectionManager()
@@ -205,7 +237,7 @@ class TestAvatarWSConnectionManager:
             "data": {"persona_id": "computer", "state": "responding"},
         }
 
-        with patch.object(mgr, 'active_connections', []):
+        with patch.object(mgr, "active_connections", []):
             mgr.broadcast_state_change(message)
 
             # Verify theme was added to message data
@@ -222,7 +254,7 @@ class TestAvatarWSConnectionManager:
             "data": {"persona_id": "computer", "state": "responding"},
         }
 
-        with patch.object(mgr, 'active_connections', []):
+        with patch.object(mgr, "active_connections", []):
             # Should not raise exception
             mgr.broadcast_state_change(message)
 
@@ -239,7 +271,7 @@ class TestAvatarWSConnectionManager:
 
         message = {"type": "test", "data": "broadcast"}
 
-        with patch('asyncio.get_running_loop') as mock_get_loop:
+        with patch("asyncio.get_running_loop") as mock_get_loop:
             mock_loop = Mock()
             mock_get_loop.return_value = mock_loop
 
@@ -255,8 +287,8 @@ class TestAvatarWSConnectionManager:
 
         message = {"type": "test", "data": "broadcast"}
 
-        with patch('asyncio.get_running_loop', side_effect=RuntimeError("No loop")):
-            with patch('asyncio.run') as mock_run:
+        with patch("asyncio.get_running_loop", side_effect=RuntimeError("No loop")):
+            with patch("asyncio.run") as mock_run:
                 mgr.broadcast_state_change(message)
                 mock_run.assert_called_once()
 
@@ -300,7 +332,7 @@ class TestAvatarAudioQueue:
 
         audio_data = b"fake audio data" * 100  # 1500 bytes
 
-        with patch('asyncio.sleep') as mock_sleep:
+        with patch("asyncio.sleep") as mock_sleep:
             await queue._play_audio(audio_data)
             # Should sleep for 1.5 seconds (1500 bytes / 1000)
             mock_sleep.assert_called_once_with(1.5)
@@ -311,7 +343,7 @@ class TestAvatarAudioQueue:
         mock_manager = Mock()
         queue = AvatarAudioQueue(mock_manager)
 
-        with patch('asyncio.sleep') as mock_sleep:
+        with patch("asyncio.sleep") as mock_sleep:
             await queue._play_audio(None)
             mock_sleep.assert_called_once_with(0)
 
@@ -321,7 +353,7 @@ class TestAvatarAudioQueue:
         mock_manager = Mock()
         queue = AvatarAudioQueue(mock_manager)
 
-        with patch.object(queue, '_ensure_processor') as mock_ensure:
+        with patch.object(queue, "_ensure_processor") as mock_ensure:
             await queue.enqueue("agent1", "Hello", b"audio")
             mock_ensure.assert_called_once()
 
@@ -336,14 +368,12 @@ class TestAvatarAudioQueue:
         await queue.queue.put(("agent2", "msg2", None))
 
         # Mock current playing task
-        mock_task = AsyncMock()
+        mock_task = Mock()
         mock_task.done.return_value = False
         mock_task.cancel = Mock()
-        # Make awaiting the cancelled task raise CancelledError
-        mock_task.side_effect = asyncio.CancelledError()
         queue._current_play_task = mock_task
 
-        with patch.object(queue, '_ensure_processor') as mock_ensure:
+        with patch.object(queue, "_ensure_processor") as mock_ensure:
             await queue.interrupt("agent3", "Priority message", b"priority_audio")
 
             # Should cancel current task
@@ -358,7 +388,7 @@ class TestAvatarAudioQueue:
         mock_manager = Mock()
         queue = AvatarAudioQueue(mock_manager)
 
-        with patch('asyncio.get_running_loop') as mock_get_loop:
+        with patch("asyncio.get_running_loop") as mock_get_loop:
             mock_loop = Mock()
             mock_get_loop.return_value = mock_loop
 
@@ -371,8 +401,8 @@ class TestAvatarAudioQueue:
         mock_manager = Mock()
         queue = AvatarAudioQueue(mock_manager)
 
-        with patch('asyncio.get_running_loop', side_effect=RuntimeError("No loop")):
-            with patch('asyncio.run') as mock_run:
+        with patch("asyncio.get_running_loop", side_effect=RuntimeError("No loop")):
+            with patch("asyncio.run") as mock_run:
                 queue._ensure_processor()
                 mock_run.assert_called_once()
 
@@ -385,7 +415,7 @@ class TestAvatarAudioQueue:
         # Add item to queue
         await queue.queue.put(("agent1", "Hello", b"audio"))
 
-        with patch.object(queue, '_play_audio', new_callable=AsyncMock) as mock_play:
+        with patch.object(queue, "_play_audio", new_callable=AsyncMock) as mock_play:
             await queue._process()
 
             # Should broadcast start and end events
@@ -412,7 +442,7 @@ class TestAvatarAudioQueue:
         # Add item to queue
         await queue.queue.put(("agent1", "Hello", b"audio"))
 
-        with patch.object(queue, '_play_audio', new_callable=AsyncMock) as mock_play:
+        with patch.object(queue, "_play_audio", new_callable=AsyncMock) as mock_play:
             mock_play.side_effect = asyncio.CancelledError()
 
             await queue._process()
@@ -432,14 +462,18 @@ class TestAvatarWSHelpers:
     @pytest.mark.asyncio
     async def test_queue_avatar_message(self):
         """Test queue_avatar_message helper function."""
-        with patch.object(audio_queue, 'enqueue', new_callable=AsyncMock) as mock_enqueue:
+        with patch.object(
+            audio_queue, "enqueue", new_callable=AsyncMock
+        ) as mock_enqueue:
             await queue_avatar_message("agent1", "Hello", b"audio")
             mock_enqueue.assert_called_once_with("agent1", "Hello", b"audio")
 
     @pytest.mark.asyncio
     async def test_interrupt_avatar_queue(self):
         """Test interrupt_avatar_queue helper function."""
-        with patch.object(audio_queue, 'interrupt', new_callable=AsyncMock) as mock_interrupt:
+        with patch.object(
+            audio_queue, "interrupt", new_callable=AsyncMock
+        ) as mock_interrupt:
             await interrupt_avatar_queue("agent1", "Priority", b"audio")
             mock_interrupt.assert_called_once_with("agent1", "Priority", b"audio")
 
@@ -452,25 +486,30 @@ class TestAvatarWSHelpers:
             WebSocketDisconnect(),
         ]
 
-        with patch.object(manager, 'connect', new_callable=AsyncMock) as mock_connect:
+        with patch.object(manager, "connect", new_callable=AsyncMock) as mock_connect:
             with patch.object(
-                manager, 'send_personal_message', new_callable=AsyncMock
+                manager, "send_personal_message", new_callable=AsyncMock
             ) as mock_send:
-                with patch.object(manager, 'disconnect') as mock_disconnect:
+                with patch.object(manager, "disconnect") as mock_disconnect:
                     await avatar_ws_endpoint(mock_websocket)
 
                     mock_connect.assert_called_once_with(mock_websocket)
-                    mock_send.assert_called_once_with({"type": "ack", "data": "ok"}, mock_websocket)
+                    mock_send.assert_called_once_with(
+                        {"type": "ack", "data": "ok"}, mock_websocket
+                    )
                     mock_disconnect.assert_called_once_with(mock_websocket)
 
     @pytest.mark.asyncio
     async def test_avatar_ws_endpoint_invalid_json(self):
         """Test WebSocket endpoint with invalid JSON."""
         mock_websocket = AsyncMock(spec=WebSocket)
-        mock_websocket.receive_text.side_effect = ["invalid json", WebSocketDisconnect()]
+        mock_websocket.receive_text.side_effect = [
+            "invalid json",
+            WebSocketDisconnect(),
+        ]
 
-        with patch.object(manager, 'connect', new_callable=AsyncMock):
-            with patch.object(manager, 'disconnect') as mock_disconnect:
+        with patch.object(manager, "connect", new_callable=AsyncMock):
+            with patch.object(manager, "disconnect") as mock_disconnect:
                 await avatar_ws_endpoint(mock_websocket)
                 mock_disconnect.assert_called_once_with(mock_websocket)
 
@@ -483,8 +522,8 @@ class TestAvatarWSHelpers:
             WebSocketDisconnect(),
         ]
 
-        with patch.object(manager, 'connect', new_callable=AsyncMock):
-            with patch.object(manager, 'disconnect') as mock_disconnect:
+        with patch.object(manager, "connect", new_callable=AsyncMock):
+            with patch.object(manager, "disconnect") as mock_disconnect:
                 await avatar_ws_endpoint(mock_websocket)
                 mock_disconnect.assert_called_once_with(mock_websocket)
 
@@ -494,8 +533,8 @@ class TestAvatarWSHelpers:
         mock_websocket = AsyncMock(spec=WebSocket)
         mock_websocket.receive_text.side_effect = Exception("Connection error")
 
-        with patch.object(manager, 'connect', new_callable=AsyncMock):
-            with patch.object(manager, 'disconnect') as mock_disconnect:
+        with patch.object(manager, "connect", new_callable=AsyncMock):
+            with patch.object(manager, "disconnect") as mock_disconnect:
                 await avatar_ws_endpoint(mock_websocket)
                 mock_disconnect.assert_called_once_with(mock_websocket)
 

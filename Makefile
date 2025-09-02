@@ -9,7 +9,7 @@ install:
 # Run full test suite (quiet) with a safety timeout
 # GNU coreutils 'timeout' will send SIGTERM after 120s; adjust if needed.
 test:
-	timeout 120s uv run pytest -q || { code=$$?; echo "pytest terminated or timed out with exit code $$code"; exit $$code; }
+	timeout 120s uv run pytest -q --maxfail=1 || { code=$$?; echo "pytest terminated or timed out with exit code $$code"; exit $$code; }
 
 # Coverage run with summary and timeout guard
 test-cov:
