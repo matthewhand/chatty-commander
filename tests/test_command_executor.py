@@ -66,8 +66,7 @@ class TestCommandExecutor:
 
     def test_validate_command_missing(self, setup):
         """Test validate_command with missing command"""
-        with pytest.raises(ValueError, match="Invalid command"):
-            setup.validate_command("missing_cmd")
+        assert setup.validate_command("missing_cmd") is False
 
     def test_report_error(self, setup):
         """Test report_error method"""

@@ -127,7 +127,7 @@ class TestWebUIComprehensive:
     def test_avatar_ui_not_found_fallback(self, test_client):
         """Test fallback message when avatar UI is not found."""
         with patch("pathlib.Path.exists", return_value=False):
-            response = test_client.get("/avatar")
+            test_client.get("/avatar")
             # Avatar endpoint might not exist if path doesn't exist
             # This tests the fallback logic in the web_mode.py
             pass
@@ -183,7 +183,7 @@ class TestWebUIComprehensive:
     def test_websocket_endpoint_availability(self, test_client):
         """Test that WebSocket endpoint is available."""
         # Test that /ws endpoint exists and can be connected to
-        with test_client.websocket_connect("/ws") as websocket:
+        with test_client.websocket_connect("/ws"):
             # Basic connection test
             pass
 
@@ -202,10 +202,9 @@ class TestWebUIComprehensive:
         assert response.status_code == 200
 
         # Check for basic security headers
-        headers = response.headers
         # Note: These might not be implemented yet, but good to test for
-        # assert "x-content-type-options" in headers
-        # assert "x-frame-options" in headers
+        # assert "x-content-type-options" in response.headers
+        # assert "x-frame-options" in response.headers
 
     def test_error_page_handling(self, test_client):
         """Test custom error page handling."""
@@ -229,7 +228,7 @@ class TestWebUIComprehensive:
         """Test that frontend assets support compression."""
         # Test gzip compression for static assets
         headers = {"Accept-Encoding": "gzip, deflate"}
-        response = test_client.get("/", headers=headers)
+        test_client.get("/", headers=headers)
         # Check if compression is supported
         # Note: This depends on the web server configuration
         pass

@@ -249,12 +249,7 @@ def include_core_routes(
         start_time = time.time()
         try:
             cfg_mgr = get_config_manager()
-            config_dict = getattr(cfg_mgr, "config", {})
-            model_actions = (
-                config_dict.get("model_actions", {})
-                if isinstance(config_dict, dict)
-                else {}
-            )
+            model_actions = getattr(cfg_mgr, "model_actions", {})
             if request.command not in model_actions:
                 raise HTTPException(
                     status_code=404, detail=f"Command '{request.command}' not found"

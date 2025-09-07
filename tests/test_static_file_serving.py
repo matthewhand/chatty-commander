@@ -197,7 +197,6 @@ class TestStaticFileServing:
         assert response.status_code == 200
 
         # Check for cache-related headers
-        headers = response.headers
         # Note: Actual caching headers depend on FastAPI/Starlette configuration
         # This is more of a documentation test for expected behavior
         pass

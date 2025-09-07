@@ -56,12 +56,19 @@ class StateManager:
 
         # Check for state transitions from the current state
         if (
-            self.current_state in self.config.state_transitions
+            hasattr(self.config, "state_transitions")
+            and getattr(self.config, "state_transitions", None) is not None
+            and isinstance(getattr(self.config, "state_transitions", None), dict)
+            and self.current_state in self.config.state_transitions
             and command in self.config.state_transitions[self.current_state]
         ):
             new_state = self.config.state_transitions[self.current_state][command]
         # Flexible resolution via config-defined wakeword mapping
-        elif command in self.config.wakeword_state_map:
+        elif (
+            hasattr(self.config, "wakeword_state_map")
+            and self.config.wakeword_state_map is not None
+            and command in self.config.wakeword_state_map
+        ):
             new_state = self.config.wakeword_state_map[command]
         elif command == "toggle_mode":
             states = list(self.config.state_models.keys()) or [

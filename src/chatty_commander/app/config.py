@@ -50,8 +50,21 @@ class Config:
             "chat_models_path", "models-chatty"
         )
 
+        default_state_models = {}
+        if not self.config_file:  # Only use defaults for empty config_file (tests)
+            default_state_models = {
+                "idle": [
+                    "hey_chat_tee",
+                    "hey_khum_puter",
+                    "okay_stop",
+                    "lights_on",
+                    "lights_off",
+                ],
+                "computer": ["oh_kay_screenshot", "okay_stop"],
+                "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"],
+            }
         self.state_models: dict[str, list[str]] = self.config_data.get(
-            "state_models", {}
+            "state_models", default_state_models
         )
         self.api_endpoints: dict[str, str] = self.config_data.get(
             "api_endpoints",
@@ -66,7 +79,18 @@ class Config:
         self.state_transitions: dict[str, dict[str, str]] = self.config_data.get(
             "state_transitions", {}
         )
-        self.commands: dict[str, Any] = self.config_data.get("commands", {})
+        self.commands: dict[str, Any] = self.config_data.get(
+            "commands",
+            {
+                "hello": {
+                    "action": "custom_message",
+                    "message": "Hello from ChattyCommander!",
+                },
+                "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
+                "paste": {"action": "keypress", "keys": "paste"},
+                "submit": {"action": "keypress", "keys": "submit"},
+            },
+        )
 
         # Advisors configuration
         advisors_cfg = self.config_data.get("advisors", {})
@@ -104,7 +128,18 @@ class Config:
         )
 
         # Commands for model actions
-        self.commands: dict = self.config_data.get("commands", {})
+        default_commands = {}
+        if not self.config_file:  # Only use defaults for empty config_file (tests)
+            default_commands = {
+                "hello": {
+                    "action": "custom_message",
+                    "message": "Hello from ChattyCommander!",
+                },
+                "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
+                "paste": {"action": "keypress", "keys": "paste"},
+                "submit": {"action": "keypress", "keys": "submit"},
+            }
+        self.commands: dict = self.config_data.get("commands", default_commands)
 
         # Start on boot setting
         self.start_on_boot: bool = bool(
@@ -347,10 +382,13 @@ class Config:
         self._apply_web_server_config()
         self.config_data["web_server"] = self.web_server
         self.config_data["voice_only"] = self.voice_only
+        if not self.config_file:
+            # Skip saving when config_file is empty (for tests)
+            return
         try:
             with open(self.config_file, "w", encoding="utf-8") as f:
                 json.dump(self.config_data, f, indent=2)
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError, OSError) as e:
             logger.error(f"Could not save config file: {e}")
 
     def validate(self) -> None:

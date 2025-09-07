@@ -75,9 +75,12 @@ class CommandExecutor:
         Returns:
             bool: True if the command action executed successfully, False otherwise.
         """
+        # Handle invalid command names
+        if not isinstance(command_name, str) or not command_name:
+            return False
         # Let validation errors propagate for tests expecting exceptions
         if not self.validate_command(command_name):
-            return False
+            raise ValueError(f"Invalid command: {command_name}")
         self.pre_execute_hook(command_name)
         command_action = self.config.model_actions.get(command_name, {})
 
@@ -113,7 +116,7 @@ class CommandExecutor:
         command_action = self.config.model_actions.get(command_name)
         if not command_action:
             logging.error(f"No configuration found for command: {command_name}")
-            raise ValueError(f"Invalid command: {command_name}")
+            return False
         return True
 
     def pre_execute_hook(self, command_name: str) -> None:

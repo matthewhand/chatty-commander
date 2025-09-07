@@ -393,6 +393,7 @@ class WebModeServer:
                 return HTMLResponse(
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
+
         else:
             # Fallback route when frontend is not built
             @app.get("/", response_class=HTMLResponse)
@@ -575,6 +576,7 @@ class WebModeServer:
 
 def create_app(
     *,
+    config: Config | None = None,
     config_manager: Config | None = None,
     state_manager: StateManager | None = None,
     model_manager: ModelManager | None = None,
@@ -582,29 +584,12 @@ def create_app(
     no_auth: bool = False,
 ) -> FastAPI:
     """Convenience function to create a minimal FastAPI app for tests."""
-    # Defer to the newer server.create_app to keep assembly consistent
-    try:
-        from .server import create_app as _create
-
-        # Use an in-memory config to avoid external config.json affecting tests
-        cfg = config_manager or Config(config_file="")
-        sm = state_manager or StateManager(cfg)
-        mm = model_manager or ModelManager(cfg)
-        ce = command_executor or CommandExecutor(cfg, mm, sm)
-        return _create(
-            config_manager=cfg,
-            state_manager=sm,
-            model_manager=mm,
-            command_executor=ce,
-            no_auth=no_auth,
-        )
-    except Exception:
-        # Fallback: construct locally
-        cfg = config_manager or Config(config_file="")
-        sm = state_manager or StateManager(cfg)
-        mm = model_manager or ModelManager(cfg)
-        ce = command_executor or CommandExecutor(cfg, mm, sm)
-        return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth).app
+    # Use WebModeServer to ensure core routes are included
+    cfg = config or config_manager or Config(config_file="")
+    sm = state_manager or StateManager(cfg)
+    mm = model_manager or ModelManager(cfg)
+    ce = command_executor or CommandExecutor(cfg, mm, sm)
+    return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth).app
 
 
 def run_server(

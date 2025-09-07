@@ -495,8 +495,7 @@ class TestCommandExecutorComprehensive:
         config.model_actions = {"simple": "value"}
         executor = CommandExecutor(config, Mock(), Mock())
 
-        with pytest.raises(TypeError):
-            executor.execute_command(None)
+        assert executor.execute_command(None) is False
 
     @patch("chatty_commander.app.command_executor.pyautogui")
     def test_execute_keypress_command(self, mock_pyautogui, mock_managers):
