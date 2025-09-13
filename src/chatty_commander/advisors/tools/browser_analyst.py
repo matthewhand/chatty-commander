@@ -27,7 +27,6 @@ This tool provides web content analysis capabilities to advisors.
 """
 
 import logging
-from typing import Optional
 
 try:
     from agents import FunctionTool
@@ -39,7 +38,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def browser_analyst_tool(url: str, max_length: Optional[int] = 500) -> str:
+def browser_analyst_tool(url: str, max_length: int | None = 500) -> str:
     """
     Analyze and summarize web content from a given URL.
 

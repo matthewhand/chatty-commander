@@ -130,9 +130,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers[
-            "Permissions-Policy"
-        ] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
 
         # Remove server header for security
         if "server" in response.headers:
@@ -257,6 +257,11 @@ class WebModeServer:
         self.app = self._create_app()
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
+
+    @property
+    def config(self) -> Config:
+        """Access config manager as 'config' for compatibility."""
+        return self.config_manager
 
     def _clear_expired_cache(self) -> None:
         """Clear expired cache entries to prevent memory leaks."""

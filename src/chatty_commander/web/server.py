@@ -29,11 +29,9 @@ try:
 except Exception:  # very minimal stub if FastAPI missing (tests won't hit real HTTP)
 
     class FastAPI:  # type: ignore
-        def __init__(self, *a: Any, **k: Any) -> None:
-            ...
+        def __init__(self, *a: Any, **k: Any) -> None: ...
 
-        def include_router(self, *a: Any, **k: Any) -> None:
-            ...
+        def include_router(self, *a: Any, **k: Any) -> None: ...
 
         @property
         def routes(self):

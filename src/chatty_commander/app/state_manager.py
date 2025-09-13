@@ -47,11 +47,34 @@ class StateManager:
         self.callbacks: list[Callable[[str, str], None]] = []
         self.logger.info(f"StateManager initialized with state: {self.current_state}")
 
+    def process_command(self, command: str) -> bool:
+        """Process a command and return success status.
+
+        This method provides a simple interface for command processing
+        that returns a boolean success status.
+
+        Args:
+            command: The command to process
+
+        Returns:
+            True if command was processed successfully, False otherwise
+        """
+        try:
+            result = self.update_state(command)
+            # Return True if state changed or command was recognized
+            return result is not None or command in ["toggle_mode"]
+        except (ValueError, AttributeError, TypeError):
+            # Handle invalid commands gracefully
+            return False
+
     def update_state(self, command: str) -> str | None:
         """Update state based on a command.
 
         Returns the new state if a transition occurred, otherwise ``None``.
         """
+        if not isinstance(command, str) or not command.strip():
+            return None
+
         new_state: str | None = None
 
         # Check for state transitions from the current state

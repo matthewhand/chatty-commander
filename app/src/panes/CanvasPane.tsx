@@ -51,7 +51,6 @@ export default function CanvasPane() {
     };
   }, [addLog, asciiOnly, setStatus]);
 
-export default function CanvasPane() {
   return (
     <section className="flex-1 flex flex-col bg-gray-900">
       <iframe

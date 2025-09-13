@@ -398,9 +398,9 @@ class VoiceSelfTester:
 
         # Suggest backend changes
         if avg_accuracy < 0.8:
-            tuning_recommendations[
-                "transcription_backend"
-            ] = "whisper_api"  # Higher quality
+            tuning_recommendations["transcription_backend"] = (
+                "whisper_api"  # Higher quality
+            )
 
         # Analyze timing issues
         individual_results = test_results.get("individual_results", [])

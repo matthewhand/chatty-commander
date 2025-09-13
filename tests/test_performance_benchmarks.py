@@ -97,11 +97,14 @@ class TestPerformanceBenchmarks:
     @pytest.fixture
     def web_server(self, mock_managers):
         """Create WebModeServer for performance testing."""
-        with patch(
-            "chatty_commander.advisors.providers.build_provider_safe"
-        ) as mock_build_provider, patch(
-            "chatty_commander.web.web_mode.WebModeServer._create_app"
-        ) as mock_create_app:
+        with (
+            patch(
+                "chatty_commander.advisors.providers.build_provider_safe"
+            ) as mock_build_provider,
+            patch(
+                "chatty_commander.web.web_mode.WebModeServer._create_app"
+            ) as mock_create_app,
+        ):
             mock_provider = MagicMock()
             mock_provider.model = "test-model"
             mock_provider.api_mode = "completion"
@@ -123,16 +126,57 @@ class TestPerformanceBenchmarks:
             from starlette.responses import JSONResponse
             from starlette.routing import Route
 
-            async def mock_endpoint(request):
-                return JSONResponse({"status": "ok"})
+            async def mock_status_endpoint(request):
+                return JSONResponse(
+                    {
+                        "status": "running",
+                        "current_state": getattr(
+                            state_manager, "current_state", "idle"
+                        ),
+                        "active_models": [],
+                        "uptime": "0h 0m 0s",
+                        "version": "0.2.0",
+                    }
+                )
+
+            async def mock_config_get_endpoint(request):
+                return JSONResponse(getattr(config, "config", {}))
+
+            async def mock_state_get_endpoint(request):
+                return JSONResponse(
+                    {
+                        "current_state": getattr(
+                            state_manager, "current_state", "idle"
+                        ),
+                        "active_models": [],
+                        "last_command": None,
+                        "timestamp": "2024-01-01T00:00:00",
+                    }
+                )
+
+            async def mock_config_put_endpoint(request):
+                return JSONResponse({"message": "Configuration updated successfully"})
+
+            async def mock_state_post_endpoint(request):
+                # Parse the JSON body to get the state
+                import json
+
+                body = await request.body()
+                state_data = json.loads(body)
+                target_state = state_data.get("state")
+
+                # Actually call the StateManager mock
+                state_manager.change_state(target_state)
+
+                return JSONResponse({"message": f"State changed to {target_state}"})
 
             mock_app = Starlette(
                 routes=[
-                    Route("/api/v1/status", mock_endpoint, methods=["GET"]),
-                    Route("/api/v1/config", mock_endpoint, methods=["GET"]),
-                    Route("/api/v1/state", mock_endpoint, methods=["GET"]),
-                    Route("/api/v1/config", mock_endpoint, methods=["PUT"]),
-                    Route("/api/v1/state", mock_endpoint, methods=["POST"]),
+                    Route("/api/v1/status", mock_status_endpoint, methods=["GET"]),
+                    Route("/api/v1/config", mock_config_get_endpoint, methods=["GET"]),
+                    Route("/api/v1/state", mock_state_get_endpoint, methods=["GET"]),
+                    Route("/api/v1/config", mock_config_put_endpoint, methods=["PUT"]),
+                    Route("/api/v1/state", mock_state_post_endpoint, methods=["POST"]),
                 ]
             )
 
@@ -173,9 +217,9 @@ class TestPerformanceBenchmarks:
                 "median": statistics.median(response_times),
                 "min": min(response_times),
                 "max": max(response_times),
-                "stdev": statistics.stdev(response_times)
-                if len(response_times) > 1
-                else 0,
+                "stdev": (
+                    statistics.stdev(response_times) if len(response_times) > 1 else 0
+                ),
             }
 
         # Assert performance requirements
@@ -204,7 +248,9 @@ class TestPerformanceBenchmarks:
         def make_requests(thread_id):
             """Make multiple requests from a single thread."""
             thread_times = []
-            for i in range(requests_per_thread):  # noqa: B007 - loop index not used; measuring throughput only
+            for i in range(
+                requests_per_thread
+            ):  # noqa: B007 - loop index not used; measuring throughput only
                 start_time = time.perf_counter()
                 response = test_client.get(endpoint)
                 end_time = time.perf_counter()
@@ -336,7 +382,9 @@ class TestPerformanceBenchmarks:
         num_connections = 50
         mock_connections = []
 
-        for i in range(num_connections):  # noqa: B007 - loop index not used; creating mock connections
+        for i in range(
+            num_connections
+        ):  # noqa: B007 - loop index not used; creating mock connections
             mock_ws = AsyncMock()
             mock_connections.append(mock_ws)
             web_server.active_connections.add(mock_ws)

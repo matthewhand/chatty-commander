@@ -147,16 +147,20 @@ class ThinkingStateManager:
 
     def add_broadcast_callback(
         self,
-        callback: Callable[[dict[str, Any]], None]
-        | Callable[[dict[str, Any]], Awaitable[None]],
+        callback: (
+            Callable[[dict[str, Any]], None]
+            | Callable[[dict[str, Any]], Awaitable[None]]
+        ),
     ) -> None:
         """Add a callback to receive state change broadcasts."""
         self.broadcast_callbacks.add(callback)
 
     def remove_broadcast_callback(
         self,
-        callback: Callable[[dict[str, Any]], None]
-        | Callable[[dict[str, Any]], Awaitable[None]],
+        callback: (
+            Callable[[dict[str, Any]], None]
+            | Callable[[dict[str, Any]], Awaitable[None]]
+        ),
     ) -> None:
         """Remove a broadcast callback."""
         self.broadcast_callbacks.discard(callback)

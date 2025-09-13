@@ -90,24 +90,50 @@ class CommandExecutor:
 
         success = False
         try:
-            if "keypress" in command_action:
-                keys = command_action["keypress"]
-                self._execute_keybinding(command_name, keys)  # tests can patch this
-                success = True
-            elif "url" in command_action:
-                url = command_action.get("url", "")
-                self._execute_url(command_name, url)
-                success = True
-            elif "shell" in command_action:
-                cmd = command_action.get("shell", "")
-                success = self._execute_shell(command_name, cmd)
+            # Handle both old format and new format with 'action' key
+            if "action" in command_action:
+                action_type = command_action["action"]
+                if action_type == "keypress":
+                    keys = command_action.get("keys", "")
+                    self._execute_keybinding(command_name, keys)
+                    success = True
+                elif action_type == "url":
+                    url = command_action.get("url", "")
+                    self._execute_url(command_name, url)
+                    success = True
+                elif action_type == "shell":
+                    cmd = command_action.get("cmd", "")
+                    success = self._execute_shell(command_name, cmd)
+                else:
+                    error_message = (
+                        f"Command '{command_name}' has an invalid action type '{action_type}'. "
+                        f"Valid actions are: 'keypress', 'url', 'shell'"
+                    )
+                    raise TypeError(error_message)
             else:
-                error_message = (
-                    f"Command '{command_name}' has an invalid type. "
-                    f"No valid action ('keypress', 'url', 'shell') found in configuration."
-                )
-                # Raise to satisfy tests expecting TypeError
-                raise TypeError(error_message)
+                # Handle old format (direct keys)
+                if "keypress" in command_action:
+                    keys = command_action["keypress"]
+                    self._execute_keybinding(command_name, keys)  # tests can patch this
+                    success = True
+                elif "url" in command_action:
+                    url = command_action.get("url", "")
+                    self._execute_url(command_name, url)
+                    success = True
+                elif "shell" in command_action:
+                    cmd = command_action.get("shell", "")
+                    success = self._execute_shell(command_name, cmd)
+                else:
+                    error_message = (
+                        f"Command '{command_name}' has an invalid type. "
+                        f"No valid action ('keypress', 'url', 'shell') found in configuration."
+                    )
+                    # Raise to satisfy tests expecting TypeError
+                    raise TypeError(error_message)
+        except (TypeError, ValueError, Exception) as e:
+            # Log the exception but don't re-raise - handle gracefully
+            logging.error(f"Error executing command '{command_name}': {e}")
+            success = False
         finally:
             self.post_execute_hook(command_name)
         return success
@@ -117,6 +143,34 @@ class CommandExecutor:
         if not command_action:
             logging.error(f"No configuration found for command: {command_name}")
             return False
+
+        # Validate that the command has a valid action configuration
+        if "action" in command_action:
+            # New format validation
+            action_type = command_action.get("action")
+            if action_type not in ["keypress", "url", "shell"]:
+                logging.error(
+                    f"Invalid action type '{action_type}' for command: {command_name}"
+                )
+                return False
+            # Check required fields for each action type
+            if action_type == "keypress" and "keys" not in command_action:
+                logging.error(
+                    f"Missing 'keys' field for keypress command: {command_name}"
+                )
+                return False
+            if action_type == "url" and "url" not in command_action:
+                logging.error(f"Missing 'url' field for url command: {command_name}")
+                return False
+            if action_type == "shell" and "cmd" not in command_action:
+                logging.error(f"Missing 'cmd' field for shell command: {command_name}")
+                return False
+        else:
+            # Old format validation
+            if not any(key in command_action for key in ["keypress", "url", "shell"]):
+                logging.error(f"No valid action found for command: {command_name}")
+                return False
+
         return True
 
     def pre_execute_hook(self, command_name: str) -> None:

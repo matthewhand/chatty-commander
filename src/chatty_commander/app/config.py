@@ -257,6 +257,7 @@ class Config:
                 self.config_data = new_config
                 self.config = new_config
                 self._validate_config()
+                self._load_general_settings()  # Load general settings to update default_state
                 logger.info("Configuration reloaded successfully")
                 return True
             return False
@@ -322,7 +323,16 @@ class Config:
     def _load_config(self) -> dict[str, Any]:
         try:
             with open(self.config_file, encoding="utf-8") as f:
-                return json.load(f)
+                config_data = json.load(f)
+                # Ensure we always return a dictionary, even if JSON contains null or other non-dict values
+                if not isinstance(config_data, dict):
+                    logger.warning(
+                        "Config file %s contains non-dictionary content (%s). Using defaults.",
+                        self.config_file,
+                        type(config_data).__name__,
+                    )
+                    return {}
+                return config_data
         except FileNotFoundError:
             logger.warning(
                 "Config file %s not found. Using defaults.", self.config_file

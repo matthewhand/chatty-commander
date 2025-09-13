@@ -123,9 +123,9 @@ def include_core_routes(
         return SystemStatus(
             status="running",
             current_state=getattr(sm, "current_state", "idle"),
-            active_models=sm.get_active_models()
-            if hasattr(sm, "get_active_models")
-            else [],
+            active_models=(
+                sm.get_active_models() if hasattr(sm, "get_active_models") else []
+            ),
             uptime=uptime_str,
         )
 
@@ -225,9 +225,9 @@ def include_core_routes(
         sm = get_state_manager()
         return StateInfo(
             current_state=getattr(sm, "current_state", "idle"),
-            active_models=sm.get_active_models()
-            if hasattr(sm, "get_active_models")
-            else [],
+            active_models=(
+                sm.get_active_models() if hasattr(sm, "get_active_models") else []
+            ),
             last_command=get_last_command(),
             timestamp=get_last_state_change().isoformat(),
         )

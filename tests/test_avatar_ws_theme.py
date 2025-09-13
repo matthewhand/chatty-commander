@@ -40,8 +40,8 @@ def test_avatar_ws_includes_theme_in_snapshot():
     mgr.register_agent(agent_id, persona_id="expert")
 
     # Inject a theme resolver for test
-    manager.theme_resolver = (
-        lambda persona_id: "robot" if persona_id == "expert" else "default"
+    manager.theme_resolver = lambda persona_id: (
+        "robot" if persona_id == "expert" else "default"
     )
 
     app = FastAPI()
