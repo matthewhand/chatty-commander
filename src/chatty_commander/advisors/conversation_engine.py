@@ -20,7 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Advanced conversation engine for ChattyCommander AI interactions."""
+"""Advanced conversation engine for ChattyCommander AI interactions.
+
+TODO: This is an experimental implementation that needs testing and validation.
+TODO: Verify conversation context management works correctly.
+TODO: Test sentiment and intent analysis accuracy.
+TODO: Validate persona-based prompt generation.
+TODO: Confirm conversation memory persistence.
+TODO: Test fallback responses in various scenarios.
+"""
 
 import json
 from dataclasses import dataclass
@@ -50,6 +58,8 @@ class ConversationEngine:
 
     def analyze_intent(self, text: str) -> str:
         """Analyze user intent from text."""
+        if text is None:
+            return "general_conversation"
         text_lower = text.lower()
 
         # Command intents
@@ -89,6 +99,8 @@ class ConversationEngine:
 
     def analyze_sentiment(self, text: str) -> str:
         """Simple sentiment analysis."""
+        if text is None:
+            return "neutral"
         positive_words = [
             "good",
             "great",
