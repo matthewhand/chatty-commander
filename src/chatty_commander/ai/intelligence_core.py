@@ -20,7 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Core AI intelligence module that orchestrates all AI capabilities."""
+"""Core AI intelligence module that orchestrates all AI capabilities.
+
+TODO: This is an experimental implementation that needs testing and validation.
+TODO: Verify voice processing integration works correctly.
+TODO: Test conversation engine with real LLM backends.
+TODO: Validate mode switching and action execution.
+TODO: Confirm all dependencies are properly handled.
+"""
 
 import logging
 from collections.abc import Callable
@@ -173,10 +180,35 @@ class IntelligenceCore:
         start_time = datetime.now()
         metadata = metadata or {}
 
+        # Handle None input gracefully
+        if text is None:
+            return AIResponse(
+                text="I didn't receive any input. Could you please try again?",
+                confidence=0.0,
+                intent="error",
+                actions=[],
+                metadata={"error": "No input provided", "input_type": input_type},
+                timestamp=start_time,
+            )
+
+        # Handle empty string input gracefully
+        if not text.strip():
+            return AIResponse(
+                text="I didn't receive any meaningful input. Could you please say something?",
+                confidence=0.0,
+                intent="error",
+                actions=[],
+                metadata={"error": "Empty input provided", "input_type": input_type},
+                timestamp=start_time,
+            )
+
         try:
-            # Create advisor message
+            # Create advisor message with valid platform types
+            platform_map = {"voice": "gui", "text": "cli", "voice_file": "gui"}
+            platform = platform_map.get(input_type, "cli")
+
             advisor_message = AdvisorMessage(
-                platform="voice" if input_type == "voice" else "text",
+                platform=platform,
                 channel="main",
                 user="user",
                 text=text,

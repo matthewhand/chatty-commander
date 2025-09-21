@@ -20,7 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Enhanced voice processing with improved quality and intelligence."""
+"""Enhanced voice processing with improved quality and intelligence.
+
+TODO: This is an experimental implementation that needs testing and validation.
+TODO: Verify all audio dependencies (pyaudio, whisper, etc.) are available.
+TODO: Test noise reduction and VAD functionality.
+TODO: Validate transcription accuracy with different engines.
+TODO: Confirm wake word detection works reliably.
+TODO: Test on different audio hardware configurations.
+"""
 
 import logging
 import queue
