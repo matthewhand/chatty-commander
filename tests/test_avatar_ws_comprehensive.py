@@ -30,7 +30,6 @@ import pytest
 
 try:
     from fastapi import WebSocket, WebSocketDisconnect
-    from fastapi.testclient import TestClient
 except ImportError:
     pytest.skip("FastAPI not available", allow_module_level=True)
 
@@ -415,7 +414,7 @@ class TestAvatarAudioQueue:
         # Add item to queue
         await queue.queue.put(("agent1", "Hello", b"audio"))
 
-        with patch.object(queue, "_play_audio", new_callable=AsyncMock) as mock_play:
+        with patch.object(queue, "_play_audio", new_callable=AsyncMock):
             await queue._process()
 
             # Should broadcast start and end events

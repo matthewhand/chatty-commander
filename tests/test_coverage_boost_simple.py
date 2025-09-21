@@ -252,8 +252,9 @@ class TestCoverageBoostSimple:
             "format": "plain",
         }
 
-        with patch("logging.handlers.RotatingFileHandler"), patch(
-            "logging.StreamHandler"
+        with (
+            patch("logging.handlers.RotatingFileHandler"),
+            patch("logging.StreamHandler"),
         ):
             logger = setup_logger("multi_handler", config=config)
             assert isinstance(logger, logging.Logger)

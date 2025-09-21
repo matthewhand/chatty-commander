@@ -93,6 +93,32 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+# Advisor API models
+class AdvisorInbound(BaseModel):
+    platform: str
+    channel: str
+    user: str
+    text: str
+    username: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class AdvisorOutbound(BaseModel):
+    reply: str
+    context_key: str
+    persona_id: str
+    model: str
+    api_mode: str
+
+
+class ContextStats(BaseModel):
+    total_contexts: int
+    platform_distribution: dict[str, int]
+    persona_distribution: dict[str, int]
+    persistence_enabled: bool
+    persistence_path: str
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
@@ -104,9 +130,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers[
-            "Permissions-Policy"
-        ] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
 
         # Remove server header for security
         if "server" in response.headers:
@@ -231,6 +257,11 @@ class WebModeServer:
         self.app = self._create_app()
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
+
+    @property
+    def config(self) -> Config:
+        """Access config manager as 'config' for compatibility."""
+        return self.config_manager
 
     def _clear_expired_cache(self) -> None:
         """Clear expired cache entries to prevent memory leaks."""
@@ -368,6 +399,14 @@ class WebModeServer:
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
 
+        else:
+            # Fallback route when frontend is not built
+            @app.get("/", response_class=HTMLResponse)
+            async def _serve_frontend_fallback():  # pragma: no cover - exercised in integration
+                return HTMLResponse(
+                    "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
+                )
+
         # Optional avatar UI
         avatar_path = Path("src/chatty_commander/webui/avatar")
         if avatar_path.exists():
@@ -392,28 +431,6 @@ class WebModeServer:
 
     def _register_advisors_routes(self, app: FastAPI) -> None:
         """Register advisors REST endpoints backed by AdvisorsService."""
-
-        class AdvisorInbound(BaseModel):
-            platform: str
-            channel: str
-            user: str
-            text: str
-            username: str | None = None
-            metadata: dict[str, Any] | None = None
-
-        class AdvisorOutbound(BaseModel):
-            reply: str
-            context_key: str
-            persona_id: str
-            model: str
-            api_mode: str
-
-        class ContextStats(BaseModel):
-            total_contexts: int
-            platform_distribution: dict[str, int]
-            persona_distribution: dict[str, int]
-            persistence_enabled: bool
-            persistence_path: str
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(message: AdvisorInbound):
@@ -564,6 +581,7 @@ class WebModeServer:
 
 def create_app(
     *,
+    config: Config | None = None,
     config_manager: Config | None = None,
     state_manager: StateManager | None = None,
     model_manager: ModelManager | None = None,
@@ -571,29 +589,12 @@ def create_app(
     no_auth: bool = False,
 ) -> FastAPI:
     """Convenience function to create a minimal FastAPI app for tests."""
-    # Defer to the newer server.create_app to keep assembly consistent
-    try:
-        from .server import create_app as _create
-
-        # Use an in-memory config to avoid external config.json affecting tests
-        cfg = config_manager or Config(config_file="")
-        sm = state_manager or StateManager(cfg)
-        mm = model_manager or ModelManager(cfg)
-        ce = command_executor or CommandExecutor(cfg, mm, sm)
-        return _create(
-            config_manager=cfg,
-            state_manager=sm,
-            model_manager=mm,
-            command_executor=ce,
-            no_auth=no_auth,
-        )
-    except Exception:
-        # Fallback: construct locally
-        cfg = config_manager or Config(config_file="")
-        sm = state_manager or StateManager(cfg)
-        mm = model_manager or ModelManager(cfg)
-        ce = command_executor or CommandExecutor(cfg, mm, sm)
-        return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth).app
+    # Use WebModeServer to ensure core routes are included
+    cfg = config or config_manager or Config(config_file="")
+    sm = state_manager or StateManager(cfg)
+    mm = model_manager or ModelManager(cfg)
+    ce = command_executor or CommandExecutor(cfg, mm, sm)
+    return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth).app
 
 
 def run_server(

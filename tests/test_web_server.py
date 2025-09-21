@@ -27,7 +27,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 try:
-    from fastapi import FastAPI, HTTPException
+    from fastapi import FastAPI
     from fastapi.testclient import TestClient
 except ImportError:
     pytest.skip("FastAPI not available", allow_module_level=True)
@@ -196,7 +196,7 @@ class TestWebServer:
         mock_include_settings.return_value = mock_settings_router
 
         # Create app with config manager
-        app = create_app(config_manager=mock_config_manager)
+        create_app(config_manager=mock_config_manager)
 
         # Import the global after app creation
         from src.chatty_commander.web import server

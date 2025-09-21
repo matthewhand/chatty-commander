@@ -123,9 +123,9 @@ def include_core_routes(
         return SystemStatus(
             status="running",
             current_state=getattr(sm, "current_state", "idle"),
-            active_models=sm.get_active_models()
-            if hasattr(sm, "get_active_models")
-            else [],
+            active_models=(
+                sm.get_active_models() if hasattr(sm, "get_active_models") else []
+            ),
             uptime=uptime_str,
         )
 
@@ -143,8 +143,8 @@ def include_core_routes(
             import psutil
 
             memory = psutil.virtual_memory()
-            memory_usage = ".1f"
-            cpu_usage = ".1f"
+            memory_usage = f"{memory.percent:.1f}%"
+            cpu_usage = f"{psutil.cpu_percent():.1f}%"
         except ImportError:
             pass  # psutil not available
 
@@ -225,9 +225,9 @@ def include_core_routes(
         sm = get_state_manager()
         return StateInfo(
             current_state=getattr(sm, "current_state", "idle"),
-            active_models=sm.get_active_models()
-            if hasattr(sm, "get_active_models")
-            else [],
+            active_models=(
+                sm.get_active_models() if hasattr(sm, "get_active_models") else []
+            ),
             last_command=get_last_command(),
             timestamp=get_last_state_change().isoformat(),
         )
@@ -249,12 +249,7 @@ def include_core_routes(
         start_time = time.time()
         try:
             cfg_mgr = get_config_manager()
-            config_dict = getattr(cfg_mgr, "config", {})
-            model_actions = (
-                config_dict.get("model_actions", {})
-                if isinstance(config_dict, dict)
-                else {}
-            )
+            model_actions = getattr(cfg_mgr, "model_actions", {})
             if request.command not in model_actions:
                 raise HTTPException(
                     status_code=404, detail=f"Command '{request.command}' not found"
@@ -293,7 +288,7 @@ def include_core_routes(
     }
 
     @router.get("/api/v1/health", operation_id="health_check_core")
-    async def health_check():
+    async def health_check_core():
         counters["status"] += 1
         return {
             "status": "healthy",

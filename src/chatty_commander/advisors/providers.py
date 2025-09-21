@@ -137,12 +137,8 @@ class CompletionProvider(LLMProvider):
             except ImportError:
                 pass
 
-        # Get MCP configuration
-        mcp_config = config.get("mcp", {})
+        # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers = []
-
-        # Get handoffs configuration
-        handoffs_config = config.get("handoffs", [])
         handoffs = []
 
         # Initialize Agent client with enhanced capabilities
@@ -210,12 +206,8 @@ class ResponsesProvider(LLMProvider):
             except ImportError:
                 pass
 
-        # Get MCP configuration
-        mcp_config = config.get("mcp", {})
+        # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers = []
-
-        # Get handoffs configuration
-        handoffs_config = config.get("handoffs", [])
         handoffs = []
 
         # Initialize Agent client with enhanced capabilities

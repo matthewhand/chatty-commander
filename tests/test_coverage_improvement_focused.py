@@ -77,9 +77,10 @@ class TestCoverageImprovementFocused:
         with patch("chatty_commander.app.command_executor.pyautogui") as mock_pg:
             mock_pg.hotkey.side_effect = RuntimeError("pyautogui not available")
 
-            with patch("logging.error") as mock_log, patch(
-                "logging.critical"
-            ) as mock_critical:
+            with (
+                patch("logging.error") as mock_log,
+                patch("logging.critical") as mock_critical,
+            ):
                 result = executor.execute_command("test_keypress")
 
                 assert result is False
@@ -90,9 +91,10 @@ class TestCoverageImprovementFocused:
         with patch(
             "requests.get", side_effect=requests.RequestException("Connection failed")
         ):
-            with patch("logging.error") as mock_log, patch(
-                "logging.critical"
-            ) as mock_critical:
+            with (
+                patch("logging.error") as mock_log,
+                patch("logging.critical") as mock_critical,
+            ):
                 result = executor.execute_command("test_url")
 
                 assert result is False
