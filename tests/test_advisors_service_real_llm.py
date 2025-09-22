@@ -346,7 +346,7 @@ class TestAdvisorsServiceRealLLM:
             text="What did I say I like?",
         )
 
-        reply = service.handle_message(message2)
+        _ = service.handle_message(message2)
 
         # Verify LLM was called with memory context
         call_args = mock_provider.generate.call_args[0][0]
@@ -368,7 +368,7 @@ class TestAdvisorsServiceRealLLM:
             platform="web", channel="chat", user="user123", text="Tell me a story"
         )
 
-        reply = service.handle_message(message)
+        _ = service.handle_message(message)
 
         # Currently using generate, not generate_stream
         # This test verifies the provider has streaming capability

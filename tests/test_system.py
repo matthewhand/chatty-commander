@@ -20,58 +20,49 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-import types
-
-# Patch sys.modules to mock openwakeword and openwakeword.model for test imports
-sys.modules["openwakeword"] = types.ModuleType("openwakeword")
-mock_model_mod = types.ModuleType("openwakeword.model")
-mock_model_mod.Model = type("Model", (), {})
-sys.modules["openwakeword.model"] = mock_model_mod
-#!/usr/bin/env python3
 """
 Comprehensive System Testing Script for ChattyCommander
 
 This script tests all application modes, CLI commands, configuration management,
 and system functions. It serves as both a testing framework and documentation
 of expected outputs.
-Usage:
-    python test_system.py [--mode MODE] [--verbose] [--output-file FILE]
+"""
 
-Modes:
-    all     - Run all tests (default)
-    cli     - Test CLI commands only
-    config  - Test configuration management only
+import argparse
+import json
+import os
+import subprocess
+import sys
+import types
+from datetime import datetime
+
+from chatty_commander.app.command_executor import (
+    CommandExecutor,
+)
+from chatty_commander.app.config import (
+    Config,
+)
+from chatty_commander.app.model_manager import (
+    ModelManager,
+)
+from chatty_commander.app.state_manager import (
+    StateManager,
+)
+
+# Patch sys.modules to mock openwakeword and openwakeword.model for test imports
+sys.modules["openwakeword"] = types.ModuleType("openwakeword")
+mock_model_mod = types.ModuleType("openwakeword.model")
+mock_model_mod.Model = type("Model", (), {})
+sys.modules["openwakeword.model"] = mock_model_mod
     states  - Test state transitions only
     system  - Test system management only
     gui     - Test GUI functionality only
 """
 
-import argparse  # noqa: E402 - imports after test setup and sys.modules patching
-import json  # noqa: E402 - imports after test setup
-import os  # noqa: E402 - imports after test setup
-import subprocess  # noqa: E402 - imports after test setup
-import sys  # noqa: E402 - imports after test setup
-from datetime import datetime  # noqa: E402 - imports after test setup
-
 # Add project root to path (parent of tests dir)
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
-from chatty_commander.app.command_executor import (
-    CommandExecutor,  # noqa: E402 - imported after path manipulation
-)
-from chatty_commander.app.config import (
-    Config,
-)
-
-# noqa: E402 - imported after path manipulation
-from chatty_commander.app.model_manager import (
-    ModelManager,  # noqa: E402 - imported after path manipulation
-)
-from chatty_commander.app.state_manager import (
-    StateManager,  # noqa: E402 - imported after path manipulation
-)
 
 
 class SystemTester:
@@ -665,7 +656,9 @@ Detailed Results:
                     status_icon = (
                         "✓"
                         if result["status"] == "PASS"
-                        else "✗" if result["status"] == "FAIL" else "⚠"
+                        else "✗"
+                        if result["status"] == "FAIL"
+                        else "⚠"
                     )
                     report += (
                         f"  {status_icon} [{result['status']}] {result['message']}\n"

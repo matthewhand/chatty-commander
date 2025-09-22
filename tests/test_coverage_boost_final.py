@@ -217,7 +217,7 @@ class TestCoverageBoostFinal:
         # Test error reporting with different parameters
         error = ValueError("Test error")
         with patch("logging.error"):
-            report_error(error, config=config)
+            report_error(error)
 
         # Test logger with file handler
         with tempfile.NamedTemporaryFile() as tmp:

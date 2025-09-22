@@ -43,7 +43,7 @@ def get_python_files_in_src():
         return []
 
     python_files = []
-    for root, dirs, files in os.walk(src_dir):
+    for root, _, files in os.walk(src_dir):
         for file in files:
             if file.endswith(".py"):
                 python_files.append(Path(root) / file)

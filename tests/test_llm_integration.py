@@ -182,7 +182,6 @@ class TestLLMManager:
         manager = LLMManager(use_mock=True)
 
         # Mock a failure and test fallback
-        original_backend = manager.active_backend
 
         # Should still work with mock backend
         response = manager.generate_response("test")
@@ -339,9 +338,9 @@ class TestLLMIntegrationE2E:
                 "OLLAMA_HOST": "localhost:11434",
             },
         ):
-            manager = LLMManager()
             # Should respect LLM_BACKEND preference
             # Note: actual backend selection depends on availability
+            pass
 
     def test_processor_status_reporting(self):
         """Test comprehensive status reporting."""

@@ -78,7 +78,7 @@ class TestCoverageImprovementFocused:
             mock_pg.hotkey.side_effect = RuntimeError("pyautogui not available")
 
             with (
-                patch("logging.error") as mock_log,
+                patch("logging.error") as mock_pg,
                 patch("logging.critical") as mock_critical,
             ):
                 result = executor.execute_command("test_keypress")
@@ -161,7 +161,7 @@ class TestCoverageImprovementFocused:
             "keys": 123,
         }
 
-        with patch("chatty_commander.app.command_executor.pyautogui") as mock_pg:
+        with patch("chatty_commander.app.command_executor.pyautogui") as _:
             with patch("logging.error") as mock_log:
                 result = executor.execute_command("test_invalid_keys")
 
@@ -175,7 +175,7 @@ class TestCoverageImprovementFocused:
             mock_response.status_code = 200
             mock_get.return_value = mock_response
 
-            with patch("logging.info") as mock_log:
+            with patch("logging.info") as _:
                 result = executor.execute_command("test_url")
 
                 assert result is True

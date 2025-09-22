@@ -262,9 +262,9 @@ class TestPerformanceBenchmarks:
         ):
             model_manager = ModelManager(config)
 
-        command_executor = CommandExecutor(
+        _ = CommandExecutor(
             config, model_manager, state_manager
-        )  # noqa: F841 - constructed to validate init path; not used further in timing
+        )  # constructed to validate init path; not used further in timing
 
         end_time = time.perf_counter()
         startup_time = end_time - start_time

@@ -101,7 +101,7 @@ class Config:
         }
 
         # Voice/GUI behaviour
-        self.voice_only: bool = bool(self.config_data.get("voice_only", False))
+        self._voice_only: bool = bool(self.config_data.get("voice_only", False))
 
         # Validate configuration after all attributes are set
         self._validate_config()
@@ -333,9 +333,9 @@ class Config:
                     )
                     return {}
                 return config_data
-        except FileNotFoundError:
+        except (FileNotFoundError, PermissionError, OSError):
             logger.warning(
-                "Config file %s not found. Using defaults.", self.config_file
+                "Error loading config file %s. Using defaults.", self.config_file
             )
             return {}
         except json.JSONDecodeError:
@@ -381,6 +381,14 @@ class Config:
     @property
     def debug_mode(self) -> bool:
         return bool(self.config_data.get("general", {}).get("debug_mode", True))
+
+    @property
+    def voice_only(self) -> bool:
+        return self._voice_only
+
+    @voice_only.setter
+    def voice_only(self, value: Any) -> None:
+        self._voice_only = bool(value)
 
     # ------------------------------------------------------------------
     # Public API
@@ -506,8 +514,8 @@ class Config:
         instance.state_transitions = instance.config_data.get("state_transitions", {})
         instance.commands = instance.config_data.get("commands", {})
         instance.advisors = instance.config_data.get("advisors", {})
-        instance.voice_only = bool(
-            instance.config_data.get("general", {}).get("voice_only", False)
+        instance.voice_only = instance.config_data.get("general", {}).get(
+            "voice_only", False
         )
         instance.mic_chunk_size = int(
             instance.config_data.get("general", {}).get("mic_chunk_size", 1024)
