@@ -1,6 +1,6 @@
 # Makefile for ChattyCommander
 # Prefer uv over pip/python
-.PHONY: install test test-cov test-web test-cli clean all lint format
+.PHONY: install test test-cov test-web test-cli test-parallel test-cached clean all lint format
 
 # Install dependencies using uv
 install:
@@ -22,6 +22,14 @@ test-web:
 # Focused CLI tests
 test-cli:
 	uv run pytest -q tests/test_repl_basic.py tests/test_cli_help_and_shell.py tests/test_cli_features.py
+
+# Run tests in parallel
+test-parallel:
+	uv run pytest -n auto --maxfail=1 || { code=$$?; echo "parallel pytest terminated or timed out with exit code $$code"; exit $$code; }
+
+# Run tests with change detection caching
+test-cached:
+	uv run pytest --testmon || { code=$$?; echo "cached pytest terminated or timed out with exit code $$code"; exit $$code; }
 
 # Lint using ruff (configured in pyproject.toml)
 lint:
@@ -128,6 +136,8 @@ help:
 	@echo "  test-cov      - Run tests with coverage"
 	@echo "  test-web      - Run web-specific tests"
 	@echo "  test-cli      - Run CLI-specific tests"
+	@echo "  test-parallel - Run tests in parallel"
+	@echo "  test-cached   - Run tests with change detection caching"
 	@echo "  lint          - Check code style"
 	@echo "  format        - Check code formatting"
 	@echo "  format-fix    - Auto-fix formatting issues"

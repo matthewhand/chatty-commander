@@ -75,7 +75,7 @@ class Metric:
 
     def _key(self, labels: dict[str, str] | None = None) -> tuple[tuple[str, str], ...]:
         if not labels:
-            return tuple()
+            return ()
         # Sort for deterministic keys
         return tuple(sorted((str(k), str(v)) for k, v in labels.items()))
 
@@ -100,7 +100,7 @@ class Counter(Metric):
     def samples(self) -> list[tuple[dict[str, str], int]]:
         out: list[tuple[dict[str, str], int]] = []
         for key, value in self._values.items():
-            labels = {k: v for k, v in key}
+            labels = dict(key)
             out.append((labels, value))
         return out
 
@@ -123,7 +123,7 @@ class Gauge(Metric):
     def samples(self) -> list[tuple[dict[str, str], float]]:
         out: list[tuple[dict[str, str], float]] = []
         for key, value in self._values.items():
-            labels = {k: v for k, v in key}
+            labels = dict(key)
             out.append((labels, value))
         return out
 
@@ -189,7 +189,7 @@ class Histogram(Metric):
     def snapshot(self) -> dict[str, Any]:
         out: dict[str, Any] = {"buckets": self._buckets.edges, "series": []}
         for key, counts in self._counts.items():
-            labels = {k: v for k, v in key}
+            labels = dict(key)
             out["series"].append(
                 {
                     "labels": labels,

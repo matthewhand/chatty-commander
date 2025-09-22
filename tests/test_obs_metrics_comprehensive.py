@@ -55,8 +55,8 @@ class TestCounter:
         sample_dict = {
             tuple(sorted(labels.items())): value for labels, value in samples
         }
-        assert sample_dict[tuple([("method", "GET")])] == 1
-        assert sample_dict[tuple([("method", "POST")])] == 2
+        assert sample_dict[(("method", "GET"),)] == 1
+        assert sample_dict[(("method", "POST"),)] == 2
 
 
 class TestGauge:
@@ -88,8 +88,8 @@ class TestGauge:
         sample_dict = {
             tuple(sorted(labels.items())): value for labels, value in samples
         }
-        assert sample_dict[tuple([("region", "us-east-1")])] == 10.0
-        assert sample_dict[tuple([("region", "us-west-2")])] == 20.0
+        assert sample_dict[(("region", "us-east-1"),)] == 10.0
+        assert sample_dict[(("region", "us-west-2"),)] == 20.0
 
 
 class TestMetricsRegistry:
@@ -147,8 +147,8 @@ class TestMetricKeyGeneration:
         counter = Counter("test", "test")
         key1 = counter._key(None)
         key2 = counter._key({})
-        assert key1 == tuple()
-        assert key2 == tuple()
+        assert key1 == ()
+        assert key2 == ()
 
     def test_key_generation_sorted_labels(self):
         """Test that keys are generated in sorted order"""

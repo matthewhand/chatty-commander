@@ -90,7 +90,7 @@ class TestAvatarWSConnectionManager:
         mgr.theme_resolver = None
         mgr._registered_manager = old_manager
 
-        result = mgr._ensure_manager()
+        _ = mgr._ensure_manager()
 
         # Should remove from old manager and add to new
         old_manager.remove_broadcast_callback.assert_called_once_with(

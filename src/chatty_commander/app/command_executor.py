@@ -67,6 +67,7 @@ class CommandExecutor:
         self.config: Any = config
         self.model_manager: Any = model_manager
         self.state_manager: Any = state_manager
+        self.last_command: str | None = None
 
     def execute_command(self, command_name: str) -> bool:
         """
@@ -82,7 +83,7 @@ class CommandExecutor:
         if not self.validate_command(command_name):
             raise ValueError(f"Invalid command: {command_name}")
         self.pre_execute_hook(command_name)
-        command_action = self.config.model_actions.get(command_name, {})
+        command_action = self.config.commands.get(command_name, {})
 
         # Set default DISPLAY if not set (X11 environments)
         if "DISPLAY" not in os.environ:
@@ -139,7 +140,7 @@ class CommandExecutor:
         return success
 
     def validate_command(self, command_name: str) -> bool:
-        command_action = self.config.model_actions.get(command_name)
+        command_action = self.config.commands.get(command_name)
         if not command_action:
             logging.error(f"No configuration found for command: {command_name}")
             return False
@@ -148,7 +149,7 @@ class CommandExecutor:
         if "action" in command_action:
             # New format validation
             action_type = command_action.get("action")
-            if action_type not in ["keypress", "url", "shell"]:
+            if action_type not in ["keypress", "url", "shell", "custom_message"]:
                 logging.error(
                     f"Invalid action type '{action_type}' for command: {command_name}"
                 )
@@ -175,6 +176,7 @@ class CommandExecutor:
 
     def pre_execute_hook(self, command_name: str) -> None:
         """Hook before executing a command."""
+        self.last_command = command_name
         # Provided for extension points and testing hooks
 
     def post_execute_hook(self, command_name: str) -> None:

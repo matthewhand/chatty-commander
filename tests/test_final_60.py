@@ -46,8 +46,8 @@ class TestFinal60:
         key3 = counter._key({"a": "1", "b": "2"})
         key4 = counter._key({"b": "2", "a": "1"})  # Different order
 
-        assert key1 == tuple()
-        assert key2 == tuple()
+        assert key1 == ()
+        assert key2 == ()
         assert key3 == key4  # Should be same due to sorting
 
         # Test string conversion in keys

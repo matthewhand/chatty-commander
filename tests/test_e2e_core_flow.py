@@ -38,7 +38,6 @@ def test_e2e_core_health_status_config_state_metrics():
     # Metrics before
     m0 = client.get("/metrics/json")
     assert m0.status_code == 200
-    data0 = m0.json()
 
     # Config PUT then GET
     r = client.put("/api/v1/config", json={"foo": {"bar": 1}})

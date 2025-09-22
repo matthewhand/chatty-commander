@@ -99,8 +99,8 @@ class TestFinal60Push:
         key3 = counter._key({"a": 1, "b": 2})
         key4 = counter._key({"b": 2, "a": 1})
 
-        assert key1 == tuple()
-        assert key2 == tuple()
+        assert key1 == ()
+        assert key2 == ()
         assert key3 == key4
 
         # Test samples

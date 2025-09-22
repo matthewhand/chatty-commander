@@ -75,7 +75,7 @@ class TestLogger(unittest.TestCase):
             "chatty_commander.utils.logger.logging.getLogger"
         ) as mock_get_logger:
             mock_get_logger.return_value = mock_logger
-            logger = setup_logger("test_logger")
+            _ = setup_logger("test_logger")
             mock_logger.setLevel.assert_called_once_with(logging.INFO)
             # Should only add console handler, not file handler
             self.assertEqual(mock_logger.addHandler.call_count, 1)
@@ -91,10 +91,8 @@ class TestLogger(unittest.TestCase):
                 "chatty_commander.utils.logger.os.makedirs",
                 side_effect=OSError("Permission denied"),
             ):
-                with patch(
-                    "chatty_commander.utils.logger.RotatingFileHandler"
-                ) as mock_handler:
-                    logger = setup_logger("test_logger", "test.log")
+                with patch("chatty_commander.utils.logger.RotatingFileHandler") as _:
+                    _ = setup_logger("test_logger", "test.log")
                     # Should still work, just without file handler
                     mock_logger.addHandler.assert_called_once()
 

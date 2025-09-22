@@ -248,9 +248,7 @@ class TestPerformanceBenchmarks:
         def make_requests(thread_id):
             """Make multiple requests from a single thread."""
             thread_times = []
-            for i in range(
-                requests_per_thread
-            ):  # noqa: B007 - loop index not used; measuring throughput only
+            for _ in range(requests_per_thread):
                 start_time = time.perf_counter()
                 response = test_client.get(endpoint)
                 end_time = time.perf_counter()
@@ -382,9 +380,7 @@ class TestPerformanceBenchmarks:
         num_connections = 50
         mock_connections = []
 
-        for i in range(
-            num_connections
-        ):  # noqa: B007 - loop index not used; creating mock connections
+        for _ in range(num_connections):
             mock_ws = AsyncMock()
             mock_connections.append(mock_ws)
             web_server.active_connections.add(mock_ws)

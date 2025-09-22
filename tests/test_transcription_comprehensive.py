@@ -25,14 +25,15 @@ Comprehensive tests for transcription.py to improve coverage from 38% to 80%+.
 Tests all backends, error conditions, and edge cases.
 """
 
+import importlib.util
 import os
 import sys
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+import pytest
 
 from chatty_commander.voice.transcription import (
     MockTranscriptionBackend,
@@ -84,9 +85,7 @@ class TestWhisperLocalBackend:
     def test_initialization_success(self):
         """Test successful initialization."""
         # Skip this test if whisper is not available
-        try:
-            import whisper
-        except ImportError:
+        if importlib.util.find_spec("whisper") is None:
             pytest.skip("Whisper not available")
 
         backend = WhisperLocalBackend(model_size="base")
@@ -137,9 +136,7 @@ class TestWhisperAPIBackend:
     def test_initialization_success(self):
         """Test successful initialization."""
         # Skip this test if openai is not available
-        try:
-            import openai
-        except ImportError:
+        if importlib.util.find_spec("openai") is None:
             pytest.skip("OpenAI not available")
 
         backend = WhisperAPIBackend(api_key="test-key")

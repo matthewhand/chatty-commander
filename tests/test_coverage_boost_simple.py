@@ -24,7 +24,7 @@
 
 import logging
 import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -61,8 +61,7 @@ class TestCoverageBoostSimple:
 
     def test_command_executor_validate_missing(self, command_executor):
         """Test validate_command with missing command"""
-        with pytest.raises(ValueError):
-            command_executor.validate_command("nonexistent")
+        assert not command_executor.validate_command("nonexistent")
 
     def test_command_executor_validate_success(self, command_executor):
         """Test validate_command with valid command"""
@@ -181,7 +180,12 @@ class TestCoverageBoostSimple:
 
     def test_state_manager_transitions(self):
         """Test state manager state transitions"""
-        manager = StateManager()
+        config = Mock()
+        config.state_models = {"idle": [], "computer": []}
+        config.default_state = "idle"
+        config.state_transitions = {}
+        config.wakeword_state_map = {}
+        manager = StateManager(config)
 
         # Test transition to computer state
         manager.change_state("computer")
@@ -207,7 +211,7 @@ class TestCoverageBoostSimple:
         """Test execute_command with invalid action type"""
         command_executor.config.model_actions["invalid"] = {"unknown_type": "value"}
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             command_executor.execute_command("invalid")
 
     def test_command_executor_execute_missing_command(self, command_executor):

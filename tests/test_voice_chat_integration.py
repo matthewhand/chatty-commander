@@ -35,7 +35,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from chatty_commander.app.command_executor import CommandExecutor
-from chatty_commander.app.config import Config
 from chatty_commander.avatars.thinking_state import ThinkingState, ThinkingStateManager
 
 
@@ -67,7 +66,6 @@ class TestVoiceChatIntegration:
                     mock_state_manager_class.return_value = mock_state_manager
 
                     # Initialize components using the mocked classes
-                    config = Config()
                     llm_manager = mock_llm_manager_class(preferred_backend="ollama")
                     voice_pipeline = mock_voice_pipeline_class()
                     state_manager = mock_state_manager_class()
