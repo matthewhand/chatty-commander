@@ -73,6 +73,7 @@ class TestCommandExecutorUltimate:
     )
     def test_command_executor_action_execution(self, action_config, mock_config):
         """Test CommandExecutor handles various action configurations."""
+        mock_config.model_actions = {"test_cmd": action_config}
         mock_config.commands = {"test_cmd": action_config}
 
         executor = CommandExecutor(mock_config, Mock(), Mock())
@@ -106,6 +107,9 @@ class TestCommandExecutorUltimate:
         mock_config.model_actions = {
             "keypress_cmd": {"action": "keypress", "keys": key_config}
         }
+        mock_config.commands = {
+            "keypress_cmd": {"action": "keypress", "keys": key_config}
+        }
 
         executor = CommandExecutor(mock_config, Mock(), Mock())
         result = executor.execute_command("keypress_cmd")
@@ -125,6 +129,7 @@ class TestCommandExecutorUltimate:
     def test_command_executor_url_handling(self, url, mock_config):
         """Test CommandExecutor handles various URL configurations."""
         mock_config.model_actions = {"url_cmd": {"action": "url", "url": url}}
+        mock_config.commands = {"url_cmd": {"action": "url", "url": url}}
 
         executor = CommandExecutor(mock_config, Mock(), Mock())
         result = executor.execute_command("url_cmd")
@@ -143,6 +148,9 @@ class TestCommandExecutorUltimate:
     )
     def test_command_executor_message_handling(self, message, mock_config):
         """Test CommandExecutor handles various message configurations."""
+        mock_config.model_actions = {
+            "msg_cmd": {"action": "custom_message", "message": message}
+        }
         mock_config.commands = {
             "msg_cmd": {"action": "custom_message", "message": message}
         }
@@ -173,6 +181,7 @@ class TestCommandExecutorUltimate:
     def test_command_executor_shell_command_handling(self, shell_cmd, mock_config):
         """Test CommandExecutor handles various shell commands."""
         mock_config.model_actions = {"shell_cmd": {"action": "shell", "cmd": shell_cmd}}
+        mock_config.commands = {"shell_cmd": {"action": "shell", "cmd": shell_cmd}}
 
         executor = CommandExecutor(mock_config, Mock(), Mock())
         result = executor.execute_command("shell_cmd")

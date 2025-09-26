@@ -20,14 +20,60 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""
-Main entry point for ChattyCommander.
+"""Thin wrapper around :mod:`chatty_commander.cli.main` for backward compatibility."""
 
-This module serves as the primary entry point that delegates to the CLI package.
-It provides backward compatibility and ensures the application can be run from
-the package root.
-"""
+from __future__ import annotations
 
-from .cli.main import create_parser, main, run_orchestrator_mode
+from importlib import import_module
+from typing import Any
 
-__all__ = ["main", "create_parser", "run_orchestrator_mode"]
+_cli_main = import_module("chatty_commander.cli.main")
+
+# Mirror patchable globals so tests that stub attributes on this module continue to work.
+Config = _cli_main.Config
+ModelManager = _cli_main.ModelManager
+StateManager = _cli_main.StateManager
+CommandExecutor = _cli_main.CommandExecutor
+setup_logger = _cli_main.setup_logger
+generate_default_config_if_needed = _cli_main.generate_default_config_if_needed
+
+
+def _propagate_patches() -> None:
+    """Copy any locally patched globals onto the real CLI module."""
+    for name in (
+        "Config",
+        "ModelManager",
+        "StateManager",
+        "CommandExecutor",
+        "setup_logger",
+        "generate_default_config_if_needed",
+    ):
+        setattr(_cli_main, name, globals()[name])
+
+
+def create_parser(*args: Any, **kwargs: Any):  # pragma: no cover - thin shim
+    return _cli_main.create_parser(*args, **kwargs)
+
+
+def run_orchestrator_mode(*args: Any, **kwargs: Any):  # pragma: no cover - thin shim
+    _propagate_patches()
+    return _cli_main.run_orchestrator_mode(*args, **kwargs)
+
+
+def main(*args: Any, **kwargs: Any):
+    """Entry point preserving legacy patch points before delegating to CLI main."""
+    _propagate_patches()
+    return _cli_main.main(*args, **kwargs)
+
+
+__all__ = [
+    "main",
+    "create_parser",
+    "run_orchestrator_mode",
+    "Config",
+    "ModelManager",
+    "StateManager",
+    "CommandExecutor",
+    "setup_logger",
+    "generate_default_config_if_needed",
+]

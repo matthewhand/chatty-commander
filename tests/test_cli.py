@@ -34,9 +34,7 @@ from unittest.mock import patch  # noqa: E402 - import after test setup
 
 import pytest  # noqa: E402 - import after test setup
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-)  # noqa: E402 - path manipulation before imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # noqa: E402 - path manipulation before imports
 
 from chatty_commander.cli.cli import cli_main  # noqa: E402 - imported after path setup
 

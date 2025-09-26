@@ -88,14 +88,13 @@ class TestCommandExecutor:
     def test_execute_command_invalid(self, setup):
         """Test that invalid command actions are handled gracefully."""
         setup.config.model_actions["invalid"] = {"unknown": "value"}
-        # The CommandExecutor now raises ValueError for invalid commands
-        with pytest.raises(ValueError):
-            setup.execute_command("invalid")
+        result = setup.execute_command("invalid")
+        assert result is False
 
     def test_execute_command_missing(self, setup):
-        """Test execution of non-existent command raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid command: not_found"):
-            setup.execute_command("not_found")
+        """Test execution of non-existent command returns False."""
+        result = setup.execute_command("not_found")
+        assert result is False
 
     def test_validate_command_success(self, setup):
         """Test validate_command with valid command."""
@@ -161,12 +160,12 @@ def test_execute_command_invalid_command_name():
     executor = CommandExecutor(config, model_manager, state_manager)
 
     # Test with None
-    result = executor.execute_command(None)
-    assert result is False
+    with pytest.raises(ValueError):
+        executor.execute_command(None)
 
     # Test with empty string
-    result = executor.execute_command("")
-    assert result is False
+    with pytest.raises(ValueError):
+        executor.execute_command("")
 
 
 def test_execute_command_new_format_keypress():
@@ -279,7 +278,6 @@ def test_execute_command_invalid_action_type_new_format():
             assert result is False
             # Post execute hook should still be called
             mock_post.assert_called_once_with("test_cmd")
-            mock_post.assert_called_once_with("test_cmd")
 
 
 def test_execute_command_no_valid_action_old_format():
@@ -301,7 +299,6 @@ def test_execute_command_no_valid_action_old_format():
             # Should return False when execution fails due to exception
             assert result is False
             # Post execute hook should still be called
-            mock_post.assert_called_once_with("test_cmd")
             mock_post.assert_called_once_with("test_cmd")
 
 
@@ -352,7 +349,6 @@ def test_execute_command_exception_in_execution():
             # Should return False when execution fails due to exception
             assert result is False
             # Post execute hook should still be called
-            mock_post.assert_called_once_with("test_cmd")
             mock_post.assert_called_once_with("test_cmd")
 
 

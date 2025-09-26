@@ -6,7 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { CssBaseline, Box } from "@mui/material";
+import { CssBaseline, Box, Alert } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Import pages
@@ -15,6 +15,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ConfigurationPage from "./pages/ConfigurationPage";
 import AudioSettingsPage from "./pages/AudioSettingsPage";
 import PersonasPage from "./pages/PersonasPage";
+import AgentStatusPage from "./pages/AgentStatusPage";
 
 // Import components
 import Navigation from "./components/Navigation";
@@ -28,8 +29,9 @@ import { useAuth } from "./hooks/useAuth";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 2, // Increased retry count for better error handling
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes stale time
     },
   },
 });
@@ -70,6 +72,13 @@ const darkTheme = createTheme({
       styleOverrides: {
         root: {
           textTransform: "none",
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          marginBottom: "16px",
         },
       },
     },
@@ -133,6 +142,14 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <PersonasPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agent-status"
+              element={
+                <ProtectedRoute>
+                  <AgentStatusPage />
                 </ProtectedRoute>
               }
             />

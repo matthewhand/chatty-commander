@@ -22,8 +22,15 @@
 
 """Tests for LLM integration components."""
 
+import importlib
 import os
 from unittest.mock import Mock, patch
+
+import pytest
+
+has_transformers = importlib.util.find_spec("transformers") is not None
+
+import importlib.util
 
 from chatty_commander.llm import CommandProcessor, LLMManager
 from chatty_commander.llm.backends import (
@@ -118,6 +125,7 @@ class TestOllamaBackend:
 
 
 class TestLocalTransformersBackend:
+    @pytest.mark.skipif(not has_transformers, reason="transformers not installed")
     def test_local_backend_without_dependencies(self):
         # Test without transformers installed
         backend = LocalTransformersBackend()
