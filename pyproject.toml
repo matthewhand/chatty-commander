@@ -53,12 +53,11 @@ dependencies = [
     "pywebview>=4.4",
     "pystray>=0.19.5",
     "onnx==1.18.0",
+    "openai-agents>=0.1.0",
+]
 
 [project.optional-dependencies]
 audio = ["pyaudio>=0.2.13"]
-
-    "openai-agents>=0.1.0",
-]
 
 [project.scripts]
 chatty-commander = "chatty_commander.cli.main:main"
