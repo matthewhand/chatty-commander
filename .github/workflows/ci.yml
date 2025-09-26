@@ -64,7 +64,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Upload security report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-report-${{ matrix.python-version }}
           path: security-report.json
@@ -94,7 +94,7 @@ jobs:
         run: uv run pytest -k "perf" --benchmark-only --benchmark-json=benchmark.json
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
           path: benchmark.json
@@ -128,7 +128,7 @@ jobs:
           python -c "import chatty_commander; print('Package installed successfully')"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
