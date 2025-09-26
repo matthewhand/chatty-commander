@@ -31,7 +31,8 @@ classifiers = [
 ]
 dependencies = [
     "openwakeword>=0.4.0",
-    "pyaudio>=0.2.13",
+    # Optional runtime audio capture dependency moved to extras: pyaudio
+
     "pyautogui>=0.9.54",
     "pytest>=8.4.1",
     "pytest-mock>=3.12.0",
@@ -52,6 +53,10 @@ dependencies = [
     "pywebview>=4.4",
     "pystray>=0.19.5",
     "onnx==1.18.0",
+
+[project.optional-dependencies]
+audio = ["pyaudio>=0.2.13"]
+
     "openai-agents>=0.1.0",
 ]
 
