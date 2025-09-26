@@ -46,7 +46,7 @@ _root_src = os.path.abspath(os.path.join(_pkg_dir, "src"))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
 
-from chatty_commander.cli.cli import (
+from chatty_commander.cli.cli import (  # noqa: E402
     HelpfulArgumentParser,
     _get_model_actions_from_config,
     _print_actions_json,

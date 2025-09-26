@@ -20,8 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import tempfile
-
 import pytest
 from test_data_factories import TestDataFactory
 from test_utils import TestUtils
