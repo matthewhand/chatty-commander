@@ -647,7 +647,7 @@ def main():
 
     # Initialize AI intelligence core for enhanced conversations
     try:
-        from .ai import create_intelligence_core
+        from ..ai import create_intelligence_core
 
         ai_core = create_intelligence_core(config)
 
@@ -666,7 +666,7 @@ def main():
         print("💬 Intelligent conversation engine ready")
 
     except Exception as e:
-        print(f"⚠️  AI Intelligence Core initialization failed: {e}")
+        print(f"[WARN] AI Intelligence Core initialization failed: {e}")
         ai_core = None
 
     # Route to appropriate mode
