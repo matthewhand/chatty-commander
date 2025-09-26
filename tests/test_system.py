@@ -54,10 +54,6 @@ sys.modules["openwakeword"] = types.ModuleType("openwakeword")
 mock_model_mod = types.ModuleType("openwakeword.model")
 mock_model_mod.Model = type("Model", (), {})
 sys.modules["openwakeword.model"] = mock_model_mod
-    states  - Test state transitions only
-    system  - Test system management only
-    gui     - Test GUI functionality only
-"""
 
 # Add project root to path (parent of tests dir)
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
