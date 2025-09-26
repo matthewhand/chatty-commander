@@ -20,9 +20,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+"""Compatibility helpers for legacy module paths.
+
+Centralise the alias table so the various compatibility shims across the code
+base can pull in the modern implementations from a single place.  This avoids
+hand-maintaining nearly identical wrappers for each legacy module.
+"""
+
 from __future__ import annotations
 
 import importlib
+import warnings
+from collections.abc import Iterable
+from types import ModuleType
+from typing import Any
 
 # Map legacy module names to their modern implementation paths.
 ALIASES: dict[str, str] = {
@@ -32,7 +43,29 @@ ALIASES: dict[str, str] = {
 }
 
 
-def expose(name: str):
-    """Return imported module for a legacy short-name (or pass through)."""
+def load(name: str) -> ModuleType:
+    """Import and return the module for ``name`` honouring the alias table."""
     target = ALIASES.get(name, name)
+    if target != name:
+        warnings.warn(
+            f"chatty_commander.{name} is deprecated; use {target}",
+            DeprecationWarning,
+            stacklevel=3,
+        )
     return importlib.import_module(target)
+
+
+def expose(namespace: dict[str, Any], name: str) -> ModuleType:
+    """Populate ``namespace`` with the public symbols from the target module."""
+    module = load(name)
+    public: Iterable[str]
+    public = getattr(module, "__all__", None) or [
+        attr for attr in dir(module) if not attr.startswith("_")
+    ]
+    for attr in public:
+        namespace[attr] = getattr(module, attr)
+    namespace["__all__"] = list(public)
+    return module
+
+
+__all__ = ["ALIASES", "load", "expose"]

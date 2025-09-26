@@ -20,10 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""
-Test Assertions - Custom assertion helpers for ChattyCommander tests
-"""
-
 import json
 from pathlib import Path
 from typing import Any
@@ -32,7 +28,6 @@ from unittest.mock import Mock
 import pytest
 
 from chatty_commander.app.command_executor import CommandExecutor
-from chatty_commander.app.config import Config
 from chatty_commander.app.state_manager import StateManager
 
 
@@ -40,7 +35,7 @@ class TestAssertions:
     """Custom assertion helpers for better test readability and maintainability."""
 
     @staticmethod
-    def assert_config_valid(config: Config) -> None:
+    def assert_config_valid(config: Any) -> None:
         """Assert that a Config object is properly initialized."""
         assert hasattr(
             config, "config_data"
@@ -105,7 +100,7 @@ class TestAssertions:
         assert sm.current_state is not None, "current_state should not be None"
 
     @staticmethod
-    def assertcommand_executor_actions_valid(ce: CommandExecutor) -> None:
+    def assert_command_executor_actions_valid(ce: CommandExecutor) -> None:
         """Assert that a CommandExecutor has valid action configurations."""
         assert hasattr(ce, "config"), "CommandExecutor should have config"
         if hasattr(ce.config, "model_actions"):

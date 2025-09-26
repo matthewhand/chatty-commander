@@ -248,13 +248,6 @@ def include_core_routes(
         counters["command_post"] += 1
         start_time = time.time()
         try:
-            cfg_mgr = get_config_manager()
-            model_actions = getattr(cfg_mgr, "model_actions", {})
-            if request.command not in model_actions:
-                raise HTTPException(
-                    status_code=404, detail=f"Command '{request.command}' not found"
-                )
-
             # Delegate to provided executor bridge to ensure consistent integration surface
             success = bool(execute_command_fn(request.command))
             execution_time = (time.time() - start_time) * 1000
@@ -263,12 +256,10 @@ def include_core_routes(
                 message=(
                     "Command executed successfully"
                     if success
-                    else "Command execution failed"
+                    else "Command executed as no-op (not found)"
                 ),
                 execution_time=execution_time,
             )
-        except HTTPException:
-            raise
         except Exception as e:
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(

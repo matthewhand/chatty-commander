@@ -130,9 +130,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = (
-            "geolocation=(), microphone=(), camera=()"
-        )
+        response.headers[
+            "Permissions-Policy"
+        ] = "geolocation=(), microphone=(), camera=()"
 
         # Remove server header for security
         if "server" in response.headers:
@@ -458,6 +458,42 @@ class WebModeServer:
                 raise
             except Exception as e:  # noqa: BLE001
                 raise HTTPException(status_code=500, detail=str(e)) from e
+
+        @app.post("/api/v1/advisors/context/switch")
+        async def switch_persona(context_key: str, persona_id: str):
+            svc = self.advisors_service
+            if not svc or not getattr(svc, "enabled", False):
+                raise HTTPException(status_code=400, detail="Advisors not enabled")
+            try:
+                success = svc.switch_persona(context_key, persona_id)
+                if success:
+                    return {
+                        "success": True,
+                        "context_key": context_key,
+                        "persona_id": persona_id,
+                    }
+                else:
+                    raise HTTPException(status_code=400, detail="Invalid persona")
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid persona: {str(e)}"
+                ) from e
+
+        @app.delete("/api/v1/advisors/context/{context_key}")
+        async def clear_context(context_key: str):
+            svc = self.advisors_service
+            if not svc or not getattr(svc, "enabled", False):
+                raise HTTPException(status_code=400, detail="Advisors not enabled")
+            try:
+                success = svc.clear_context(context_key)
+                if success:
+                    return {"success": True, "context_key": context_key}
+                else:
+                    raise HTTPException(status_code=404, detail="Context not found")
+            except Exception as e:
+                raise HTTPException(
+                    status_code=404, detail=f"Context not found: {str(e)}"
+                ) from e
 
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
