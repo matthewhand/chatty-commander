@@ -385,7 +385,7 @@ class TestLLMFallbackMechanisms:
                 )
 
                 # Should raise exception since context is fundamental
-                with pytest.raises(Exception):
+                with pytest.raises(Exception):  # noqa: B017
                     service.handle_message(message)
 
     def test_llm_conversation_engine_fallback(self):
@@ -610,7 +610,7 @@ class TestSmartFallbackResponses:
                 ("Bye", "farewell"),
             ]
 
-            for text, category in test_cases:
+            for text, _category in test_cases:
                 message = AdvisorMessage(
                     platform="discord",
                     channel="test",
