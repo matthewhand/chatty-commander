@@ -26,6 +26,12 @@ Comprehensive System Testing Script for ChattyCommander
 This script tests all application modes, CLI commands, configuration management,
 and system functions. It serves as both a testing framework and documentation
 of expected outputs.
+
+Available test options:
+    all     - Run all tests (default)
+    states  - Test state transitions only
+    system  - Test system management only
+    gui     - Test GUI functionality only
 """
 
 import argparse
@@ -54,7 +60,6 @@ sys.modules["openwakeword"] = types.ModuleType("openwakeword")
 mock_model_mod = types.ModuleType("openwakeword.model")
 mock_model_mod.Model = type("Model", (), {})
 sys.modules["openwakeword.model"] = mock_model_mod
-
 # Add project root to path (parent of tests dir)
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:

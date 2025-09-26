@@ -806,7 +806,7 @@ class TestUltimateCoverage:
     def testcommand_executor_validation(self, command_name):
         """Test CommandExecutor command validation."""
         config = Mock()
-        config.commands = {"valid_cmd": {"action": "shell", "cmd": "echo test"}}
+        config.model_actions = {"valid_cmd": {"action": "shell", "cmd": "echo test"}}
 
         executor = CommandExecutor(config, Mock(), Mock())
 
@@ -829,7 +829,7 @@ class TestUltimateCoverage:
     def testcommand_executor_action_execution(self, action_config):
         """Test CommandExecutor handles various action configurations."""
         config = Mock()
-        config.commands = {"test_cmd": action_config}
+        config.model_actions = {"test_cmd": action_config}
 
         executor = CommandExecutor(config, Mock(), Mock())
 

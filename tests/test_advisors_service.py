@@ -39,6 +39,7 @@ class DummyConfig:
             },
             "default_persona": "general",
         },
+        "commands": {},
     }
 
 
