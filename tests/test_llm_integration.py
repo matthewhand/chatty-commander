@@ -373,3 +373,6 @@ class TestLLMIntegrationE2E:
         assert status["llm_available"] is True
         assert status["llm_backend"] == "mock"
         assert status["commands_count"] == 1
+
+
+# CI trigger: remove prior stray slash import issue; no functional change
