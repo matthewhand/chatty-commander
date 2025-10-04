@@ -10,34 +10,37 @@ interface MessageItemProps {
 
 function MessageItem({ message }: MessageItemProps) {
   const roleStyles: Record<string, string> = {
-    user: 'bg-blue-700 text-white',
-    assistant: 'bg-gray-700 text-white',
-    system: 'bg-yellow-800 text-yellow-100',
-    tool: 'bg-green-700 text-white',
+    user: "bg-blue-700 text-white",
+    assistant: "bg-gray-700 text-white",
+    system: "bg-yellow-800 text-yellow-100",
+    tool: "bg-green-700 text-white",
   };
 
   const renderBlocks = (text: string) => {
-    const blocks: { type: 'text' | 'code'; value: string }[] = [];
+    const blocks: { type: "text" | "code"; value: string }[] = [];
     const regex = /```(?:\w+)?\n([\s\S]*?)```/g;
     let lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = regex.exec(text))) {
       if (match.index > lastIndex) {
-        blocks.push({ type: 'text', value: text.slice(lastIndex, match.index) });
+        blocks.push({
+          type: "text",
+          value: text.slice(lastIndex, match.index),
+        });
       }
-      blocks.push({ type: 'code', value: match[1] });
+      blocks.push({ type: "code", value: match[1] });
       lastIndex = regex.lastIndex;
     }
     if (lastIndex < text.length) {
-      blocks.push({ type: 'text', value: text.slice(lastIndex) });
+      blocks.push({ type: "text", value: text.slice(lastIndex) });
     }
     return blocks;
   };
 
   return (
-    <div className={`mb-2 p-2 rounded ${roleStyles[message.role] ?? ''}`}>
-      {renderBlocks(message.content[0]?.text ?? '').map((b, i) =>
-        b.type === 'code' ? (
+    <div className={`mb-2 p-2 rounded ${roleStyles[message.role] ?? ""}`}>
+      {renderBlocks(message.content[0]?.text ?? "").map((b, i) =>
+        b.type === "code" ? (
           <pre key={i} className="relative bg-black bg-opacity-40 p-2 rounded">
             <button
               onClick={() => navigator.clipboard.writeText(b.value)}
@@ -73,8 +76,8 @@ function MessageList({ messages }: { messages: ChatMessage[] }) {
       );
       setRange({ start, end });
     };
-    el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
   }, [messages.length]);
 
   useEffect(() => {
@@ -89,7 +92,7 @@ function MessageList({ messages }: { messages: ChatMessage[] }) {
   return (
     <div ref={containerRef} className="flex-1 overflow-auto p-2">
       <div style={{ paddingTop: topPadding, paddingBottom: bottomPadding }}>
-        {slice.map(m => (
+        {slice.map((m) => (
           <MessageItem key={m.id} message={m} />
         ))}
       </div>
@@ -115,10 +118,10 @@ export default function ChatPane() {
       createdAt: new Date().toISOString(),
       content: [{ type: "text", text: content }],
       contextRef: useSidecar
-        ? { pane: 'sidecar' }
+        ? { pane: "sidecar" }
         : useCanvas
-        ? { pane: 'canvas' }
-        : undefined,
+          ? { pane: "canvas" }
+          : undefined,
     };
     push(userMsg);
     setText("");
@@ -162,20 +165,23 @@ export default function ChatPane() {
             ],
           }));
         },
-        tool: data => {
-          if ((data?.name === 'open_file' || data?.name === 'open_diff') && data.path) {
-            const isDiff = data.name === 'open_diff' || data.diff;
+        tool: (data) => {
+          if (
+            (data?.name === "open_file" || data?.name === "open_diff") &&
+            data.path
+          ) {
+            const isDiff = data.name === "open_diff" || data.diff;
             setSidecar({
               refId: data.path,
               title: data.path,
-              kind: isDiff ? 'diff' : 'code',
+              kind: isDiff ? "diff" : "code",
               contentUrl: `/api/sidecar/file?path=${encodeURIComponent(data.path)}${
-                isDiff ? '&diff=1' : ''
+                isDiff ? "&diff=1" : ""
               }`,
             });
           }
         },
-        'sidecar.open': data => {
+        "sidecar.open": (data) => {
           setSidecar(data);
         },
         done: () => {},
@@ -193,6 +199,11 @@ export default function ChatPane() {
   return (
     <section className="h-full flex flex-col bg-gray-900" aria-label="Chat">
       <MessageList messages={messages} />
+      <div
+        id="console"
+        className="hidden px-2 py-1 text-xs bg-black text-green-400 font-mono"
+        tabIndex={0}
+      />
       <div className="px-2 py-1 text-xs text-yellow-400">
         Responses may be inaccurate. Do not share sensitive information.
       </div>
@@ -210,7 +221,7 @@ export default function ChatPane() {
               <input
                 type="checkbox"
                 checked={useSidecar}
-                onChange={e => setUseSidecar(e.target.checked)}
+                onChange={(e) => setUseSidecar(e.target.checked)}
                 className="mr-1"
               />
               Sidecar
@@ -219,7 +230,7 @@ export default function ChatPane() {
               <input
                 type="checkbox"
                 checked={useCanvas}
-                onChange={e => setUseCanvas(e.target.checked)}
+                onChange={(e) => setUseCanvas(e.target.checked)}
                 className="mr-1"
               />
               Canvas
