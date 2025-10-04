@@ -12,7 +12,7 @@ jobs:
   draft-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Generate release notes from CHANGELOG
         id: notes
@@ -55,7 +55,7 @@ jobs:
           - os: windows-latest
             arch: windows-amd64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6

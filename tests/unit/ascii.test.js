@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { encodeASCII, decodeASCII } from "../../app/src/lib/ascii.js";
-import { isASCII } from "../../shared/ascii.mjs";
+import { encodeASCII, decodeASCII, isASCII } from "../../shared/ascii.ts";
 
 test("encodeASCII returns Uint8Array and replaces non-ascii", () => {
   const hello = encodeASCII("hello");

@@ -1,10 +1,9 @@
-import { build } from "esbuild";
+import { build } from "../shared/esbuild.js";
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
-import { assertASCII } from "@shared/ascii";
-import { encodeASCII, decodeASCII } from "../app/src/lib/ascii.js";
+import { assertASCII, encodeASCII, decodeASCII } from "../shared/ascii.ts";
 
 /**
  * Build a browser bundle for a given entry file.

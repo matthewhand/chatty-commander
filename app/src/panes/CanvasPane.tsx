@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { createBus } from '../lib/bus';
-import { useCanvasStore } from '../stores/canvas';
-import { traceCanvasLoad } from '../lib/telemetry';
+import React, { useEffect, useRef } from "react";
+import { createBus } from "../lib/bus";
+import { useCanvasStore } from "../stores/canvas";
+import { traceCanvasLoad } from "../lib/telemetry";
 
 export default function CanvasPane() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -19,11 +19,11 @@ export default function CanvasPane() {
     let off: (() => void) | undefined;
 
     async function load() {
-      setStatus('loading');
+      setStatus("loading");
       try {
-        const res = await fetch('/api/canvas/build', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/canvas/build", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ asciiOnly }),
         });
         const info = await res.json();
@@ -32,16 +32,16 @@ export default function CanvasPane() {
           if (!iframe.contentWindow) return;
           const bus = createBus(iframe.contentWindow);
           off = bus.onAny((type, payload) => {
-            if (type.startsWith('canvas:')) {
+            if (type.startsWith("canvas:")) {
               addLog(`${type}: ${JSON.stringify(payload)}`);
             }
           });
-          bus.post('canvas:init', info);
-          setStatus('ready');
+          bus.post("canvas:init", info);
+          setStatus("ready");
         });
       } catch (err: any) {
         addLog(`error: ${err.message}`);
-        setStatus('error');
+        setStatus("error");
       }
     }
 
@@ -52,6 +52,18 @@ export default function CanvasPane() {
     };
   }, [addLog, asciiOnly, setStatus]);
 
+  useEffect(() => {
+    if (!asciiOnly || !iframeRef.current) return;
+    const doc = iframeRef.current.contentDocument;
+    if (!doc) return;
+    const script = doc.createElement("script");
+    script.textContent = `
+      Object.defineProperty(window, 'localStorage', { get: () => undefined });
+      Object.defineProperty(window, 'sessionStorage', { get: () => undefined });
+      Object.defineProperty(window, 'indexedDB', { value: undefined });
+    `;
+    doc.head.appendChild(script);
+  }, [asciiOnly]);
   return (
     <section className="flex-1 flex flex-col bg-gray-900">
       <iframe
@@ -60,7 +72,10 @@ export default function CanvasPane() {
         sandbox="allow-scripts allow-downloads"
         className="flex-1 bg-gray-800"
       />
-      <div className="h-40 overflow-auto bg-black text-green-400 text-xs p-2" aria-label="Console">
+      <div
+        className="h-40 overflow-auto bg-black text-green-400 text-xs p-2"
+        aria-label="Console"
+      >
         {logs.map((l, i) => (
           <div key={i}>{l}</div>
         ))}
