@@ -21,7 +21,7 @@ export async function buildCanvas(entry: string, asciiOnly = false) {
   assertASCII(absEntry);
   const tmpOut = path.join(outDir, "bundle.js");
 
-  let buildOptions = {
+  let buildOptions: any = {
     entryPoints: [absEntry],
     bundle: true,
     platform: "browser" as const,

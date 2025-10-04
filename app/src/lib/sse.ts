@@ -2,6 +2,7 @@ export interface SSEHandlers {
   chunk?: (data: { id: string; delta: string }) => void;
   tool_call?: (data: any) => void;
   tool_result?: (data: any) => void;
+  tool?: (data: any) => void;
   done?: () => void;
   error?: (err: any) => void;
 }
@@ -46,6 +47,8 @@ export async function sse(url: string, body: any, handlers: SSEHandlers) {
           handlers.tool_call?.(json);
         } else if (event === "tool_result") {
           handlers.tool_result?.(json);
+        } else if (event === "tool") {
+          handlers.tool?.(json);
         } else if (event === "done") {
           handlers.done?.();
         }
