@@ -51,6 +51,17 @@ export default function CanvasPane() {
     };
   }, [addLog, asciiOnly, setStatus]);
 
+  useEffect(() => {
+    if (!asciiOnly || !iframeRef.current) return;
+    const doc = iframeRef.current.contentDocument;
+    if (!doc) return;
+    const script = doc.createElement('script');
+    script.textContent = `
+      Object.defineProperty(window, 'localStorage', { value: undefined });
+      Object.defineProperty(window, 'indexedDB', { value: undefined });
+    `;
+    doc.head.appendChild(script);
+  }, [asciiOnly]);
   return (
     <section className="flex-1 flex flex-col bg-gray-900">
       <iframe
