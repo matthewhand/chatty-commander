@@ -6,7 +6,11 @@ import ChatPane from "./panes/ChatPane";
 import CanvasPane from "./panes/CanvasPane";
 import SidecarPane from "./panes/SidecarPane";
 import { useGlobalHotkeys } from "./lib/hotkeys";
+import { initTelemetry, recordHydration } from "./lib/telemetry";
 import "./styles/index.css";
+
+const startTime = performance.now();
+initTelemetry();
 
 function App() {
   useGlobalHotkeys();
@@ -27,3 +31,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <App />
   </React.StrictMode>,
 );
+
+recordHydration(startTime);

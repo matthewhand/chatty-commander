@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useChatStore, ChatMessage } from "../stores/chat";
 import { useSidecarStore } from "../stores/sidecar";
 import { sse } from "../lib/sse";
+import { startSendSpan } from "../lib/telemetry";
 
 interface MessageItemProps {
   message: ChatMessage;
@@ -112,6 +113,9 @@ export default function ChatPane() {
   const send = async () => {
     const content = text.trim();
     if (!content) return;
+    
+    const endSendSpan = startSendSpan();
+    
     const userMsg: ChatMessage = {
       id: uuidv4(),
       role: "user",
@@ -184,7 +188,9 @@ export default function ChatPane() {
         "sidecar.open": (data) => {
           setSidecar(data);
         },
-        done: () => {},
+        done: () => {
+          endSendSpan();
+        },
       },
     );
   };

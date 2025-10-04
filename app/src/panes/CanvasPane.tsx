@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createBus } from '../lib/bus';
 import { useCanvasStore } from '../stores/canvas';
+import { traceCanvasLoad } from '../lib/telemetry';
 
 export default function CanvasPane() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -27,7 +28,7 @@ export default function CanvasPane() {
         });
         const info = await res.json();
         iframe.src = info.bundleUrl;
-        iframe.onload = () => {
+        iframe.onload = traceCanvasLoad(info.bundleUrl, () => {
           if (!iframe.contentWindow) return;
           const bus = createBus(iframe.contentWindow);
           off = bus.onAny((type, payload) => {
@@ -37,7 +38,7 @@ export default function CanvasPane() {
           });
           bus.post('canvas:init', info);
           setStatus('ready');
-        };
+        });
       } catch (err: any) {
         addLog(`error: ${err.message}`);
         setStatus('error');
@@ -54,6 +55,7 @@ export default function CanvasPane() {
   return (
     <section className="flex-1 flex flex-col bg-gray-900">
       <iframe
+        ref={iframeRef}
         title="canvas"
         sandbox="allow-scripts allow-downloads"
         className="flex-1 bg-gray-800"
