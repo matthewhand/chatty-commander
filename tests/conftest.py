@@ -376,4 +376,3 @@ def cleanup_mocks() -> Generator[None, None, None]:
     from unittest.mock import _patch_stopall
 
     _patch_stopall()
-

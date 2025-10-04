@@ -2778,7 +2778,9 @@ class TestUltimateCoverage:
         # Validate enterprise capabilities
         for category, capabilities in enterprise_capabilities.items():
             for capability, implemented in capabilities.items():
-                assert implemented, f"Enterprise capability '{category}.{capability}' should be implemented"
+                assert (
+                    implemented
+                ), f"Enterprise capability '{category}.{capability}' should be implemented"
 
         # Quantitative validation
         total_capabilities = sum(
