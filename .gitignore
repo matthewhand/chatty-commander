@@ -214,3 +214,6 @@ data/advisors_memory.jsonl
 
 # Git worktrees
 .worktrees/
+
+# Serena memories
+.serena/
