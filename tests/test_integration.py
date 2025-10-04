@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 import pytest
 from test_data_factories import TestDataFactory
 from test_utils import TestUtils
@@ -80,6 +81,4 @@ class TestIntegration:
         config.save_config()
         # Reload and verify persistence
         reloaded_config = Config(str(temp_file))
-        assert (
-            reloaded_config.default_state == "idle"
-        )  # Assuming no change to default
+        assert reloaded_config.default_state == "idle"  # Assuming no change to default

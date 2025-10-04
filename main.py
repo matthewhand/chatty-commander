@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # MIT License
 #
 # Copyright (c) 2024 mhand
@@ -20,9 +21,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Compatibility shim for config_cli module."""
+"""Entry point wrapper for ChattyCommander."""
 
-# Compatibility shim to preserve `from config_cli import ConfigCLI`
-from chatty_commander.compat import expose
+import os
+import sys
 
-expose(globals(), "config_cli")
+# Add src to path so we can import the main module
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+
+
+def main():
+    """Entry point wrapper."""
+    # ruff: noqa: E402
+    import chatty_commander.main
+
+    main_func = chatty_commander.main.main
+    return main_func()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

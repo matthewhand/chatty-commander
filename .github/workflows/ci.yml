@@ -1,5 +1,6 @@
 name: CI/CD Pipeline
 
+# CI pipeline for testing and building ChattyCommander
 on:
   push:
     branches: [main, develop]

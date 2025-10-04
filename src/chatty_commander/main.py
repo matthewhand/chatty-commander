@@ -51,16 +51,18 @@ def _propagate_patches() -> None:
         setattr(_cli_main, name, globals()[name])
 
 
-def create_parser(*args: Any, **kwargs: Any):  # pragma: no cover - thin shim
+def create_parser(*args: Any, **kwargs: Any) -> Any:  # pragma: no cover - thin shim
     return _cli_main.create_parser(*args, **kwargs)
 
 
-def run_orchestrator_mode(*args: Any, **kwargs: Any):  # pragma: no cover - thin shim
+def run_orchestrator_mode(
+    *args: Any, **kwargs: Any
+) -> Any:  # pragma: no cover - thin shim
     _propagate_patches()
     return _cli_main.run_orchestrator_mode(*args, **kwargs)
 
 
-def main(*args: Any, **kwargs: Any):
+def main(*args: Any, **kwargs: Any) -> Any:
     """Entry point preserving legacy patch points before delegating to CLI main."""
     _propagate_patches()
     return _cli_main.main(*args, **kwargs)

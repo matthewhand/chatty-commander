@@ -31,6 +31,8 @@ try:
 
     VOICE_AVAILABLE = True
 except ImportError:
+    MockWakeWordDetector = None  # type: ignore
+    WakeWordDetector = None  # type: ignore
     VOICE_AVAILABLE = False
 
 
@@ -46,7 +48,6 @@ class AdvisorSink(Protocol):
 
 class InputAdapter(Protocol):
     name: str
-    registry: dict[str, type[InputAdapter]] = {}
 
     def start(self) -> None:  # pragma: no cover - protocol
         ...
@@ -129,19 +130,21 @@ class OpenWakeWordAdapter:
         threshold = getattr(self._config, "wake_word_threshold", 0.5)
 
         # Use MockWakeWordDetector if no audio hardware available
-        try:
-            self._detector = WakeWordDetector(
-                wake_words=wake_words, threshold=threshold
-            )
-        except Exception:
-            # Fallback to mock detector
-            self._detector = MockWakeWordDetector()
+        if WakeWordDetector is not None and MockWakeWordDetector is not None:
+            try:
+                self._detector = WakeWordDetector(
+                    wake_words=wake_words, threshold=threshold
+                )
+            except Exception:
+                # Fallback to mock detector
+                self._detector = MockWakeWordDetector()
+        else:
+            self._detector = None
 
         # Add callback for wake word detection
-        self._detector.add_callback(self._handle_wake_word)
-
-        # Start listening
-        self._detector.start_listening()
+        if self._detector is not None:
+            self._detector.add_callback(self._handle_wake_word)
+            self._detector.start_listening()
         self._started = True
 
     def stop(self) -> None:
@@ -152,20 +155,6 @@ class OpenWakeWordAdapter:
     def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection by calling the callback."""
         self._on_wake_word(wake_word, confidence)
-
-
-# Initialize the registry with default adapters
-InputAdapter.registry = {
-    "gui": lambda: DummyAdapter("gui"),
-    "web": lambda: DummyAdapter("web"),
-    "openwakeword": lambda config=None, on_wake_word=None: (
-        OpenWakeWordAdapter(on_wake_word, config)
-        if VOICE_AVAILABLE
-        else DummyAdapter("openwakeword")
-    ),
-    "computer_vision": lambda: DummyAdapter("computer_vision"),
-    "discord_bridge": lambda: DummyAdapter("discord_bridge"),
-}
 
 
 class ModeOrchestrator:
@@ -194,41 +183,34 @@ class ModeOrchestrator:
         self.adapters: list[InputAdapter] = []
 
     def select_adapters(self) -> list[str]:
-        selected: list[InputAdapter] = []
+        selected: list[Any] = []
 
         if self.flags.enable_text:
             selected.append(TextInputAdapter(on_command=self._dispatch_command))
 
         if self.flags.enable_gui:
-            adapter_factory = InputAdapter.registry.get("gui")
-            if adapter_factory:
-                selected.append(adapter_factory())
+            selected.append(DummyAdapter("gui"))
 
         if self.flags.enable_web:
-            adapter_factory = InputAdapter.registry.get("web")
-            if adapter_factory:
-                selected.append(adapter_factory())
+            selected.append(DummyAdapter("web"))
 
         if self.flags.enable_openwakeword:
-            adapter_factory = InputAdapter.registry.get("openwakeword")
-            if adapter_factory:
-                selected.append(
-                    adapter_factory(
-                        config=self.config, on_wake_word=self._handle_wake_word
-                    )
-                )
+            if VOICE_AVAILABLE:
+                try:
+                    adapter = OpenWakeWordAdapter(self._handle_wake_word, self.config)  # type: ignore
+                    selected.append(adapter)
+                except Exception:
+                    selected.append(DummyAdapter("openwakeword"))
+            else:
+                selected.append(DummyAdapter("openwakeword"))
 
         if self.flags.enable_computer_vision:
-            adapter_factory = InputAdapter.registry.get("computer_vision")
-            if adapter_factory:
-                selected.append(adapter_factory())
+            selected.append(DummyAdapter("computer_vision"))
 
         if self.flags.enable_discord_bridge and getattr(
             self.config, "advisors", {}
         ).get("enabled", False):
-            adapter_factory = InputAdapter.registry.get("discord_bridge")
-            if adapter_factory:
-                selected.append(adapter_factory())
+            selected.append(DummyAdapter("discord_bridge"))
 
         self.adapters = selected
         return [a.name for a in selected]

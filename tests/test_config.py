@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import json
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -44,7 +45,8 @@ class TestConfig:
         temp_path = Path(tempfile.mkdtemp(prefix="chatty_test_"))
         yield temp_path
         # Cleanup
-        temp_path.rmdir()  # Simplified cleanup for single dir
+
+        shutil.rmtree(temp_path)  # Remove directory and all contents
 
     @pytest.fixture
     def temp_file(self, temp_dir: Path) -> Path:
@@ -290,5 +292,10 @@ class TestConfig:
         """Test Config environment variable overrides."""
         monkeypatch.setenv(env_var, value)
         config = Config()
-        # Assuming config reads env vars; adjust based on actual implementation
-        assert config.config_data.get(env_var.lower()) == value
+        # Check that the environment variable was properly applied
+        if env_var == "CHATCOMM_CHECK_FOR_UPDATES":
+            assert hasattr(config, "check_for_updates")
+            assert config.check_for_updates is True
+        else:
+            # For other env vars, check if they were applied to config_data
+            assert config.config_data.get(env_var.lower()) == value

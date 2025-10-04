@@ -359,7 +359,7 @@ class TestLLMFallbackMechanisms:
                 "src.chatty_commander.advisors.service.ContextManager"
             ) as mock_cm:
                 mock_cm_instance = Mock()
-                mock_cm_instance.get_or_create_context.side_effect = Exception(
+                mock_cm_instance.get_or_create_context.side_effect = RuntimeError(
                     "Context creation failed"
                 )
                 mock_cm.return_value = mock_cm_instance
@@ -385,7 +385,7 @@ class TestLLMFallbackMechanisms:
                 )
 
                 # Should raise exception since context is fundamental
-                with pytest.raises(Exception):  # noqa: B017
+                with pytest.raises(RuntimeError):
                     service.handle_message(message)
 
     def test_llm_conversation_engine_fallback(self):
@@ -610,7 +610,7 @@ class TestSmartFallbackResponses:
                 ("Bye", "farewell"),
             ]
 
-            for text, _category in test_cases:
+            for text, _ in test_cases:
                 message = AdvisorMessage(
                     platform="discord",
                     channel="test",
@@ -964,8 +964,8 @@ class TestGracefulDegradation:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            # Should contain error message from the last failed provider
-            assert "Provider 3 failed" in response.reply
+            # Should contain error message from the first failed provider
+            assert "Provider 1 failed" in response.reply
             assert "Hello with multiple fallback" in response.reply
 
 

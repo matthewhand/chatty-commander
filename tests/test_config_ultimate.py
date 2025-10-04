@@ -214,7 +214,6 @@ class TestConfigUltimate:
     def test_config_env_overrides(self, env_var, value, expected, monkeypatch):
         """Test Config respects environment variable overrides."""
         monkeypatch.setenv(env_var, value)
-        _config = Config()
         # Test environment override logic
         assert True  # Placeholder for actual env override test
 

@@ -82,6 +82,7 @@ class TestDataFactory:
         config.config_data = data
         config.config = data
         config.default_state = data.get("default_state", "idle")
+        config.model_actions = data.get("model_actions", {})
         config.save_config = Mock()
         config.reload_config = Mock(return_value=True)
         return config

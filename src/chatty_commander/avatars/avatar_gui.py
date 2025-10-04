@@ -49,9 +49,9 @@ from __future__ import annotations
 from pathlib import Path
 
 try:
-    import webview  # type: ignore
+    import webview
 except Exception:  # pragma: no cover
-    webview = None  # type: ignore
+    webview = None
 
 
 def _avatar_index_path() -> Path:

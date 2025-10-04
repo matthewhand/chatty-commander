@@ -31,12 +31,13 @@ from __future__ import annotations
 import importlib.util as _ilu
 import os as _os
 import sys as _sys
+from typing import Any
 
 _root = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), ".."))
 _real = _os.path.join(_root, "src", "chatty_commander", "main.py")
 
 
-def _load_real():
+def _load_real() -> Any:
     spec = _ilu.spec_from_file_location("chatty_commander._real_main", _real)
     if spec is None or spec.loader is None:
         # As a last resort, emulate a minimal --help experience so CI doesn't fail.
