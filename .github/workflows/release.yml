@@ -52,6 +52,8 @@ jobs:
             arch: macos-amd64
           - os: macos-14
             arch: macos-arm64
+          - os: windows-latest
+            arch: windows-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -71,15 +73,25 @@ jobs:
         env:
           PYINSTALLER_STRIP: "true"
         run: |
-          pwd && ls -la packaging/ && uv run pyinstaller --clean -y packaging/chatty_cli_lite.spec
+          pwd && ls -la packaging/
+          uv run pyinstaller --onefile packaging/run_cli.py --name chatty-lite
           ls -lah dist
 
-      - name: Rename artifact per arch
+      - name: Rename artifact per arch (non-Windows)
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           NAME="chatty-lite-${{ matrix.arch }}"
           mv dist/chatty-lite "$NAME"
           echo "ARTIFACT=$NAME" >> $GITHUB_ENV
+
+      - name: Rename artifact per arch (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $name = "chatty-lite-${{ matrix.arch }}.exe"
+          Move-Item "dist/chatty-lite.exe" $name
+          echo "ARTIFACT=$name" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2

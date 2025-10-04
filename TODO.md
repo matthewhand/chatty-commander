@@ -514,6 +514,18 @@ webui/frontend/ (React) ← Keep and connect to Python backend
 - [ ] Web mode: uv run pytest -q tests/test_web_mode_unit.py tests/test_web_mode.py tests/test_web_integration.py
 - [ ] CLI interactive: uv run pytest -q tests/test_repl_basic.py
 - [ ] Performance: uv run pytest -q tests/test_performance_benchmarks.py
+- [ ] Coverage target: raise to ≥69% OR total tests ≥420 (whichever hits first); enforce via coverage gate in CI
+  - Command: uv run pytest --maxfail=1 --disable-warnings --cov=src --cov-report=term-missing
+  - CI: fail if coverage &lt; 69% and total collected tests &lt; 420
+- [ ] Headless non-interactive verification
+  - Linux: xvfb-run uv run pytest -q tests/test_repl_basic.py tests/test_cli_help_and_shell.py
+  - Windows: run CLI without GUI flags; ensure exit code 0 for help and REPL start/exit
+    - Commands:
+      - uv run python -m src.chatty_commander.cli.cli --help
+      - echo exit | uv run python -m src.chatty_commander.cli.cli
+  - Add CI jobs: (a) headless Linux with Xvfb, (b) Windows no-GUI runs
+- [ ] Lint/format gates must pass before tests
+  - Commands: ruff check . ; black --check .
 
 ## Project Cleanup Roadmap (added by Rovo Dev)
 

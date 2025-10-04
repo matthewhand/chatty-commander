@@ -46,6 +46,7 @@ for path in (PROJECT_ROOT, SRC_DIR):
     if path not in sys.path:
         sys.path.insert(0, path)
 
+
 # ============================================================================
 # SHARED TEST UTILITIES
 # ============================================================================
@@ -375,3 +376,4 @@ def cleanup_mocks() -> Generator[None, None, None]:
     from unittest.mock import _patch_stopall
 
     _patch_stopall()
+

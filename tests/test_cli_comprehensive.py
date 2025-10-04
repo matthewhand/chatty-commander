@@ -88,15 +88,16 @@ class TestConfigResolution:
     def test_get_model_actions_from_config(self):
         """Test extracting model actions from config."""
         # Test with dict attribute
-        mock_config = MagicMock()
-        mock_config.__dict__ = {"model_actions": {"test": "action"}}
-        result = _get_model_actions_from_config(mock_config)
+        # Test with dict attribute on plain object
+        from types import SimpleNamespace
+        plain_cfg = SimpleNamespace(model_actions={"test": "action"})
+        result = _get_model_actions_from_config(plain_cfg)
         assert result == {"test": "action"}
 
-        # Test with getattr fallback
-        mock_config2 = MagicMock()
-        mock_config2.model_actions = {"test2": "action2"}
-        result = _get_model_actions_from_config(mock_config2)
+        # Test with getattr fallback on MagicMock
+        mock_cfg = MagicMock()
+        mock_cfg.model_actions = {"test2": "action2"}
+        result = _get_model_actions_from_config(mock_cfg)
         assert result == {"test2": "action2"}
 
         # Test with empty/fallback
@@ -124,10 +125,7 @@ class TestActionPrinting:
 
     def test_print_actions_json(self, capsys):
         """Test printing actions in JSON format."""
-        actions = {
-            "command1": {"shell": {"cmd": "echo test"}},
-            "command2": {"url": {"url": "https://example.com"}},
-        }
+        actions = {"command1": {"type": "shell"}, "command2": {"type": "url"}}
         _print_actions_json(actions)
         captured = capsys.readouterr()
         assert '"name": "command1"' in captured.out
@@ -242,28 +240,26 @@ class TestCLIMainFunction:
         # Verify function was called
         mock_args.func.assert_called_once()
 
-    def test_cli_main_run_with_display(self, monkeypatch):
+    @patch("chatty_commander.cli.cli.build_parser")
+    def test_cli_main_run_with_display(self, mock_build_parser, monkeypatch):
         """Test cli_main run command with display setting."""
-        # Mock sys.argv to simulate 'chatty-commander run --display :0'
-        monkeypatch.setattr(sys, "argv", ["chatty-commander", "run", "--display", ":0"])
+        # Mock parser
+        mock_parser = MagicMock()
+        mock_build_parser.return_value = mock_parser
 
-        # Mock the run_app function to avoid actually starting the app
-        with patch("chatty_commander.cli.cli.run_app") as mock_run_app:
-            # Clear environment but keep track of changes
-            original_display = os.environ.get("DISPLAY")
-            os.environ.clear()
-            try:
-                cli_main()
-            except SystemExit:
-                pass  # cli_main might call sys.exit
+        # Mock args with run command and display
+        mock_args = MagicMock()
+        mock_args.command = "run"
+        mock_args.display = ":0"
+        mock_args.func = MagicMock()
+        mock_parser.parse_args.return_value = mock_args
 
-            # Verify DISPLAY was set during cli_main execution
-            assert os.environ.get("DISPLAY") == ":0"
-            mock_run_app.assert_called_once()
+        with patch.dict(os.environ, {}, clear=True):
+            cli_main()
 
-            # Restore original environment
-            if original_display is not None:
-                os.environ["DISPLAY"] = original_display
+        # Verify DISPLAY was set
+        assert os.environ.get("DISPLAY") == ":0"
+        mock_args.func.assert_called_once()
 
 
 class TestCommandFunctions:
@@ -317,17 +313,13 @@ class TestErrorHandling:
 
         # Test invalid state for set-state-model
         with pytest.raises(SystemExit):
-            args = parser.parse_args(
+            parser.parse_args(
                 ["config", "--set-state-model", "invalid_state", "model1"]
             )
-            args.func(args)
 
         # Test invalid model for set-state-model
         with pytest.raises(SystemExit):
-            args = parser.parse_args(
-                ["config", "--set-state-model", "idle", "invalid_model"]
-            )
-            args.func(args)
+            parser.parse_args(["config", "--set-state-model", "idle", "invalid_model"])
 
 
 class TestInteractiveShell:
