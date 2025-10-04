@@ -345,8 +345,33 @@ class Config:
             return {}
 
     def _load_general_settings(self) -> None:
-        general = self.config_data.get("general", {}) or {}
-        self.default_state = general.get("default_state", self.default_state)
+        """Load general settings, applying environment variable overrides."""
+        general_settings = self.config_data.get("general_settings", {})
+
+        def _env_bool(name: str, default: bool) -> bool:
+            val = os.getenv(name)
+            if val is None:
+                return default
+            return val.strip().lower() in {"1", "true", "yes"}
+
+        # Set debug mode in config data
+        self.config_data.setdefault("general", {})["debug_mode"] = _env_bool(
+            "CHATCOMM_DEBUG", general_settings.get("debug_mode", True)
+        )
+        self.default_state = os.getenv(
+            "CHATCOMM_DEFAULT_STATE", general_settings.get("default_state", "idle")
+        )
+        self.inference_framework = os.getenv(
+            "CHATCOMM_INFERENCE_FRAMEWORK",
+            general_settings.get("inference_framework", "onnx"),
+        )
+        self.start_on_boot = _env_bool(
+            "CHATCOMM_START_ON_BOOT", general_settings.get("start_on_boot", False)
+        )
+        self.check_for_updates = _env_bool(
+            "CHATCOMM_CHECK_FOR_UPDATES",
+            general_settings.get("check_for_updates", True),
+        )
 
     # Build model_actions from the high-level 'commands' section
     def _build_model_actions(self) -> dict[str, dict[str, str]]:
@@ -381,6 +406,10 @@ class Config:
     @property
     def debug_mode(self) -> bool:
         return bool(self.config_data.get("general", {}).get("debug_mode", True))
+
+    @debug_mode.setter
+    def debug_mode(self, value: bool) -> None:
+        self.config_data.setdefault("general", {})["debug_mode"] = bool(value)
 
     @property
     def voice_only(self) -> bool:
