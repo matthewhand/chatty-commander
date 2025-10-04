@@ -199,6 +199,9 @@ utils/__pycache__/
 htmlcov/
 .venv/
 node_modules/
+# Lockfiles from npm should not be committed; this repo uses pnpm.
+package-lock.json
+**/package-lock.json
 # Other common noise
 .DS_Store
 Thumbs.db
