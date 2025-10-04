@@ -22,7 +22,19 @@ export const useSidecarStore = create<SidecarStore>((set) => ({
     set({ open: true, current: item });
     if (item.contentUrl && !item.snippet) {
       fetch(item.contentUrl)
-        .then(res => res.text())
+        .then(res => {
+          if (res.headers.get('content-type')?.includes('application/json')) {
+            return res.json().then(data => data.url || data.content || '');
+          }
+          return res.text();
+        })
+        .then(content => {
+          if (content.startsWith('/api/sidecar/file/content')) {
+            // It's a signed URL, fetch the actual content
+            return fetch(content).then(res => res.text());
+          }
+          return content;
+        })
         .then(text => set({ open: true, current: { ...item, snippet: text } }))
         .catch(() => {});
     }

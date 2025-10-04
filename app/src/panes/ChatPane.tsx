@@ -75,6 +75,9 @@ export default function ChatPane() {
             });
           }
         },
+        'sidecar.open': data => {
+          setSidecar(data);
+        },
         done: () => {},
       },
     );

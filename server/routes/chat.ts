@@ -11,6 +11,14 @@ router.post("/", async (req, res) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
+  // Check for sidecar.open tool call in request
+  const tool = req.body?.tool;
+  if (tool?.name === 'sidecar.open') {
+    const payload = JSON.stringify(tool.input || {});
+    res.write('event: sidecar.open\n');
+    res.write(`data: ${payload}\n\n`);
+  }
+
   // simulate streaming of an assistant response with a tool call
   send("chunk", { id: "assistant", delta: "Hello from ChattyCommander. " });
   send("tool_call", { id: "tool-1", name: "clock" });
