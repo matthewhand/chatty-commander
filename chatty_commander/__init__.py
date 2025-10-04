@@ -38,14 +38,14 @@ _here = _os.path.dirname(_os.path.abspath(__file__))
 _src_pkg = _os.path.abspath(_os.path.join(_here, "..", "src", "chatty_commander"))
 
 # Ensure this package behaves like a namespace spanning both locations
-__path__ = _pkgutil.extend_path(__path__, __name__)  # type: ignore[name-defined]
+__path__ = _pkgutil.extend_path(__path__, __name__)
 if _src_pkg not in __path__:
-    __path__.append(_src_pkg)  # type: ignore[attr-defined]
+    __path__.append(_src_pkg)
 
 # Expose __version__ consistently whether or not the package is installed
 try:
-    from importlib.metadata import PackageNotFoundError  # type: ignore
-    from importlib.metadata import version as _version  # type: ignore
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as _version
 
     try:
         __version__ = _version("chatty-commander")

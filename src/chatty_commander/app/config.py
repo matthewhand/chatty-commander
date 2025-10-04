@@ -345,7 +345,7 @@ class Config:
             return {}
 
     def _load_general_settings(self) -> None:
-        general = self.config_data.get("general", {})
+        general = self.config_data.get("general", {}) or {}
         self.default_state = general.get("default_state", self.default_state)
 
     # Build model_actions from the high-level 'commands' section

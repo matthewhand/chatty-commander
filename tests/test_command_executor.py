@@ -45,20 +45,24 @@ class TestCommandExecutor:
         return TestDataFactory.create_mock_command_executor(mock_config)
 
     @pytest.mark.parametrize(
-        "command_name",
+        "command_name,expected",
         [
-            "test_cmd",
-            "keypress_cmd",
-            "url_cmd",
-            "msg_cmd",
-            "invalid_cmd",
+            ("test_cmd", True),
+            ("keypress_cmd", True),
+            ("url_cmd", True),
+            ("msg_cmd", True),
+            ("invalid_cmd", False),
         ],
     )
-    def test_command_executor_validation(self, command_name):
+    def test_command_executor_validation(self, command_name, expected):
         """Test CommandExecutor validation for various commands."""
-        ce = CommandExecutor(TestDataFactory.create_mock_config())
+        mock_model_manager = Mock()
+        mock_state_manager = Mock()
+        ce = CommandExecutor(
+            TestDataFactory.create_mock_config(), mock_model_manager, mock_state_manager
+        )
         result = ce.validate_command(command_name)
-        assert result is True  # Assuming validation returns True for valid
+        assert result is expected
 
     @pytest.mark.parametrize(
         "action_config",
@@ -75,7 +79,9 @@ class TestCommandExecutor:
         config = TestDataFactory.create_mock_config(
             {"model_actions": {"test": action_config}}
         )
-        ce = CommandExecutor(config)
+        mock_model_manager = Mock()
+        mock_state_manager = Mock()
+        ce = CommandExecutor(config, mock_model_manager, mock_state_manager)
         ce.execute_command("test")
         # Add assertions based on expected side effects
 
@@ -92,7 +98,9 @@ class TestCommandExecutor:
         config = TestDataFactory.create_mock_config(
             {"model_actions": {"keypress": key_config}}
         )
-        ce = CommandExecutor(config)
+        mock_model_manager = Mock()
+        mock_state_manager = Mock()
+        ce = CommandExecutor(config, mock_model_manager, mock_state_manager)
         ce.execute_command("keypress")
         # Assuming keypress is mocked; add assertions
 
@@ -109,7 +117,9 @@ class TestCommandExecutor:
         config = TestDataFactory.create_mock_config(
             {"model_actions": {"url_cmd": {"action": "url", "url": url}}}
         )
-        ce = CommandExecutor(config)
+        mock_model_manager = Mock()
+        mock_state_manager = Mock()
+        ce = CommandExecutor(config, mock_model_manager, mock_state_manager)
         ce.execute_command("url_cmd")
         # Add assertions for URL opening
 
@@ -130,14 +140,20 @@ class TestCommandExecutor:
                 }
             }
         )
-        ce = CommandExecutor(config)
+        mock_model_manager = Mock()
+        mock_state_manager = Mock()
+        ce = CommandExecutor(config, mock_model_manager, mock_state_manager)
         ce.execute_command("msg_cmd")
         # Add assertions for message display
 
     def test_command_executor_pre_execute_hook(self):
         """Test CommandExecutor pre-execute hook."""
-        ce = CommandExecutor(TestDataFactory.create_mock_config())
-        ce.pre_execute_hook()
+        mock_model_manager = Mock()
+        mock_state_manager = Mock()
+        ce = CommandExecutor(
+            TestDataFactory.create_mock_config(), mock_model_manager, mock_state_manager
+        )
+        ce.pre_execute_hook("test_cmd")
         # Assuming hook is called; add assertions if needed
 
     @pytest.mark.parametrize(
@@ -153,11 +169,17 @@ class TestCommandExecutor:
         config = TestDataFactory.create_mock_config(
             {"model_actions": {"shell_cmd": {"action": "shell", "cmd": shell_cmd}}}
         )
-        ce = CommandExecutor(config)
+        mock_model_manager = Mock()
+        mock_state_manager = Mock()
+        ce = CommandExecutor(config, mock_model_manager, mock_state_manager)
         ce.execute_command("shell_cmd")
         # Add assertions for shell execution
 
     def test_command_executor_actions_valid(self):
         """Test CommandExecutor actions validation using assertion helper."""
-        ce = CommandExecutor(TestDataFactory.create_mock_config())
+        mock_model_manager = Mock()
+        mock_state_manager = Mock()
+        ce = CommandExecutor(
+            TestDataFactory.create_mock_config(), mock_model_manager, mock_state_manager
+        )
         TestAssertions.assert_command_executor_actions_valid(ce)

@@ -23,14 +23,11 @@
 """Tests for LLM integration components."""
 
 import importlib
+import importlib.util
 import os
 from unittest.mock import Mock, patch
 
 import pytest
-
-has_transformers = importlib.util.find_spec("transformers") is not None
-
-import importlib.util
 
 from chatty_commander.llm import CommandProcessor, LLMManager
 from chatty_commander.llm.backends import (
@@ -39,6 +36,8 @@ from chatty_commander.llm.backends import (
     OllamaBackend,
     OpenAIBackend,
 )
+
+has_transformers = importlib.util.find_spec("transformers") is not None
 
 
 class TestMockLLMBackend:

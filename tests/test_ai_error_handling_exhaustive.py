@@ -180,7 +180,7 @@ class TestInvalidInputHandling:
         result = processor._energy_based_vad(binary_data)
 
         # Check that result is a boolean type (including numpy.bool_)
-        assert isinstance(result, (bool, np.bool_))
+        assert isinstance(result, bool | np.bool_)
 
     def test_special_character_input_handling(self):
         """Test handling of input with special characters."""
@@ -350,7 +350,7 @@ class TestFallbackMechanisms:
             # Basic VAD should still work
             audio_data = b"\x00\x01\x02\x03"
             result = processor._energy_based_vad(audio_data)
-            assert isinstance(result, (bool, np.bool_))
+            assert isinstance(result, bool | np.bool_)
 
     def test_llm_api_key_invalid_error_handling(self):
         """Test handling of invalid API key errors."""

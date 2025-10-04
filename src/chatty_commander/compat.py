@@ -40,6 +40,22 @@ ALIASES: dict[str, str] = {
     "config": "chatty_commander.app.config",
     "model_manager": "chatty_commander.app.model_manager",
     "web_mode": "chatty_commander.web.web_mode",
+    "state_manager": "chatty_commander.app.state_manager",
+    "config_cli": "chatty_commander.cli.config",
+    "cli": "chatty_commander.cli.cli",
+    "default_config": "chatty_commander.app.default_config",
+    "wakeword": "chatty_commander.voice.wakeword",
+    "command_executor": "chatty_commander.app.command_executor",
+    "logger": "chatty_commander.utils.logger",
+    "gui": "chatty_commander.gui",
+    "avatar_gui": "chatty_commander.avatars.avatar_gui",
+    "thinking_state": "chatty_commander.avatars.thinking_state",
+    "llm_manager": "chatty_commander.llm.manager",
+    "voice_pipeline": "chatty_commander.voice.pipeline",
+    "orchestrator": "chatty_commander.app.orchestrator",
+    "cli_main": "chatty_commander.cli.main",
+    "pyqt5_avatar": "chatty_commander.gui.pyqt5_avatar",
+    "tray_popup": "chatty_commander.gui.tray_popup",
 }
 
 

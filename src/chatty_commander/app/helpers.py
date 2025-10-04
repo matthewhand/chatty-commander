@@ -30,20 +30,20 @@ across different components of the application to perform common tasks.
 import os
 
 
-def ensure_directory_exists(path):
+def ensure_directory_exists(path: str) -> None:
     """Ensure that a directory exists, and if not, create it."""
     if not os.path.exists(path):
         os.makedirs(path)
 
 
-def format_command_output(cmd_output):
+def format_command_output(cmd_output: str) -> str:
     """Format the output of a command for better readability."""
     return cmd_output.strip().replace("\n", " | ")
 
 
-def parse_model_keybindings(keybindings_str):
+def parse_model_keybindings(keybindings_str: str) -> dict[str, str]:
     """Parse a string of keybindings into a dictionary."""
-    keybindings = {}
+    keybindings: dict[str, str] = {}
     if keybindings_str:
         pairs = keybindings_str.split(",")
         for pair in pairs:
