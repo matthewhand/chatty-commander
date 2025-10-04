@@ -52,7 +52,7 @@ dependencies = [
     "httpx>=0.28.1",
     "pywebview>=4.4",
     "pystray>=0.19.5",
-    "onnx==1.18.0",
+    "onnx==1.19.0",
     "openai-agents>=0.1.0",
 ]
 
