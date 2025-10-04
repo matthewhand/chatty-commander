@@ -1,4 +1,4 @@
-import { build } from "esbuild";
+import { build } from '../shared/esbuild.js';
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
