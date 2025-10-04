@@ -5,9 +5,5 @@
     "port": 8100,
     "auth_enabled": true
   },
-  "voice_only": false,
-  "general": {
-    "debug_mode": true,
-    "final_test": true
-  }
+  "voice_only": false
 }

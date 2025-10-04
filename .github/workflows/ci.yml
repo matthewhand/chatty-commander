@@ -32,3 +32,57 @@ jobs:
       - name: Run pytest (skip heavy perf)
         run: |
           pytest -q -k "not performance"
+
+  e2e-test:
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install Python dependencies
+        run: uv sync --dev
+
+      - name: Start backend server
+        run: |
+          uv run python -m src.chatty_commander.main --web --no-auth --port 8100 &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          sleep 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install frontend dependencies
+        run: |
+          cd webui/frontend
+          npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          cd webui/frontend
+          npx playwright install --with-deps
+
+      - name: Run E2E tests
+        run: |
+          cd webui/frontend
+          npx playwright test
+
+      - name: Stop backend server
+        if: always()
+        run: kill $SERVER_PID
