@@ -133,14 +133,19 @@ def _print_actions_text(actions: dict[str, Any]) -> None:
 
 
 def _print_actions_json(actions: dict[str, Any]) -> None:
+    """Print actions in JSON format."""
     arr: list[dict[str, str | None]] = []
     for k, v in actions.items():
         vtype = None
         if isinstance(v, dict) and v:
-            try:
-                vtype = next(iter(v.keys()))
-            except Exception:
-                vtype = None
+            # Get the type value, not the key
+            vtype = v.get("type")
+            if vtype is None:
+                # Fallback to first key if no type field
+                try:
+                    vtype = next(iter(v.keys()))
+                except Exception:
+                    vtype = None
         arr.append({"name": k, "type": vtype})
     print(json.dumps(arr))
 

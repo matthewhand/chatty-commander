@@ -352,7 +352,6 @@ dependencies = [
     { name = "openwakeword" },
     { name = "passlib", extra = ["bcrypt"] },
     { name = "psutil" },
-    { name = "pyaudio" },
     { name = "pyautogui" },
     { name = "pyjwt" },
     { name = "pystray" },
@@ -367,6 +366,11 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
     { name = "watchdog" },
     { name = "websockets" },
+]
+
+[package.optional-dependencies]
+audio = [
+    { name = "pyaudio" },
 ]
 
 [package.dev-dependencies]
@@ -420,7 +424,7 @@ requires-dist = [
     { name = "openwakeword", specifier = ">=0.4.0" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "psutil", specifier = ">=7.0.0" },
-    { name = "pyaudio", specifier = ">=0.2.13" },
+    { name = "pyaudio", marker = "extra == 'audio'", specifier = ">=0.2.13" },
     { name = "pyautogui", specifier = ">=0.9.54" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pystray", specifier = ">=0.19.5" },

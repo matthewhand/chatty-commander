@@ -90,6 +90,7 @@ class TestConfigResolution:
         # Test with dict attribute
         # Test with dict attribute on plain object
         from types import SimpleNamespace
+
         plain_cfg = SimpleNamespace(model_actions={"test": "action"})
         result = _get_model_actions_from_config(plain_cfg)
         assert result == {"test": "action"}
@@ -125,7 +126,7 @@ class TestActionPrinting:
 
     def test_print_actions_json(self, capsys):
         """Test printing actions in JSON format."""
-        actions = {"command1": {"type": "shell"}, "command2": {"type": "url"}}
+        actions = {"command1": {"shell": {}}, "command2": {"url": {}}}
         _print_actions_json(actions)
         captured = capsys.readouterr()
         assert '"name": "command1"' in captured.out
