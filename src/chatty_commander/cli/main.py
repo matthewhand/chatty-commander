@@ -33,7 +33,6 @@ import os as _os
 import signal
 import sys
 import sys as _sys
-import threading
 
 # Fix sys.path to include the project src root (one level up from this package directory)
 _pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
@@ -124,7 +123,7 @@ def run_web_mode(
     import os
 
     try:
-        from chatty_commander.web.web_mode import create_web_server
+        from chatty_commander.web.web_mode import run_server
     except ImportError:
         logger.error(
             "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
@@ -135,57 +134,28 @@ def run_web_mode(
         f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
     )
 
-    # Create web server instance
-    web_server = create_web_server(
-        config_manager=config,
-        state_manager=state_manager,
-        model_manager=model_manager,
-        command_executor=command_executor,
-        no_auth=no_auth,
-    )
-
-    # Setup callbacks for voice command integration
-    def on_command_detected(command):
-        web_server.on_command_detected(command)
-
-    def on_state_change(old_state, new_state):
-        web_server._on_state_change(old_state, new_state)
-
-    # Register callbacks
-    if hasattr(model_manager, "add_command_callback"):
-        model_manager.add_command_callback(on_command_detected)
-    if hasattr(state_manager, "add_state_change_callback"):
-        state_manager.add_state_change_callback(on_state_change)
-
-    stop_event = threading.Event()
-
-    def handle_signal(signum, frame):
-        logger.info(f"Received signal {signum}, stopping web server...")
-        stop_event.set()
-        try:
-            stopper = getattr(web_server, "stop", None)
-            if callable(stopper):
-                stopper()
-        except Exception as e:
-            logger.error(f"Error stopping web server: {e}")
-
-    signal.signal(signal.SIGINT, handle_signal)
-    signal.signal(signal.SIGTERM, handle_signal)
-
+    # Override host/port from environment if provided
     env_host = os.getenv("CHATCOMM_HOST")
-    env_port = os.getenv("CHATCOMM_PORT")
     if env_host:
         host = env_host
+    env_port = os.getenv("CHATCOMM_PORT")
     if env_port:
         try:
             port = int(env_port)
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
-    log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
 
     # Start the server
     try:
-        web_server.run(host=host, port=port, log_level=log_level)
+        run_server(
+            config_manager=config,
+            state_manager=state_manager,
+            model_manager=model_manager,
+            command_executor=command_executor,
+            host=host,
+            port=port,
+            no_auth=no_auth,
+        )
     finally:
         try:
             if hasattr(model_manager, "shutdown"):

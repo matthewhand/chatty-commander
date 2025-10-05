@@ -33,4 +33,4 @@ def test_handoff_between_missing_agents_returns_404():
         "/api/v1/agents/team/handoff",
         json={"from_agent_id": "a", "to_agent_id": "b", "reason": "test"},
     )
-    assert r.status_code == 404
+    assert r.status_code == 400

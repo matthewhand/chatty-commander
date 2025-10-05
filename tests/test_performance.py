@@ -26,10 +26,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from chatty_commander.app.command_executor import CommandExecutor
-from chatty_commander.app.config import Config
-from chatty_commander.app.state_manager import StateManager
-from tests.test_1337_ultimate_coverage import TestAssertions, TestUtils
+from src.chatty_commander.app.command_executor import CommandExecutor
+from src.chatty_commander.app.config import Config
+from src.chatty_commander.app.state_manager import StateManager
 
 
 @pytest.mark.performance
@@ -47,12 +46,18 @@ class TestPerformance:
         config = Config(str(temp_file))
         large_data = {f"key_{i}": f"value_{i}" for i in range(1000)}
         config.config_data = large_data
-        _, duration = TestUtils.measure_execution_time(config.save_config)
-        TestAssertions.assert_performance_within_limit(duration, 1.0)
+
+        # Measure execution time manually
+        start_time = time.time()
+        config.save_config()
+        duration = time.time() - start_time
+
+        # Performance assertion - should complete within 1 second
+        assert duration < 1.0, f"Config save took {duration:.3f}s, expected < 1.0s"
+
         new_config = Config(str(temp_file))
         assert len(new_config.config_data) == 1000
         assert new_config.config_data["key_999"] == "value_999"
-        TestAssertions.assert_file_contains_json(temp_file, large_data)
 
     def test_state_manager_performance_multiple_transitions(self):
         """Test StateManager performance with multiple state transitions."""

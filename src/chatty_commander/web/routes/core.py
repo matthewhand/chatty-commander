@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import Callable
 from datetime import datetime
@@ -86,6 +87,94 @@ class MetricsData(BaseModel):
     response_time_avg: float = Field(
         default=0.0, description="Average response time in ms"
     )
+
+
+# Validation functions
+def validate_command_security(command: str) -> str:
+    """Validate command name for security."""
+    if not isinstance(command, str):
+        raise HTTPException(status_code=400, detail="Command must be a string")
+
+    command = command.strip()
+
+    if len(command) < 1:
+        raise HTTPException(status_code=400, detail="Command cannot be empty")
+
+    if len(command) > 100:
+        raise HTTPException(
+            status_code=400, detail="Command must not exceed 100 characters"
+        )
+
+    # Prevent command injection attacks
+    dangerous_patterns = [
+        r"[;&|`$()]",  # Shell metacharacters
+        r"\.\./",  # Directory traversal
+        r"^\s*rm\s+",  # Dangerous commands
+        r"^\s*sudo\s+",  # Privilege escalation
+    ]
+
+    for pattern in dangerous_patterns:
+        if re.search(pattern, command, re.IGNORECASE):
+            raise HTTPException(
+                status_code=400,
+                detail="Command contains potentially dangerous characters or patterns",
+            )
+
+    # Only allow alphanumeric, spaces, hyphens, underscores, and dots
+    if not re.match(r"^[a-zA-Z0-9\s\-_\.]+$", command):
+        raise HTTPException(
+            status_code=400,
+            detail="Command can only contain letters, numbers, spaces, hyphens, underscores, and dots",
+        )
+
+    return command
+
+
+def validate_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
+    """Sanitize configuration data to prevent injection attacks."""
+    if not isinstance(config_data, dict):
+        raise HTTPException(
+            status_code=400, detail="Configuration data must be a dictionary"
+        )
+
+    # Check for potentially dangerous keys
+    dangerous_keys = [
+        "__proto__",
+        "constructor",
+        "prototype",
+        "eval",
+        "function",
+        "script",
+        "javascript:",
+    ]
+
+    for key in config_data.keys():
+        if isinstance(key, str):
+            key_lower = key.lower()
+            if any(dangerous in key_lower for dangerous in dangerous_keys):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Configuration contains potentially dangerous key: {key}",
+                )
+
+    # Recursively sanitize string values
+    def sanitize_value(value: Any) -> Any:
+        if isinstance(value, str):
+            # Remove potential script injections
+            if "<script" in value.lower() or "javascript:" in value.lower():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Configuration contains potentially dangerous script content",
+                )
+            return value.strip()
+        elif isinstance(value, dict):
+            return {k: sanitize_value(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [sanitize_value(item) for item in value]
+        else:
+            return value
+
+    return {k: sanitize_value(v) for k, v in config_data.items()}
 
 
 def include_core_routes(
@@ -204,10 +293,13 @@ def include_core_routes(
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
         try:
+            # Validate and sanitize config data
+            sanitized_config = validate_config_data(config_data)
+
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
             if isinstance(cfg, dict):
-                cfg.update(config_data)
+                cfg.update(sanitized_config)
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:
@@ -216,6 +308,8 @@ def include_core_routes(
                     # Some implementations require the cfg param
                     save(cfg)  # type: ignore[arg-type]
             return {"message": "Configuration updated successfully"}
+        except HTTPException:
+            raise
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
 
@@ -248,8 +342,11 @@ def include_core_routes(
         counters["command_post"] += 1
         start_time = time.time()
         try:
+            # Validate command for security
+            validated_command = validate_command_security(request.command)
+
             # Delegate to provided executor bridge to ensure consistent integration surface
-            success = bool(execute_command_fn(request.command))
+            success = bool(execute_command_fn(validated_command))
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
                 success=success,
@@ -260,6 +357,8 @@ def include_core_routes(
                 ),
                 execution_time=execution_time,
             )
+        except HTTPException:
+            raise
         except Exception as e:
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(

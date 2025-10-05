@@ -80,6 +80,9 @@ class CommandExecutor:
         if not isinstance(command_name, str) or not command_name.strip():
             raise ValueError(f"Invalid command name: {command_name!r}")
 
+        # Call pre-execute hook before any validation
+        self.pre_execute_hook(command_name)
+
         try:
             # Ensure model_actions is accessible
             model_actions = self.config.model_actions
@@ -93,8 +96,6 @@ class CommandExecutor:
         command_action = model_actions.get(command_name)
         if command_action is None:
             return False
-
-        self.pre_execute_hook(command_name)
 
         # Set default DISPLAY if not set (X11 environments)
         if "DISPLAY" not in os.environ:
@@ -111,12 +112,10 @@ class CommandExecutor:
                     )
                 if action_type == "keypress":
                     keys = command_action.get("keys", "")
-                    self._execute_keybinding(command_name, keys)
-                    success = True
+                    success = self._execute_keybinding(command_name, keys)
                 elif action_type == "url":
                     url = command_action.get("url", "")
-                    self._execute_url(command_name, url)
-                    success = True
+                    success = self._execute_url(command_name, url)
                 elif action_type == "shell":
                     cmd = command_action.get("cmd", "")
                     success = self._execute_shell(command_name, cmd)
@@ -183,26 +182,31 @@ class CommandExecutor:
                 if "action" in command_action:
                     # New format validation
                     action_type = command_action.get("action")
-                    if not isinstance(action_type, str):
-                        return False
-                    if action_type not in [
+                    if not isinstance(action_type, str) or not action_type.strip():
+                        # Empty or None action - fall back to old format validation
+                        pass
+                    elif action_type not in [
                         "keypress",
                         "url",
                         "shell",
                         "custom_message",
                     ]:
                         return False
-                    # Check required fields for each action type
-                    if action_type == "keypress" and "keys" not in command_action:
-                        return False
-                    if action_type == "url" and "url" not in command_action:
-                        return False
-                    if action_type == "shell" and "cmd" not in command_action:
-                        return False
+                    else:
+                        # Valid action type, check required fields
+                        if action_type == "keypress" and "keys" not in command_action:
+                            return False
+                        if action_type == "url" and "url" not in command_action:
+                            return False
+                        if action_type == "shell" and "cmd" not in command_action:
+                            return False
+                        # Valid new format
+                        return True
                 else:
-                    # Old format validation
+                    # Old format validation - also accept cmd as valid for backwards compatibility
                     if not any(
-                        key in command_action for key in ["keypress", "url", "shell"]
+                        key in command_action
+                        for key in ["keypress", "url", "shell", "cmd"]
                     ):
                         return False
             else:
@@ -232,13 +236,20 @@ class CommandExecutor:
         """Hook after executing a command."""
         # Keep this post hook for compatibility with tests that patch it
 
-    def _execute_keybinding(self, command_name: str, keys: str | list[str]) -> None:
+    def _execute_keybinding(self, command_name: str, keys: str | list[str]) -> bool:
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
+        Returns True on success, False on failure.
         """
         if pyautogui is None:
             self.report_error(command_name, "pyautogui is not installed")
-            return
+            return False
+
+        # Validate keys parameter
+        if keys is None:
+            self.report_error(command_name, "Keys parameter cannot be None")
+            return False
+
         try:
             # Support either a list of keys (hotkey/chord) or a single key sequence
             if isinstance(keys, list | tuple):
@@ -252,29 +263,53 @@ class CommandExecutor:
                 pyautogui.press(keys)
             logging.info(f"Executed keybinding for {command_name}")
             logging.info(f"Completed execution of command: {command_name}")
+            return True
         except Exception as e:  # pragma: no cover - patched in tests
             logging.error(f"Failed to execute keybinding for {command_name}: {e}")
             self.report_error(command_name, str(e))
+            return False
 
-    def _execute_url(self, command_name: str, url: str) -> None:
+    def _execute_url(self, command_name: str, url: str) -> bool:
         """
         Sends an HTTP GET request based on the URL mapped to the command with basic error checks.
+        Returns True on success, False on failure.
         """
-        if not url:
+        if url is None:
             self.report_error(command_name, "missing URL")
-            return
+            return False
         if requests is None:  # pragma: no cover - optional
             self.report_error(command_name, "requests not available")
-            return
+            return False
         try:
             # Match tests: do not pass extra kwargs like timeout
             resp = requests.get(url)
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
+                return False
             else:
                 logging.info(f"Completed execution of command: {command_name}")
+                return True
         except Exception as e:  # pragma: no cover - patched in tests
             self.report_error(command_name, str(e))
+            return False
+        try:
+            import webbrowser
+
+            webbrowser.open(url)
+            logging.info(f"Completed execution of command: {command_name}")
+            return True
+        except Exception as e:  # pragma: no cover - patched in tests
+            self.report_error(command_name, str(e))
+            return False
+        try:
+            import webbrowser
+
+            webbrowser.open(url)
+            logging.info(f"Completed execution of command: {command_name}")
+            return True
+        except Exception as e:  # pragma: no cover - patched in tests
+            self.report_error(command_name, str(e))
+            return False
 
     def _execute_shell(self, command_name: str, cmd: str) -> bool:
         """

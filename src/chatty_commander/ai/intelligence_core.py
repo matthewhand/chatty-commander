@@ -244,25 +244,31 @@ class IntelligenceCore:
         ):
             return "screenshot"
 
-        if any(word in text_lower for word in ["lights on", "turn on lights"]):
+        if any(
+            word in text_lower
+            for word in ["lights on", "turn on lights", "turn on the lights"]
+        ):
             return "lights_on"
 
-        if any(word in text_lower for word in ["lights off", "turn off lights"]):
+        if any(
+            word in text_lower
+            for word in ["lights off", "turn off lights", "turn off the lights"]
+        ):
             return "lights_off"
 
         # Questions
-        if text.startswith(("what", "how", "why", "when", "where", "who")):
+        if text_lower.startswith(("what", "how", "why", "when", "where", "who")):
             return "question"
+
+        # Tasks (check before greetings to avoid "help" matching in "hello")
+        if any(
+            word in text_lower for word in ["help me", "assist", "do", "make", "create"]
+        ):
+            return "task_request"
 
         # Greetings
         if any(word in text_lower for word in ["hello", "hi", "hey", "good morning"]):
             return "greeting"
-
-        # Tasks
-        if any(
-            word in text_lower for word in ["help", "assist", "do", "make", "create"]
-        ):
-            return "task_request"
 
         return "conversation"
 

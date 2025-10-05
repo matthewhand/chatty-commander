@@ -59,7 +59,7 @@ def test_agents_crud_happy_path_isolated_store():
     payload = AgentBlueprintModel(
         name="A1",
         description="desc",
-        persona_prompt="prompt",
+        persona_prompt="prompt that is long enough",
         capabilities=["x"],
     ).model_dump()
 

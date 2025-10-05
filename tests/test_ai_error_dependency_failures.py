@@ -1,9 +1,32 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Tests for AI error handling when dependencies fail.
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
 
 
 class TestAIDependencyFailures:
@@ -154,7 +177,9 @@ class TestAIDependencyFailures:
         """Test handling of missing optional dependencies."""
         with patch.dict("sys.modules", {"openai": None}):
             try:
-                import openai
+                import importlib.util
+
+                importlib.util.find_spec("openai")
 
                 # If import succeeds, that's fine
                 assert True
@@ -167,7 +192,7 @@ class TestAIDependencyFailures:
         with patch("requests.post") as mock_post:
             mock_post.side_effect = Exception("SSL verification failed")
 
-            with pytest.raises(Exception):
+            with pytest.raises(Exception, match="SSL verification failed"):
                 mock_post("https://api.openai.com/v1/completions")
 
     def test_dns_resolution_failure(self, mock_config):
@@ -175,7 +200,7 @@ class TestAIDependencyFailures:
         with patch("requests.post") as mock_post:
             mock_post.side_effect = Exception("Name resolution failed")
 
-            with pytest.raises(Exception):
+            with pytest.raises(Exception, match="Name resolution failed"):
                 mock_post("https://api.openai.com/v1/completions")
 
     @pytest.mark.asyncio
@@ -192,7 +217,7 @@ class TestAIDependencyFailures:
         """Test retry mechanism on dependency failures."""
         call_count = 0
 
-        def mock_failing_call():
+        def mock_failing_call(*args, **kwargs):
             nonlocal call_count
             call_count += 1
             if call_count < 3:
@@ -239,7 +264,7 @@ class TestAIDependencyFailures:
         """Test circuit breaker pattern for dependency failures."""
         failure_count = 0
 
-        def mock_failing_service():
+        def mock_failing_service(*args, **kwargs):
             nonlocal failure_count
             failure_count += 1
             if failure_count <= 5:  # Fail first 5 times

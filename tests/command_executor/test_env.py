@@ -1,12 +1,34 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Environment-specific tests for CommandExecutor.
 """
 
-import pytest
 import os
 import platform
 from unittest.mock import Mock, patch
-from src.chatty_commander.app.command_executor import CommandExecutor
+
+import pytest
 
 
 class TestCommandExecutorEnvironment:
@@ -29,20 +51,28 @@ class TestCommandExecutorEnvironment:
             mock_config.model_actions = {"unix_cmd": {"action": "shell", "cmd": "ls"}}
 
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(returncode=0)
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stdout = ""
+            mock_result.stderr = ""
+            mock_run.return_value = mock_result
 
             if platform_name == "Windows":
                 result = command_executor.execute_command("windows_cmd")
-                mock_run.assert_called_once_with("dir", shell=True, check=True)
+                mock_run.assert_called_once_with(
+                    ["dir"], capture_output=True, text=True, timeout=15
+                )
             else:
                 result = command_executor.execute_command("unix_cmd")
-                mock_run.assert_called_once_with("ls", shell=True, check=True)
+                mock_run.assert_called_once_with(
+                    ["ls"], capture_output=True, text=True, timeout=15
+                )
 
             assert result is True
 
-    @patch("pyautogui.press")
+    @patch("src.chatty_commander.app.command_executor.pyautogui.hotkey")
     def test_keypress_platform_differences(
-        self, mock_press, command_executor, mock_config
+        self, mock_hotkey, command_executor, mock_config
     ):
         """Test keypress commands across platforms."""
         # Test platform-specific key combinations
@@ -52,14 +82,14 @@ class TestCommandExecutorEnvironment:
             (["ctrl", "alt", "delete"], "windows"),
         ]
 
-        for keys, platform in key_combinations:
+        for keys, platform_name in key_combinations:
             mock_config.model_actions = {
-                f"{platform}_keys": {"action": "keypress", "keys": keys}
+                f"{platform_name}_keys": {"action": "keypress", "keys": keys}
             }
 
-            result = command_executor.execute_command(f"{platform}_keys")
+            result = command_executor.execute_command(f"{platform_name}_keys")
             assert result is True
-            mock_press.assert_called_with(keys)
+            mock_hotkey.assert_called_with(*keys)
 
     def test_environment_variable_usage(self, command_executor, mock_config):
         """Test commands that use environment variables."""
@@ -67,35 +97,57 @@ class TestCommandExecutorEnvironment:
             "env_cmd": {"action": "shell", "cmd": "echo $HOME"}
         }
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(returncode=0)
+        with patch("subprocess.run") as mock_run, patch("shlex.split") as mock_shlex:
+            mock_shlex.return_value = ["echo", "$HOME"]
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stderr = ""
+            mock_result.stdout = ""
+            mock_run.return_value = mock_result
 
             result = command_executor.execute_command("env_cmd")
             assert result is True
-            mock_run.assert_called_once_with("echo $HOME", shell=True, check=True)
+            mock_shlex.assert_called_once_with("echo $HOME")
+            mock_run.assert_called_once_with(
+                ["echo", "$HOME"], capture_output=True, text=True, timeout=15
+            )
 
     def test_path_separator_handling(self, command_executor, mock_config):
         """Test path separator handling across platforms."""
         if platform.system() == "Windows":
             path_cmd = "dir C:\\Users\\%USERNAME%"
+            expected_args = ["dir", "C:\\Users\\%USERNAME%"]
         else:
             path_cmd = "ls $HOME"
+            expected_args = ["ls", "$HOME"]
 
         mock_config.model_actions = {"path_cmd": {"action": "shell", "cmd": path_cmd}}
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(returncode=0)
+        with patch("subprocess.run") as mock_run, patch("shlex.split") as mock_shlex:
+            mock_shlex.return_value = expected_args
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stderr = ""
+            mock_result.stdout = ""
+            mock_run.return_value = mock_result
 
             result = command_executor.execute_command("path_cmd")
             assert result is True
-            mock_run.assert_called_once_with(path_cmd, shell=True, check=True)
+            mock_shlex.assert_called_once_with(path_cmd)
+            mock_run.assert_called_once_with(
+                expected_args, capture_output=True, text=True, timeout=15
+            )
 
-    @patch("webbrowser.open")
-    def test_url_opening_cross_platform(self, mock_open, command_executor):
+    @patch("src.chatty_commander.app.command_executor.requests.get")
+    def test_url_opening_cross_platform(self, mock_get, command_executor):
         """Test URL opening works across platforms."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_get.return_value = mock_response
+
         result = command_executor.execute_command("test_url")
         assert result is True
-        mock_open.assert_called_once_with("http://example.com")
+        mock_get.assert_called_once_with("http://example.com")
 
     def test_command_executor_with_missing_dependencies(
         self, command_executor, mock_config
@@ -106,8 +158,13 @@ class TestCommandExecutorEnvironment:
         }
 
         # Should handle missing dependencies gracefully
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(returncode=0)
+        with patch("subprocess.run") as mock_run, patch("shlex.split") as mock_shlex:
+            mock_shlex.return_value = ["echo", "test"]
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stderr = ""
+            mock_result.stdout = ""
+            mock_run.return_value = mock_result
 
             result = command_executor.execute_command("test_cmd")
             assert result is True
@@ -121,18 +178,36 @@ class TestCommandExecutorEnvironment:
         }
         mock_config.model_actions.update(env_config)
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(returncode=0)
+        with patch("subprocess.run") as mock_run, patch("shlex.split") as mock_shlex:
+
+            def shlex_side_effect(cmd):
+                if cmd == "echo development":
+                    return ["echo", "development"]
+                elif cmd == "echo production":
+                    return ["echo", "production"]
+                else:
+                    return ["echo", "unknown"]
+
+            mock_shlex.side_effect = shlex_side_effect
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stderr = ""
+            mock_result.stdout = ""
+            mock_run.return_value = mock_result
 
             # Test dev command
             result = command_executor.execute_command("dev_cmd")
             assert result is True
-            mock_run.assert_called_with("echo development", shell=True, check=True)
+            mock_run.assert_called_with(
+                ["echo", "development"], capture_output=True, text=True, timeout=15
+            )
 
             # Test prod command
             result = command_executor.execute_command("prod_cmd")
             assert result is True
-            mock_run.assert_called_with("echo production", shell=True, check=True)
+            mock_run.assert_called_with(
+                ["echo", "production"], capture_output=True, text=True, timeout=15
+            )
 
     @patch.dict(os.environ, {"TEST_VAR": "test_value"})
     def test_environment_variable_expansion(self, command_executor, mock_config):
@@ -141,24 +216,40 @@ class TestCommandExecutorEnvironment:
             "expand_cmd": {"action": "shell", "cmd": "echo $TEST_VAR"}
         }
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(returncode=0)
+        with patch("subprocess.run") as mock_run, patch("shlex.split") as mock_shlex:
+            mock_shlex.return_value = ["echo", "$TEST_VAR"]
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stderr = ""
+            mock_result.stdout = ""
+            mock_run.return_value = mock_result
 
             result = command_executor.execute_command("expand_cmd")
             assert result is True
             # The command should be passed as-is to subprocess
-            mock_run.assert_called_once_with("echo $TEST_VAR", shell=True, check=True)
+            mock_shlex.assert_called_once_with("echo $TEST_VAR")
+            mock_run.assert_called_once_with(
+                ["echo", "$TEST_VAR"], capture_output=True, text=True, timeout=15
+            )
 
     def test_working_directory_handling(self, command_executor, mock_config):
         """Test commands that depend on working directory."""
         mock_config.model_actions = {"pwd_cmd": {"action": "shell", "cmd": "pwd"}}
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(returncode=0)
+        with patch("subprocess.run") as mock_run, patch("shlex.split") as mock_shlex:
+            mock_shlex.return_value = ["pwd"]
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stderr = ""
+            mock_result.stdout = ""
+            mock_run.return_value = mock_result
 
             result = command_executor.execute_command("pwd_cmd")
             assert result is True
-            mock_run.assert_called_once_with("pwd", shell=True, check=True)
+            mock_shlex.assert_called_once_with("pwd")
+            mock_run.assert_called_once_with(
+                ["pwd"], capture_output=True, text=True, timeout=15
+            )
 
     def test_permission_handling(self, command_executor, mock_config):
         """Test permission-related scenarios."""
@@ -166,9 +257,15 @@ class TestCommandExecutorEnvironment:
             "perm_cmd": {"action": "shell", "cmd": "echo test"}
         }
 
-        with patch("subprocess.run") as mock_run:
+        with patch("subprocess.run") as mock_run, patch("shlex.split") as mock_shlex:
+            mock_shlex.return_value = ["echo", "test"]
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stderr = ""
+            mock_result.stdout = ""
+            mock_run.return_value = mock_result
+
             # Test successful execution
-            mock_run.return_value = Mock(returncode=0)
             result = command_executor.execute_command("perm_cmd")
             assert result is True
 
@@ -183,11 +280,20 @@ class TestCommandExecutorEnvironment:
             "locale_cmd": {"action": "shell", "cmd": "echo 'test with unicode: ñáéíóú'"}
         }
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(returncode=0)
+        with patch("subprocess.run") as mock_run, patch("shlex.split") as mock_shlex:
+            mock_shlex.return_value = ["echo", "test with unicode: ñáéíóú"]
+            mock_result = Mock()
+            mock_result.returncode = 0
+            mock_result.stderr = ""
+            mock_result.stdout = ""
+            mock_run.return_value = mock_result
 
             result = command_executor.execute_command("locale_cmd")
             assert result is True
+            mock_shlex.assert_called_once_with("echo 'test with unicode: ñáéíóú'")
             mock_run.assert_called_once_with(
-                "echo 'test with unicode: ñáéíóú'", shell=True, check=True
+                ["echo", "test with unicode: ñáéíóú"],
+                capture_output=True,
+                text=True,
+                timeout=15,
             )

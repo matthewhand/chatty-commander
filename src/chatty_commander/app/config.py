@@ -35,6 +35,8 @@ class Config:
     def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
+        # Track if the original config was valid (not empty due to errors)
+        self._config_was_valid: bool = bool(self.config_data)
         # Expose the raw dict for web handlers/tests that expect it
         self.config: dict[str, Any] = self.config_data
 
@@ -354,10 +356,13 @@ class Config:
                 return default
             return val.strip().lower() in {"1", "true", "yes"}
 
-        # Set debug mode in config data
-        self.config_data.setdefault("general", {})["debug_mode"] = _env_bool(
-            "CHATCOMM_DEBUG", general_settings.get("debug_mode", True)
-        )
+        # Set debug mode in config data only if original config was valid
+        if self._config_was_valid:
+            if self.config_data.get("general") is None:
+                self.config_data["general"] = {}
+            self.config_data["general"]["debug_mode"] = _env_bool(
+                "CHATCOMM_DEBUG", general_settings.get("debug_mode", True)
+            )
         self.default_state = os.getenv(
             "CHATCOMM_DEFAULT_STATE", general_settings.get("default_state", "idle")
         )
@@ -531,6 +536,8 @@ class Config:
         instance = cls.__new__(cls)
         instance.config_file = config_file
         instance.config_data = data.copy()
+        # Track if the original config was valid (not empty due to errors)
+        instance._config_was_valid: bool = bool(data)
 
         # Set basic attributes first
         instance.default_state = instance.config_data.get("default_state", "idle")

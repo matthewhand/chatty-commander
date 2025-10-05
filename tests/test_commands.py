@@ -80,9 +80,9 @@ class TestCommandExecution:
 
     def test_invalid_command(self, command_executor):
         """Test handling of undefined commands."""
-        with pytest.raises(ValueError):
-            command_executor.execute_command("undefined_command")
-        logging.debug("Invalid command raised ValueError as expected")
+        result = command_executor.execute_command("undefined_command")
+        assert result is False
+        logging.debug("Invalid command returned False as expected")
 
     @patch("chatty_commander.app.command_executor.requests")
     def test_url_command_failure(self, mock_requests, command_executor):
@@ -145,7 +145,9 @@ class TestCommandExecution:
         logging.debug("Multiple commands executed")
 
     def test_invalid_command_type(self, command_executor):
-        """Test that a command with an invalid type raises a TypeError."""
-        with pytest.raises(TypeError):
+        """Test that a command with an invalid type raises a ValueError."""
+        with pytest.raises(
+            ValueError, match="Command 'invalid_type_cmd' has an invalid type"
+        ):
             command_executor.execute_command("invalid_type_cmd")
-        logging.debug("Invalid command type raised TypeError as expected")
+        logging.debug("Invalid command type raised ValueError as expected")

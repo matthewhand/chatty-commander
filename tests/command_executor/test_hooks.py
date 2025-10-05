@@ -1,10 +1,30 @@
+# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Hook functionality tests for CommandExecutor.
 """
 
-import pytest
-from unittest.mock import Mock, patch, call
-from src.chatty_commander.app.command_executor import CommandExecutor
+from unittest.mock import Mock, patch
 
 
 class TestCommandExecutorHooks:
@@ -80,6 +100,11 @@ class TestCommandExecutorHooks:
     def test_pre_execute_hook_with_execution_failure(self, command_executor):
         """Test pre-execute hook behavior when execution fails."""
         with patch.object(command_executor, "pre_execute_hook") as mock_hook:
+            # Make the mock actually set last_command like the real hook does
+            mock_hook.side_effect = lambda cmd: setattr(
+                command_executor, "last_command", cmd
+            )
+
             with patch("subprocess.run") as mock_run:
                 mock_run.side_effect = Exception("Execution failed")
 
@@ -92,6 +117,11 @@ class TestCommandExecutorHooks:
     def test_pre_execute_hook_with_validation_failure(self, command_executor):
         """Test pre-execute hook behavior when validation fails."""
         with patch.object(command_executor, "pre_execute_hook") as mock_hook:
+            # Make the mock actually set last_command like the real hook does
+            mock_hook.side_effect = lambda cmd: setattr(
+                command_executor, "last_command", cmd
+            )
+
             result = command_executor.execute_command("nonexistent")
 
             # Hook should still be called even for invalid commands
@@ -151,11 +181,11 @@ class TestCommandExecutorHooks:
         """Test pre-execute hook doesn't cause memory leaks."""
         import sys
 
-        initial_size = (
-            sys.getsizeof(command_executor.last_command)
-            if command_executor.last_command
-            else 0
-        )
+        # initial_size = (
+        #     sys.getsizeof(command_executor.last_command)
+        #     if command_executor.last_command
+        #     else 0
+        # )
 
         # Set many different commands
         for i in range(100):

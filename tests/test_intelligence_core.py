@@ -522,3 +522,325 @@ class TestIntelligenceCore:
                     except AttributeError:
                         # Method might not be implemented yet
                         pass
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_analyze_intent_comprehensive(
+        self, mock_state_manager, mock_advisors, mock_config
+    ):
+        """Test comprehensive intent analysis scenarios."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            core = IntelligenceCore(mock_config)
+
+            # Test mode switch intent
+            intent = core._analyze_intent("switch to chatty mode")
+            assert intent == "mode_switch"
+
+            # Test screenshot intent
+            intent = core._analyze_intent("take a screenshot")
+            assert intent == "screenshot"
+
+            # Test lights intents
+            intent = core._analyze_intent("turn on the lights")
+            assert intent == "lights_on"
+
+            intent = core._analyze_intent("lights off")
+            assert intent == "lights_off"
+
+            # Test question intent
+            intent = core._analyze_intent("What is the weather like?")
+            assert intent == "question"
+
+            # Test greeting intent
+            intent = core._analyze_intent("Hello there")
+            assert intent == "greeting"
+
+            # Test task request intent
+            intent = core._analyze_intent("Help me with something")
+            assert intent == "task_request"
+
+            # Test default conversation intent
+            intent = core._analyze_intent("Just talking about stuff")
+            assert intent == "conversation"
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_extract_actions_comprehensive(
+        self, mock_state_manager, mock_advisors, mock_config
+    ):
+        """Test comprehensive action extraction scenarios."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            core = IntelligenceCore(mock_config)
+
+            # Test mode switch action extraction
+            response = "I will SWITCH_MODE:chatty for you"
+            actions = core._extract_actions(response)
+            assert len(actions) == 1
+            assert actions[0]["type"] == "mode_switch"
+            assert actions[0]["target_mode"] == "chatty"
+            assert actions[0]["priority"] == "high"
+
+            # Test mode switched confirmation
+            response = "✓ Switched to computer mode"
+            actions = core._extract_actions(response)
+            assert len(actions) == 1
+            assert actions[0]["type"] == "mode_switched"
+            assert actions[0]["priority"] == "info"
+
+            # Test screenshot action
+            response = "I will take a screenshot now"
+            actions = core._extract_actions(response)
+            assert len(actions) == 1
+            assert actions[0]["type"] == "screenshot"
+            assert actions[0]["priority"] == "medium"
+
+            # Test lights actions
+            response = "Turning lights on"
+            actions = core._extract_actions(response)
+            assert len(actions) == 1
+            assert actions[0]["type"] == "lights_on"
+
+            response = "Lights will go off"
+            actions = core._extract_actions(response)
+            assert len(actions) == 1
+            assert actions[0]["type"] == "lights_off"
+
+            # Test no actions
+            response = "Just a regular response"
+            actions = core._extract_actions(response)
+            assert len(actions) == 0
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_execute_actions_comprehensive(
+        self, mock_state_manager, mock_advisors, mock_config
+    ):
+        """Test comprehensive action execution scenarios."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            core = IntelligenceCore(mock_config)
+
+            # Mock state manager
+            mock_state_manager_instance = mock_state_manager.return_value
+            core.state_manager = mock_state_manager_instance
+
+            # Set up callbacks
+            mode_callback = Mock()
+            core.on_mode_change = mode_callback
+
+            # Test mode switch action
+            actions = [{"type": "mode_switch", "target_mode": "computer"}]
+            core._execute_actions(actions)
+
+            mock_state_manager_instance.change_state.assert_called_once_with("computer")
+            mode_callback.assert_called_once_with("computer")
+
+            # Reset mocks
+            mock_state_manager_instance.reset_mock()
+            mode_callback.reset_mock()
+
+            # Test screenshot action (should just log)
+            actions = [{"type": "screenshot"}]
+            core._execute_actions(actions)
+            # Should not raise exception
+
+            # Test lights actions (should just log)
+            actions = [{"type": "lights_on"}, {"type": "lights_off"}]
+            core._execute_actions(actions)
+            # Should not raise exception
+
+            # Test action execution error
+            actions = [{"type": "mode_switch", "target_mode": "invalid"}]
+            mock_state_manager_instance.change_state.side_effect = Exception(
+                "Invalid mode"
+            )
+
+            # Should not raise exception
+            core._execute_actions(actions)
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_voice_listening_controls(
+        self, mock_state_manager, mock_advisors, mock_config
+    ):
+        """Test voice listening start/stop functionality."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ) as mock_voice_proc:
+            mock_voice_instance = Mock()
+            mock_voice_proc.return_value = mock_voice_instance
+
+            core = IntelligenceCore(mock_config)
+
+            # Test start listening
+            core.start_voice_listening()
+            mock_voice_instance.start_listening.assert_called_once()
+            assert core.listening_mode == "continuous"
+
+            # Test stop listening
+            core.stop_voice_listening()
+            mock_voice_instance.stop_listening.assert_called_once()
+            assert core.listening_mode == "off"
+
+            # Test when voice processor is None
+            core.voice_processor = None
+            core.start_voice_listening()  # Should not raise exception
+            core.stop_voice_listening()  # Should not raise exception
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_process_text_input(self, mock_state_manager, mock_advisors, mock_config):
+        """Test process_text_input convenience method."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            core = IntelligenceCore(mock_config)
+
+            mock_response = Mock(spec=AIResponse)
+
+            with patch.object(
+                core, "process_input", return_value=mock_response
+            ) as mock_process:
+                result = core.process_text_input("Hello world")
+
+                mock_process.assert_called_once_with("Hello world", input_type="text")
+                assert result == mock_response
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_process_voice_file_success(
+        self, mock_state_manager, mock_advisors, mock_config
+    ):
+        """Test successful voice file processing."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ) as mock_voice_proc:
+            mock_voice_instance = Mock()
+            mock_voice_proc.return_value = mock_voice_instance
+
+            core = IntelligenceCore(mock_config)
+
+            # Mock voice result
+            mock_voice_result = Mock()
+            mock_voice_result.text = "Transcribed speech"
+            mock_voice_result.confidence = 0.85
+            mock_voice_result.duration = 3.2
+            mock_voice_instance.process_audio_file.return_value = mock_voice_result
+
+            mock_response = Mock(spec=AIResponse)
+
+            with patch.object(
+                core, "process_input", return_value=mock_response
+            ) as mock_process:
+                result = core.process_voice_file("/path/to/audio.wav")
+
+                mock_voice_instance.process_audio_file.assert_called_once_with(
+                    "/path/to/audio.wav"
+                )
+                mock_process.assert_called_once_with(
+                    text="Transcribed speech",
+                    input_type="voice_file",
+                    metadata={
+                        "confidence": 0.85,
+                        "duration": 3.2,
+                        "file_path": "/path/to/audio.wav",
+                    },
+                )
+                assert result == mock_response
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_process_voice_file_no_processor(
+        self, mock_state_manager, mock_advisors, mock_config
+    ):
+        """Test voice file processing when no voice processor available."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            core = IntelligenceCore(mock_config)
+            core.voice_processor = None
+
+            result = core.process_voice_file("/path/to/audio.wav")
+
+            assert result.text == "Voice processing not available"
+            assert result.confidence == 0.0
+            assert result.intent == "error"
+            assert result.actions == []
+            assert "No voice processor" in result.metadata["error"]
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_process_voice_file_error(
+        self, mock_state_manager, mock_advisors, mock_config
+    ):
+        """Test voice file processing when an error occurs."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ) as mock_voice_proc:
+            mock_voice_instance = Mock()
+            mock_voice_proc.return_value = mock_voice_instance
+
+            core = IntelligenceCore(mock_config)
+
+            mock_voice_instance.process_audio_file.side_effect = Exception(
+                "Audio file error"
+            )
+
+            result = core.process_voice_file("/path/to/audio.wav")
+
+            assert result.text == "Error processing voice file: Audio file error"
+            assert result.confidence == 0.0
+            assert result.intent == "error"
+            assert result.actions == []
+            assert result.metadata["error"] == "Audio file error"
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_set_persona(self, mock_state_manager, mock_advisors, mock_config):
+        """Test changing the active persona."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            core = IntelligenceCore(mock_config)
+
+            core.set_persona("computer")
+            assert core.active_persona == "computer"
+
+            core.set_persona("assistant")
+            assert core.active_persona == "assistant"
+
+    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    def test_get_conversation_stats(
+        self, mock_state_manager, mock_advisors, mock_config
+    ):
+        """Test getting conversation statistics."""
+        with patch(
+            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            core = IntelligenceCore(mock_config)
+
+            # Mock dependencies
+            mock_state_manager_instance = mock_state_manager.return_value
+            mock_state_manager_instance.current_state = "chatty"
+            mock_advisors_instance = mock_advisors.return_value
+            mock_advisors_instance.enabled = True
+
+            core.state_manager = mock_state_manager_instance
+            core.advisors_service = mock_advisors_instance
+            core.active_persona = "computer"
+            core.listening_mode = "continuous"
+            core.voice_processor = Mock()
+
+            stats = core.get_conversation_stats()
+
+            assert stats["active_persona"] == "computer"
+            assert stats["current_mode"] == "chatty"
+            assert stats["listening_mode"] == "continuous"
+            assert stats["voice_available"] is True
+            assert stats["advisors_enabled"] is True

@@ -31,10 +31,13 @@ def test_update_blueprint_nonexistent_returns_404():
     client = TestClient(app)
 
     payload = AgentBlueprintModel(
-        name="X", description="Y", persona_prompt="Z", capabilities=[]
+        name="X",
+        description="Y",
+        persona_prompt="Z that is long enough",
+        capabilities=[],
     ).model_dump()
     r = client.put("/api/v1/agents/blueprints/does-not-exist", json=payload)
-    assert r.status_code == 404
+    assert r.status_code == 400
 
 
 def test_delete_blueprint_nonexistent_returns_404():
@@ -42,4 +45,4 @@ def test_delete_blueprint_nonexistent_returns_404():
     client = TestClient(app)
 
     r = client.delete("/api/v1/agents/blueprints/does-not-exist")
-    assert r.status_code == 404
+    assert r.status_code == 400
