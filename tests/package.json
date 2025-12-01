@@ -9,6 +9,6 @@
     "test": "node --version | grep -q 'v22' && node --experimental-strip-types --test || node --test --import tsx"
   },
   "devDependencies": {
-    "tsx": "^4.20.6"
+    "tsx": "^4.21.0"
   }
 }
