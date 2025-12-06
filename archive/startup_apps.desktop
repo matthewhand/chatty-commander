@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Exec=/home/matthewh/chatty-commander/startup_apps.sh
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-Name=Startup Apps
-Comment=Start nvtop, htop, pavucontrol, alsamixer, and Epiphany Browser
