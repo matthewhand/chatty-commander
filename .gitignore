@@ -258,3 +258,9 @@ data/advisors_memory.jsonl
 *.md
 !README.md
 !LICENSE
+
+# Ignore markdown files in subdirectories
+**/*.md
+
+# Wakewords directory
+wakewords/
