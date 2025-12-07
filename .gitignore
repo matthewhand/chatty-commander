@@ -264,3 +264,7 @@ data/advisors_memory.jsonl
 
 # Wakewords directory
 wakewords/
+
+# Test results
+test-results/
+**/test-results/
