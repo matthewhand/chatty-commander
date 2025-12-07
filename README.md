@@ -109,7 +109,7 @@ Quickstart
 - Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh
 - Create and sync env: uv python install 3.11 && uv sync
 - Run tests: uv run pytest -q
-- Run CLI: uv run chatty-commander --help
+- Run CLI: uv run python -m chatty_commander.cli.cli --help
 - Run web server: uv run python main.py --web --no-auth
 
 1. **Prerequisites**: Ensure you have Python 3.11+ and `uv` installed for dependency management.
@@ -166,21 +166,21 @@ This enables:
 To start the application:
 
 ```bash
-uv run chatty run
+uv run python -m chatty_commander.cli.cli run
 ```
 
 - The app will load models based on the initial 'idle' state and begin listening for voice input.
 - Speak a wake word (e.g., "hey khum puter") to transition states and trigger actions.
 - Logs are saved in `logs/chattycommander.log` for debugging.
 
-For testing in environments without a display, use `xvfb-run uv run chatty run`.
+For testing in environments without a display, use `xvfb-run uv run python -m chatty_commander.cli.cli run`.
 
 ### Desktop GUI Application
 
 ChattyCommander now includes a comprehensive desktop GUI for easy configuration and management:
 
 ```bash
-uv run chatty gui
+uv run python -m chatty_commander.cli.cli gui
 ```
 
 The GUI provides:
@@ -203,6 +203,38 @@ The GUI provides:
 - **Validation**: Built-in configuration validation to catch errors before running
 
 The GUI is optional - you can continue using the CLI-only approach if preferred. Both interfaces work with the same configuration files and provide the same functionality.
+
+### Creating a Desktop Icon (Linux)
+
+To create a desktop shortcut for easy access to ChattyCommander:
+
+1. **Create a desktop entry file** at `~/.local/share/applications/chatty-commander.desktop`:
+
+```ini
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ChattyCommander
+Comment=Voice-controlled command executor with desktop GUI
+Exec=/path/to/chatty-commander/venv/bin/python -m chatty_commander.cli.cli gui
+Icon=utilities-terminal
+Terminal=false
+Categories=Utility;AudioVideo;
+Keywords=voice;command;AI;automation;
+StartupNotify=true
+```
+
+2. **Make it executable**:
+```bash
+chmod +x ~/.local/share/applications/chatty-commander.desktop
+```
+
+3. **Update desktop database**:
+```bash
+update-desktop-database ~/.local/share/applications
+```
+
+4. **Alternative: Use an existing icon** - You can use standard system icons like `utilities-terminal`, `audio-input-microphone`, or install custom icons.
 
 ### Orchestrator examples
 
@@ -404,7 +436,7 @@ ChattyCommander can be configured dynamically using the CLI tool via the `chatty
 Run:
 
 ```bash
-uv run chatty config
+uv run python -m chatty_commander.cli.cli config
 ```
 
 Follow the prompts to set model-action mappings, state-model associations, and other settings.
@@ -414,10 +446,10 @@ Follow the prompts to set model-action mappings, state-model associations, and o
 Update specific settings directly:
 
 ```bash
-uv run chatty config --model-action "okay_stop" "ctrl+shift+;"
+uv run python -m chatty_commander.cli.cli config --model-action "okay_stop" "ctrl+shift+;"
 ```
 
-Use `uv run chatty config --help` for more options.
+Use `uv run python -m chatty_commander.cli.cli config --help` for more options.
 
 Alternatively, edit `config.py` manually for static changes.
 

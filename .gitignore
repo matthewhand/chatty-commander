@@ -253,3 +253,8 @@ data/advisors_memory.jsonl
 
 # Serena memories
 .seren/
+
+# Markdown files - ignore all except essential ones
+*.md
+!README.md
+!LICENSE
