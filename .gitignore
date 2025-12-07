@@ -272,3 +272,7 @@ test-results/
 # Playwright reports
 playwright-report/
 **/playwright-report/
+
+# Kubernetes configurations
+k8s/
+**/k8s/
