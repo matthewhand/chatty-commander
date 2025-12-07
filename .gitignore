@@ -268,3 +268,7 @@ wakewords/
 # Test results
 test-results/
 **/test-results/
+
+# Playwright reports
+playwright-report/
+**/playwright-report/
