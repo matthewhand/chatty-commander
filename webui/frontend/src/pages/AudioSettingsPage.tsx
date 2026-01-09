@@ -1,21 +1,10 @@
 import React, { useState } from "react";
-import {
-  Box,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
-  Container,
-  Grid,
-  Paper,
-} from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Save as SaveIcon,
   Mic as MicIcon,
   VolumeUp as VolumeUpIcon,
+  Headphones as HeadphonesIcon,
 } from "@mui/icons-material";
 
 // Placeholder services for audio devices
@@ -23,8 +12,8 @@ const getAudioDevices = async () => {
   // Simulate fetching devices
   console.log("Fetching audio devices...");
   return {
-    input: ["Default Microphone", "External USB Mic"],
-    output: ["Default Speakers", "Headphones"],
+    input: ["Default Microphone", "External USB Mic", "Webcam Mic"],
+    output: ["Default Speakers", "Headphones", "HDMI Output"],
   };
 };
 const saveAudioSettings = async (settings: any) => {
@@ -51,82 +40,80 @@ const AudioSettingsPage: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        p: 3,
-        background: "linear-gradient(to right bottom, #2e3a4d, #1a202c)",
-        minHeight: "calc(100vh - 64px)",
-      }}
-    >
-      <Container maxWidth="md">
-        <Typography variant="h4" gutterBottom sx={{ color: "white", mb: 4 }}>
-          <MicIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-          Audio Settings
-        </Typography>
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
-                Audio Devices
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel id="input-device-label">Input Device</InputLabel>
-                <Select
-                  labelId="input-device-label"
-                  value={inputDevice}
-                  onChange={(e) => setInputDevice(e.target.value as string)}
-                  startAdornment={
-                    <MicIcon sx={{ mr: 1, color: "action.active" }} />
-                  }
-                >
-                  {devices?.input.map((dev) => (
-                    <MenuItem key={dev} value={dev}>
-                      {dev}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel id="output-device-label">Output Device</InputLabel>
-                <Select
-                  labelId="output-device-label"
-                  value={outputDevice}
-                  onChange={(e) => setOutputDevice(e.target.value as string)}
-                  startAdornment={
-                    <VolumeUpIcon sx={{ mr: 1, color: "action.active" }} />
-                  }
-                >
-                  {devices?.output.map((dev) => (
-                    <MenuItem key={dev} value={dev}>
-                      {dev}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid
-              item
-              xs={12}
-              sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
-            >
-              <Button
-                variant="contained"
-                onClick={handleSave}
-                disabled={mutation.isPending}
-                startIcon={<SaveIcon />}
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-secondary/10 rounded-xl text-secondary">
+          <HeadphonesIcon sx={{ fontSize: 32 }} />
+        </div>
+        <div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">
+            Audio Settings
+          </h2>
+          <p className="text-base-content/60">Configure inputs and outputs</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Input Device Card */}
+        <div className="card bg-base-100 shadow-xl border border-base-content/10">
+          <div className="card-body">
+            <h3 className="card-title text-primary">
+              <MicIcon /> Input Device
+            </h3>
+            <p className="text-sm opacity-70 mb-4">Select microphone source.</p>
+
+            <div className="form-control w-full">
+              <select
+                className="select select-bordered w-full select-primary"
+                value={inputDevice}
+                onChange={(e) => setInputDevice(e.target.value)}
               >
-                {mutation.isPending ? "Saving..." : "Save Settings"}
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-      </Container>
-    </Box>
+                <option value="" disabled>Select device...</option>
+                {devices?.input.map((dev) => (
+                  <option key={dev} value={dev}>{dev}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Output Device Card */}
+        <div className="card bg-base-100 shadow-xl border border-base-content/10">
+          <div className="card-body">
+            <h3 className="card-title text-secondary">
+              <VolumeUpIcon /> Output Device
+            </h3>
+            <p className="text-sm opacity-70 mb-4">Select playback endpoint.</p>
+
+            <div className="form-control w-full">
+              <select
+                className="select select-bordered w-full select-secondary"
+                value={outputDevice}
+                onChange={(e) => setOutputDevice(e.target.value)}
+              >
+                <option value="" disabled>Select device...</option>
+                {devices?.output.map((dev) => (
+                  <option key={dev} value={dev}>{dev}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div className="flex justify-end pt-4">
+        <button
+          className={`btn btn-accent gap-2 ${mutation.isPending ? 'loading' : ''}`}
+          onClick={handleSave}
+          disabled={mutation.isPending}
+        >
+          <SaveIcon />
+          {mutation.isPending ? "Saving..." : "Apply Settings"}
+        </button>
+      </div>
+    </div>
   );
 };
 

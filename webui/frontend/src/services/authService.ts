@@ -1,7 +1,3 @@
-interface LoginRequest {
-  username: string;
-  password: string;
-}
 
 interface TokenResponse {
   access_token: string;
