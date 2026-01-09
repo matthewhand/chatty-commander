@@ -124,7 +124,7 @@ def run_web_mode(
     import os
 
     try:
-        from chatty_commander.web.web_mode import create_web_server
+        from chatty_commander.web.web_mode import WebModeServer
     except ImportError:
         logger.error(
             "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
@@ -136,11 +136,11 @@ def run_web_mode(
     )
 
     # Create web server instance
-    web_server = create_web_server(
-        config_manager=config,
-        state_manager=state_manager,
-        model_manager=model_manager,
-        command_executor=command_executor,
+    web_server = WebModeServer(
+        config,
+        state_manager,
+        model_manager,
+        command_executor,
         no_auth=no_auth,
     )
 
@@ -185,7 +185,7 @@ def run_web_mode(
 
     # Start the server
     try:
-        web_server.run(host=host, port=port, log_level=log_level)
+        web_server.run(host=host, port=port)
     finally:
         try:
             if hasattr(model_manager, "shutdown"):

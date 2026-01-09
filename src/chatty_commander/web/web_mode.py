@@ -385,6 +385,8 @@ class WebModeServer:
 
         # Serve static web UI (optional)
         frontend_path = Path("webui/frontend/dist")
+        if not frontend_path.exists():
+            frontend_path = Path("webui/frontend/build")
         if frontend_path.exists():
             app.mount(
                 "/static", StaticFiles(directory=str(frontend_path)), name="static"
