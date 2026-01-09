@@ -34,8 +34,8 @@ class ApiService {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
           errorData.detail ||
-            errorData.message ||
-            `HTTP ${response.status}: ${response.statusText}`,
+          errorData.message ||
+          `HTTP ${response.status}: ${response.statusText}`,
         );
       }
 
@@ -52,12 +52,13 @@ class ApiService {
       throw error;
     }
   }
-
   /**
    * GET request
    */
   async get(endpoint, params = {}) {
-    const url = new URL(`${this.baseURL}${endpoint}`);
+    // Use window.location.origin as base if baseURL is empty
+    const base = this.baseURL || window.location.origin;
+    const url = new URL(`${base}${endpoint}`);
     Object.keys(params).forEach((key) => {
       if (params[key] !== undefined && params[key] !== null) {
         url.searchParams.append(key, params[key]);
