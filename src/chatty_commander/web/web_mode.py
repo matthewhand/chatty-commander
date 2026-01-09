@@ -404,10 +404,26 @@ class WebModeServer:
         else:
             # Fallback route when frontend is not built
             @app.get("/", response_class=HTMLResponse)
-            async def _serve_frontend_fallback():  # pragma: no cover - exercised in integration
+            async def _serve_frontend_fallback():  # pragma: no cover
                 return HTMLResponse(
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
+
+        # SPA Catch-all: serve index.html for any non-API routes
+        # This allows React Router to handle deep linking (e.g. /dashboard)
+        if frontend_path.exists():
+            @app.exception_handler(404)
+            async def spa_fallback(request: Request, exc: HTTPException):
+                # If API or static file request fails, let it 404.
+                # Otherwise, serve index.html for SPA routing.
+                if request.url.path.startswith("/api") or request.url.path.startswith("/static"):
+                     return await getattr(app, "exception_handler_default")(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
+                
+                index_file = frontend_path / "index.html"
+                if index_file.exists():
+                    return FileResponse(str(index_file))
+                return HTMLResponse("Not Found", status_code=404)
+
 
         # Optional avatar UI
         avatar_path = Path("src/chatty_commander/webui/avatar")

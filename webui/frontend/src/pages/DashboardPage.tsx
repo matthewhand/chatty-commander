@@ -1,17 +1,4 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  List,
-  ListItem,
-  ListItemText,
-  CircularProgress,
-  Paper,
-  Container,
-} from "@mui/material";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
 import { Dns, Timer, Terminal, Wifi, WifiOff } from "@mui/icons-material";
@@ -36,121 +23,94 @@ const DashboardPage: React.FC = () => {
     }
   }, [ws]);
 
-  const StatCard = ({
-    title,
-    value,
-    icon,
-  }: {
-    title: string;
-    value: string | number;
-    icon: React.ReactNode;
-  }) => (
-    <Grid item xs={12} sm={6} md={3}>
-      <Paper
-        elevation={3}
-        sx={{ p: 2, display: "flex", alignItems: "center", borderRadius: 2 }}
-      >
-        {icon}
-        <Box sx={{ ml: 2 }}>
-          <Typography variant="h6">{value}</Typography>
-          <Typography color="text.secondary">{title}</Typography>
-        </Box>
-      </Paper>
-    </Grid>
-  );
-
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center h-full">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
     );
   }
 
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        p: 3,
-        background: "linear-gradient(to right bottom, #2e3a4d, #1a202c)",
-        minHeight: "calc(100vh - 64px)",
-      }}
-    >
-      <Container maxWidth="lg">
-        <Typography variant="h4" gutterBottom sx={{ color: "white", mb: 4 }}>
-          Dashboard
-        </Typography>
-        <Grid container spacing={3}>
-          <StatCard
-            title="Status"
-            value={systemStatus?.status || "Unknown"}
-            icon={<Dns sx={{ fontSize: 40, color: "primary.main" }} />}
-          />
-          <StatCard
-            title="Uptime"
-            value={systemStatus?.uptime || "N/A"}
-            icon={<Timer sx={{ fontSize: 40, color: "primary.main" }} />}
-          />
-          <StatCard
-            title="Commands Executed"
-            value={systemStatus?.commandsExecuted || 0}
-            icon={<Terminal sx={{ fontSize: 40, color: "primary.main" }} />}
-          />
-          <StatCard
-            title="WebSocket"
-            value={isConnected ? "Connected" : "Disconnected"}
-            icon={
-              isConnected ? (
-                <Wifi sx={{ fontSize: 40, color: "green" }} />
-              ) : (
-                <WifiOff sx={{ fontSize: 40, color: "red" }} />
-              )
-            }
-          />
-        </Grid>
-        <Grid container spacing={3} sx={{ mt: 4 }}>
-          <Grid item xs={12}>
-            <Card sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="h6">Real-time Command Log</Typography>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    height: 300,
-                    overflowY: "auto",
-                    backgroundColor: "#1a202c",
-                    color: "white",
-                  }}
-                >
-                  <List>
-                    {messages.length > 0 ? (
-                      messages.slice(-10).map((msg, index) => (
-                        <ListItem key={index}>
-                          <ListItemText primary={`> ${msg}`} />
-                        </ListItem>
-                      ))
-                    ) : (
-                      <Typography sx={{ p: 2, color: "text.secondary" }}>
-                        No commands received yet...
-                      </Typography>
-                    )}
-                  </List>
-                </Paper>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+    <div className="space-y-6">
+      <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+        Dashboard
+      </h2>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-primary">
+              <Dns sx={{ fontSize: 32 }} />
+            </div>
+            <div className="stat-title">System Status</div>
+            <div className="stat-value text-primary">{systemStatus?.status || "Unknown"}</div>
+            <div className="stat-desc">Core services running</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-secondary">
+              <Timer sx={{ fontSize: 32 }} />
+            </div>
+            <div className="stat-title">Uptime</div>
+            <div className="stat-value text-secondary text-2xl">{systemStatus?.uptime || "N/A"}</div>
+            <div className="stat-desc">Since last restart</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-accent">
+              <Terminal sx={{ fontSize: 32 }} />
+            </div>
+            <div className="stat-title">Commands</div>
+            <div className="stat-value text-accent">{systemStatus?.commandsExecuted || 0}</div>
+            <div className="stat-desc">Total executed</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure">
+              {isConnected ?
+                <Wifi sx={{ fontSize: 32 }} className="text-success" /> :
+                <WifiOff sx={{ fontSize: 32 }} className="text-error" />
+              }
+            </div>
+            <div className="stat-title">WebSocket</div>
+            <div className={`stat-value text-2xl ${isConnected ? 'text-success' : 'text-error'}`}>
+              {isConnected ? "Connected" : "Offline"}
+            </div>
+            <div className="stat-desc">Realtime stream</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="card bg-base-100 shadow-xl border border-base-content/10">
+        <div className="card-body">
+          <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
+
+          <div className="mockup-code bg-base-300 text-base-content h-96 overflow-y-auto w-full custom-scrollbar">
+            {messages.length > 0 ? (
+              messages.slice(-15).map((msg, index) => (
+                <pre key={index} data-prefix=">" className="text-success">
+                  <code>{msg}</code>
+                </pre>
+              ))
+            ) : (
+              <div className="p-4 text-base-content/50 italic text-center pt-32">
+                Waiting for commands...
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

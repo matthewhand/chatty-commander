@@ -1,13 +1,4 @@
 import React, { useState } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  Container,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
 import { useAuth } from "../hooks/useAuth";
 import MicIcon from "@mui/icons-material/Mic";
 
@@ -30,73 +21,77 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(to right bottom, #2e3a4d, #1a202c)",
-      }}
-    >
-      <Container component="main" maxWidth="xs">
-        <Paper
-          elevation={6}
-          sx={{
-            p: 4,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 2,
-            borderRadius: 2,
-          }}
-        >
-          <MicIcon sx={{ fontSize: 40, color: "primary.main" }} />
-          <Typography variant="h5" component="h1">
+    <div className="min-h-screen flex items-center justify-center bg-base-300 pattern-isometric">
+      <div className="card w-96 bg-base-100 shadow-xl border border-primary/20">
+        <div className="card-body items-center text-center">
+          <div className="avatar placeholder mb-4">
+            <div className="bg-primary text-primary-content rounded-full w-20 ring ring-primary ring-offset-2 ring-offset-base-100">
+              <MicIcon sx={{ fontSize: 48 }} />
+            </div>
+          </div>
+          <h2 className="card-title text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Chatty Commander
-          </Typography>
-          <form onSubmit={handleSubmit} style={{ width: "100%" }}>
-            <TextField
-              label="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              fullWidth
-              margin="normal"
-              autoFocus
-            />
-            <TextField
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
+          </h2>
+          <p className="text-sm opacity-70 mb-4">Voice Control System</p>
+
+          <form onSubmit={handleSubmit} className="w-full space-y-4">
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Username</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter username"
+                className="input input-bordered w-full input-primary"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Password</span>
+              </label>
+              <input
+                type="password"
+                placeholder="Enter password"
+                className="input input-bordered w-full input-primary"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
             {error && (
-              <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-                {error}
-              </Typography>
+              <div className="alert alert-error shadow-lg py-2">
+                <span>{error}</span>
+              </div>
             )}
-            <Button
+
+            <button
               type="submit"
-              variant="contained"
-              fullWidth
-              sx={{ mt: 3, mb: 2 }}
+              className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
               disabled={loading}
             >
               {loading ? "Logging in..." : "Login"}
-            </Button>
+            </button>
           </form>
-          <Alert severity="info" sx={{ width: "100%", mt: 2 }}>
-            <Typography variant="caption">
-              Authentication is configured via the CLI. There is no password
-              reset functionality. To run without authentication, use the{" "}
-              <code>--no-auth</code> flag when starting the server.
-            </Typography>
-          </Alert>
-        </Paper>
-      </Container>
-    </Box>
+
+          <div className="divider"></div>
+
+          <div className="alert alert-info shadow-sm text-left text-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+              <span>Auth configured via CLI. No reset function.</span>
+              <br />
+              <span className="opacity-75">Use --no-auth to disable.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
