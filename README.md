@@ -337,7 +337,65 @@ python scripts/voice_demo.py --mock
 
 ### WebUI
 
-See docs/WEBUI_CONNECTIVITY.md for running the React frontend against the Python backend.
+
+
+The React frontend uses **DaisyUI** (v5) with **Tailwind CSS** (v3) for styling.
+
+
+
+#### Tech Stack
+
+- React 18 + TypeScript
+
+- DaisyUI 5 component library
+
+- Tailwind CSS 3 for utility styles
+
+- React Query for data fetching
+
+- Playwright for E2E testing
+
+
+
+#### Development
+
+```bash
+
+cd webui/frontend
+
+npm install
+
+npm run start          # Dev server on port 3000
+
+npm run build          # Production build
+
+npm run test:e2e       # Playwright tests
+
+```
+
+
+
+#### Test Mode (Fast Backend)
+
+For rapid E2E testing, the backend supports a `--test-mode` flag that mocks heavy AI dependencies:
+
+```bash
+
+# Start backend with mocked models (< 2s startup)
+
+uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth
+
+
+
+# Run Playwright tests
+
+cd webui/frontend && npx playwright test
+
+```
+
+
+
+See `docs/WEBUI_CONNECTIVITY.md` for detailed connectivity docs.
 
 ## Example workflows
 
