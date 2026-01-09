@@ -171,7 +171,7 @@ Response:"""
         return prompt
 
     def _parse_llm_response(
-        self, response: str, original_input: str
+        self, response: str
     ) -> tuple[str | None, float, str]:
         """Parse LLM response to extract command information."""
         try:

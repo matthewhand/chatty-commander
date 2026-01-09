@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Save as SaveIcon,
-  Settings as SettingsIcon,
-  Tune as TuneIcon,
-} from "@mui/icons-material";
+import { Save as SaveIcon, Settings as SettingsIcon, Sliders as SlidersIcon } from "lucide-react";
 
 // Assuming a service for saving config
 const saveConfig = async (config: any) => {
@@ -44,7 +40,7 @@ const ConfigurationPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-primary/10 rounded-xl text-primary">
-          <SettingsIcon sx={{ fontSize: 32 }} />
+          <SettingsIcon size={32} />
         </div>
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -60,7 +56,7 @@ const ConfigurationPage: React.FC = () => {
           {/* General Settings Section */}
           <div className="p-6 border-b border-base-content/10">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4 text-base-content">
-              <TuneIcon className="w-5 h-5 text-primary" />
+              <SlidersIcon className="w-5 h-5 text-primary" />
               General Settings
             </h3>
 
@@ -128,7 +124,7 @@ const ConfigurationPage: React.FC = () => {
               onClick={handleSubmit}
               disabled={mutation.isPending}
             >
-              <SaveIcon />
+              <SaveIcon size={20} />
               {mutation.isPending ? "Saving..." : "Save Changes"}
             </button>
           </div>

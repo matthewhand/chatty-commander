@@ -306,7 +306,7 @@ class ThinkingStateContext:
         self.manager.start_thinking(self.agent_id, self.thinking_message)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, _exc_type, _exc_val, _exc_tb):
         if exc_type is not None:
             self.manager.set_error(self.agent_id, f"Error: {exc_val}")
         else:

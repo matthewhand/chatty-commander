@@ -38,13 +38,12 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def browser_analyst_tool(url: str, max_length: int | None = 500) -> str:
+def browser_analyst_tool(url: str) -> str:
     """
     Analyze and summarize web content from a given URL.
 
     Args:
         url: The URL to analyze and summarize.
-        max_length: Maximum length of the summary (default: 500).
 
     Returns:
         A concise summary of the web content.

@@ -1,7 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAgentStatus, Agent } from "../services/api";
-import { Assessment as AssessmentIcon } from "@mui/icons-material";
+import { Activity as AssessmentIcon } from "lucide-react";
 
 const AgentStatusPage: React.FC = () => {
   const { data, isLoading, isError, error } = useQuery<Agent[]>({
@@ -33,7 +33,7 @@ const AgentStatusPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-error/10 rounded-xl text-error">
-          <AssessmentIcon sx={{ fontSize: 32 }} />
+          <AssessmentIcon size={32} />
         </div>
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-error to-warning bg-clip-text text-transparent">

@@ -32,8 +32,6 @@ def register_lifecycle(
     app: FastAPI,
     *,
     get_state_manager: Callable[[], Any],
-    get_model_manager: Callable[[], Any],
-    get_command_executor: Callable[[], Any],
     on_startup: Callable[[], None] | None = None,
     on_shutdown: Callable[[], None] | None = None,
 ) -> None:

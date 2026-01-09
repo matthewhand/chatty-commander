@@ -1,7 +1,7 @@
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiService } from "../services/apiService";
-import { Groups as GroupsIcon, Star as StarIcon } from "@mui/icons-material";
+import { Users as UsersIcon, Star as StarIcon } from "lucide-react";
 
 const PersonasPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -55,7 +55,7 @@ const PersonasPage: React.FC = () => {
     <div className="space-y-8">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-accent/10 rounded-xl text-accent">
-          <GroupsIcon sx={{ fontSize: 32 }} />
+          <UsersIcon size={32} />
         </div>
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-accent to-secondary bg-clip-text text-transparent">
@@ -95,7 +95,7 @@ const PersonasPage: React.FC = () => {
                 </div>
                 {p.is_default && (
                   <div className="badge badge-primary gap-1">
-                    <StarIcon fontSize="small" /> Default
+                    <StarIcon size={16} fill="currentColor" /> Default
                   </div>
                 )}
               </div>

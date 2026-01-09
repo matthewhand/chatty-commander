@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import SettingsIcon from '@mui/icons-material/Settings';
-import MicIcon from '@mui/icons-material/Mic';
-import GroupIcon from '@mui/icons-material/Group';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import LogoutIcon from '@mui/icons-material/Logout';
+import {
+    LayoutDashboard as DashboardIcon,
+    Settings as SettingsIcon,
+    Mic as MicIcon,
+    Users as GroupIcon,
+    Activity as AssessmentIcon,
+    LogOut as LogoutIcon
+} from "lucide-react";
 import { useAuth } from '../hooks/useAuth';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -17,14 +19,14 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const hasErrors = false;
 
     const navItems = [
-        { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-        { label: 'Configuration', path: '/configuration', icon: <SettingsIcon /> },
-        { label: 'Audio Settings', path: '/audio-settings', icon: <MicIcon /> },
-        { label: 'Personas', path: '/personas', icon: <GroupIcon /> },
+        { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon size={20} /> },
+        { label: 'Configuration', path: '/configuration', icon: <SettingsIcon size={20} /> },
+        { label: 'Audio Settings', path: '/audio-settings', icon: <MicIcon size={20} /> },
+        { label: 'Personas', path: '/personas', icon: <GroupIcon size={20} /> },
         {
             label: 'Agent Status',
             path: '/agent-status',
-            icon: <AssessmentIcon />,
+            icon: <AssessmentIcon size={20} />,
             badge: hasErrors || !systemHealthy ? '!' : null,
             badgeColor: 'badge-error'
         },
@@ -72,7 +74,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <ul className="menu w-full p-0">
                         <li>
                             <button onClick={logout} className="text-error hover:bg-error/10">
-                                <LogoutIcon />
+                                <LogoutIcon size={20} />
                                 Logout
                             </button>
                         </li>

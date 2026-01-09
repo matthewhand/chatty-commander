@@ -213,7 +213,7 @@ class Timer:
         self._t0 = monotonic()
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, _exc_type, _exc, _tb) -> None:
         dt = monotonic() - self._t0
         self._h.observe(dt, labels=self._l)
 

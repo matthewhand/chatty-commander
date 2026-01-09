@@ -3,9 +3,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Save as SaveIcon,
   Mic as MicIcon,
-  VolumeUp as VolumeUpIcon,
+  Volume2 as VolumeUpIcon,
   Headphones as HeadphonesIcon,
-} from "@mui/icons-material";
+} from "lucide-react";
 
 // Placeholder services for audio devices
 const getAudioDevices = async () => {
@@ -43,7 +43,7 @@ const AudioSettingsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-secondary/10 rounded-xl text-secondary">
-          <HeadphonesIcon sx={{ fontSize: 32 }} />
+          <HeadphonesIcon size={32} />
         </div>
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">
@@ -59,7 +59,7 @@ const AudioSettingsPage: React.FC = () => {
         <div className="card bg-base-100 shadow-xl border border-base-content/10">
           <div className="card-body">
             <h3 className="card-title text-primary">
-              <MicIcon /> Input Device
+              <MicIcon size={20} /> Input Device
             </h3>
             <p className="text-sm opacity-70 mb-4">Select microphone source.</p>
 
@@ -82,7 +82,7 @@ const AudioSettingsPage: React.FC = () => {
         <div className="card bg-base-100 shadow-xl border border-base-content/10">
           <div className="card-body">
             <h3 className="card-title text-secondary">
-              <VolumeUpIcon /> Output Device
+              <VolumeUpIcon size={20} /> Output Device
             </h3>
             <p className="text-sm opacity-70 mb-4">Select playback endpoint.</p>
 
@@ -109,7 +109,7 @@ const AudioSettingsPage: React.FC = () => {
           onClick={handleSave}
           disabled={mutation.isPending}
         >
-          <SaveIcon />
+          <SaveIcon size={20} />
           {mutation.isPending ? "Saving..." : "Apply Settings"}
         </button>
       </div>

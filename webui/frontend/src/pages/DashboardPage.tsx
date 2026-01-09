@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Dns, Timer, Terminal, Wifi, WifiOff } from "@mui/icons-material";
+import { Server, Clock, Terminal, Wifi, WifiOff } from "lucide-react";
 
 const DashboardPage: React.FC = () => {
   const { ws, isConnected } = useWebSocket();
@@ -43,7 +43,7 @@ const DashboardPage: React.FC = () => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-primary">
-              <Dns sx={{ fontSize: 32 }} />
+              <Server size={32} />
             </div>
             <div className="stat-title">System Status</div>
             <div className="stat-value text-primary">{systemStatus?.status || "Unknown"}</div>
@@ -54,7 +54,7 @@ const DashboardPage: React.FC = () => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-secondary">
-              <Timer sx={{ fontSize: 32 }} />
+              <Clock size={32} />
             </div>
             <div className="stat-title">Uptime</div>
             <div className="stat-value text-secondary text-2xl">{systemStatus?.uptime || "N/A"}</div>
@@ -65,7 +65,7 @@ const DashboardPage: React.FC = () => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-accent">
-              <Terminal sx={{ fontSize: 32 }} />
+              <Terminal size={32} />
             </div>
             <div className="stat-title">Commands</div>
             <div className="stat-value text-accent">{systemStatus?.commandsExecuted || 0}</div>
@@ -77,8 +77,8 @@ const DashboardPage: React.FC = () => {
           <div className="stat">
             <div className="stat-figure">
               {isConnected ?
-                <Wifi sx={{ fontSize: 32 }} className="text-success" /> :
-                <WifiOff sx={{ fontSize: 32 }} className="text-error" />
+                <Wifi size={32} className="text-success" /> :
+                <WifiOff size={32} className="text-error" />
               }
             </div>
             <div className="stat-title">WebSocket</div>

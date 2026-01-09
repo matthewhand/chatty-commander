@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
-import MicIcon from "@mui/icons-material/Mic";
+import { Mic as MicIcon } from "lucide-react";
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -26,7 +26,7 @@ const LoginPage: React.FC = () => {
         <div className="card-body items-center text-center">
           <div className="avatar placeholder mb-4">
             <div className="bg-primary text-primary-content rounded-full w-20 ring ring-primary ring-offset-2 ring-offset-base-100">
-              <MicIcon sx={{ fontSize: 48 }} />
+              <MicIcon size={48} />
             </div>
           </div>
           <h2 className="card-title text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
