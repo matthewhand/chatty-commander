@@ -6,8 +6,6 @@ import MicIcon from '@mui/icons-material/Mic';
 import GroupIcon from '@mui/icons-material/Group';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LogoutIcon from '@mui/icons-material/Logout';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
 import { useAuth } from '../hooks/useAuth';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

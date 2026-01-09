@@ -1,7 +1,7 @@
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiService } from "../services/apiService";
-import { Groups as GroupsIcon, Person as PersonIcon, Star as StarIcon } from "@mui/icons-material";
+import { Groups as GroupsIcon, Star as StarIcon } from "@mui/icons-material";
 
 const PersonasPage: React.FC = () => {
   const queryClient = useQueryClient();
