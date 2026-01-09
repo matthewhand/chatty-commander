@@ -388,10 +388,12 @@ class WebModeServer:
         if not frontend_path.exists():
             frontend_path = Path("webui/frontend/build")
         if frontend_path.exists():
-            app.mount(
-                "/static", StaticFiles(directory=str(frontend_path)), name="static"
-            )
-
+            static_assets = frontend_path / "static"
+            if static_assets.exists():
+                app.mount(
+                    "/static", StaticFiles(directory=str(static_assets)), name="static"
+                )
+            
             @app.get("/", response_class=HTMLResponse)
             async def _serve_frontend():  # pragma: no cover - exercised in integration
                 index_file = frontend_path / "index.html"

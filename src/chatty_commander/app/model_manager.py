@@ -95,10 +95,11 @@ def _get_patchable_model_class():
 
 
 class ModelManager:
-    def __init__(self, config: Any) -> None:
+    def __init__(self, config: Any, mock_models: bool = False) -> None:
         """Initialize with configuration and preload models."""
         logging.basicConfig(level=logging.INFO)
         self.config: Any = config
+        self.mock_models = mock_models
         self.models: dict[str, dict[str, Model]] = {
             "general": {},
             "system": {},
@@ -115,6 +116,17 @@ class ModelManager:
         If state is provided, only that state's models are loaded.
         Returns the loaded models mapping.
         """
+        if self.mock_models:
+             # Just Mock
+             dummy = self.models["general"] = {"mock_model": Model("mock_path")}
+             self.models["system"] = {"mock_system": Model("mock_path")}
+             self.models["chat"] = {"mock_chat": Model("mock_path")}
+             if state:
+                 self.active_models = dummy
+                 return dummy
+             self.active_models = dummy
+             return self.models
+
         if state is None:
             self.models["general"] = self.load_model_set(
                 self.config.general_models_path

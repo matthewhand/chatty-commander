@@ -5,13 +5,8 @@ const ARTIFACTS_DIR = "/home/matthewh/.gemini/antigravity/brain/ea411f02-4a15-47
 
 test.describe("UI Screenshots", () => {
     test("capture all pages", async ({ page }) => {
-        // 0. Login
-        await page.goto("/login");
-        await page.getByPlaceholder("Enter username").fill("admin");
-        await page.getByPlaceholder("Enter password").fill("admin");
-        await page.click("button[type='submit']");
-
         // 1. Dashboard
+        await page.goto("/");
         await expect(page).toHaveURL(/dashboard/);
         await page.waitForTimeout(1000); // Allow animations/graphs to settle
         await page.screenshot({ path: path.join(ARTIFACTS_DIR, "dashboard.png"), fullPage: true });
