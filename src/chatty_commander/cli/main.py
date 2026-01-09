@@ -413,9 +413,9 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
 
     # Advisors convenience flag
     parser.add_argument(
-        "--advisors",
+        "--test-mode",
         action="store_true",
-        help="Enable advisors feature at runtime (overrides config.advisors.enabled).",
+        help="Run in lightweight test mode (mock models, no AI core).",
     )
 
     return parser
@@ -641,33 +641,37 @@ def main():
 
         CommandExecutor = _CommandExecutor
 
-    model_manager = ModelManager(config)
+    model_manager = ModelManager(config, mock_models=getattr(args, "test_mode", False))
     state_manager = StateManager()
     command_executor = CommandExecutor(config, model_manager, state_manager)
 
     # Initialize AI intelligence core for enhanced conversations
-    try:
-        from ..ai import create_intelligence_core
+    # Skip if in test mode to save resources
+    if not getattr(args, "test_mode", False):
+        try:
+            from ..ai import create_intelligence_core
 
-        ai_core = create_intelligence_core(config)
+            ai_core = create_intelligence_core(config)
 
-        # Set up AI response handling
-        def handle_ai_response(response):
-            print(f"AI: {response.text}")
-            if response.actions:
-                print(f"Actions: {response.actions}")
+            # Set up AI response handling
+            def handle_ai_response(response):
+                print(f"AI: {response.text}")
+                if response.actions:
+                    print(f"Actions: {response.actions}")
 
-        ai_core.on_response = handle_ai_response
-        ai_core.on_mode_change = lambda mode: print(f"Mode changed to: {mode}")
-        ai_core.on_error = lambda error: print(f"AI Error: {error}")
+            ai_core.on_response = handle_ai_response
+            ai_core.on_mode_change = lambda mode: print(f"Mode changed to: {mode}")
+            ai_core.on_error = lambda error: print(f"AI Error: {error}")
 
-        print("🤖 AI Intelligence Core initialized successfully!")
-        print("🎤 Enhanced voice processing available")
-        print("💬 Intelligent conversation engine ready")
+            print("🤖 AI Intelligence Core initialized successfully!")
+            print("🎤 Enhanced voice processing available")
+            print("💬 Intelligent conversation engine ready")
 
-    except Exception as e:
-        print(f"[WARN] AI Intelligence Core initialization failed: {e}")
-        ai_core = None
+        except Exception as e:
+            print(f"[WARN] AI Intelligence Core initialization failed: {e}")
+            ai_core = None
+    else:
+        logger.info("Test mode enabled: AI Intelligence Core disabled.")
 
     # Route to appropriate mode
     if getattr(args, "config", False):

@@ -254,10 +254,10 @@ data/advisors_memory.jsonl
 # Serena memories
 .seren/
 
-# Markdown files - ignore all except essential ones
-*.md
-!README.md
-!LICENSE
+# Markdown files
+# *.md
+# !README.md
+# !LICENSE
 
 # Ignore markdown files in subdirectories
 **/*.md
