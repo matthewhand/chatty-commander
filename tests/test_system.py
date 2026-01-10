@@ -149,13 +149,13 @@ class SystemTester:
         self.log("Testing CLI help commands...", "CLI Help")
 
         tests = [
-            ("chatty --help", "Main help"),
-            ("chatty run --help", "Run command help"),
-            ("chatty gui --help", "GUI command help"),
-            ("chatty config --help", "Config command help"),
-            ("chatty system --help", "System command help"),
-            ("chatty system start-on-boot --help", "Start-on-boot help"),
-            ("chatty system updates --help", "Updates help"),
+            ("chatty-commander --help", "Main help"),
+            ("chatty-commander run --help", "Run command help"),
+            ("chatty-commander gui --help", "GUI command help"),
+            ("chatty-commander config --help", "Config command help"),
+            ("chatty-commander system --help", "System command help"),
+            ("chatty-commander system start-on-boot --help", "Start-on-boot help"),
+            ("chatty-commander system updates --help", "Updates help"),
         ]
 
         for cmd, desc in tests:
@@ -170,7 +170,7 @@ class SystemTester:
         self.log("Testing configuration management...", "Config Management")
 
         # Test config listing
-        result = self.run_command("chatty config --list")
+        result = self.run_command("chatty-commander config --list")
         if result["success"]:
             self.log("✓ Config listing works", "Config Management", "PASS")
         else:
@@ -182,7 +182,7 @@ class SystemTester:
 
         # Test setting model action
         result = self.run_command(
-            "chatty config --set-model-action test_model test_action"
+            "chatty-commander config --set-model-action test_model test_action"
         )
         if result["success"]:
             self.log("✓ Model action setting works", "Config Management", "PASS")
@@ -203,7 +203,7 @@ class SystemTester:
 
         # Test setting state model
         result = self.run_command(
-            'chatty config --set-state-model test_state "model1,model2"'
+            'chatty-commander config --set-state-model test_state "model1,model2"'
         )
         if result["success"]:
             self.log("✓ State model setting works", "Config Management", "PASS")
@@ -227,7 +227,7 @@ class SystemTester:
         self.log("Testing system management...", "System Management")
 
         # Test start-on-boot status
-        result = self.run_command("chatty system start-on-boot status")
+        result = self.run_command("chatty-commander system start-on-boot status")
         if result["success"]:
             self.log("✓ Start-on-boot status check works", "System Management", "PASS")
         else:
@@ -238,7 +238,7 @@ class SystemTester:
             )
 
         # Test enabling start-on-boot
-        result = self.run_command("chatty system start-on-boot enable")
+        result = self.run_command("chatty-commander system start-on-boot enable")
         if result["success"]:
             self.log("✓ Start-on-boot enable works", "System Management", "PASS")
         else:
@@ -249,7 +249,7 @@ class SystemTester:
             )
 
         # Test disabling start-on-boot
-        result = self.run_command("chatty system start-on-boot disable")
+        result = self.run_command("chatty-commander system start-on-boot disable")
         if result["success"]:
             self.log("✓ Start-on-boot disable works", "System Management", "PASS")
         else:
@@ -260,7 +260,7 @@ class SystemTester:
             )
 
         # Test update checking
-        result = self.run_command("chatty system updates check")
+        result = self.run_command("chatty-commander system updates check")
         if result["success"]:
             self.log("✓ Update checking works", "System Management", "PASS")
         else:
@@ -271,7 +271,7 @@ class SystemTester:
             )
 
         # Test auto-update settings
-        result = self.run_command("chatty system updates enable-auto")
+        result = self.run_command("chatty-commander system updates enable-auto")
         if result["success"]:
             self.log("✓ Auto-update enable works", "System Management", "PASS")
         else:
@@ -281,7 +281,7 @@ class SystemTester:
                 "FAIL",
             )
 
-        result = self.run_command("chatty system updates disable-auto")
+        result = self.run_command("chatty-commander system updates disable-auto")
         if result["success"]:
             self.log("✓ Auto-update disable works", "System Management", "PASS")
         else:
@@ -532,12 +532,12 @@ class SystemTester:
         self.log("Testing GUI launch...", "GUI Launch")
 
         # Test GUI command with short timeout to simulate successful launch
-        result = self.run_command("chatty gui --help")
+        result = self.run_command("chatty-commander gui --help")
         if result["success"] and "usage:" in result["stdout"]:
             self.log("✓ GUI command help works", "GUI Launch", "PASS")
         else:
             # Try a quick non-blocking test
-            result = self.run_command("timeout 2 chatty gui || true", timeout=5)
+            result = self.run_command("timeout 2 chatty-commander gui || true", timeout=5)
             if result["returncode"] in [0, 124]:  # Success or timeout
                 self.log(
                     "✓ GUI command accepts launch (terminated as expected)",
@@ -553,16 +553,16 @@ class SystemTester:
         """Test package installation and CLI availability"""
         self.log("Testing installation...", "Installation")
 
-        # Test if chatty command is available
-        result = self.run_command("which chatty")
+        # Test if chatty-commander command is available
+        result = self.run_command("which chatty-commander")
         if result["success"] and result["stdout"].strip():
             self.log(
-                f"✓ 'chatty' command available at: {result['stdout'].strip()}",
+                f"✓ 'chatty-commander' command available at: {result['stdout'].strip()}",
                 "Installation",
                 "PASS",
             )
         else:
-            self.log("✗ 'chatty' command not found in PATH", "Installation", "FAIL")
+            self.log("✗ 'chatty-commander' command not found in PATH", "Installation", "FAIL")
 
         # Test Python module imports
         modules = [
