@@ -105,8 +105,9 @@ class StateManager:
                 current_index = 0
             new_state = states[(current_index + 1) % len(states)]
 
-        if new_state and new_state != self.current_state:
-            self.change_state(new_state)
+        if new_state:
+            if new_state != self.current_state:
+                self.change_state(new_state)
             return new_state
         return None
 
