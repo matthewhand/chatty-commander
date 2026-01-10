@@ -133,7 +133,8 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(self.state_manager.current_state, "idle")
 
         self.state_manager.current_state = "chatty"
-        self.assertIsNone(self.state_manager.update_state("hey_chat_tee"))
+        # Since update_state now returns resolved state even for self-loops
+        self.assertEqual(self.state_manager.update_state("hey_chat_tee"), "chatty")
         self.logger.debug(
             f"State after 'hey_chat_tee' in chatty: {self.state_manager.current_state}"
         )
