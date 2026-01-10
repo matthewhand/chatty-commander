@@ -50,22 +50,7 @@ class Config:
             "chat_models_path", "models-chatty"
         )
 
-        default_state_models = {}
-        if not self.config_file:  # Only use defaults for empty config_file (tests)
-            default_state_models = {
-                "idle": [
-                    "hey_chat_tee",
-                    "hey_khum_puter",
-                    "okay_stop",
-                    "lights_on",
-                    "lights_off",
-                ],
-                "computer": ["oh_kay_screenshot", "okay_stop"],
-                "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"],
-            }
-        self.state_models: dict[str, list[str]] = self.config_data.get(
-            "state_models", default_state_models
-        )
+        self.state_models: dict[str, list[str]] = self.config_data.get("state_models", {})
         self.api_endpoints: dict[str, str] = self.config_data.get(
             "api_endpoints",
             {
@@ -73,38 +58,11 @@ class Config:
                 "chatbot_endpoint": "http://localhost:3100/",
             },
         )
-        default_wakeword_map = {}
-        default_state_transitions = {}
-        if not self.config_file:
-            default_wakeword_map = {
-                "hey_chat_tee": "chatty",
-                "hey_khum_puter": "computer",
-                "okay_stop": "idle",
-            }
-            default_state_transitions = {
-                "idle": {
-                    "hey_chat_tee": "chatty",
-                    "hey_khum_puter": "computer",
-                    "toggle_mode": "computer",
-                },
-                "computer": {
-                    "okay_stop": "idle",
-                    "that_ill_do": "idle",
-                    "toggle_mode": "chatty",
-                },
-                "chatty": {
-                    "hey_khum_puter": "computer",
-                    "okay_stop": "idle",
-                    "thanks_chat_tee": "idle",
-                    "toggle_mode": "idle",
-                },
-            }
-
         self.wakeword_state_map: dict[str, str] = self.config_data.get(
-            "wakeword_state_map", default_wakeword_map
+            "wakeword_state_map", {}
         )
         self.state_transitions: dict[str, dict[str, str]] = self.config_data.get(
-            "state_transitions", default_state_transitions
+            "state_transitions", {}
         )
         self.commands: dict[str, Any] = self.config_data.get(
             "commands",
@@ -348,6 +306,8 @@ class Config:
         return fallback
 
     def _load_config(self) -> dict[str, Any]:
+        if not isinstance(self.config_file, str):
+             raise TypeError("config_file must be a string")
         try:
             with open(self.config_file, encoding="utf-8") as f:
                 config_data = json.load(f)
