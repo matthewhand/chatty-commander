@@ -205,6 +205,7 @@ class DefaultConfigGenerator:
                     "hey_khum_puter": "computer",
                     "okay_stop": "idle",
                     "that_ill_do": "idle",
+                    "thanks_chat_tee": "idle",
                     "toggle_mode": "idle",
                 },
             },
