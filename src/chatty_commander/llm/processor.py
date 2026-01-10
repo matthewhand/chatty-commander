@@ -135,7 +135,7 @@ class CommandProcessor:
                 temperature=0.3,  # Lower temperature for more consistent results
             )
 
-            return self._parse_llm_response(response, user_input)
+            return self._parse_llm_response(response)
 
         except Exception as e:
             logger.error(f"LLM interpretation failed: {e}")

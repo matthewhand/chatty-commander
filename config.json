@@ -114,6 +114,11 @@
     "start_on_boot": false,
     "check_for_updates": true
   },
+  "wakeword_state_map": {
+    "hey_chat_tee": "chatty",
+    "hey_khum_puter": "computer",
+    "okay_stop": "idle"
+  },
   "logging": {
     "level": "INFO",
     "format": "plain",
