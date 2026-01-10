@@ -73,11 +73,43 @@ class Config:
                 "chatbot_endpoint": "http://localhost:3100/",
             },
         )
+        default_wakeword_map = {}
+        default_state_transitions = {}
+        if not self.config_file:
+            default_wakeword_map = {
+                "hey_chat_tee": "chatty",
+                "hey_khum_puter": "computer",
+                "okay_stop": "idle",
+            }
+            default_state_transitions = {
+                "idle": {
+                    "hey_chat_tee": "chatty",
+                    "hey_khum_puter": "computer",
+                    "okay_stop": "idle",
+                    "that_ill_do": "idle",
+                    "toggle_mode": "computer",
+                },
+                "computer": {
+                    "hey_chat_tee": "chatty",
+                    "hey_khum_puter": "computer",
+                    "okay_stop": "idle",
+                    "that_ill_do": "idle",
+                    "toggle_mode": "chatty",
+                },
+                "chatty": {
+                    "hey_chat_tee": "chatty",
+                    "hey_khum_puter": "computer",
+                    "okay_stop": "idle",
+                    "that_ill_do": "idle",
+                    "toggle_mode": "idle",
+                },
+            }
+
         self.wakeword_state_map: dict[str, str] = self.config_data.get(
-            "wakeword_state_map", {}
+            "wakeword_state_map", default_wakeword_map
         )
         self.state_transitions: dict[str, dict[str, str]] = self.config_data.get(
-            "state_transitions", {}
+            "state_transitions", default_state_transitions
         )
         self.commands: dict[str, Any] = self.config_data.get(
             "commands",
