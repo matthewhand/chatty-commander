@@ -21,6 +21,8 @@
 # SOFTWARE.
 
 
+from unittest.mock import MagicMock
+
 import pytest
 from test_data_factories import TestDataFactory
 
@@ -32,8 +34,30 @@ class TestWebMode:
     Comprehensive tests for the WebModeServer module.
     """
 
+    @pytest.fixture
+    def mock_state_manager(self):
+        """Create a mock StateManager."""
+        mock = MagicMock()
+        mock.current_state = "idle"
+        mock.add_state_change_callback = MagicMock()
+        return mock
+
+    @pytest.fixture
+    def mock_model_manager(self):
+        """Create a mock ModelManager."""
+        mock = MagicMock()
+        return mock
+
+    @pytest.fixture
+    def mock_command_executor(self):
+        """Create a mock CommandExecutor."""
+        mock = MagicMock()
+        return mock
+
     @pytest.mark.parametrize("no_auth", [True, False])
-    def test_web_mode_server_initialization(self, no_auth):
+    def test_web_mode_server_initialization(
+        self, no_auth, mock_state_manager, mock_model_manager, mock_command_executor
+    ):
         """Test WebModeServer initialization with auth settings."""
         config = TestDataFactory.create_mock_config(
             {
@@ -44,58 +68,74 @@ class TestWebMode:
                 }
             }
         )
-        server = WebModeServer(config, no_auth=no_auth)
+        server = WebModeServer(
+            config, mock_state_manager, mock_model_manager, mock_command_executor, no_auth=no_auth
+        )
         assert server is not None
 
     @pytest.mark.parametrize("host", ["0.0.0.0", "127.0.0.1", "localhost", ""])
-    def test_web_mode_server_host_configuration(self, host):
+    def test_web_mode_server_host_configuration(
+        self, host, mock_state_manager, mock_model_manager, mock_command_executor
+    ):
         """Test WebModeServer host configuration."""
         config = TestDataFactory.create_mock_config(
             {"web_server": {"host": host, "port": 8000, "auth_enabled": False}}
         )
-        server = WebModeServer(config)
+        server = WebModeServer(
+            config, mock_state_manager, mock_model_manager, mock_command_executor
+        )
         assert server is not None
-        # Assuming server has host attribute; adjust as needed
-        # assert server.host == host
 
     @pytest.mark.parametrize("port", [8000, 3000, 5000, 0, 65535, None])
-    def test_web_mode_server_port_configuration(self, port):
+    def test_web_mode_server_port_configuration(
+        self, port, mock_state_manager, mock_model_manager, mock_command_executor
+    ):
         """Test WebModeServer port configuration."""
         config = TestDataFactory.create_mock_config(
             {"web_server": {"host": "0.0.0.0", "port": port, "auth_enabled": False}}
         )
-        server = WebModeServer(config)
+        server = WebModeServer(
+            config, mock_state_manager, mock_model_manager, mock_command_executor
+        )
         assert server is not None
-        # Assuming server has port attribute; adjust as needed
-        # assert server.port == port
 
-    def test_web_mode_server_cors_configuration(self):
+    def test_web_mode_server_cors_configuration(
+        self, mock_state_manager, mock_model_manager, mock_command_executor
+    ):
         """Test WebModeServer CORS configuration."""
         config = TestDataFactory.create_mock_config()
-        server = WebModeServer(config)
+        server = WebModeServer(
+            config, mock_state_manager, mock_model_manager, mock_command_executor
+        )
         assert server is not None
-        # Assuming CORS is configured; add assertions
 
-    def test_web_mode_server_websocket_management(self):
+    def test_web_mode_server_websocket_management(
+        self, mock_state_manager, mock_model_manager, mock_command_executor
+    ):
         """Test WebModeServer WebSocket management."""
         config = TestDataFactory.create_mock_config()
-        server = WebModeServer(config)
+        server = WebModeServer(
+            config, mock_state_manager, mock_model_manager, mock_command_executor
+        )
         assert server is not None
-        # Assuming WebSocket handling; add assertions
 
-    def test_web_mode_server_cache_management(self):
+    def test_web_mode_server_cache_management(
+        self, mock_state_manager, mock_model_manager, mock_command_executor
+    ):
         """Test WebModeServer cache management."""
         config = TestDataFactory.create_mock_config()
-        server = WebModeServer(config)
+        server = WebModeServer(
+            config, mock_state_manager, mock_model_manager, mock_command_executor
+        )
         assert server is not None
-        # Assuming cache functionality; add assertions
 
     @pytest.mark.parametrize("uptime_seconds", [0, 60, 3600, 86400, 604800])
-    def test_web_mode_server_uptime_formatting(self, uptime_seconds):
+    def test_web_mode_server_uptime_formatting(
+        self, uptime_seconds, mock_state_manager, mock_model_manager, mock_command_executor
+    ):
         """Test WebModeServer uptime formatting."""
         config = TestDataFactory.create_mock_config()
-        server = WebModeServer(config)
+        server = WebModeServer(
+            config, mock_state_manager, mock_model_manager, mock_command_executor
+        )
         assert server is not None
-        # Assuming uptime method; adjust as needed
-        # uptime_str = server.format_uptime(uptime_seconds)
-        # assert isinstance(uptime_str, str)
