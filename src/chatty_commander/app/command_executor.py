@@ -38,7 +38,7 @@ from typing import Any
 # Optional deps that may not be present in CI/headless environments
 try:  # pragma: no cover - exercised via tests with patching
     import pyautogui
-except (ImportError, OSError, KeyError):  # pragma: no cover - optional
+except Exception:  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
     pyautogui = None
 
 try:  # pragma: no cover - optional
