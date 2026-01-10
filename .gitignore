@@ -260,7 +260,7 @@ data/advisors_memory.jsonl
 # !LICENSE
 
 # Ignore markdown files in subdirectories
-**/*.md
+# **/*.md
 
 # Wakewords directory
 wakewords/

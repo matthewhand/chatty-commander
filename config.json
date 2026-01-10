@@ -97,23 +97,6 @@
       "okay_stop"
     ]
   },
-  "model_paths": {
-    "idle": "models-idle",
-    "computer": "models-computer",
-    "chatty": "models-chatty"
-  },
-  "audio_settings": {
-    "mic_chunk_size": 1024,
-    "sample_rate": 16000,
-    "audio_format": "int16"
-  },
-  "general_settings": {
-    "debug_mode": true,
-    "default_state": "idle",
-    "inference_framework": "onnx",
-    "start_on_boot": false,
-    "check_for_updates": true
-  },
   "wakeword_state_map": {
     "hey_chat_tee": "chatty",
     "hey_khum_puter": "computer",
@@ -137,6 +120,23 @@
       "toggle_mode": "idle"
     }
   },
+  "model_paths": {
+    "idle": "models-idle",
+    "computer": "models-computer",
+    "chatty": "models-chatty"
+  },
+  "audio_settings": {
+    "mic_chunk_size": 1024,
+    "sample_rate": 16000,
+    "audio_format": "int16"
+  },
+  "general_settings": {
+    "debug_mode": true,
+    "default_state": "idle",
+    "inference_framework": "onnx",
+    "start_on_boot": false,
+    "check_for_updates": true
+  },
   "logging": {
     "level": "INFO",
     "format": "plain",
@@ -148,5 +148,25 @@
     "telemetry_url": "",
     "external_url": "",
     "diagnostics_file": "logs/diagnostics.jsonl"
-  }
+  },
+  "general": {
+    "debug_mode": true,
+    "test_key": "test_value",
+    "git_test": true,
+    "check_for_updates": true,
+    "custom_setting": "custom_value",
+    "another_key": "another_value",
+    "inference_framework": "custom",
+    "start_on_boot": true,
+    "test_bool": true,
+    "test_int": 42,
+    "test": "value"
+  },
+  "web_server": {
+    "host": "0.0.0.0",
+    "port": 8100,
+    "auth_enabled": true
+  },
+  "voice_only": false,
+  "default_state": "idle"
 }

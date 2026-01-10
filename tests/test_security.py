@@ -73,8 +73,8 @@ class TestSecurity:
         if should_be_safe:
             assert config.config_file == malicious_input
         else:
-            # Empty paths should be handled gracefully
-            assert config.config_data == {}
+            # Empty paths should be handled gracefully (defaults applied)
+            assert "general" in config.config_data
 
         # Test that save operation doesn't create dangerous files
         if malicious_input and ".." not in malicious_input:

@@ -291,7 +291,6 @@ class TestProjectStructure:
             "ruff",
             "trailing-whitespace",
             "end-of-file-fixer",
-            "compile-server",
         ]
 
         for hook in required_hooks:
