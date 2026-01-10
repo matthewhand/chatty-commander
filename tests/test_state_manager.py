@@ -99,18 +99,20 @@ class TestStateManager:
         callback = Mock()
         sm.add_state_change_callback(callback)
         sm.change_state("computer")
-        callback.assert_called_once_with("computer")
+        # StateManager calls callbacks with (old_state, new_state)
+        callback.assert_called_once_with("idle", "computer")
 
     @pytest.mark.parametrize("state", ["idle", "computer", "chatty", "invalid"])
     def test_state_manager_state_changes(self, state):
         """Test StateManager state changes."""
         sm = StateManager(TestDataFactory.create_mock_config())
-        sm.change_state(state)
         if state in ["idle", "computer", "chatty"]:
+            sm.change_state(state)
             assert sm.current_state == state
         else:
-            # Assuming invalid states are handled gracefully
-            assert sm.current_state != state
+            # Invalid states should raise ValueError
+            with pytest.raises(ValueError):
+                sm.change_state(state)
 
     def test_state_manager_active_models(self):
         """Test StateManager active models retrieval."""

@@ -124,10 +124,12 @@ class CommandExecutor:
                     message = command_action.get("message", "")
                     self._execute_custom_message(command_name, message)
                     success = True
+                elif action_type == "voice_chat":
+                    success = self._execute_voice_chat(command_name)
                 else:
                     raise ValueError(
                         f"Command '{command_name}' has an invalid action type '{action_type}'. "
-                        f"Valid actions are: 'keypress', 'url', 'shell', 'custom_message'"
+                        f"Valid actions are: 'keypress', 'url', 'shell', 'custom_message', 'voice_chat'"
                     )
             else:
                 # Handle old format (direct keys)
@@ -190,6 +192,7 @@ class CommandExecutor:
                         "url",
                         "shell",
                         "custom_message",
+                        "voice_chat",
                     ]:
                         return False
                     # Check required fields for each action type
@@ -213,7 +216,9 @@ class CommandExecutor:
                         "keypress",
                         "url",
                         "shell",
+                        "shell",
                         "custom_message",
+                        "voice_chat",
                     ]:
                         # Assume valid if action type matches, skip field checks for mocks
                         return True
@@ -316,6 +321,51 @@ class CommandExecutor:
         logging.info(f"Custom message from {command_name}: {message}")
         # In a real implementation, this might display a notification or send to a UI
         # For now, just log it
+
+    def _execute_voice_chat(self, command_name: str) -> bool:
+        """Executes a voice chat session."""
+        logging.info(f"Starting voice chat for {command_name}")
+
+        # Access components from config as expected by integration tests
+        # In production, these might need to be injected differently
+        llm_manager = getattr(self.config, "llm_manager", None)
+        voice_pipeline = getattr(self.config, "voice_pipeline", None)
+
+        if not llm_manager or not voice_pipeline:
+            self.report_error(command_name, "voice chat components not available")
+            return False
+
+        try:
+            # 1. Verify component availability
+            if (
+                not hasattr(voice_pipeline, "transcriber")
+                or not hasattr(voice_pipeline, "tts")
+                or not hasattr(llm_manager, "generate_response")
+            ):
+                self.report_error(command_name, "voice chat components incomplete")
+                return False
+
+            # 2. Transcribe
+            user_input = voice_pipeline.transcriber.record_and_transcribe()
+            if not user_input:
+                logging.warning("No input received for voice chat")
+                return False
+
+            # 3. Generate response
+            response = llm_manager.generate_response(user_input)
+
+            # 4. Speak response
+            if voice_pipeline.tts.is_available():
+                voice_pipeline.tts.speak(response)
+
+            logging.info(f"Completed voice chat session")
+            return True
+
+        except Exception as e:
+            msg = f"voice chat failed: {e}"
+            logging.error(msg)
+            self.report_error(command_name, msg)
+            return False
 
     def report_error(self, command_name: str, error_message: str) -> None:
         """Reports an error to the logging system or an external monitoring service."""

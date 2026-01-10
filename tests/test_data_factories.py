@@ -78,11 +78,30 @@ class TestDataFactory:
     def create_mock_config(config_data: dict[str, Any] | None = None) -> Mock:
         """Create a properly configured mock Config object."""
         config = Mock(spec=Config)
-        data = config_data or TestDataFactory.create_valid_config_data()
+        base_data = TestDataFactory.create_valid_config_data()
+        if config_data:
+            # Merge provided config_data with base defaults
+            base_data.update(config_data)
+        data = base_data
         config.config_data = data
         config.config = data
+        # Set all required attributes that StateManager and other components expect
         config.default_state = data.get("default_state", "idle")
         config.model_actions = data.get("model_actions", {})
+        config.state_models = data.get("state_models", {
+            "idle": ["model1", "model2"],
+            "computer": ["model3"],
+            "chatty": ["model4"],
+        })
+        config.wakeword_state_map = data.get("wakeword_state_map", {})
+        config.state_transitions = data.get("state_transitions", {})
+        config.general_models_path = data.get("general_models_path", "models-idle")
+        config.system_models_path = data.get("system_models_path", "models-computer")
+        config.chat_models_path = data.get("chat_models_path", "models-chatty")
+        config.commands = data.get("commands", {})
+        config.advisors = data.get("advisors", {"enabled": False})
+        config.debug_mode = data.get("debug_mode", False)
+        config.web_server = data.get("web_server", {"host": "0.0.0.0", "port": 8000, "auth_enabled": False})
         config.save_config = Mock()
         config.reload_config = Mock(return_value=True)
         return config

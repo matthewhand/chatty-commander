@@ -468,7 +468,19 @@ class WebModeServer:
             return {"personas": getattr(svc, "get_personas", lambda: [])()}
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
-        async def advisor_message(message: AdvisorInbound):
+        async def advisor_message(
+            message: AdvisorInbound,
+            x_api_key: str | None = Header(None, alias="X-API-Key"),
+        ):
+            # Check authentication
+            if not self.no_auth:
+                expected_key = None
+                if hasattr(self.config_manager, "auth"):
+                    expected_key = self.config_manager.auth.get("api_key")
+                
+                if not expected_key or x_api_key != expected_key:
+                    raise HTTPException(status_code=401, detail="Unauthorized")
+
             if not self.advisors_service:
                 raise HTTPException(status_code=500, detail="Advisors unavailable")
             try:
