@@ -189,22 +189,16 @@ class DefaultConfigGenerator:
                 "idle": {
                     "hey_chat_tee": "chatty",
                     "hey_khum_puter": "computer",
-                    "okay_stop": "idle",
-                    "that_ill_do": "idle",
                     "toggle_mode": "computer",
                 },
                 "computer": {
-                    "hey_chat_tee": "chatty",
-                    "hey_khum_puter": "computer",
                     "okay_stop": "idle",
                     "that_ill_do": "idle",
                     "toggle_mode": "chatty",
                 },
                 "chatty": {
-                    "hey_chat_tee": "chatty",
                     "hey_khum_puter": "computer",
                     "okay_stop": "idle",
-                    "that_ill_do": "idle",
                     "thanks_chat_tee": "idle",
                     "toggle_mode": "idle",
                 },
