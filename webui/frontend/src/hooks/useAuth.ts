@@ -28,7 +28,7 @@ export const useAuth = (): AuthContextType => {
     // Only run if context is not available
     if (!context) {
       console.log("Checking Auth Env:", process.env.REACT_APP_NO_AUTH);
-      if (process.env.REACT_APP_NO_AUTH === 'true') {
+      if (process.env.REACT_APP_NO_AUTH === 'true' && process.env.NODE_ENV !== 'test') {
         setUser({ username: 'testuser', roles: ['admin'], is_active: true });
         setLoading(false);
         return;

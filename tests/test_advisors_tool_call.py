@@ -27,7 +27,7 @@ def test_advisors_happy_path_with_stub_provider(monkeypatch):
     # Configure advisors enabled with stub provider (no API key)
     cfg = {
         "enabled": True,
-        "providers": {"model": "gpt-oss20b", "api_mode": "completion"},
+        "providers": {"model": "gpt-oss20b", "api_mode": "completion", "api_key": None},
         "memory": {"persistence_enabled": False},
     }
 

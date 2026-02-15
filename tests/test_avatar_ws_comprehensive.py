@@ -278,6 +278,8 @@ class TestAvatarWSConnectionManager:
 
             # Verify task was created
             mock_loop.create_task.assert_called_once()
+            task_coro = mock_loop.create_task.call_args[0][0]
+            task_coro.close()
 
     def test_broadcast_state_change_no_event_loop(self):
         """Test broadcast when no event loop is running."""
@@ -287,7 +289,10 @@ class TestAvatarWSConnectionManager:
         message = {"type": "test", "data": "broadcast"}
 
         with patch("asyncio.get_running_loop", side_effect=RuntimeError("No loop")):
-            with patch("asyncio.run") as mock_run:
+            def _run(coro):
+                coro.close()
+
+            with patch("asyncio.run", side_effect=_run) as mock_run:
                 mgr.broadcast_state_change(message)
                 mock_run.assert_called_once()
 
@@ -394,6 +399,8 @@ class TestAvatarAudioQueue:
             queue._ensure_processor()
 
             mock_loop.create_task.assert_called_once()
+            task_coro = mock_loop.create_task.call_args[0][0]
+            task_coro.close()
 
     def test_ensure_processor_no_event_loop(self):
         """Test _ensure_processor when no event loop is running."""
@@ -401,7 +408,10 @@ class TestAvatarAudioQueue:
         queue = AvatarAudioQueue(mock_manager)
 
         with patch("asyncio.get_running_loop", side_effect=RuntimeError("No loop")):
-            with patch("asyncio.run") as mock_run:
+            def _run(coro):
+                coro.close()
+
+            with patch("asyncio.run", side_effect=_run) as mock_run:
                 queue._ensure_processor()
                 mock_run.assert_called_once()
 

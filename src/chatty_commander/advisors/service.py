@@ -31,7 +31,16 @@ from .conversation_engine import create_conversation_engine
 from .memory import MemoryStore
 
 # from .prompting import build_provider_prompt  # Currently unused
-from .providers import build_provider_safe
+from . import providers as providers_module
+from .providers import build_provider_safe as build_provider_safe
+
+_DEFAULT_BUILD_PROVIDER_SAFE = build_provider_safe
+
+
+def _get_provider_builder():
+    if build_provider_safe is not _DEFAULT_BUILD_PROVIDER_SAFE:
+        return build_provider_safe
+    return providers_module.build_provider_safe
 
 
 @dataclass
@@ -77,7 +86,8 @@ class AdvisorsService:
             persist=mem_cfg.get("persistence_enabled", mem_cfg.get("persist", False)),
             persist_path=mem_cfg.get("persistence_path") or mem_cfg.get("persist_path"),
         )
-        self.provider = build_provider_safe(base_cfg.get("providers", {}))
+        provider_builder = _get_provider_builder()
+        self.provider = provider_builder(base_cfg.get("providers", {}))
         self.context_manager = ContextManager(base_cfg.get("context", {}))
 
         # Check if advisors are enabled

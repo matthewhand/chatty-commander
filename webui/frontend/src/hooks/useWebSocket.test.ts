@@ -97,7 +97,7 @@ afterEach(() => {
   // Ensure no pending timers leak across tests
   try {
     jest.runOnlyPendingTimers();
-  } catch {}
+  } catch { }
   uninstallWSMock();
   jest.useRealTimers();
   jest.restoreAllMocks();
@@ -126,7 +126,9 @@ describe("useWebSocket Hook", () => {
 
     // Should not throw when called (even if not connected)
     expect(() => {
-      result.current.sendMessage({ type: "test" });
+      act(() => {
+        result.current.sendMessage({ type: "test" });
+      });
     }).not.toThrow();
 
     unmount();
@@ -141,7 +143,9 @@ describe("useWebSocket Hook", () => {
 
     // Should not throw when called
     expect(() => {
-      result.current.disconnect();
+      act(() => {
+        result.current.disconnect();
+      });
     }).not.toThrow();
 
     unmount();

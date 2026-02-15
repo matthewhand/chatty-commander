@@ -50,6 +50,7 @@ end-to-end advisor interactions (prompt building, memory, context) is handled by
 chatty_commander.advisors.service.
 """
 
+import inspect
 import logging
 import os
 import time
@@ -66,6 +67,30 @@ except Exception:  # pragma: no cover - import guard
     AGENTS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+
+def _filter_kwargs_for_callable(fn: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
+    try:
+        signature = inspect.signature(fn)
+    except (TypeError, ValueError):
+        return kwargs
+    if any(
+        param.kind == param.VAR_KEYWORD
+        for param in signature.parameters.values()
+    ):
+        return kwargs
+    return {key: value for key, value in kwargs.items() if key in signature.parameters}
+
+
+def _build_stub_provider(config: dict[str, Any]) -> "LLMProvider":
+    api_mode = config.get("llm_api_mode", config.get("api_mode", "completion"))
+    if api_mode == "responses":
+        stub = StubResponsesProvider(config)
+        stub.api_mode = "responses"
+        return stub
+    stub = StubCompletionProvider(config)
+    stub.api_mode = "completion"
+    return stub
 
 
 class LLMProvider(ABC):
@@ -142,16 +167,20 @@ class CompletionProvider(LLMProvider):
         handoffs = []
 
         # Initialize Agent client with enhanced capabilities
-        self.agent = Agent(
-            name=f"advisor-{self.api_mode}",
-            model=self.model,
-            api_key=self.api_key,
-            base_url=self.base_url,
-            tools=tools,
-            mcp_servers=mcp_servers,
-            handoffs=handoffs,
-            instructions=config.get("instructions", "You are a helpful AI assistant."),
-        )
+        agent_kwargs = {
+            "name": f"advisor-{self.api_mode}",
+            "model": self.model,
+            "api_key": self.api_key,
+            "base_url": self.base_url,
+            "tools": tools,
+            "mcp_servers": mcp_servers,
+            "handoffs": handoffs,
+            "instructions": config.get(
+                "instructions", "You are a helpful AI assistant."
+            ),
+        }
+        filtered_kwargs = _filter_kwargs_for_callable(Agent.__init__, agent_kwargs)
+        self.agent = Agent(**filtered_kwargs)
 
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate completion response via Agent.chat()."""
@@ -211,19 +240,21 @@ class ResponsesProvider(LLMProvider):
         handoffs = []
 
         # Initialize Agent client with enhanced capabilities
-        self.agent = Agent(
-            name=f"advisor-{self.api_mode}",
-            model=self.model,
-            api_key=self.api_key,
-            base_url=self.base_url,
-            tools=tools,
-            mcp_servers=mcp_servers,
-            handoffs=handoffs,
-            instructions=config.get(
+        agent_kwargs = {
+            "name": f"advisor-{self.api_mode}",
+            "model": self.model,
+            "api_key": self.api_key,
+            "base_url": self.base_url,
+            "tools": tools,
+            "mcp_servers": mcp_servers,
+            "handoffs": handoffs,
+            "instructions": config.get(
                 "instructions",
                 "You are a helpful AI assistant with access to various tools.",
             ),
-        )
+        }
+        filtered_kwargs = _filter_kwargs_for_callable(Agent.__init__, agent_kwargs)
+        self.agent = Agent(**filtered_kwargs)
 
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate response using Agent.chat()."""
@@ -373,41 +404,21 @@ def build_provider_safe(config: dict[str, Any]) -> LLMProvider:
     """
     if not AGENTS_AVAILABLE:
         logger.warning("openai-agents SDK not available, using stub providers")
-        api_mode = config.get("llm_api_mode", config.get("api_mode", "completion"))
-
-        if api_mode == "completion":
-            stub = StubCompletionProvider(config)
-            stub.api_mode = "completion"
-            return stub
-        elif api_mode == "responses":
-            stub = StubResponsesProvider(config)
-            stub.api_mode = "responses"
-            return stub
-        else:
-            stub = StubCompletionProvider(config)
-            stub.api_mode = "completion"
-            return stub
+        return _build_stub_provider(config)
 
     # Check if API key is available
-    api_key = config.get(
-        "api_key",
-        config.get("provider", {}).get("api_key", os.getenv("OPENAI_API_KEY")),
-    )
+    if "api_key" in config:
+        api_key = config.get("api_key")
+    elif "provider" in config and "api_key" in config.get("provider", {}):
+        api_key = config.get("provider", {}).get("api_key")
+    else:
+        api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.warning("No API key provided, using stub providers")
-        api_mode = config.get("llm_api_mode", config.get("api_mode", "completion"))
+        return _build_stub_provider(config)
 
-        if api_mode == "completion":
-            stub = StubCompletionProvider(config)
-            stub.api_mode = "completion"
-            return stub
-        elif api_mode == "responses":
-            stub = StubResponsesProvider(config)
-            stub.api_mode = "responses"
-            return stub
-        else:
-            stub = StubCompletionProvider(config)
-            stub.api_mode = "completion"
-            return stub
-
-    return build_provider(config)
+    try:
+        return build_provider(config)
+    except Exception as exc:
+        logger.warning("Provider initialization failed, using stub: %s", exc)
+        return _build_stub_provider(config)
