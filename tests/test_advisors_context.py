@@ -2,8 +2,9 @@
 Tests for advisors context management functionality.
 """
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
 
 
 class TestAdvisorsContext:

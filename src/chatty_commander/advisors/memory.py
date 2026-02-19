@@ -49,6 +49,33 @@ class MemoryStore:
         self._path = persist_path or "data/advisors_memory.jsonl"
         if self._persist:
             os.makedirs(os.path.dirname(self._path), exist_ok=True)
+            self._load_from_disk()
+
+    def _load_from_disk(self) -> None:
+        """Load memory from the persistence file."""
+        if not os.path.exists(self._path):
+            return
+
+        try:
+            with open(self._path, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        data = json.loads(line)
+                        key = data.get("key")
+                        if key:
+                            q = self._store.setdefault(key, deque(maxlen=self._max))
+                            q.append(
+                                MemoryItem(
+                                    role=data["role"],
+                                    content=data["content"],
+                                    timestamp=data.get("timestamp", datetime.utcnow().isoformat()),
+                                )
+                            )
+                    except (json.JSONDecodeError, KeyError):
+                        continue
+        except Exception:
+            # If metrics/logging were available, we'd log this
+            pass
 
     def _ctx(self, platform: str, channel: str, user: str) -> str:
         return f"{platform}:{channel}:{user}"
@@ -58,9 +85,10 @@ class MemoryStore:
     ) -> None:
         key = self._ctx(platform, channel, user)
         q = self._store.setdefault(key, deque(maxlen=self._max))
+        ts = datetime.utcnow().isoformat()
         q.append(
             MemoryItem(
-                role=role, content=content, timestamp=datetime.utcnow().isoformat()
+                role=role, content=content, timestamp=ts
             )
         )
         if self._persist:
@@ -72,7 +100,7 @@ class MemoryStore:
                                 "key": key,
                                 "role": role,
                                 "content": content,
-                                "timestamp": datetime.utcnow().isoformat(),
+                                "timestamp": ts,
                             }
                         )
                         + "\n"
