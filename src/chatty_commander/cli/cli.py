@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # MIT License
 #
 # Copyright (c) 2024 mhand
@@ -21,904 +20,781 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+"""Entry point for the ChattyCommander application.
+
+This module coordinates model loading, manages state transitions based on
+voice commands, and handles the execution of commands.
+"""
+
 import argparse
-import json
 import os
-import shlex
+import signal
 import sys
-from typing import Any
+import threading
 
-# Re-export CommandExecutor so tests can patch cli.CommandExecutor
-from chatty_commander.app import CommandExecutor  # noqa: F401
+# NOTE: Intentionally avoid importing heavy modules at import time.
+# Any imports of internal components are done lazily inside functions
+# after we know we are not just answering --help. This keeps
+# `python -m chatty_commander.main --help` lightweight and reliable in CI.
 
-# Re-export run_app and ConfigCLI at module level so tests can patch cli.run_app and cli.ConfigCLI
-try:
-    from chatty_commander.main import run_app as run_app  # type: ignore # noqa: F401
-except Exception:
+# Expose patchable module-level names that tests expect; they are populated
+# lazily inside cli_main() unless patched by tests.
+Config = None  # type: ignore[assignment]
+ModelManager = None  # type: ignore[assignment]
+StateManager = None  # type: ignore[assignment]
+CommandExecutor = None  # type: ignore[assignment]
+generate_default_config_if_needed = None  # type: ignore[assignment]
 
-    def run_app() -> None:  # type: ignore
-        pass
-
-
-try:
-    from chatty_commander.config_cli import (
-        ConfigCLI as ConfigCLI,  # type: ignore # noqa: F401
-    )
-except Exception:
-
-    class ConfigCLI:  # type: ignore
-        @staticmethod
-        def interactive_mode() -> int:
-            return 0
-
-        @staticmethod
-        def list_config() -> int:
-            return 0
-
-        @staticmethod
-        def set_listen_for(key: str, value: str) -> int:
-            return 0
-
-        @staticmethod
-        def set_mode(mode: str, value: str) -> int:
-            return 0
-
-        @staticmethod
-        def run_wizard() -> int:
-            return 0
-
-        @staticmethod
-        def set_model_action(model: str, action: str) -> int:
-            return 0
+# setup_logger is safe/lightweight to import at import time so tests can patch it
+from chatty_commander.utils.logger import setup_logger  # noqa: E402
 
 
-# Expose HelpfulArgumentParser at package module level as well for tests that patch cli.HelpfulArgumentParser
-class HelpfulArgumentParser(argparse.ArgumentParser):
-    def error(self, message):
-        self.print_usage(sys.stderr)
-        self.exit(0, f"{self.prog}: error: {message}\n")
+def run_cli_mode(config, model_manager, state_manager, command_executor, logger):
+    """Run the traditional CLI voice command mode with graceful shutdown."""
+    logger.info("Starting CLI voice command mode")
 
+    # Load models based on the initial idle state
+    model_manager.reload_models(state_manager.current_state)
 
-# Resolve Config in a way that allows tests to monkeypatch the top-level 'config' module
-# and provide a DummyCfg. Falls back to chatty_commander.app.config.Config otherwise.
-def _resolve_Config():
+    shutdown_flag = {"stop": False}
+
+    def handle_signal(signum, frame):
+        logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+        shutdown_flag["stop"] = True
+
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+
     try:
-        import sys as _sys
+        while not shutdown_flag["stop"]:
+            # Listen for voice input
+            command = model_manager.listen_for_commands()
+            if not command:
+                continue
 
-        mod = _sys.modules.get("config")
-        if mod is not None:
-            C = getattr(mod, "Config", None)
-            if C is not None:
-                return C
-    except Exception:
-        pass
-    try:
-        import importlib as _il
+            logger.info(f"Command detected: {command}")
 
-        mod = _il.import_module("config")
-        C = getattr(mod, "Config", None)
-        if C is not None:
-            return C
-    except Exception:
-        pass
-    from chatty_commander.app.config import Config as _Cfg  # fallback
+            # Update system state based on command
+            new_state = state_manager.update_state(command)
+            if new_state:
+                logger.info(f"Transitioning to new state: {new_state}")
+                model_manager.reload_models(new_state)
 
-    return _Cfg
+            # Execute the detected command if it's actionable
+            if command in config.model_actions:
+                command_executor.execute_command(command)
 
-
-def _get_model_actions_from_config(cfg: Any) -> dict[str, Any]:
-    try:
-        if hasattr(cfg, "__dict__"):
-            v = cfg.__dict__.get("model_actions")
-            if isinstance(v, dict):
-                return v
-    except Exception:
-        pass
-    try:
-        v = getattr(cfg, "model_actions", {})
-        if isinstance(v, dict):
-            return v
-    except Exception:
-        pass
-    return {}
-
-
-def _print_actions_text(actions: dict[str, Any]) -> None:
-    if not actions:
-        print("No commands configured.")
-        return
-    print("Available commands:")
-    for name in sorted(actions.keys()):
-        print(f"- {name}")
-
-
-def _print_actions_json(actions: dict[str, Any]) -> None:
-    """Print actions in JSON format."""
-    arr: list[dict[str, str | None]] = []
-    for k, v in actions.items():
-        vtype = None
-        if isinstance(v, dict) and v:
-            # Get the type value, not the key
-            vtype = v.get("type")
-            if vtype is None:
-                # Fallback to first key if no type field
-                try:
-                    vtype = next(iter(v.keys()))
-                except Exception:
-                    vtype = None
-        arr.append({"name": k, "type": vtype})
-    print(json.dumps(arr))
-
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = HelpfulArgumentParser(
-        prog="chatty-commander",
-        description=(
-            "ChattyCommander CLI — control, configure, and test.\n\n"
-            "Examples:\n"
-            "  chatty-commander list\n"
-            "  chatty-commander exec hello --dry-run\n"
-            "  chatty-commander config --list\n"
-            "  chatty-commander system updates check\n"
-        ),
-    )
-
-    # Do **not** implicitly set a DISPLAY environment variable. Some tests run
-    # in headless environments and expect importing other modules (e.g.,
-    # ``pyautogui`` via ``main.py``) to skip any X11 connection attempts when a
-    # display is not present. Previously, we forced ``DISPLAY=:0`` which caused
-    # later tests spawning new Python processes to fail with
-    # ``Xlib.error.DisplayConnectionError``.  Rely on the caller to provide an
-    # explicit DISPLAY when needed instead of mutating the global environment
-    # here.
-
-    subparsers = parser.add_subparsers(dest="command", required=False)
-
-    # Expose parser instance on itself so handlers can call parser.error(...) and trigger SystemExit
-    # This keeps behavior aligned with argparse UX and lets tests assert on stderr.
-    parser._self = parser  # type: ignore[attr-defined]
-
-    # run
-    run_parser = subparsers.add_parser(
-        "run",
-        help="Run the main application.",
-        description=(
-            "Launch ChattyCommander core runtime.\n\nExample:\n  chatty-commander run --display :0"
-        ),
-    )
-    run_parser.add_argument("--display", help="Override DISPLAY for GUI features.")
-    run_parser.add_argument(
-        "--voice-only",
-        action="store_true",
-        help="Run without avatar GUI; responses are spoken via TTS.",
-    )
-
-    def run_func() -> None:
+    except KeyboardInterrupt:
+        logger.info("KeyboardInterrupt received; shutting down")
+    finally:
+        # Perform any resource cleanup if needed
         try:
-            func = globals().get("run_app")
-            if callable(func):
-                func()
-        except Exception:
-            return
+            if hasattr(model_manager, "shutdown"):
+                model_manager.shutdown()
+            if hasattr(state_manager, "shutdown"):
+                state_manager.shutdown()
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}")
+        logger.info("ChattyCommander CLI shutdown complete")
+        sys.exit(0)
 
-    run_parser.set_defaults(func=run_func)
 
-    # gui
-    gui_parser = subparsers.add_parser(
-        "gui",
-        help="Launch GUI mode.",
-        description=(
-            "Open the graphical user interface.\n\nExample:\n  chatty-commander gui"
-        ),
+def run_web_mode(
+    config,
+    model_manager,
+    state_manager,
+    command_executor,
+    logger,
+    *,
+    host: str = "0.0.0.0",
+    port: int = 8100,
+    no_auth: bool = False,
+):
+    """Run the web UI mode with FastAPI server and graceful shutdown."""
+
+    try:
+        from chatty_commander.web.web_mode import WebModeServer
+    except ImportError:
+        logger.error(
+            "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
+        )
+        sys.exit(1)
+
+    logger.info(
+        f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
     )
 
-    def gui_func(args: argparse.Namespace) -> None:
-        try:
-            from chatty_commander.gui import run_gui  # noqa
-
-            run_gui()
-        except Exception:
-            # Allow tests without GUI stack
-            return
-
-    gui_parser.set_defaults(func=gui_func)
-
-    # voice-chat
-    voice_chat_parser = subparsers.add_parser(
-        "voice-chat",
-        help="Start voice chat mode with GPT-OSS:20B, TTS/STT, and avatar integration.",
-        description=(
-            "Launch voice chat mode with full integration:\n"
-            "- Ollama with GPT-OSS:20B for LLM responses\n"
-            "- Whisper for speech-to-text\n"
-            "- pyttsx3 for text-to-speech\n"
-            "- 3D avatar with lip-sync\n\n"
-            "Example:\n  chatty-commander voice-chat"
-        ),
+    # Create web server instance
+    web_server = WebModeServer(
+        config,
+        state_manager,
+        model_manager,
+        command_executor,
+        no_auth=no_auth,
     )
 
-    def voice_chat_func(args: argparse.Namespace) -> int:
-        """Start voice chat mode with complete integration."""
-        import logging
+    # Setup callbacks for voice command integration
+    def on_command_detected(command):
+        web_server.on_command_detected(command)
 
-        from chatty_commander.app.config import Config
-        from chatty_commander.app.state_manager import StateManager
-        from chatty_commander.avatars.thinking_state import ThinkingStateManager
-        from chatty_commander.llm.manager import LLMManager
-        from chatty_commander.voice.pipeline import VoicePipeline
+    def on_state_change(old_state, new_state):
+        web_server._on_state_change(old_state, new_state)
 
-        # Setup logging
-        logging.basicConfig(level=logging.INFO)
-        logger = logging.getLogger(__name__)
+    # Register callbacks
+    if hasattr(model_manager, "add_command_callback"):
+        model_manager.add_command_callback(on_command_detected)
+    if hasattr(state_manager, "add_state_change_callback"):
+        state_manager.add_state_change_callback(on_state_change)
 
+    stop_event = threading.Event()
+
+    def handle_signal(signum, frame):
+        logger.info(f"Received signal {signum}, stopping web server...")
+        stop_event.set()
         try:
-            logger.info("Initializing voice chat mode...")
+            stopper = getattr(web_server, "stop", None)
+            if callable(stopper):
+                stopper()
+        except Exception as e:
+            logger.error(f"Error stopping web server: {e}")
 
-            # Load configuration
-            config = Config()
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
 
-            # Initialize LLM manager with Ollama and GPT-OSS:20B
-            logger.info("Setting up LLM manager with Ollama...")
-            llm_manager = LLMManager(
-                preferred_backend="ollama",
-                ollama_model="gpt-oss:20b",
-                ollama_host="localhost:11434",
-            )
+    env_host = os.getenv("CHATCOMM_HOST")
+    env_port = os.getenv("CHATCOMM_PORT")
+    if env_host:
+        host = env_host
+    if env_port:
+        try:
+            port = int(env_port)
+        except ValueError:
+            logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
+    _log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")  # noqa: F841
 
-            # Check if Ollama is available
-            if not llm_manager.is_available():
-                logger.error(
-                    "Ollama backend not available. Please ensure Ollama is running with gpt-oss:20b model."
-                )
-                logger.info("To install: ollama pull gpt-oss:20b")
-                return 1
+    # Start the server
+    try:
+        web_server.run(host=host, port=port)
+    finally:
+        try:
+            if hasattr(model_manager, "shutdown"):
+                model_manager.shutdown()
+            if hasattr(state_manager, "shutdown"):
+                state_manager.shutdown()
+        except Exception as e:
+            logger.error(f"Error during web mode shutdown: {e}")
+        logger.info("Web mode shutdown complete")
 
-            logger.info(f"LLM backend ready: {llm_manager.get_active_backend_name()}")
 
-            # Initialize voice pipeline
-            logger.info("Setting up voice pipeline...")
-            voice_pipeline = VoicePipeline(
-                transcription_backend="whisper_local",
-                tts_backend="pyttsx3",
-                use_mock=False,
-            )
+def run_gui_mode(
+    config,
+    model_manager,
+    state_manager,
+    command_executor,
+    logger,
+    display_override: str | None = None,
+    no_gui: bool = False,
+):
+    """Run the GUI mode with graceful handling in headless environments.
 
-            # Check voice components
-            if not voice_pipeline.transcriber.is_available():
-                logger.warning(
-                    "Voice transcription not available. Install whisper: pip install openai-whisper"
-                )
+    Returns:
+        int: 0 if skipped or exited cleanly; non-zero if GUI could not start due to missing deps.
+    """
 
-            if not voice_pipeline.tts.is_available():
-                logger.warning(
-                    "TTS not available. Install pyttsx3: pip install pyttsx3"
-                )
+    if no_gui:
+        logger.info("--no-gui specified; skipping GUI launch")
+        return 0
 
-            # Initialize state manager for avatar
-            state_manager = StateManager()
-            thinking_state_manager = ThinkingStateManager()
+    # Apply DISPLAY override if provided (POSIX only)
+    if display_override and os.name != "nt":
+        os.environ["DISPLAY"] = display_override
 
-            # Initialize command executor with all components
-            command_executor = CommandExecutor(config, llm_manager, state_manager)
-
-            # Attach components to config for voice chat action
-            config.llm_manager = llm_manager
-            config.voice_pipeline = voice_pipeline
-            command_executor.state_manager = state_manager
-
-            # Start avatar GUI
-            logger.info("Starting avatar GUI...")
+    # Graceful handling when DISPLAY is not present (headless/CI on POSIX)
+    if os.name != "nt" and not os.environ.get("DISPLAY"):
+        logger.warning(
+            "No DISPLAY environment variable set. Skipping GUI mode in headless environment."
+        )
+        return 0
+    # Prefer new tray popup GUI (pystray + pywebview) with fallback to legacy tkinter GUI
+    try:
+        # Prefer avatar GUI if available (pywebview + local index.html)
+        try:
             try:
-                import threading
-
-                from chatty_commander.avatars.avatar_gui import run_avatar_gui
-
-                # Start avatar in background thread
-                avatar_thread = threading.Thread(target=run_avatar_gui, daemon=True)
-                avatar_thread.start()
-                logger.info("Avatar GUI started")
-            except Exception as e:
-                logger.warning(f"Avatar GUI not available: {e}")
-
-            # Set initial state
-            from chatty_commander.avatars.thinking_state import ThinkingState
-
-            thinking_state_manager.set_agent_state(
-                "voice_chat_agent", ThinkingState.IDLE, "Voice chat ready"
-            )
-
-            logger.info("🎤 Voice chat mode activated!")
-            logger.info("💬 Say 'voice_chat' to start a conversation")
-            logger.info("🤖 The avatar will respond with GPT-OSS:20B")
-            logger.info("🔊 Press Ctrl+C to exit")
-
-            # Main voice chat loop
-            while True:
-                try:
-                    # Execute voice chat command
-                    success = command_executor.execute_command("voice_chat")
-
-                    if success:
-                        logger.info("Voice chat session completed")
-                    else:
-                        logger.warning("Voice chat session failed")
-
-                    # Small delay between sessions
-                    import time
-
-                    time.sleep(1)
-
-                except KeyboardInterrupt:
-                    logger.info("Voice chat mode stopped by user")
-                    break
-                except Exception as e:
-                    logger.error(f"Voice chat error: {e}")
-                    break
-
-            # Cleanup
-            from chatty_commander.avatars.thinking_state import ThinkingState
-
-            thinking_state_manager.set_agent_state(
-                "voice_chat_agent", ThinkingState.IDLE, "Voice chat ended"
-            )
-            logger.info("Voice chat mode ended")
-            return 0
-
+                from chatty_commander.avatars.avatar_gui import (
+                    run_avatar_gui,  # type: ignore
+                )
+            except Exception:
+                from src.chatty_commander.avatars.avatar_gui import (
+                    run_avatar_gui,  # type: ignore
+                )
+            logger.info("Starting Avatar GUI (TalkingHead)")
+            rc = run_avatar_gui()
+            return 0 if rc is None else int(rc)
         except Exception as e:
-            logger.error(f"Failed to start voice chat mode: {e}")
-            return 1
-
-    voice_chat_parser.set_defaults(func=voice_chat_func)
-
-    # config
-    config_parser = subparsers.add_parser(
-        "config",
-        help="Configuration utilities.",
-        description=(
-            "Show, modify, or validate configuration.\n\n"
-            "Examples:\n"
-            "  chatty-commander config --list\n"
-            "  chatty-commander config --set-state-model idle model1,model2\n"
-            "  chatty-commander config wizard"
-        ),
-    )
-    # Legacy flags used by tests
-    config_parser.add_argument(
-        "--interactive", action="store_true", help="Run interactive config tool."
-    )
-    config_parser.add_argument(
-        "--list", action="store_true", help="List configuration."
-    )
-    config_parser.add_argument("--set-listen-for", nargs=2, metavar=("KEY", "VALUE"))
-    config_parser.add_argument("--set-mode", nargs=2, metavar=("MODE", "VALUE"))
-    config_parser.add_argument(
-        "--set-model-action", nargs=2, metavar=("MODEL", "ACTION")
-    )
-    # Additional legacy flag required by tests
-    config_parser.add_argument(
-        "--set-state-model",
-        nargs=2,
-        metavar=("STATE", "MODELS"),
-        help="Map a state to comma-separated models. Ex: --set-state-model idle model1,model2",
-    )
-    # Rich flags still supported
-    config_parser.add_argument(
-        "--show", action="store_true", help="Print current configuration."
-    )
-    config_parser.add_argument(
-        "--validate",
-        action="store_true",
-        help="Validate configuration and exit non-zero.",
-    )
-    config_parser.add_argument(
-        "--export", metavar="PATH", help="Export configuration to PATH."
-    )
-
-    config_subparsers = config_parser.add_subparsers(
-        dest="config_subcommand", required=False, help="Config subcommand to execute."
-    )
-    config_subparsers.add_parser(
-        "wizard",
-        help="Launch the guided configuration wizard.",
-        description="Interactive wizard to guide through configuration.",
-    )
-
-    def config_func(args: argparse.Namespace) -> int:
-        # Compatibility path for tests that patch cli.ConfigCLI.*
-        try:
-            _CLI = globals().get("ConfigCLI")  # pick patched symbol if any
-
-            if getattr(args, "config_subcommand", None) == "wizard":
-                _CLI.run_wizard()
-                return 0
-            if getattr(args, "interactive", False):
-                _CLI.interactive_mode()
-                return 0
-            if getattr(args, "list", False):
-                # Legacy tests expect list behavior to succeed without exit
+            logger.warning(
+                f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI"
+            )
+            try:
+                # Try PyQt5-based transparent browser avatar
                 try:
-                    _CLI.list_config()
+                    from chatty_commander.gui.pyqt5_avatar import (
+                        run_pyqt5_avatar,  # type: ignore
+                    )
                 except Exception:
-                    pass
-                return 0
-            if getattr(args, "set_listen_for", None):
-                k, v = args.set_listen_for
-                _CLI.set_listen_for(k, v)
-                return 0
-            if getattr(args, "set_mode", None):
-                m, v = args.set_mode
-                # Emit explicit error text expected by tests
-                if m not in {"voice", "text", "web"}:
-                    print("Invalid mode", file=sys.stderr)
-                    raise SystemExit(2)
-                _CLI.set_mode(m, v)
-                return 0
-            if getattr(args, "set_model_action", None):
-                m, a = args.set_model_action
-                # Emit explicit error text expected by tests
-                if m not in {"models-chatty", "models-computer", "models-idle"}:
-                    print("Invalid model name", file=sys.stderr)
-                    raise SystemExit(2)
-                _CLI.set_model_action(m, a)
-                return 0
-            if getattr(args, "set_state_model", None):
-                state, models_csv = args.set_state_model
-                # Validate state and models
-                valid_states = {"idle", "computer", "chatty"}
-                valid_models = {
-                    "models-chatty",
-                    "models-computer",
-                    "models-idle",
-                    "model1",
-                    "model2",
-                    "test_model",
-                }
-                models = [m.strip() for m in models_csv.split(",") if m.strip()]
+                    from src.chatty_commander.gui.pyqt5_avatar import (
+                        run_pyqt5_avatar,  # type: ignore
+                    )
+                logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
+                rc = run_pyqt5_avatar(config, logger)
+                return 0 if rc is None else int(rc)
+            except Exception as e2:
+                logger.warning(
+                    f"PyQt5 Avatar GUI unavailable ({e2}); falling back to tray popup GUI"
+                )
+                try:
+                    # Installed package path
+                    from chatty_commander.gui.tray_popup import (
+                        run_tray_popup,  # type: ignore
+                    )
+                except Exception:
+                    # Repo-root execution fallback
+                    from src.chatty_commander.gui.tray_popup import (
+                        run_tray_popup,  # type: ignore
+                    )
 
-                if state not in valid_states:
-                    parser_local = HelpfulArgumentParser(prog="chatty-commander")
-                    parser_local.error("Invalid state")
-
-                invalid_models = [m for m in models if m not in valid_models]
-                if invalid_models:
-                    parser_local = HelpfulArgumentParser(prog="chatty-commander")
-                    parser_local.error("Invalid model(s) for --set-state-model")
-
-                # If validation passes, call ConfigCLI method
-                _CLI.set_state_model(state, models_csv)
-                return 0
-        except SystemExit:
-            # Re-raise to satisfy tests expecting SystemExit
-            raise
-        except Exception:
-            # Fall through to handler if ConfigCLI not available
-            pass
-
-        # Extended flags passthrough
+                logger.info("Starting GUI tray popup mode")
+                rc = run_tray_popup(config, logger)
+                return 0 if rc is None else int(rc)
+    except Exception as e:
+        logger.warning(
+            f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
+        )
         try:
-            from chatty_commander.config_cli import handle_config_cli  # noqa
+            from chatty_commander.gui import main as gui_main
 
-            rc = handle_config_cli(args)
-            if rc is None:
-                return 0
-            if isinstance(rc, bool):
-                return 0 if rc else 1
-            if isinstance(rc, int):
-                return rc
-            return 0
+            logger.info("Starting legacy tkinter GUI mode")
+            rc = gui_main()
+            return 0 if rc is None else int(rc)
         except Exception:
-            # If extended handler unavailable, treat as no-op success for legacy success paths
-            return 0
+            logger.error("GUI dependencies not available. Install with: uv add tkinter")
+            return 2
 
-    config_parser.set_defaults(func=config_func)
 
-    # Also attach a direct handler for the flag to ensure argparse-like validation can raise SystemExit
-    def config_entrypoint(argv=None):
-        # Build args for this subparser directly and invoke config_func
-        # This is used when tests simulate: ['cli.py', 'config', ...]
-        parser_local = HelpfulArgumentParser(prog="chatty-commander")
-        # Mirror only the pieces needed for validation path
-        sub = parser_local.add_subparsers(dest="command", required=False)
-        cfg = sub.add_parser("config")
-        cfg.add_argument("--set-state-model", nargs=2, metavar=("STATE", "MODELS"))
-        cfg.add_argument("--set-mode", nargs=2, metavar=("MODE", "VALUE"))
-        cfg.add_argument("--set-model-action", nargs=2, metavar=("MODEL", "ACTION"))
-        cfg.add_argument("--interactive", action="store_true")
-        cfg.add_argument("--list", action="store_true")
-        cfg.add_argument("--show", action="store_true")
-        cfg.add_argument("--validate", action="store_true")
-        cfg.add_argument("--export", metavar="PATH")
-        cfg_sp = cfg.add_subparsers(dest="config_subcommand", required=False)
-        cfg_sp.add_parser("wizard")
+def create_parser():
+    """Create and configure the argument parser."""
+    parser = argparse.ArgumentParser(
+        description="ChattyCommander - Advanced voice-activated command processing system.\n"
+        "This application allows users to control their computer using voice commands, "
+        "with support for multiple modes including CLI, web UI, GUI, and configuration wizard.\n"
+        "It integrates machine learning models for command detection and state management.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  %(prog)s                    # Start in CLI voice command mode
+  %(prog)s --shell            # Start interactive text shell mode
+  %(prog)s --web              # Start web UI server on default port 8100
+  %(prog)s --web --port 8080 --no-auth  # Start web server on port 8080 without auth
+  %(prog)s --gui              # Launch graphical user interface
+  %(prog)s --config           # Run interactive configuration wizard
+  %(prog)s --log-level DEBUG  # Start with debug logging
+  %(prog)s list               # List available commands
+  %(prog)s list --json        # List commands in JSON format
+  %(prog)s exec <command>     # Execute a command
+  %(prog)s exec <command> --dry-run  # Show what would be executed
 
-        parsed = parser_local.parse_args(argv)
-        # Reuse the existing logic
-        return config_func(parsed)
+Available modes:
+- CLI: Voice-activated command processing
+- Shell: Interactive text-based command input
+- Web: Browser-based interface with real-time updates
+- GUI: Desktop application interface
+- Config: Setup and configuration tool
 
-    # list
-    list_parser = subparsers.add_parser(
-        "list",
-        help="List available configured commands.",
-        description=(
-            "List available configured commands from configuration.\n\n"
-            "Example:\n  chatty-commander list --json"
-        ),
+For detailed documentation and source code, visit: https://github.com/your-repo/chatty-commander
+        ''',
     )
+
+    # Add subparsers for list and exec commands
+    subparsers = parser.add_subparsers(dest="subcommand", help="Subcommands")
+
+    # list subcommand
+    list_parser = subparsers.add_parser("list", help="List available commands")
     list_parser.add_argument(
-        "--json", action="store_true", help="Output the list in JSON format."
+        "--json",
+        action="store_true",
+        help="Output in JSON format",
     )
 
-    def list_func(args: argparse.Namespace) -> int:
-        try:
-            from chatty_commander.app.config import Config  # noqa
-
-            cfg = Config()
-            actions = _get_model_actions_from_config(cfg)
-            if args.json:
-                _print_actions_json(actions)
-            else:
-                _print_actions_text(actions)
-            return 0
-        except SystemExit:
-            raise
-        except Exception as e:
-            print(f"Error listing commands: {e}", file=sys.stderr)
-            return 1
-
-    list_parser.set_defaults(func=list_func)
-
-    # exec
-    exec_parser = subparsers.add_parser(
-        "exec",
-        help="Execute a configured command by name.",
-        description=(
-            "Execute a single configured command by name with optional dry-run.\n\n"
-            "Examples:\n"
-            "  chatty-commander exec hello\n"
-            "  chatty-commander exec hello --dry-run --timeout 5"
-        ),
-    )
-    exec_parser.add_argument("name", help="Name of the configured command to execute.")
+    # exec subcommand
+    exec_parser = subparsers.add_parser("exec", help="Execute a command")
     exec_parser.add_argument(
-        "--dry-run", action="store_true", help="Print what would run without executing."
+        "command_name",
+        help="Name of the command to execute",
     )
     exec_parser.add_argument(
-        "--timeout",
+        "--dry-run",
+        action="store_true",
+        help="Show what would be executed without running it",
+    )
+
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--web",
+        action="store_true",
+        help="Start the web UI server using FastAPI backend. Requires FastAPI and Uvicorn. "
+        "Serves a React-based frontend if built.",
+    )
+    mode_group.add_argument(
+        "--gui",
+        action="store_true",
+        help="Start the graphical user interface. Requires Tkinter and a DISPLAY environment.",
+    )
+    mode_group.add_argument(
+        "--config",
+        action="store_true",
+        help="Launch the interactive configuration wizard to set up models, commands, and settings.",
+    )
+    mode_group.add_argument(
+        "--shell",
+        action="store_true",
+        help="Start interactive shell mode for text-based command input and execution.",
+    )
+
+    # Orchestrator flags (opt-in; does not change default behavior)
+    parser.add_argument(
+        "--orchestrate",
+        action="store_true",
+        help="Use the mode orchestrator to unify adapters (text, web, gui, wakeword, cv, discord bridge).",
+    )
+    parser.add_argument(
+        "--enable-text",
+        action="store_true",
+        help="Enable text adapter in orchestrator.",
+    )
+    parser.add_argument(
+        "--enable-openwakeword",
+        action="store_true",
+        help="Enable OpenWakeWord adapter in orchestrator.",
+    )
+    parser.add_argument(
+        "--enable-computer-vision",
+        action="store_true",
+        help="Enable Computer Vision adapter in orchestrator.",
+    )
+    parser.add_argument(
+        "--enable-discord-bridge",
+        action="store_true",
+        help="Enable Discord/Slack bridge adapter (requires advisors + bridge token).",
+    )
+
+    parser.add_argument(
+        "--no-auth",
+        action="store_true",
+        help="Disable authentication for web mode (INSECURE - use only for local development).",
+    )
+
+    parser.add_argument(
+        "--host",
+        type=str,
+        default=None,
+        help="Specify the host interface for the web server (default: 0.0.0.0).",
+    )
+
+    parser.add_argument(
+        "--port",
         type=int,
         default=None,
-        help="Optional timeout (seconds) for shell commands.",
+        help="Specify the port for the web server. Only used in web mode.",
     )
 
-    def exec_func(args: argparse.Namespace) -> int:
-        try:
-            Config = _resolve_Config()
-            cfg = Config()
-            actions = _get_model_actions_from_config(cfg)
-            action_entry = actions.get(args.name)
-            if action_entry is None:
-                print(f"Unknown command: {args.name}", file=sys.stderr)
-                return 1
-            if args.dry_run:
-                print(f"DRY RUN: would execute command '{args.name}'")
-                return 0
-            # Resolve CommandExecutor in a way that allows tests to patch via 'cli.CommandExecutor'
-            CommandExecutorRT = globals().get("CommandExecutor")
-            if CommandExecutorRT is None:
-                from chatty_commander.app.command_executor import (
-                    CommandExecutor as CommandExecutorRT,  # type: ignore
-                )
-            executor = CommandExecutorRT(cfg, None, None)  # type: ignore
-            executor.execute_command(args.name)
-            return 0
-        except SystemExit:
-            raise
-        except Exception as e:
-            print(f"Error executing command '{args.name}': {e}", file=sys.stderr)
-            return 2
-
-    exec_parser.set_defaults(func=exec_func)
-
-    # system
-    system_parser = subparsers.add_parser(
-        "system",
-        help="System management commands (start on boot, updates, etc).",
-        description=(
-            "Perform system-level management tasks for ChattyCommander.\n"
-            "Includes enabling/disabling start on boot and managing updates.\n\n"
-            "Examples:\n"
-            "  chatty-commander system start-on-boot enable\n"
-            "  chatty-commander system updates check"
-        ),
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Set the logging level for the application (default: INFO).",
     )
 
-    # Voice integration commands
-    try:
-        from chatty_commander.voice.cli import add_voice_subcommands
-
-        add_voice_subcommands(subparsers)
-    except ImportError:
-        pass  # Voice integration not available
-    system_subparsers = system_parser.add_subparsers(
-        dest="system_command",
-        required=True,
-        help="System management command to execute.",
+    parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        help="Avoid launching the GUI even if --gui is provided; useful in CI/headless.",
     )
-    # start-on-boot
-    boot_parser = system_subparsers.add_parser(
-        "start-on-boot",
-        help="Manage whether ChattyCommander starts automatically on system boot.",
-        description="Enable, disable, or check the status of automatic startup on system boot.",
-    )
-    boot_subparsers = boot_parser.add_subparsers(
-        dest="boot_action", required=True, help="Action to perform for start-on-boot."
-    )
-    boot_subparsers.add_parser(
-        "enable", help="Enable ChattyCommander to start automatically on system boot."
-    )
-    boot_subparsers.add_parser(
-        "disable", help="Disable automatic start on boot for ChattyCommander."
-    )
-    boot_subparsers.add_parser(
-        "status", help="Show whether start on boot is currently enabled or disabled."
-    )
-    # updates
-    update_parser = system_subparsers.add_parser(
-        "updates",
-        help="Manage application updates (check, enable/disable auto-check).",
-        description="Check for available updates or manage automatic update checking.",
-    )
-    update_subparsers = update_parser.add_subparsers(
-        dest="update_action", required=True, help="Update action to perform."
-    )
-    update_subparsers.add_parser("check", help="Check for available updates.")
-    update_subparsers.add_parser("enable-auto", help="Enable automatic update checks.")
-    update_subparsers.add_parser(
-        "disable-auto", help="Disable automatic update checks."
+    parser.add_argument(
+        "--display",
+        type=str,
+        default=None,
+        help="Override DISPLAY value for GUI mode (e.g., :0).",
     )
 
-    def system_func(args: argparse.Namespace) -> int:
-        # Integrate with config.Config methods as tests expect
-        from chatty_commander.app.config import Config  # lazy import
-
-        cfg = Config()
-        if args.system_command == "start-on-boot":
-            if args.boot_action == "enable":
-                try:
-                    cfg.set_start_on_boot(True)
-                    print("Start on boot enabled successfully.")
-                except Exception:
-                    # Environments without systemd/dbus (CI, containers) should not fail the CLI
-                    print(
-                        "Start on boot enable simulated (environment does not support user systemctl)."
-                    )
-                return 0
-            if args.boot_action == "disable":
-                try:
-                    cfg.set_start_on_boot(False)
-                    print("Start on boot disabled successfully.")
-                except Exception:
-                    print(
-                        "Start on boot disable simulated (environment does not support user systemctl)."
-                    )
-                return 0
-            if args.boot_action == "status":
-                enabled = getattr(cfg, "start_on_boot_enabled", False)
-                print(f"Start on boot status: {'enabled' if enabled else 'disabled'}")
-                return 0
-            print("Unknown start-on-boot action.", file=sys.stderr)
-            return 2
-        if args.system_command == "updates":
-            if args.update_action == "check":
-                try:
-                    result = cfg.perform_update_check()
-                except Exception:
-                    result = {"updates_available": False}
-                if result and not result.get("updates_available"):
-                    print("No updates available.")
-                else:
-                    print("Updates available.")
-                return 0
-            if args.update_action == "enable-auto":
-                print("Automatic update checks enabled.")
-                return 0
-            if args.update_action == "disable-auto":
-                print("Automatic update checks disabled.")
-                return 0
-            print("Unknown updates action.", file=sys.stderr)
-            return 2
-        print("Unknown system command.", file=sys.stderr)
-        return 2
-
-    system_parser.set_defaults(func=system_func)
+    # Advisors convenience flag
+    parser.add_argument(
+        "--test-mode",
+        action="store_true",
+        help="Run in lightweight test mode (mock models, no AI core).",
+    )
 
     return parser
 
 
-def cli_main() -> None:
-    parser = build_parser()
+def run_interactive_shell(
+    config, model_manager, state_manager, command_executor, logger
+):
+    """Run interactive text-based shell mode with tab completion."""
+    import readline
 
-    def validate_args(args: argparse.Namespace) -> None:
-        # Placeholder for extended validation
-        return
+    logger.info("Starting interactive shell mode")
+    print("ChattyCommander Interactive Shell")
+    print("Type 'help' for commands, 'exit' to quit")
 
-    def cli_shell() -> None:
-        # Build a command tree for basic completion
-        command_tree = {
-            "run": {"subparsers": {}, "options": ["--display"]},
-            "gui": {"subparsers": {}, "options": []},
-            "config": {
-                "subparsers": {"wizard": {"subparsers": {}, "options": []}},
-                "options": [
-                    "--interactive",
-                    "--list",
-                    "--set-listen-for",
-                    "--set-mode",
-                    "--set-model-action",
-                    "--show",
-                    "--validate",
-                    "--export",
-                ],
-            },
-            "list": {"subparsers": {}, "options": ["--json"]},
-            "exec": {"subparsers": {}, "options": ["--dry-run", "--timeout"]},
-            "system": {
-                "subparsers": {
-                    "start-on-boot": {
-                        "subparsers": {
-                            "enable": {"subparsers": {}, "options": []},
-                            "disable": {"subparsers": {}, "options": []},
-                            "status": {"subparsers": {}, "options": []},
-                        },
-                        "options": [],
-                    },
-                    "updates": {
-                        "subparsers": {
-                            "check": {"subparsers": {}, "options": []},
-                            "enable-auto": {"subparsers": {}, "options": []},
-                            "disable-auto": {"subparsers": {}, "options": []},
-                        },
-                        "options": [],
-                    },
-                },
-                "options": [],
-            },
-        }
+    commands = ["help", "exit", "state", "models", "execute"]
+    model_actions = list(config.model_actions.keys())
 
-        def get_completions(text, line, begidx, endidx):
-            tokens = shlex.split(line[:begidx])
-            if not tokens:
-                return [c for c in command_tree.keys() if c.startswith(text)]
-            cmd = tokens[0]
-            if len(tokens) == 1:
-                return [c for c in command_tree.keys() if c.startswith(text)]
-            if cmd in command_tree:
-                if command_tree[cmd]["subparsers"]:
-                    if len(tokens) == 2:
-                        return [
-                            sc
-                            for sc in command_tree[cmd]["subparsers"].keys()
-                            if sc.startswith(text)
-                        ]
-                    subcmd = tokens[1]
-                    if subcmd in command_tree[cmd]["subparsers"]:
-                        if command_tree[cmd]["subparsers"][subcmd]["subparsers"]:
-                            if len(tokens) == 3:
-                                return [
-                                    ssc
-                                    for ssc in command_tree[cmd]["subparsers"][subcmd][
-                                        "subparsers"
-                                    ].keys()
-                                    if ssc.startswith(text)
-                                ]
-                        opts = command_tree[cmd]["subparsers"][subcmd]["options"]
-                        return [o for o in opts if o.startswith(text)]
-                opts = command_tree[cmd]["options"]
-                return [o for o in opts if o.startswith(text)]
-            return []
-
-        def completer(text, state):
-            import readline
-
-            line = readline.get_line_buffer()
-            begidx = readline.get_begidx()
-            endidx = readline.get_endidx()
-            completions = get_completions(text, line, begidx, endidx)
-            completions = sorted(set(completions))
-            if state < len(completions):
-                return completions[state]
+    def completer(text, state):
+        options = [cmd for cmd in commands if cmd.startswith(text)]
+        if text.startswith("execute "):
+            subtext = text[8:]
+            suboptions = [
+                f"execute {act}" for act in model_actions if act.startswith(subtext)
+            ]
+            try:
+                return suboptions[state]
+            except IndexError:
+                return None
+        try:
+            return options[state]
+        except IndexError:
             return None
 
-        import readline
+    readline.set_completer(completer)
+    readline.parse_and_bind("tab: complete")
 
-        readline.set_completer(completer)
-        readline.parse_and_bind("tab: complete")
-
-        while True:
-            try:
-                line = input("chatty> ").strip()
-                if not line:
-                    continue
-                if line in ("exit", "quit"):
-                    print("Exiting shell.")
-                    break
-                if line == "help":
-                    parser.print_help()
-                    continue
-                try:
-                    shell_args = shlex.split(line)
-                except ValueError as ve:
-                    print(f"Error parsing input: {ve}")
-                    continue
-                try:
-                    args = parser.parse_args(shell_args)
-                    if getattr(args, "command", None) is None:
-                        parser.print_help()
-                        continue
-                    try:
-                        validate_args(args)
-                    except SystemExit:
-                        continue
-                    if args.command == "run":
-                        if getattr(args, "display", None) is not None:
-                            os.environ["DISPLAY"] = args.display
-                        args.func()
-                    else:
-                        ret = (
-                            args.func(args)
-                            if "args" in args.func.__code__.co_varnames
-                            else args.func()
-                        )
-                        if (
-                            isinstance(ret, int)
-                            and ret != 0
-                            and args.command in ("list", "exec")
-                        ):
-                            # For shell mode, only error-exit behavior is relevant; continue loop.
-                            print(f"Command exited with code {ret}", file=sys.stderr)
-                except SystemExit:
-                    # argparse error inside shell; continue prompt
-                    pass
-                except Exception as e:
-                    print(f"Error: {e}")
-            except (KeyboardInterrupt, EOFError):
-                print("\nExiting shell.")
+    while True:
+        try:
+            input_str = input("> ").strip()
+            if not input_str:
+                continue
+            if input_str.lower() == "exit":
                 break
+            if input_str.lower() == "help":
+                print(
+                    "Available commands: help, exit, state, models, execute <command>"
+                )
+                continue
+            if input_str.lower() == "state":
+                print(f"Current state: {state_manager.current_state}")
+                continue
+            if input_str.lower() == "models":
+                print("Loaded models: " + ", ".join(model_manager.get_models()))
+                continue
+            if input_str.startswith("execute "):
+                command = input_str[8:].strip()
+                if command in config.model_actions:
+                    command_executor.execute_command(command)
+                    print(f"Executed: {command}")
+                else:
+                    print(f"Unknown command: {command}")
+                continue
 
-    if len(sys.argv) == 1:
-        print("ChattyCommander Interactive Shell")
-        cli_shell()
-        sys.exit(0)
+            # Treat as voice command simulation
+            new_state = state_manager.update_state(input_str)
+            if new_state:
+                logger.info(f"Transitioning to new state: {new_state}")
+                model_manager.reload_models(new_state)
+            if input_str in config.model_actions:
+                command_executor.execute_command(input_str)
+        except EOFError:
+            break
+    logger.info("Exiting interactive shell")
 
-    # Normal CLI mode
-    args = parser.parse_args()
-    if getattr(args, "command", None) is None:
-        # If no command provided, start interactive shell
-        print("ChattyCommander Interactive Shell")
-        cli_shell()
-        sys.exit(0)
 
-    # Validation step
-    validate_args(args)
+def run_orchestrator_mode(
+    config, model_manager, state_manager, command_executor, logger, args
+):
+    """Run orchestrator-driven mode; adapters route to the same command sink."""
+    # Lazy import to avoid heavy imports in --help path
+    from chatty_commander.app.orchestrator import (
+        ModeOrchestrator,
+        OrchestratorFlags,
+    )
 
-    # Dispatch
-    if args.command == "run":
-        if getattr(args, "display", None) is not None:
-            os.environ["DISPLAY"] = args.display
-        args.func()
-        return
+    flags = OrchestratorFlags(
+        enable_text=bool(getattr(args, "enable_text", False)),
+        enable_gui=bool(getattr(args, "gui", False)),
+        enable_web=bool(getattr(args, "web", False)),
+        enable_openwakeword=bool(getattr(args, "enable_openwakeword", False)),
+        enable_computer_vision=bool(getattr(args, "enable_computer_vision", False)),
+        enable_discord_bridge=bool(getattr(args, "enable_discord_bridge", False)),
+    )
+    orchestrator = ModeOrchestrator(
+        config=config,
+        command_sink=command_executor,
+        advisor_sink=None,
+        flags=flags,
+    )
+    selected = orchestrator.start()
+    logger.info(f"Orchestrator started adapters: {selected}")
+    # For now, block on CLI loop to keep process alive if no web/gui
+    if not args.web and not args.gui:
+        try:
+            while True:
+                signal.pause()
+        except KeyboardInterrupt:
+            pass
+    orchestrator.stop()
+    return 0
 
-    # For functions that return codes, respect them
+
+def cli_main():
+    """Entry point for the ChattyCommander application."""
+    parser = create_parser()
+    # Parse as the very first action and immediately return argparse exit code for help/usage
+    # We must allow --help to exit(0) without doing any setup, to satisfy tests.
     try:
-        wants_args = "args" in args.func.__code__.co_varnames  # type: ignore[attr-defined]
-    except Exception:
-        wants_args = True
-    ret = args.func(args) if wants_args else args.func()
-    if isinstance(ret, int):
-        # Do not sys.exit on success for commands directly asserted in tests
-        suppress_on_success = args.command in ("list", "exec", "system", "config")
-        if ret != 0 or not suppress_on_success:
-            sys.exit(ret)
+        args, _unknown = parser.parse_known_args()
+    except SystemExit as e:
+        # Propagate argparse's exit code (0 on --help)
+        return int(getattr(e, "code", 0) or 0)
+
+    # If help was requested, argparse would have exited above with code 0.
+    # Continue with validation for actual runs only.
+    # Argument validation (only enforce when options are provided)
+    if getattr(args, "web", False) and args.port is not None and args.port < 1024:
+        parser.error("Port must be 1024 or higher for non-root users")
+    if getattr(args, "no_auth", False) and not getattr(args, "web", False):
+        parser.error("--no-auth only applicable in web mode")
+
+    # If user only asked for help (--help), we would have already returned.
+    # If no args other than program name, launch interactive shell
+    if len(sys.argv) <= 1:
+        print("ChattyCommander - Voice Command System")
+        print("Starting interactive shell... (type 'exit' to quit)")
+        # We'll launch the interactive shell after initialization
+        interactive_mode = True
+    elif "--help" in sys.argv or "-h" in sys.argv:
+        print("ChattyCommander - Voice Command System")
+        print("Use --help for available options")
+        # Align with tests expecting SystemExit on main invocation path.
+        raise SystemExit(0)
+    else:
+        interactive_mode = False
+
+    # Ensure logger is created with the expected name for tests
+    logger = setup_logger("main", "logs/chattycommander.log")
+    logger.info("Starting ChattyCommander application")
+
+    # Generate default configuration if needed
+    global generate_default_config_if_needed
+    if generate_default_config_if_needed is None:  # Resolve lazily unless patched
+        from chatty_commander.app.default_config import (
+            generate_default_config_if_needed as _gdfin,
+        )
+
+        generate_default_config_if_needed = _gdfin
+
+    if generate_default_config_if_needed():
+        logger.info("Default configuration generated")
+
+    # Load configuration settings
+    global Config
+    if Config is None:  # Resolve lazily unless patched
+        from chatty_commander.app.config import Config as _Config
+
+        Config = _Config
+    config = Config()
+    # Apply CLI overrides to web server settings
+    web_cfg = getattr(config, "web_server", {}) or {}
+    if args.host is not None:
+        web_cfg["host"] = args.host
+    if args.port is not None:
+        web_cfg["port"] = args.port
+    if args.no_auth:
+        web_cfg["auth_enabled"] = False
+    if web_cfg:
+        config.web_server = web_cfg
+        try:
+            config.config["web_server"] = web_cfg
+        except Exception:
+            pass
+    # Apply runtime advisors enable if requested
+    if getattr(args, "advisors", False):
+        try:
+            if not hasattr(config, "advisors"):
+                config.advisors = {}
+            config.advisors["enabled"] = True
+        except Exception:
+            pass
+
+    # Derive web server settings with CLI overrides
+    web_cfg = getattr(config, "web_server", {}) or {}
+    host = web_cfg.get("host", "0.0.0.0")
+    port = int(web_cfg.get("port", 8100))
+    auth_enabled = bool(web_cfg.get("auth_enabled", True))
+
+    if args.host is not None:
+        host = args.host
+    if args.port is not None:
+        port = args.port
+    if getattr(args, "no_auth", False):
+        auth_enabled = False
+
+    web_cfg.update({"host": host, "port": port, "auth_enabled": auth_enabled})
+    config.web_server = web_cfg
+
+    global ModelManager, StateManager, CommandExecutor
+    if ModelManager is None:
+        from chatty_commander.app.model_manager import ModelManager as _ModelManager
+
+        ModelManager = _ModelManager
+    if StateManager is None:
+        from chatty_commander.app.state_manager import StateManager as _StateManager
+
+        StateManager = _StateManager
+    if CommandExecutor is None:
+        from chatty_commander.app.command_executor import (
+            CommandExecutor as _CommandExecutor,
+        )
+
+        CommandExecutor = _CommandExecutor
+
+    model_manager = ModelManager(config, mock_models=getattr(args, "test_mode", False))
+    state_manager = StateManager()
+    command_executor = CommandExecutor(config, model_manager, state_manager)
+
+    # Handle list subcommand
+    if getattr(args, "subcommand", None) == "list":
+        import json as json_module
+
+        actions = getattr(config, "model_actions", {}) or {}
+        if getattr(args, "json", False):
+            # Output as JSON array
+            result = []
+            for name, action in actions.items():
+                action_type = "shell" if "shell" in action else "url" if "url" in action else "unknown"
+                result.append({"name": name, "type": action_type})
+            print(json_module.dumps(result, indent=2))
+        else:
+            # Output as text
+            if not actions:
+                print("No commands configured.")
+            else:
+                print("Available commands:")
+                for name in sorted(actions.keys()):
+                    print(f"- {name}")
+        return 0
+
+    # Handle exec subcommand
+    if getattr(args, "subcommand", None) == "exec":
+        command_name = getattr(args, "command_name", None)
+        dry_run = getattr(args, "dry_run", False)
+        actions = getattr(config, "model_actions", {}) or {}
+
+        if command_name not in actions:
+            print(f"Unknown command: {command_name}", file=sys.stderr)
+            raise SystemExit(1)
+
+        if dry_run:
+            print(f"DRY RUN: would execute command '{command_name}'")
+            return 0
+
+        # Actually execute the command
+        command_executor.execute_command(command_name)
+        return 0
+
+    # Initialize AI intelligence core for enhanced conversations
+    # Skip if in test mode to save resources
+    if not getattr(args, "test_mode", False):
+        try:
+            from ..ai import create_intelligence_core
+
+            ai_core = create_intelligence_core(config)
+
+            # Set up AI response handling
+            def handle_ai_response(response):
+                print(f"AI: {response.text}")
+                if response.actions:
+                    print(f"Actions: {response.actions}")
+
+            ai_core.on_response = handle_ai_response
+            ai_core.on_mode_change = lambda mode: print(f"Mode changed to: {mode}")
+            ai_core.on_error = lambda error: print(f"AI Error: {error}")
+
+            print("🤖 AI Intelligence Core initialized successfully!")
+            print("🎤 Enhanced voice processing available")
+            print("💬 Intelligent conversation engine ready")
+
+        except Exception as e:
+            print(f"[WARN] AI Intelligence Core initialization failed: {e}")
+            ai_core = None
+    else:
+        logger.info("Test mode enabled: AI Intelligence Core disabled.")
+
+    # Route to appropriate mode
+    if getattr(args, "config", False):
+        from chatty_commander.config_cli import ConfigCLI
+
+        config_cli = ConfigCLI()
+        config_cli.run_wizard()
+        return 0
+    elif getattr(args, "web", False):
+        # Ensure web_server config exists and reflect CLI overrides
+        if not hasattr(config, "web_server") or config.web_server is None:
+            config.web_server = {}
+        host = getattr(args, "host", None) or config.web_server.get("host", "0.0.0.0")
+        port = getattr(args, "port", None) or config.web_server.get("port", 8100)
+        config.web_server.update(
+            {"host": host, "port": port, "auth_enabled": not args.no_auth}
+        )
+        run_web_mode(
+            config,
+            model_manager,
+            state_manager,
+            command_executor,
+            logger,
+            host=host,
+            no_auth=args.no_auth,
+            port=(
+                args.port
+                if args.port is not None
+                else getattr(getattr(config, "web_server", {}), "get", lambda *_: None)(
+                    "port", 8100
+                )
+            ),
+        )
+        return 0
+    elif args.gui:
+        # Respect return codes from GUI runner (0=headless skipped, 2=deps missing)
+        rc = run_gui_mode(
+            config,
+            model_manager,
+            state_manager,
+            command_executor,
+            logger,
+            display_override=args.display,
+            no_gui=args.no_gui,
+        )
+        if isinstance(rc, int) and rc != 0:
+            # Non-zero means GUI could not start; exit without stack trace
+            return rc
+        return 0
+    elif args.shell:
+        run_interactive_shell(
+            config, model_manager, state_manager, command_executor, logger
+        )
+        return 0
+    elif getattr(args, "orchestrate", False):
+        return run_orchestrator_mode(
+            config, model_manager, state_manager, command_executor, logger, args
+        )
+    elif interactive_mode:
+        # Launch interactive shell when no arguments provided
+        run_interactive_shell(
+            config, model_manager, state_manager, command_executor, logger
+        )
+        return 0
+    else:
+        run_cli_mode(config, model_manager, state_manager, command_executor, logger)
+        return 0
 
 
 if __name__ == "__main__":
-    cli_main()
+    sys.exit(cli_main())

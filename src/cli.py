@@ -22,10 +22,21 @@
 
 """Compatibility wrapper for the command-line interface.
 
-This module allows importing ``cli`` for legacy tests by re-exporting the
-actual CLI implementation from :mod:`chatty_commander.cli.cli`.
+This module is deprecated. Use chatty_commander.cli.cli instead.
 """
 
-from chatty_commander.compat import expose
+import sys
+import warnings
 
-expose(globals(), "cli")
+from chatty_commander.cli.cli import cli_main as main
+
+warnings.warn(
+    "The root cli module is deprecated. Use chatty_commander.cli.cli instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+if __name__ == "__main__":
+    if "." not in sys.path:
+        sys.path.insert(0, ".")
+    sys.exit(main())
