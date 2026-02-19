@@ -10,9 +10,17 @@ const DashboardPage: React.FC = () => {
   const { data: systemStatus, isLoading } = useQuery({
     queryKey: ["systemStatus"],
     queryFn: async () => {
-      // Placeholder for fetching system status
-      return { status: "Online", uptime: "2 hours", commandsExecuted: 45 };
+      const res = await fetch("/health");
+      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0 };
+      const data = await res.json();
+      return {
+        status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
+        uptime: data.uptime ?? "N/A",
+        commandsExecuted: data.commands_executed ?? 0,
+        version: data.version,
+      };
     },
+    refetchInterval: 30000,
   });
 
   useEffect(() => {

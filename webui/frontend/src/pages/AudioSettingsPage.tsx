@@ -7,19 +7,22 @@ import {
   Headphones as HeadphonesIcon,
 } from "lucide-react";
 
-// Placeholder services for audio devices
+// Real API calls for audio devices
 const getAudioDevices = async () => {
-  // Simulate fetching devices
-  console.log("Fetching audio devices...");
-  return {
-    input: ["Default Microphone", "External USB Mic", "Webcam Mic"],
-    output: ["Default Speakers", "Headphones", "HDMI Output"],
-  };
+  try {
+    const res = await fetch("/api/audio/devices");
+    if (res.ok) return await res.json() as { input: string[]; output: string[] };
+  } catch { /* ignore */ }
+  // Fallback: empty lists if backend doesn't expose audio hardware
+  return { input: [] as string[], output: [] as string[] };
 };
-const saveAudioSettings = async (settings: any) => {
-  // Placeholder save
-  console.log("Saving audio settings:", settings);
-  return new Promise((resolve) => setTimeout(resolve, 1000));
+
+const saveAudioSettings = async (settings: { inputDevice: string; outputDevice: string }) => {
+  await fetch("/api/audio/device", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ device_id: settings.inputDevice }),
+  });
 };
 
 const AudioSettingsPage: React.FC = () => {
