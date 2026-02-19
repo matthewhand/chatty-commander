@@ -181,7 +181,7 @@ def run_web_mode(
             port = int(env_port)
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
-    log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")
+    _log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")  # noqa: F841
 
     # Start the server
     try:
