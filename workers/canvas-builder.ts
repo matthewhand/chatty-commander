@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
-import { assertASCII, encodeASCII, decodeASCII } from "../shared/ascii.ts";
+import { assertASCII, encodeASCII, decodeASCII } from "../shared/ascii.js";
 
 /**
  * Build a browser bundle for a given entry file.

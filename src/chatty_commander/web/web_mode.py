@@ -393,7 +393,7 @@ class WebModeServer:
                 app.mount(
                     "/static", StaticFiles(directory=str(static_assets)), name="static"
                 )
-            
+
             @app.get("/", response_class=HTMLResponse)
             async def _serve_frontend():  # pragma: no cover - exercised in integration
                 index_file = frontend_path / "index.html"
@@ -419,8 +419,8 @@ class WebModeServer:
                 # If API or static file request fails, let it 404.
                 # Otherwise, serve index.html for SPA routing.
                 if request.url.path.startswith("/api") or request.url.path.startswith("/static"):
-                     return await getattr(app, "exception_handler_default")(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
-                
+                     return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
+
                 index_file = frontend_path / "index.html"
                 if index_file.exists():
                     return FileResponse(str(index_file))
@@ -477,7 +477,7 @@ class WebModeServer:
                 expected_key = None
                 if hasattr(self.config_manager, "auth"):
                     expected_key = self.config_manager.auth.get("api_key")
-                
+
                 if not expected_key or x_api_key != expected_key:
                     raise HTTPException(status_code=401, detail="Unauthorized")
 

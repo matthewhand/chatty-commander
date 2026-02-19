@@ -351,7 +351,7 @@ class Config:
             "CHATCOMM_DEBUG", general_settings.get("debug_mode", True)
         )
         self.default_state = os.getenv(
-            "CHATCOMM_DEFAULT_STATE", 
+            "CHATCOMM_DEFAULT_STATE",
             general_settings.get("default_state", self.config_data.get("default_state", "idle"))
         )
         self.inference_framework = os.getenv(
