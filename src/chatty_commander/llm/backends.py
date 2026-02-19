@@ -56,11 +56,13 @@ class LLMBackend(ABC):
 class OpenAIBackend(LLMBackend):
     """OpenAI API backend."""
 
-    def __init__(self, api_key: str | None = None, base_url: str | None = None):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None, **kwargs):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.base_url = base_url or os.getenv(
             "OPENAI_API_BASE", "https://api.openai.com/v1"
         )
+        self.max_retries = kwargs.get("max_retries", 3)
+        self.timeout = kwargs.get("timeout", 30.0)
         self._client = None
         self._initialize_client()
 
@@ -73,7 +75,12 @@ class OpenAIBackend(LLMBackend):
         try:
             import openai
 
-            self._client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
+            self._client = openai.OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                timeout=self.timeout,
+                max_retries=0  # We handle retries manually
+            )
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
         except ImportError:
             logger.warning(
@@ -100,27 +107,35 @@ class OpenAIBackend(LLMBackend):
             return False
 
     def generate_response(self, prompt: str, **kwargs) -> str:
-        """Generate response using OpenAI API."""
+        """Generate response using OpenAI API with retries."""
         if not self._client:
             raise RuntimeError("OpenAI client not available")
 
-        try:
-            model = kwargs.get("model", "gpt-3.5-turbo")
-            max_tokens = kwargs.get("max_tokens", 150)
-            temperature = kwargs.get("temperature", 0.7)
+        import time
 
-            response = self._client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
+        model = kwargs.get("model", "gpt-3.5-turbo")
+        max_tokens = kwargs.get("max_tokens", 150)
+        temperature = kwargs.get("temperature", 0.7)
 
-            return response.choices[0].message.content.strip()
+        last_error = None
 
-        except Exception as e:
-            logger.error(f"OpenAI generation failed: {e}")
-            raise
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = self._client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                last_error = e
+                logger.warning(f"OpenAI generation attempt {attempt + 1} failed: {e}")
+                if attempt < self.max_retries:
+                    sleep_time = 1.0 * (2 ** attempt)  # Exponential backoff
+                    time.sleep(sleep_time)
+
+        raise RuntimeError(f"OpenAI generation failed after {self.max_retries} retries: {last_error}")
 
     def get_backend_info(self) -> dict[str, Any]:
         """Get OpenAI backend information."""
@@ -129,6 +144,7 @@ class OpenAIBackend(LLMBackend):
             "available": self.is_available(),
             "base_url": self.base_url,
             "has_api_key": bool(self.api_key),
+            "max_retries": self.max_retries,
         }
 
 
