@@ -47,8 +47,10 @@ sys.modules["openwakeword.model"] = mock_model_mod
 sys.modules["pyaudio"] = types.ModuleType("pyaudio")
 sys.modules["numpy"] = types.ModuleType("numpy")
 
-import importlib
-import chatty_commander.voice.wakeword
+import importlib  # noqa: E402
+
+import chatty_commander.voice.wakeword  # noqa: E402
+
 importlib.reload(chatty_commander.voice.wakeword)
 
 from chatty_commander.voice.wakeword import (  # noqa: E402 - imported after sys.modules patching
