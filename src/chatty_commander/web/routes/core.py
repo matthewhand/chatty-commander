@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from collections.abc import Callable
 from datetime import datetime
@@ -196,7 +197,6 @@ def include_core_routes(
 
     @router.get("/api/v1/config")
     async def get_config():
-        import os
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
         config_data = dict(getattr(cfg_mgr, "config", {}))
