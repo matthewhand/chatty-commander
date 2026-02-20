@@ -320,7 +320,7 @@ class WebModeServer:
 
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
-        app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+        app.add_middleware(RateLimitMiddleware, requests_per_minute=10000)
 
         # CORS policy
         app.add_middleware(

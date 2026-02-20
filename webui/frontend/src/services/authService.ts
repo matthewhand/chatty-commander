@@ -1,14 +1,14 @@
-
-interface TokenResponse {
+export interface TokenResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
 }
 
-interface User {
+export interface User {
   username: string;
   is_active: boolean;
   roles: string[];
+  noAuth?: boolean;
 }
 
 class AuthService {
@@ -32,21 +32,31 @@ class AuthService {
 
   async getCurrentUser(): Promise<User> {
     const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No token available");
+
+    // Attempt normal token auth if token exists
+    if (token) {
+      const response = await fetch(`${this.baseUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        return response.json();
+      }
     }
 
-    const response = await fetch(`${this.baseUrl}/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to get user info");
+    // If we're here, we either had no token or the token was invalid.
+    // Let's check if the backend is actually running in --no-auth mode
+    // We can test this by trying to load the config endpoint without a token.
+    try {
+      const confRes = await fetch(`${this.baseUrl}/config`);
+      if (confRes.ok) {
+        // We successfully fetched config without auth! The server is in no-auth mode.
+        return { username: 'local_admin', roles: ['admin'], is_active: true, noAuth: true };
+      }
+    } catch {
+      // Ignore connection errors
     }
 
-    return response.json();
+    throw new Error("Authentication required");
   }
 
   logout(): void {

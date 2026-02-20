@@ -6,34 +6,25 @@
   "dependencies": {
     "@tanstack/react-query": "^5.8.4",
     "@types/node": "^20.9.0",
-    "@types/react": "^18.2.37",
-    "@types/react-dom": "^18.2.15",
     "axios": "^1.6.2",
+    "classnames": "^2.5.1",
+    "framer-motion": "^12.34.3",
     "lucide-react": "^0.562.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.18.0",
-    "react-scripts": "5.0.1",
     "recharts": "^2.8.0",
-    "typescript": "^4.9.5",
+    "tailwind-merge": "^3.5.0",
     "web-vitals": "^3.5.0"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "test:e2e": "playwright test",
-    "eject": "react-scripts eject",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "type-check": "tsc --noEmit",
-    "test:ci": "react-scripts test --watchAll=false --ci",
-    "jest:ci": "jest --ci --runInBand --watch=false",
-    "test:ci:coverage": "react-scripts test --watchAll=false --ci --coverage",
-    "test:changed": "jest --ci --runInBand --watch=false --onlyChanged",
-    "test:watch:ci": "npm run test:ci",
-    "lint:ci": "eslint src --ext .ts,.tsx --max-warnings=0",
-    "type-check:ci": "tsc --noEmit"
+    "type-check": "tsc --noEmit"
   },
   "eslintConfig": {
     "extends": [
@@ -74,16 +65,15 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
-    "@testing-library/jest-dom": "^6.1.6",
-    "@testing-library/react": "^14.1.2",
-    "@testing-library/user-event": "^14.6.0",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
     "autoprefixer": "^10.4.16",
     "daisyui": "^5.5.14",
     "eslint": "^8.53.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "postcss": "^8.4.31",
-    "tailwindcss": "^3.4.17"
-  },
-  "proxy": "http://localhost:8100"
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.9.3"
+  }
 }

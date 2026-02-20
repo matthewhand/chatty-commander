@@ -14,6 +14,7 @@ import MicIcon from "@mui/icons-material/Mic";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "../hooks/useAuth";
 import GroupIcon from "@mui/icons-material/Group";
+import StorageIcon from "@mui/icons-material/Storage";
 
 const Navigation: React.FC = () => {
   const { logout } = useAuth();
@@ -53,6 +54,12 @@ const Navigation: React.FC = () => {
             <GroupIcon />
           </ListItemIcon>
           <ListItemText primary="Personas" />
+        </ListItem>
+        <ListItem button component={Link} to="/models">
+          <ListItemIcon>
+            <StorageIcon />
+          </ListItemIcon>
+          <ListItemText primary="Voice Models" />
         </ListItem>
       </List>
       <Divider />

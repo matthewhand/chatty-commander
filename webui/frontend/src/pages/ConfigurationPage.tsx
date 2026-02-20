@@ -6,8 +6,12 @@ import {
   Sliders as SlidersIcon,
   Cpu as CpuIcon,
   RefreshCw as RefreshIcon,
+  Mic as MicIcon,
+  Volume2 as VolumeUpIcon,
+  Headphones as HeadphonesIcon,
 } from "lucide-react";
 import { fetchLLMModels } from "../services/api";
+import { useTheme } from "../components/ThemeProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AppConfig {
@@ -16,6 +20,11 @@ interface AppConfig {
   llmModel: string;
   enableVoice: boolean;
   theme: string;
+  envOverrides: {
+    apiKey: boolean;
+    baseUrl: boolean;
+    model: boolean;
+  };
 }
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
@@ -26,21 +35,43 @@ async function loadConfig(): Promise<AppConfig> {
       const data = await res.json();
       return {
         apiKey: data.advisors?.providers?.api_key ?? "",
-        llmBaseUrl: data.advisors?.providers?.base_url ?? "https://open-litellm.fly.dev/v1",
+        llmBaseUrl: data.advisors?.providers?.base_url ?? "http://localhost:11434/v1",
         llmModel: data.advisors?.providers?.model ?? "",
         enableVoice: data.voice?.enabled ?? true,
         theme: data.ui?.theme ?? "dark",
+        envOverrides: {
+          apiKey: data._env_overrides?.api_key ?? false,
+          baseUrl: data._env_overrides?.base_url ?? false,
+          model: data._env_overrides?.model ?? false,
+        }
       };
     }
   } catch { /* fall through */ }
   return {
     apiKey: "",
-    llmBaseUrl: "https://open-litellm.fly.dev/v1",
+    llmBaseUrl: "http://localhost:11434/v1",
     llmModel: "",
     enableVoice: true,
     theme: "dark",
+    envOverrides: { apiKey: false, baseUrl: false, model: false },
   };
 }
+
+const getAudioDevices = async () => {
+  try {
+    const res = await fetch("/api/audio/devices");
+    if (res.ok) return await res.json() as { input: string[]; output: string[] };
+  } catch { /* ignore */ }
+  return { input: [] as string[], output: [] as string[] };
+};
+
+const saveAudioSettings = async (settings: { inputDevice: string; outputDevice: string }) => {
+  await fetch("/api/audio/device", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ device_id: settings.inputDevice }),
+  });
+};
 
 async function persistConfig(cfg: AppConfig): Promise<void> {
   await fetch("/api/v1/config", {
@@ -63,15 +94,28 @@ async function persistConfig(cfg: AppConfig): Promise<void> {
 // ─── Component ────────────────────────────────────────────────────────────────
 const ConfigurationPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { setTheme } = useTheme();
   const [config, setConfig] = useState<AppConfig>({
     apiKey: "",
-    llmBaseUrl: "https://open-litellm.fly.dev/v1",
+    llmBaseUrl: "http://localhost:11434/v1",
     llmModel: "",
     enableVoice: true,
     theme: "dark",
+    envOverrides: { apiKey: false, baseUrl: false, model: false },
   });
   const [modelList, setModelList] = useState<string[]>([]);
   const [fetchingModels, setFetchingModels] = useState(false);
+
+  // Audio state
+  const [inputDevice, setInputDevice] = useState("");
+  const [outputDevice, setOutputDevice] = useState("");
+  const [isTestingMic, setIsTestingMic] = useState(false);
+  const [isTestingOutput, setIsTestingOutput] = useState(false);
+
+  const { data: devices } = useQuery({
+    queryKey: ["audioDevices"],
+    queryFn: getAudioDevices,
+  });
 
   // Load config on mount
   const { data: remoteConfig } = useQuery({
@@ -84,11 +128,20 @@ const ConfigurationPage: React.FC = () => {
 
   const mutation = useMutation({
     mutationFn: persistConfig,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["config"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["config"] });
+      // also save audio settings
+      if (inputDevice || outputDevice) {
+        saveAudioSettings({ inputDevice, outputDevice });
+      }
+    },
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setConfig({ ...config, [e.target.name]: e.target.value });
+    if (e.target.name === "theme") {
+      setTheme(e.target.value);
+    }
   };
   const handleSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConfig({ ...config, [e.target.name]: e.target.checked });
@@ -105,6 +158,16 @@ const ConfigurationPage: React.FC = () => {
     } finally {
       setFetchingModels(false);
     }
+  };
+
+  const handleTestMic = () => {
+    setIsTestingMic(true);
+    setTimeout(() => setIsTestingMic(false), 3000); // Simulate 3s test
+  };
+
+  const handleTestOutput = () => {
+    setIsTestingOutput(true);
+    setTimeout(() => setIsTestingOutput(false), 2000); // Simulate 2s sound
   };
 
   return (
@@ -165,6 +228,101 @@ const ConfigurationPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Audio Hardware Component */}
+          <div className="p-6 border-b border-base-content/10 bg-base-200/30">
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+              <HeadphonesIcon className="w-5 h-5 text-accent" />
+              Audio Devices
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Input Device Card */}
+              <div className="card bg-base-100 shadow-sm border border-base-content/10">
+                <div className="card-body p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="card-title text-sm text-primary">
+                        <MicIcon size={16} /> Input Device
+                      </h4>
+                      <p className="text-xs opacity-70">Microphone source</p>
+                    </div>
+                    <button
+                      className="btn btn-xs btn-outline btn-primary"
+                      onClick={handleTestMic}
+                      disabled={isTestingMic || !inputDevice}
+                    >
+                      {isTestingMic ? "Testing..." : "Test"}
+                    </button>
+                  </div>
+
+                  <select
+                    className="select select-bordered select-sm w-full select-primary mb-4"
+                    value={inputDevice}
+                    onChange={(e) => setInputDevice(e.target.value)}
+                  >
+                    <option value="" disabled>Select device...</option>
+                    {devices?.input.map((dev) => (
+                      <option key={dev} value={dev}>{dev}</option>
+                    ))}
+                  </select>
+
+                  {/* Visualizer Area */}
+                  <div className="h-6 bg-base-200 rounded flex items-center px-4 gap-1 overflow-hidden">
+                    {isTestingMic ? (
+                      Array.from({ length: 15 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-full bg-primary rounded-full animate-pulse"
+                          style={{ height: `${Math.max(10, Math.random() * 100)}%`, animationDuration: `${0.2 + Math.random() * 0.5}s` }}
+                        />
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-base-content/40 italic w-full text-center">Click Test</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Output Device Card */}
+              <div className="card bg-base-100 shadow-sm border border-base-content/10">
+                <div className="card-body p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="card-title text-sm text-secondary">
+                        <VolumeUpIcon size={16} className={isTestingOutput ? "animate-bounce" : ""} /> Output Device
+                      </h4>
+                      <p className="text-xs opacity-70">Playback endpoint</p>
+                    </div>
+                    <button
+                      className="btn btn-xs btn-outline btn-secondary"
+                      onClick={handleTestOutput}
+                      disabled={isTestingOutput || !outputDevice}
+                    >
+                      {isTestingOutput ? "Playing..." : "Test"}
+                    </button>
+                  </div>
+
+                  <select
+                    className="select select-bordered select-sm w-full select-secondary mb-4"
+                    value={outputDevice}
+                    onChange={(e) => setOutputDevice(e.target.value)}
+                  >
+                    <option value="" disabled>Select device...</option>
+                    {devices?.output.map((dev) => (
+                      <option key={dev} value={dev}>{dev}</option>
+                    ))}
+                  </select>
+
+                  <div className="h-6 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
+                    <span className="text-[10px] text-base-content/40 italic">
+                      {isTestingOutput ? "🔊 Playing test sound..." : "Ready"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* LLM Endpoint Configuration */}
           <div className="p-6 border-b border-base-content/10">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
@@ -174,16 +332,19 @@ const ConfigurationPage: React.FC = () => {
             <div className="space-y-4">
               <div className="form-control w-full">
                 <label className="label">
-                  <span className="label-text font-medium">API Base URL</span>
+                  <span className="label-text font-medium text-base-content flex items-center gap-2">
+                    API Base URL {config.envOverrides.baseUrl && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
+                  </span>
                   <span className="label-text-alt text-base-content/40">OpenAI-compatible</span>
                 </label>
                 <input
                   type="url"
                   name="llmBaseUrl"
-                  placeholder="https://open-litellm.fly.dev/v1"
-                  className="input input-bordered w-full focus:input-secondary"
-                  value={config.llmBaseUrl}
+                  placeholder={config.envOverrides.baseUrl ? "(Configured via environment variable)" : "http://localhost:11434/v1"}
+                  className="input input-bordered w-full focus:input-secondary disabled:opacity-50"
+                  value={config.envOverrides.baseUrl ? "################" : config.llmBaseUrl}
                   onChange={handleChange}
+                  disabled={config.envOverrides.baseUrl}
                 />
                 <label className="label">
                   <span className="label-text-alt text-base-content/40">
@@ -195,34 +356,39 @@ const ConfigurationPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control w-full">
                   <label className="label">
-                    <span className="label-text font-medium">API Key</span>
+                    <span className="label-text font-medium flex items-center gap-2">
+                      API Key {config.envOverrides.apiKey && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
+                    </span>
                   </label>
                   <input
                     type="password"
                     name="apiKey"
-                    placeholder="sk-... or Bearer token"
-                    className="input input-bordered w-full"
-                    value={config.apiKey}
+                    placeholder={config.envOverrides.apiKey ? "(Configured via environment variable)" : "sk-... or Bearer token"}
+                    className="input input-bordered w-full disabled:opacity-50"
+                    value={config.envOverrides.apiKey ? "********" : config.apiKey}
                     onChange={handleChange}
                     autoComplete="off"
+                    disabled={config.envOverrides.apiKey}
                   />
                 </div>
 
                 <div className="form-control w-full">
                   <label className="label">
-                    <span className="label-text font-medium">Model</span>
+                    <span className="label-text font-medium flex items-center gap-2">
+                      Model {config.envOverrides.model && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
+                    </span>
                     <button
                       type="button"
                       className={`btn btn-xs btn-ghost gap-1 ${fetchingModels ? "loading" : ""}`}
                       onClick={handleFetchModels}
-                      disabled={fetchingModels || !config.llmBaseUrl}
+                      disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                       title="Fetch available models from endpoint"
                     >
                       {!fetchingModels && <RefreshIcon size={12} />}
                       {fetchingModels ? "Fetching..." : "Fetch list"}
                     </button>
                   </label>
-                  {modelList.length > 0 ? (
+                  {modelList.length > 0 && !config.envOverrides.model ? (
                     <select
                       name="llmModel"
                       className="select select-bordered w-full"
@@ -238,10 +404,11 @@ const ConfigurationPage: React.FC = () => {
                     <input
                       type="text"
                       name="llmModel"
-                      placeholder="gpt-4o-mini · llama-3.1-8b-instant · …"
-                      className="input input-bordered w-full"
-                      value={config.llmModel}
+                      placeholder={config.envOverrides.model ? "(Configured via environment variable)" : "gpt-4o-mini · llama-3.1-8b-instant · …"}
+                      className="input input-bordered w-full disabled:opacity-50"
+                      value={config.envOverrides.model ? "################" : config.llmModel}
                       onChange={handleChange}
+                      disabled={config.envOverrides.model}
                     />
                   )}
                 </div>

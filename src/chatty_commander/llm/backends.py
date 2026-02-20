@@ -57,10 +57,16 @@ class OpenAIBackend(LLMBackend):
     """OpenAI API backend."""
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None, **kwargs):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.base_url = base_url or os.getenv(
-            "OPENAI_API_BASE", "https://api.openai.com/v1"
+        self.api_key = (
+            api_key 
+            or os.getenv("OPENAI_API_KEY") 
         )
+        self.base_url = (
+            base_url 
+            or os.getenv("OPENAI_BASE_URL") 
+            or os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        )
+        self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
         self.max_retries = kwargs.get("max_retries", 3)
         self.timeout = kwargs.get("timeout", 30.0)
         self._client = None
@@ -97,7 +103,7 @@ class OpenAIBackend(LLMBackend):
         try:
             # Test with a minimal request
             self._client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=getattr(self, "model", "gpt-3.5-turbo"),
                 messages=[{"role": "user", "content": "test"}],
                 max_tokens=1,
             )
@@ -113,7 +119,7 @@ class OpenAIBackend(LLMBackend):
 
         import time
 
-        model = kwargs.get("model", "gpt-3.5-turbo")
+        model = kwargs.get("model", getattr(self, "model", "gpt-3.5-turbo"))
         max_tokens = kwargs.get("max_tokens", 150)
         temperature = kwargs.get("temperature", 0.7)
 

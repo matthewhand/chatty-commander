@@ -12,9 +12,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ConfigurationPage from "./pages/ConfigurationPage";
-import AudioSettingsPage from "./pages/AudioSettingsPage";
-import PersonasPage from "./pages/PersonasPage";
-import AgentStatusPage from "./pages/AgentStatusPage";
+import CommandsPage from "./pages/CommandsPage";
 
 // Import components
 import MainLayout from "./components/MainLayout";
@@ -22,7 +20,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { WebSocketProvider } from "./components/WebSocketProvider";
 
 // Import hooks
-import { useAuth } from "./hooks/useAuth";
+import { useAuth, AuthProvider } from "./hooks/useAuth";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -36,9 +35,19 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
-  const noAuth = process.env.REACT_APP_NO_AUTH === "true";
-  const showNav = isAuthenticated || noAuth;
+  const { isAuthenticated, user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner text-primary loading-lg"></span>
+      </div>
+    );
+  }
+
+  // Use a special user object or flag provided by the updated authService to skip login
+  const isNoAuthMode = user?.noAuth === true;
+  const showNav = isAuthenticated || isNoAuthMode;
 
   // Wrapper for protected content that needs the MainLayout
   const ProtectedLayout = () => (
@@ -64,9 +73,7 @@ function AppContent() {
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/configuration" element={<ConfigurationPage />} />
-          <Route path="/audio-settings" element={<AudioSettingsPage />} />
-          <Route path="/personas" element={<PersonasPage />} />
-          <Route path="/agent-status" element={<AgentStatusPage />} />
+          <Route path="/commands" element={<CommandsPage />} />
         </Route>
 
         {/* Default Redirect */}
@@ -87,11 +94,15 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
-        <div data-theme="dark" className="min-h-screen bg-base-100 text-base-content">
-          <AppContent />
-        </div>
-      </WebSocketProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <WebSocketProvider>
+            <div className="min-h-screen bg-base-100 text-base-content">
+              <AppContent />
+            </div>
+          </WebSocketProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

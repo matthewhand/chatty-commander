@@ -196,9 +196,19 @@ def include_core_routes(
 
     @router.get("/api/v1/config")
     async def get_config():
+        import os
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
-        return getattr(cfg_mgr, "config", {})
+        config_data = dict(getattr(cfg_mgr, "config", {}))
+        
+        # Expose which fields are overridden by the environment
+        env_overrides = {
+            "api_key": bool(os.environ.get("OPENAI_API_KEY")),
+            "base_url": bool(os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")),
+            "model": bool(os.environ.get("OPENAI_MODEL"))
+        }
+        config_data["_env_overrides"] = env_overrides
+        return config_data
 
     @router.put("/api/v1/config")
     async def update_config(config_data: dict[str, Any]):
