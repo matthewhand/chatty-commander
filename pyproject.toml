@@ -64,7 +64,7 @@ dependencies = [
 audio = ["pyaudio>=0.2.13"]
 
 [project.scripts]
-chatty-commander = "chatty_commander.cli.main:main"
+chatty-commander = "chatty_commander.cli.cli:cli_main"
 
 [dependency-groups]
 dev = [

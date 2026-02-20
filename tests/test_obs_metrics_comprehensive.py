@@ -23,7 +23,12 @@
 """Comprehensive tests for obs/metrics.py to increase coverage."""
 
 
-from chatty_commander.obs.metrics import Counter, Gauge, HistogramBuckets, MetricsRegistry
+from chatty_commander.obs.metrics import (
+    Counter,
+    Gauge,
+    HistogramBuckets,
+    MetricsRegistry,
+)
 
 
 class TestCounter:
