@@ -3,9 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard as DashboardIcon,
     Settings as SettingsIcon,
-    Mic as MicIcon,
-    Users as GroupIcon,
-    Activity as AssessmentIcon,
+    Terminal as TerminalIcon,
     LogOut as LogoutIcon
 } from "lucide-react";
 import { useAuth } from '../hooks/useAuth';
@@ -14,22 +12,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { logout } = useAuth();
     const location = useLocation();
 
-    // Mock mock status
-    const systemHealthy = true;
-    const hasErrors = false;
-
     const navItems = [
         { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon size={20} /> },
+        { label: 'Commands', path: '/commands', icon: <TerminalIcon size={20} /> },
         { label: 'Configuration', path: '/configuration', icon: <SettingsIcon size={20} /> },
-        { label: 'Audio Settings', path: '/audio-settings', icon: <MicIcon size={20} /> },
-        { label: 'Personas', path: '/personas', icon: <GroupIcon size={20} /> },
-        {
-            label: 'Agent Status',
-            path: '/agent-status',
-            icon: <AssessmentIcon size={20} />,
-            badge: hasErrors || !systemHealthy ? '!' : null,
-            badgeColor: 'badge-error'
-        },
     ];
 
     return (
@@ -52,17 +38,12 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             <li key={item.path}>
                                 <Link
                                     to={item.path}
-                                    className={`${isActive ? 'active bg-primary/20 text-primary border-l-4 border-primary' : 'hover:bg-base-content/10'} transition-all`}
+                                    className={`${isActive ? 'active bg-primary/20 text-primary border-l-4 border-primary' : 'hover:bg-base-content/10'} transition-all flex items-center gap-3 p-3 rounded-xl`}
                                 >
                                     <span className={isActive ? 'text-primary' : 'text-base-content/70'}>
                                         {item.icon}
                                     </span>
                                     <span className="font-medium">{item.label}</span>
-                                    {item.badge && (
-                                        <span className={`badge ${item.badgeColor} badge-sm ml-auto animate-pulse`}>
-                                            {item.badge}
-                                        </span>
-                                    )}
                                 </Link>
                             </li>
                         );

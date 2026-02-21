@@ -1,5 +1,5 @@
-// Mock API service for agent status
-// In a real implementation, this would connect to your backend API
+// API service for agent/advisor status
+// Connects to the real FastAPI backend
 
 export interface Agent {
   id: string;
@@ -11,36 +11,54 @@ export interface Agent {
   error?: string;
 }
 
+/**
+ * Fetch real advisor/agent context stats from the backend.
+ * Falls back to an empty array if advisors are disabled or unavailable.
+ */
 export const fetchAgentStatus = async (): Promise<Agent[]> => {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  try {
+    const res = await fetch("/api/v1/advisors/context/stats");
+    if (!res.ok) {
+      // Advisors may be disabled — return empty list gracefully
+      if (res.status === 400 || res.status === 503) return [];
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    // data is typically { contexts: { [key]: { persona_id, platform, ... } }, total: N }
+    if (!data || !data.contexts) return [];
+    return Object.entries(data.contexts).map(([key, ctx]: [string, any]) => ({
+      id: key,
+      name: `${ctx.persona_id ?? "advisor"} @ ${key}`,
+      status: "online" as const,
+      lastMessageSent: ctx.last_updated ?? "-",
+      lastMessageReceived: ctx.last_updated ?? "-",
+      lastMessageContent: ctx.context_key ?? "-",
+    }));
+  } catch {
+    return [];
+  }
+};
 
-  // Return mock data
-  return [
-    {
-      id: "agent-1",
-      name: "Customer Support Agent",
-      status: "online",
-      lastMessageSent: "2 minutes ago",
-      lastMessageReceived: "5 minutes ago",
-      lastMessageContent: "Hello, how can I help you?",
-    },
-    {
-      id: "agent-2",
-      name: "Technical Support Agent",
-      status: "processing",
-      lastMessageSent: "10 minutes ago",
-      lastMessageReceived: "12 minutes ago",
-      lastMessageContent: "I need help with my account.",
-    },
-    {
-      id: "agent-3",
-      name: "Sales Agent",
-      status: "error",
-      lastMessageSent: "1 hour ago",
-      lastMessageReceived: "1 hour ago",
-      lastMessageContent: "Checking inventory",
-      error: "Connection timeout to inventory service",
-    },
-  ];
+/**
+ * Fetch available models from a custom LLM endpoint.
+ * Returns [] if the endpoint is unavailable or errors.
+ */
+export const fetchLLMModels = async (
+  baseUrl: string,
+  apiKey?: string
+): Promise<string[]> => {
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+    const url = baseUrl.replace(/\/$/, "") + "/models";
+    const res = await fetch(url, { headers });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (data?.data && Array.isArray(data.data)) {
+      return data.data.map((m: any) => m.id ?? m.name ?? String(m));
+    }
+    return [];
+  } catch {
+    return [];
+  }
 };

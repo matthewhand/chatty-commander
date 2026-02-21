@@ -31,6 +31,7 @@ class DummyConfig:
         "providers": {
             "llm_api_mode": "completion",
             "model": "gpt-oss20b",
+            "api_key": None,
         },
         "context": {
             "personas": {

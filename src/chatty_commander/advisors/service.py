@@ -26,12 +26,21 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..avatars.thinking_state import get_thinking_manager
+
+# from .prompting import build_provider_prompt  # Currently unused
+from . import providers as providers_module
 from .context import ContextManager, PlatformType
 from .conversation_engine import create_conversation_engine
 from .memory import MemoryStore
+from .providers import build_provider_safe as build_provider_safe
 
-# from .prompting import build_provider_prompt  # Currently unused
-from .providers import build_provider_safe
+_DEFAULT_BUILD_PROVIDER_SAFE = build_provider_safe
+
+
+def _get_provider_builder():
+    if build_provider_safe is not _DEFAULT_BUILD_PROVIDER_SAFE:
+        return build_provider_safe
+    return providers_module.build_provider_safe
 
 
 @dataclass
@@ -77,7 +86,8 @@ class AdvisorsService:
             persist=mem_cfg.get("persistence_enabled", mem_cfg.get("persist", False)),
             persist_path=mem_cfg.get("persistence_path") or mem_cfg.get("persist_path"),
         )
-        self.provider = build_provider_safe(base_cfg.get("providers", {}))
+        provider_builder = _get_provider_builder()
+        self.provider = provider_builder(base_cfg.get("providers", {}))
         self.context_manager = ContextManager(base_cfg.get("context", {}))
 
         # Check if advisors are enabled
@@ -85,6 +95,16 @@ class AdvisorsService:
 
         # Initialize conversation engine for enhanced AI interactions
         self.conversation_engine = create_conversation_engine(base_cfg)
+
+        # Initialize LLM Manager for unified provider handling
+        from ..llm.manager import get_global_llm_manager
+
+        # Use global manager if available or create new one
+        self.llm_manager = get_global_llm_manager(
+             openai_api_key=base_cfg.get("openai_api_key") or base_cfg.get("api_key"),
+             ollama_host=base_cfg.get("ollama_host"),
+             use_mock=False
+        )
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
         """Process an incoming message and return an advisor response.
@@ -168,7 +188,30 @@ class AdvisorsService:
                     current_mode=getattr(self.config, "current_mode", "chatty"),
                 )
 
-                response = self.provider.generate(enhanced_prompt)
+                # Use LLMManager to generate response
+                # We prioritize the manager if available, otherwise fallback to legacy provider
+                if hasattr(self, "llm_manager") and self.llm_manager:
+                     response = self.llm_manager.generate_response(
+                        enhanced_prompt,
+                        model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
+                        max_tokens=self.config.get("max_tokens", 150),
+                        temperature=self.config.get("temperature", 0.7)
+                    )
+                     # Use the backend name, but prefer provider's configured model when
+                     # the backend is a generic fallback (mock/none/unknown).
+                     _backend_name = self.llm_manager.get_active_backend_name()
+                     _fallback_names = {"mock", "none", "unknown"}
+                     if _backend_name in _fallback_names:
+                         model_name = getattr(self.provider, "model", _backend_name)
+                         api_mode = getattr(self.provider, "api_mode", "chat")
+                     else:
+                         model_name = _backend_name
+                         api_mode = "chat"
+                else:
+                    # Legacy provider path
+                    response = self.provider.generate(enhanced_prompt)
+                    model_name = getattr(self.provider, "model", "unknown")
+                    api_mode = getattr(self.provider, "api_mode", "unknown")
 
                 # Enhanced directive handling for tool-like replies
                 if isinstance(response, str) and "SWITCH_MODE:" in response:
@@ -201,7 +244,9 @@ class AdvisorsService:
                 )
             except Exception as e:
                 # Fallback to echo if LLM fails
-                response = f"[{self.provider.model}][{self.provider.api_mode}][{context.persona_id}] {message.text} (LLM error: {str(e)})"
+                model_name = "error"
+                api_mode = "error"
+                response = f"[LLM Error] {message.text} ({str(e)})"
 
             # Update to responding state
             thinking_manager.start_responding(agent_id, "Finalizing response...")
@@ -218,8 +263,8 @@ class AdvisorsService:
                 reply=response,
                 context_key=context.identity.context_key,
                 persona_id=context.persona_id,
-                model=self.provider.model,
-                api_mode=self.provider.api_mode,
+                model=model_name,
+                api_mode=api_mode,
             )
 
             # Return to idle state

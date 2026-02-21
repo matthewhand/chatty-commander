@@ -1,19 +1,68 @@
 import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon } from "lucide-react";
+import { apiService } from "../services/apiService";
+import { fetchAgentStatus, Agent } from "../services/api";
 
 const DashboardPage: React.FC = () => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
+  const [commandInput, setCommandInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSendCommand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commandInput.trim()) return;
+
+    setIsSending(true);
+    const cmd = commandInput;
+    setCommandInput("");
+
+    // Optimistically add to log
+    setMessages(prev => [...prev, `> Executing: ${cmd}`]);
+
+    try {
+      await apiService.executeCommand(cmd);
+    } catch (err: any) {
+      setMessages(prev => [...prev, `Error: ${err.message}`]);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const { data: systemStatus, isLoading } = useQuery({
     queryKey: ["systemStatus"],
     queryFn: async () => {
-      // Placeholder for fetching system status
-      return { status: "Online", uptime: "2 hours", commandsExecuted: 45 };
+      const res = await fetch("/health");
+      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0 };
+      const data = await res.json();
+      return {
+        status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
+        uptime: data.uptime ?? "N/A",
+        commandsExecuted: data.commands_executed ?? 0,
+        version: data.version,
+      };
     },
+    refetchInterval: 30000,
   });
+
+  const { data: agentData, isLoading: agentsLoading, isError: agentsError, error: agentsErrObj } = useQuery<Agent[]>({
+    queryKey: ["agentStatus"],
+    queryFn: fetchAgentStatus,
+    refetchInterval: 30000,
+    retry: 2,
+  });
+
+  const getAgentStatusColor = (status: Agent["status"]) => {
+    switch (status) {
+      case "online": return "badge-success";
+      case "offline": return "badge-ghost";
+      case "error": return "badge-error";
+      case "processing": return "badge-warning";
+      default: return "badge-ghost";
+    }
+  };
 
   useEffect(() => {
     if (ws) {
@@ -95,21 +144,95 @@ const DashboardPage: React.FC = () => {
         <div className="card-body">
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
-          <div className="mockup-code bg-base-300 text-base-content h-96 overflow-y-auto w-full custom-scrollbar">
+          <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
             {messages.length > 0 ? (
               messages.slice(-15).map((msg, index) => (
-                <pre key={index} data-prefix=">" className="text-success">
+                <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
                   <code>{msg}</code>
                 </pre>
               ))
             ) : (
-              <div className="p-4 text-base-content/50 italic text-center pt-32">
+              <div className="p-4 text-base-content/50 italic text-center pt-24">
                 Waiting for commands...
               </div>
             )}
           </div>
+
+          <form onSubmit={handleSendCommand} className="mt-4 flex gap-2">
+            <input
+              type="text"
+              placeholder="Type a command to execute..."
+              className="input input-bordered w-full focus:input-primary"
+              value={commandInput}
+              onChange={(e) => setCommandInput(e.target.value)}
+              disabled={isSending || !isConnected}
+            />
+            <button
+              type="submit"
+              className={`btn btn-primary ${isSending ? 'loading' : ''}`}
+              disabled={!commandInput.trim() || isSending || !isConnected}
+            >
+              {!isSending && <Send size={18} />}
+              Execute
+            </button>
+          </form>
         </div>
       </div>
+
+      {/* Agent Status Section */}
+      <h3 className="text-2xl font-bold bg-gradient-to-r from-error to-warning bg-clip-text text-transparent mt-8 mb-4 flex items-center gap-2">
+        <AssessmentIcon size={24} className="text-error" /> Agent Status
+      </h3>
+
+      {agentsError && (
+        <div className="alert alert-error shadow-lg">
+          <span>{(agentsErrObj as Error)?.message || "Failed to fetch agent status."}</span>
+        </div>
+      )}
+
+      {agentsLoading ? (
+        <div className="flex justify-center p-8">
+          <span className="loading loading-spinner text-primary"></span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {agentData?.map((agent) => (
+            <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
+              <div className="card-body p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="card-title text-xl font-bold">{agent.name}</h3>
+                  <div className={`badge ${getAgentStatusColor(agent.status)} badge-lg font-bold uppercase`}>
+                    {agent.status}
+                  </div>
+                </div>
+
+                {agent.error && (
+                  <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg">
+                    <span>{agent.error}</span>
+                  </div>
+                )}
+
+                <div className="mockup-code bg-base-300 text-xs mt-2 before:hidden p-0">
+                  <div className="px-4 py-3 space-y-3">
+                    <div className="flex flex-col">
+                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Sent</span>
+                      <span className="font-mono text-primary">{agent.lastMessageSent || "-"}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Received</span>
+                      <span className="font-mono text-secondary">{agent.lastMessageReceived || "-"}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Content</span>
+                      <span className="font-mono text-base-content/70 break-words mt-1">{agent.lastMessageContent || "-"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

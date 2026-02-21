@@ -1,5 +1,5 @@
 import React from "react";
-import { render } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 import { WebSocketProvider } from "./WebSocketProvider";
 
 jest.useFakeTimers();
@@ -40,6 +40,8 @@ it("connects and then closes (reconnect handled by component lifecycle)", () => 
       <div>Child</div>
     </WebSocketProvider>,
   );
-  jest.runOnlyPendingTimers();
+  act(() => {
+    jest.advanceTimersByTime(100);
+  });
   unmount();
 });

@@ -23,7 +23,12 @@
 """Comprehensive tests for obs/metrics.py to increase coverage."""
 
 
-from chatty_commander.obs.metrics import Counter, Gauge, MetricsRegistry
+from chatty_commander.obs.metrics import (
+    Counter,
+    Gauge,
+    HistogramBuckets,
+    MetricsRegistry,
+)
 
 
 class TestCounter:
@@ -163,3 +168,20 @@ class TestMetricKeyGeneration:
         counter = Counter("test", "test")
         key = counter._key({"num": 123, "bool": True})
         assert key == (("bool", "True"), ("num", "123"))
+
+
+class TestHistogramBuckets:
+    def test_bucket_clamp_and_snapshot(self):
+        """Test histogram buckets clamp values and snapshot structure."""
+        buckets = HistogramBuckets([0.1, 0.5, 1.0])
+        assert buckets.clamp(-1.0) == 0.0
+        assert buckets.clamp(0.3) == 0.3
+
+        registry = MetricsRegistry()
+        histogram = registry.histogram("bucket_test", "Bucket test", buckets=buckets)
+        histogram.observe(5.0)
+
+        snapshot = histogram.snapshot()
+        assert snapshot["buckets"] == [0.1, 0.5, 1.0]
+        assert snapshot["series"]
+        assert snapshot["series"][0]["counts"][-1] == 1

@@ -15,6 +15,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ConfigurationPage from "./pages/ConfigurationPage";
 import AudioSettingsPage from "./pages/AudioSettingsPage";
 import PersonasPage from "./pages/PersonasPage";
+import ModelsPage from "./pages/ModelsPage";
 
 // Import components
 import Navigation from "./components/Navigation";
@@ -133,6 +134,14 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <PersonasPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/models"
+              element={
+                <ProtectedRoute>
+                  <ModelsPage />
                 </ProtectedRoute>
               }
             />

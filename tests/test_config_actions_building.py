@@ -65,7 +65,7 @@ def test_builds_keypress_without_keybinding_name(tmp_path: Path):
 
 
 def test_handles_empty_commands_safely(tmp_path: Path):
-    data = {}
+    data = {"commands": {}}
     cfg_file = write_tmp_config(tmp_path, data)
     cfg = Config.load(str(cfg_file))
     assert isinstance(cfg.model_actions, dict)

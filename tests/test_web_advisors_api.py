@@ -62,6 +62,7 @@ def build_server(cfg, *, no_auth: bool = True):
         mock_provider = MagicMock()
         mock_provider.model = "test-model"
         mock_provider.api_mode = "completion"
+        mock_provider.generate.return_value = "hello from test provider"
         mock_build_provider.return_value = mock_provider
         sm = StateManager()
         mm = ModelManager(cfg)

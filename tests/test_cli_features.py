@@ -33,6 +33,10 @@ class DummyConfigDirect:
     def __init__(self, actions):
         # Intentionally set instance attribute so cli resolution uses __dict__ directly
         self.model_actions = actions
+        # Add model paths required by ModelManager - use empty dict to avoid path issues
+        self.general_models_path = {}
+        self.system_models_path = {}
+        self.chat_models_path = {}
 
 
 @pytest.fixture
@@ -48,10 +52,43 @@ def replace_config_with_dummy(monkeypatch):
         monkeypatch.setattr(
             config_module, "Config", staticmethod(lambda: DummyConfigDirect(actions))
         )
-        # Also patch _resolve_Config to ensure it uses our dummy
+        # Patch the global Config variable in cli module
         monkeypatch.setattr(
-            cli_module, "_resolve_Config", lambda: lambda: DummyConfigDirect(actions)
+            cli_module, "Config", lambda: DummyConfigDirect(actions)
         )
+
+        # Mock ModelManager to avoid path issues
+        class DummyModelManager:
+            def __init__(self, config, mock_models=False):
+                self.config = config
+                self.models = {"general": {}, "system": {}, "chat": {}}
+                self.active_models = {}
+
+            def reload_models(self, *args, **kwargs):
+                pass
+
+            def get_model(self, name):
+                return None
+
+            def set_state(self, state):
+                pass
+
+        monkeypatch.setattr(cli_module, "ModelManager", DummyModelManager)
+
+        # Mock StateManager
+        class DummyStateManager:
+            def __init__(self):
+                self.state = "idle"
+                self.current_state = "idle"  # Add current_state property
+
+            def get_state(self):
+                return self.state
+
+            def set_state(self, state):
+                self.state = state
+                self.current_state = state
+
+        monkeypatch.setattr(cli_module, "StateManager", DummyStateManager)
 
         return _dummy_config_ctor
 

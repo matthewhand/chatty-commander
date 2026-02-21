@@ -21,15 +21,14 @@
 # SOFTWARE.
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
-from unittest.mock import MagicMock
 from test_data_factories import TestDataFactory
 
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.web.web_mode import WebModeServer
 
 
 class TestErrorHandling:
@@ -91,7 +90,7 @@ class TestErrorHandling:
 
     def test_web_mode_error_handling_missing_dependencies(self):
         """Test WebModeServer error handling for missing dependencies."""
-        pass 
+        pass
         # config = TestDataFactory.create_mock_config()
         # with pytest.raises(ImportError):
         #    WebModeServer(config, missing_dependency=True)

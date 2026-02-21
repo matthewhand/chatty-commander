@@ -88,8 +88,7 @@ class Config:
         # Voice/GUI behaviour
         self._voice_only: bool = bool(self.config_data.get("voice_only", False))
 
-        # Validate configuration after all attributes are set
-        self._validate_config()
+
 
         # Audio configuration
         self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
@@ -114,7 +113,7 @@ class Config:
 
         # Commands for model actions
         default_commands = {}
-        if not self.config_file:  # Only use defaults for empty config_file (tests)
+        if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
             default_commands = {
                 "hello": {
                     "action": "custom_message",
@@ -137,6 +136,10 @@ class Config:
         # Additional attributes for config CLI compatibility
         self.listen_for: dict[str, Any] = self.config_data.get("listen_for", {})
         self.modes: dict[str, Any] = self.config_data.get("modes", {})
+
+        # Validate configuration after all attributes are set (moved from line 92)
+        # Verify state_models is a dict before trying to validate its children if needed
+        self._validate_config()
 
         # Back-compat general settings wrapper with property-based access
         class _GeneralSettings:
@@ -243,6 +246,8 @@ class Config:
                 self.config = new_config
                 self._validate_config()
                 self._load_general_settings()  # Load general settings to update default_state
+                # Force re-load of other properties that depend on config_data
+                self.model_actions = self._build_model_actions()
                 logger.info("Configuration reloaded successfully")
                 return True
             return False
@@ -346,7 +351,8 @@ class Config:
             "CHATCOMM_DEBUG", general_settings.get("debug_mode", True)
         )
         self.default_state = os.getenv(
-            "CHATCOMM_DEFAULT_STATE", general_settings.get("default_state", "idle")
+            "CHATCOMM_DEFAULT_STATE",
+            general_settings.get("default_state", self.config_data.get("default_state", "idle"))
         )
         self.inference_framework = os.getenv(
             "CHATCOMM_INFERENCE_FRAMEWORK",
@@ -363,15 +369,19 @@ class Config:
     # Build model_actions from the high-level 'commands' section
     def _build_model_actions(self) -> dict[str, dict[str, str]]:
         actions: dict[str, dict[str, str]] = {}
-        commands_cfg = self.commands or {}
+        # Ensure commands is a dict
+        commands_cfg = self.commands if isinstance(self.commands, dict) else {}
         keybindings = self.config_data.get("keybindings", {}) or {}
         for name, cfg in commands_cfg.items():
+            if not isinstance(cfg, dict):
+                continue
             action_type = cfg.get("action")
             if action_type == "keypress":
                 keys = cfg.get("keys")
-                mapped = keybindings.get(keys, keys)
-                if mapped:
-                    actions[name] = {"keypress": mapped}
+                if isinstance(keys, str):
+                   mapped = keybindings.get(keys, keys)
+                   if mapped:
+                       actions[name] = {"keypress": mapped}
             elif action_type == "url":
                 url = cfg.get("url", "")
                 url = url.replace(

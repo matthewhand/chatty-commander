@@ -320,7 +320,7 @@ class WebModeServer:
 
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
-        app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+        app.add_middleware(RateLimitMiddleware, requests_per_minute=10000)
 
         # CORS policy
         app.add_middleware(
@@ -387,13 +387,37 @@ class WebModeServer:
         frontend_path = Path("webui/frontend/dist")
         if not frontend_path.exists():
             frontend_path = Path("webui/frontend/build")
+        if not frontend_path.exists():
+            logger.info("Frontend build not found. Automagically building the frontend UI...")
+            try:
+                import subprocess
+                import sys
+                
+                # Check if npm is available
+                subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                
+                logger.info("Installing frontend dependencies...")
+                subprocess.run(["npm", "install", "--no-audit", "--no-fund", "--legacy-peer-deps"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
+                
+                logger.info("Building frontend assets...")
+                subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
+                
+                if Path("webui/frontend/dist").exists():
+                    frontend_path = Path("webui/frontend/dist")
+                elif Path("webui/frontend/build").exists():
+                    frontend_path = Path("webui/frontend/build")
+            except FileNotFoundError:
+                logger.error("Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/.")
+            except Exception as e:
+                logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
+
         if frontend_path.exists():
-            static_assets = frontend_path / "static"
+            static_assets = frontend_path / "assets"
             if static_assets.exists():
                 app.mount(
-                    "/static", StaticFiles(directory=str(static_assets)), name="static"
+                    "/assets", StaticFiles(directory=str(static_assets)), name="assets"
                 )
-            
+
             @app.get("/", response_class=HTMLResponse)
             async def _serve_frontend():  # pragma: no cover - exercised in integration
                 index_file = frontend_path / "index.html"
@@ -418,9 +442,9 @@ class WebModeServer:
             async def spa_fallback(request: Request, exc: HTTPException):
                 # If API or static file request fails, let it 404.
                 # Otherwise, serve index.html for SPA routing.
-                if request.url.path.startswith("/api") or request.url.path.startswith("/static"):
-                     return await getattr(app, "exception_handler_default")(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
-                
+                if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
+                     return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
+
                 index_file = frontend_path / "index.html"
                 if index_file.exists():
                     return FileResponse(str(index_file))
@@ -477,7 +501,7 @@ class WebModeServer:
                 expected_key = None
                 if hasattr(self.config_manager, "auth"):
                     expected_key = self.config_manager.auth.get("api_key")
-                
+
                 if not expected_key or x_api_key != expected_key:
                     raise HTTPException(status_code=401, detail="Unauthorized")
 

@@ -34,10 +34,47 @@ def test_cli_exec_dry_run_prints_action(monkeypatch):
     class DummyCfg:
         def __init__(self):
             self.model_actions = {"hello": {"shell": {"cmd": "echo hi"}}}
+            # Add model paths required by ModelManager - use empty dict to avoid path issues
+            self.general_models_path = {}
+            self.system_models_path = {}
+            self.chat_models_path = {}
 
-    # Patch both the config module and the _resolve_Config function
+    # Patch both the config module and the global Config variable in cli module
     monkeypatch.setattr(config_module, "Config", DummyCfg)
-    monkeypatch.setattr(cli_module, "_resolve_Config", lambda: DummyCfg)
+    monkeypatch.setattr(cli_module, "Config", DummyCfg)
+
+    # Mock ModelManager to avoid path issues
+    class DummyModelManager:
+        def __init__(self, config, mock_models=False):
+            self.config = config
+            self.models = {"general": {}, "system": {}, "chat": {}}
+            self.active_models = {}
+
+        def reload_models(self, *args, **kwargs):
+            pass
+
+        def get_model(self, name):
+            return None
+
+        def set_state(self, state):
+            pass
+
+    monkeypatch.setattr(cli_module, "ModelManager", DummyModelManager)
+
+    # Mock StateManager
+    class DummyStateManager:
+        def __init__(self):
+            self.state = "idle"
+            self.current_state = "idle"  # Add current_state property
+
+        def get_state(self):
+            return self.state
+
+        def set_state(self, state):
+            self.state = state
+            self.current_state = state
+
+    monkeypatch.setattr(cli_module, "StateManager", DummyStateManager)
 
     # Simulate CLI invocation
     monkeypatch.setattr(sys, "argv", ["chatty-commander", "exec", "hello", "--dry-run"])

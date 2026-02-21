@@ -70,6 +70,11 @@ except ImportError:
     agents_router = None
 
 try:
+    from .routes.models import router as models_router
+except ImportError:
+    models_router = None
+
+try:
     from ..obs.metrics import create_metrics_router
 
     metrics_router = create_metrics_router()
@@ -97,6 +102,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         "version_router",
         "metrics_router",
         "agents_router",
+        "models_router",
     ):
         _include_optional(app, nm)
 

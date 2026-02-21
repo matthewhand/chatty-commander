@@ -7,11 +7,10 @@ type ProtectedRouteProps = {
 };
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
-  // Allow bypassing auth in development/no-auth mode
-  const noAuth = process.env.REACT_APP_NO_AUTH === "true";
-  if (noAuth) {
+  // Allow bypassing auth in development/no-auth mode based on dynamic backend configuration
+  if (user?.noAuth) {
     return <>{children}</>;
   }
 

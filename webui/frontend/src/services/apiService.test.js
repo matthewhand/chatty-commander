@@ -2,6 +2,7 @@ import apiService from "./apiService";
 
 beforeAll(() => {
   global.fetch = jest.fn();
+  apiService.setBaseURL("http://localhost:8100");
 });
 
 describe("ApiService", () => {

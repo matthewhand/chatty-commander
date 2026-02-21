@@ -358,7 +358,7 @@ class CommandExecutor:
             if voice_pipeline.tts.is_available():
                 voice_pipeline.tts.speak(response)
 
-            logging.info(f"Completed voice chat session")
+            logging.info("Completed voice chat session")
             return True
 
         except Exception as e:

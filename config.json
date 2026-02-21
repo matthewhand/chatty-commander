@@ -153,20 +153,34 @@
     "debug_mode": true,
     "test_key": "test_value",
     "git_test": true,
-    "check_for_updates": true,
+    "check_for_updates": false,
     "custom_setting": "custom_value",
     "another_key": "another_value",
     "inference_framework": "custom",
     "start_on_boot": true,
     "test_bool": true,
     "test_int": 42,
-    "test": "value"
+    "test": "value",
+    "final_test": true
   },
   "web_server": {
     "host": "0.0.0.0",
     "port": 8100,
-    "auth_enabled": true
+    "auth_enabled": false
   },
   "voice_only": false,
-  "default_state": "idle"
+  "default_state": "idle",
+  "advisors": {
+    "providers": {
+      "api_key": "",
+      "base_url": "http://localhost:11434/v1",
+      "model": ""
+    }
+  },
+  "voice": {
+    "enabled": true
+  },
+  "ui": {
+    "theme": "dark"
+  }
 }
