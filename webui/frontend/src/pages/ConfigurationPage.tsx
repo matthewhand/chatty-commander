@@ -9,6 +9,8 @@ import {
   Mic as MicIcon,
   Volume2 as VolumeUpIcon,
   Headphones as HeadphonesIcon,
+  Server as ServerIcon,
+  Activity as ActivityIcon,
 } from "lucide-react";
 import { fetchLLMModels } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
@@ -18,12 +20,15 @@ interface AppConfig {
   apiKey: string;
   llmBaseUrl: string;
   llmModel: string;
-  enableVoice: boolean;
   theme: string;
   envOverrides: {
     apiKey: boolean;
     baseUrl: boolean;
     model: boolean;
+  };
+  services: {
+    voiceCommands: boolean;
+    restApi: boolean;
   };
 }
 
@@ -37,13 +42,16 @@ async function loadConfig(): Promise<AppConfig> {
         apiKey: data.advisors?.providers?.api_key ?? "",
         llmBaseUrl: data.advisors?.providers?.base_url ?? "http://localhost:11434/v1",
         llmModel: data.advisors?.providers?.model ?? "",
-        enableVoice: data.voice?.enabled ?? true,
         theme: data.ui?.theme ?? "dark",
         envOverrides: {
           apiKey: data._env_overrides?.api_key ?? false,
           baseUrl: data._env_overrides?.base_url ?? false,
           model: data._env_overrides?.model ?? false,
-        }
+        },
+        services: {
+          voiceCommands: data.services?.voiceCommands ?? data.voice?.enabled ?? true,
+          restApi: data.services?.restApi ?? true,
+        },
       };
     }
   } catch { /* fall through */ }
@@ -51,9 +59,9 @@ async function loadConfig(): Promise<AppConfig> {
     apiKey: "",
     llmBaseUrl: "http://localhost:11434/v1",
     llmModel: "",
-    enableVoice: true,
     theme: "dark",
     envOverrides: { apiKey: false, baseUrl: false, model: false },
+    services: { voiceCommands: true, restApi: true },
   };
 }
 
@@ -85,8 +93,9 @@ async function persistConfig(cfg: AppConfig): Promise<void> {
           model: cfg.llmModel,
         },
       },
-      voice: { enabled: cfg.enableVoice },
+      voice: { enabled: cfg.services.voiceCommands },
       ui: { theme: cfg.theme },
+      services: { ...cfg.services },
     }),
   });
 }
@@ -99,9 +108,9 @@ const ConfigurationPage: React.FC = () => {
     apiKey: "",
     llmBaseUrl: "http://localhost:11434/v1",
     llmModel: "",
-    enableVoice: true,
     theme: "dark",
     envOverrides: { apiKey: false, baseUrl: false, model: false },
+    services: { voiceCommands: true, restApi: true },
   });
   const [modelList, setModelList] = useState<string[]>([]);
   const [fetchingModels, setFetchingModels] = useState(false);
@@ -145,6 +154,15 @@ const ConfigurationPage: React.FC = () => {
   };
   const handleSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConfig({ ...config, [e.target.name]: e.target.checked });
+  };
+  const handleServiceSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConfig({
+      ...config,
+      services: {
+        ...config.services,
+        [e.target.name]: e.target.checked,
+      },
+    });
   };
 
   const handleFetchModels = async () => {
@@ -210,18 +228,44 @@ const ConfigurationPage: React.FC = () => {
                   <option value="synthwave">Synthwave</option>
                 </select>
               </div>
+            </div>
+          </div>
+
+          {/* Services Configuration */}
+          <div className="p-6 border-b border-base-content/10 bg-base-200/50">
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+              <ServerIcon className="w-5 h-5 text-info" />
+              Services
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-control">
                 <label className="label cursor-pointer justify-start gap-4">
                   <input
                     type="checkbox"
-                    className="toggle toggle-primary"
-                    checked={config.enableVoice}
-                    onChange={handleSwitch}
-                    name="enableVoice"
+                    className="toggle toggle-info"
+                    checked={config.services.voiceCommands}
+                    onChange={handleServiceSwitch}
+                    name="voiceCommands"
                   />
                   <div className="flex flex-col">
-                    <span className="label-text font-medium">Enable Voice Commands</span>
-                    <span className="label-text-alt text-base-content/50">Microphone input</span>
+                    <span className="label-text font-medium text-info">Voice Commands (always-on)</span>
+                    <span className="label-text-alt text-base-content/60">Listens for audio using ONNX models via openwakeword</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="form-control">
+                <label className="label cursor-pointer justify-start gap-4">
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-info"
+                    checked={config.services.restApi}
+                    onChange={handleServiceSwitch}
+                    name="restApi"
+                  />
+                  <div className="flex flex-col">
+                    <span className="label-text font-medium text-info">REST API</span>
+                    <span className="label-text-alt text-base-content/60">Needed for this WebUI functionality</span>
                   </div>
                 </label>
               </div>
@@ -261,7 +305,7 @@ const ConfigurationPage: React.FC = () => {
                     onChange={(e) => setInputDevice(e.target.value)}
                   >
                     <option value="" disabled>Select device...</option>
-                    {devices?.input.map((dev) => (
+                    {devices?.input.map((dev: string) => (
                       <option key={dev} value={dev}>{dev}</option>
                     ))}
                   </select>
@@ -308,7 +352,7 @@ const ConfigurationPage: React.FC = () => {
                     onChange={(e) => setOutputDevice(e.target.value)}
                   >
                     <option value="" disabled>Select device...</option>
-                    {devices?.output.map((dev) => (
+                    {devices?.output.map((dev: string) => (
                       <option key={dev} value={dev}>{dev}</option>
                     ))}
                   </select>

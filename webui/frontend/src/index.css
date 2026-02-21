@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@plugin "daisyui";
-@source "./src";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ============================================
    Open Hivemind - Modern UI Styles
