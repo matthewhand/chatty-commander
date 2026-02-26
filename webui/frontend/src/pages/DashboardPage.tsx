@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Cpu, HardDrive } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
@@ -35,12 +35,14 @@ const DashboardPage: React.FC = () => {
     queryKey: ["systemStatus"],
     queryFn: async () => {
       const res = await fetch("/health");
-      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0 };
+      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0, cpuUsage: "N/A", memoryUsage: "N/A" };
       const data = await res.json();
       return {
         status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
         uptime: data.uptime ?? "N/A",
         commandsExecuted: data.commands_executed ?? 0,
+        cpuUsage: data.cpu_usage ?? "N/A",
+        memoryUsage: data.memory_usage ?? "N/A",
         version: data.version,
       };
     },
@@ -135,6 +137,28 @@ const DashboardPage: React.FC = () => {
               {isConnected ? "Connected" : "Offline"}
             </div>
             <div className="stat-desc">Realtime stream</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-info">
+              <Cpu size={32} />
+            </div>
+            <div className="stat-title">CPU Usage</div>
+            <div className="stat-value text-info text-2xl">{systemStatus?.cpuUsage || "N/A"}</div>
+            <div className="stat-desc">System Load</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-warning">
+              <HardDrive size={32} />
+            </div>
+            <div className="stat-title">Memory</div>
+            <div className="stat-value text-warning text-2xl">{systemStatus?.memoryUsage || "N/A"}</div>
+            <div className="stat-desc">RAM Usage</div>
           </div>
         </div>
       </div>

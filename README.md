@@ -309,6 +309,19 @@ curl -s http://localhost:8100/metrics/json | jq
 curl -s http://localhost:8100/metrics/prom | head -n 20
 ```
 
+### Web Dashboard
+
+The web dashboard provides real-time monitoring of system health, status, and agent activities.
+
+![Dashboard](docs/images/dashboard.png)
+
+Key features:
+- **System Status**: View core service status.
+- **Uptime**: Monitor system uptime.
+- **Commands**: Track total commands executed (voice + API).
+- **CPU & Memory**: Real-time system resource usage (requires `psutil`).
+- **Real-time Log**: Watch commands and events as they happen.
+
 ### Voice Integration
 
 - Install voice dependencies:
