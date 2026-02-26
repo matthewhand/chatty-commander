@@ -4,11 +4,22 @@ import { exec as execCb } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
-import { createHmac } from "crypto";
+import { createHmac, randomBytes } from "crypto";
 
 const exec = promisify(execCb);
 const router = Router();
-const SECRET = process.env.SIDECAR_SECRET || "dev-secret";
+
+const SECRET =
+  process.env.SIDECAR_SECRET ||
+  (() => {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("SIDECAR_SECRET env var must be set in production");
+    }
+    console.warn(
+      "SIDECAR_SECRET not set. Using a random secret. Signed URLs will be invalid after restart."
+    );
+    return randomBytes(32).toString("hex");
+  })();
 
 function sign(p: string) {
   return createHmac("sha256", SECRET).update(p).digest("hex");
