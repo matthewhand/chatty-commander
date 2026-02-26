@@ -78,6 +78,32 @@ def _infer_category(name: str) -> str:
     return "unknown"
 
 
+def _scan_animations(root: Path) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for p in sorted(root.rglob("*")):
+        if not p.is_file():
+            continue
+        ext = p.suffix.lower()
+        if ext not in _ALLOWED_EXTS:
+            continue
+        rel = p.relative_to(root)
+        name = p.stem
+        try:
+            size = p.stat().st_size
+        except Exception:
+            size = None
+        results.append(
+            {
+                "name": name,
+                "file": str(rel).replace("\\", "/"),
+                "ext": ext,
+                "size": size,
+                "category": _infer_category(name),
+            }
+        )
+    return results
+
+
 @router.get("/avatar/animations")
 async def list_animations(
     dir: str | None = Query(
@@ -91,28 +117,9 @@ async def list_animations(
                 status_code=404, detail=f"Animations directory not found: {root}"
             )
 
-        results: list[dict[str, Any]] = []
-        for p in sorted(root.rglob("*")):
-            if not p.is_file():
-                continue
-            ext = p.suffix.lower()
-            if ext not in _ALLOWED_EXTS:
-                continue
-            rel = p.relative_to(root)
-            name = p.stem
-            try:
-                size = p.stat().st_size
-            except Exception:
-                size = None
-            results.append(
-                {
-                    "name": name,
-                    "file": str(rel).replace("\\", "/"),
-                    "ext": ext,
-                    "size": size,
-                    "category": _infer_category(name),
-                }
-            )
+        loop = asyncio.get_running_loop()
+        results = await loop.run_in_executor(None, _scan_animations, root)
+
         return {"root": str(root), "count": len(results), "animations": results}
     except HTTPException:
         raise
