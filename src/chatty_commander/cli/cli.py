@@ -484,7 +484,12 @@ def run_interactive_shell(
                 print(f"Current state: {state_manager.current_state}")
                 continue
             if input_str.lower() == "models":
-                print("Loaded models: " + ", ".join(model_manager.get_models()))
+                all_models = [
+                    name
+                    for state_models in model_manager.models.values()
+                    for name in state_models.keys()
+                ]
+                print("Loaded models: " + ", ".join(all_models))
                 continue
             if input_str.startswith("execute "):
                 command = input_str[8:].strip()
