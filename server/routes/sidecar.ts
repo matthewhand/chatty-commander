@@ -10,6 +10,16 @@ const exec = promisify(execCb);
 const router = Router();
 const SECRET = process.env.SIDECAR_SECRET || "dev-secret";
 
+// Define the project root as the current working directory
+// This prevents access to files outside the intended scope (e.g. /etc/passwd)
+const PROJECT_ROOT = path.resolve(process.cwd());
+
+function isSafePath(p: string) {
+  const abs = path.resolve(p);
+  // Check if the resolved path starts with the project root
+  return abs.startsWith(PROJECT_ROOT + path.sep) || abs === PROJECT_ROOT;
+}
+
 function sign(p: string) {
   return createHmac("sha256", SECRET).update(p).digest("hex");
 }
@@ -26,6 +36,12 @@ router.get("/file", async (req, res) => {
   const isDiff = req.query.diff === "1" || req.query.diff === "true";
 
   try {
+    // Validate path is safe before proceeding
+    if (!isSafePath(filePath)) {
+      res.status(403).json({ error: "access denied" });
+      return;
+    }
+
     if (isDiff) {
       // For diff requests, return the diff content directly
       const { stdout } = await exec(`git diff HEAD -- ${filePath}`);
@@ -56,6 +72,12 @@ router.get("/file/content", (req, res) => {
   }
 
   const abs = path.resolve(file);
+
+  if (!isSafePath(abs)) {
+    res.status(403).end();
+    return;
+  }
+
   if (sig !== sign(abs)) {
     res.status(403).end();
     return;
