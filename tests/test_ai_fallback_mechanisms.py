@@ -28,13 +28,6 @@ to skip until the service can be refactored for better testability.
 """
 
 import pytest
-from unittest.mock import Mock, patch
-
-from src.chatty_commander.advisors.service import (
-    AdvisorMessage,
-    AdvisorReply,
-    AdvisorsService,
-)
 
 
 @pytest.mark.skip(reason="Requires refactoring of AdvisorsService for proper mock injection")
