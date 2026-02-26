@@ -1,6 +1,6 @@
 # Avatar GUI
 
-The Avatar GUI is an optional 3D anime-style avatar that provides visual feedback for ChattyCommander's states.
+The Avatar GUI is an optional visual interface that provides visual feedback for ChattyCommander's states.
 
 ## Starting the Avatar
 

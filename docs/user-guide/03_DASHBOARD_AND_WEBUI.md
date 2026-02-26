@@ -9,4 +9,3 @@ By default, the dashboard is served at `http://localhost:8100/` when the applica
 - **Real-time Metrics**: View CPU usage, Memory Usage, and total API Commands Executed on the home page.
 - **WebSocket Streaming**: All AI generated logs, state transitions, and system errors are streamed directly to the UI.
 - **Configuration Hot-Reload**: Update Settings and prompts without needing to restart the backend.
-- **Avatar Selection**: Toggle between different visual interaction modes (2D Canvas vs ASCII vs Robot Face).
