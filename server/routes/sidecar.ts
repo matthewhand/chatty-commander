@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { readFile } from "fs/promises";
-import { exec as execCb } from "child_process";
+import { execFile as execFileCb } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
 import { createHmac } from "crypto";
 
-const exec = promisify(execCb);
+const execFile = promisify(execFileCb);
 const router = Router();
 const SECRET = process.env.SIDECAR_SECRET || "dev-secret";
 
@@ -28,7 +28,7 @@ router.get("/file", async (req, res) => {
   try {
     if (isDiff) {
       // For diff requests, return the diff content directly
-      const { stdout } = await exec(`git diff HEAD -- ${filePath}`);
+      const { stdout } = await execFile("git", ["diff", "HEAD", "--", filePath]);
       res.json({ content: stdout });
     } else {
       // For file requests, generate a signed URL
