@@ -373,6 +373,19 @@ npm run test:e2e       # Playwright tests
 
 ```
 
+### Dashboard
+
+ChattyCommander comes with a comprehensive WebUI for monitoring and configuration.
+
+![Dashboard](docs/images/dashboard.png)
+
+The dashboard provides real-time system status including:
+- **System Health**: Overall status of core services.
+- **Uptime**: System running time.
+- **Commands Executed**: Total count of voice and API commands processed.
+- **Resource Usage**: Real-time CPU and Memory utilization.
+- **WebSocket Status**: Connection status for real-time updates.
+
 
 
 #### Test Mode (Fast Backend)
