@@ -124,6 +124,9 @@ class TestWebModeServer:
         assert response.status_code == 200
 
         data = response.json()
+        # Remove _env_overrides for comparison as it is dynamically added
+        if "_env_overrides" in data:
+            del data["_env_overrides"]
         assert data == {"test": "value"}
 
     def test_update_config_endpoint(self, test_client, mock_managers):

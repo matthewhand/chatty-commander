@@ -375,6 +375,18 @@ npm run test:e2e       # Playwright tests
 
 
 
+#### Dashboard
+
+The dashboard provides a real-time overview of the system status, including:
+- **System Status**: Overall health of the application.
+- **Uptime**: Time since the last restart.
+- **Commands**: Total number of commands executed (voice and API).
+- **CPU Usage**: Current system CPU load.
+- **Memory Usage**: Current system memory usage.
+- **WebSocket**: Connection status.
+
+![Dashboard](docs/images/dashboard.png)
+
 #### Test Mode (Fast Backend)
 
 For rapid E2E testing, the backend supports a `--test-mode` flag that mocks heavy AI dependencies:
