@@ -337,9 +337,16 @@ python scripts/voice_demo.py --mock
 
 ### WebUI
 
-
+![Dashboard](docs/images/dashboard.png)
 
 The React frontend uses **DaisyUI** (v5) with **Tailwind CSS** (v3) for styling.
+
+The Dashboard provides real-time monitoring of:
+- **System Status**: Overall health and uptime.
+- **Commands**: Total commands executed (voice and API).
+- **Resources**: CPU and Memory usage.
+- **WebSocket**: Connection status.
+- **Agent Status**: Health and activity of AI advisors.
 
 
 

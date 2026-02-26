@@ -102,6 +102,7 @@ class TestServerImportSafety:
             # The server.py has a fallback stub that may return empty routes
             # or FastAPI may have default routes like openapi/docs
             route_count = len(app.routes)
+            print(f"DEBUG: route_count={route_count}")
             assert route_count <= 5  # Allow for openapi, docs, redoc, root, and bridge
 
         finally:
