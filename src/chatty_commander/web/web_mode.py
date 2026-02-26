@@ -141,16 +141,138 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Simple rate limiting middleware."""
+def get_client_ip(
+    request: Request,
+    trusted_proxies: list[str] | None = None,
+) -> str:
+    """
+    Securely extract the client IP from a request.
 
-    def __init__(self, app, requests_per_minute: int = 60):
+    This function prevents IP spoofing by only trusting X-Forwarded-For
+    headers when the immediate connection comes from a trusted proxy.
+
+    Args:
+        request: The FastAPI/Starlette request object
+        trusted_proxies: List of trusted proxy IP addresses or CIDR ranges.
+            If None or empty, only the direct connection IP is used.
+
+    Returns:
+        The client IP address (or "unknown" if unavailable)
+    """
+    # Get the direct connection IP
+    direct_ip = request.client.host if request.client else None
+    if not direct_ip:
+        return "unknown"
+
+    # If no trusted proxies are configured, always use the direct connection IP
+    # This prevents IP spoofing attacks via forged headers
+    if not trusted_proxies:
+        return direct_ip
+
+    # Check if the direct connection is from a trusted proxy
+    from ipaddress import ip_address, ip_network
+
+    try:
+        direct_addr = ip_address(direct_ip)
+    except ValueError:
+        return direct_ip  # Invalid IP format, fall back to direct
+
+    is_trusted_proxy = False
+    for proxy in trusted_proxies:
+        try:
+            if "/" in proxy:
+                # CIDR range (e.g., "10.0.0.0/8")
+                network = ip_network(proxy, strict=False)
+                if direct_addr in network:
+                    is_trusted_proxy = True
+                    break
+            else:
+                # Single IP address
+                if direct_addr == ip_address(proxy):
+                    is_trusted_proxy = True
+                    break
+        except ValueError:
+            continue  # Skip invalid proxy definitions
+
+    # If not from a trusted proxy, use direct IP (ignore headers to prevent spoofing)
+    if not is_trusted_proxy:
+        return direct_ip
+
+    # From a trusted proxy - safely extract real client IP from headers
+    # X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2, ...
+    # The rightmost non-trusted IP is the actual client
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        # Parse the header value (format: "client, proxy1, proxy2")
+        ips = [ip.strip() for ip in forwarded_for.split(",")]
+        # Walk backwards from the rightmost IP to find the first non-trusted one
+        for ip_str in reversed(ips):
+            try:
+                ip_addr = ip_address(ip_str)
+                # Check if this IP is NOT a trusted proxy
+                is_proxy = False
+                for proxy in trusted_proxies:
+                    try:
+                        if "/" in proxy:
+                            if ip_addr in ip_network(proxy, strict=False):
+                                is_proxy = True
+                                break
+                        else:
+                            if ip_addr == ip_address(proxy):
+                                is_proxy = True
+                                break
+                    except ValueError:
+                        continue
+                if not is_proxy:
+                    return ip_str
+            except ValueError:
+                continue  # Skip invalid IPs
+
+    # Fall back to X-Real-IP if X-Forwarded-For didn't yield a valid client IP
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        try:
+            ip_addr = ip_address(real_ip)
+            # Verify it's not a trusted proxy IP
+            is_proxy = False
+            for proxy in trusted_proxies:
+                try:
+                    if "/" in proxy:
+                        if ip_addr in ip_network(proxy, strict=False):
+                            is_proxy = True
+                            break
+                    else:
+                        if ip_addr == ip_address(proxy):
+                            is_proxy = True
+                            break
+                except ValueError:
+                    continue
+            if not is_proxy:
+                return real_ip
+        except ValueError:
+            pass
+
+    # If we couldn't extract a valid client IP from headers, use direct IP
+    return direct_ip
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Simple rate limiting middleware with secure client IP extraction."""
+
+    def __init__(
+        self,
+        app,
+        requests_per_minute: int = 60,
+        trusted_proxies: list[str] | None = None,
+    ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
-        self.requests = defaultdict(list)
+        self.requests: defaultdict[str, list[float]] = defaultdict(list)
+        self.trusted_proxies = trusted_proxies or []
 
     async def dispatch(self, request: Request, call_next):
-        client_ip = request.client.host if request.client else "unknown"
+        # Use secure IP extraction to prevent spoofing
+        client_ip = get_client_ip(request, self.trusted_proxies)
 
         # Clean old requests
         current_time = time.time()
@@ -325,7 +447,26 @@ class WebModeServer:
 
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
-        app.add_middleware(RateLimitMiddleware, requests_per_minute=10000)
+
+        # Get trusted proxies from config (for secure IP extraction behind proxies)
+        trusted_proxies: list[str] = []
+        if hasattr(self.config_manager, "web_server"):
+            trusted_proxies = self.config_manager.web_server.get("trusted_proxies", [])
+        if not trusted_proxies:
+            # Default: trust common private proxy ranges for Docker/Kubernetes
+            trusted_proxies = [
+                "127.0.0.1",
+                "::1",
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16",
+            ]
+
+        app.add_middleware(
+            RateLimitMiddleware,
+            requests_per_minute=10000,
+            trusted_proxies=trusted_proxies,
+        )
 
         # CORS policy
         app.add_middleware(
