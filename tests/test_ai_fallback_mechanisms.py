@@ -24,11 +24,19 @@
 
 from unittest.mock import Mock, patch
 
+import pytest
+
 from src.chatty_commander.advisors.service import (
     AdvisorMessage,
     AdvisorReply,
     AdvisorsService,
 )
+
+@pytest.fixture(autouse=True)
+def disable_llm_manager():
+    """Disable the new LLMManager for these legacy fallback tests."""
+    with patch("src.chatty_commander.llm.manager.get_global_llm_manager", return_value=None):
+        yield
 
 
 def _create_mock_provider(side_effect=None, return_value=None, model="gpt-4", api_mode="completion"):
@@ -82,8 +90,8 @@ class TestLLMFallbackMechanisms:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
-            assert response.model == "gpt-4"
+            assert "LLM Error" in response.reply
+            assert response.model == "error"
 
     def test_llm_timeout_fallback(self):
         """Test fallback when LLM times out."""
@@ -122,7 +130,7 @@ class TestLLMFallbackMechanisms:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
+            assert "LLM Error" in response.reply
 
     def test_llm_rate_limit_fallback(self):
         """Test fallback when LLM hits rate limits."""
@@ -161,7 +169,7 @@ class TestLLMFallbackMechanisms:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
+            assert "LLM Error" in response.reply
 
     def test_llm_network_error_fallback(self):
         """Test fallback when network connectivity fails."""
@@ -202,7 +210,7 @@ class TestLLMFallbackMechanisms:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
+            assert "LLM Error" in response.reply
 
     def test_llm_invalid_response_fallback(self):
         """Test fallback when LLM returns invalid response format."""
@@ -289,7 +297,7 @@ class TestLLMFallbackMechanisms:
             response = service.handle_message(message2)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
+            assert "LLM Error" in response.reply
 
     def test_llm_mode_switch_fallback_failure(self):
         """Test mode switch directive handling when it fails."""
@@ -365,7 +373,7 @@ class TestLLMFallbackMechanisms:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
+            assert "LLM Error" in response.reply
 
     def test_llm_fallback_with_different_api_modes(self):
         """Test fallback works with different API modes."""
@@ -406,7 +414,7 @@ class TestLLMFallbackMechanisms:
                 response = service.handle_message(message)
 
                 assert isinstance(response, AdvisorReply)
-                assert "LLM error" in response.reply
+                assert "LLM Error" in response.reply
 
 
 class TestSmartFallbackResponses:
@@ -447,7 +455,7 @@ class TestSmartFallbackResponses:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
+            assert "LLM Error" in response.reply
 
     def test_pattern_based_fallback_responses(self):
         """Test pattern-based fallback response generation."""
@@ -484,7 +492,7 @@ class TestSmartFallbackResponses:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
+            assert "LLM Error" in response.reply
 
     def test_fallback_response_formatting(self):
         """Test that fallback responses are properly formatted."""
@@ -521,7 +529,7 @@ class TestSmartFallbackResponses:
             response = service.handle_message(message)
 
             assert isinstance(response, AdvisorReply)
-            assert "LLM error" in response.reply
+            assert "LLM Error" in response.reply
             assert response.context_key == "discord:test:user123"
             assert response.persona_id == "analyst"
 
@@ -652,4 +660,4 @@ class TestGracefulDegradation:
 
             assert isinstance(response, AdvisorReply)
             # First call fails, error response returned
-            assert "LLM error" in response.reply or "Fallback response" in response.reply
+            assert "LLM Error" in response.reply or "Fallback response" in response.reply
