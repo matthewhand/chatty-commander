@@ -36,10 +36,11 @@ const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="w-full space-y-4">
             <div className="form-control w-full">
-              <label className="label">
+              <label className="label" htmlFor="username">
                 <span className="label-text">Username</span>
               </label>
               <input
+                id="username"
                 type="text"
                 placeholder="Enter username"
                 className="input input-bordered w-full input-primary"
@@ -51,10 +52,11 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div className="form-control w-full">
-              <label className="label">
+              <label className="label" htmlFor="password">
                 <span className="label-text">Password</span>
               </label>
               <input
+                id="password"
                 type="password"
                 placeholder="Enter password"
                 className="input input-bordered w-full input-primary"
@@ -65,7 +67,7 @@ const LoginPage: React.FC = () => {
             </div>
 
             {error && (
-              <div className="alert alert-error shadow-lg py-2">
+              <div className="alert alert-error shadow-lg py-2" role="alert" aria-live="polite">
                 <span>{error}</span>
               </div>
             )}
