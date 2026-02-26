@@ -235,6 +235,8 @@ class WebModeServer:
         self.last_command: str | None = None
         self.last_state_change = datetime.now()
 
+        self.commands_executed: int = 0
+
         # Performance optimizations
         self._command_cache: dict[str, Any] = {}
         self._state_cache: dict[str, Any] = {}
@@ -341,6 +343,7 @@ class WebModeServer:
             execute_command_fn=lambda cmd: self.command_executor.execute_command(cmd),
             get_active_connections=lambda: len(self.active_connections),
             get_cache_size=lambda: len(self._command_cache) + len(self._state_cache),
+            get_total_commands=lambda: self.commands_executed,
         )
         app.include_router(core)
 
@@ -659,6 +662,7 @@ class WebModeServer:
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:
         self.last_command = command
+        self.commands_executed += 1
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:

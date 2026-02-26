@@ -61,6 +61,8 @@ For component diagrams and extension points see
 [Configuration Schema](docs/CONFIG_SCHEMA.md), and
 [Adapter and Plugin System](docs/ADAPTERS.md).
 
+**For detailed usage instructions, please refer to the [User Guide](docs/USER_GUIDE.md).**
+
 ## What It Does
 
 ChattyCommander listens continuously for voice commands using ONNX-based models. It supports different states (idle, computer, chatty) and transitions between them based on detected wake words like "hey chat tee" or "hey khum puter". Once in a specific state, it can execute actions such as keypresses, API calls to home assistants, or interactions with chatbots.
