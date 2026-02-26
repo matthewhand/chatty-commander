@@ -21,7 +21,6 @@ import {
 // Placeholder services for audio devices
 const getAudioDevices = async () => {
   // Simulate fetching devices
-  console.log("Fetching audio devices...");
   return {
     input: ["Default Microphone", "External USB Mic"],
     output: ["Default Speakers", "Headphones"],
@@ -29,7 +28,6 @@ const getAudioDevices = async () => {
 };
 const saveAudioSettings = async (settings: any) => {
   // Placeholder save
-  console.log("Saving audio settings:", settings);
   return new Promise((resolve) => setTimeout(resolve, 1000));
 };
 
