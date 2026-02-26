@@ -343,6 +343,16 @@ The React frontend uses **DaisyUI** (v5) with **Tailwind CSS** (v3) for styling.
 
 
 
+#### Dashboard Features
+
+The dashboard provides real-time system monitoring including:
+- **System Status**: Overall health and uptime.
+- **Commands Executed**: Total count of voice and API commands.
+- **Resource Usage**: Real-time CPU and Memory usage statistics.
+- **WebSocket Status**: Connection state for live updates.
+
+![Dashboard Screenshot](docs/images/dashboard.png)
+
 #### Tech Stack
 
 - React 18 + TypeScript

@@ -73,6 +73,7 @@ class HealthStatus(BaseModel):
     database: str = Field(default="unknown", description="Database status")
     memory_usage: str = Field(default="unknown", description="Memory usage")
     cpu_usage: str = Field(default="unknown", description="CPU usage")
+    commands_executed: int = Field(default=0, description="Total commands executed")
     last_health_check: str = Field(..., description="Last health check timestamp")
 
 
@@ -99,6 +100,7 @@ def include_core_routes(
     execute_command_fn: Callable[[str], Any],
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
+    get_total_commands: Callable[[], int] | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -115,6 +117,46 @@ def include_core_routes(
         if days > 0:
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
+
+    def _get_system_stats() -> dict[str, Any]:
+        memory_usage = "unknown"
+        cpu_usage = "unknown"
+
+        try:
+            import psutil
+
+            memory = psutil.virtual_memory()
+            memory_usage = f"{memory.percent:.1f}%"
+            cpu_usage = f"{psutil.cpu_percent():.1f}%"
+        except ImportError:
+            pass  # psutil not available
+
+        return {"memory_usage": memory_usage, "cpu_usage": cpu_usage}
+
+    def _get_health_status() -> HealthStatus:
+        uptime_seconds = time.time() - get_start_time()
+        uptime_str = _format_uptime(uptime_seconds)
+
+        stats = _get_system_stats()
+
+        # Calculate commands executed
+        commands_executed = counters["command_post"]
+        if get_total_commands:
+            commands_executed += get_total_commands()
+
+        # Database check (placeholder for future database integration)
+        database_status = "not_configured"
+
+        return HealthStatus(
+            status="healthy",
+            uptime=uptime_str,
+            version="0.2.0",
+            database=database_status,
+            memory_usage=stats["memory_usage"],
+            cpu_usage=stats["cpu_usage"],
+            commands_executed=commands_executed,
+            last_health_check=datetime.now().isoformat(),
+        )
 
     @router.get("/api/v1/status", response_model=SystemStatus)
     async def get_status():
@@ -133,34 +175,7 @@ def include_core_routes(
     @router.get("/health", response_model=HealthStatus)
     async def health_check():
         """Comprehensive health check endpoint."""
-        uptime_seconds = time.time() - get_start_time()
-        uptime_str = _format_uptime(uptime_seconds)
-
-        # Basic system checks
-        memory_usage = "unknown"
-        cpu_usage = "unknown"
-
-        try:
-            import psutil
-
-            memory = psutil.virtual_memory()
-            memory_usage = f"{memory.percent:.1f}%"
-            cpu_usage = f"{psutil.cpu_percent():.1f}%"
-        except ImportError:
-            pass  # psutil not available
-
-        # Database check (placeholder for future database integration)
-        database_status = "not_configured"
-
-        return HealthStatus(
-            status="healthy",
-            uptime=uptime_str,
-            version="0.2.0",
-            database=database_status,
-            memory_usage=memory_usage,
-            cpu_usage=cpu_usage,
-            last_health_check=datetime.now().isoformat(),
-        )
+        return _get_health_status()
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
@@ -288,14 +303,10 @@ def include_core_routes(
         "command_post": 0,
     }
 
-    @router.get("/api/v1/health", operation_id="health_check_core")
+    @router.get("/api/v1/health", operation_id="health_check_core", response_model=HealthStatus)
     async def health_check_core():
         counters["status"] += 1
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "uptime": _format_uptime(time.time() - get_start_time()),
-        }
+        return _get_health_status()
 
     @router.get("/api/v1/metrics")
     async def metrics():
