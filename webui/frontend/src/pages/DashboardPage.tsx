@@ -35,13 +35,15 @@ const DashboardPage: React.FC = () => {
     queryKey: ["systemStatus"],
     queryFn: async () => {
       const res = await fetch("/health");
-      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0 };
+      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0, cpu: "N/A", memory: "N/A" };
       const data = await res.json();
       return {
         status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
         uptime: data.uptime ?? "N/A",
         commandsExecuted: data.commands_executed ?? 0,
         version: data.version,
+        cpu: data.cpu_usage ?? "N/A",
+        memory: data.memory_usage ?? "N/A",
       };
     },
     refetchInterval: 30000,
@@ -87,7 +89,7 @@ const DashboardPage: React.FC = () => {
       </h2>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
@@ -119,6 +121,28 @@ const DashboardPage: React.FC = () => {
             <div className="stat-title">Commands</div>
             <div className="stat-value text-accent">{systemStatus?.commandsExecuted || 0}</div>
             <div className="stat-desc">Total executed</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-info">
+              <div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>
+            </div>
+            <div className="stat-title">CPU Load</div>
+            <div className="stat-value text-info text-2xl">{systemStatus?.cpu || "N/A"}</div>
+            <div className="stat-desc">Processor usage</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-warning">
+              <div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>
+            </div>
+            <div className="stat-title">Memory</div>
+            <div className="stat-value text-warning text-2xl">{systemStatus?.memory || "N/A"}</div>
+            <div className="stat-desc">RAM usage</div>
           </div>
         </div>
 
