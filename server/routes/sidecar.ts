@@ -4,11 +4,11 @@ import { exec as execCb } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
-import { createHmac } from "crypto";
+import { createHmac, randomBytes } from "crypto";
 
 const exec = promisify(execCb);
 const router = Router();
-const SECRET = process.env.SIDECAR_SECRET || "dev-secret";
+const SECRET = process.env.SIDECAR_SECRET || randomBytes(32).toString("hex");
 
 function sign(p: string) {
   return createHmac("sha256", SECRET).update(p).digest("hex");
