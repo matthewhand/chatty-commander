@@ -65,8 +65,8 @@ def _get_patchable_model_class():
             M = getattr(mm, "Model", None)
             if M is not None:
                 return M
-    except Exception:
-        pass
+    except Exception as e:
+        logging.debug(f"Failed to get Model from sys.modules: {e}")
 
     # 2) Dynamic import
     try:
@@ -76,8 +76,8 @@ def _get_patchable_model_class():
         M = getattr(mm, "Model", None)
         if M is not None:
             return M
-    except Exception:
-        pass
+    except Exception as e:
+        logging.debug(f"Failed to dynamic import model_manager: {e}")
 
     # 3) Under pytest: return MagicMock to simplify tests if requested
     try:
@@ -87,8 +87,8 @@ def _get_patchable_model_class():
             from unittest.mock import MagicMock as _MagicMock  # type: ignore
 
             return _MagicMock  # type: ignore[return-value]
-    except Exception:
-        pass
+    except Exception as e:
+        logging.debug(f"Failed to import MagicMock: {e}")
 
     # 4) Fallback to local class
     return Model
