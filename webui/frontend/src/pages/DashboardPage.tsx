@@ -5,6 +5,8 @@ import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIco
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
+const MAX_LOG_MESSAGES = 100;
+
 const DashboardPage: React.FC = () => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
@@ -20,12 +22,12 @@ const DashboardPage: React.FC = () => {
     setCommandInput("");
 
     // Optimistically add to log
-    setMessages(prev => [...prev, `> Executing: ${cmd}`]);
+    setMessages(prev => [...prev, `> Executing: ${cmd}`].slice(-MAX_LOG_MESSAGES));
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
-      setMessages(prev => [...prev, `Error: ${err.message}`]);
+      setMessages(prev => [...prev, `Error: ${err.message}`].slice(-MAX_LOG_MESSAGES));
     } finally {
       setIsSending(false);
     }
@@ -67,7 +69,7 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (ws) {
       ws.onmessage = (event) => {
-        setMessages((prev) => [...prev, event.data]);
+        setMessages((prev) => [...prev, event.data].slice(-MAX_LOG_MESSAGES));
       };
     }
   }, [ws]);

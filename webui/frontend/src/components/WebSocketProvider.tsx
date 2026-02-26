@@ -13,16 +13,18 @@ const WebSocketContext = createContext<WebSocketContextType | undefined>(
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const token = localStorage.getItem("auth_token");
-    if (!token) return;
+    if (!token && !user?.noAuth) return;
 
-    const socket = new WebSocket(`ws://localhost:8001/ws?token=${token}`);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(`${protocol}//${window.location.host}/ws?token=${token || ""}`);
 
     socket.onopen = () => setIsConnected(true);
     socket.onclose = () => setIsConnected(false);
@@ -36,7 +38,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       socket.close();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.noAuth]);
 
   return (
     <WebSocketContext.Provider value={{ ws, isConnected }}>
