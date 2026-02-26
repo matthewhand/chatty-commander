@@ -32,6 +32,14 @@ from typing import Any
 
 import numpy as np
 
+try:
+    from scipy import signal
+
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+    signal = None
+
 
 @dataclass
 class VoiceProcessingConfig:
@@ -117,6 +125,10 @@ class EnhancedVoiceProcessor:
 
     def _initialize_noise_reduction(self):
         """Initialize noise reduction component."""
+        # Initialize filter coefficients as None
+        self._nr_b = None
+        self._nr_a = None
+
         try:
             # Try to use advanced noise reduction if available
             import noisereduce as nr
@@ -125,8 +137,18 @@ class EnhancedVoiceProcessor:
             self.logger.info("Advanced noise reduction enabled")
         except ImportError:
             # Fallback to basic noise reduction
-            self.noise_reducer = self._basic_noise_reduction
-            self.logger.info("Basic noise reduction enabled")
+            if SCIPY_AVAILABLE:
+                # Pre-calculate filter coefficients
+                self._nr_b, self._nr_a = signal.butter(
+                    4, 300, btype="high", fs=self.config.sample_rate
+                )
+                self.noise_reducer = self._basic_noise_reduction
+                self.logger.info("Basic noise reduction enabled")
+            else:
+                self.logger.warning(
+                    "Noise reduction disabled: neither noisereduce nor scipy available"
+                )
+                self.noise_reducer = None
 
     def _initialize_vad(self):
         """Initialize voice activity detection."""
@@ -183,10 +205,10 @@ class EnhancedVoiceProcessor:
     def _basic_noise_reduction(self, audio_data: np.ndarray) -> np.ndarray:
         """Basic noise reduction using spectral subtraction."""
         # Simple high-pass filter to remove low-frequency noise
-        from scipy import signal
+        if not SCIPY_AVAILABLE or self._nr_b is None or self._nr_a is None:
+            return audio_data
 
-        b, a = signal.butter(4, 300, btype="high", fs=self.config.sample_rate)
-        return signal.filtfilt(b, a, audio_data)
+        return signal.filtfilt(self._nr_b, self._nr_a, audio_data)
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
         """Energy-based voice activity detection."""
