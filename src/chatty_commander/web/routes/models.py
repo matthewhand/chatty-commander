@@ -24,6 +24,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import shutil
 from datetime import datetime
@@ -96,7 +97,7 @@ def _get_model_dirs() -> list[Path]:
     return dirs
 
 
-def _scan_model_files() -> list[ModelFileInfo]:
+def _scan_model_files_sync() -> list[ModelFileInfo]:
     """Scan all model directories for ONNX files."""
     models = []
     model_dirs = _get_model_dirs()
@@ -131,6 +132,11 @@ def _scan_model_files() -> list[ModelFileInfo]:
     return models
 
 
+async def _scan_model_files() -> list[ModelFileInfo]:
+    """Asynchronously scan all model directories for ONNX files."""
+    return await asyncio.to_thread(_scan_model_files_sync)
+
+
 def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
     """Create router for model file management.
 
@@ -145,7 +151,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
     @router.get("/files", response_model=ModelListResponse)
     async def list_model_files():
         """List all available ONNX model files."""
-        models = _scan_model_files()
+        models = await _scan_model_files()
         total_size = sum(m.size_bytes for m in models)
 
         return ModelListResponse(
@@ -224,7 +230,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             File download response
         """
         # Find the file in model directories
-        models = _scan_model_files()
+        models = await _scan_model_files()
         matching = [m for m in models if m.name == filename]
 
         if not matching:
@@ -258,7 +264,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             Deletion confirmation
         """
         # Find the file in model directories
-        models = _scan_model_files()
+        models = await _scan_model_files()
         matching = [m for m in models if m.name == filename]
 
         if not matching:
