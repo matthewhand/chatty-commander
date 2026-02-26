@@ -10,6 +10,22 @@ const exec = promisify(execCb);
 const router = Router();
 const SECRET = process.env.SIDECAR_SECRET || "dev-secret";
 
+function findProjectRoot(startDir: string): string {
+  let current = path.resolve(startDir);
+  while (true) {
+    if (fs.existsSync(path.join(current, "pnpm-workspace.yaml"))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return process.cwd();
+    }
+    current = parent;
+  }
+}
+
+const PROJECT_ROOT = findProjectRoot(process.cwd());
+
 function sign(p: string) {
   return createHmac("sha256", SECRET).update(p).digest("hex");
 }
@@ -33,6 +49,11 @@ router.get("/file", async (req, res) => {
     } else {
       // For file requests, generate a signed URL
       const abs = path.resolve(filePath);
+      if (!abs.startsWith(PROJECT_ROOT) || (abs.length > PROJECT_ROOT.length && abs[PROJECT_ROOT.length] !== path.sep)) {
+        res.status(403).json({ error: "Access denied" });
+        return;
+      }
+
       if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
         res.status(404).json({ error: "not found" });
         return;
@@ -57,6 +78,11 @@ router.get("/file/content", (req, res) => {
 
   const abs = path.resolve(file);
   if (sig !== sign(abs)) {
+    res.status(403).end();
+    return;
+  }
+
+  if (!abs.startsWith(PROJECT_ROOT) || (abs.length > PROJECT_ROOT.length && abs[PROJECT_ROOT.length] !== path.sep)) {
     res.status(403).end();
     return;
   }
