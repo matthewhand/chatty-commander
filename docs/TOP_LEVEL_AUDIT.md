@@ -4,7 +4,7 @@
 
 | File/Directory             | Type          | Justification                            | Competition Necessity                       |
 | -------------------------- | ------------- | ---------------------------------------- | ------------------------------------------- |
-| `.env.template`            | Config        | Template for environment variables setup | ✅ Essential - User configuration           |
+| `.env.example`             | Config        | Template for environment variables setup | ✅ Essential - User configuration           |
 | `.github/`                 | Directory     | GitHub workflows and issue templates     | ✅ Essential - CI/CD and project management |
 | `.gitignore`               | Config        | Git exclusion rules                      | ✅ Essential - Version control hygiene      |
 | `.python-version`          | Config        | Python version specification for pyenv   | ✅ Essential - Environment consistency      |

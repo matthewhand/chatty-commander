@@ -63,7 +63,7 @@ These don't affect core application functionality - users can install, configure
 ├── Makefile
 ├── Dockerfile
 ├── .env.example
-├── .env.template
+├── .env.example
 ├── .gitignore
 ├── chatty (dev wrapper)
 ├── icon.svg

@@ -9,7 +9,7 @@ chatty-commander/
 ├── config/                 # Configuration files and templates
 │   ├── config.json
 │   ├── config.json.template
-│   └── .env.template
+│   └── .env.example
 ├── deploy/                 # Deployment and packaging
 │   ├── docker/            # Container definitions
 │   ├── k8s/               # Kubernetes manifests
