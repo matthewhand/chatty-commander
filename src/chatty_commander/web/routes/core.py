@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 from collections.abc import Callable
@@ -140,14 +141,22 @@ def include_core_routes(
         memory_usage = "unknown"
         cpu_usage = "unknown"
 
-        try:
+        def _get_system_stats():
             import psutil
 
-            memory = psutil.virtual_memory()
-            memory_usage = f"{memory.percent:.1f}%"
-            cpu_usage = f"{psutil.cpu_percent():.1f}%"
+            return psutil.virtual_memory().percent, psutil.cpu_percent()
+
+        try:
+            loop = asyncio.get_running_loop()
+            mem_percent, cpu_percent = await loop.run_in_executor(
+                None, _get_system_stats
+            )
+            memory_usage = f"{mem_percent:.1f}%"
+            cpu_usage = f"{cpu_percent:.1f}%"
         except ImportError:
             pass  # psutil not available
+        except Exception:
+            pass  # Other errors
 
         # Database check (placeholder for future database integration)
         database_status = "not_configured"
