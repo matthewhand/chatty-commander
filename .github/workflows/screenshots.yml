@@ -1,0 +1,60 @@
+name: Update Documentation Screenshots
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'webui/frontend/src/**'
+      - 'src/chatty_commander/web/**'
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        run: pip install uv && uv sync
+
+      - name: Start backend (test mode)
+        run: |
+          uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth &
+          sleep 5
+        env:
+          PYTHONPATH: src
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: webui/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: webui/frontend
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: webui/frontend
+
+      - name: Generate screenshots
+        run: npx playwright test tests/e2e/screenshots.spec.ts --reporter=list
+        working-directory: webui/frontend
+        env:
+          BASE_URL: http://localhost:8100
+
+      - name: Commit screenshots
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-update screenshots [skip ci]"
+          file_pattern: "docs/screenshots/*.png"
