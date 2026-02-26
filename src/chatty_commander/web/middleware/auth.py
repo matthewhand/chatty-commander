@@ -81,7 +81,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             expected_key = None
 
             # Check for DummyConfig pattern (test configs)
-            if hasattr(self.config_manager, "auth") and self.config_manager.auth:
+            if hasattr(self.config_manager, "auth"):
                 expected_key = self.config_manager.auth.get("api_key")
                 logger.debug(f"Found auth config in DummyConfig: {expected_key}")
             # Check for regular Config pattern
