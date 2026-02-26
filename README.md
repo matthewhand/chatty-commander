@@ -341,6 +341,20 @@ python scripts/voice_demo.py --mock
 
 The React frontend uses **DaisyUI** (v5) with **Tailwind CSS** (v3) for styling.
 
+#### Dashboard
+
+The ChattyCommander WebUI provides a real-time dashboard to monitor system health and performance.
+
+![Dashboard](docs/images/dashboard.png)
+
+Key metrics displayed:
+- **System Status**: Overall health of the application.
+- **Uptime**: Time since last restart.
+- **Commands Executed**: Total number of voice and API commands processed.
+- **CPU & Memory Usage**: Real-time system resource utilization.
+- **WebSocket Status**: Connection status for real-time updates.
+- **Agent Status**: Health and activity of AI agents.
+
 
 
 #### Tech Stack

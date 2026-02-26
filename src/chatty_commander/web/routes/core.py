@@ -73,6 +73,7 @@ class HealthStatus(BaseModel):
     database: str = Field(default="unknown", description="Database status")
     memory_usage: str = Field(default="unknown", description="Memory usage")
     cpu_usage: str = Field(default="unknown", description="CPU usage")
+    commands_executed: int = Field(default=0, description="Total commands executed")
     last_health_check: str = Field(..., description="Last health check timestamp")
 
 
@@ -99,6 +100,7 @@ def include_core_routes(
     execute_command_fn: Callable[[str], Any],
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
+    get_total_commands: Callable[[], int] | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -130,9 +132,7 @@ def include_core_routes(
             uptime=uptime_str,
         )
 
-    @router.get("/health", response_model=HealthStatus)
-    async def health_check():
-        """Comprehensive health check endpoint."""
+    async def _get_health_status() -> HealthStatus:
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
 
@@ -149,6 +149,10 @@ def include_core_routes(
         except ImportError:
             pass  # psutil not available
 
+        commands_count = counters["command_post"]
+        if get_total_commands:
+            commands_count += get_total_commands()
+
         # Database check (placeholder for future database integration)
         database_status = "not_configured"
 
@@ -159,8 +163,14 @@ def include_core_routes(
             database=database_status,
             memory_usage=memory_usage,
             cpu_usage=cpu_usage,
+            commands_executed=commands_count,
             last_health_check=datetime.now().isoformat(),
         )
+
+    @router.get("/health", response_model=HealthStatus)
+    async def health_check():
+        """Comprehensive health check endpoint."""
+        return await _get_health_status()
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
@@ -288,14 +298,10 @@ def include_core_routes(
         "command_post": 0,
     }
 
-    @router.get("/api/v1/health", operation_id="health_check_core")
+    @router.get("/api/v1/health", operation_id="health_check_core", response_model=HealthStatus)
     async def health_check_core():
         counters["status"] += 1
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "uptime": _format_uptime(time.time() - get_start_time()),
-        }
+        return await _get_health_status()
 
     @router.get("/api/v1/metrics")
     async def metrics():
