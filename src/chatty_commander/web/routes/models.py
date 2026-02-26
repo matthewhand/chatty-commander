@@ -30,6 +30,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import aiofiles
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -197,15 +198,17 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
 
         try:
             # Write file
-            content = await file.read()
-            with open(file_path, "wb") as f:
-                f.write(content)
+            total_size = 0
+            async with aiofiles.open(file_path, "wb") as f:
+                while chunk := await file.read(1024 * 1024):  # 1MB chunks
+                    await f.write(chunk)
+                    total_size += len(chunk)
 
             return UploadResponse(
                 success=True,
                 message=f"Model '{file.filename}' uploaded successfully to {target_dir}",
                 filename=file.filename,
-                size_bytes=len(content),
+                size_bytes=total_size,
             )
         except Exception as e:
             raise HTTPException(
