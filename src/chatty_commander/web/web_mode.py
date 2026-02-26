@@ -605,8 +605,12 @@ class WebModeServer:
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
             # Check for bridge token in header
-            expected_token = "secret"  # TODO: Make configurable
-            if not x_bridge_token or x_bridge_token != expected_token:
+            expected_token = self.config_manager.web_server.get("bridge_token")
+            if (
+                not expected_token
+                or not x_bridge_token
+                or x_bridge_token != expected_token
+            ):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
             # For now, just echo back the event

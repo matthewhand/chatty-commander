@@ -37,6 +37,8 @@ class DummyConfig:
         self.system_models_path = "models-computer"
         self.chat_models_path = "models-chatty"
         self.config = {"model_actions": {}}
+        # Web server config for bridge token
+        self.web_server = {"bridge_token": "test-secret"}
         self.advisors = {
             "enabled": True,
             "providers": {
@@ -50,7 +52,7 @@ class DummyConfig:
                 },
                 "default_persona": "general",
             },
-            "bridge": {"token": "secret", "url": "http://localhost:3001"},
+            "bridge": {"url": "http://localhost:3001"},
         }
 
 
@@ -81,7 +83,7 @@ def test_bridge_event_ok_with_secret():
     client = TestClient(server.app)
     resp = client.post(
         "/bridge/event",
-        headers={"X-Bridge-Token": "secret"},
+        headers={"X-Bridge-Token": "test-secret"},
         json={
             "platform": "discord",
             "channel": "c1",

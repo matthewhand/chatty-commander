@@ -287,12 +287,25 @@ class Config:
             update_val = os.environ["CHATCOMM_CHECK_FOR_UPDATES"].lower()
             self.check_for_updates = update_val not in ("false", "no", "0")
 
+        if os.environ.get("CHATTY_BRIDGE_TOKEN"):
+            if "web_server" not in self.config_data:
+                self.config_data["web_server"] = {}
+            self.config_data["web_server"]["bridge_token"] = os.environ[
+                "CHATTY_BRIDGE_TOKEN"
+            ]
+
     def _apply_web_server_config(self) -> None:
         web_cfg = self.config_data.get("web_server", {})
         host = web_cfg.get("host", "0.0.0.0")
         port = int(web_cfg.get("port", 8100))
         auth = bool(web_cfg.get("auth_enabled", True))
-        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
+        bridge_token = web_cfg.get("bridge_token")
+        self.web_server = {
+            "host": host,
+            "port": port,
+            "auth_enabled": auth,
+            "bridge_token": bridge_token,
+        }
         self.web_host = host
         self.web_port = port
         self.web_auth_enabled = auth

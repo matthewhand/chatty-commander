@@ -3,7 +3,8 @@
   "web_server": {
     "host": "0.0.0.0",
     "port": 8100,
-    "auth_enabled": true
+    "auth_enabled": true,
+    "bridge_token": "CHANGE_ME_IN_PROD"
   },
   "voice_only": false
 }
