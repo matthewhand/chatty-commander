@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 from collections.abc import Callable
@@ -210,6 +211,8 @@ def include_core_routes(
         config_data["_env_overrides"] = env_overrides
         return config_data
 
+    config_save_lock = asyncio.Lock()
+
     @router.put("/api/v1/config")
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
@@ -220,11 +223,18 @@ def include_core_routes(
                 cfg.update(config_data)
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
-                try:
-                    save()
-                except TypeError:
-                    # Some implementations require the cfg param
-                    save(cfg)  # type: ignore[arg-type]
+                loop = asyncio.get_running_loop()
+
+                def _do_save():
+                    try:
+                        save()
+                    except TypeError:
+                        # Some implementations require the cfg param
+                        save(cfg)  # type: ignore[arg-type]
+
+                async with config_save_lock:
+                    await loop.run_in_executor(None, _do_save)
+
             return {"message": "Configuration updated successfully"}
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
