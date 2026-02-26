@@ -26,6 +26,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+import logging
+
 try:
     from chatty_commander.voice.wakeword import MockWakeWordDetector, WakeWordDetector
 
@@ -34,6 +36,9 @@ except ImportError:
     MockWakeWordDetector = None  # type: ignore
     WakeWordDetector = None  # type: ignore
     VOICE_AVAILABLE = False
+
+
+logger = logging.getLogger(__name__)
 
 
 class CommandSink(Protocol):
@@ -244,6 +249,9 @@ class ModeOrchestrator:
             # If no specific wake word command, try a generic wake command
             try:
                 self._dispatch_command("wake")
-            except Exception:
+            except Exception as e:
                 # If no wake command, log the detection
-                pass  # Could add logging here if needed
+                logger.warning(
+                    f"Wake word '{wake_word}' detected but no 'wake_word_{wake_word}' "
+                    f"or generic 'wake' command found, or execution failed: {e}"
+                )
