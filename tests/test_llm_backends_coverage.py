@@ -187,6 +187,7 @@ class TestOpenAIBackend:
             temperature=0.5,
         )
 
+        assert result == "Response"
         mock_client.chat.completions.create.assert_called_once()
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["model"] == "gpt-4"
