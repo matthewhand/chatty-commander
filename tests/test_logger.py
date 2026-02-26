@@ -224,18 +224,22 @@ class TestHTTPLogHandler(unittest.TestCase):
 
 
 class TestReportError(unittest.TestCase):
-    def test_report_error_basic(self):
+    @patch("chatty_commander.utils.logger.logging.error")
+    def test_report_error_basic(self, mock_logging_error):
         """Test report_error basic functionality"""
         error = ValueError("Test error")
-        # Just test that it doesn't raise an exception
         report_error(error)
+        mock_logging_error.assert_called_once_with(f"Error reported: {error}")
 
-    def test_report_error_with_context(self):
+    @patch("chatty_commander.utils.logger.logging.error")
+    def test_report_error_with_context(self, mock_logging_error):
         """Test report_error with context"""
         error = ValueError("Test error")
         context = {"operation": "test_operation", "user": "test_user"}
-        # Just test that it doesn't raise an exception
         report_error(error, context=context)
+        mock_logging_error.assert_called_once_with(
+            f"Error reported: {error}, context: {context}"
+        )
 
 
 if __name__ == "__main__":
