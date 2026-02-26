@@ -241,6 +241,9 @@ class WebModeServer:
         self._cache_timeout = 30.0  # 30 seconds cache
         self._last_cache_clear = time.time()
 
+        # Metrics
+        self.commands_executed = 0
+
         # Optional advisors service (enabled via config)
         try:
             self.advisors_service = AdvisorsService(config=config_manager)
@@ -338,9 +341,10 @@ class WebModeServer:
             get_config_manager=lambda: self.config_manager,
             get_last_command=lambda: self.last_command,
             get_last_state_change=lambda: self.last_state_change,
-            execute_command_fn=lambda cmd: self.command_executor.execute_command(cmd),
+            execute_command_fn=lambda cmd: self._execute_command_wrapper(cmd),
             get_active_connections=lambda: len(self.active_connections),
             get_cache_size=lambda: len(self._command_cache) + len(self._state_cache),
+            get_total_commands=lambda: self.commands_executed,
         )
         app.include_router(core)
 
@@ -656,8 +660,13 @@ class WebModeServer:
             )
         )
 
+    def _execute_command_wrapper(self, command: str) -> Any:
+        self.commands_executed += 1
+        return self.command_executor.execute_command(command)
+
     # Optional convenience callbacks (exposed for tests)
-    def on_command_detected(self, command: str, confidence: float) -> None:
+    def on_command_detected(self, command: str, confidence: float = 1.0) -> None:
+        self.commands_executed += 1
         self.last_command = command
         try:
             loop = asyncio.get_event_loop()

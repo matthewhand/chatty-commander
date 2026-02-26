@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
 
-const ARTIFACTS_DIR = "/home/matthewh/.gemini/antigravity/brain/ea411f02-4a15-4787-bf51-08531d57bd78";
+const ARTIFACTS_DIR = path.resolve(process.cwd(), "../../docs/images");
 
 test.describe("UI Screenshots", () => {
     test("capture all pages", async ({ page }) => {

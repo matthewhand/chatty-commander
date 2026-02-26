@@ -29,7 +29,7 @@
 
 ### 📊 Monitoring & Observability
 
-- **Health Checks**: Comprehensive system health monitoring (`/health`)
+- **Health Checks**: Comprehensive system health monitoring (`/health`) with real-time CPU and Memory usage
 - **Metrics Endpoint**: Prometheus-compatible metrics (`/metrics`)
 - **Performance Monitoring**: Response times, cache hit rates, error tracking
 - **System Resources**: CPU, memory, and disk usage monitoring
@@ -337,7 +337,7 @@ python scripts/voice_demo.py --mock
 
 ### WebUI
 
-
+![WebUI Dashboard](docs/images/dashboard.png)
 
 The React frontend uses **DaisyUI** (v5) with **Tailwind CSS** (v3) for styling.
 
@@ -370,6 +370,8 @@ npm run start          # Dev server on port 3000
 npm run build          # Production build
 
 npm run test:e2e       # Playwright tests
+
+npm run generate-screenshots # Generate UI screenshots
 
 ```
 
