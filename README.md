@@ -397,6 +397,26 @@ cd webui/frontend && npx playwright test
 
 See `docs/WEBUI_CONNECTIVITY.md` for detailed connectivity docs.
 
+### Web Dashboard
+
+ChattyCommander provides a web-based dashboard for monitoring and control.
+
+![ChattyCommander Dashboard](docs/images/dashboard.png)
+
+The dashboard provides real-time insights into:
+- **System Status**: Overall health and uptime.
+- **Resource Usage**: CPU and Memory utilization.
+- **Commands**: Total number of commands executed (voice + API).
+- **WebSocket**: Connection status for real-time updates.
+- **Real-time Log**: Live feed of detected commands and execution status.
+- **Agent Status**: Status and activity of connected AI agents.
+
+To generate updated screenshots:
+```bash
+cd webui/frontend
+npm run generate-screenshots
+```
+
 ## Example workflows
 
 1. Configure and trigger a keypress

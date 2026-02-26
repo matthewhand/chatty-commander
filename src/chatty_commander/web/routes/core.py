@@ -74,6 +74,7 @@ class HealthStatus(BaseModel):
     memory_usage: str = Field(default="unknown", description="Memory usage")
     cpu_usage: str = Field(default="unknown", description="CPU usage")
     last_health_check: str = Field(..., description="Last health check timestamp")
+    commands_executed: int = Field(default=0, description="Total commands executed")
 
 
 class MetricsData(BaseModel):
@@ -99,6 +100,7 @@ def include_core_routes(
     execute_command_fn: Callable[[str], Any],
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
+    get_total_commands: Callable[[], int] | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -116,23 +118,7 @@ def include_core_routes(
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
 
-    @router.get("/api/v1/status", response_model=SystemStatus)
-    async def get_status():
-        uptime_seconds = time.time() - get_start_time()
-        uptime_str = _format_uptime(uptime_seconds)
-        sm = get_state_manager()
-        return SystemStatus(
-            status="running",
-            current_state=getattr(sm, "current_state", "idle"),
-            active_models=(
-                sm.get_active_models() if hasattr(sm, "get_active_models") else []
-            ),
-            uptime=uptime_str,
-        )
-
-    @router.get("/health", response_model=HealthStatus)
-    async def health_check():
-        """Comprehensive health check endpoint."""
+    def _get_health_status() -> HealthStatus:
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
 
@@ -152,6 +138,24 @@ def include_core_routes(
         # Database check (placeholder for future database integration)
         database_status = "not_configured"
 
+        cmd_count = 0
+        if get_total_commands:
+            try:
+                cmd_count = get_total_commands()
+            except Exception:
+                pass
+
+        # Include API command count if not included in total (assuming caller handles summation or we sum here)
+        # Actually, if get_total_commands sums voice + API, good. If it's just voice, we should add API.
+        # But `counters` is local here.
+        # Let's assume get_total_commands returns voice commands, and we add API commands here.
+        # BUT the plan said "Pass a lambda that returns the total count".
+        # Let's assume the caller provides the *total* or at least the *external* count.
+        # The safest bet is: get_total_commands() returns whatever the caller tracks (e.g. voice).
+        # And we add counters["command_post"].
+        # But wait, if I change WebModeServer to track all commands, then get_total_commands is enough.
+        # I'll stick to: get_total_commands returns the count from WebModeServer, which I will make comprehensive.
+
         return HealthStatus(
             status="healthy",
             uptime=uptime_str,
@@ -160,7 +164,27 @@ def include_core_routes(
             memory_usage=memory_usage,
             cpu_usage=cpu_usage,
             last_health_check=datetime.now().isoformat(),
+            commands_executed=cmd_count,
         )
+
+    @router.get("/api/v1/status", response_model=SystemStatus)
+    async def get_status():
+        uptime_seconds = time.time() - get_start_time()
+        uptime_str = _format_uptime(uptime_seconds)
+        sm = get_state_manager()
+        return SystemStatus(
+            status="running",
+            current_state=getattr(sm, "current_state", "idle"),
+            active_models=(
+                sm.get_active_models() if hasattr(sm, "get_active_models") else []
+            ),
+            uptime=uptime_str,
+        )
+
+    @router.get("/health", response_model=HealthStatus)
+    async def health_check():
+        """Comprehensive health check endpoint."""
+        return _get_health_status()
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
@@ -288,14 +312,10 @@ def include_core_routes(
         "command_post": 0,
     }
 
-    @router.get("/api/v1/health", operation_id="health_check_core")
+    @router.get("/api/v1/health", operation_id="health_check_core", response_model=HealthStatus)
     async def health_check_core():
         counters["status"] += 1
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "uptime": _format_uptime(time.time() - get_start_time()),
-        }
+        return _get_health_status()
 
     @router.get("/api/v1/metrics")
     async def metrics():

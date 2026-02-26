@@ -86,6 +86,7 @@ class TestServerImportSafety:
                 "version_router",
                 "metrics_router",
                 "agents_router",
+                "models_router",
             ]
 
             for name in router_names:

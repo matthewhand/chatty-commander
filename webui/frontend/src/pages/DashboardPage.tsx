@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Cpu, HardDrive } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
@@ -42,6 +42,8 @@ const DashboardPage: React.FC = () => {
         uptime: data.uptime ?? "N/A",
         commandsExecuted: data.commands_executed ?? 0,
         version: data.version,
+        cpuUsage: data.cpu_usage ?? "N/A",
+        memoryUsage: data.memory_usage ?? "N/A",
       };
     },
     refetchInterval: 30000,
@@ -87,7 +89,7 @@ const DashboardPage: React.FC = () => {
       </h2>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
@@ -95,7 +97,7 @@ const DashboardPage: React.FC = () => {
               <Server size={32} />
             </div>
             <div className="stat-title">System Status</div>
-            <div className="stat-value text-primary">{systemStatus?.status || "Unknown"}</div>
+            <div className="stat-value text-primary text-xl">{systemStatus?.status || "Unknown"}</div>
             <div className="stat-desc">Core services running</div>
           </div>
         </div>
@@ -106,7 +108,7 @@ const DashboardPage: React.FC = () => {
               <Clock size={32} />
             </div>
             <div className="stat-title">Uptime</div>
-            <div className="stat-value text-secondary text-2xl">{systemStatus?.uptime || "N/A"}</div>
+            <div className="stat-value text-secondary text-xl">{systemStatus?.uptime || "N/A"}</div>
             <div className="stat-desc">Since last restart</div>
           </div>
         </div>
@@ -119,6 +121,28 @@ const DashboardPage: React.FC = () => {
             <div className="stat-title">Commands</div>
             <div className="stat-value text-accent">{systemStatus?.commandsExecuted || 0}</div>
             <div className="stat-desc">Total executed</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-info">
+              <Cpu size={32} />
+            </div>
+            <div className="stat-title">CPU Usage</div>
+            <div className="stat-value text-info">{systemStatus?.cpuUsage || "N/A"}</div>
+            <div className="stat-desc">System Load</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-warning">
+              <HardDrive size={32} />
+            </div>
+            <div className="stat-title">Memory Usage</div>
+            <div className="stat-value text-warning">{systemStatus?.memoryUsage || "N/A"}</div>
+            <div className="stat-desc">RAM Utilization</div>
           </div>
         </div>
 

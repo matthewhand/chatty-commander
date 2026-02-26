@@ -234,6 +234,7 @@ class WebModeServer:
         self.start_time = time.time()
         self.last_command: str | None = None
         self.last_state_change = datetime.now()
+        self.commands_executed = 0
 
         # Performance optimizations
         self._command_cache: dict[str, Any] = {}
@@ -338,9 +339,10 @@ class WebModeServer:
             get_config_manager=lambda: self.config_manager,
             get_last_command=lambda: self.last_command,
             get_last_state_change=lambda: self.last_state_change,
-            execute_command_fn=lambda cmd: self.command_executor.execute_command(cmd),
+            execute_command_fn=lambda cmd: self._execute_command_wrapper(cmd),
             get_active_connections=lambda: len(self.active_connections),
             get_cache_size=lambda: len(self._command_cache) + len(self._state_cache),
+            get_total_commands=lambda: self.commands_executed,
         )
         app.include_router(core)
 
@@ -623,6 +625,10 @@ class WebModeServer:
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
 
+    def _execute_command_wrapper(self, cmd: str) -> Any:
+        self.commands_executed += 1
+        return self.command_executor.execute_command(cmd)
+
     async def _broadcast_message(self, message: WebSocketMessage) -> None:
         """Broadcast a message to all active WebSocket connections."""
         payload = message.model_dump_json()
@@ -658,6 +664,7 @@ class WebModeServer:
 
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:
+        self.commands_executed += 1
         self.last_command = command
         try:
             loop = asyncio.get_event_loop()
