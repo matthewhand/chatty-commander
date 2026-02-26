@@ -508,7 +508,8 @@ class WebModeServer:
             if not self.advisors_service:
                 raise HTTPException(status_code=500, detail="Advisors unavailable")
             try:
-                reply = self.advisors_service.handle_message(
+                reply = await asyncio.to_thread(
+                    self.advisors_service.handle_message,
                     AdvisorMessage(
                         platform=message.platform,
                         channel=message.channel,
