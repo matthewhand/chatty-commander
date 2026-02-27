@@ -11,8 +11,11 @@ import {
   Headphones as HeadphonesIcon,
   Server as ServerIcon,
   Activity as ActivityIcon,
+  Trash2 as TrashIcon,
+  Upload as UploadIcon,
+  FileAudio as FileAudioIcon,
 } from "lucide-react";
-import { fetchLLMModels } from "../services/api";
+import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -121,9 +124,18 @@ const ConfigurationPage: React.FC = () => {
   const [isTestingMic, setIsTestingMic] = useState(false);
   const [isTestingOutput, setIsTestingOutput] = useState(false);
 
+  // Voice Models State
+  const [uploadState, setUploadState] = useState<"idle" | "computer" | "chatty">("idle");
+  const [isUploading, setIsUploading] = useState(false);
+
   const { data: devices } = useQuery({
     queryKey: ["audioDevices"],
     queryFn: getAudioDevices,
+  });
+
+  const { data: voiceModels, refetch: refetchVoiceModels } = useQuery({
+    queryKey: ["voiceModels"],
+    queryFn: fetchVoiceModels,
   });
 
   // Load config on mount
@@ -145,6 +157,30 @@ const ConfigurationPage: React.FC = () => {
       }
     },
   });
+
+  const uploadMutation = useMutation({
+    mutationFn: async ({ file, state }: { file: File, state: "idle" | "computer" | "chatty" }) => {
+      await uploadVoiceModel(file, state);
+    },
+    onSuccess: () => {
+      refetchVoiceModels();
+      setIsUploading(false);
+    },
+    onError: () => setIsUploading(false),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteVoiceModel,
+    onSuccess: () => refetchVoiceModels(),
+  });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setIsUploading(true);
+      uploadMutation.mutate({ file: e.target.files[0], state: uploadState });
+      e.target.value = ""; // Reset input
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setConfig({ ...config, [e.target.name]: e.target.value });
@@ -363,6 +399,105 @@ const ConfigurationPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Voice Models Section */}
+          <div className="p-6 border-b border-base-content/10">
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+              <FileAudioIcon className="w-5 h-5 text-warning" />
+              Voice Models (ONNX)
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="col-span-2">
+                <div className="overflow-x-auto bg-base-200/30 rounded-lg border border-base-content/5 max-h-60 overflow-y-auto custom-scrollbar">
+                  <table className="table table-xs w-full">
+                    <thead className="sticky top-0 bg-base-200 z-10">
+                      <tr>
+                        <th>Name</th>
+                        <th>State</th>
+                        <th>Size</th>
+                        <th className="text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {voiceModels && voiceModels.length > 0 ? (
+                        voiceModels.map((model: ModelFileInfo) => (
+                          <tr key={model.name} className="hover:bg-base-200/50">
+                            <td className="font-mono text-xs">{model.name}</td>
+                            <td>
+                              {model.state ? (
+                                <span className={`badge badge-xs ${
+                                  model.state === 'idle' ? 'badge-primary' :
+                                  model.state === 'computer' ? 'badge-secondary' : 'badge-accent'
+                                }`}>
+                                  {model.state}
+                                </span>
+                              ) : (
+                                <span className="opacity-50">-</span>
+                              )}
+                            </td>
+                            <td className="text-xs opacity-70">{model.size_human}</td>
+                            <td className="text-right">
+                              <button
+                                className="btn btn-ghost btn-xs text-error"
+                                onClick={() => deleteMutation.mutate(model.name)}
+                                title="Delete Model"
+                                disabled={deleteMutation.isPending}
+                              >
+                                <TrashIcon size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="text-center py-4 opacity-50 italic">
+                            No custom models found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="card bg-base-200/50 border border-base-content/5 p-4 h-fit">
+                 <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
+                  <UploadIcon size={14}/> Upload Model
+                 </h4>
+
+                 <div className="form-control w-full mb-3">
+                   <label className="label py-1">
+                     <span className="label-text-alt">Target State</span>
+                   </label>
+                   <select
+                    className="select select-bordered select-xs w-full"
+                    value={uploadState}
+                    onChange={(e) => setUploadState(e.target.value as any)}
+                   >
+                     <option value="idle">Idle (Wake Word)</option>
+                     <option value="computer">Computer (Active)</option>
+                     <option value="chatty">Chatty (Conv.)</option>
+                   </select>
+                 </div>
+
+                 <div className="form-control w-full">
+                   <input
+                    type="file"
+                    accept=".onnx"
+                    className="file-input file-input-bordered file-input-primary file-input-sm w-full"
+                    onChange={handleFileUpload}
+                    disabled={isUploading}
+                   />
+                   <label className="label py-1">
+                     <span className="label-text-alt text-warning">.onnx files only</span>
+                   </label>
+                 </div>
+
+                 {isUploading && <progress className="progress progress-primary w-full mt-2"></progress>}
               </div>
             </div>
           </div>
