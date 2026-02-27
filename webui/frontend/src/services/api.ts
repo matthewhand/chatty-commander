@@ -11,12 +11,6 @@ export interface Agent {
   error?: string;
 }
 
-export interface CommandsResponse {
-  commands: Record<string, any>;
-  state_models: Record<string, string[]>;
-  wakeword_state_map: Record<string, string>;
-}
-
 /**
  * Fetch real advisor/agent context stats from the backend.
  * Falls back to an empty array if advisors are disabled or unavailable.
@@ -67,13 +61,4 @@ export const fetchLLMModels = async (
   } catch {
     return [];
   }
-};
-
-/**
- * Fetch configured commands and triggers from the backend.
- */
-export const fetchCommands = async (): Promise<CommandsResponse> => {
-  const res = await fetch("/api/v1/commands");
-  if (!res.ok) throw new Error("Failed to fetch commands");
-  return await res.json();
 };

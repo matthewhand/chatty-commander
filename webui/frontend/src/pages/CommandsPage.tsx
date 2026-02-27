@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   TerminalSquare,
@@ -11,99 +11,54 @@ import {
   FileAudio
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchCommands, CommandsResponse } from '../services/api';
+import { apiService } from '../services/apiService';
 
-// --- Domain Model ---
-interface ParsedCommand {
-  id: string;
-  displayName: string;
-  actionType: string;
-  payload: string;
-  apiEnabled: boolean;
-  wakewords: ParsedWakeword[];
-}
-
-interface ParsedWakeword {
-  id: string;
-  displayName: string;
-  isActive: boolean;
-  threshold?: number;
-  assets: string[];
-}
+// --- MOCK DOMAIN MODEL FOR DEMO ---
+// We will replace this with actual backend fetch routes later.
+const MOCK_COMMANDS = [
+  {
+    id: "cmd_lights_on",
+    displayName: "Turn On Lights",
+    actionType: "home_assistant_script",
+    payload: "script.lights_on",
+    apiEnabled: true,
+    wakewords: [
+      {
+        id: "ww_lights_on_1",
+        displayName: "Lights On",
+        isActive: true,
+        threshold: 0.5,
+        assets: ["models/lights_on.onnx"]
+      },
+      {
+        id: "ww_lights_on_2",
+        displayName: "Turn The Lights On",
+        isActive: true,
+        threshold: 0.45,
+        assets: ["models/turn_the_lights_on.onnx"]
+      }
+    ]
+  },
+  {
+    id: "cmd_stop",
+    displayName: "Stop/Cancel",
+    actionType: "system_interrupt",
+    payload: "cancel_current",
+    apiEnabled: true,
+    wakewords: [
+      {
+        id: "ww_stop_1",
+        displayName: "Okay Stop",
+        isActive: true,
+        threshold: 0.4,
+        assets: ["models/okay_stop.onnx", "models/okay_stop_alt.onnx"]
+      }
+    ]
+  }
+];
 
 export default function CommandsPage() {
-  const { data, isLoading, isError, error } = useQuery<CommandsResponse>({
-    queryKey: ['commands'],
-    queryFn: fetchCommands,
-    refetchInterval: 10000,
-  });
-
-  const parsedCommands: ParsedCommand[] = useMemo(() => {
-    if (!data) return [];
-
-    // Reverse map: model_name -> list of states that use it
-    const modelToStates: Record<string, string[]> = {};
-    Object.entries(data.state_models || {}).forEach(([state, models]) => {
-      models.forEach(model => {
-        if (!modelToStates[model]) modelToStates[model] = [];
-        modelToStates[model].push(state);
-      });
-    });
-
-    // Helper: find all wakewords that map to a state where this command is available
-    // Note: This logic assumes a simple relationship where wakewords trigger states, and states enable commands.
-    // In reality, commands are just actions. The "availability" is not strictly enforced by state,
-    // but typically a state (like 'computer') listens for specific commands.
-    // Since the config structure is loose, we will just list associated wakewords if we can infer them.
-
-    return Object.entries(data.commands || {}).map(([key, cmd]: [string, any]) => {
-      const actionType = cmd.action || "unknown";
-      let payload = "";
-      if (cmd.url) payload = cmd.url;
-      else if (cmd.keys) payload = `keys: ${cmd.keys}`;
-      else if (cmd.message) payload = `msg: ${cmd.message}`;
-      else if (cmd.payload) payload = cmd.payload;
-
-      // Infer associated wakewords/models
-      // If a command key matches a model name (often true in this system), we can show it as a trigger.
-      const associatedWakewords: ParsedWakeword[] = [];
-
-      // Check if this command IS a model name in some state
-      if (modelToStates[key]) {
-         associatedWakewords.push({
-            id: `ww_${key}`,
-            displayName: key.replace(/_/g, " "),
-            isActive: true, // Assuming active if present in state_models
-            assets: modelToStates[key].map(state => `Active in: ${state}`)
-         });
-      }
-
-      return {
-        id: key,
-        displayName: key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
-        actionType,
-        payload,
-        apiEnabled: true, // Always true for backend commands
-        wakewords: associatedWakewords
-      };
-    });
-  }, [data]);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="alert alert-error shadow-lg">
-        <span>Error loading commands: {(error as Error).message}</span>
-      </div>
-    );
-  }
+  const [activeTab, setActiveTab] = useState('all');
 
   return (
     <div className="space-y-6">
@@ -130,7 +85,7 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {parsedCommands.map((command, idx) => (
+          {MOCK_COMMANDS.map((command, idx) => (
             <motion.div
               key={command.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -150,7 +105,7 @@ export default function CommandsPage() {
                       <h2 className="card-title text-xl mb-1">{command.displayName}</h2>
                       <div className="flex gap-2 text-xs font-mono text-base-content/60">
                         <span className="px-2 py-1 rounded bg-base-300">{command.actionType}</span>
-                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[150px]" title={command.payload}>{command.payload}</span>
+                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[150px]">{command.payload}</span>
                       </div>
                     </div>
                   </div>
@@ -194,7 +149,7 @@ export default function CommandsPage() {
 
                   {/* Wakewords 1-to-Many UI */}
                   <div className="space-y-3 mt-4">
-                    {command.wakewords.length > 0 ? command.wakewords.map((ww) => (
+                    {command.wakewords.map((ww) => (
                       <div key={ww.id} className="relative pl-6">
                         {/* Tree line connector */}
                         <div className="absolute left-[11px] top-0 bottom-[-16px] w-[2px] bg-base-content/10 last:bottom-auto last:h-8"></div>
@@ -205,7 +160,12 @@ export default function CommandsPage() {
                           <div className="flex-1">
                             <div className="flex justify-between items-center mb-2">
                               <p className="font-semibold">{ww.displayName}</p>
-                              <div className="badge badge-sm badge-ghost">Voice Model</div>
+                              <input
+                                type="checkbox"
+                                className="toggle toggle-sm toggle-primary"
+                                defaultChecked={ww.isActive}
+                                aria-label={`Toggle ${ww.displayName} wakeword`}
+                              />
                             </div>
 
                             {/* ONNX Assets attached to this Wakeword */}
@@ -221,9 +181,7 @@ export default function CommandsPage() {
                           </div>
                         </div>
                       </div>
-                    )) : (
-                        <div className="text-sm text-base-content/40 italic pl-2">No voice triggers configured</div>
-                    )}
+                    ))}
 
                     {/* Add Wakeword Button */}
                     <div className="relative pl-6 mt-2">
