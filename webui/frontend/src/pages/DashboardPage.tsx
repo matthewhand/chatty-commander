@@ -14,6 +14,8 @@ const DashboardPage: React.FC = () => {
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
+  // Real-time telemetry state (updated via WebSocket telemetry messages)
+  const [realtimeStatus, setRealtimeStatus] = useState<{ cpu?: string; memory?: string }>({});
 
   // Show toast for connection status
   const [showToast, setShowToast] = useState(false);
@@ -99,62 +101,78 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (ws) {
-      ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
+  const handleWsMessage = useCallback((event: MessageEvent) => {
+    try {
+      const payload = JSON.parse(event.data);
 
-          switch (payload.type) {
-            case "state_change":
-              addMessage({
-                type: "state",
-                content: `State changed to ${payload.data.new_state} (was ${payload.data.old_state})`,
-                metadata: payload.data
-              });
-              break;
-            case "command_detected":
-              const confidence = (payload.data.confidence * 100).toFixed(1);
-              addMessage({
-                type: "command",
-                content: `Command detected: ${payload.data.command} (${confidence}%)`,
-                metadata: payload.data
-              });
-              break;
-            case "system_event":
-              addMessage({
-                type: "system",
-                content: `System Event: ${payload.data.message}`,
-                metadata: payload.data
-              });
-              break;
-            case "connection_established":
-              addMessage({
-                type: "connection",
-                content: `Connected to ChattyCommander (State: ${payload.data.current_state})`,
-                metadata: payload.data
-              });
-              break;
-            case "heartbeat":
-            case "pong":
-              // Ignore keepalives
-              return;
-            default:
-              addMessage({
-                type: "info",
-                content: `[${payload.type}] ${JSON.stringify(payload.data)}`,
-                metadata: payload
-              });
-          }
-        } catch (e) {
+      // Handle telemetry messages without adding to log
+      if (payload.type === "telemetry" && payload.data) {
+        setRealtimeStatus((prev) => ({
+          ...prev,
+          cpu: payload.data.cpu !== undefined ? `${Number(payload.data.cpu).toFixed(1)}` : prev.cpu,
+          memory: payload.data.memory !== undefined ? `${Number(payload.data.memory).toFixed(1)}` : prev.memory,
+        }));
+        return;
+      }
+
+      switch (payload.type) {
+        case "state_change":
+          addMessage({
+            type: "state",
+            content: `State changed to ${payload.data.new_state} (was ${payload.data.old_state})`,
+            metadata: payload.data,
+          });
+          break;
+        case "command_detected": {
+          const confidence = (payload.data.confidence * 100).toFixed(1);
+          addMessage({
+            type: "command",
+            content: `Command detected: ${payload.data.command} (${confidence}%)`,
+            metadata: payload.data,
+          });
+          break;
+        }
+        case "system_event":
+          addMessage({
+            type: "system",
+            content: `System Event: ${payload.data.message}`,
+            metadata: payload.data,
+          });
+          break;
+        case "connection_established":
+          addMessage({
+            type: "connection",
+            content: `Connected to ChattyCommander (State: ${payload.data.current_state})`,
+            metadata: payload.data,
+          });
+          break;
+        case "heartbeat":
+        case "pong":
+          // Ignore keepalives
+          return;
+        default:
           addMessage({
             type: "info",
-            content: event.data,
+            content: `[${payload.type}] ${JSON.stringify(payload.data)}`,
+            metadata: payload,
           });
-        }
-      };
+      }
+    } catch {
+      addMessage({
+        type: "info",
+        content: event.data,
+      });
     }
-  }, [ws, addMessage]);
+  }, [addMessage]); // addMessage is stable via useCallback
+
+  useEffect(() => {
+    if (!ws) return;
+    // Use addEventListener to avoid overwriting other handlers
+    ws.addEventListener("message", handleWsMessage);
+    return () => {
+      ws.removeEventListener("message", handleWsMessage);
+    };
+  }, [ws, handleWsMessage]);
 
   // Auto-scroll to bottom of log
   useEffect(() => {

@@ -385,6 +385,35 @@ class WebModeServer:
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+        # Start background telemetry loop on startup
+        @self.app.on_event("startup")
+        async def start_telemetry_loop():
+            asyncio.create_task(self._telemetry_loop())
+
+    async def _telemetry_loop(self) -> None:
+        """Background task to broadcast system telemetry."""
+        while True:
+            try:
+                import psutil
+
+                cpu = psutil.cpu_percent(interval=None)
+                memory = psutil.virtual_memory().percent
+
+                await self._broadcast_message(
+                    WebSocketMessage(
+                        type="telemetry",
+                        data={
+                            "cpu": cpu,
+                            "memory": memory,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                    )
+                )
+            except Exception as e:  # noqa: BLE001
+                logger.debug("Telemetry loop error: %s", e)
+
+            await asyncio.sleep(2.0)
+
     @property
     def config(self) -> Config:
         """Access config manager as 'config' for compatibility."""
