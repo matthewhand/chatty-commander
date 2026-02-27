@@ -1,0 +1,154 @@
+const express = require('express');
+const { Client, GatewayIntentBits } = require('discord.js');
+const { App } = require('@slack/bolt');
+const axios = require('axios');
+const winston = require('winston');
+require('dotenv').config();
+
+// Configure logging
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || '{{ log_level_default }}',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: process.env.LOG_FILE || '{{ log_file_default }}' })
+  ]
+});
+
+// Initialize Express app
+const app = express();
+app.use(express.json());
+
+// Initialize Discord client
+const discordClient = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
+});
+
+// Initialize Slack app
+const slackApp = new App({
+  token: process.env.SLACK_BOT_TOKEN,
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  socketMode: true,
+  appToken: process.env.SLACK_APP_TOKEN
+});
+
+// Advisor API client
+class AdvisorAPIClient {
+  constructor() {
+    this.baseURL = process.env.ADVISOR_API_URL || '{{ advisor_api_url_default }}';
+    this.bridgeToken = process.env.BRIDGE_TOKEN;
+  }
+
+  async sendMessage(platform, channel, user, text) {
+    try {
+      const response = await axios.post(`${this.baseURL}/api/v1/advisors/message`, {
+        platform,
+        channel,
+        user,
+        text
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      logger.error('Error sending message to advisor API:', error.message);
+      throw error;
+    }
+  }
+
+  async sendBridgeEvent(event) {
+    try {
+      const response = await axios.post(`${this.baseURL}/bridge/event`, event, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bridge-Token': this.bridgeToken
+        }
+      });
+      return response.data;
+    } catch (error) {
+      logger.error('Error sending bridge event:', error.message);
+      throw error;
+    }
+  }
+}
+
+const advisorClient = new AdvisorAPIClient();
+
+// Discord event handlers
+discordClient.on('ready', () => {
+  logger.info(`Discord bot logged in as ${discordClient.user.tag}`);
+});
+
+discordClient.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+
+  try {
+    const response = await advisorClient.sendMessage(
+      'discord',
+      message.channel.id,
+      message.author.id,
+      message.content
+    );
+
+    await message.reply(response.reply);
+  } catch (error) {
+    logger.error('Error handling Discord message:', error);
+    await message.reply('Sorry, I encountered an error processing your message.');
+  }
+});
+
+// Slack event handlers
+slackApp.message(async ({ message, say }) => {
+  try {
+    const response = await advisorClient.sendMessage(
+      'slack',
+      message.channel,
+      message.user,
+      message.text
+    );
+
+    await say(response.reply);
+  } catch (error) {
+    logger.error('Error handling Slack message:', error);
+    await say('Sorry, I encountered an error processing your message.');
+  }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Start the application
+async function start() {
+  try {
+    // Start Express server
+    const port = process.env.PORT || {{ port_default }};
+    app.listen(port, () => {
+      logger.info(`Bridge server listening on port ${port}`);
+    });
+
+    // Start Discord bot
+    await discordClient.login(process.env.DISCORD_TOKEN);
+
+    // Start Slack app
+    await slackApp.start();
+    logger.info('Slack app started');
+
+  } catch (error) {
+    logger.error('Error starting bridge application:', error);
+    process.exit(1);
+  }
+}
+
+start();

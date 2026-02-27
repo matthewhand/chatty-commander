@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  bridge:
+    build: .
+    ports:
+      - "{{ port }}:{{ port }}"
+    environment:
+      - NODE_ENV=development
+      - ADVISOR_API_URL={{ advisor_api_url_default }}
+      - BRIDGE_TOKEN=${BRIDGE_TOKEN}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped

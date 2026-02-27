@@ -1,0 +1,70 @@
+# {{ name }}
+
+{{ description }}
+
+## Features
+
+- Discord bot integration with message handling
+- Slack app integration with event subscriptions
+- Secure authentication with Python advisor API
+- Structured logging and error handling
+- Health check endpoint
+
+## Setup
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. Start the bridge:
+   ```bash
+   npm start
+   ```
+
+## Configuration
+
+### Discord Bot Setup
+
+1. Create a Discord application at https://discord.com/developers/applications
+2. Create a bot and get the token
+3. Set up intents (Message Content Intent required)
+4. Invite the bot to your server
+
+### Slack App Setup
+
+1. Create a Slack app at https://api.slack.com/apps
+2. Add bot token scopes (chat:write, channels:history, etc.)
+3. Set up event subscriptions for message events
+4. Install the app to your workspace
+
+### Python Advisor API
+
+Ensure the Python advisor API is running and accessible at the configured URL.
+
+## Environment Variables
+
+- `ADVISOR_API_URL`: URL of the Python advisor API
+- `BRIDGE_TOKEN`: Shared secret for authentication
+- `DISCORD_TOKEN`: Discord bot token
+- `SLACK_BOT_TOKEN`: Slack bot token
+- `SLACK_SIGNING_SECRET`: Slack app signing secret
+- `SLACK_APP_TOKEN`: Slack app token for socket mode
+
+## Development
+
+```bash
+npm run dev  # Start with nodemon for development
+npm test     # Run tests
+```
+
+## Deployment
+
+The bridge can be deployed to any Node.js hosting platform (Heroku, Railway, etc.).
+Ensure all environment variables are configured in your deployment environment.
