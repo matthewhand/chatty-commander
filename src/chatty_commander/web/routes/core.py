@@ -91,6 +91,12 @@ class MetricsData(BaseModel):
     )
 
 
+class CommandDefinition(BaseModel):
+    name: str = Field(..., description="Unique identifier for the command")
+    action_type: str = Field(..., description="Type of action (keypress, url, shell, etc.)")
+    details: dict[str, Any] = Field(default_factory=dict, description="Raw command configuration details")
+
+
 def include_core_routes(
     *,
     get_start_time: Callable[[], float],
@@ -102,6 +108,7 @@ def include_core_routes(
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
     get_total_commands: Callable[[], int] | None = None,
+    get_commands_config: Callable[[], dict[str, Any]] | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -283,6 +290,37 @@ def include_core_routes(
                 message=f"Command execution failed: {str(e)}",
                 execution_time=execution_time,
             )
+
+    @router.get("/api/v1/commands", response_model=list[CommandDefinition])
+    async def get_commands():
+        """Retrieve the list of configured commands."""
+        if not get_commands_config:
+            return []
+
+        commands_config = get_commands_config()
+        result = []
+
+        for name, details in commands_config.items():
+            # Infer action type if not explicitly set (handle simple dicts vs rich objects)
+            action_type = "unknown"
+            if isinstance(details, dict):
+                action_type = details.get("action", "unknown")
+                # Fallback for legacy format
+                if action_type == "unknown":
+                    if "keypress" in details:
+                        action_type = "keypress"
+                    elif "url" in details:
+                        action_type = "url"
+                    elif "shell" in details:
+                        action_type = "shell"
+
+            result.append(CommandDefinition(
+                name=name,
+                action_type=action_type,
+                details=details if isinstance(details, dict) else {"raw": str(details)}
+            ))
+
+        return sorted(result, key=lambda x: x.name)
 
     # Basic in-memory metrics counters (per-router instance)
     counters = {

@@ -488,6 +488,7 @@ class WebModeServer:
             get_active_connections=lambda: len(self.active_connections),
             get_cache_size=lambda: len(self._command_cache) + len(self._state_cache),
             get_total_commands=lambda: self.commands_executed,
+            get_commands_config=lambda: self.config_manager.commands,
         )
         app.include_router(core)
 
