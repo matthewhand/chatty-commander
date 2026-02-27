@@ -27,6 +27,9 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 import logging
+import time
+
+from chatty_commander.obs.metrics import DEFAULT_REGISTRY
 
 try:
     from chatty_commander.voice.wakeword import MockWakeWordDetector, WakeWordDetector
@@ -119,6 +122,9 @@ class OpenWakeWordAdapter:
         self._config = config
         self._detector = None
         self._started = False
+        self._detection_counter = DEFAULT_REGISTRY.counter(
+            "wake_word_detections_total", "Total wake word detections"
+        )
 
     def start(self) -> None:
         if not VOICE_AVAILABLE:
@@ -159,6 +165,7 @@ class OpenWakeWordAdapter:
 
     def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection by calling the callback."""
+        self._detection_counter.inc(1, labels={"wake_word": wake_word})
         self._on_wake_word(wake_word, confidence)
 
 
@@ -186,6 +193,9 @@ class ModeOrchestrator:
         self.advisor_sink = advisor_sink
         self.flags = flags or OrchestratorFlags()
         self.adapters: list[InputAdapter] = []
+        self._command_metrics = DEFAULT_REGISTRY.counter(
+            "orchestrator_commands_total", "Total commands processed by orchestrator"
+        )
 
     def select_adapters(self) -> list[str]:
         selected: list[Any] = []
@@ -223,8 +233,20 @@ class ModeOrchestrator:
     def start(self) -> list[str]:
         if not self.adapters:
             self.select_adapters()
+
         for adapter in self.adapters:
-            adapter.start()
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    adapter.start()
+                    break
+                except Exception as e:
+                    logger.warning(f"Failed to start adapter {adapter.name} (attempt {attempt + 1}/{max_retries}): {e}")
+                    if attempt == max_retries - 1:
+                        logger.error(f"Could not start adapter {adapter.name} after {max_retries} attempts.")
+                    else:
+                        time.sleep(1)  # Brief backoff before retry
+
         return [a.name for a in self.adapters]
 
     def stop(self) -> None:
@@ -236,7 +258,13 @@ class ModeOrchestrator:
 
     # Routing
     def _dispatch_command(self, command_name: str) -> Any:
-        return self.command_sink.execute_command(command_name)
+        try:
+            result = self.command_sink.execute_command(command_name)
+            self._command_metrics.inc(1, labels={"status": "success", "command": command_name})
+            return result
+        except Exception as e:
+            self._command_metrics.inc(1, labels={"status": "error", "command": command_name})
+            raise e
 
     def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection."""
@@ -251,6 +279,7 @@ class ModeOrchestrator:
                 self._dispatch_command("wake")
             except Exception as e:
                 # If no wake command, log the detection
+                self._command_metrics.inc(1, labels={"status": "wake_word_fallback_failed", "command": "wake"})
                 logger.warning(
                     f"Wake word '{wake_word}' detected but no 'wake_word_{wake_word}' "
                     f"or generic 'wake' command found, or execution failed: {e}"
