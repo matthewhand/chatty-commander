@@ -8,7 +8,11 @@ import {
   Plus,
   Edit3,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Search,
+  Play,
+  Keyboard,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
@@ -20,12 +24,52 @@ interface CommandInfo {
 }
 
 export default function CommandsPage() {
-  const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [runningCommand, setRunningCommand] = useState<string | null>(null);
 
   const { data: commands, isLoading, isError, error } = useQuery<CommandInfo[]>({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
   });
+
+  const handleRunCommand = async (commandName: string) => {
+    setRunningCommand(commandName);
+    try {
+      await apiService.executeCommand(commandName);
+      // Optional: Add toast notification here
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTimeout(() => setRunningCommand(null), 1000);
+    }
+  };
+
+  const renderDetails = (command: CommandInfo) => {
+    if (command.action_type === 'keypress') {
+      return (
+        <div className="flex items-center gap-1.5 bg-base-300 px-2 py-1 rounded text-xs font-mono">
+          <Keyboard size={12} className="opacity-70" />
+          <kbd className="kbd kbd-xs">{command.details.keypress || command.details.keys}</kbd>
+        </div>
+      );
+    }
+    if (command.action_type === 'url') {
+      return (
+        <div className="flex items-center gap-1.5 bg-base-300 px-2 py-1 rounded text-xs truncate max-w-[200px]">
+          <LinkIcon size={12} className="opacity-70" />
+          <span className="truncate">{command.details.url}</span>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-1.5 bg-base-300 px-2 py-1 rounded text-xs font-mono truncate max-w-[200px]">
+        <TerminalSquare size={12} className="opacity-70" />
+        <span className="truncate">
+          {command.details.shell || command.details.cmd || JSON.stringify(command.details)}
+        </span>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -44,7 +88,10 @@ export default function CommandsPage() {
     );
   }
 
-  const commandList = commands || [];
+  const filteredCommands = (commands || []).filter(cmd =>
+    cmd.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cmd.action_type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -60,10 +107,22 @@ export default function CommandsPage() {
             Manage system commands and configure the Wakewords or API endpoints that trigger them.
           </p>
         </div>
-        <button className="btn btn-primary glass">
-          <Plus size={18} />
-          New Command
-        </button>
+        <div className="flex gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={16} />
+            <input
+              type="text"
+              placeholder="Search commands..."
+              className="input input-bordered w-full pl-10 h-10 bg-base-200/50 focus:bg-base-100 transition-colors"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <button className="btn btn-primary glass btn-sm h-10">
+            <Plus size={16} />
+            New
+          </button>
+        </div>
       </motion.div>
 
       <div className="divider divider-accent"></div>
@@ -71,34 +130,41 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {commandList.map((command, idx) => (
+          {filteredCommands.map((command, idx) => (
             <motion.div
               key={command.name}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: idx * 0.1 }}
-              className="card glass-card overflow-hidden"
+              className="card glass-card overflow-hidden group"
             >
               <div className="border-gradient"></div>
               <div className="card-body p-0">
                 {/* Command Header */}
-                <div className="p-6 bg-base-200/50 border-b border-base-content/10 flex justify-between items-start">
-                  <div className="flex gap-3">
-                    <div className="p-3 rounded-xl bg-primary/20 text-primary">
-                      <TerminalSquare size={24} />
+                <div className="p-5 bg-base-200/50 border-b border-base-content/10 flex justify-between items-start">
+                  <div className="flex gap-3 overflow-hidden">
+                    <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                      <TerminalSquare size={20} />
                     </div>
-                    <div>
-                      <h2 className="card-title text-xl mb-1">{command.name}</h2>
-                      <div className="flex gap-2 text-xs font-mono text-base-content/60">
-                        <span className="px-2 py-1 rounded bg-base-300">{command.action_type}</span>
-                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[250px]">
-                           {JSON.stringify(command.details).slice(0, 40)}
-                           {JSON.stringify(command.details).length > 40 ? '...' : ''}
-                        </span>
+                    <div className="min-w-0">
+                      <h2 className="card-title text-lg mb-1 truncate">{command.name}</h2>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="badge badge-sm badge-ghost font-mono">{command.action_type}</span>
+                        {renderDetails(command)}
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 shrink-0">
+                     <div className="tooltip tooltip-bottom" data-tip="Test Command">
+                      <button
+                        className={`btn btn-ghost btn-sm btn-circle ${runningCommand === command.name ? 'text-success loading' : 'text-primary'}`}
+                        onClick={() => handleRunCommand(command.name)}
+                        disabled={runningCommand === command.name}
+                        aria-label={`Run ${command.name}`}
+                      >
+                        {!runningCommand && <Play size={16} className="fill-current" />}
+                      </button>
+                    </div>
                     <div className="tooltip tooltip-bottom" data-tip="Edit Command">
                       <button
                         className="btn btn-ghost btn-sm btn-circle"

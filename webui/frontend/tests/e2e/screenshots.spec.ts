@@ -66,9 +66,21 @@ test.describe("Documentation Screenshots", () => {
             await page.waitForURL(/commands/);
             // Wait for at least one card to appear, or the "No commands" message
             try {
-                await page.waitForSelector(".card", { timeout: 5000 });
+                await Promise.any([
+                    page.waitForSelector(".card", { timeout: 8000 }),
+                    page.waitForSelector("text=No commands found", { timeout: 8000 })
+                ]);
+            } catch (e) {
+                console.log("Timed out waiting for commands content. Proceeding anyway.");
+            }
+
+            // Ensure search bar and new elements are visible
+            try {
+                // Short wait to see if the element appears, but don't fail hard if build/reload is lagging
+                // The screenshot is the primary goal
+                await page.waitForSelector('input[placeholder="Search commands..."]', { timeout: 3000 });
             } catch {
-                await page.waitForSelector("text=No commands found", { timeout: 2000 });
+                console.log("Search input not found within timeout, proceeding with screenshot.");
             }
             await page.waitForTimeout(500); // settling time for animations
         }

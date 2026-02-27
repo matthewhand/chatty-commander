@@ -10,6 +10,9 @@ By default, the dashboard is served at `http://localhost:8100/` when the applica
 - **WebSocket Streaming**: All AI generated logs, state transitions, and system errors are streamed directly to the UI.
 - **Configuration Hot-Reload**: Update Settings and prompts without needing to restart the backend.
 - **Live Command View**: Inspect the currently loaded voice commands and their configurations dynamically from the Commands page.
+  - **Search**: Filter commands by name or action type.
+  - **Test Execution**: Run commands directly from the UI to verify behavior.
+  - **Enhanced Details**: View command specifics like keybindings, shell scripts, or URLs.
 
 ## Screenshots
 
