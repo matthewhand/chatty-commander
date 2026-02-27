@@ -9,10 +9,20 @@ By default, the dashboard is served at `http://localhost:8100/` when the applica
 - **Real-time Metrics**: View CPU usage, Memory Usage, and total API Commands Executed on the home page.
 - **WebSocket Streaming**: All AI generated logs, state transitions, and system errors are streamed directly to the UI.
 - **Configuration Hot-Reload**: Update Settings and prompts without needing to restart the backend.
+- **Live Command View**: Inspect the currently loaded voice commands and their configurations dynamically from the Commands page.
 
 ## Screenshots
 
 Screenshots of the UI are stored in [`docs/screenshots/`](../screenshots/).
+
+### Dashboard
+![Dashboard](../screenshots/dashboard.png)
+
+### Commands
+![Commands](../screenshots/commands.png)
+
+### Configuration
+![General Config](../screenshots/configuration-general.png)
 
 ---
 

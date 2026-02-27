@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 
@@ -59,7 +63,14 @@ test.describe("Documentation Screenshots", () => {
         const commandsLink = page.locator("text=Commands").first();
         if (await commandsLink.isVisible()) {
             await commandsLink.click();
-            await page.waitForTimeout(500);
+            await page.waitForURL(/commands/);
+            // Wait for at least one card to appear, or the "No commands" message
+            try {
+                await page.waitForSelector(".card", { timeout: 5000 });
+            } catch {
+                await page.waitForSelector("text=No commands found", { timeout: 2000 });
+            }
+            await page.waitForTimeout(500); // settling time for animations
         }
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "commands.png"), fullPage: true });
     });

@@ -91,6 +91,14 @@ class MetricsData(BaseModel):
     )
 
 
+class CommandInfo(BaseModel):
+    name: str = Field(..., description="Command name")
+    action_type: str = Field(
+        ..., description="Type of action (keypress, shell, url, etc.)"
+    )
+    details: dict[str, Any] = Field(default_factory=dict, description="Action details")
+
+
 def include_core_routes(
     *,
     get_start_time: Callable[[], float],
@@ -102,6 +110,7 @@ def include_core_routes(
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
     get_total_commands: Callable[[], int] | None = None,
+    get_model_actions: Callable[[], dict[str, Any]] | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -264,7 +273,9 @@ def include_core_routes(
             # Delegate to provided executor bridge to ensure consistent integration surface
             # Use run_in_executor to prevent blocking the event loop
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(None, execute_command_fn, request.command)
+            result = await loop.run_in_executor(
+                None, execute_command_fn, request.command
+            )
             success = bool(result)
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
@@ -283,6 +294,32 @@ def include_core_routes(
                 message=f"Command execution failed: {str(e)}",
                 execution_time=execution_time,
             )
+
+    @router.get("/api/v1/commands", response_model=list[CommandInfo])
+    async def list_commands():
+        """List all available commands and their configurations."""
+        if not get_model_actions:
+            return []
+
+        actions = get_model_actions()
+        result = []
+        for name, data in actions.items():
+            # Determine type
+            if "action" in data:
+                a_type = str(data["action"])
+            elif "keypress" in data:
+                a_type = "keypress"
+            elif "url" in data:
+                a_type = "url"
+            elif "shell" in data:
+                a_type = "shell"
+            else:
+                a_type = "unknown"
+
+            result.append(CommandInfo(name=name, action_type=a_type, details=data))
+        # Sort by name
+        result.sort(key=lambda x: x.name)
+        return result
 
     # Basic in-memory metrics counters (per-router instance)
     counters = {
