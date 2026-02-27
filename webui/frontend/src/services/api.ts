@@ -11,6 +11,17 @@ export interface Agent {
   error?: string;
 }
 
+export interface CommandDefinition {
+  id: string; // Internal ID for React keys
+  name: string; // The config key (unique)
+  displayName: string;
+  actionType: string;
+  description?: string;
+  payload?: Record<string, any>;
+  apiEnabled: boolean;
+  wakewords?: any[]; // For backward compatibility or future enhancement
+}
+
 /**
  * Fetch real advisor/agent context stats from the backend.
  * Falls back to an empty array if advisors are disabled or unavailable.
@@ -60,5 +71,71 @@ export const fetchLLMModels = async (
     return [];
   } catch {
     return [];
+  }
+};
+
+/**
+ * Fetch all commands from the backend.
+ */
+export const fetchCommands = async (): Promise<CommandDefinition[]> => {
+  try {
+    const res = await fetch("/api/v1/commands");
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json(); // returns dict { name: config }
+
+    // Map dictionary to array of CommandDefinition
+    return Object.entries(data).map(([name, config]: [string, any]) => {
+      // Extract known fields, put rest in payload
+      const { action, description, ...rest } = config;
+
+      // Determine a payload for display if needed
+      let payload = { ...rest };
+
+      return {
+        id: name, // internal ID for React keys
+        name: name,
+        displayName: name, // Could be enhanced later
+        actionType: action,
+        description: description,
+        payload: payload,
+        apiEnabled: true, // Assuming all commands are API callable
+        wakewords: [] // Backend doesn't link wakewords to commands directly in the same config structure yet
+      } as CommandDefinition;
+    });
+  } catch (error) {
+    console.error("Failed to fetch commands:", error);
+    return [];
+  }
+};
+
+/**
+ * Create or update a command.
+ */
+export const saveCommand = async (command: Partial<CommandDefinition> & { name: string; action: string }): Promise<void> => {
+  const res = await fetch("/api/v1/commands", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(command),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+};
+
+/**
+ * Delete a command.
+ */
+export const deleteCommand = async (commandName: string): Promise<void> => {
+  const res = await fetch(`/api/v1/commands/${encodeURIComponent(commandName)}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
   }
 };

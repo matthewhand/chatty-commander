@@ -75,6 +75,11 @@ except ImportError:
     models_router = None
 
 try:
+    from .routes.commands import include_commands_routes
+except ImportError:
+    include_commands_routes = None
+
+try:
     from ..obs.metrics import create_metrics_router
 
     metrics_router = create_metrics_router()
@@ -83,6 +88,7 @@ except ImportError:
 
 # Settings router needs to be created with config manager
 settings_router = None
+commands_router = None
 
 
 def _include_optional(app: FastAPI, name: str) -> None:
@@ -113,6 +119,14 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             get_config_manager=lambda: config_manager
         )
         _include_optional(app, "settings_router")
+
+    # Handle commands router separately since it needs config manager
+    if include_commands_routes and config_manager:
+        global commands_router
+        commands_router = include_commands_routes(
+            get_config_manager=lambda: config_manager
+        )
+        _include_optional(app, "commands_router")
 
     # Add bridge endpoint for tests
     try:

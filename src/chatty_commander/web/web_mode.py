@@ -498,6 +498,17 @@ class WebModeServer:
         if agents_router:
             app.include_router(agents_router)
 
+        # Commands endpoints
+        try:
+            from chatty_commander.web.routes.commands import include_commands_routes
+
+            commands_router = include_commands_routes(
+                get_config_manager=lambda: self.config_manager
+            )
+            app.include_router(commands_router)
+        except ImportError:
+            pass
+
         # Avatar endpoints
         if avatar_api_router:
             app.include_router(avatar_api_router)

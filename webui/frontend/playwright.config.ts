@@ -1,15 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Read environment variables from file.
- * https://playwright.dev/docs/test-configuration#environment-variables
- */
-function getEnvVar(name: string): string | undefined {
-  const env = process.env;
-  return env[name];
-}
-
-/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -33,9 +24,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "cd ../.. && uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
+    // Run from repo root, set PYTHONPATH to src, and use uv run
+    command: "cd ../.. && PYTHONPATH=src uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
     url: "http://localhost:8100/health",
     reuseExistingServer: !process.env.CI,
-    timeout: 10 * 1000,
+    timeout: 30 * 1000, // Increased timeout to allow for env setup if needed
   },
 });
