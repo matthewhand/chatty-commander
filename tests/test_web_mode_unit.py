@@ -280,14 +280,14 @@ class TestPydanticModels:
         assert status.uptime == "1h 30m"
         assert status.version == "0.2.0"  # Default value
 
-    @pytest.mark.parametrize("state", ["idle", "computer", "chatty"])
-    def test_state_change_request_validation_valid(self, state):
-        """Test StateChangeRequest validation with valid states."""
-        request = StateChangeRequest(state=state)
-        assert request.state == state
+    def test_state_change_request_validation(self):
+        """Test StateChangeRequest validation."""
+        # Valid states
+        for state in ["idle", "computer", "chatty"]:
+            request = StateChangeRequest(state=state)
+            assert request.state == state
 
-    def test_state_change_request_validation_invalid(self):
-        """Test StateChangeRequest validation with invalid state."""
+        # Invalid state should raise validation error
         with pytest.raises(ValueError):
             StateChangeRequest(state="invalid")
 
