@@ -85,7 +85,7 @@ class MetricsData(BaseModel):
         default=0, description="Active WebSocket connections"
     )
     cache_size: int = Field(default=0, description="Cache entries count")
-    error_rate: float = Field(default=0.0, description="Error rate percentage")
+    error_rate: float = Field(default=0, description="Error rate percentage")
     response_time_avg: float = Field(
         default=0.0, description="Average response time in ms"
     )
@@ -99,6 +99,7 @@ def include_core_routes(
     get_last_command: Callable[[], str | None],
     get_last_state_change: Callable[[], datetime],
     execute_command_fn: Callable[[str], Any],
+    get_commands: Callable[[], dict[str, Any]] | None = None,
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
     get_total_commands: Callable[[], int] | None = None,
@@ -231,6 +232,13 @@ def include_core_routes(
             return {"message": "Configuration updated successfully"}
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
+
+    @router.get("/api/v1/commands")
+    async def list_commands():
+        """Get the configured commands."""
+        if get_commands:
+            return get_commands()
+        return {}
 
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
