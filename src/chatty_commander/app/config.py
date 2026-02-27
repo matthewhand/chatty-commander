@@ -95,6 +95,8 @@ class Config:
         self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
         self.sample_rate: int = self.config_data.get("sample_rate", 16000)
         self.audio_format: str = self.config_data.get("audio_format", "int16")
+        self.audio_input_device: str | None = self.config_data.get("audio_input_device")
+        self.audio_output_device: str | None = self.config_data.get("audio_output_device")
 
         # Wake word configuration
         self.wake_words: list[str] = self.config_data.get(
@@ -606,6 +608,10 @@ class Config:
         result["general"]["mic_chunk_size"] = self.mic_chunk_size
         result["general"]["sample_rate"] = self.sample_rate
         result["general"]["audio_format"] = self.audio_format
+        if self.audio_input_device:
+            result["audio_input_device"] = self.audio_input_device
+        if self.audio_output_device:
+            result["audio_output_device"] = self.audio_output_device
         result["general"]["check_for_updates"] = self.check_for_updates
         result["general"]["inference_framework"] = self.inference_framework
         result["general"]["start_on_boot"] = self.start_on_boot
