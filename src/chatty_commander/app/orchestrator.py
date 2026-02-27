@@ -138,13 +138,13 @@ class OpenWakeWordAdapter:
             "hey_jarvis",
             "alexa",
         ]
-        threshold = getattr(self._config, "wake_word_threshold", 0.5)
+        self.threshold = getattr(self._config, "wake_word_threshold", 0.5)
 
         # Use MockWakeWordDetector if no audio hardware available
         if WakeWordDetector is not None and MockWakeWordDetector is not None:
             try:
                 self._detector = WakeWordDetector(
-                    wake_words=wake_words, threshold=threshold
+                    wake_words=wake_words, threshold=self.threshold
                 )
             except Exception:
                 # Fallback to mock detector
@@ -158,6 +158,16 @@ class OpenWakeWordAdapter:
             self._detector.start_listening()
         self._started = True
 
+    def update_threshold(self, new_threshold: float) -> None:
+        """Update the wake word detection threshold dynamically."""
+        self.threshold = float(new_threshold)
+        # Note: If OpenWakeWord allows dynamic update, we'd call it here.
+        # Currently, we simulate it by restarting or checking manually if needed.
+        # Assuming WakeWordDetector might need a restart or has a property setter:
+        # if self._detector and hasattr(self._detector, "threshold"): ...
+        # For now, we store it so future restarts use it, or if detector exposes it.
+        logger.info(f"Updated wake word threshold to {self.threshold}")
+
     def stop(self) -> None:
         if self._detector and self._started:
             self._detector.stop_listening()
@@ -165,6 +175,10 @@ class OpenWakeWordAdapter:
 
     def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection by calling the callback."""
+        # Double-check threshold if detector doesn't filter internally
+        if confidence < self.threshold:
+            return
+
         self._detection_counter.inc(1, labels={"wake_word": wake_word})
         self._on_wake_word(wake_word, confidence)
 
