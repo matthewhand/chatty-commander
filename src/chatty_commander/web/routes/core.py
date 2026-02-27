@@ -213,6 +213,28 @@ def include_core_routes(
         config_data["_env_overrides"] = env_overrides
         return config_data
 
+    @router.get("/api/v1/commands")
+    async def get_commands():
+        """
+        Return the list of configured commands and their triggers.
+        This includes the 'commands' dict, 'state_models' mapping, and 'wakeword_state_map'.
+        """
+        counters["config_get"] += 1
+        cfg_mgr = get_config_manager()
+        # Retrieve the raw config dict
+        cfg = getattr(cfg_mgr, "config", {})
+
+        # Extract relevant sections securely
+        commands = cfg.get("commands", {})
+        state_models = cfg.get("state_models", {})
+        wakeword_state_map = cfg.get("wakeword_state_map", {})
+
+        return {
+            "commands": commands,
+            "state_models": state_models,
+            "wakeword_state_map": wakeword_state_map
+        }
+
     @router.put("/api/v1/config")
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
