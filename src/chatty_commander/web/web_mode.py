@@ -90,9 +90,9 @@ except ImportError:
     agents_router = None
 
 try:
-    from chatty_commander.web.routes.audio import router as audio_router
+    from chatty_commander.web.routes.audio import include_audio_routes
 except ImportError:
-    audio_router = None
+    include_audio_routes = None
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -504,8 +504,8 @@ class WebModeServer:
             app.include_router(agents_router)
 
         # Audio endpoints
-        if audio_router:
-            app.include_router(audio_router)
+        if include_audio_routes:
+            app.include_router(include_audio_routes(self.config_manager))
 
         # Avatar endpoints
         if avatar_api_router:
