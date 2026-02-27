@@ -92,6 +92,120 @@ router.get("/blame", async (req, res) => {
   }
 });
 
+// 4. Git Hygiene Check
+router.get("/git/check", async (req, res) => {
+  const filePath = req.query.path as string;
+  if (typeof filePath !== "string") {
+    res.status(400).json({ error: "path required" });
+    return;
+  }
+
+  if (!isSafePath(filePath)) {
+    res.status(403).json({ error: "access denied: path outside project root" });
+    return;
+  }
+
+  try {
+    // "git diff --check" exits with non-zero if issues found
+    await execFile("git", ["diff", "--check", "HEAD", "--", filePath]);
+    res.json({ status: "clean" });
+  } catch (err: any) {
+    // If it's an exit code issue, it means whitespace errors found
+    if (err.code && err.code !== 0) {
+      res.json({ status: "issues_found", output: err.stdout });
+    } else {
+      res.status(500).json({ error: "git check failed" });
+    }
+  }
+});
+
+// 5. Interactive Git Staging (Apply Patch)
+router.post("/git/apply", async (req, res) => {
+  const patch = req.body.patch;
+
+  if (typeof patch !== "string" || !patch) {
+    res.status(400).json({ error: "patch content required" });
+    return;
+  }
+
+  try {
+    // Write patch to temp file or pipe it to stdin?
+    // Using stdin is safer and cleaner.
+    const child = execFileCb("git", ["apply", "--cached", "-"], (error, stdout, stderr) => {
+      if (error) {
+        res.status(400).json({ error: "failed to apply patch", stderr });
+      } else {
+        res.json({ status: "success", message: "patch applied to index" });
+      }
+    });
+
+    if (child.stdin) {
+        child.stdin.write(patch);
+        child.stdin.end();
+    } else {
+        res.status(500).json({ error: "failed to open stdin" });
+    }
+
+  } catch (err) {
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
+// 6. Safe File Restoration
+router.post("/file/restore", async (req, res) => {
+  const filePath = req.body.path;
+  if (typeof filePath !== "string") {
+    res.status(400).json({ error: "path required" });
+    return;
+  }
+
+  if (!isSafePath(filePath)) {
+    res.status(403).json({ error: "access denied: path outside project root" });
+    return;
+  }
+
+  try {
+    // Revert changes to file (checkout HEAD)
+    await execFile("git", ["checkout", "HEAD", "--", filePath]);
+    res.json({ status: "restored", message: `Reverted changes to ${filePath}` });
+  } catch (err) {
+    res.status(500).json({ error: "failed to restore file" });
+  }
+});
+
+// 7. Repository Health/Stats
+router.get("/repo/status", async (req, res) => {
+  try {
+    const branch = (await execFile("git", ["rev-parse", "--abbrev-ref", "HEAD"])).stdout.trim();
+    const statusOutput = (await execFile("git", ["status", "--porcelain"])).stdout;
+    const modifiedCount = statusOutput.split("\n").filter(l => l.trim().length > 0).length;
+
+    // Check ahead/behind
+    // This requires upstream to be set. If not, it might fail or return empty.
+    let ahead = 0;
+    let behind = 0;
+    try {
+        const trackInfo = (await execFile("git", ["rev-list", "--left-right", "--count", "HEAD...@{u}"])).stdout.trim();
+        const parts = trackInfo.split(/\s+/);
+        if (parts.length === 2) {
+            ahead = parseInt(parts[0], 10);
+            behind = parseInt(parts[1], 10);
+        }
+    } catch (e) {
+        // Upstream might not be configured
+    }
+
+    res.json({
+        branch,
+        modifiedFiles: modifiedCount,
+        ahead,
+        behind
+    });
+  } catch (err) {
+    res.status(500).json({ error: "failed to get repo status" });
+  }
+});
+
 // Serve file contents after verifying the signature.
 router.get("/file/content", (req, res) => {
   const file = req.query.path as string;
