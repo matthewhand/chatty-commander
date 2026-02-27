@@ -89,6 +89,11 @@ try:
 except ImportError:
     agents_router = None
 
+try:
+    from .routes.audio import router as audio_router
+except ImportError:
+    audio_router = None
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -497,6 +502,10 @@ class WebModeServer:
         # Agents endpoints
         if agents_router:
             app.include_router(agents_router)
+
+        # Audio endpoints
+        if audio_router:
+            app.include_router(audio_router)
 
         # Avatar endpoints
         if avatar_api_router:
