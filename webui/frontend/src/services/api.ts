@@ -11,6 +11,33 @@ export interface Agent {
   error?: string;
 }
 
+// ─── Config Types ─────────────────────────────────────────────────────────────
+export interface CommandAction {
+  action: "keypress" | "url" | "shell" | "custom_message" | "voice_chat";
+  keys?: string;
+  url?: string;
+  cmd?: string;
+  message?: string;
+  [key: string]: any;
+}
+
+export interface AppConfig {
+  apiKey: string;
+  llmBaseUrl: string;
+  llmModel: string;
+  theme: string;
+  envOverrides: {
+    apiKey: boolean;
+    baseUrl: boolean;
+    model: boolean;
+  };
+  services: {
+    voiceCommands: boolean;
+    restApi: boolean;
+  };
+  commands: Record<string, CommandAction>;
+}
+
 /**
  * Fetch real advisor/agent context stats from the backend.
  * Falls back to an empty array if advisors are disabled or unavailable.
@@ -61,4 +88,65 @@ export const fetchLLMModels = async (
   } catch {
     return [];
   }
+};
+
+/**
+ * Fetch application configuration from the backend.
+ */
+export const fetchConfig = async (): Promise<AppConfig> => {
+  try {
+    const res = await fetch("/api/v1/config");
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        apiKey: data.advisors?.providers?.api_key ?? "",
+        llmBaseUrl: data.advisors?.providers?.base_url ?? "http://localhost:11434/v1",
+        llmModel: data.advisors?.providers?.model ?? "",
+        theme: data.ui?.theme ?? "dark",
+        envOverrides: {
+          apiKey: data._env_overrides?.api_key ?? false,
+          baseUrl: data._env_overrides?.base_url ?? false,
+          model: data._env_overrides?.model ?? false,
+        },
+        services: {
+          voiceCommands: data.services?.voiceCommands ?? data.voice?.enabled ?? true,
+          restApi: data.services?.restApi ?? true,
+        },
+        commands: data.commands ?? {},
+      };
+    }
+  } catch { /* fall through */ }
+  // Default fallback
+  return {
+    apiKey: "",
+    llmBaseUrl: "http://localhost:11434/v1",
+    llmModel: "",
+    theme: "dark",
+    envOverrides: { apiKey: false, baseUrl: false, model: false },
+    services: { voiceCommands: true, restApi: true },
+    commands: {},
+  };
+};
+
+/**
+ * Save application configuration to the backend.
+ */
+export const saveConfig = async (cfg: AppConfig): Promise<void> => {
+  await fetch("/api/v1/config", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      advisors: {
+        providers: {
+          api_key: cfg.apiKey,
+          base_url: cfg.llmBaseUrl,
+          model: cfg.llmModel,
+        },
+      },
+      voice: { enabled: cfg.services.voiceCommands },
+      ui: { theme: cfg.theme },
+      services: { ...cfg.services },
+      commands: cfg.commands, // Persist commands as well
+    }),
+  });
 };

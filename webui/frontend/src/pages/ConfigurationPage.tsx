@@ -10,61 +10,11 @@ import {
   Volume2 as VolumeUpIcon,
   Headphones as HeadphonesIcon,
   Server as ServerIcon,
-  Activity as ActivityIcon,
 } from "lucide-react";
-import { fetchLLMModels } from "../services/api";
+import { fetchLLMModels, fetchConfig, saveConfig, AppConfig } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface AppConfig {
-  apiKey: string;
-  llmBaseUrl: string;
-  llmModel: string;
-  theme: string;
-  envOverrides: {
-    apiKey: boolean;
-    baseUrl: boolean;
-    model: boolean;
-  };
-  services: {
-    voiceCommands: boolean;
-    restApi: boolean;
-  };
-}
-
 // ─── API helpers ──────────────────────────────────────────────────────────────
-async function loadConfig(): Promise<AppConfig> {
-  try {
-    const res = await fetch("/api/v1/config");
-    if (res.ok) {
-      const data = await res.json();
-      return {
-        apiKey: data.advisors?.providers?.api_key ?? "",
-        llmBaseUrl: data.advisors?.providers?.base_url ?? "http://localhost:11434/v1",
-        llmModel: data.advisors?.providers?.model ?? "",
-        theme: data.ui?.theme ?? "dark",
-        envOverrides: {
-          apiKey: data._env_overrides?.api_key ?? false,
-          baseUrl: data._env_overrides?.base_url ?? false,
-          model: data._env_overrides?.model ?? false,
-        },
-        services: {
-          voiceCommands: data.services?.voiceCommands ?? data.voice?.enabled ?? true,
-          restApi: data.services?.restApi ?? true,
-        },
-      };
-    }
-  } catch { /* fall through */ }
-  return {
-    apiKey: "",
-    llmBaseUrl: "http://localhost:11434/v1",
-    llmModel: "",
-    theme: "dark",
-    envOverrides: { apiKey: false, baseUrl: false, model: false },
-    services: { voiceCommands: true, restApi: true },
-  };
-}
-
 const getAudioDevices = async () => {
   try {
     const res = await fetch("/api/audio/devices");
@@ -81,25 +31,6 @@ const saveAudioSettings = async (settings: { inputDevice: string; outputDevice: 
   });
 };
 
-async function persistConfig(cfg: AppConfig): Promise<void> {
-  await fetch("/api/v1/config", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      advisors: {
-        providers: {
-          api_key: cfg.apiKey,
-          base_url: cfg.llmBaseUrl,
-          model: cfg.llmModel,
-        },
-      },
-      voice: { enabled: cfg.services.voiceCommands },
-      ui: { theme: cfg.theme },
-      services: { ...cfg.services },
-    }),
-  });
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 const ConfigurationPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -111,6 +42,7 @@ const ConfigurationPage: React.FC = () => {
     theme: "dark",
     envOverrides: { apiKey: false, baseUrl: false, model: false },
     services: { voiceCommands: true, restApi: true },
+    commands: {},
   });
   const [modelList, setModelList] = useState<string[]>([]);
   const [fetchingModels, setFetchingModels] = useState(false);
@@ -129,14 +61,14 @@ const ConfigurationPage: React.FC = () => {
   // Load config on mount
   const { data: remoteConfig } = useQuery({
     queryKey: ["config"],
-    queryFn: loadConfig,
+    queryFn: fetchConfig,
   });
   useEffect(() => {
     if (remoteConfig) setConfig(remoteConfig);
   }, [remoteConfig]);
 
   const mutation = useMutation({
-    mutationFn: persistConfig,
+    mutationFn: saveConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["config"] });
       // also save audio settings
