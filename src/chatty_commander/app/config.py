@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -396,7 +397,7 @@ class Config:
                 actions[name] = {"url": url}
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
-                actions[name] = {"shell": f"echo {msg}"}
+                actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
             elif action_type == "voice_chat":
                 # Voice chat action - pass through the entire config
                 actions[name] = {"action": "voice_chat"}

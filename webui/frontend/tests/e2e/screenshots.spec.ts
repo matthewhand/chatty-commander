@@ -1,48 +1,66 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
+import fs from "fs";
 
-const ARTIFACTS_DIR = "/home/matthewh/.gemini/antigravity/brain/ea411f02-4a15-4787-bf51-08531d57bd78";
+const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 
-test.describe("UI Screenshots", () => {
-    test("capture all pages", async ({ page }) => {
-        // 1. Dashboard
+test.describe("Documentation Screenshots", () => {
+    test.beforeAll(() => {
+        fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+    });
+
+    test("dashboard", async ({ page }) => {
         await page.goto("/");
         await expect(page).toHaveURL(/dashboard/);
-        await page.waitForTimeout(1000); // Allow animations/graphs to settle
-        await page.screenshot({ path: path.join(ARTIFACTS_DIR, "dashboard.png"), fullPage: true });
+        await page.waitForTimeout(1500);
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "dashboard.png"), fullPage: true });
+    });
 
-        // 2. Configuration
+    test("login", async ({ page }) => {
+        await page.goto("/login");
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "login.png"), fullPage: true });
+    });
+
+    test("configuration-general", async ({ page }) => {
+        await page.goto("/");
         await page.click("text=Configuration");
         await expect(page).toHaveURL(/configuration/);
         await page.waitForTimeout(500);
-        await page.screenshot({ path: path.join(ARTIFACTS_DIR, "configuration.png"), fullPage: true });
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "configuration-general.png"), fullPage: true });
+    });
 
-        // 3. Audio Settings
-        await page.click("text=Audio Settings");
-        await expect(page).toHaveURL(/audio-settings/);
-        await page.waitForTimeout(500);
-        await page.screenshot({ path: path.join(ARTIFACTS_DIR, "audio_settings.png"), fullPage: true });
+    test("configuration-llm", async ({ page }) => {
+        await page.goto("/");
+        await page.click("text=Configuration");
+        await page.waitForTimeout(300);
+        const llmTab = page.locator("text=LLM").first();
+        if (await llmTab.isVisible()) {
+            await llmTab.click();
+            await page.waitForTimeout(300);
+        }
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "configuration-llm.png"), fullPage: true });
+    });
 
-        // 4. Personas
-        await page.click("text=Personas");
-        await expect(page).toHaveURL(/personas/);
-        // Wait for persona cards to render (or timeout gracefully)
-        await page.waitForSelector(".card", { timeout: 5000 }).catch(() => { });
-        await page.waitForTimeout(500);
-        await page.screenshot({ path: path.join(ARTIFACTS_DIR, "personas.png"), fullPage: true });
+    test("configuration-services", async ({ page }) => {
+        await page.goto("/");
+        await page.click("text=Configuration");
+        await page.waitForTimeout(300);
+        const servicesTab = page.locator("text=Services").first();
+        if (await servicesTab.isVisible()) {
+            await servicesTab.click();
+            await page.waitForTimeout(300);
+        }
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "configuration-services.png"), fullPage: true });
+    });
 
-        // 5. Agent Status
-        await page.click("text=Agent Status");
-        await expect(page).toHaveURL(/agent-status/);
-        // Wait for agent cards to render (or timeout gracefully)
-        await page.waitForSelector(".card", { timeout: 5000 }).catch(() => { });
-        await page.waitForTimeout(500);
-        await page.screenshot({ path: path.join(ARTIFACTS_DIR, "agent_status.png"), fullPage: true });
-
-        // 6. Login Page (Fake logout)
-        // We can't easily logout with NO_AUTH=true, so let's just go to /login explicitly
-        await page.goto("/login");
-        await page.waitForTimeout(500);
-        await page.screenshot({ path: path.join(ARTIFACTS_DIR, "login.png"), fullPage: true });
+    test("commands", async ({ page }) => {
+        await page.goto("/");
+        const commandsLink = page.locator("text=Commands").first();
+        if (await commandsLink.isVisible()) {
+            await commandsLink.click();
+            await page.waitForTimeout(500);
+        }
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "commands.png"), fullPage: true });
     });
 });

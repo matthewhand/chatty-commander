@@ -58,12 +58,12 @@ class OpenAIBackend(LLMBackend):
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None, **kwargs):
         self.api_key = (
-            api_key 
-            or os.getenv("OPENAI_API_KEY") 
+            api_key
+            or os.getenv("OPENAI_API_KEY")
         )
         self.base_url = (
-            base_url 
-            or os.getenv("OPENAI_BASE_URL") 
+            base_url
+            or os.getenv("OPENAI_BASE_URL")
             or os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
         )
         self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
