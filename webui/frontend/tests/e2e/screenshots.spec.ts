@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
+
+// ES Module workaround for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 

@@ -9,10 +9,16 @@ By default, the dashboard is served at `http://localhost:8100/` when the applica
 - **Real-time Metrics**: View CPU usage, Memory Usage, and total API Commands Executed on the home page.
 - **WebSocket Streaming**: All AI generated logs, state transitions, and system errors are streamed directly to the UI.
 - **Configuration Hot-Reload**: Update Settings and prompts without needing to restart the backend.
+- **Commands & Triggers**: View and manage the currently active voice commands and their wakeword bindings in real-time.
 
 ## Screenshots
 
 Screenshots of the UI are stored in [`docs/screenshots/`](../screenshots/).
+
+### Commands Page
+The Commands page dynamically renders the current configuration, showing active commands, their action types (e.g., keypress, URL), and the specific wakewords that trigger them. You can delete commands directly from this interface to update the system configuration.
+
+![Commands Page](../screenshots/commands.png)
 
 ---
 
