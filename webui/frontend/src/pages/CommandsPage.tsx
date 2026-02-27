@@ -110,8 +110,22 @@ export default function CommandsPage() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button className="btn btn-ghost btn-sm btn-circle"><Edit3 size={16} /></button>
-                    <button className="btn btn-ghost btn-sm btn-circle text-error"><Trash2 size={16} /></button>
+                    <div className="tooltip tooltip-bottom" data-tip="Edit Command">
+                      <button
+                        className="btn btn-ghost btn-sm btn-circle"
+                        aria-label={`Edit ${command.displayName}`}
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                    </div>
+                    <div className="tooltip tooltip-bottom tooltip-error" data-tip="Delete Command">
+                      <button
+                        className="btn btn-ghost btn-sm btn-circle text-error"
+                        aria-label={`Delete ${command.displayName}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -146,7 +160,12 @@ export default function CommandsPage() {
                           <div className="flex-1">
                             <div className="flex justify-between items-center mb-2">
                               <p className="font-semibold">{ww.displayName}</p>
-                              <input type="checkbox" className="toggle toggle-sm toggle-primary" defaultChecked={ww.isActive} />
+                              <input
+                                type="checkbox"
+                                className="toggle toggle-sm toggle-primary"
+                                defaultChecked={ww.isActive}
+                                aria-label={`Toggle ${ww.displayName} wakeword`}
+                              />
                             </div>
 
                             {/* ONNX Assets attached to this Wakeword */}
