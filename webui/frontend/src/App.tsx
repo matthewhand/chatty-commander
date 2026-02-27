@@ -13,6 +13,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ConfigurationPage from "./pages/ConfigurationPage";
 import CommandsPage from "./pages/CommandsPage";
+import CommandAuthoringPage from "./pages/CommandAuthoringPage";
 
 // Import components
 import MainLayout from "./components/MainLayout";
@@ -74,6 +75,7 @@ function AppContent() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/configuration" element={<ConfigurationPage />} />
           <Route path="/commands" element={<CommandsPage />} />
+          <Route path="/commands/authoring" element={<CommandAuthoringPage />} />
         </Route>
 
         {/* Default Redirect */}
