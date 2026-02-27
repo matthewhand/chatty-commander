@@ -13,52 +13,41 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 
-// --- MOCK DOMAIN MODEL FOR DEMO ---
-// We will replace this with actual backend fetch routes later.
-const MOCK_COMMANDS = [
-  {
-    id: "cmd_lights_on",
-    displayName: "Turn On Lights",
-    actionType: "home_assistant_script",
-    payload: "script.lights_on",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_lights_on_1",
-        displayName: "Lights On",
-        isActive: true,
-        threshold: 0.5,
-        assets: ["models/lights_on.onnx"]
-      },
-      {
-        id: "ww_lights_on_2",
-        displayName: "Turn The Lights On",
-        isActive: true,
-        threshold: 0.45,
-        assets: ["models/turn_the_lights_on.onnx"]
-      }
-    ]
-  },
-  {
-    id: "cmd_stop",
-    displayName: "Stop/Cancel",
-    actionType: "system_interrupt",
-    payload: "cancel_current",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_stop_1",
-        displayName: "Okay Stop",
-        isActive: true,
-        threshold: 0.4,
-        assets: ["models/okay_stop.onnx", "models/okay_stop_alt.onnx"]
-      }
-    ]
-  }
-];
-
 export default function CommandsPage() {
   const [activeTab, setActiveTab] = useState('all');
+
+  // Fetch real commands from the backend
+  const { data: commandsData, isLoading, isError } = useQuery({
+    queryKey: ['commands'],
+    queryFn: () => apiService.getCommands(),
+  });
+
+  // Transform backend dictionary to array for display
+  const commandsList = commandsData ? Object.entries(commandsData).map(([key, value]) => ({
+    id: key,
+    displayName: key,
+    actionType: (value as any).action || "unknown",
+    payload: (value as any).keys || (value as any).url || (value as any).message || JSON.stringify(value),
+    apiEnabled: true, // Assuming all configured commands are executable via API
+    // Wakeword mapping logic would go here if available from backend
+    wakewords: []
+  })) : [];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center p-8">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="alert alert-error shadow-lg">
+        <span>Failed to load commands. Please check the backend connection.</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,7 +74,12 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {MOCK_COMMANDS.map((command, idx) => (
+          {commandsList.length === 0 ? (
+             <div className="col-span-full text-center p-8 text-base-content/50 italic">
+               No commands configured.
+             </div>
+          ) : (
+            commandsList.map((command, idx) => (
             <motion.div
               key={command.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -105,7 +99,7 @@ export default function CommandsPage() {
                       <h2 className="card-title text-xl mb-1">{command.displayName}</h2>
                       <div className="flex gap-2 text-xs font-mono text-base-content/60">
                         <span className="px-2 py-1 rounded bg-base-300">{command.actionType}</span>
-                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[150px]">{command.payload}</span>
+                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[250px]">{command.payload}</span>
                       </div>
                     </div>
                   </div>
@@ -141,15 +135,16 @@ export default function CommandsPage() {
                       <Globe className="text-success" size={20} />
                       <div className="flex-1">
                         <p className="font-medium text-sm">REST API / WebUI Trigger</p>
-                        <p className="text-xs text-base-content/60 font-mono mt-0.5">POST /api/v1/commands/execute</p>
+                        <p className="text-xs text-base-content/60 font-mono mt-0.5">POST /api/v1/command</p>
                       </div>
                       <div className="badge badge-success badge-sm badge-outline">Enabled</div>
                     </div>
                   )}
 
                   {/* Wakewords 1-to-Many UI */}
+                  {command.wakewords && command.wakewords.length > 0 && (
                   <div className="space-y-3 mt-4">
-                    {command.wakewords.map((ww) => (
+                    {command.wakewords.map((ww: any) => (
                       <div key={ww.id} className="relative pl-6">
                         {/* Tree line connector */}
                         <div className="absolute left-[11px] top-0 bottom-[-16px] w-[2px] bg-base-content/10 last:bottom-auto last:h-8"></div>
@@ -170,7 +165,7 @@ export default function CommandsPage() {
 
                             {/* ONNX Assets attached to this Wakeword */}
                             <div className="space-y-1.5">
-                              {ww.assets.map(asset => (
+                              {ww.assets.map((asset: any) => (
                                 <div key={asset} className="flex flex-items-center gap-2 text-xs text-base-content/70 bg-base-300/50 p-1.5 rounded-md font-mono">
                                   <FileAudio size={12} className="text-accent" />
                                   <span className="truncate">{asset}</span>
@@ -182,21 +177,12 @@ export default function CommandsPage() {
                         </div>
                       </div>
                     ))}
-
-                    {/* Add Wakeword Button */}
-                    <div className="relative pl-6 mt-2">
-                      <div className="absolute left-[11px] top-0 w-[2px] h-6 bg-base-content/10"></div>
-                      <div className="absolute left-[11px] top-6 w-4 h-[2px] bg-base-content/10"></div>
-                      <button className="btn btn-ghost btn-sm text-base-content/50 ml-2 mt-2 gap-2 hover:text-primary">
-                        <Plus size={14} /> Add Wakeword Binding
-                      </button>
-                    </div>
-
                   </div>
+                  )}
                 </div>
               </div>
             </motion.div>
-          ))}
+          )))}
         </AnimatePresence>
       </div>
     </div>

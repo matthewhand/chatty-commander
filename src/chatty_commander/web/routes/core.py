@@ -165,6 +165,11 @@ def include_core_routes(
             last_health_check=datetime.now().isoformat(),
         )
 
+    @router.get("/api/v1/commands")
+    async def get_commands():
+        cfg_mgr = get_config_manager()
+        return getattr(cfg_mgr, "commands", {})
+
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
         """Get application metrics and performance data."""
