@@ -298,6 +298,40 @@ export default function CommandAuthoringPage() {
       return;
     }
 
+    // Validate each action has required fields based on type
+    for (let i = 0; i < commandToSave.actions.length; i++) {
+      const action = commandToSave.actions[i];
+      switch (action.type) {
+        case 'keypress':
+          if (!action.keys?.trim()) {
+            setError(`Action ${i + 1} (Keypress) requires a 'keys' value`);
+            return;
+          }
+          break;
+        case 'url':
+          if (!action.url?.trim()) {
+            setError(`Action ${i + 1} (URL) requires a 'url' value`);
+            return;
+          }
+          break;
+        case 'shell':
+          if (!action.cmd?.trim() && !action.command?.trim()) {
+            setError(`Action ${i + 1} (Shell) requires a 'command' value`);
+            return;
+          }
+          break;
+        case 'custom_message':
+          if (!action.message?.trim()) {
+            setError(`Action ${i + 1} (Message) requires a 'message' value`);
+            return;
+          }
+          break;
+        default:
+          setError(`Action ${i + 1} has an invalid type`);
+          return;
+      }
+    }
+
     setShowConfirmModal(true);
     setError(null);
   }, [mode, generatedCommand, manualCommand]);

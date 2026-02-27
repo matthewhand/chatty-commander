@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -99,8 +100,8 @@ class GeneratedCommandResponse(BaseModel):
 
 
 # Prompt template for LLM command generation
-_COMMAND_GENERATION_PROMPT = """Convert this user request into a command configuration:
-"{user_description}"
+# User description is passed separately to prevent prompt injection
+_COMMAND_GENERATION_PROMPT_TEMPLATE = """Convert this user request into a command configuration.
 
 Available action types:
 - keypress: simulate keyboard shortcuts (requires "keys" field referencing keybindings)
@@ -117,7 +118,56 @@ Output ONLY valid JSON in this format:
     {{"type": "action_type", ...action_specific_fields}}
   ]
 }}
+
+=== USER REQUEST ===
+{user_description}
+=== END USER REQUEST ===
 """
+
+
+def _sanitize_user_input(description: str) -> str:
+    """Sanitize user input to prevent prompt injection attacks.
+    
+    Removes or escapes potentially harmful characters and patterns that
+    could be used to manipulate the LLM's behavior.
+    
+    Args:
+        description: Raw user input
+        
+    Returns:
+        Sanitized input safe for embedding in prompts
+    """
+    # Remove null bytes
+    cleaned = description.replace('\x00', '')
+    
+    # Remove control characters except newlines and tabs
+    cleaned = ''.join(char for char in cleaned if ord(char) >= 32 or char in '\n\t')
+    
+    # Escape triple backticks that could break out of the context
+    cleaned = cleaned.replace('```', '``\u200B`')
+    
+    # Limit length to prevent DoS via extremely long inputs
+    max_length = 2000
+    if len(cleaned) > max_length:
+        cleaned = cleaned[:max_length]
+    
+    return cleaned
+
+
+def _build_prompt(description: str) -> str:
+    """Build a safe prompt with sanitized user input.
+    
+    Uses JSON encoding for the user description to prevent prompt injection.
+    The description is wrapped in delimiters to establish clear boundaries.
+    
+    Args:
+        description: Raw user description
+        
+    Returns:
+        Safe prompt string ready for LLM generation
+    """
+    sanitized = _sanitize_user_input(description)
+    return _COMMAND_GENERATION_PROMPT_TEMPLATE.format(user_description=sanitized)
 
 
 def _get_llm_manager() -> LLMManager | None:
@@ -233,8 +283,8 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
             detail="LLM service not available. Please configure an LLM backend.",
         )
 
-    # Generate prompt
-    prompt = _COMMAND_GENERATION_PROMPT.format(user_description=request.description)
+    # Generate prompt with sanitized input
+    prompt = _build_prompt(request.description)
 
     try:
         # Get LLM response
