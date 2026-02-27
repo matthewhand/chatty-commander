@@ -1,17 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Trash2 } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
 const MAX_MESSAGES = 100;
 
+interface LogEntry {
+  id: string;
+  timestamp: string;
+  content: string;
+  type: 'info' | 'error' | 'success';
+}
+
 const DashboardPage: React.FC = () => {
   const { ws, isConnected } = useWebSocket();
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<LogEntry[]>([]);
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const generateId = () => {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  };
+
+  const addLog = (content: string, type: LogEntry['type']) => {
+    const newLog: LogEntry = {
+      id: generateId(),
+      timestamp: new Date().toLocaleTimeString(),
+      content,
+      type
+    };
+    setMessages(prev => [...prev, newLog].slice(-MAX_MESSAGES));
+  };
+
+  const handleClearLogs = () => {
+    setMessages([]);
+  };
 
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,12 +55,12 @@ const DashboardPage: React.FC = () => {
     setCommandInput("");
 
     // Optimistically add to log
-    setMessages(prev => [...prev, `> Executing: ${cmd}`].slice(-MAX_MESSAGES));
+    addLog(`Executing: ${cmd}`, 'info');
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
-      setMessages(prev => [...prev, `Error: ${err.message}`].slice(-MAX_MESSAGES));
+      addLog(`Error: ${err.message}`, 'error');
     } finally {
       setIsSending(false);
     }
@@ -71,7 +104,10 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (ws) {
       ws.onmessage = (event) => {
-        setMessages((prev) => [...prev, event.data].slice(-MAX_MESSAGES));
+        const msg = event.data;
+        // Simple heuristic to determine log type if not explicit
+        const type = msg.toLowerCase().includes("error") ? 'error' : 'success';
+        addLog(msg, type);
       };
     }
   }, [ws]);
@@ -168,14 +204,36 @@ const DashboardPage: React.FC = () => {
       {/* Main Content */}
       <div className="card bg-base-100 shadow-xl border border-base-content/10">
         <div className="card-body">
-          <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="card-title text-xl">Real-time Command Log</h3>
+            <button
+              className="btn btn-sm btn-ghost gap-2 text-error"
+              onClick={handleClearLogs}
+              disabled={messages.length === 0}
+              title="Clear logs"
+            >
+              <Trash2 size={16} />
+              Clear
+            </button>
+          </div>
 
-          <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
+          <div
+            ref={logContainerRef}
+            className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar"
+          >
             {messages.length > 0 ? (
-              messages.slice(-15).map((msg, index) => (
-                <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
-                  <code>{msg}</code>
-                </pre>
+              messages.map((msg) => (
+                <div key={msg.id} className="px-4 py-1 hover:bg-base-content/5 flex gap-2 font-mono text-sm">
+                  <span className="opacity-50 select-none">[{msg.timestamp}]</span>
+                  <span className={
+                    msg.type === 'error' ? "text-error" :
+                    msg.type === 'success' ? "text-success" :
+                    "text-info"
+                  }>
+                    {msg.type === 'info' && '> '}
+                    {msg.content}
+                  </span>
+                </div>
               ))
             ) : (
               <div className="p-4 text-base-content/50 italic text-center pt-24">
