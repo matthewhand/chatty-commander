@@ -42,11 +42,18 @@ def test_generate_env_template():
 def test_generate_index_js():
     """Test index.js generation."""
     content = generate_index_js()
+    # Basic dependencies
     assert "require('express')" in content
     assert "require('discord.js')" in content
     assert "require('@slack/bolt')" in content
     assert "app.listen" in content
     assert "discordClient.login" in content
+
+    # New features
+    assert "app.post('/send'" in content  # Proactive messaging
+    assert "app.get('/'" in content       # Dashboard
+    assert "ChattyCommander Bridge Status" in content  # Dashboard title
+    assert "process.env.BRIDGE_TOKEN" in content # Auth check
 
 
 def test_generate_readme():

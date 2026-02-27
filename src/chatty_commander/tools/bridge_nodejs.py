@@ -212,9 +212,78 @@ slackApp.message(async ({ message, say }) => {
   }
 });
 
+// Proactive messaging endpoint
+app.post('/send', async (req, res) => {
+  const { platform, channel, user, text } = req.body;
+  const bridgeToken = req.headers['x-bridge-token'];
+
+  if (bridgeToken !== process.env.BRIDGE_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    if (platform === 'discord') {
+      const targetChannel = await discordClient.channels.fetch(channel);
+      if (targetChannel) {
+        await targetChannel.send(text);
+        return res.json({ success: true });
+      }
+    } else if (platform === 'slack') {
+      await slackApp.client.chat.postMessage({
+        channel: channel,
+        text: text
+      });
+      return res.json({ success: true });
+    }
+    res.status(400).json({ error: 'Invalid platform or channel not found' });
+  } catch (error) {
+    logger.error('Error sending proactive message:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Bridge Status Dashboard
+app.get('/', (req, res) => {
+  const uptime = process.uptime();
+  const uptimeString = new Date(uptime * 1000).toISOString().substr(11, 8);
+
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>ChattyCommander Bridge Status</title>
+        <style>
+          body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
+          .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+          h1 { color: #1a1a1a; }
+          .status-ok { color: green; font-weight: bold; }
+          .metric { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>ChattyCommander Bridge</h1>
+          <div class="metric">
+            <span>Status:</span>
+            <span class="status-ok">Operational</span>
+          </div>
+          <div class="metric">
+            <span>Uptime:</span>
+            <span>${uptimeString}</span>
+          </div>
+          <div class="metric">
+            <span>Discord Bot:</span>
+            <span>${discordClient.isReady() ? 'Connected' : 'Connecting...'}</span>
+          </div>
+        </div>
+      </body>
+    </html>
+  `);
 });
 
 // Start the application
