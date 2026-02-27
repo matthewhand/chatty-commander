@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import secrets
 import time
 from datetime import datetime
 from pathlib import Path
@@ -605,8 +606,10 @@ class WebModeServer:
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
             # Check for bridge token in header
-            expected_token = "secret"  # TODO: Make configurable
-            if not x_bridge_token or x_bridge_token != expected_token:
+            expected_token = getattr(self.config, "bridge_token", "secret")
+            if not x_bridge_token or not secrets.compare_digest(
+                x_bridge_token, expected_token
+            ):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
             # For now, just echo back the event
