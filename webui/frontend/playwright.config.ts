@@ -33,9 +33,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "cd ../.. && uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
+    command: "cd ../.. && PYTHONPATH=src uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
     url: "http://localhost:8100/health",
     reuseExistingServer: !process.env.CI,
-    timeout: 10 * 1000,
+    timeout: 30 * 1000,
   },
 });

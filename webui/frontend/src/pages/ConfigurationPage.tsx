@@ -74,10 +74,13 @@ const getAudioDevices = async () => {
 };
 
 const saveAudioSettings = async (settings: { inputDevice: string; outputDevice: string }) => {
-  await fetch("/api/audio/device", {
+  await fetch("/api/audio/settings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ device_id: settings.inputDevice }),
+    body: JSON.stringify({
+      input_device: settings.inputDevice,
+      output_device: settings.outputDevice,
+    }),
   });
 };
 
