@@ -12,4 +12,20 @@ You can configure the exact model and threshold passing in `config.json`.
 3. **Chatty**: Keeping the microphone open for sequential commands.
 
 ## Custom Voice Commands
-You can map specific voice triggers to CLI commands or internal Python functions by modifying the JSON profiles within the backend configs.
+
+You can manage voice commands directly from the **WebUI**. Navigate to the **Commands** page to add, edit, or remove commands.
+
+### Managing Commands via WebUI
+1.  **View Commands**: See all configured commands in the "Commands" tab.
+2.  **Add Command**: Click "New Command", specify a unique ID, choose an action type (Keypress, URL, Shell, Custom Message), and enter the payload.
+3.  **Edit/Delete**: Use the action buttons on each command card to modify or remove commands.
+
+Changes made in the WebUI are persisted to `config.json` automatically.
+
+![Commands Page](../screenshots/commands-list-updated.png)
+
+### Action Types
+- **Keypress**: Simulates keyboard shortcuts (e.g., `ctrl+alt+t`).
+- **URL**: Sends a POST request to a webhook (e.g., Home Assistant).
+- **Shell**: Executes a system shell command.
+- **Custom Message**: Echoes a message (useful for testing or TTS).

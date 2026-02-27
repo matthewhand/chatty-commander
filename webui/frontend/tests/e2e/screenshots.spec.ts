@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 
@@ -62,5 +66,35 @@ test.describe("Documentation Screenshots", () => {
             await page.waitForTimeout(500);
         }
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "commands.png"), fullPage: true });
+    });
+
+    test("commands-add-workflow", async ({ page }) => {
+        await page.goto("/");
+        const commandsLink = page.locator("text=Commands").first();
+        if (await commandsLink.isVisible()) {
+            await commandsLink.click();
+            await page.waitForTimeout(500);
+        }
+
+        // Click Add Command
+        await page.click("text=New Command");
+        await page.waitForTimeout(300);
+
+        // Fill Form
+        await page.fill('input[placeholder="e.g., lights_on"]', "demo_command_screenshot");
+        await page.selectOption('select', "custom_message");
+        await page.fill('input[placeholder="Hello World"]', "This is a demo command for docs");
+
+        await page.waitForTimeout(300);
+
+        // Take screenshot of the form open
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "commands-add-workflow.png"), fullPage: true });
+
+        // Save
+        await page.click("text=Save Command");
+        await page.waitForTimeout(1000); // Wait for optimistic update and re-render
+
+        // Take screenshot of list with new command
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "commands-list-updated.png"), fullPage: true });
     });
 });
