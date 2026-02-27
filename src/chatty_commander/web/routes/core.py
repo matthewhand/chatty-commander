@@ -202,7 +202,7 @@ def include_core_routes(
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
         config_data = dict(getattr(cfg_mgr, "config", {}))
-        
+
         # Expose which fields are overridden by the environment
         env_overrides = {
             "api_key": bool(os.environ.get("OPENAI_API_KEY")),
