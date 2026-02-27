@@ -4,6 +4,41 @@ import fs from "fs";
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 
+const MOCK_COMMANDS = [
+    {
+        "id": "cmd_lights_on",
+        "displayName": "Turn On Lights",
+        "actionType": "home_assistant_script",
+        "payload": "script.lights_on",
+        "apiEnabled": true,
+        "wakewords": [
+            {
+                "id": "ww_lights_on_1",
+                "displayName": "Lights On",
+                "isActive": true,
+                "threshold": 0.5,
+                "assets": ["models/lights_on.onnx"]
+            }
+        ]
+    },
+    {
+        "id": "cmd_stop",
+        "displayName": "Stop/Cancel",
+        "actionType": "system_interrupt",
+        "payload": "cancel_current",
+        "apiEnabled": true,
+        "wakewords": [
+            {
+                "id": "ww_stop_1",
+                "displayName": "Okay Stop",
+                "isActive": true,
+                "threshold": 0.4,
+                "assets": ["models/okay_stop.onnx"]
+            }
+        ]
+    }
+];
+
 test.describe("Documentation Screenshots", () => {
     test.beforeAll(() => {
         fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
@@ -55,11 +90,16 @@ test.describe("Documentation Screenshots", () => {
     });
 
     test("commands", async ({ page }) => {
+        // Mock the backend API response for commands page
+        await page.route('**/api/v1/commands', async route => {
+            await route.fulfill({ json: MOCK_COMMANDS });
+        });
+
         await page.goto("/");
         const commandsLink = page.locator("text=Commands").first();
         if (await commandsLink.isVisible()) {
             await commandsLink.click();
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(1500); // Allow for animation/loading
         }
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "commands.png"), fullPage: true });
     });

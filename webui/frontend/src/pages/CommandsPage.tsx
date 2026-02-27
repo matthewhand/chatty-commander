@@ -13,52 +13,50 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 
-// --- MOCK DOMAIN MODEL FOR DEMO ---
-// We will replace this with actual backend fetch routes later.
-const MOCK_COMMANDS = [
-  {
-    id: "cmd_lights_on",
-    displayName: "Turn On Lights",
-    actionType: "home_assistant_script",
-    payload: "script.lights_on",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_lights_on_1",
-        displayName: "Lights On",
-        isActive: true,
-        threshold: 0.5,
-        assets: ["models/lights_on.onnx"]
-      },
-      {
-        id: "ww_lights_on_2",
-        displayName: "Turn The Lights On",
-        isActive: true,
-        threshold: 0.45,
-        assets: ["models/turn_the_lights_on.onnx"]
-      }
-    ]
-  },
-  {
-    id: "cmd_stop",
-    displayName: "Stop/Cancel",
-    actionType: "system_interrupt",
-    payload: "cancel_current",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_stop_1",
-        displayName: "Okay Stop",
-        isActive: true,
-        threshold: 0.4,
-        assets: ["models/okay_stop.onnx", "models/okay_stop_alt.onnx"]
-      }
-    ]
-  }
-];
+// --- DOMAIN MODEL ---
+interface Wakeword {
+    id: string;
+    displayName: string;
+    isActive: boolean;
+    threshold: number;
+    assets: string[];
+}
+
+interface Command {
+    id: string;
+    displayName: string;
+    actionType: string;
+    payload: string;
+    apiEnabled: boolean;
+    wakewords: Wakeword[];
+}
 
 export default function CommandsPage() {
   const [activeTab, setActiveTab] = useState('all');
+
+  const { data: commands, isLoading, isError, error } = useQuery({
+    queryKey: ['commands'],
+    queryFn: () => apiService.getCommands(),
+  });
+
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-96">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+        </div>
+    );
+  }
+
+  if (isError) {
+      return (
+          <div className="alert alert-error shadow-lg">
+              <div>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span>Error loading commands: {(error as Error).message}</span>
+              </div>
+          </div>
+      );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,7 +83,7 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {MOCK_COMMANDS.map((command, idx) => (
+          {(commands as Command[])?.map((command, idx) => (
             <motion.div
               key={command.id}
               initial={{ opacity: 0, scale: 0.95 }}

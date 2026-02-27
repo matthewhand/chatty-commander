@@ -91,6 +91,23 @@ class MetricsData(BaseModel):
     )
 
 
+class WakewordInfo(BaseModel):
+    id: str
+    displayName: str
+    isActive: bool
+    threshold: float
+    assets: list[str]
+
+
+class CommandInfo(BaseModel):
+    id: str
+    displayName: str
+    actionType: str
+    payload: str
+    apiEnabled: bool
+    wakewords: list[WakewordInfo]
+
+
 def include_core_routes(
     *,
     get_start_time: Callable[[], float],
@@ -283,6 +300,67 @@ def include_core_routes(
                 message=f"Command execution failed: {str(e)}",
                 execution_time=execution_time,
             )
+
+    @router.get("/api/v1/commands", response_model=list[CommandInfo])
+    async def get_commands():
+        """
+        Get all configured commands and their associated wakewords/triggers.
+        """
+        cfg_mgr = get_config_manager()
+        config = getattr(cfg_mgr, "config", {})
+        if not isinstance(config, dict):
+            config = {}
+
+        raw_commands = config.get("commands", {})
+        state_models = config.get("state_models", {})
+
+        commands_data = []
+
+        for cmd_id, cmd_data in raw_commands.items():
+            # Normalize cmd_data if it's not a dict (though it should be)
+            if not isinstance(cmd_data, dict):
+                continue
+
+            # Infer action type and payload
+            action_type = cmd_data.get("action", "unknown")
+            payload = ""
+            if action_type == "keypress":
+                payload = cmd_data.get("keys", "")
+            elif action_type == "url":
+                payload = cmd_data.get("url", "")
+            elif action_type == "shell":
+                payload = cmd_data.get("cmd", "")
+            elif action_type == "custom_message":
+                payload = cmd_data.get("message", "")
+
+            # Find associated wakewords (infer from state_models)
+            associated_wakewords = []
+            for state_name, models_list in state_models.items():
+                if isinstance(models_list, list) and cmd_id in models_list:
+                    # Create a wakeword entry for this state association
+                    ww_id = f"ww_{cmd_id}_{state_name}"
+                    associated_wakewords.append(
+                        WakewordInfo(
+                            id=ww_id,
+                            displayName=cmd_id.replace("_", " ").title(),
+                            isActive=True,
+                            threshold=0.5,
+                            assets=[f"{cmd_id}.onnx"],
+                        )
+                    )
+
+            commands_data.append(
+                CommandInfo(
+                    id=cmd_id,
+                    displayName=cmd_id.replace("_", " ").title(),
+                    actionType=action_type,
+                    payload=str(payload),
+                    apiEnabled=True,
+                    wakewords=associated_wakewords,
+                )
+            )
+
+        return commands_data
 
     # Basic in-memory metrics counters (per-router instance)
     counters = {

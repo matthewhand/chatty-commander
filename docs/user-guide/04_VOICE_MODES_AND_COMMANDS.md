@@ -13,3 +13,7 @@ You can configure the exact model and threshold passing in `config.json`.
 
 ## Custom Voice Commands
 You can map specific voice triggers to CLI commands or internal Python functions by modifying the JSON profiles within the backend configs.
+
+The **Commands** page in the WebUI provides a dynamic view of all configured commands and their associated wakewords, fetched directly from the system configuration.
+
+![Commands Page](../screenshots/commands.png)
