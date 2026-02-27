@@ -148,5 +148,35 @@
     "telemetry_url": "",
     "external_url": "",
     "diagnostics_file": "logs/diagnostics.jsonl"
+  },
+  "general": {
+    "debug_mode": false
+  },
+  "web_server": {
+    "host": "0.0.0.0",
+    "port": 8100,
+    "auth_enabled": false,
+    "bridge_token": null
+  },
+  "advisors": {
+    "providers": {
+      "api_key": "",
+      "base_url": "http://localhost:11434/v1",
+      "model": ""
+    }
+  },
+  "voice": {
+    "enabled": true
+  },
+  "ui": {
+    "theme": "dark"
+  },
+  "services": {
+    "voiceCommands": true,
+    "restApi": true
+  },
+  "voice_only": false,
+  "audio": {
+    "device": "Mock Microphone 1"
   }
 }

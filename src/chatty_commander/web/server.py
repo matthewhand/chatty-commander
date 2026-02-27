@@ -60,6 +60,11 @@ except ImportError:
     include_avatar_settings_routes = None
 
 try:
+    from .routes.audio import include_audio_routes
+except ImportError:
+    include_audio_routes = None
+
+try:
     from .routes.version import router as version_router
 except ImportError:
     version_router = None
@@ -88,6 +93,7 @@ except ImportError:
 
 # Settings router needs to be created with config manager
 settings_router = None
+audio_router = None
 
 
 def _include_optional(app: FastAPI, name: str) -> None:
@@ -119,6 +125,13 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             get_config_manager=lambda: config_manager
         )
         _include_optional(app, "settings_router")
+
+    if include_audio_routes and config_manager:
+        global audio_router
+        audio_router = include_audio_routes(
+            get_config_manager=lambda: config_manager
+        )
+        _include_optional(app, "audio_router")
 
     # Add bridge endpoint for tests
     try:
