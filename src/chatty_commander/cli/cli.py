@@ -136,7 +136,7 @@ def run_web_mode(
 
     # Setup callbacks for voice command integration
     def on_command_detected(command):
-        web_server.on_command_detected(command)
+        web_server.on_command_detected(command, confidence=1.0)
 
     def on_state_change(old_state, new_state):
         web_server._on_state_change(old_state, new_state)
@@ -220,14 +220,9 @@ def run_gui_mode(
     try:
         # Prefer avatar GUI if available (pywebview + local index.html)
         try:
-            try:
-                from chatty_commander.avatars.avatar_gui import (
-                    run_avatar_gui,  # type: ignore
-                )
-            except Exception:
-                from src.chatty_commander.avatars.avatar_gui import (
-                    run_avatar_gui,  # type: ignore
-                )
+            from chatty_commander.avatars.avatar_gui import (
+                run_avatar_gui,  # type: ignore
+            )
             logger.info("Starting Avatar GUI (TalkingHead)")
             rc = run_avatar_gui()
             return 0 if rc is None else int(rc)
@@ -237,31 +232,20 @@ def run_gui_mode(
             )
             try:
                 # Try PyQt5-based transparent browser avatar
-                try:
-                    from chatty_commander.gui.pyqt5_avatar import (
-                        run_pyqt5_avatar,  # type: ignore
-                    )
-                except Exception:
-                    from src.chatty_commander.gui.pyqt5_avatar import (
-                        run_pyqt5_avatar,  # type: ignore
-                    )
+                from chatty_commander.gui.pyqt5_avatar import (
+                    run_pyqt5_avatar,  # type: ignore
+                )
                 logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
-                rc = run_pyqt5_avatar(config, logger)
+                rc = run_pyqt5_avatar()
                 return 0 if rc is None else int(rc)
             except Exception as e2:
                 logger.warning(
                     f"PyQt5 Avatar GUI unavailable ({e2}); falling back to tray popup GUI"
                 )
-                try:
-                    # Installed package path
-                    from chatty_commander.gui.tray_popup import (
-                        run_tray_popup,  # type: ignore
-                    )
-                except Exception:
-                    # Repo-root execution fallback
-                    from src.chatty_commander.gui.tray_popup import (
-                        run_tray_popup,  # type: ignore
-                    )
+                # Installed package path
+                from chatty_commander.gui.tray_popup import (
+                    run_tray_popup,  # type: ignore
+                )
 
                 logger.info("Starting GUI tray popup mode")
                 rc = run_tray_popup(config, logger)
@@ -702,7 +686,7 @@ def cli_main():
             return 0
 
         # Actually execute the command
-        command_executor.execute_command(command_name)
+        command_executor.execute_command(str(command_name))
         return 0
 
     # Initialize AI intelligence core for enhanced conversations
@@ -757,13 +741,7 @@ def cli_main():
             logger,
             host=host,
             no_auth=args.no_auth,
-            port=(
-                args.port
-                if args.port is not None
-                else getattr(getattr(config, "web_server", {}), "get", lambda *_: None)(
-                    "port", 8100
-                )
-            ),
+            port=int(port),
         )
         return 0
     elif args.gui:
