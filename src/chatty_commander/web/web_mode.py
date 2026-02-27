@@ -398,16 +398,16 @@ class WebModeServer:
             try:
                 import subprocess
                 import sys
-                
+
                 # Check if npm is available
                 subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-                
+
                 logger.info("Installing frontend dependencies...")
                 subprocess.run(["npm", "install", "--no-audit", "--no-fund", "--legacy-peer-deps"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
-                
+
                 logger.info("Building frontend assets...")
                 subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
-                
+
                 if Path("webui/frontend/dist").exists():
                     frontend_path = Path("webui/frontend/dist")
                 elif Path("webui/frontend/build").exists():

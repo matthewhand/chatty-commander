@@ -24,11 +24,8 @@
 
 from __future__ import annotations
 
-import os
-import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -211,7 +208,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to save file: {str(e)}"
-            )
+            ) from e
 
     @router.get("/download/{filename}")
     async def download_model_file(filename: str):
@@ -280,7 +277,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to delete file: {str(e)}"
-            )
+            ) from e
 
     @router.get("/directories")
     async def list_model_directories():
