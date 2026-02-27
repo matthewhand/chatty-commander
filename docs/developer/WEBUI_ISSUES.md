@@ -48,7 +48,7 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 ### Priority 1: Add Missing Audio Endpoints
 
 The AudioSettingsPage.tsx needs:
-- `GET /api/audio/devices` - List available audio input/output devices
+- `GET /api/audio/devices` - List available audio input devices
 - `POST /api/audio/device` - Set active audio device
 
 ### Priority 2: Add Voice Status Endpoints

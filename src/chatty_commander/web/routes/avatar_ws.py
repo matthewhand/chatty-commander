@@ -170,7 +170,7 @@ class AvatarAudioQueue:
     async def _play_audio(self, audio: bytes | None) -> None:
         """Placeholder for audio playback.
 
-        In production this would stream audio to an output device. For testing
+        Audio output is not currently supported in this version. For testing,
         we simply sleep for a duration based on the audio length if provided.
         """
         if audio:
