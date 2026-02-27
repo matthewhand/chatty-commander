@@ -83,9 +83,11 @@ class Config:
             "enabled": advisors_cfg.get("enabled", False),
             "llm_api_mode": advisors_cfg.get("llm_api_mode", "completion"),
             "model": advisors_cfg.get("model", "gpt-oss20b"),
-            "bridge": advisors_cfg.get("bridge", {"token": "secret"}),
+            "bridge": advisors_cfg.get("bridge", {}),
         }
-        self.bridge_token: str = self.advisors.get("bridge", {}).get("token", "secret")
+        # Bridge token - must be explicitly configured, no hardcoded default
+        bridge_cfg = self.advisors.get("bridge", {})
+        self.bridge_token: str | None = bridge_cfg.get("token") if bridge_cfg.get("token") else None
 
         # Voice/GUI behaviour
         self._voice_only: bool = bool(self.config_data.get("voice_only", False))
@@ -266,13 +268,11 @@ class Config:
         if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
 
-        # Bridge token overrides
-        for env_var in ["CHATCOMM_BRIDGE_TOKEN", "ADVISORS_BRIDGE_TOKEN"]:
-            if os.environ.get(env_var):
-                self.bridge_token = os.environ[env_var]
-                self.config_data.setdefault("advisors", {}).setdefault("bridge", {})[
-                    "token"
-                ] = self.bridge_token
+        # Bridge token - CHATCOMM_BRIDGE_TOKEN takes precedence over ADVISORS_BRIDGE_TOKEN
+        if os.environ.get("CHATCOMM_BRIDGE_TOKEN"):
+            self.bridge_token = os.environ["CHATCOMM_BRIDGE_TOKEN"]
+        elif os.environ.get("ADVISORS_BRIDGE_TOKEN"):
+            self.bridge_token = os.environ["ADVISORS_BRIDGE_TOKEN"]
 
         # General settings overrides
         if os.environ.get("CHATCOMM_DEBUG"):
@@ -306,7 +306,6 @@ class Config:
             "host": host,
             "port": port,
             "auth_enabled": auth,
-            "bridge_token": self.bridge_token,
         }
         self.web_host = host
         self.web_port = port
@@ -555,7 +554,9 @@ class Config:
         instance.state_transitions = instance.config_data.get("state_transitions", {})
         instance.commands = instance.config_data.get("commands", {})
         instance.advisors = instance.config_data.get("advisors", {})
-        instance.bridge_token = instance.advisors.get("bridge", {}).get("token", "secret")
+        # Bridge token - no hardcoded default, must be explicitly configured
+        advisors_bridge = instance.advisors.get("bridge", {})
+        instance.bridge_token = advisors_bridge.get("token") if advisors_bridge.get("token") else None
         instance.voice_only = instance.config_data.get("general", {}).get(
             "voice_only", False
         )

@@ -31,7 +31,7 @@ from chatty_commander.web.web_mode import WebModeServer
 
 
 class DummyConfig:
-    def __init__(self) -> None:
+    def __init__(self, bridge_token: str | None = "test-token") -> None:
         # Minimal paths for ModelManager
         self.general_models_path = "models-idle"
         self.system_models_path = "models-computer"
@@ -50,11 +50,13 @@ class DummyConfig:
                 },
                 "default_persona": "general",
             },
-            "bridge": {"token": "secret", "url": "http://localhost:3001"},
+            "bridge": {},
         }
+        # Bridge token - explicitly configured for tests
+        self.bridge_token = bridge_token
 
 
-def build_server():
+def build_server(bridge_token: str | None = "test-token"):
     with patch(
         "chatty_commander.advisors.providers.build_provider_safe"
     ) as mock_build_provider:
@@ -62,26 +64,36 @@ def build_server():
         mock_provider.model = "test-model"
         mock_provider.api_mode = "completion"
         mock_build_provider.return_value = mock_provider
-        cfg = DummyConfig()
+        cfg = DummyConfig(bridge_token=bridge_token)
         sm = StateManager()
         mm = ModelManager(cfg)
         ce = CommandExecutor(cfg, mm, sm)
         return WebModeServer(cfg, sm, mm, ce, no_auth=True)
 
 
+def test_bridge_event_returns_503_when_not_configured():
+    """When bridge token is not configured, return 503 Service Unavailable."""
+    server = build_server(bridge_token=None)
+    client = TestClient(server.app)
+    resp = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+    assert resp.status_code == 503
+
+
 def test_bridge_event_requires_auth():
+    """When bridge token is configured but not provided, return 401."""
     server = build_server()
     client = TestClient(server.app)
     resp = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
     assert resp.status_code == 401
 
 
-def test_bridge_event_ok_with_secret():
+def test_bridge_event_ok_with_valid_token():
+    """When valid bridge token is provided, return 200."""
     server = build_server()
     client = TestClient(server.app)
     resp = client.post(
         "/bridge/event",
-        headers={"X-Bridge-Token": "secret"},
+        headers={"X-Bridge-Token": "test-token"},
         json={
             "platform": "discord",
             "channel": "c1",
@@ -93,3 +105,15 @@ def test_bridge_event_ok_with_secret():
     data = resp.json()
     assert data["ok"] is True
     assert data["reply"]["text"] is not None
+
+
+def test_bridge_event_rejects_invalid_token():
+    """When invalid bridge token is provided, return 401."""
+    server = build_server()
+    client = TestClient(server.app)
+    resp = client.post(
+        "/bridge/event",
+        headers={"X-Bridge-Token": "invalid-token"},
+        json={"platform": "discord", "text": "hi"},
+    )
+    assert resp.status_code == 401
