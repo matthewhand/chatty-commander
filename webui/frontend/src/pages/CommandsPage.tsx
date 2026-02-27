@@ -13,52 +13,90 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 
-// --- MOCK DOMAIN MODEL FOR DEMO ---
-// We will replace this with actual backend fetch routes later.
-const MOCK_COMMANDS = [
-  {
-    id: "cmd_lights_on",
-    displayName: "Turn On Lights",
-    actionType: "home_assistant_script",
-    payload: "script.lights_on",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_lights_on_1",
-        displayName: "Lights On",
-        isActive: true,
-        threshold: 0.5,
-        assets: ["models/lights_on.onnx"]
-      },
-      {
-        id: "ww_lights_on_2",
-        displayName: "Turn The Lights On",
-        isActive: true,
-        threshold: 0.45,
-        assets: ["models/turn_the_lights_on.onnx"]
-      }
-    ]
-  },
-  {
-    id: "cmd_stop",
-    displayName: "Stop/Cancel",
-    actionType: "system_interrupt",
-    payload: "cancel_current",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_stop_1",
-        displayName: "Okay Stop",
-        isActive: true,
-        threshold: 0.4,
-        assets: ["models/okay_stop.onnx", "models/okay_stop_alt.onnx"]
-      }
-    ]
-  }
-];
+interface Wakeword {
+  id: string;
+  displayName: string;
+  isActive: boolean;
+  threshold: number;
+  assets: string[];
+}
+
+interface Command {
+  id: string;
+  displayName: string;
+  actionType: string;
+  payload: string;
+  apiEnabled: true; // Default true for now
+  wakewords: Wakeword[];
+}
 
 export default function CommandsPage() {
   const [activeTab, setActiveTab] = useState('all');
+
+  const { data: commands, isLoading, isError, error } = useQuery({
+    queryKey: ['commands'],
+    queryFn: async () => {
+      const data = await apiService.getCommands();
+      // Transform the dictionary response to our list format
+      return Object.entries(data).map(([key, value]: [string, any]) => {
+          let actionType = 'unknown';
+          let payload = '';
+
+          if (value.action) {
+              actionType = value.action;
+              if (value.action === 'keypress') payload = value.keys;
+              else if (value.action === 'url') payload = value.url;
+              else if (value.action === 'shell') payload = value.cmd;
+              else if (value.action === 'custom_message') payload = value.message;
+              else if (value.action === 'voice_chat') payload = '(voice chat)';
+          } else if (value.keypress) {
+              actionType = 'keypress';
+              payload = value.keypress;
+          } else if (value.url) {
+              actionType = 'url';
+              payload = value.url;
+          } else if (value.shell) {
+              actionType = 'shell';
+              payload = value.shell;
+          }
+
+          // Generate a pseudo-wakeword entry since backend doesn't link them directly yet
+          // In a real scenario, we'd fetch wakeword mappings separately and join them.
+          const wakewords: Wakeword[] = [{
+              id: `ww_${key}`,
+              displayName: key.replace(/_/g, ' '), // Heuristic: command name often mirrors wakeword
+              isActive: true,
+              threshold: 0.5,
+              assets: [`models/${key}.onnx`] // Heuristic
+          }];
+
+          return {
+            id: key,
+            displayName: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            actionType: actionType,
+            payload: payload,
+            apiEnabled: true,
+            wakewords: wakewords
+          } as Command;
+      });
+    },
+  });
+
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+        </div>
+    );
+  }
+
+  if (isError) {
+      return (
+          <div className="alert alert-error">
+              <span>Error loading commands: {(error as Error).message}</span>
+          </div>
+      );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,7 +123,7 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {MOCK_COMMANDS.map((command, idx) => (
+          {commands?.map((command, idx) => (
             <motion.div
               key={command.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -105,7 +143,7 @@ export default function CommandsPage() {
                       <h2 className="card-title text-xl mb-1">{command.displayName}</h2>
                       <div className="flex gap-2 text-xs font-mono text-base-content/60">
                         <span className="px-2 py-1 rounded bg-base-300">{command.actionType}</span>
-                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[150px]">{command.payload}</span>
+                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[150px]" title={command.payload}>{command.payload}</span>
                       </div>
                     </div>
                   </div>

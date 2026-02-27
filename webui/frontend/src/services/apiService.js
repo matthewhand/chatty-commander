@@ -159,7 +159,7 @@ class ApiService {
    * Get available commands
    */
   async getCommands() {
-    return this.get("/api/commands");
+    return this.get("/api/v1/commands");
   }
 
   /**
