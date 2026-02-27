@@ -65,6 +65,9 @@ from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.ws import include_ws_routes
+from chatty_commander.web.routes.audio import router as audio_router
+from chatty_commander.web.routes.voice import router as voice_router
+from chatty_commander.web.routes.system import router as system_router
 
 # Avatar routes (optional)
 try:
@@ -494,6 +497,15 @@ class WebModeServer:
         # Version endpoint
         app.include_router(version_router)
 
+        # Audio endpoints
+        app.include_router(audio_router)
+
+        # Voice endpoints
+        app.include_router(voice_router)
+
+        # System endpoints
+        app.include_router(system_router)
+
         # Agents endpoints
         if agents_router:
             app.include_router(agents_router)
@@ -739,7 +751,14 @@ class WebModeServer:
         async def advisors_context_stats():
             svc = self.advisors_service
             if not svc or not getattr(svc, "enabled", False):
-                raise HTTPException(status_code=400, detail="Advisors not enabled")
+                # Return empty stats instead of 400 when disabled, to keep frontend happy
+                return ContextStats(
+                    total_contexts=0,
+                    platform_distribution={},
+                    persona_distribution={},
+                    persistence_enabled=False,
+                    persistence_path=""
+                )
             stats = svc.get_context_stats()
             return ContextStats(**stats)
 
