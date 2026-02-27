@@ -109,23 +109,19 @@ class CommandExecutor:
                     raise TypeError(
                         f"Action type must be string, got {type(action_type)}"
                     )
-                if action_type == "keypress":
-                    keys = command_action.get("keys", "")
-                    self._execute_keybinding(command_name, keys)
-                    success = True
-                elif action_type == "url":
-                    url = command_action.get("url", "")
-                    self._execute_url(command_name, url)
-                    success = True
-                elif action_type == "shell":
-                    cmd = command_action.get("cmd", "")
-                    success = self._execute_shell(command_name, cmd)
-                elif action_type == "custom_message":
-                    message = command_action.get("message", "")
-                    self._execute_custom_message(command_name, message)
-                    success = True
-                elif action_type == "voice_chat":
-                    success = self._execute_voice_chat(command_name)
+
+                action_dispatch = {
+                    "keypress": lambda: self._execute_keybinding(command_name, command_action.get("keys", "")),
+                    "url": lambda: self._execute_url(command_name, command_action.get("url", "")),
+                    "shell": lambda: self._execute_shell(command_name, command_action.get("cmd", "")),
+                    "custom_message": lambda: self._execute_custom_message(command_name, command_action.get("message", "")),
+                    "voice_chat": lambda: self._execute_voice_chat(command_name),
+                }
+
+                if action_type in action_dispatch:
+                    result = action_dispatch[action_type]()
+                    # _execute_shell and _execute_voice_chat return bool, others return None (implicit success)
+                    success = True if result is None else result
                 else:
                     raise ValueError(
                         f"Command '{command_name}' has an invalid action type '{action_type}'. "

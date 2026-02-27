@@ -26,6 +26,7 @@ import json
 import logging
 import os
 import subprocess
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -438,14 +439,15 @@ class Config:
     def validate(self) -> None:
         if not self.model_actions:
             raise ValueError("Model actions configuration is empty.")
-        for path in [
+        for path_str in [
             self.general_models_path,
             self.system_models_path,
             self.chat_models_path,
         ]:
-            if not os.path.exists(path):
+            path = Path(path_str)
+            if not path.exists():
                 logging.warning(f"Model directory {path} does not exist.")
-            elif not os.listdir(path):
+            elif not any(path.iterdir()):
                 logging.warning(f"Model directory {path} is empty.")
 
     # Start-on-boot and update checks
