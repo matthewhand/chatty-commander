@@ -2,16 +2,24 @@ import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
 import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
 const MAX_MESSAGES = 100;
+
+interface PerfMetric {
+  time: string;
+  cpu: number;
+  memory: number;
+}
 
 const DashboardPage: React.FC = () => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [history, setHistory] = useState<PerfMetric[]>([]);
 
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +56,21 @@ const DashboardPage: React.FC = () => {
         memory: data.memory_usage ?? "N/A",
       };
     },
-    refetchInterval: 30000,
+    refetchInterval: 2000,
   });
+
+  useEffect(() => {
+    if (systemStatus) {
+      const cpuVal = parseFloat(systemStatus.cpu.replace("%", "")) || 0;
+      const memVal = parseFloat(systemStatus.memory.replace("%", "")) || 0;
+      const now = new Date().toLocaleTimeString();
+
+      setHistory(prev => {
+        const next = [...prev, { time: now, cpu: cpuVal, memory: memVal }];
+        return next.slice(-20); // Keep last 20 points
+      });
+    }
+  }, [systemStatus]);
 
   const { data: agentData, isLoading: agentsLoading, isError: agentsError, error: agentsErrObj } = useQuery<Agent[]>({
     queryKey: ["agentStatus"],
@@ -161,6 +182,53 @@ const DashboardPage: React.FC = () => {
               {isConnected ? "Connected" : "Offline"}
             </div>
             <div className="stat-desc">Realtime stream</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Real-time Performance History Chart */}
+      <div className="card bg-base-100 shadow-xl border border-base-content/10">
+        <div className="card-body">
+          <h3 className="card-title text-xl mb-4">Real-time Performance History</h3>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={history}>
+                <defs>
+                  <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                <XAxis dataKey="time" hide />
+                <YAxis domain={[0, 100]} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#1d232a", borderColor: "#374151" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="cpu"
+                  stroke="#3abff8"
+                  fillOpacity={1}
+                  fill="url(#colorCpu)"
+                  name="CPU %"
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="memory"
+                  stroke="#fbbd23"
+                  fillOpacity={1}
+                  fill="url(#colorMem)"
+                  name="Memory %"
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

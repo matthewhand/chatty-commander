@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 
@@ -12,7 +16,8 @@ test.describe("Documentation Screenshots", () => {
     test("dashboard", async ({ page }) => {
         await page.goto("/");
         await expect(page).toHaveURL(/dashboard/);
-        await page.waitForTimeout(1500);
+        // Wait long enough for 1-2 intervals to pass so the real-time chart populates
+        await page.waitForTimeout(4000);
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "dashboard.png"), fullPage: true });
     });
 
