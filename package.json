@@ -7,12 +7,10 @@
     "test": "pnpm --filter ./tests test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.3",
     "esbuild": "^0.20.2"
-  },
-  "dependencies": {
-    "@playwright/test": "^1.55.1"
   }
 }

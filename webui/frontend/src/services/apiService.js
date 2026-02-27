@@ -107,49 +107,49 @@ class ApiService {
    * Health check endpoint
    */
   async healthCheck() {
-    return this.get("/health");
+    return this.get("/api/v1/health");
   }
 
   /**
    * Get system status
    */
   async getStatus() {
-    return this.get("/api/status");
+    return this.get("/api/v1/status");
   }
 
   /**
    * Get system configuration
    */
   async getConfig() {
-    return this.get("/api/config");
+    return this.get("/api/v1/config");
   }
 
   /**
    * Update system configuration
    */
   async updateConfig(config) {
-    return this.put("/api/config", config);
+    return this.put("/api/v1/config", config);
   }
 
   /**
    * Get current state information
    */
   async getState() {
-    return this.get("/api/state");
+    return this.get("/api/v1/state");
   }
 
   /**
    * Change system state
    */
   async changeState(newState) {
-    return this.post("/api/state", { new_state: newState });
+    return this.post("/api/v1/state", { state: newState });
   }
 
   /**
    * Execute a command
    */
   async executeCommand(command, parameters = {}) {
-    return this.post("/api/command", {
+    return this.post("/api/v1/command", {
       command,
       parameters,
     });
@@ -253,7 +253,7 @@ class ApiService {
    * Get system metrics
    */
   async getMetrics() {
-    return this.get("/api/metrics");
+    return this.get("/api/v1/metrics");
   }
 
   /**

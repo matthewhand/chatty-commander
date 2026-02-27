@@ -13,52 +13,93 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 
-// --- MOCK DOMAIN MODEL FOR DEMO ---
-// We will replace this with actual backend fetch routes later.
-const MOCK_COMMANDS = [
-  {
-    id: "cmd_lights_on",
-    displayName: "Turn On Lights",
-    actionType: "home_assistant_script",
-    payload: "script.lights_on",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_lights_on_1",
-        displayName: "Lights On",
-        isActive: true,
-        threshold: 0.5,
-        assets: ["models/lights_on.onnx"]
-      },
-      {
-        id: "ww_lights_on_2",
-        displayName: "Turn The Lights On",
-        isActive: true,
-        threshold: 0.45,
-        assets: ["models/turn_the_lights_on.onnx"]
-      }
-    ]
-  },
-  {
-    id: "cmd_stop",
-    displayName: "Stop/Cancel",
-    actionType: "system_interrupt",
-    payload: "cancel_current",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_stop_1",
-        displayName: "Okay Stop",
-        isActive: true,
-        threshold: 0.4,
-        assets: ["models/okay_stop.onnx", "models/okay_stop_alt.onnx"]
-      }
-    ]
-  }
-];
+// Define the shape of our command data as expected by the UI
+interface UICommand {
+  id: string;
+  displayName: string;
+  actionType: string;
+  payload: string;
+  apiEnabled: boolean;
+  wakewords: UIWakeword[];
+}
+
+interface UIWakeword {
+  id: string;
+  displayName: string;
+  isActive: boolean;
+  threshold: number;
+  assets: string[];
+}
 
 export default function CommandsPage() {
   const [activeTab, setActiveTab] = useState('all');
+
+  // Fetch configuration from the backend
+  const { data: commands, isLoading, isError, error } = useQuery({
+    queryKey: ['commands'],
+    queryFn: async () => {
+      const config = await apiService.getConfig();
+      const commandsData = config.commands || {};
+      const globalWakeWords = config.wake_words || [];
+      const wakeWordThreshold = config.wake_word_threshold || 0.5;
+
+      // Transform backend command dict to UI array
+      const transformed: UICommand[] = Object.entries(commandsData).map(([key, val]: [string, any]) => {
+        // Determine payload based on action type
+        let payload = "";
+        if (val.action === 'keypress') {
+          payload = val.keys || "";
+        } else if (val.action === 'custom_message') {
+          payload = val.message || "";
+        } else if (val.action === 'url') {
+          payload = val.url || "";
+        } else {
+          payload = JSON.stringify(val);
+        }
+
+        // Best-effort mapping: Since backend commands don't have direct wakeword bindings in the config struct,
+        // we'll display the global wakewords for all commands as "available triggers" if the command
+        // is part of a state model, or just list them generally.
+        // For this improvement, we will map the global wakewords to every command to show they are active in the system.
+        const mappedWakewords: UIWakeword[] = globalWakeWords.map((ww: string, idx: number) => ({
+             id: `ww_${key}_${idx}`,
+             displayName: ww.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+             isActive: true, // Assuming enabled if in the list
+             threshold: wakeWordThreshold,
+             assets: [] // No assets exposed in this config view yet
+        }));
+
+        return {
+          id: key,
+          displayName: key, // Use key as display name for now
+          actionType: val.action || "unknown",
+          payload: payload,
+          apiEnabled: true, // Assuming all commands are API executeable
+          wakewords: mappedWakewords
+        };
+      });
+      return transformed;
+    }
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[50vh]">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="alert alert-error shadow-lg my-4">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <span>Error loading commands: {(error as Error).message}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,7 +126,7 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {MOCK_COMMANDS.map((command, idx) => (
+          {commands && commands.map((command, idx) => (
             <motion.div
               key={command.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -149,39 +190,45 @@ export default function CommandsPage() {
 
                   {/* Wakewords 1-to-Many UI */}
                   <div className="space-y-3 mt-4">
-                    {command.wakewords.map((ww) => (
-                      <div key={ww.id} className="relative pl-6">
-                        {/* Tree line connector */}
-                        <div className="absolute left-[11px] top-0 bottom-[-16px] w-[2px] bg-base-content/10 last:bottom-auto last:h-8"></div>
-                        <div className="absolute left-[11px] top-8 w-4 h-[2px] bg-base-content/10"></div>
+                    {command.wakewords.length > 0 ? (
+                      command.wakewords.map((ww) => (
+                        <div key={ww.id} className="relative pl-6">
+                          {/* Tree line connector */}
+                          <div className="absolute left-[11px] top-0 bottom-[-16px] w-[2px] bg-base-content/10 last:bottom-auto last:h-8"></div>
+                          <div className="absolute left-[11px] top-8 w-4 h-[2px] bg-base-content/10"></div>
 
-                        <div className="flex items-start gap-3 p-4 rounded-xl border border-base-content/10 bg-base-100/50 hover:bg-base-200/50 transition-colors ml-2">
-                          <Volume2 className={ww.isActive ? "text-primary" : "text-base-content/30"} size={20} />
-                          <div className="flex-1">
-                            <div className="flex justify-between items-center mb-2">
-                              <p className="font-semibold">{ww.displayName}</p>
-                              <input
-                                type="checkbox"
-                                className="toggle toggle-sm toggle-primary"
-                                defaultChecked={ww.isActive}
-                                aria-label={`Toggle ${ww.displayName} wakeword`}
-                              />
+                          <div className="flex items-start gap-3 p-4 rounded-xl border border-base-content/10 bg-base-100/50 hover:bg-base-200/50 transition-colors ml-2">
+                            <Volume2 className={ww.isActive ? "text-primary" : "text-base-content/30"} size={20} />
+                            <div className="flex-1">
+                              <div className="flex justify-between items-center mb-2">
+                                <p className="font-semibold">{ww.displayName}</p>
+                                <input
+                                  type="checkbox"
+                                  className="toggle toggle-sm toggle-primary"
+                                  defaultChecked={ww.isActive}
+                                  aria-label={`Toggle ${ww.displayName} wakeword`}
+                                />
+                              </div>
+
+                              {/* ONNX Assets attached to this Wakeword */}
+                              <div className="space-y-1.5">
+                                {ww.assets.map(asset => (
+                                  <div key={asset} className="flex flex-items-center gap-2 text-xs text-base-content/70 bg-base-300/50 p-1.5 rounded-md font-mono">
+                                    <FileAudio size={12} className="text-accent" />
+                                    <span className="truncate">{asset}</span>
+                                  </div>
+                                ))}
+                              </div>
+
                             </div>
-
-                            {/* ONNX Assets attached to this Wakeword */}
-                            <div className="space-y-1.5">
-                              {ww.assets.map(asset => (
-                                <div key={asset} className="flex flex-items-center gap-2 text-xs text-base-content/70 bg-base-300/50 p-1.5 rounded-md font-mono">
-                                  <FileAudio size={12} className="text-accent" />
-                                  <span className="truncate">{asset}</span>
-                                </div>
-                              ))}
-                            </div>
-
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="pl-6 text-sm text-base-content/40 italic">
+                        No voice triggers configured.
                       </div>
-                    ))}
+                    )}
 
                     {/* Add Wakeword Button */}
                     <div className="relative pl-6 mt-2">

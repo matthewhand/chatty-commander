@@ -21,7 +21,8 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:8100",
+    // For this mock test, we can just run against the dev server
+    baseURL: "http://localhost:3000",
     trace: "on-first-retry",
   },
 
@@ -33,9 +34,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "cd ../.. && uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
-    url: "http://localhost:8100/health",
-    reuseExistingServer: !process.env.CI,
-    timeout: 10 * 1000,
+    // Just start the frontend dev server, don't try to start the backend
+    command: "pnpm dev",
+    port: 3000,
+    reuseExistingServer: true,
+    timeout: 120 * 1000,
   },
 });
