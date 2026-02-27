@@ -1,5 +1,4 @@
 import asyncio
-import os
 from playwright.async_api import async_playwright
 
 async def verify_websocket_connection():
@@ -7,9 +6,8 @@ async def verify_websocket_connection():
         browser = await p.chromium.launch()
         page = await browser.new_page()
 
-        # Navigate to the dashboard - use env var for port to match dynamic WebSocket URL behavior
-        port = os.environ.get('WEBUI_PORT', '8100')
-        await page.goto(f"http://localhost:{port}/")
+        # Navigate to the dashboard
+        await page.goto("http://localhost:8100/")
 
         # Wait for dashboard to load
         # Wait for "Dashboard" text to be visible
