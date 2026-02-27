@@ -32,14 +32,6 @@ from typing import Any
 
 import numpy as np
 
-try:
-    from scipy import signal
-
-    SCIPY_AVAILABLE = True
-except ImportError:
-    SCIPY_AVAILABLE = False
-    signal = None
-
 
 @dataclass
 class VoiceProcessingConfig:
@@ -76,7 +68,9 @@ class EnhancedVoiceProcessor:
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.is_listening = False
-        self.audio_queue = queue.Queue()
+        # Queue for decoupling audio capture from processing
+        self.capture_queue = queue.Queue()
+        self.capture_thread = None
         self.processing_thread = None
 
         # Voice activity detection state
@@ -99,7 +93,19 @@ class EnhancedVoiceProcessor:
         self.on_transcription: Callable[[VoiceResult], None] | None = None
         self.on_wake_word: Callable[[str], None] | None = None
 
+        # Telemetry
+        self.metrics = {
+            "processed_chunks": 0,
+            "dropped_frames": 0,
+            "vad_activations": 0,
+            "transcription_time_total": 0.0,
+        }
+
         self._initialize_components()
+
+    def get_metrics(self) -> dict[str, Any]:
+        """Return current performance metrics."""
+        return self.metrics.copy()
 
     def _initialize_components(self):
         """Initialize voice processing components."""
@@ -125,10 +131,6 @@ class EnhancedVoiceProcessor:
 
     def _initialize_noise_reduction(self):
         """Initialize noise reduction component."""
-        # Initialize filter coefficients as None
-        self._nr_b = None
-        self._nr_a = None
-
         try:
             # Try to use advanced noise reduction if available
             import noisereduce as nr
@@ -137,18 +139,8 @@ class EnhancedVoiceProcessor:
             self.logger.info("Advanced noise reduction enabled")
         except ImportError:
             # Fallback to basic noise reduction
-            if SCIPY_AVAILABLE:
-                # Pre-calculate filter coefficients
-                self._nr_b, self._nr_a = signal.butter(
-                    4, 300, btype="high", fs=self.config.sample_rate
-                )
-                self.noise_reducer = self._basic_noise_reduction
-                self.logger.info("Basic noise reduction enabled")
-            else:
-                self.logger.warning(
-                    "Noise reduction disabled: neither noisereduce nor scipy available"
-                )
-                self.noise_reducer = None
+            self.noise_reducer = self._basic_noise_reduction
+            self.logger.info("Basic noise reduction enabled")
 
     def _initialize_vad(self):
         """Initialize voice activity detection."""
@@ -205,10 +197,10 @@ class EnhancedVoiceProcessor:
     def _basic_noise_reduction(self, audio_data: np.ndarray) -> np.ndarray:
         """Basic noise reduction using spectral subtraction."""
         # Simple high-pass filter to remove low-frequency noise
-        if not SCIPY_AVAILABLE or self._nr_b is None or self._nr_a is None:
-            return audio_data
+        from scipy import signal
 
-        return signal.filtfilt(self._nr_b, self._nr_a, audio_data)
+        b, a = signal.butter(4, 300, btype="high", fs=self.config.sample_rate)
+        return signal.filtfilt(b, a, audio_data)
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
         """Energy-based voice activity detection."""
@@ -221,9 +213,14 @@ class EnhancedVoiceProcessor:
 
     def _detect_wake_words(self, text: str) -> list[str]:
         """Detect wake words in transcribed text."""
+        if not text:
+            return []
+
         wake_words = ["hey chatty", "chatty", "hey computer", "computer"]
         detected = []
 
+        # Optimization: Use Aho-Corasick or similar if list grows.
+        # For small lists, simple 'in' check is fast enough but we can early exit.
         text_lower = text.lower()
         for wake_word in wake_words:
             if wake_word in text_lower:
@@ -350,27 +347,47 @@ class EnhancedVoiceProcessor:
             return
 
         self.is_listening = True
+        # Queue for decoupling audio capture from processing
+        # Re-initialize queue to clear any stale data
+        self.capture_queue = queue.Queue(maxsize=100)  # Buffer up to ~100 chunks
+
+        self.capture_thread = threading.Thread(target=self._audio_capture_loop)
+        self.capture_thread.daemon = True
+        self.capture_thread.start()
+
         self.processing_thread = threading.Thread(target=self._audio_processing_loop)
         self.processing_thread.daemon = True
         self.processing_thread.start()
 
-        self.logger.info("Enhanced voice processing started")
+        self.logger.info("Enhanced voice processing started (capture + processing threads)")
 
     def stop_listening(self):
         """Stop listening for voice input."""
         self.is_listening = False
+        if self.capture_thread:
+            self.capture_thread.join(timeout=1.0)
         if self.processing_thread:
             self.processing_thread.join(timeout=1.0)
 
         self.logger.info("Enhanced voice processing stopped")
 
-    def _audio_processing_loop(self):
-        """Main audio processing loop."""
+    def _audio_capture_loop(self):
+        """Audio capture loop that runs in a dedicated thread."""
         try:
             import pyaudio
 
             # Initialize audio stream
             audio = pyaudio.PyAudio()
+
+            # Simple check for default input device rate
+            try:
+                default_device_index = audio.get_default_input_device_info()['index']
+                device_info = audio.get_device_info_by_index(default_device_index)
+                native_rate = int(device_info.get('defaultSampleRate', 16000))
+                self.logger.info(f"Input device native rate: {native_rate}")
+            except Exception:
+                native_rate = self.config.sample_rate
+
             stream = audio.open(
                 format=pyaudio.paInt16,
                 channels=1,
@@ -379,29 +396,27 @@ class EnhancedVoiceProcessor:
                 frames_per_buffer=self.config.chunk_size,
             )
 
-            self.logger.info("Audio stream opened")
+            self.logger.info("Audio capture stream opened")
 
             while self.is_listening:
                 try:
-                    # Read audio chunk
+                    # Read audio chunk - blocking call
                     audio_chunk = stream.read(
                         self.config.chunk_size, exception_on_overflow=False
                     )
 
-                    # Process the chunk
-                    result = self._process_audio_chunk(audio_chunk)
-
-                    if result and result.confidence >= self.config.confidence_threshold:
-                        # Call transcription callback
-                        if self.on_transcription:
-                            self.on_transcription(result)
-
-                        # Call wake word callback if detected
-                        if result.wake_word_detected and self.on_wake_word:
-                            self.on_wake_word(result.text)
+                    # Put into queue, skip if full (drop frame rather than block capture)
+                    try:
+                        self.capture_queue.put_nowait(audio_chunk)
+                    except queue.Full:
+                        self.metrics["dropped_frames"] += 1
+                        self.logger.warning("Audio processing queue full, dropping frame")
 
                 except Exception as e:
-                    self.logger.error(f"Audio processing error: {e}")
+                    self.logger.error(f"Audio capture error: {e}")
+                    # Brief sleep to avoid busy loop if persistent error
+                    import time
+                    time.sleep(0.1)
                     continue
 
             # Cleanup
@@ -410,7 +425,41 @@ class EnhancedVoiceProcessor:
             audio.terminate()
 
         except Exception as e:
-            self.logger.error(f"Audio processing loop error: {e}")
+            self.logger.error(f"Audio capture loop error: {e}")
+
+    def _audio_processing_loop(self):
+        """Audio processing loop that consumes from the capture queue."""
+        self.logger.info("Audio processing loop started")
+
+        while self.is_listening or not self.capture_queue.empty():
+            try:
+                try:
+                    # Get chunk with timeout to check is_listening periodically
+                    audio_chunk = self.capture_queue.get(timeout=0.5)
+                except queue.Empty:
+                    continue
+
+                # Process the chunk
+                self.metrics["processed_chunks"] += 1
+                result = self._process_audio_chunk(audio_chunk)
+
+                if result:
+                    self.metrics["transcription_time_total"] += result.duration
+
+                if result and result.confidence >= self.config.confidence_threshold:
+                    # Call transcription callback
+                    if self.on_transcription:
+                        self.on_transcription(result)
+
+                    # Call wake word callback if detected
+                    if result.wake_word_detected and self.on_wake_word:
+                        self.on_wake_word(result.text)
+
+                self.capture_queue.task_done()
+
+            except Exception as e:
+                self.logger.error(f"Audio processing error: {e}")
+                continue
 
     def process_audio_file(self, file_path: str) -> VoiceResult:
         """Process an audio file and return transcription."""
