@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 from collections.abc import Callable
@@ -261,7 +262,10 @@ def include_core_routes(
         start_time = time.time()
         try:
             # Delegate to provided executor bridge to ensure consistent integration surface
-            success = bool(execute_command_fn(request.command))
+            # Use run_in_executor to prevent blocking the event loop
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, execute_command_fn, request.command)
+            success = bool(result)
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
                 success=success,
