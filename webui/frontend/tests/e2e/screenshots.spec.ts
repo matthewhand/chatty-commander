@@ -18,6 +18,13 @@ test.describe("Documentation Screenshots", () => {
         await expect(page).toHaveURL(/dashboard/);
         // Wait long enough for 1-2 intervals to pass so the real-time chart populates
         await page.waitForTimeout(4000);
+
+        // Verify chart controls are visible
+        const pauseBtn = page.locator('button[aria-label="Pause Chart"], button[aria-label="Resume Chart"]');
+        await expect(pauseBtn).toBeVisible();
+        const exportBtn = page.locator('button[aria-label="Export Data as CSV"]');
+        await expect(exportBtn).toBeVisible();
+
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "dashboard.png"), fullPage: true });
     });
 
