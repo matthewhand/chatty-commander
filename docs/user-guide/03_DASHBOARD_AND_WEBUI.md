@@ -8,7 +8,7 @@ By default, the dashboard is served at `http://localhost:8100/` when the applica
 ## Features
 - **Real-time Metrics**: View CPU usage, Memory Usage, and total API Commands Executed on the home page.
 - **WebSocket Streaming**: All AI generated logs, state transitions, and system errors are streamed directly to the UI.
-- **Dynamic Commands Management**: View and execute available voice commands directly from the UI.
+- **Dynamic Commands Management**: View, search, and execute available voice commands directly from the UI.
 - **Configuration Hot-Reload**: Update Settings and prompts without needing to restart the backend.
 
 ## Screenshots
@@ -19,6 +19,11 @@ Screenshots of the UI are stored in [`docs/screenshots/`](../screenshots/).
 ![Dashboard](../screenshots/dashboard.png)
 
 ### Commands & Triggers
+The Commands page allows you to explore all configured voice commands. You can:
+- **Search** for commands by name.
+- **View Details** such as key bindings, URLs, or shell scripts associated with each command.
+- **Execute** commands directly from the browser for testing.
+
 ![Commands](../screenshots/commands.png)
 
 ### Configuration

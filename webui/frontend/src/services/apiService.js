@@ -149,7 +149,7 @@ class ApiService {
    * Execute a command
    */
   async executeCommand(command, parameters = {}) {
-    return this.post("/api/command", {
+    return this.post("/api/v1/command", {
       command,
       parameters,
     });
