@@ -4,7 +4,8 @@ import {
     LayoutDashboard as DashboardIcon,
     Settings as SettingsIcon,
     Terminal as TerminalIcon,
-    LogOut as LogoutIcon
+    LogOut as LogoutIcon,
+    Wand2
 } from "lucide-react";
 import { useAuth } from '../hooks/useAuth';
 
@@ -15,6 +16,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const navItems = [
         { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon size={20} /> },
         { label: 'Commands', path: '/commands', icon: <TerminalIcon size={20} /> },
+        { label: 'Command Authoring', path: '/commands/authoring', icon: <Wand2 size={20} /> },
         { label: 'Configuration', path: '/configuration', icon: <SettingsIcon size={20} /> },
     ];
 
