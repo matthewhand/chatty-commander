@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, createContext, useContext, useRef } from "react";
 import { authService, User } from "../services/authService";
 
 interface AuthContextType {
@@ -14,19 +14,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const retryCount = useRef(0);
+
+  const checkAuth = async () => {
+    try {
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+      setLoading(false);
+    } catch (error) {
+      console.warn("Auth check failed:", error);
+      // If we failed, specifically in a dev/test environment where the server might be starting up,
+      // we should retry a few times for the 'no-auth' check.
+      if (retryCount.current < 5) {
+        retryCount.current += 1;
+        const delay = 1000 * retryCount.current;
+        console.log(`Retrying auth check in ${delay}ms...`);
+        setTimeout(checkAuth, delay);
+      } else {
+        localStorage.removeItem("auth_token");
+        setLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
-    authService
-      .getCurrentUser()
-      .then((userData) => {
-        setUser(userData);
-      })
-      .catch(() => {
-        localStorage.removeItem("auth_token");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    checkAuth();
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
