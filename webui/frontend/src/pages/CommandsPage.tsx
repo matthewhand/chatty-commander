@@ -8,57 +8,78 @@ import {
   Plus,
   Edit3,
   Trash2,
-  FileAudio
+  FileAudio,
+  AlertCircle
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 
-// --- MOCK DOMAIN MODEL FOR DEMO ---
-// We will replace this with actual backend fetch routes later.
-const MOCK_COMMANDS = [
-  {
-    id: "cmd_lights_on",
-    displayName: "Turn On Lights",
-    actionType: "home_assistant_script",
-    payload: "script.lights_on",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_lights_on_1",
-        displayName: "Lights On",
-        isActive: true,
-        threshold: 0.5,
-        assets: ["models/lights_on.onnx"]
-      },
-      {
-        id: "ww_lights_on_2",
-        displayName: "Turn The Lights On",
-        isActive: true,
-        threshold: 0.45,
-        assets: ["models/turn_the_lights_on.onnx"]
-      }
-    ]
-  },
-  {
-    id: "cmd_stop",
-    displayName: "Stop/Cancel",
-    actionType: "system_interrupt",
-    payload: "cancel_current",
-    apiEnabled: true,
-    wakewords: [
-      {
-        id: "ww_stop_1",
-        displayName: "Okay Stop",
-        isActive: true,
-        threshold: 0.4,
-        assets: ["models/okay_stop.onnx", "models/okay_stop_alt.onnx"]
-      }
-    ]
-  }
-];
+// --- DOMAIN MODEL ---
+interface Wakeword {
+  id: string;
+  displayName: string;
+  isActive: boolean;
+  threshold: number;
+  assets: string[];
+}
+
+interface Command {
+  id: string;
+  displayName: string;
+  actionType: string;
+  payload: string;
+  apiEnabled: boolean;
+  wakewords: Wakeword[];
+}
 
 export default function CommandsPage() {
   const [activeTab, setActiveTab] = useState('all');
+
+  // Fetch configuration from backend
+  const { data: config, isLoading, isError, error } = useQuery({
+    queryKey: ['config'],
+    queryFn: () => apiService.getConfig()
+  });
+
+  // Transform backend config to frontend domain model
+  const commands: Command[] = React.useMemo(() => {
+    if (!config || !config.commands) return [];
+
+    return Object.entries(config.commands).map(([key, value]: [string, any]) => {
+      let payload = '';
+      if (value.keys) payload = `Keys: ${value.keys}`;
+      else if (value.url) payload = `URL: ${value.url}`;
+      else if (value.message) payload = `Msg: ${value.message}`;
+      else if (value.action === 'voice_chat') payload = 'Voice Chat Session';
+      else payload = JSON.stringify(value);
+
+      return {
+        id: key,
+        displayName: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        actionType: value.action || 'unknown',
+        payload: payload,
+        apiEnabled: true, // Assuming all commands are API callable by default
+        wakewords: [] // No direct mapping available in current config structure
+      };
+    });
+  }, [config]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[50vh]">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="alert alert-error shadow-lg my-6">
+        <AlertCircle />
+        <span>Error loading commands: {(error as Error).message}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,7 +106,12 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {MOCK_COMMANDS.map((command, idx) => (
+          {commands.length === 0 ? (
+             <div className="col-span-full text-center p-10 opacity-50 italic">
+               No commands found in configuration.
+             </div>
+          ) : (
+            commands.map((command, idx) => (
             <motion.div
               key={command.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -105,7 +131,7 @@ export default function CommandsPage() {
                       <h2 className="card-title text-xl mb-1">{command.displayName}</h2>
                       <div className="flex gap-2 text-xs font-mono text-base-content/60">
                         <span className="px-2 py-1 rounded bg-base-300">{command.actionType}</span>
-                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[150px]">{command.payload}</span>
+                        <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[250px]">{command.payload}</span>
                       </div>
                     </div>
                   </div>
@@ -149,7 +175,8 @@ export default function CommandsPage() {
 
                   {/* Wakewords 1-to-Many UI */}
                   <div className="space-y-3 mt-4">
-                    {command.wakewords.map((ww) => (
+                    {command.wakewords.length > 0 ? (
+                      command.wakewords.map((ww) => (
                       <div key={ww.id} className="relative pl-6">
                         {/* Tree line connector */}
                         <div className="absolute left-[11px] top-0 bottom-[-16px] w-[2px] bg-base-content/10 last:bottom-auto last:h-8"></div>
@@ -181,7 +208,12 @@ export default function CommandsPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ))
+                    ) : (
+                      <div className="text-xs text-base-content/40 italic ml-6">
+                        No specific wakewords linked (uses defaults or N/A).
+                      </div>
+                    )}
 
                     {/* Add Wakeword Button */}
                     <div className="relative pl-6 mt-2">
@@ -196,7 +228,7 @@ export default function CommandsPage() {
                 </div>
               </div>
             </motion.div>
-          ))}
+          )))}
         </AnimatePresence>
       </div>
     </div>

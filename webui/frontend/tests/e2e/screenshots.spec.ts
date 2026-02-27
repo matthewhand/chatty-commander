@@ -1,12 +1,17 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 
 test.describe("Documentation Screenshots", () => {
     test.beforeAll(() => {
-        fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+        if (!fs.existsSync(SCREENSHOTS_DIR)) {
+            fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+        }
     });
 
     test("dashboard", async ({ page }) => {
@@ -55,10 +60,25 @@ test.describe("Documentation Screenshots", () => {
     });
 
     test("commands", async ({ page }) => {
+        // Intercept config request to provide deterministic data
+        await page.route("**/api/v1/config", async (route) => {
+            const json = {
+                commands: {
+                    lights_on: { action: "url", url: "http://homeassistant/lights_on" },
+                    stop_music: { action: "keypress", keys: "media_stop" },
+                    say_hello: { action: "custom_message", message: "Hello there!" }
+                }
+            };
+            await route.fulfill({ json });
+        });
+
         await page.goto("/");
         const commandsLink = page.locator("text=Commands").first();
         if (await commandsLink.isVisible()) {
             await commandsLink.click();
+            await expect(page).toHaveURL(/commands/);
+            // Wait for commands to load (look for a known command text)
+            await expect(page.locator("text=Lights On")).toBeVisible();
             await page.waitForTimeout(500);
         }
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "commands.png"), fullPage: true });

@@ -121,14 +121,14 @@ class ApiService {
    * Get system configuration
    */
   async getConfig() {
-    return this.get("/api/config");
+    return this.get("/api/v1/config");
   }
 
   /**
    * Update system configuration
    */
   async updateConfig(config) {
-    return this.put("/api/config", config);
+    return this.put("/api/v1/config", config);
   }
 
   /**
