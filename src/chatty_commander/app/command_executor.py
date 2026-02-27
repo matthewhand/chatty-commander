@@ -33,6 +33,7 @@ import logging
 import os
 import shlex
 import subprocess
+import threading
 from typing import Any
 
 # Optional deps that may not be present in CI/headless environments
@@ -68,6 +69,7 @@ class CommandExecutor:
         self.model_manager: Any = model_manager
         self.state_manager: Any = state_manager
         self.last_command: str | None = None
+        self._gui_lock = threading.Lock()
 
     def execute_command(self, command_name: str) -> bool:
         """
@@ -245,16 +247,17 @@ class CommandExecutor:
             self.report_error(command_name, "pyautogui is not installed")
             return
         try:
-            # Support either a list of keys (hotkey/chord) or a single key sequence
-            if isinstance(keys, list | tuple):
-                pyautogui.hotkey(*keys)
-            elif isinstance(keys, str) and "+" in keys:
-                # Parse plus-separated key combinations (e.g., 'ctrl+alt+t')
-                key_parts = [part.strip() for part in keys.split("+")]
-                pyautogui.hotkey(*key_parts)
-            else:
-                # For simple cases, press is less invasive than typewrite
-                pyautogui.press(keys)
+            with self._gui_lock:
+                # Support either a list of keys (hotkey/chord) or a single key sequence
+                if isinstance(keys, list | tuple):
+                    pyautogui.hotkey(*keys)
+                elif isinstance(keys, str) and "+" in keys:
+                    # Parse plus-separated key combinations (e.g., 'ctrl+alt+t')
+                    key_parts = [part.strip() for part in keys.split("+")]
+                    pyautogui.hotkey(*key_parts)
+                else:
+                    # For simple cases, press is less invasive than typewrite
+                    pyautogui.press(keys)
             logging.info(f"Executed keybinding for {command_name}")
             logging.info(f"Completed execution of command: {command_name}")
         except Exception as e:  # pragma: no cover - patched in tests

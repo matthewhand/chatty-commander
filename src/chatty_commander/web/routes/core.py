@@ -22,8 +22,8 @@
 
 from __future__ import annotations
 
-import asyncio
 import os
+import asyncio
 import time
 from collections.abc import Callable
 from datetime import datetime
@@ -54,10 +54,19 @@ class CommandRequest(BaseModel):
     )
 
 
+class BatchCommandRequest(BaseModel):
+    commands: list[str] = Field(..., description="List of command names to execute in parallel")
+
+
 class CommandResponse(BaseModel):
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
     execution_time: float = Field(..., description="Execution time in milliseconds")
+
+
+class BatchCommandResponse(BaseModel):
+    results: list[CommandResponse] = Field(..., description="Results for each command")
+    total_execution_time: float = Field(..., description="Total batch execution time in milliseconds")
 
 
 class StateInfo(BaseModel):
@@ -281,6 +290,38 @@ def include_core_routes(
                 message=f"Command execution failed: {str(e)}",
                 execution_time=execution_time,
             )
+
+    @router.post("/api/v1/command/batch", response_model=BatchCommandResponse)
+    async def execute_batch_commands(request: BatchCommandRequest):
+        counters["command_post"] += len(request.commands)
+        start_time = time.time()
+        loop = asyncio.get_running_loop()
+
+        async def _run_single(cmd: str) -> CommandResponse:
+            cmd_start = time.time()
+            try:
+                success = await loop.run_in_executor(
+                    None, lambda: bool(execute_command_fn(cmd))
+                )
+                duration = (time.time() - cmd_start) * 1000
+                return CommandResponse(
+                    success=success,
+                    message="Command executed successfully" if success else "Command executed as no-op (not found)",
+                    execution_time=duration,
+                )
+            except Exception as e:
+                duration = (time.time() - cmd_start) * 1000
+                return CommandResponse(
+                    success=False,
+                    message=f"Command execution failed: {str(e)}",
+                    execution_time=duration,
+                )
+
+        # Execute all commands concurrently
+        results = await asyncio.gather(*[_run_single(cmd) for cmd in request.commands])
+
+        total_time = (time.time() - start_time) * 1000
+        return BatchCommandResponse(results=results, total_execution_time=total_time)
 
     # Basic in-memory metrics counters (per-router instance)
     counters = {
