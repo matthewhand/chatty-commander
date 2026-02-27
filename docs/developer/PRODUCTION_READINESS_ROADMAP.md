@@ -294,27 +294,13 @@ This document outlines the work required to achieve production readiness.
 
 ---
 
-## Phase 8: Aspirational Features & Roadmap Ideas (Priority: Wishlist)
+## Phase 8: Deprecated & Removed Features
 
-These features were originally brainstormed but are not yet reflected by substantial source code:
+### 8.1 Advanced Avatar System / Avatar GUI
+- The 3D Avatar GUI (`src/chatty_commander/gui.py` and `/avatar/ws` endpoints) has been **removed**. The progressive web UI is the singular visual interface moving forward.
 
-### 8.1 Advanced Avatar System
-- [ ] **3D Anime-style Avatar**
-  - WebGL/Three.js integration in the frontend
-  - Real-time lip-sync capabilities synchronized with TTS audio output
-  - Procedural expression generation based on LLM sentiment
-
-### 8.2 Complex Container Orchestration
-- [ ] **Background Docker Task Runner**
-  - Schedule `--yolo -p` Codex containers dynamically
-  - Surface live 3-word summaries of background execution states
-  - Provide a kill switch/stop button to terminate rogue tasks
-
-### 8.3 Desktop Native Experience
-- [ ] **Standalone GUI Desktop App**
-  - Fully packaged installable binary with PyInstaller
-  - Native system tray integration and notifications
-  - Local auto-update mechanism
+### 8.2 Desktop Native Experience
+- Standalone GUI desktop apps are discouraged in favor of the WebUI.
 
 ---
 
