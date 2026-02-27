@@ -176,12 +176,13 @@ class Histogram(Metric):
                 self._count[key] = 0
             self._sum[key] += v
             self._count[key] += 1
-            # cumulative counts: increment all buckets where le >= v
+            # cumulative counts: increment all buckets >= v
             placed = False
             for idx, edge in enumerate(self._buckets.edges):
                 if v <= edge:
                     counts[idx] += 1
                     placed = True
+                    break
             if not placed:
                 counts[-1] += 1
 

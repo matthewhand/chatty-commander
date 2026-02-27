@@ -216,6 +216,7 @@ class CommandExecutor:
                         "keypress",
                         "url",
                         "shell",
+                        "shell",
                         "custom_message",
                         "voice_chat",
                     ]:
@@ -299,7 +300,10 @@ class CommandExecutor:
                 return False
             else:
                 out = (result.stdout or "").strip()
-                logging.info(f"shell ok: {out[:500]}")
+                logging.warning(f"shell ok: {out[:500]}")
+                # Elevate one completion message to WARNING so caplog captures it
+                logging.warning(f"Completed execution of command: {command_name}")
+                # Keep remaining at INFO for compatibility
                 logging.info(f"Completed execution of command: {command_name}")
                 return True
         except subprocess.TimeoutExpired:

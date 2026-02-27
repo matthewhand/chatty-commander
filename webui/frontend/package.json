@@ -24,7 +24,6 @@
     "build": "vite build",
     "serve": "vite preview",
     "test:e2e": "playwright test",
-    "generate-docs": "playwright test tests/e2e/screenshots.spec.ts",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit"

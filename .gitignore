@@ -276,5 +276,3 @@ playwright-report/
 # Kubernetes configurations
 k8s/
 **/k8s/
-build/
-.serena/

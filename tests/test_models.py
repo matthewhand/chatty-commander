@@ -44,9 +44,7 @@ class TestModelLoading(unittest.TestCase):
         self.config = Config()
         self.model_manager = ModelManager(self.config)
 
-    @patch("os.path.exists", return_value=True)
-    @patch("os.listdir", return_value=["dummy.onnx"])
-    def test_model_load(self, mock_listdir, mock_exists):
+    def test_model_load(self):
         """Test if models are loaded correctly from all directories."""
         self.model_manager.reload_models("idle")
         self.assertGreater(
@@ -65,9 +63,7 @@ class TestModelLoading(unittest.TestCase):
             len(self.model_manager.models["chat"]), 0, "Chat models should be loaded."
         )
 
-    @patch("os.path.exists", return_value=True)
-    @patch("os.listdir", return_value=["dummy.onnx"])
-    def test_model_types(self, mock_listdir, mock_exists):
+    def test_model_types(self):
         """Ensure that models loaded are instances of the expected class."""
         self.model_manager.reload_models("idle")
         self.assertGreater(

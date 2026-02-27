@@ -73,7 +73,6 @@ class HealthStatus(BaseModel):
     database: str = Field(default="unknown", description="Database status")
     memory_usage: str = Field(default="unknown", description="Memory usage")
     cpu_usage: str = Field(default="unknown", description="CPU usage")
-    commands_executed: int = Field(default=0, description="Total commands executed")
     last_health_check: str = Field(..., description="Last health check timestamp")
 
 
@@ -100,7 +99,6 @@ def include_core_routes(
     execute_command_fn: Callable[[str], Any],
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
-    get_total_commands: Callable[[], int] | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -290,10 +288,14 @@ def include_core_routes(
         "command_post": 0,
     }
 
-    @router.get("/api/v1/health", operation_id="health_check_core", response_model=HealthStatus)
+    @router.get("/api/v1/health", operation_id="health_check_core")
     async def health_check_core():
         counters["status"] += 1
-        return await health_check()
+        return {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "uptime": _format_uptime(time.time() - get_start_time()),
+        }
 
     @router.get("/api/v1/metrics")
     async def metrics():

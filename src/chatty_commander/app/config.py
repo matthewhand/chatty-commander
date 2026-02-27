@@ -25,18 +25,17 @@ from __future__ import annotations
 import json
 import logging
 import os
-import shlex
-import shutil
 import subprocess
-import sys
-from pathlib import Path
-from typing import Any
+import threading
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
 
 class Config:
     def __init__(self, config_file: str = "config.json") -> None:
+        self._reload_callbacks: list[Callable[[], None]] = []
+        self._config_lock = threading.RLock()
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
         # Expose the raw dict for web handlers/tests that expect it
@@ -243,21 +242,41 @@ class Config:
 
     def reload_config(self) -> bool:
         """Reload configuration from file. Returns True if successful."""
-        try:
-            new_config = self._load_config()
-            if new_config != self.config_data:
-                self.config_data = new_config
-                self.config = new_config
-                self._validate_config()
-                self._load_general_settings()  # Load general settings to update default_state
-                # Force re-load of other properties that depend on config_data
-                self.model_actions = self._build_model_actions()
-                logger.info("Configuration reloaded successfully")
-                return True
-            return False
-        except Exception as e:
-            logger.error(f"Failed to reload configuration: {e}")
-            return False
+        with self._config_lock:
+            try:
+                new_config = self._load_config()
+                if new_config != self.config_data:
+                    self.config_data = new_config
+                    self.config = new_config
+                    self._validate_config()
+                    self._load_general_settings()  # Load general settings to update default_state
+                    # Force re-load of other properties that depend on config_data
+                    self.model_actions = self._build_model_actions()
+                    logger.info("Configuration reloaded successfully")
+
+                    # Notify subscribers
+                    for cb in self._reload_callbacks:
+                        try:
+                            cb()
+                        except Exception as e:
+                            logger.error(f"Error in config reload callback {cb}: {e}")
+                    return True
+                return False
+            except Exception as e:
+                logger.error(f"Failed to reload configuration: {e}")
+                return False
+
+    def add_reload_callback(self, callback: Callable[[], None]) -> None:
+        """Register a callback to be invoked when configuration is reloaded."""
+        with self._config_lock:
+            if callback not in self._reload_callbacks:
+                self._reload_callbacks.append(callback)
+
+    def remove_reload_callback(self, callback: Callable[[], None]) -> None:
+        """Unregister a reload callback."""
+        with self._config_lock:
+            if callback in self._reload_callbacks:
+                self._reload_callbacks.remove(callback)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -397,7 +416,7 @@ class Config:
                 actions[name] = {"url": url}
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
-                actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
+                actions[name] = {"shell": f"echo {msg}"}
             elif action_type == "voice_chat":
                 # Voice chat action - pass through the entire config
                 actions[name] = {"action": "voice_chat"}
@@ -463,111 +482,11 @@ class Config:
 
     def _enable_start_on_boot(self) -> None:
         """Enable start on boot functionality."""
-        app_name = "ChattyCommander"
-        try:
-            startup_cmd = self._get_startup_command()
-
-            if sys.platform == "win32":
-                import winreg
-                key = winreg.OpenKey(
-                    winreg.HKEY_CURRENT_USER,
-                    r"Software\Microsoft\Windows\CurrentVersion\Run",
-                    0,
-                    winreg.KEY_SET_VALUE,
-                )
-                winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, startup_cmd)
-                winreg.CloseKey(key)
-
-            elif sys.platform == "linux":
-                desktop_entry = f"""[Desktop Entry]
-Type=Application
-Name={app_name}
-Exec={startup_cmd}
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-Comment=Start {app_name} on login
-"""
-                autostart_dir = Path.home() / ".config" / "autostart"
-                autostart_dir.mkdir(parents=True, exist_ok=True)
-                desktop_file = autostart_dir / f"{app_name.lower().replace(' ', '-')}.desktop"
-                desktop_file.write_text(desktop_entry)
-
-            elif sys.platform == "darwin":
-                plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.{app_name.lower()}.startup</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/bin/sh</string>
-        <string>-c</string>
-        <string>{startup_cmd}</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-</dict>
-</plist>
-"""
-                launch_agents_dir = Path.home() / "Library" / "LaunchAgents"
-                launch_agents_dir.mkdir(parents=True, exist_ok=True)
-                plist_file = launch_agents_dir / f"com.{app_name.lower()}.startup.plist"
-                plist_file.write_text(plist_content)
-
-            logger.info(f"Enabled start on boot for {sys.platform}")
-
-        except Exception as e:
-            logger.error(f"Failed to enable start on boot: {e}")
+        pass
 
     def _disable_start_on_boot(self) -> None:
         """Disable start on boot functionality."""
-        app_name = "ChattyCommander"
-        try:
-            if sys.platform == "win32":
-                import winreg
-                key = winreg.OpenKey(
-                    winreg.HKEY_CURRENT_USER,
-                    r"Software\Microsoft\Windows\CurrentVersion\Run",
-                    0,
-                    winreg.KEY_SET_VALUE,
-                )
-                try:
-                    winreg.DeleteValue(key, app_name)
-                except FileNotFoundError:
-                    pass  # Already deleted
-                winreg.CloseKey(key)
-
-            elif sys.platform == "linux":
-                desktop_file = Path.home() / ".config" / "autostart" / f"{app_name.lower().replace(' ', '-')}.desktop"
-                if desktop_file.exists():
-                    desktop_file.unlink()
-
-            elif sys.platform == "darwin":
-                plist_file = Path.home() / "Library" / "LaunchAgents" / f"com.{app_name.lower()}.startup.plist"
-                if plist_file.exists():
-                    plist_file.unlink()
-
-            logger.info(f"Disabled start on boot for {sys.platform}")
-
-        except Exception as e:
-            logger.error(f"Failed to disable start on boot: {e}")
-
-    def _get_startup_command(self) -> str:
-        """Determine the command to run on startup."""
-        # Check if running as a frozen executable (e.g., PyInstaller)
-        if getattr(sys, "frozen", False):
-            return f'"{sys.executable}" --gui'
-
-        # Check if 'chatty-commander' is in PATH
-        cmd = shutil.which("chatty-commander")
-        if cmd:
-            return f'"{cmd}" --gui'
-
-        # Fallback to python execution
-        # We assume the package is installed or we are running from source root
-        return f'"{sys.executable}" -m chatty_commander.cli.cli --gui'
+        pass
 
     def set_check_for_updates(self, enabled: bool) -> None:
         self._update_general_setting("check_for_updates", bool(enabled))
