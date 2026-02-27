@@ -110,8 +110,20 @@ export default function CommandsPage() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button className="btn btn-ghost btn-sm btn-circle"><Edit3 size={16} /></button>
-                    <button className="btn btn-ghost btn-sm btn-circle text-error"><Trash2 size={16} /></button>
+                    <button
+                      className="btn btn-ghost btn-sm btn-circle"
+                      aria-label={`Edit ${command.displayName}`}
+                      title={`Edit ${command.displayName}`}
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm btn-circle text-error"
+                      aria-label={`Delete ${command.displayName}`}
+                      title={`Delete ${command.displayName}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
 
