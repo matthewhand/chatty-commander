@@ -32,6 +32,14 @@ from typing import Any
 
 import numpy as np
 
+try:
+    from scipy import signal
+
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+    signal = None
+
 
 @dataclass
 class VoiceProcessingConfig:
@@ -94,6 +102,7 @@ class EnhancedVoiceProcessor:
         self.on_wake_word: Callable[[str], None] | None = None
 
         # Telemetry
+        self.metrics_lock = threading.Lock()
         self.metrics = {
             "processed_chunks": 0,
             "dropped_frames": 0,
@@ -105,7 +114,8 @@ class EnhancedVoiceProcessor:
 
     def get_metrics(self) -> dict[str, Any]:
         """Return current performance metrics."""
-        return self.metrics.copy()
+        with self.metrics_lock:
+            return self.metrics.copy()
 
     def _initialize_components(self):
         """Initialize voice processing components."""
@@ -131,6 +141,10 @@ class EnhancedVoiceProcessor:
 
     def _initialize_noise_reduction(self):
         """Initialize noise reduction component."""
+        # Initialize filter coefficients as None
+        self._nr_b = None
+        self._nr_a = None
+
         try:
             # Try to use advanced noise reduction if available
             import noisereduce as nr
@@ -139,8 +153,18 @@ class EnhancedVoiceProcessor:
             self.logger.info("Advanced noise reduction enabled")
         except ImportError:
             # Fallback to basic noise reduction
-            self.noise_reducer = self._basic_noise_reduction
-            self.logger.info("Basic noise reduction enabled")
+            if SCIPY_AVAILABLE and signal:
+                # Pre-calculate filter coefficients
+                self._nr_b, self._nr_a = signal.butter(
+                    4, 300, btype="high", fs=self.config.sample_rate
+                )
+                self.noise_reducer = self._basic_noise_reduction
+                self.logger.info("Basic noise reduction enabled")
+            else:
+                self.logger.warning(
+                    "Noise reduction disabled: neither noisereduce nor scipy available"
+                )
+                self.noise_reducer = None
 
     def _initialize_vad(self):
         """Initialize voice activity detection."""
@@ -197,10 +221,10 @@ class EnhancedVoiceProcessor:
     def _basic_noise_reduction(self, audio_data: np.ndarray) -> np.ndarray:
         """Basic noise reduction using spectral subtraction."""
         # Simple high-pass filter to remove low-frequency noise
-        from scipy import signal
+        if not SCIPY_AVAILABLE or self._nr_b is None or self._nr_a is None or not signal:
+            return audio_data
 
-        b, a = signal.butter(4, 300, btype="high", fs=self.config.sample_rate)
-        return signal.filtfilt(b, a, audio_data)
+        return signal.filtfilt(self._nr_b, self._nr_a, audio_data)
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
         """Energy-based voice activity detection."""
@@ -388,28 +412,64 @@ class EnhancedVoiceProcessor:
             except Exception:
                 native_rate = self.config.sample_rate
 
+            # If native rate differs significantly, capture at native rate and resample
+            should_resample = native_rate != self.config.sample_rate
+            capture_rate = native_rate if should_resample else self.config.sample_rate
+
+            # Adjust chunk size for capture rate to match duration of processing chunk
+            capture_chunk_size = int(self.config.chunk_size * capture_rate / self.config.sample_rate)
+
             stream = audio.open(
                 format=pyaudio.paInt16,
                 channels=1,
-                rate=self.config.sample_rate,
+                rate=capture_rate,
                 input=True,
-                frames_per_buffer=self.config.chunk_size,
+                frames_per_buffer=capture_chunk_size,
             )
 
-            self.logger.info("Audio capture stream opened")
+            self.logger.info(f"Audio capture stream opened at {capture_rate}Hz")
 
             while self.is_listening:
                 try:
                     # Read audio chunk - blocking call
                     audio_chunk = stream.read(
-                        self.config.chunk_size, exception_on_overflow=False
+                        capture_chunk_size, exception_on_overflow=False
                     )
+
+                    if should_resample:
+                        try:
+                            # Convert to float32 for resampling
+                            audio_data = np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32)
+
+                            # Resample using scipy
+                            if SCIPY_AVAILABLE and signal:
+                                # Calculate number of samples for target rate
+                                num_samples = int(len(audio_data) * self.config.sample_rate / capture_rate)
+                                resampled_data = signal.resample(audio_data, num_samples)
+                                # Convert back to int16 bytes
+                                audio_chunk = resampled_data.astype(np.int16).tobytes()
+                                with self.metrics_lock:
+                                    self.metrics.setdefault("resample_count", 0)
+                                    self.metrics["resample_count"] += 1
+                            else:
+                                # Fallback: simplistic decimation or interpolation (poor quality but works)
+                                # For now, just log once
+                                warning_needed = False
+                                with self.metrics_lock:
+                                    if "resample_warning" not in self.metrics:
+                                        self.metrics["resample_warning"] = True
+                                        warning_needed = True
+                                if warning_needed:
+                                    self.logger.warning("Resampling needed but scipy not available")
+                        except Exception as e:
+                            self.logger.error(f"Resampling error: {e}")
 
                     # Put into queue, skip if full (drop frame rather than block capture)
                     try:
                         self.capture_queue.put_nowait(audio_chunk)
                     except queue.Full:
-                        self.metrics["dropped_frames"] += 1
+                        with self.metrics_lock:
+                            self.metrics["dropped_frames"] += 1
                         self.logger.warning("Audio processing queue full, dropping frame")
 
                 except Exception as e:
@@ -440,11 +500,13 @@ class EnhancedVoiceProcessor:
                     continue
 
                 # Process the chunk
-                self.metrics["processed_chunks"] += 1
+                with self.metrics_lock:
+                    self.metrics["processed_chunks"] += 1
                 result = self._process_audio_chunk(audio_chunk)
 
                 if result:
-                    self.metrics["transcription_time_total"] += result.duration
+                    with self.metrics_lock:
+                        self.metrics["transcription_time_total"] += result.duration
 
                 if result and result.confidence >= self.config.confidence_threshold:
                     # Call transcription callback
