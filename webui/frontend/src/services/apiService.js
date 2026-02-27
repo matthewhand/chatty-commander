@@ -149,7 +149,7 @@ class ApiService {
    * Execute a command
    */
   async executeCommand(command, parameters = {}) {
-    return this.post("/api/command", {
+    return this.post("/api/v1/command", {
       command,
       parameters,
     });
@@ -159,7 +159,7 @@ class ApiService {
    * Get available commands
    */
   async getCommands() {
-    return this.get("/api/commands");
+    return this.get("/api/v1/commands");
   }
 
   /**

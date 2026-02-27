@@ -284,6 +284,12 @@ def include_core_routes(
                 execution_time=execution_time,
             )
 
+    @router.get("/api/v1/commands")
+    async def get_commands():
+        counters["commands_get"] = counters.get("commands_get", 0) + 1
+        cfg_mgr = get_config_manager()
+        return getattr(cfg_mgr, "commands", {})
+
     # Basic in-memory metrics counters (per-router instance)
     counters = {
         "status": 0,
@@ -292,6 +298,7 @@ def include_core_routes(
         "state_get": 0,
         "state_post": 0,
         "command_post": 0,
+        "commands_get": 0,
     }
 
     @router.get("/api/v1/health", operation_id="health_check_core", response_model=HealthStatus)
