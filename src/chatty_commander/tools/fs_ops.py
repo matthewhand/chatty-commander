@@ -23,8 +23,11 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
+
+logger = logging.getLogger(__name__)
 
 
 def ensure_dir(path: Path) -> None:
@@ -48,5 +51,51 @@ def write_text(path: Path, data: str) -> None:
     Write a text file.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        f.write(data)
+    path.write_text(data, encoding="utf-8")
+
+
+def scan_directory(
+    root: Path, extensions: Iterable[str] | None = None
+) -> list[dict[str, Any]]:
+    """
+    Synchronously scan a directory recursively for files with matching extensions.
+    Returns a list of dictionaries with file metadata:
+      - name: file stem
+      - file: path relative to root (posix style)
+      - ext: file suffix (lowercase)
+      - size: file size in bytes (or None on error)
+    """
+    results: list[dict[str, Any]] = []
+    if not root.exists() or not root.is_dir():
+        return results
+
+    allowed = set(ext.lower() for ext in extensions) if extensions else None
+
+    for p in sorted(root.rglob("*")):
+        if not p.is_file():
+            continue
+        ext = p.suffix.lower()
+        if allowed and ext not in allowed:
+            continue
+
+        try:
+            rel = p.relative_to(root)
+            name = p.stem
+            try:
+                size = p.stat().st_size
+            except Exception:
+                size = None
+
+            results.append(
+                {
+                    "name": name,
+                    "file": str(rel).replace("\\", "/"),
+                    "ext": ext,
+                    "size": size,
+                }
+            )
+        except Exception as e:
+            logger.debug(f"Error processing file {p}: {e}")
+            continue
+
+    return results

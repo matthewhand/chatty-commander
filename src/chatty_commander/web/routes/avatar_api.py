@@ -30,6 +30,8 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from chatty_commander.tools.fs_ops import scan_directory
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -91,28 +93,17 @@ async def list_animations(
                 status_code=404, detail=f"Animations directory not found: {root}"
             )
 
-        results: list[dict[str, Any]] = []
-        for p in sorted(root.rglob("*")):
-            if not p.is_file():
-                continue
-            ext = p.suffix.lower()
-            if ext not in _ALLOWED_EXTS:
-                continue
-            rel = p.relative_to(root)
-            name = p.stem
-            try:
-                size = p.stat().st_size
-            except Exception:
-                size = None
-            results.append(
-                {
-                    "name": name,
-                    "file": str(rel).replace("\\", "/"),
-                    "ext": ext,
-                    "size": size,
-                    "category": _infer_category(name),
-                }
-            )
+        # Offload synchronous filesystem scan to thread pool
+        loop = asyncio.get_running_loop()
+        scanned_files = await loop.run_in_executor(
+            None, scan_directory, root, _ALLOWED_EXTS
+        )
+
+        # Enhance results with category
+        results = [
+            {**f, "category": _infer_category(f["name"])} for f in scanned_files
+        ]
+
         return {"root": str(root), "count": len(results), "animations": results}
     except HTTPException:
         raise
