@@ -66,3 +66,24 @@ def test_config_env_audio_overrides(monkeypatch, tmp_path):
     assert c.inference_framework == "pytorch"
     assert c.start_on_boot is True
     assert c.check_for_updates is False
+
+
+def test_config_env_bridge_token_overrides(monkeypatch, tmp_path):
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text("{}")
+
+    # Test CHATCOMM_BRIDGE_TOKEN takes precedence
+    monkeypatch.setenv("CHATCOMM_BRIDGE_TOKEN", "chatcomm_token")
+    monkeypatch.setenv("ADVISORS_BRIDGE_TOKEN", "advisors_token")
+    c = Config(config_file=str(cfg_path))
+    assert c.bridge_token == "chatcomm_token"  # CHATCOMM_* takes precedence
+
+    # Test ADVISORS_BRIDGE_TOKEN used when CHATCOMM_BRIDGE_TOKEN not set
+    monkeypatch.delenv("CHATCOMM_BRIDGE_TOKEN", raising=False)
+    c = Config(config_file=str(cfg_path))
+    assert c.bridge_token == "advisors_token"
+
+    # Test no token configured by default
+    monkeypatch.delenv("ADVISORS_BRIDGE_TOKEN", raising=False)
+    c = Config(config_file=str(cfg_path))
+    assert c.bridge_token is None

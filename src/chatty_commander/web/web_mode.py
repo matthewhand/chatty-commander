@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import secrets
 import time
 from datetime import datetime
 from pathlib import Path
@@ -610,9 +611,16 @@ class WebModeServer:
             event: dict[str, Any],
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
-            # Check for bridge token in header
-            expected_token = "secret"  # TODO: Make configurable
-            if not x_bridge_token or x_bridge_token != expected_token:
+            # Check for bridge token in header - must be explicitly configured
+            expected_token = getattr(self.config_manager, "bridge_token", None)
+            if not expected_token:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Bridge token not configured. Set CHATCOMM_BRIDGE_TOKEN or ADVISORS_BRIDGE_TOKEN environment variable."
+                )
+            if not x_bridge_token or not secrets.compare_digest(
+                x_bridge_token, expected_token
+            ):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
             # For now, just echo back the event
