@@ -41,13 +41,16 @@ class DummyConfig:
         self.advisors = {"enabled": True}
 
 
+import unittest.mock
+
 def test_avatar_animations_lists_allowed_files(tmp_path: Path):
     # Create temporary animation directory with a few files
-    (tmp_path / "think.gif").write_bytes(b"gifdata")
-    (tmp_path / "speak.mp4").write_bytes(b"mp4data")
-    (tmp_path / "meta.json").write_text(json.dumps({"name": "meta"}))
+    (tmp_path / "anims").mkdir()
+    (tmp_path / "anims" / "think.gif").write_bytes(b"gifdata")
+    (tmp_path / "anims" / "speak.mp4").write_bytes(b"mp4data")
+    (tmp_path / "anims" / "meta.json").write_text(json.dumps({"name": "meta"}))
     # Disallowed ext
-    (tmp_path / "notes.txt").write_text("x")
+    (tmp_path / "anims" / "notes.txt").write_text("x")
 
     cfg = DummyConfig()
     sm = StateManager()
@@ -56,9 +59,10 @@ def test_avatar_animations_lists_allowed_files(tmp_path: Path):
     server = WebModeServer(cfg, sm, mm, ce, no_auth=True)
     client = TestClient(server.app)
 
-    r = client.get("/avatar/animations", params={"dir": str(tmp_path)})
-    assert r.status_code == 200
-    data = r.json()
-    assert data["count"] >= 3
-    names = {a["name"] for a in data["animations"]}
-    assert {"think", "speak", "meta"}.issubset(names)
+    with unittest.mock.patch("chatty_commander.web.routes.avatar_api._default_animations_dir", return_value=tmp_path):
+        r = client.get("/avatar/animations", params={"dir": "anims"})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["count"] >= 3
+        names = {a["name"] for a in data["animations"]}
+        assert {"think", "speak", "meta"}.issubset(names)
