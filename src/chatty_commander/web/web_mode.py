@@ -65,6 +65,16 @@ from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
 from chatty_commander.web.routes.system import include_system_routes
 try:
+    from chatty_commander.utils.logging_config import (
+        RequestIdMiddleware,
+        configure_logging,
+    )
+    _LOGGING_CONFIG_AVAILABLE = True
+except Exception:  # pragma: no cover
+    RequestIdMiddleware = None  # type: ignore[assignment,misc]
+    configure_logging = None  # type: ignore[assignment]
+    _LOGGING_CONFIG_AVAILABLE = False
+try:
     from chatty_commander.obs.metrics import (
         RequestMetricsMiddleware,
         create_metrics_router,
@@ -503,6 +513,11 @@ class WebModeServer:
     # App and routing
     # --------------------------
     def _create_app(self) -> FastAPI:
+        # Configure logging based on environment variables (LOG_FORMAT, LOG_LEVEL)
+        # This is idempotent — safe to call multiple times.
+        if _LOGGING_CONFIG_AVAILABLE and configure_logging is not None:
+            configure_logging()
+
         app = FastAPI(
             title="ChattyCommander API",
             description="Voice command automation system with web interface",
@@ -510,6 +525,11 @@ class WebModeServer:
             docs_url="/docs" if self.no_auth else None,
             redoc_url="/redoc" if self.no_auth else None,
         )
+
+        # Request ID middleware — must be outermost so all downstream middleware
+        # and handlers see the request_id in their log context.
+        if _LOGGING_CONFIG_AVAILABLE and RequestIdMiddleware is not None:
+            app.add_middleware(RequestIdMiddleware)
 
         # Observability: request metrics middleware (must be added before other middleware
         # so it wraps the full request lifecycle)
