@@ -22,12 +22,20 @@
 
 from __future__ import annotations
 
+from __future__ import annotations
+
+import json
+import logging
+import os
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -56,9 +64,42 @@ class AgentBlueprintResponse(AgentBlueprintModel):
     id: str
 
 
-# In-memory store (replace with persistence later)
+_STORE_PATH = Path(os.path.expanduser(os.environ.get("CHATTY_AGENTS_STORE", "~/.chatty_commander/agents.json")))
+
 _STORE: dict[str, AgentBlueprint] = {}
 _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
+
+
+def _load_store() -> None:
+    global _STORE, _TEAM
+    if not _STORE_PATH.exists():
+        return
+    try:
+        with _STORE_PATH.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+            _STORE.clear()
+            _TEAM.clear()
+
+            for agent_dict in data.get("agents", []):
+                agent = AgentBlueprint(**agent_dict)
+                _STORE[agent.id] = agent
+                if agent.team_role:
+                    _TEAM.setdefault(agent.team_role, []).append(agent.id)
+    except Exception as e:
+        logger.warning("Error loading agent store from %s: %s", _STORE_PATH, e)
+
+def _save_store() -> None:
+    try:
+        _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        agents = [asdict(agent) for agent in _STORE.values()]
+        data = {"agents": agents}
+        with _STORE_PATH.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
+
+_load_store()
 
 
 # Placeholder natural language parser (stub for LLM)
@@ -102,6 +143,7 @@ async def create_blueprint(
         _STORE[uid] = ent
         if ent.team_role:
             _TEAM.setdefault(ent.team_role, []).append(uid)
+        _save_store()
         return AgentBlueprintResponse(id=uid, **model.model_dump())
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -121,6 +163,7 @@ async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
         raise HTTPException(status_code=404, detail="Agent not found")
     ent = AgentBlueprint(id=agent_id, **bp.model_dump())
     _STORE[agent_id] = ent
+    _save_store()
     return AgentBlueprintResponse(id=agent_id, **bp.model_dump())
 
 
@@ -135,6 +178,7 @@ async def delete_blueprint(agent_id: str):
             if not ids:
                 _TEAM.pop(role, None)
     _STORE.pop(agent_id, None)
+    _save_store()
     return {"deleted": True, "id": agent_id}
 
 
