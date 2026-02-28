@@ -63,6 +63,7 @@ from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
+from chatty_commander.web.routes.system import include_system_routes
 try:
     from chatty_commander.web.routes.audio import include_audio_routes
 except ImportError:
@@ -561,6 +562,12 @@ class WebModeServer:
 
         # Version endpoint
         app.include_router(version_router)
+
+        # System info endpoints
+        system_routes = include_system_routes(
+            get_start_time=lambda: self.start_time
+        )
+        app.include_router(system_routes)
 
         # Agents endpoints
         if agents_router:
