@@ -20,9 +20,17 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!isAuthenticated) return;
 
     const token = localStorage.getItem("auth_token");
-    if (!token) return;
+    // Only require token if we are not in no-auth mode. Since we don't have that info easily,
+    // let's pass token if it exists, otherwise pass empty token
+    const tokenQuery = token ? `?token=${token}` : "";
 
-    const socket = new WebSocket(`ws://localhost:8001/ws?token=${token}`);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    // Construct websocket URL using the current host, but respect an env var if provided during build
+    // Or if in dev mode (Vite typically runs on 5173), fallback to the standard backend port 8100
+    const host = window.location.port === "5173" || window.location.port === "3000"
+      ? window.location.hostname + ":8100"
+      : window.location.host;
+    const socket = new WebSocket(`${protocol}//${host}/ws${tokenQuery}`);
 
     socket.onopen = () => setIsConnected(true);
     socket.onclose = () => setIsConnected(false);
