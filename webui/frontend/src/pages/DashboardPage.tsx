@@ -1,44 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, AlertTriangle, Loader2 } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
-import { LogMessage, LogMessageItem } from "../components/LogMessageItem";
 
 const MAX_MESSAGES = 100;
 
 const DashboardPage: React.FC = () => {
-  const { ws, isConnected, reconnectAttempt } = useWebSocket();
-  const [messages, setMessages] = useState<LogMessage[]>([]);
+  const { ws, isConnected } = useWebSocket();
+  const [messages, setMessages] = useState<string[]>([]);
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const logEndRef = useRef<HTMLDivElement>(null);
-  // Real-time telemetry state (updated via WebSocket telemetry messages)
-  const [realtimeStatus, setRealtimeStatus] = useState<{ cpu?: string; memory?: string }>({});
-
-  // Show toast for connection status
-  const [showToast, setShowToast] = useState(false);
-
-  useEffect(() => {
-    // Show toast when connection is lost or reconnecting
-    if (!isConnected) {
-        setShowToast(true);
-    } else {
-        // Hide toast shortly after connection is restored
-        const timer = setTimeout(() => setShowToast(false), 3000);
-        return () => clearTimeout(timer);
-    }
-  }, [isConnected]);
-
-  const addMessage = useCallback((message: Omit<LogMessage, "id" | "timestamp">) => {
-    const newMessage: LogMessage = {
-      id: Math.random().toString(36).substring(7),
-      timestamp: new Date(),
-      ...message,
-    };
-    setMessages((prev) => [...prev, newMessage].slice(-MAX_MESSAGES));
-  }, []); // setMessages is stable; no external deps needed
 
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,24 +22,18 @@ const DashboardPage: React.FC = () => {
     setCommandInput("");
 
     // Optimistically add to log
-    addMessage({
-      type: "command",
-      content: `> Executing: ${cmd}`,
-    });
+    setMessages(prev => [...prev, `> Executing: ${cmd}`].slice(-MAX_MESSAGES));
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
-      addMessage({
-        type: "error",
-        content: `Error: ${err.message}`,
-      });
+      setMessages(prev => [...prev, `Error: ${err.message}`].slice(-MAX_MESSAGES));
     } finally {
       setIsSending(false);
     }
   };
 
-  const { data: systemStatus, isLoading } = useQuery({
+  const { data: initialSystemStatus, isLoading } = useQuery({
     queryKey: ["systemStatus"],
     queryFn: async () => {
       const res = await fetch("/health");
@@ -83,6 +50,9 @@ const DashboardPage: React.FC = () => {
     },
     refetchInterval: 30000,
   });
+
+  const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
+  const systemStatus = { ...initialSystemStatus, ...realtimeStatus };
 
   const { data: agentData, isLoading: agentsLoading, isError: agentsError, error: agentsErrObj } = useQuery<Agent[]>({
     queryKey: ["agentStatus"],
@@ -103,67 +73,24 @@ const DashboardPage: React.FC = () => {
 
   const handleWsMessage = useCallback((event: MessageEvent) => {
     try {
-      const payload = JSON.parse(event.data);
-
-      // Handle telemetry messages without adding to log
-      if (payload.type === "telemetry" && payload.data) {
-        setRealtimeStatus((prev) => ({
+      const msg = JSON.parse(event.data);
+      if (msg.type === "telemetry" && msg.data) {
+        setRealtimeStatus((prev: any) => ({
           ...prev,
-          cpu: payload.data.cpu !== undefined ? `${Number(payload.data.cpu).toFixed(1)}` : prev.cpu,
-          memory: payload.data.memory !== undefined ? `${Number(payload.data.memory).toFixed(1)}` : prev.memory,
+          cpu: msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu,
+          memory: msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory,
         }));
         return;
       }
-
-      switch (payload.type) {
-        case "state_change":
-          addMessage({
-            type: "state",
-            content: `State changed to ${payload.data.new_state} (was ${payload.data.old_state})`,
-            metadata: payload.data,
-          });
-          break;
-        case "command_detected": {
-          const confidence = (payload.data.confidence * 100).toFixed(1);
-          addMessage({
-            type: "command",
-            content: `Command detected: ${payload.data.command} (${confidence}%)`,
-            metadata: payload.data,
-          });
-          break;
-        }
-        case "system_event":
-          addMessage({
-            type: "system",
-            content: `System Event: ${payload.data.message}`,
-            metadata: payload.data,
-          });
-          break;
-        case "connection_established":
-          addMessage({
-            type: "connection",
-            content: `Connected to ChattyCommander (State: ${payload.data.current_state})`,
-            metadata: payload.data,
-          });
-          break;
-        case "heartbeat":
-        case "pong":
-          // Ignore keepalives
-          return;
-        default:
-          addMessage({
-            type: "info",
-            content: `[${payload.type}] ${JSON.stringify(payload.data)}`,
-            metadata: payload,
-          });
+      // Fallback for non-JSON or other messages
+      if (msg.data && typeof msg.data === "string") {
+        setMessages((prev) => [...prev, msg.data].slice(-MAX_MESSAGES));
       }
     } catch {
-      addMessage({
-        type: "info",
-        content: event.data,
-      });
+      // Plain text message
+      setMessages((prev) => [...prev, event.data].slice(-MAX_MESSAGES));
     }
-  }, [addMessage]); // addMessage is stable via useCallback
+  }, []); // setRealtimeStatus and setMessages are stable; no external deps
 
   useEffect(() => {
     if (!ws) return;
@@ -174,11 +101,6 @@ const DashboardPage: React.FC = () => {
     };
   }, [ws, handleWsMessage]);
 
-  // Auto-scroll to bottom of log
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -188,39 +110,10 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-6">
       <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
         Dashboard
       </h2>
-
-      {/* Connection Toast */}
-      {showToast && (
-        <div className="toast toast-end z-50">
-            {isConnected ? (
-                <div className="alert alert-success shadow-lg animate-in slide-in-from-bottom-5">
-                    <Wifi size={20} />
-                    <span>Connected to Server</span>
-                </div>
-            ) : (
-                <div className="alert alert-warning shadow-lg animate-in slide-in-from-bottom-5">
-                    {reconnectAttempt > 0 ? (
-                        <>
-                            <Loader2 size={20} className="animate-spin" />
-                            <div className="flex flex-col">
-                                <span className="font-bold">Connection Lost</span>
-                                <span className="text-xs">Reconnecting (Attempt {reconnectAttempt})...</span>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <AlertTriangle size={20} />
-                            <span>Connection Lost</span>
-                        </>
-                    )}
-                </div>
-            )}
-        </div>
-      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -292,9 +185,7 @@ const DashboardPage: React.FC = () => {
             <div className={`stat-value text-2xl ${isConnected ? 'text-success' : 'text-error'}`}>
               {isConnected ? "Connected" : "Offline"}
             </div>
-            <div className="stat-desc">
-                {reconnectAttempt > 0 ? `Reconnecting (${reconnectAttempt})...` : "Realtime stream"}
-            </div>
+            <div className="stat-desc">Realtime stream</div>
           </div>
         </div>
       </div>
@@ -304,19 +195,18 @@ const DashboardPage: React.FC = () => {
         <div className="card-body">
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
-          <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar p-0">
-            <div className="p-4 min-h-full flex flex-col justify-end">
-              {messages.length > 0 ? (
-                messages.map((msg) => (
-                  <LogMessageItem key={msg.id} message={msg} />
-                ))
-              ) : (
-                <div className="p-4 text-base-content/30 italic text-center">
-                  Waiting for system events...
-                </div>
-              )}
-              <div ref={logEndRef} />
-            </div>
+          <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
+            {messages.length > 0 ? (
+              messages.slice(-15).map((msg, index) => (
+                <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
+                  <code>{msg}</code>
+                </pre>
+              ))
+            ) : (
+              <div className="p-4 text-base-content/50 italic text-center pt-24">
+                Waiting for commands...
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSendCommand} className="mt-4 flex gap-2">
