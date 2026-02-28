@@ -127,6 +127,8 @@ const ConfigurationPage: React.FC = () => {
   // Voice Models State
   const [uploadState, setUploadState] = useState<"idle" | "computer" | "chatty">("idle");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { data: devices } = useQuery({
     queryKey: ["audioDevices"],
@@ -159,26 +161,40 @@ const ConfigurationPage: React.FC = () => {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async ({ file, state }: { file: File, state: "idle" | "computer" | "chatty" }) => {
+    mutationFn: async ({ file, state }: { file: File; state: "idle" | "computer" | "chatty" }) => {
       await uploadVoiceModel(file, state);
     },
     onSuccess: () => {
       refetchVoiceModels();
       setIsUploading(false);
+      setUploadError(null);
     },
-    onError: () => setIsUploading(false),
+    onError: (err: unknown) => {
+      setIsUploading(false);
+      setUploadError(err instanceof Error ? err.message : "Upload failed. Please try again.");
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteVoiceModel,
-    onSuccess: () => refetchVoiceModels(),
+    onSuccess: () => {
+      refetchVoiceModels();
+      setDeleteError(null);
+    },
+    onError: (err: unknown) => {
+      setDeleteError(err instanceof Error ? err.message : "Delete failed. Please try again.");
+    },
   });
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    const file = e.target.files?.[0];
+    if (file) {
       setIsUploading(true);
-      uploadMutation.mutate({ file: e.target.files[0], state: uploadState });
-      e.target.value = ""; // Reset input
+      setUploadError(null);
+      uploadMutation.mutate({ file, state: uploadState });
+      // Reset input only after mutation completes (in onSuccess/onError)
+      // to allow retry with the same file if needed
+      e.target.value = "";
     }
   };
 
@@ -476,7 +492,7 @@ const ConfigurationPage: React.FC = () => {
                    <select
                     className="select select-bordered select-xs w-full"
                     value={uploadState}
-                    onChange={(e) => setUploadState(e.target.value as any)}
+                    onChange={(e) => setUploadState(e.target.value as "idle" | "computer" | "chatty")}
                    >
                      <option value="idle">Idle (Wake Word)</option>
                      <option value="computer">Computer (Active)</option>
@@ -498,6 +514,16 @@ const ConfigurationPage: React.FC = () => {
                  </div>
 
                  {isUploading && <progress className="progress progress-primary w-full mt-2"></progress>}
+                 {uploadError && (
+                   <div className="alert alert-error text-xs mt-2 py-2">
+                     <span>{uploadError}</span>
+                   </div>
+                 )}
+                 {deleteError && (
+                   <div className="alert alert-error text-xs mt-2 py-2">
+                     <span>{deleteError}</span>
+                   </div>
+                 )}
               </div>
             </div>
           </div>
