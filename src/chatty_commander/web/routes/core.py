@@ -81,21 +81,30 @@ class HealthStatus(BaseModel):
     last_health_check: str = Field(..., description="Last health check timestamp")
 
 
-# Global rolling average tracker for response times
-response_times: deque[float] = deque(maxlen=100)
-response_times_lock = threading.Lock()
-
-
 class ResponseTimeMiddleware(BaseHTTPMiddleware):
-    """Middleware to track the rolling average of request response times."""
+    """Middleware to track the rolling average of request response times.
+
+    Uses instance-level state so multiple app instances in tests don't
+    share the same deque (avoids cross-contamination between test cases).
+    """
+
+    def __init__(self, app: Any, maxlen: int = 100) -> None:
+        super().__init__(app)
+        self._response_times: deque[float] = deque(maxlen=maxlen)
+        self._lock = threading.Lock()
+
+    def get_average_ms(self) -> float:
+        """Return the current rolling average response time in milliseconds."""
+        with self._lock:
+            return sum(self._response_times) / len(self._response_times) if self._response_times else 0.0
 
     async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
         start_time = time.time()
         response = await call_next(request)
         duration_ms = (time.time() - start_time) * 1000.0
 
-        with response_times_lock:
-            response_times.append(duration_ms)
+        with self._lock:
+            self._response_times.append(duration_ms)
 
         return response
 
@@ -124,6 +133,7 @@ def include_core_routes(
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
     get_total_commands: Callable[[], int] | None = None,
+    response_time_middleware: "ResponseTimeMiddleware | None" = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -246,8 +256,12 @@ def include_core_routes(
         error_count = counters.get("errors", 0)
         error_rate = (error_count / max(total_requests, 1)) * 100
 
-        with response_times_lock:
-            avg_duration = sum(response_times) / len(response_times) if response_times else 0.0
+        # Get average response time from middleware instance (avoids global state)
+        avg_duration = (
+            response_time_middleware.get_average_ms()
+            if response_time_middleware is not None
+            else 0.0
+        )
 
         return MetricsData(
             total_requests=total_requests,
@@ -363,8 +377,11 @@ def include_core_routes(
     async def metrics():
         # Shallow copy to avoid external mutation
         metrics_dict = {**counters}
-        with response_times_lock:
-            avg_duration = sum(response_times) / len(response_times) if response_times else 0.0
+        avg_duration = (
+            response_time_middleware.get_average_ms()
+            if response_time_middleware is not None
+            else 0.0
+        )
         metrics_dict["response_time_avg"] = round(avg_duration, 2)
         return metrics_dict
 
