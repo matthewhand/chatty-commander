@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 
@@ -56,7 +60,7 @@ test.describe("Documentation Screenshots", () => {
 
     test("commands", async ({ page }) => {
         await page.goto("/");
-        const commandsLink = page.locator("text=Commands").first();
+        const commandsLink = page.getByRole('link', { name: "Commands" }).first();
         if (await commandsLink.isVisible()) {
             await commandsLink.click();
             await page.waitForTimeout(500);

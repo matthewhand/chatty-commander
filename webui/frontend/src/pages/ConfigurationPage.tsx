@@ -10,7 +10,6 @@ import {
   Volume2 as VolumeUpIcon,
   Headphones as HeadphonesIcon,
   Server as ServerIcon,
-  Activity as ActivityIcon,
 } from "lucide-react";
 import { fetchLLMModels } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
@@ -152,9 +151,7 @@ const ConfigurationPage: React.FC = () => {
       setTheme(e.target.value);
     }
   };
-  const handleSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig({ ...config, [e.target.name]: e.target.checked });
-  };
+
   const handleServiceSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConfig({
       ...config,

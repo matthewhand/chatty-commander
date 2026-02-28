@@ -232,6 +232,14 @@ def include_core_routes(
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
 
+    @router.get("/api/v1/commands")
+    async def get_commands():
+        """Get the configured commands."""
+        counters["config_get"] += 1
+        cfg_mgr = get_config_manager()
+        # Return the 'commands' dictionary directly from the config
+        return getattr(cfg_mgr, "commands", {})
+
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
         counters["state_get"] += 1
