@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
 
@@ -30,13 +34,25 @@ test.describe("Documentation Screenshots", () => {
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "configuration-general.png"), fullPage: true });
     });
 
+    test("configuration-models", async ({ page }) => {
+        await page.goto("/");
+        await page.click("text=Configuration");
+        await page.waitForTimeout(300);
+        const modelsSection = page.locator("text=Voice Models (ONNX)").first();
+        if (await modelsSection.isVisible()) {
+            await modelsSection.scrollIntoViewIfNeeded();
+            await page.waitForTimeout(300);
+        }
+        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "configuration-models.png"), fullPage: true });
+    });
+
     test("configuration-llm", async ({ page }) => {
         await page.goto("/");
         await page.click("text=Configuration");
         await page.waitForTimeout(300);
         const llmTab = page.locator("text=LLM").first();
         if (await llmTab.isVisible()) {
-            await llmTab.click();
+            await llmTab.scrollIntoViewIfNeeded();
             await page.waitForTimeout(300);
         }
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "configuration-llm.png"), fullPage: true });
@@ -48,7 +64,7 @@ test.describe("Documentation Screenshots", () => {
         await page.waitForTimeout(300);
         const servicesTab = page.locator("text=Services").first();
         if (await servicesTab.isVisible()) {
-            await servicesTab.click();
+            await servicesTab.scrollIntoViewIfNeeded();
             await page.waitForTimeout(300);
         }
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "configuration-services.png"), fullPage: true });
