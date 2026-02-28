@@ -69,6 +69,7 @@ except ImportError:
     include_audio_routes = None
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.ws import include_ws_routes
+from chatty_commander.web.routes.voice import include_voice_routes
 
 # Avatar routes (optional)
 try:
@@ -549,6 +550,12 @@ class WebModeServer:
         if include_audio_routes:
             audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
             app.include_router(audio)
+
+        # Voice routing
+        voice = include_voice_routes(
+            get_config_manager=lambda: self.config_manager,
+        )
+        app.include_router(voice)
 
         # Version endpoint
         app.include_router(version_router)

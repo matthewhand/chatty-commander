@@ -14,9 +14,9 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 | Endpoint | Used By | Status |
 |----------|---------|--------|
 | `/api/audio/devices` | AudioSettingsPage.tsx | ❌ Missing |
-| `/api/voice/status` | apiService.js | ❌ Missing |
-| `/api/voice/start` | apiService.js | ❌ Missing |
-| `/api/voice/stop` | apiService.js | ❌ Missing |
+| `/api/voice/status` | apiService.js | ✅ Working |
+| `/api/voice/start` | apiService.js | ✅ Working |
+| `/api/voice/stop` | apiService.js | ✅ Working |
 | `/api/themes` | apiService.js | ❌ Missing |
 | `/api/theme` | apiService.js | ❌ Missing |
 | `/api/preferences` | apiService.js | ❌ Missing |
