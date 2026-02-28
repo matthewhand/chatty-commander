@@ -22,12 +22,15 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass, field
 from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel, Field
+
+from chatty_commander.llm.manager import LLMManager
 
 router = APIRouter()
 
@@ -61,9 +64,44 @@ _STORE: dict[str, AgentBlueprint] = {}
 _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
 
 
-# Placeholder natural language parser (stub for LLM)
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
-    # Very naive heuristic parser for now
+    llm = LLMManager()
+    if llm.is_available():
+        try:
+            prompt = f"""
+Extract an agent blueprint from the following text.
+Return a JSON object with EXACTLY these keys:
+- "name" (string, short)
+- "description" (string, short summary)
+- "persona_prompt" (string, detailed prompt)
+- "capabilities" (list of strings, inferred abilities)
+- "team_role" (string or null, inferred role if any)
+
+Text:
+{text}
+
+Return ONLY valid JSON.
+"""
+            response = llm.generate_response(prompt)
+            # clean up possible markdown block around json
+            if "```json" in response:
+                response = response.split("```json")[1].split("```")[0]
+            elif "```" in response:
+                response = response.split("```")[1].split("```")[0]
+
+            data = json.loads(response.strip())
+            return AgentBlueprintModel(
+                name=data.get("name", "Agent")[:48],
+                description=data.get("description", text.strip()[:256]),
+                persona_prompt=data.get("persona_prompt", text.strip()),
+                capabilities=data.get("capabilities", []),
+                team_role=data.get("team_role"),
+                handoff_triggers=[],
+            )
+        except Exception:
+            pass
+
+    # Very naive heuristic parser fallback
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
     name = lines[0][:48] if lines else "Agent"
     description = text.strip()[:256]
