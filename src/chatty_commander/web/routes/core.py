@@ -24,13 +24,16 @@ from __future__ import annotations
 
 import asyncio
 import os
+import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class SystemStatus(BaseModel):
@@ -78,6 +81,34 @@ class HealthStatus(BaseModel):
     last_health_check: str = Field(..., description="Last health check timestamp")
 
 
+class ResponseTimeMiddleware(BaseHTTPMiddleware):
+    """Middleware to track the rolling average of request response times.
+
+    Uses instance-level state so multiple app instances in tests don't
+    share the same deque (avoids cross-contamination between test cases).
+    """
+
+    def __init__(self, app: Any, maxlen: int = 100) -> None:
+        super().__init__(app)
+        self._response_times: deque[float] = deque(maxlen=maxlen)
+        self._lock = threading.Lock()
+
+    def get_average_ms(self) -> float:
+        """Return the current rolling average response time in milliseconds."""
+        with self._lock:
+            return sum(self._response_times) / len(self._response_times) if self._response_times else 0.0
+
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
+        start_time = time.time()
+        response = await call_next(request)
+        duration_ms = (time.time() - start_time) * 1000.0
+
+        with self._lock:
+            self._response_times.append(duration_ms)
+
+        return response
+
+
 class MetricsData(BaseModel):
     total_requests: int = Field(..., description="Total API requests")
     uptime_seconds: float = Field(..., description="Uptime in seconds")
@@ -102,6 +133,7 @@ def include_core_routes(
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
     get_total_commands: Callable[[], int] | None = None,
+    response_time_middleware: "ResponseTimeMiddleware | None" = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -224,13 +256,20 @@ def include_core_routes(
         error_count = counters.get("errors", 0)
         error_rate = (error_count / max(total_requests, 1)) * 100
 
+        # Get average response time from middleware instance (avoids global state)
+        avg_duration = (
+            response_time_middleware.get_average_ms()
+            if response_time_middleware is not None
+            else 0.0
+        )
+
         return MetricsData(
             total_requests=total_requests,
             uptime_seconds=uptime_seconds,
             active_connections=active_connections,
             cache_size=cache_size,
             error_rate=round(error_rate, 2),
-            response_time_avg=0.0,  # Placeholder for future implementation
+            response_time_avg=round(avg_duration, 2),
         )
 
     @router.get("/api/v1/config")
@@ -337,6 +376,13 @@ def include_core_routes(
     @router.get("/api/v1/metrics")
     async def metrics():
         # Shallow copy to avoid external mutation
-        return {**counters}
+        metrics_dict = {**counters}
+        avg_duration = (
+            response_time_middleware.get_average_ms()
+            if response_time_middleware is not None
+            else 0.0
+        )
+        metrics_dict["response_time_avg"] = round(avg_duration, 2)
+        return metrics_dict
 
     return router

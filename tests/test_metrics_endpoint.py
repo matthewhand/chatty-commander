@@ -42,6 +42,7 @@ def test_metrics_counts_increment():
     m2 = client.get("/api/v1/metrics").json()
 
     assert m2["status"] >= (m1.get("status", 0) + 1)
+    assert m2["response_time_avg"] > 0.0
     assert m2["config_get"] >= m1.get("config_get", 0)
     assert m2["state_get"] >= (m1.get("state_get", 0) + 1)
     assert m2["state_post"] >= (m1.get("state_post", 0) + 1)
