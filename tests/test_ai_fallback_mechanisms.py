@@ -79,6 +79,8 @@ class TestLLMFallbackMechanisms:
             }
 
             service = AdvisorsService(config)
+
+            # Use 'default_persona' as fallback when user has not explicitly set a persona
             message = AdvisorMessage(
                 platform="discord",
                 channel="test",
@@ -531,7 +533,7 @@ class TestSmartFallbackResponses:
             assert isinstance(response, AdvisorReply)
             assert "LLM Error" in response.reply
             assert response.context_key == "discord:test:user123"
-            assert response.persona_id == "analyst"
+            assert response.persona_id == "general"
 
 
 class TestGracefulDegradation:

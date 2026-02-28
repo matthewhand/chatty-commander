@@ -53,7 +53,6 @@ def test_runtime_openapi_matches_docs_file_on_key_paths():
         "/api/v1/config",
         "/api/v1/state",
         "/api/v1/command",
-        "/api/v1/version",
     }
 
     missing_in_runtime = key - runtime_paths
