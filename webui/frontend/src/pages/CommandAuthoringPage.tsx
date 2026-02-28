@@ -421,7 +421,7 @@ export default function CommandAuthoringPage() {
           >
             <AlertCircle size={20} />
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle">
+            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error">
               <X size={16} />
             </button>
           </motion.div>
