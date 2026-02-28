@@ -49,11 +49,12 @@ logger = logging.getLogger(__name__)
 
 
 def _deterministic_fallback(url: str) -> str:
-    if "github.com" in url:
+    domain = urlparse(url).netloc
+    if "github.com" in domain:
         return f"GitHub repository: {url}. This appears to be an open source project with documentation, issues, and pull requests."
-    elif "stackoverflow.com" in url:
+    elif "stackoverflow.com" in domain:
         return f"Stack Overflow question: {url}. This contains programming questions and answers from the developer community."
-    elif "wikipedia.org" in url:
+    elif "wikipedia.org" in domain:
         return f"Wikipedia article: {url}. This is an encyclopedia entry providing factual information on the topic."
     else:
         return f"Web page at {url}: This appears to be a general web page with content related to the URL's domain."
