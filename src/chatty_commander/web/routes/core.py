@@ -24,13 +24,16 @@ from __future__ import annotations
 
 import asyncio
 import os
+import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class SystemStatus(BaseModel):
@@ -76,6 +79,25 @@ class HealthStatus(BaseModel):
     cpu_usage: str = Field(default="unknown", description="CPU usage")
     commands_executed: int = Field(default=0, description="Total commands executed")
     last_health_check: str = Field(..., description="Last health check timestamp")
+
+
+# Global rolling average tracker for response times
+response_times: deque[float] = deque(maxlen=100)
+response_times_lock = threading.Lock()
+
+
+class ResponseTimeMiddleware(BaseHTTPMiddleware):
+    """Middleware to track the rolling average of request response times."""
+
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
+        start_time = time.time()
+        response = await call_next(request)
+        duration_ms = (time.time() - start_time) * 1000.0
+
+        with response_times_lock:
+            response_times.append(duration_ms)
+
+        return response
 
 
 class MetricsData(BaseModel):
@@ -224,13 +246,16 @@ def include_core_routes(
         error_count = counters.get("errors", 0)
         error_rate = (error_count / max(total_requests, 1)) * 100
 
+        with response_times_lock:
+            avg_duration = sum(response_times) / len(response_times) if response_times else 0.0
+
         return MetricsData(
             total_requests=total_requests,
             uptime_seconds=uptime_seconds,
             active_connections=active_connections,
             cache_size=cache_size,
             error_rate=round(error_rate, 2),
-            response_time_avg=0.0,  # Placeholder for future implementation
+            response_time_avg=round(avg_duration, 2),
         )
 
     @router.get("/api/v1/config")
@@ -337,6 +362,10 @@ def include_core_routes(
     @router.get("/api/v1/metrics")
     async def metrics():
         # Shallow copy to avoid external mutation
-        return {**counters}
+        metrics_dict = {**counters}
+        with response_times_lock:
+            avg_duration = sum(response_times) / len(response_times) if response_times else 0.0
+        metrics_dict["response_time_avg"] = round(avg_duration, 2)
+        return metrics_dict
 
     return router

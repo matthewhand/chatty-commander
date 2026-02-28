@@ -62,7 +62,7 @@ from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.web.routes.core import include_core_routes
+from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
 try:
     from chatty_commander.web.routes.audio import include_audio_routes
 except ImportError:
@@ -522,6 +522,8 @@ class WebModeServer:
             requests_per_minute=10000,
             trusted_proxies=trusted_proxies,
         )
+
+        app.add_middleware(ResponseTimeMiddleware)
 
         # CORS policy
         app.add_middleware(
