@@ -33,6 +33,10 @@ export default defineConfig({
   ],
 
   webServer: {
+<<<<<<< HEAD
+=======
+    // Restore the automated server startup for proper CI/test flow
+>>>>>>> 9c81b95 (Fix WebSocket connectivity and improve command log UX)
     command: "cd ../.. && PYTHONPATH=src uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
     url: "http://localhost:8100/health",
     reuseExistingServer: !process.env.CI,

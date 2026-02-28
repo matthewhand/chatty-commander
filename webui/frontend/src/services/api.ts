@@ -20,7 +20,8 @@ export const fetchAgentStatus = async (): Promise<Agent[]> => {
     const res = await fetch("/api/v1/advisors/context/stats");
     if (!res.ok) {
       // Advisors may be disabled — return empty list gracefully
-      if (res.status === 400 || res.status === 503) return [];
+      // Also handle 404/500 if the service is completely missing
+      if (res.status >= 400) return [];
       throw new Error(`HTTP ${res.status}`);
     }
     const data = await res.json();

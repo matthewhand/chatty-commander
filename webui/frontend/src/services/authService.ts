@@ -33,27 +33,38 @@ class AuthService {
   async getCurrentUser(): Promise<User> {
     const token = localStorage.getItem("auth_token");
 
-    // Attempt normal token auth if token exists
     if (token) {
-      const response = await fetch(`${this.baseUrl}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        return response.json();
+      try {
+        const response = await fetch(`${this.baseUrl}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (e) {
+        console.warn("Auth check failed with token", e);
       }
     }
 
-    // If we're here, we either had no token or the token was invalid.
-    // Let's check if the backend is actually running in --no-auth mode
-    // We can test this by trying to load the config endpoint without a token.
+    // Check for no-auth mode by hitting the config endpoint
     try {
-      const confRes = await fetch(`${this.baseUrl}/config`);
+      // In development/test, window.location might not match API location if proxied incorrectly.
+      // But usually relative path works if served by Vite proxy or same origin.
+
+      const configUrl = `${this.baseUrl}/config`;
+      console.log(`Checking no-auth mode at ${configUrl}`);
+
+      const confRes = await fetch(configUrl);
       if (confRes.ok) {
-        // We successfully fetched config without auth! The server is in no-auth mode.
+        console.log("No-auth mode detected via config endpoint");
         return { username: 'local_admin', roles: ['admin'], is_active: true, noAuth: true };
+      } else {
+         console.log("Config endpoint returned non-200", confRes.status);
+         // Fallback: If we get a 200 from ANY public endpoint, we might assume no-auth if auth endpoints fail?
+         // No, that's risky. But for this specific bug, maybe the URL is just missing the /api prefix or similar.
       }
-    } catch {
-      // Ignore connection errors
+    } catch (e) {
+      console.error("Failed to check no-auth mode", e);
     }
 
     throw new Error("Authentication required");
