@@ -33,8 +33,6 @@ export default defineConfig({
   ],
 
   webServer: {
-=======
->>>>>>> 751f268 (Implement real-time dashboard telemetry)
     command: "cd ../.. && PYTHONPATH=src uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
     url: "http://localhost:8100/health",
     reuseExistingServer: !process.env.CI,
