@@ -380,10 +380,60 @@ class WebModeServer:
         # WebSocket connection management
         self.active_connections: set[WebSocket] = set()
 
+        # Telemetry task lifecycle management
+        self._telemetry_task: asyncio.Task | None = None  # type: ignore[type-arg]
+        self._telemetry_running: bool = False
+
         # Initialize FastAPI app and register routes
         self.app = self._create_app()
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
+
+        # Register startup/shutdown handlers for telemetry lifecycle
+        @self.app.on_event("startup")
+        async def start_telemetry_loop() -> None:
+            self._telemetry_running = True
+            self._telemetry_task = asyncio.create_task(self._telemetry_loop())
+
+        @self.app.on_event("shutdown")
+        async def stop_telemetry_loop() -> None:
+            self._telemetry_running = False
+            if self._telemetry_task and not self._telemetry_task.done():
+                self._telemetry_task.cancel()
+                try:
+                    await self._telemetry_task
+                except asyncio.CancelledError:
+                    pass
+            self._telemetry_task = None
+
+    async def _telemetry_loop(self) -> None:
+        """Background task to broadcast system telemetry.
+
+        Runs until _telemetry_running is False or the task is cancelled.
+        """
+        while self._telemetry_running:
+            try:
+                import psutil
+
+                cpu = psutil.cpu_percent(interval=None)
+                memory = psutil.virtual_memory().percent
+
+                await self._broadcast_message(
+                    WebSocketMessage(
+                        type="telemetry",
+                        data={
+                            "cpu": cpu,
+                            "memory": memory,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                    )
+                )
+            except asyncio.CancelledError:
+                raise  # Allow cancellation to propagate
+            except Exception as e:  # noqa: BLE001
+                logger.debug("Telemetry loop error: %s", e)
+
+            await asyncio.sleep(2.0)
 
     @property
     def config(self) -> Config:
