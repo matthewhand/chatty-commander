@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
 import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, AlertTriangle, Loader2 } from "lucide-react";
@@ -29,14 +29,14 @@ const DashboardPage: React.FC = () => {
     }
   }, [isConnected]);
 
-  const addMessage = (message: Omit<LogMessage, "id" | "timestamp">) => {
+  const addMessage = useCallback((message: Omit<LogMessage, "id" | "timestamp">) => {
     const newMessage: LogMessage = {
       id: Math.random().toString(36).substring(7),
       timestamp: new Date(),
       ...message,
     };
     setMessages((prev) => [...prev, newMessage].slice(-MAX_MESSAGES));
-  };
+  }, []); // setMessages is stable; no external deps needed
 
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,7 +154,7 @@ const DashboardPage: React.FC = () => {
         }
       };
     }
-  }, [ws]);
+  }, [ws, addMessage]);
 
   // Auto-scroll to bottom of log
   useEffect(() => {
