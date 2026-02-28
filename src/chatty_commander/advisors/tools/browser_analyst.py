@@ -27,6 +27,10 @@ This tool provides web content analysis capabilities to advisors.
 """
 
 import logging
+import re
+from urllib.parse import urlparse
+
+from chatty_commander.app.config import Config
 
 try:
     from agents import FunctionTool
@@ -35,8 +39,24 @@ try:
 except ImportError:
     AGENTS_AVAILABLE = False
 
+try:
+    import httpx
+    HTTPX_AVAILABLE = True
+except ImportError:
+    HTTPX_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
+
+def _deterministic_fallback(url: str) -> str:
+    if "github.com" in url:
+        return f"GitHub repository: {url}. This appears to be an open source project with documentation, issues, and pull requests."
+    elif "stackoverflow.com" in url:
+        return f"Stack Overflow question: {url}. This contains programming questions and answers from the developer community."
+    elif "wikipedia.org" in url:
+        return f"Wikipedia article: {url}. This is an encyclopedia entry providing factual information on the topic."
+    else:
+        return f"Web page at {url}: This appears to be a general web page with content related to the URL's domain."
 
 def browser_analyst_tool(url: str) -> str:
     """
@@ -48,21 +68,39 @@ def browser_analyst_tool(url: str) -> str:
     Returns:
         A concise summary of the web content.
     """
+    if not HTTPX_AVAILABLE:
+        return _deterministic_fallback(url)
+
     try:
-        # For now, return a deterministic response
-        # In a real implementation, this would fetch and analyze the URL
-        if "github.com" in url:
-            return f"GitHub repository: {url}. This appears to be an open source project with documentation, issues, and pull requests."
-        elif "stackoverflow.com" in url:
-            return f"Stack Overflow question: {url}. This contains programming questions and answers from the developer community."
-        elif "wikipedia.org" in url:
-            return f"Wikipedia article: {url}. This is an encyclopedia entry providing factual information on the topic."
-        else:
-            return f"Web page at {url}: This appears to be a general web page with content related to the URL's domain."
+        config_data = Config().config_data
+        allowlist = config_data.get("advisors", {}).get("browser_analyst", {}).get("allowlist", None)
+        timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
+
+        domain = urlparse(url).netloc
+        if allowlist is not None and domain not in allowlist:
+            logger.warning(f"Domain {domain} is not in the allowlist.")
+            return f"Error: Domain {domain} is not allowed."
+
+        response = httpx.get(url, timeout=timeout, follow_redirects=False)
+        response.raise_for_status()
+        text = response.text
+
+        title_match = re.search(r'<title.*?>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
+        title = title_match.group(1).strip() if title_match else "No Title"
+
+        # Remove script and style elements first to avoid extracting their content
+        body_text = re.sub(r'<(script|style).*?>.*?</\1>', ' ', text, flags=re.IGNORECASE | re.DOTALL)
+        # Strip other HTML tags
+        body_text = re.sub(r'<[^>]+>', ' ', body_text)
+        # Clean whitespace
+        body_text = re.sub(r'\s+', ' ', body_text).strip()
+
+        summary = body_text[:500]
+        return f"Title: {title}\nSummary: {summary}"
 
     except Exception as e:
         logger.error(f"Error analyzing URL {url}: {e}")
-        return f"Unable to analyze {url} due to an error."
+        return f"Unable to analyze {url} due to an error: {e}"
 
 
 # Create the tool instance if agents are available
