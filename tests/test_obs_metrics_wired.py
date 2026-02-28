@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 
 def _make_app():
@@ -63,15 +63,34 @@ def test_metrics_prom_endpoint_registered():
 
 
 def test_request_metrics_middleware_tracks_requests():
-    """After making a request, http_requests_total counter should be non-zero."""
-    from fastapi.testclient import TestClient
-    from chatty_commander.obs.metrics import DEFAULT_REGISTRY
+    """After making a request, http_requests_total counter should be non-zero.
 
-    app = _make_app()
+    Uses an isolated MetricsRegistry to avoid cross-test contamination from
+    the module-level DEFAULT_REGISTRY singleton.
+    """
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from chatty_commander.obs.metrics import (
+        MetricsRegistry,
+        RequestMetricsMiddleware,
+        create_metrics_router,
+    )
+
+    # Create an isolated registry for this test
+    registry = MetricsRegistry()
+
+    app = FastAPI()
+    app.add_middleware(RequestMetricsMiddleware, registry=registry)
+    app.include_router(create_metrics_router(registry=registry))
+
+    @app.get("/ping")
+    async def ping():
+        return {"ok": True}
+
     client = TestClient(app, raise_server_exceptions=False)
 
     # Make a request to populate the counter
-    client.get("/health")
+    client.get("/ping")
 
     # Check the metrics endpoint reflects the request
     response = client.get("/metrics/json")
