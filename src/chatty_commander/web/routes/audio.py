@@ -50,17 +50,18 @@ def include_audio_routes(
             p = pyaudio.PyAudio()
             input_devices = []
             output_devices = []
-            info = p.get_host_api_info_by_index(0)
-            numdevices = info.get('deviceCount')
+            try:
+                info = p.get_host_api_info_by_index(0)
+                numdevices = info.get('deviceCount') or 0
 
-            for i in range(0, numdevices):
-                device_info = p.get_device_info_by_host_api_device_index(0, i)
-                if device_info.get('maxInputChannels') > 0:
-                    input_devices.append(device_info.get('name'))
-                if device_info.get('maxOutputChannels') > 0:
-                    output_devices.append(device_info.get('name'))
-
-            p.terminate()
+                for i in range(0, numdevices):
+                    device_info = p.get_device_info_by_host_api_device_index(0, i)
+                    if (device_info.get('maxInputChannels') or 0) > 0:
+                        input_devices.append(device_info.get('name'))
+                    if (device_info.get('maxOutputChannels') or 0) > 0:
+                        output_devices.append(device_info.get('name'))
+            finally:
+                p.terminate()
             return AudioDevices(input=input_devices, output=output_devices)
         except ImportError:
             # Fallback for environments without PyAudio or audio hardware (e.g., CI/Container)
@@ -76,8 +77,6 @@ def include_audio_routes(
     async def set_audio_device(request: AudioDeviceRequest):
         try:
             cfg_mgr = get_config_manager()
-            # Here we would update the config
-            # For now, we'll just log it as the config structure for audio isn't fully standardized in the provided snippets
             logger.info(f"Setting audio device to: {request.device_id}")
 
             # Attempt to save if structure exists
@@ -91,6 +90,7 @@ def include_audio_routes(
 
             return {"success": True, "device": request.device_id}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"Failed to set audio device: {e}")
+            raise HTTPException(status_code=500, detail="Failed to update audio device configuration")
 
     return router
