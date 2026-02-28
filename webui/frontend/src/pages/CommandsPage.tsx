@@ -23,15 +23,22 @@ export default function CommandsPage() {
   });
 
   // Transform backend dictionary to array for display
-  const commandsList = commandsData ? Object.entries(commandsData).map(([key, value]) => ({
-    id: key,
-    displayName: key,
-    actionType: (value as any).action || "unknown",
-    payload: (value as any).keys || (value as any).url || (value as any).message || JSON.stringify(value),
-    apiEnabled: true, // Assuming all configured commands are executable via API
-    // Wakeword mapping logic would go here if available from backend
-    wakewords: []
-  })) : [];
+  const commandsList = commandsData ? Object.entries(commandsData).map(([key, value]) => {
+    const cmd = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+    const payload =
+      (typeof cmd.keys === "string" ? cmd.keys : null) ||
+      (typeof cmd.url === "string" ? cmd.url : null) ||
+      (typeof cmd.message === "string" ? cmd.message : null) ||
+      (value != null ? JSON.stringify(value) : "");
+    return {
+      id: key,
+      displayName: key,
+      actionType: typeof cmd.action === "string" ? cmd.action : "unknown",
+      payload,
+      apiEnabled: true,
+      wakewords: [] as string[],
+    };
+  }) : [];
 
   if (isLoading) {
     return (
