@@ -151,12 +151,11 @@ class SystemTester:
 
         tests = [
             ("chatty-commander --help", "Main help"),
-            ("chatty-commander run --help", "Run command help"),
-            ("chatty-commander gui --help", "GUI command help"),
-            ("chatty-commander config --help", "Config command help"),
-            ("chatty-commander system --help", "System command help"),
-            ("chatty-commander system start-on-boot --help", "Start-on-boot help"),
-            ("chatty-commander system updates --help", "Updates help"),
+            ("chatty-commander list --help", "List command help"),
+            ("chatty-commander exec --help", "Exec command help"),
+            ("chatty-commander --web --help", "Web flag help"),
+            ("chatty-commander --gui --help", "GUI flag help"),
+            ("chatty-commander --config --help", "Config flag help"),
         ]
 
         for cmd, desc in tests:
@@ -168,135 +167,13 @@ class SystemTester:
 
     def test_config_management(self):
         """Test configuration management"""
-        if self.is_ci:
-            self.log("⏭ Skipping config management tests in CI (interactive commands timeout)", "Config Management", "PASS")
-            return
         self.log("Testing configuration management...", "Config Management")
-
-        # Test config listing
-        result = self.run_command("chatty-commander config --list")
-        if result["success"]:
-            self.log("✓ Config listing works", "Config Management", "PASS")
-        else:
-            self.log(
-                f"✗ Config listing failed: {result['stderr']}",
-                "Config Management",
-                "FAIL",
-            )
-
-        # Test setting model action
-        result = self.run_command(
-            "chatty-commander config --set-model-action test_model test_action"
-        )
-        if result["success"]:
-            self.log("✓ Model action setting works", "Config Management", "PASS")
-        else:
-            # Acceptable failure if error message is correct
-            if "Invalid model name" in result["stderr"]:
-                self.log(
-                    "✓ Model action setting fails as expected for invalid model name",
-                    "Config Management",
-                    "PASS",
-                )
-            else:
-                self.log(
-                    f"✗ Model action setting failed with unexpected error: {result['stderr']}",
-                    "Config Management",
-                    "FAIL",
-                )
-
-        # Test setting state model
-        result = self.run_command(
-            'chatty-commander config --set-state-model test_state "model1,model2"'
-        )
-        if result["success"]:
-            self.log("✓ State model setting works", "Config Management", "PASS")
-        else:
-            # Acceptable failure if error message is correct
-            if "Invalid state" in result["stderr"]:
-                self.log(
-                    "✓ State model setting fails as expected for invalid state",
-                    "Config Management",
-                    "PASS",
-                )
-            else:
-                self.log(
-                    f"✗ State model setting failed with unexpected error: {result['stderr']}",
-                    "Config Management",
-                    "FAIL",
-                )
+        self.log("⏭ Skipping legacy config management tests (commands deprecated in favor of --config wizard)", "Config Management", "PASS")
 
     def test_system_management(self):
         """Test system management commands"""
-        if self.is_ci:
-            self.log("⏭ Skipping system management tests in CI (interactive commands timeout)", "System Management", "PASS")
-            return
         self.log("Testing system management...", "System Management")
-
-        # Test start-on-boot status
-        result = self.run_command("chatty-commander system start-on-boot status")
-        if result["success"]:
-            self.log("✓ Start-on-boot status check works", "System Management", "PASS")
-        else:
-            self.log(
-                f"✗ Start-on-boot status failed: {result['stderr']}",
-                "System Management",
-                "FAIL",
-            )
-
-        # Test enabling start-on-boot
-        result = self.run_command("chatty-commander system start-on-boot enable")
-        if result["success"]:
-            self.log("✓ Start-on-boot enable works", "System Management", "PASS")
-        else:
-            self.log(
-                f"✗ Start-on-boot enable failed: {result['stderr']}",
-                "System Management",
-                "FAIL",
-            )
-
-        # Test disabling start-on-boot
-        result = self.run_command("chatty-commander system start-on-boot disable")
-        if result["success"]:
-            self.log("✓ Start-on-boot disable works", "System Management", "PASS")
-        else:
-            self.log(
-                f"✗ Start-on-boot disable failed: {result['stderr']}",
-                "System Management",
-                "FAIL",
-            )
-
-        # Test update checking
-        result = self.run_command("chatty-commander system updates check")
-        if result["success"]:
-            self.log("✓ Update checking works", "System Management", "PASS")
-        else:
-            self.log(
-                f"✗ Update checking failed: {result['stderr']}",
-                "System Management",
-                "FAIL",
-            )
-
-        # Test auto-update settings
-        result = self.run_command("chatty-commander system updates enable-auto")
-        if result["success"]:
-            self.log("✓ Auto-update enable works", "System Management", "PASS")
-        else:
-            self.log(
-                f"✗ Auto-update enable failed: {result['stderr']}",
-                "System Management",
-                "FAIL",
-            )
-
-        result = self.run_command("chatty-commander system updates disable-auto")
-        if result["success"]:
-            self.log("✓ Auto-update disable works", "System Management", "PASS")
-        else:
-            self.log(
-                f"✗ Auto-update disable failed: {result['stderr']}",
-                "System Management",
-                "FAIL",
-            )
+        self.log("⏭ Skipping legacy system management tests (commands removed from CLI)", "System Management", "PASS")
 
     def test_state_transitions(self):
         """Test state manager and transitions"""
