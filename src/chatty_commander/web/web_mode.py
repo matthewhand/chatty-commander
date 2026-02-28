@@ -65,6 +65,7 @@ from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.ws import include_ws_routes
+from chatty_commander.web.routes.audio import include_audio_routes
 
 # Avatar routes (optional)
 try:
@@ -493,6 +494,12 @@ class WebModeServer:
 
         # Version endpoint
         app.include_router(version_router)
+
+        # Audio endpoints
+        audio_router = include_audio_routes(
+            get_config_manager=lambda: self.config_manager
+        )
+        app.include_router(audio_router)
 
         # Agents endpoints
         if agents_router:

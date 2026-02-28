@@ -13,7 +13,7 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 
 | Endpoint | Used By | Status |
 |----------|---------|--------|
-| `/api/audio/devices` | AudioSettingsPage.tsx | ❌ Missing |
+| `/api/audio/devices` | AudioSettingsPage.tsx | ✅ Working |
 | `/api/voice/status` | apiService.js | ❌ Missing |
 | `/api/voice/start` | apiService.js | ❌ Missing |
 | `/api/voice/stop` | apiService.js | ❌ Missing |
@@ -45,7 +45,7 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 
 ## Recommendations
 
-### Priority 1: Add Missing Audio Endpoints
+### Priority 1: Add Missing Audio Endpoints (Resolved)
 
 The AudioSettingsPage.tsx needs:
 - `GET /api/audio/devices` - List available audio input/output devices
@@ -80,7 +80,7 @@ For ONNX model management:
 | LoginPage | ✅ Working | None |
 | DashboardPage | ⚠️ Partial | Uses placeholder data, WebSocket may fail |
 | ConfigurationPage | ⚠️ Partial | Uses placeholder save function |
-| AudioSettingsPage | ❌ Broken | Calls missing `/api/audio/devices` |
+| AudioSettingsPage | ⚠️ Partial | Calls missing endpoints / Uses `/api/audio/devices` |
 | PersonasPage | ⚠️ Partial | Context stats fail when advisors disabled |
 
 ## Next Steps
