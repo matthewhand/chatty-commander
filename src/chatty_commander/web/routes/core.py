@@ -152,8 +152,34 @@ def include_core_routes(
         except ImportError:
             pass  # psutil not available
 
-        # Database check (placeholder for future database integration)
+        # Database connectivity check
         database_status = "not_configured"
+
+        cfg_mgr = get_config_manager()
+        cfg = getattr(cfg_mgr, "config", {})
+        # Look for database_url in general_settings or root
+        db_url = cfg.get("database_url") or cfg.get("general_settings", {}).get("database_url")
+
+        if db_url:
+            def _check_db():
+                try:
+                    from sqlalchemy import create_engine, text
+                    from sqlalchemy.pool import NullPool
+                    engine = create_engine(db_url, poolclass=NullPool)
+                    with engine.connect() as conn:
+                        conn.execute(text("SELECT 1")).scalar()
+                    engine.dispose()
+                    return "healthy"
+                except Exception:
+                    return "unreachable"
+
+            try:
+                database_status = await asyncio.wait_for(
+                    asyncio.to_thread(_check_db),
+                    timeout=2.0
+                )
+            except Exception:
+                database_status = "unreachable"
 
         return HealthStatus(
             status="healthy",
