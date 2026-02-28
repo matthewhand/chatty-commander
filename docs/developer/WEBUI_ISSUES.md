@@ -20,7 +20,7 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 | `/api/themes` | apiService.js | ❌ Missing |
 | `/api/theme` | apiService.js | ❌ Missing |
 | `/api/preferences` | apiService.js | ❌ Missing |
-| `/api/system/info` | apiService.js | ❌ Missing |
+| `/api/system/info` | apiService.js | ✅ Working |
 | `/api/system/restart` | apiService.js | ❌ Missing |
 | `/api/system/shutdown` | apiService.js | ❌ Missing |
 | `/api/backup` | apiService.js | ❌ Missing |
@@ -42,6 +42,7 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 | `/api/v1/state` | ✅ Working |
 | `/api/v1/metrics` | ✅ Working |
 | `/api/v1/advisors/personas` | ✅ Working |
+| `/api/system/info` | ✅ Working |
 
 ## Recommendations
 
@@ -61,7 +62,6 @@ For voice control features:
 ### Priority 3: Add System Info Endpoints
 
 For dashboard and system management:
-- `GET /api/system/info` - Get system information (CPU, memory, disk)
 - `GET /api/preferences` - Get user preferences
 - `PUT /api/preferences` - Update user preferences
 
