@@ -63,6 +63,10 @@ from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import include_core_routes
+try:
+    from chatty_commander.web.routes.audio import include_audio_routes
+except ImportError:
+    include_audio_routes = None
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.ws import include_ws_routes
 
@@ -490,6 +494,11 @@ class WebModeServer:
             get_total_commands=lambda: self.commands_executed,
         )
         app.include_router(core)
+
+        # Audio endpoints
+        if include_audio_routes:
+            audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
+            app.include_router(audio)
 
         # Version endpoint
         app.include_router(version_router)

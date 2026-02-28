@@ -67,14 +67,14 @@ async function loadConfig(): Promise<AppConfig> {
 
 const getAudioDevices = async () => {
   try {
-    const res = await fetch("/api/audio/devices");
+    const res = await fetch("/api/v1/audio/devices");
     if (res.ok) return await res.json() as { input: string[]; output: string[] };
   } catch { /* ignore */ }
   return { input: [] as string[], output: [] as string[] };
 };
 
 const saveAudioSettings = async (settings: { inputDevice: string; outputDevice: string }) => {
-  await fetch("/api/audio/device", {
+  await fetch("/api/v1/audio/device", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ device_id: settings.inputDevice }),
