@@ -65,6 +65,16 @@ from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
 from chatty_commander.web.routes.system import include_system_routes
 try:
+    from chatty_commander.obs.metrics import (
+        RequestMetricsMiddleware,
+        create_metrics_router,
+    )
+    _OBS_METRICS_AVAILABLE = True
+except Exception:  # pragma: no cover - optional dependency path
+    RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
+    create_metrics_router = None  # type: ignore[assignment]
+    _OBS_METRICS_AVAILABLE = False
+try:
     from chatty_commander.web.routes.audio import include_audio_routes
 except ImportError:
     include_audio_routes = None
@@ -501,6 +511,11 @@ class WebModeServer:
             redoc_url="/redoc" if self.no_auth else None,
         )
 
+        # Observability: request metrics middleware (must be added before other middleware
+        # so it wraps the full request lifecycle)
+        if _OBS_METRICS_AVAILABLE and RequestMetricsMiddleware is not None:
+            app.add_middleware(RequestMetricsMiddleware)
+
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
 
@@ -568,6 +583,10 @@ class WebModeServer:
             get_start_time=lambda: self.start_time
         )
         app.include_router(system_routes)
+
+        # Observability: expose /metrics/json and /metrics/prom endpoints
+        if _OBS_METRICS_AVAILABLE and create_metrics_router is not None:
+            app.include_router(create_metrics_router())
 
         # Agents endpoints
         if agents_router:

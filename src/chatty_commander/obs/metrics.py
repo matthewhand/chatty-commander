@@ -40,8 +40,9 @@ Design principles
 - Defensive coding: invalid inputs are clamped/sanitized; errors in metrics collection
   never break the application path (best-effort philosophy).
 
-Note: This module is not yet wired into the running server by default to avoid test
-flake risk; consumers can import and install the middleware/routers on demand.
+This module is wired into the running server via web_mode.py:
+- RequestMetricsMiddleware is added to the FastAPI app on startup
+- create_metrics_router() exposes /metrics/json and /metrics/prom endpoints
 """
 
 from __future__ import annotations
