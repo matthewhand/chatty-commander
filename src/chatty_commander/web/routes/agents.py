@@ -22,15 +22,20 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from typing import Annotated, Any
+from __future__ import annotations
+
 import json
+import logging
 import os
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -82,7 +87,7 @@ def _load_store() -> None:
                 if agent.team_role:
                     _TEAM.setdefault(agent.team_role, []).append(agent.id)
     except Exception as e:
-        print(f"Error loading agent store: {e}")
+        logger.warning("Error loading agent store from %s: %s", _STORE_PATH, e)
 
 def _save_store() -> None:
     try:
@@ -92,7 +97,7 @@ def _save_store() -> None:
         with _STORE_PATH.open("w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
     except Exception as e:
-        print(f"Error saving agent store: {e}")
+        logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
 
 _load_store()
 
