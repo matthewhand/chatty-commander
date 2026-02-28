@@ -76,13 +76,15 @@ const DashboardPage: React.FC = () => {
         memory: data.memory_usage ?? "N/A",
       };
     },
-    refetchInterval: 2000,
+    refetchInterval: 5000,
   });
 
   useEffect(() => {
     if (systemStatus && !isPaused) {
-      const cpuVal = parseFloat(systemStatus.cpu.replace("%", "")) || 0;
-      const memVal = parseFloat(systemStatus.memory.replace("%", "")) || 0;
+      const cpuStr = String(systemStatus.cpu).replace("%", "");
+      const memStr = String(systemStatus.memory).replace("%", "");
+      const cpuVal = parseFloat(cpuStr) || 0;
+      const memVal = parseFloat(memStr) || 0;
       const now = new Date().toLocaleTimeString();
 
       setHistory(prev => {
