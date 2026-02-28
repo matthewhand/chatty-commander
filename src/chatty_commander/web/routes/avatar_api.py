@@ -85,7 +85,18 @@ async def list_animations(
     ),
 ) -> dict[str, Any]:
     try:
-        root = Path(dir) if dir else _default_animations_dir()
+        base_dir = _default_animations_dir().resolve()
+
+        if dir:
+            # Resolve the requested path and ensure it's within base_dir
+            root = (base_dir / dir).resolve()
+            if not str(root).startswith(str(base_dir)):
+                raise HTTPException(
+                    status_code=403, detail="Access denied: Invalid directory path"
+                )
+        else:
+            root = base_dir
+
         if not root.exists() or not root.is_dir():
             raise HTTPException(
                 status_code=404, detail=f"Animations directory not found: {root}"

@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest.mock
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -41,13 +42,27 @@ def test_list_animations_endpoint(tmp_path: Path):
     app = FastAPI()
     app.include_router(avatar_router)
     client = TestClient(app)
-    resp = client.get("/avatar/animations", params={"dir": str(anim_dir)})
-    assert resp.status_code == 200, resp.text
-    data = resp.json()
-    assert data["count"] == 4
-    files = {a["file"] for a in data["animations"]}
-    assert files == set(allowed)
-    # category hints should map at least some
-    categories = {a["name"]: a["category"] for a in data["animations"]}
-    assert categories["think_idle"] in ("thinking", "idle")
-    assert categories["hack_loop"] in ("tool_calling", "processing")
+
+    with unittest.mock.patch("chatty_commander.web.routes.avatar_api._default_animations_dir", return_value=tmp_path):
+        resp = client.get("/avatar/animations", params={"dir": "anims"})
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert data["count"] == 4
+        files = {a["file"] for a in data["animations"]}
+        assert files == set(allowed)
+        # category hints should map at least some
+        categories = {a["name"]: a["category"] for a in data["animations"]}
+        assert categories["think_idle"] in ("thinking", "idle")
+        assert categories["hack_loop"] in ("tool_calling", "processing")
+
+def test_list_animations_path_traversal(tmp_path: Path):
+    app = FastAPI()
+    app.include_router(avatar_router)
+    client = TestClient(app)
+
+    with unittest.mock.patch("chatty_commander.web.routes.avatar_api._default_animations_dir", return_value=tmp_path):
+        resp = client.get("/avatar/animations", params={"dir": "../"})
+        assert resp.status_code == 403
+
+        resp = client.get("/avatar/animations", params={"dir": "/tmp"})
+        assert resp.status_code == 403
