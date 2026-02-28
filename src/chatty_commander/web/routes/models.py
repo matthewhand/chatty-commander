@@ -24,12 +24,15 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 class ModelFileInfo(BaseModel):
@@ -182,14 +185,32 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         # Create directory if it doesn't exist
         target_dir.mkdir(parents=True, exist_ok=True)
 
+        # Sanitize filename to prevent path traversal attacks
+        # Use only the basename (strip any directory components)
+        safe_filename = Path(file.filename).name
+        if not safe_filename or safe_filename != file.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid filename: directory traversal not allowed"
+            )
+
         # Save file
-        file_path = target_dir / file.filename
+        file_path = target_dir / safe_filename
+
+        # Verify the resolved path is still within the target directory
+        try:
+            file_path.resolve().relative_to(target_dir.resolve())
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid filename: path escapes target directory"
+            )
 
         # Check if file already exists
         if file_path.exists():
             raise HTTPException(
                 status_code=409,
-                detail=f"File '{file.filename}' already exists. Delete it first to replace."
+                detail=f"File '{safe_filename}' already exists. Delete it first to replace."
             )
 
         try:
@@ -200,14 +221,15 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
 
             return UploadResponse(
                 success=True,
-                message=f"Model '{file.filename}' uploaded successfully to {target_dir}",
-                filename=file.filename,
+                message=f"Model '{safe_filename}' uploaded successfully to {target_dir}",
+                filename=safe_filename,
                 size_bytes=len(content),
             )
         except Exception as e:
+            logger.error("Failed to save uploaded model file: %s", e)
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to save file: {str(e)}"
+                detail="Failed to save file. Check server logs for details."
             ) from e
 
     @router.get("/download/{filename}")
@@ -274,9 +296,10 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 filename=filename,
             )
         except Exception as e:
+            logger.error("Failed to delete model file '%s': %s", filename, e)
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to delete file: {str(e)}"
+                detail="Failed to delete file. Check server logs for details."
             ) from e
 
     @router.get("/directories")
