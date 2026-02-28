@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   TerminalSquare,
@@ -23,22 +23,25 @@ export default function CommandsPage() {
   });
 
   // Transform backend dictionary to array for display
-  const commandsList = commandsData ? Object.entries(commandsData).map(([key, value]) => {
-    const cmd = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-    const payload =
-      (typeof cmd.keys === "string" ? cmd.keys : null) ||
-      (typeof cmd.url === "string" ? cmd.url : null) ||
-      (typeof cmd.message === "string" ? cmd.message : null) ||
-      (value != null ? JSON.stringify(value) : "");
-    return {
-      id: key,
-      displayName: key,
-      actionType: typeof cmd.action === "string" ? cmd.action : "unknown",
-      payload,
-      apiEnabled: true,
-      wakewords: [] as string[],
-    };
-  }) : [];
+  // Memoized to prevent expensive object parsing and JSON.stringify on every render
+  const commandsList = useMemo(() => {
+    return commandsData ? Object.entries(commandsData).map(([key, value]) => {
+      const cmd = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+      const payload =
+        (typeof cmd.keys === "string" ? cmd.keys : null) ||
+        (typeof cmd.url === "string" ? cmd.url : null) ||
+        (typeof cmd.message === "string" ? cmd.message : null) ||
+        (value != null ? JSON.stringify(value) : "");
+      return {
+        id: key,
+        displayName: key,
+        actionType: typeof cmd.action === "string" ? cmd.action : "unknown",
+        payload,
+        apiEnabled: true,
+        wakewords: [] as string[],
+      };
+    }) : [];
+  }, [commandsData]);
 
   if (isLoading) {
     return (
