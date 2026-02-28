@@ -91,10 +91,13 @@ class SystemTester:
             self.log("✓ Configuration backed up")
 
         # Ensure tests run with the example config
-        if os.path.exists("config.json.example"):
+        example_path = os.path.join(ROOT_DIR, "config.json.example")
+        if os.path.exists(example_path):
             import shutil
-            shutil.copy("config.json.example", "config.json")
-            self.log("✓ Loaded config.json.example for testing")
+            shutil.copy(example_path, "config.json")
+            self.log(f"✓ Loaded {example_path} for testing")
+        else:
+            self.log(f"⚠ Could not find {example_path}")
 
     def restore_config(self):
         """Restore original configuration after testing"""
