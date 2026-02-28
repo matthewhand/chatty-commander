@@ -4,6 +4,7 @@ import platform
 import sys
 import time
 from collections.abc import Callable
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter
@@ -40,8 +41,8 @@ def include_system_routes(
         try:
             import psutil
 
-            # CPU
-            info.cpu_percent = psutil.cpu_percent(interval=None)
+            # CPU — use interval=0.1 to avoid the misleading 0.0 on first call
+            info.cpu_percent = psutil.cpu_percent(interval=0.1)
 
             # Memory
             mem = psutil.virtual_memory()
@@ -49,8 +50,9 @@ def include_system_routes(
             info.memory_used_mb = int(mem.used / (1024 * 1024))
             info.memory_percent = mem.percent
 
-            # Disk
-            disk = psutil.disk_usage("/")
+            # Disk — use cross-platform root path detection
+            root_path = Path(sys.executable).anchor  # e.g. "/" on Unix, "C:\\" on Windows
+            disk = psutil.disk_usage(root_path)
             info.disk_total_gb = round(disk.total / (1024 * 1024 * 1024), 2)
             info.disk_used_gb = round(disk.used / (1024 * 1024 * 1024), 2)
             info.disk_percent = disk.percent
