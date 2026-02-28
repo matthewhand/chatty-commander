@@ -26,6 +26,7 @@ from collections.abc import Iterable
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 
 
 def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
@@ -37,11 +38,27 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
     """
     if not no_auth:
         return
+
     # FastAPI does not support toggling docs_url/redoc_url after init,
     # but if app.docs_url is None (hidden), we can attach routes manually if needed.
-    # For now, assume the legacy app has already set docs appropriately when in no_auth.
-    # This function remains a no-op placeholder to formalize the intent and boundary.
-    return
+    if app.docs_url is None:
+        @app.get("/docs", include_in_schema=False)
+        async def custom_swagger_ui_html():
+            return get_swagger_ui_html(
+                openapi_url=app.openapi_url or "/openapi.json",
+                title=app.title + " - Swagger UI",
+                oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+                swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+                swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+            )
+
+        @app.get("/redoc", include_in_schema=False)
+        async def redoc_html():
+            return get_redoc_html(
+                openapi_url=app.openapi_url or "/openapi.json",
+                title=app.title + " - ReDoc",
+                redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
+            )
 
 
 def apply_cors(
