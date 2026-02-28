@@ -80,10 +80,11 @@ except ImportError:
     command_authoring_router = None
 
 try:
-    from ..obs.metrics import create_metrics_router
+    from ..obs.metrics import RequestMetricsMiddleware, create_metrics_router
 
     metrics_router = create_metrics_router()
 except ImportError:
+    RequestMetricsMiddleware = None
     metrics_router = None
 
 # Settings router needs to be created with config manager
@@ -98,6 +99,9 @@ def _include_optional(app: FastAPI, name: str) -> None:
 
 def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
     app = FastAPI()
+
+    if RequestMetricsMiddleware:
+        app.add_middleware(RequestMetricsMiddleware)
 
     # Include routers that are available
     for nm in (

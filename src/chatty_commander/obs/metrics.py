@@ -39,9 +39,6 @@ Design principles
   isolatable registries for tests.
 - Defensive coding: invalid inputs are clamped/sanitized; errors in metrics collection
   never break the application path (best-effort philosophy).
-
-Note: This module is not yet wired into the running server by default to avoid test
-flake risk; consumers can import and install the middleware/routers on demand.
 """
 
 from __future__ import annotations

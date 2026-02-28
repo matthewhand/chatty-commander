@@ -89,6 +89,12 @@ try:
 except ImportError:
     agents_router = None
 
+try:
+    from ..obs.metrics import RequestMetricsMiddleware, create_metrics_router
+except ImportError:
+    RequestMetricsMiddleware = None
+    create_metrics_router = None
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -448,6 +454,10 @@ class WebModeServer:
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
 
+        # Metrics middleware
+        if RequestMetricsMiddleware:
+            app.add_middleware(RequestMetricsMiddleware)
+
         # Get trusted proxies from config (for secure IP extraction behind proxies)
         trusted_proxies: list[str] = []
         if hasattr(self.config_manager, "web_server"):
@@ -493,6 +503,10 @@ class WebModeServer:
 
         # Version endpoint
         app.include_router(version_router)
+
+        # Metrics endpoints
+        if create_metrics_router:
+            app.include_router(create_metrics_router())
 
         # Agents endpoints
         if agents_router:
