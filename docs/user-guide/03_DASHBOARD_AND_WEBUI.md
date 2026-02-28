@@ -13,6 +13,8 @@ By default, the dashboard is served at `http://localhost:8100/` when the applica
 
 ## Screenshots
 
+![Dashboard](../screenshots/dashboard.png)
+
 Screenshots of the UI are stored in [`docs/screenshots/`](../screenshots/).
 
 ---
