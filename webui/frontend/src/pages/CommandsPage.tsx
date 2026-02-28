@@ -225,7 +225,7 @@ export default function CommandsPage() {
             </motion.div>
           ))}
         </AnimatePresence>
-        {commandList.length === 0 && (
+        {filteredCommands.length === 0 && (
           <div className="col-span-full text-center p-10 text-base-content/50 italic">
             No commands found. Create one to get started.
           </div>
