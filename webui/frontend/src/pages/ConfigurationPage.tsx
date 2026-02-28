@@ -461,6 +461,7 @@ const ConfigurationPage: React.FC = () => {
                                 className="btn btn-ghost btn-xs text-error"
                                 onClick={() => deleteMutation.mutate(model.name)}
                                 title="Delete Model"
+                                aria-label="Delete Model"
                                 disabled={deleteMutation.isPending}
                               >
                                 <TrashIcon size={14} />
