@@ -33,23 +33,33 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const { data: systemStatus, isLoading } = useQuery({
+  const [realtimeMetrics, setRealtimeMetrics] = useState<{ cpu: number; memory: number } | null>(null);
+
+  const { data: apiSystemStatus, isLoading } = useQuery({
     queryKey: ["systemStatus"],
     queryFn: async () => {
-      const res = await fetch("/health");
-      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0, cpu: "N/A", memory: "N/A" };
-      const data = await res.json();
-      return {
-        status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
-        uptime: data.uptime ?? "N/A",
-        commandsExecuted: data.commands_executed ?? 0,
-        version: data.version,
-        cpu: data.cpu_usage ?? "N/A",
-        memory: data.memory_usage ?? "N/A",
-      };
+      try {
+        const data = await apiService.healthCheck() as any;
+        return {
+          status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
+          uptime: data.uptime ?? "N/A",
+          commandsExecuted: data.commands_executed ?? 0,
+          version: data.version,
+          cpu: data.cpu_usage ?? "N/A",
+          memory: data.memory_usage ?? "N/A",
+        };
+      } catch (e) {
+        return { status: "Unknown", uptime: "N/A", commandsExecuted: 0, cpu: "N/A", memory: "N/A" };
+      }
     },
     refetchInterval: 30000,
   });
+
+  const systemStatus = {
+    ...apiSystemStatus,
+    cpu: realtimeMetrics ? `${realtimeMetrics.cpu.toFixed(1)}%` : apiSystemStatus?.cpu,
+    memory: realtimeMetrics ? `${realtimeMetrics.memory.toFixed(1)}%` : apiSystemStatus?.memory,
+  };
 
   const { data: agentData, isLoading: agentsLoading, isError: agentsError, error: agentsErrObj } = useQuery<Agent[]>({
     queryKey: ["agentStatus"],
@@ -71,6 +81,15 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (ws) {
       ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "system_metrics" && msg.data) {
+            setRealtimeMetrics({ cpu: msg.data.cpu, memory: msg.data.memory });
+            return; // Don't log metrics to message console
+          }
+        } catch {
+          // Ignore parsing errors for non-JSON messages
+        }
         setMessages((prev) => [...prev, event.data].slice(-MAX_MESSAGES));
       };
     }
@@ -133,7 +152,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="stat-title">CPU Load</div>
             <div className="stat-value text-info text-2xl">{systemStatus?.cpu || "N/A"}</div>
-            <div className="stat-desc">Processor usage</div>
+            <div className="stat-desc">Real-time usage</div>
           </div>
         </div>
 
@@ -144,7 +163,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="stat-title">Memory</div>
             <div className="stat-value text-warning text-2xl">{systemStatus?.memory || "N/A"}</div>
-            <div className="stat-desc">RAM usage</div>
+            <div className="stat-desc">Real-time usage</div>
           </div>
         </div>
 

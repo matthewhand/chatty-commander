@@ -22,7 +22,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     const token = localStorage.getItem("auth_token");
     if (!token) return;
 
-    const socket = new WebSocket(`ws://localhost:8001/ws?token=${token}`);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    const socket = new WebSocket(`${protocol}//${host}/ws?token=${token}`);
 
     socket.onopen = () => setIsConnected(true);
     socket.onclose = () => setIsConnected(false);

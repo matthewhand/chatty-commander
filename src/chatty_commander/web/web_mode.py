@@ -381,6 +381,10 @@ class WebModeServer:
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+        # Telemetry control
+        self._telemetry_running = False
+        self._telemetry_task_handle = None
+
     @property
     def config(self) -> Config:
         """Access config manager as 'config' for compatibility."""
@@ -476,6 +480,28 @@ class WebModeServer:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+        @app.on_event("startup")
+        async def startup_event():
+            """Start background tasks."""
+            try:
+                import psutil  # noqa: F401
+                loop = asyncio.get_running_loop()
+                self._telemetry_running = True
+                self._telemetry_task_handle = loop.create_task(self._telemetry_loop())
+            except ImportError:
+                logger.warning("psutil not installed; telemetry disabled")
+
+        @app.on_event("shutdown")
+        async def shutdown_event():
+            """Stop background tasks."""
+            self._telemetry_running = False
+            if self._telemetry_task_handle:
+                self._telemetry_task_handle.cancel()
+                try:
+                    await self._telemetry_task_handle
+                except asyncio.CancelledError:
+                    pass
 
         # Core REST via extracted router (status/config/state/command)
         core = include_core_routes(
@@ -762,6 +788,35 @@ class WebModeServer:
 
             # For now, just echo back the event
             return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
+
+    async def _telemetry_loop(self) -> None:
+        """Broadcast system telemetry periodically."""
+        import psutil
+
+        self._telemetry_running = True
+        try:
+            while self._telemetry_running:
+                try:
+                    cpu = psutil.cpu_percent(interval=None)
+                    memory = psutil.virtual_memory().percent
+                    await self._broadcast_message(
+                        WebSocketMessage(
+                            type="system_metrics",
+                            data={
+                                "cpu": cpu,
+                                "memory": memory,
+                            },
+                        )
+                    )
+                except Exception as e:
+                    logger.debug(f"Telemetry error: {e}")
+
+                # Push updates every 2 seconds
+                await asyncio.sleep(2)
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._telemetry_running = False
 
     # --------------------------
     # Broadcast helpers and callbacks
