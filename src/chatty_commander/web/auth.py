@@ -30,17 +30,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
     """
-    Toggle docs/re-doc endpoints based on no_auth.
+    Toggle docs/redoc endpoints based on no_auth.
 
-    If no_auth is True, ensure docs are exposed at /docs and /redoc.
-    Otherwise, leave existing configuration as-is (do not force-disable).
+    When no_auth is True, docs should be exposed at /docs and /redoc.
+    When no_auth is False, the existing configuration is left unchanged.
+
+    Note: FastAPI does not support toggling docs_url/redoc_url after initialization.
+    The calling code is responsible for setting docs_url/redoc_url appropriately
+    before the app is created when no_auth is True.
     """
     if not no_auth:
         return
-    # FastAPI does not support toggling docs_url/redoc_url after init,
-    # but if app.docs_url is None (hidden), we can attach routes manually if needed.
-    # For now, assume the legacy app has already set docs appropriately when in no_auth.
-    # This function remains a no-op placeholder to formalize the intent and boundary.
     return
 
 

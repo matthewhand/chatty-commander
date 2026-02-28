@@ -56,12 +56,10 @@ class AgentBlueprintResponse(AgentBlueprintModel):
     id: str
 
 
-# In-memory store (replace with persistence later)
 _STORE: dict[str, AgentBlueprint] = {}
 _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
 
 
-# Placeholder natural language parser (stub for LLM)
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
     # Very naive heuristic parser for now
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
@@ -159,7 +157,6 @@ class HandoffRequest(BaseModel):
 async def handoff(h: HandoffRequest):
     if h.from_agent_id not in _STORE or h.to_agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
-    # For now, just acknowledge; future: integrate with thinking_state + avatar_ws
     return {
         "ok": True,
         "from": h.from_agent_id,

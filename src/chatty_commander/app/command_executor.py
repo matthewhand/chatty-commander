@@ -315,8 +315,6 @@ class CommandExecutor:
     def _execute_custom_message(self, command_name: str, message: str) -> None:
         """Execute a custom message action."""
         logging.info(f"Custom message from {command_name}: {message}")
-        # In a real implementation, this might display a notification or send to a UI
-        # For now, just log it
 
     def _execute_voice_chat(self, command_name: str) -> bool:
         """Executes a voice chat session."""

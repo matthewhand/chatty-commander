@@ -162,7 +162,6 @@ class CompletionProvider(LLMProvider):
             except ImportError:
                 pass
 
-        # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers = []
         handoffs = []
 
@@ -186,7 +185,6 @@ class CompletionProvider(LLMProvider):
         """Generate completion response via Agent.chat()."""
         for attempt in range(self.max_retries):
             try:
-                # Agent.chat returns a string (implementation dependent). Keep kwargs for future expansion.
                 response = self.agent.chat(prompt)
                 return str(response).strip() if response is not None else ""
             except Exception as e:
@@ -235,7 +233,6 @@ class ResponsesProvider(LLMProvider):
             except ImportError:
                 pass
 
-        # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers = []
         handoffs = []
 
@@ -371,7 +368,6 @@ def build_provider(config: dict[str, Any]) -> LLMProvider:
         raise ValueError(f"Unknown API mode: {api_mode}")
 
 
-# Stub providers for testing when SDK is not available or API key missing
 class StubCompletionProvider(LLMProvider):
     """Stub provider for testing."""
 

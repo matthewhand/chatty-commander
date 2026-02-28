@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 def browser_analyst_tool(url: str) -> str:
     """
-    Analyze and summarize web content from a given URL.
+    Return a domain-based summary for a given URL.
 
     Args:
         url: The URL to analyze and summarize.
@@ -49,8 +49,6 @@ def browser_analyst_tool(url: str) -> str:
         A concise summary of the web content.
     """
     try:
-        # For now, return a deterministic response
-        # In a real implementation, this would fetch and analyze the URL
         if "github.com" in url:
             return f"GitHub repository: {url}. This appears to be an open source project with documentation, issues, and pull requests."
         elif "stackoverflow.com" in url:

@@ -334,3 +334,63 @@ ChattyCommander has a solid foundation but requires focused effort in security, 
 - Add circuit breakers
 - Improve error messages
 - Complete API documentation
+
+---
+
+## Feature Backlog (Roadmap Items)
+
+This section captures all identified unfinished features, stubs, and deferred work discovered during codebase analysis. Items are organized by domain.
+
+### LLM & AI Integration
+
+- **MCP/Handoffs support** (`src/chatty_commander/advisors/providers.py`): `mcp_servers` and `handoffs` are empty lists; needs real MCP server configuration and agent handoff routing.
+- **Provider-specific prompt formatting** (`src/chatty_commander/advisors/prompting.py`): `build_prompt()` currently produces a generic envelope; needs provider-specific formatting for OpenAI, Anthropic, Ollama, and other backends.
+- **LLM-powered NL blueprint parser** (`src/chatty_commander/web/routes/agents.py`): natural language agent blueprint parser uses naive keyword heuristics; needs a real LLM call for accurate intent extraction.
+- **LLM-powered avatar animation classifier** (`src/chatty_commander/web/routes/avatar_selector.py`): animation state classifier uses keyword matching; needs an LLM-based classifier for higher accuracy.
+- **Multiple LLM providers**: runtime model switching, cost tracking across OpenAI/Anthropic/Ollama/local models.
+- **`generate()` kwargs expansion** (`src/chatty_commander/advisors/providers.py`): kwargs are accepted but unused; needs real provider-specific parameter passthrough (temperature, max_tokens, stop sequences, etc.).
+
+### Web API & Endpoints
+
+- **Missing WebUI API endpoints** (documented in `docs/developer/WEBUI_ISSUES.md`):
+  - `GET /api/audio/devices` — audio device enumeration
+  - `GET/POST /api/voice/status`, `/api/voice/start`, `/api/voice/stop` — voice pipeline control
+  - `GET /api/themes`, `GET/POST /api/theme` — theme management
+  - `GET/PUT /api/preferences` — user preferences
+  - `GET /api/system/info`, `POST /api/system/restart`, `POST /api/system/shutdown` — system management
+  - `POST /api/backup`, `POST /api/restore` — backup/restore
+- **Real database health check** (`src/chatty_commander/web/routes/core.py`): health endpoint returns hardcoded `"not_configured"`; needs real DB connectivity check.
+- **Response time metrics** (`src/chatty_commander/web/routes/core.py`): metrics endpoint always returns `0.0` for average response time; needs real measurement instrumentation.
+- **Node.js bridge processing** (`src/chatty_commander/web/web_mode.py`): bridge endpoint only echoes events back; needs real Node.js bridge event processing logic.
+
+### Agent & Orchestration
+
+- **Agent blueprint persistence** (`src/chatty_commander/web/routes/agents.py`): blueprints stored in in-memory dict `_STORE`; needs database persistence (PostgreSQL/SQLite) with proper lifecycle management.
+- **Agent handoff integration** (`src/chatty_commander/web/routes/agents.py`): handoff endpoint returns a stub acknowledgement; needs integration with `thinking_state` and `avatar_ws` for real handoff coordination.
+- **Avatar-to-agent ID mapping** (`src/chatty_commander/web/routes/avatar_ws.py`): WebSocket handler has no agent-to-avatar ID mapping; needs a registry to correlate avatar sessions with agent identities.
+- **Wake word → advisor/voice mode** (`src/chatty_commander/app/orchestrator.py`): wake word detection only triggers commands; needs to activate voice input or advisor mode as an alternative response path.
+
+### Browser & Tool Integration
+
+- **Real browser analyst tool** (`src/chatty_commander/advisors/tools/browser_analyst.py` and `src/chatty_commander/tools/browser_analyst.py`): both return hardcoded deterministic responses; needs real HTTP fetch, content extraction, and LLM summarization with allowlists and timeouts.
+- **Custom message UI notifications** (`src/chatty_commander/app/command_executor.py`): `_execute_custom_message()` only logs the message; needs UI notification dispatch (WebSocket push or system notification).
+
+### Observability & Metrics
+
+- **Wire metrics module to server** (`src/chatty_commander/obs/metrics.py`): module exists but is not connected to the running server by default; needs integration with web server startup so middleware and router are installed automatically.
+- **Voice self-test tuning application** (`src/chatty_commander/voice/self_test.py`): tuning recommendations are logged but never applied; needs an auto-apply or user-confirmation flow to act on the recommendations.
+
+### Voice & Wake Word
+
+- **Real ONNX wake word models** (`src/chatty_commander/app/default_config.py`): `.onnx` files are text stub files created for development/testing; needs real trained ONNX wake word models for production use.
+- **Voice pipeline stability**: wake word accuracy metrics, fallback-to-text when voice recognition fails.
+
+### Auth & Docs
+
+- **`enable_no_auth_docs()` implementation** (`src/chatty_commander/web/auth.py`): function is currently a no-op; needs a real toggle for disabling auth on API docs endpoints in development mode (FastAPI does not support toggling `docs_url`/`redoc_url` after init, so manual route attachment is required).
+
+### WebUI Polish
+
+- **Dashboard real data** (`docs/developer/WEBUI_ISSUES.md`): DashboardPage uses placeholder data; needs real WebSocket data binding for live metrics and status.
+- **Configuration page save** (`docs/developer/WEBUI_ISSUES.md`): ConfigurationPage uses a placeholder save function; needs a real API call to persist configuration changes.
+- **Error states, loading states, offline support**: WebUI needs proper UX for all failure modes including network errors, server unavailability, and partial data.

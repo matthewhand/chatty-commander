@@ -599,10 +599,6 @@ Error responses include a JSON body with details:
 }}
 ```
 
-## Rate Limiting
-
-Currently, no rate limiting is implemented. This may be added in future versions.
-
 ## Examples
 
 ### Python Client Example

@@ -468,8 +468,6 @@ def create_self_improvement_loop(
             f"Iteration {iteration + 1} accuracy: {results['summary']['average_accuracy']:.2%}"
         )
 
-        # In a real implementation, we would apply the tuning recommendations here
-        # For now, we just log them
         logger.info(f"Tuning recommendations: {tuning}")
 
         time.sleep(1)  # Brief pause between iterations

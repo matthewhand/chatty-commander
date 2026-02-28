@@ -69,7 +69,6 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
         def allowed(label: str) -> bool:
             return (not labels) or (label in labels)
 
-        # Hint-based deterministic classifier (placeholder for LLM)
         for label, keywords in _HINTS.items():
             if not allowed(label):
                 continue

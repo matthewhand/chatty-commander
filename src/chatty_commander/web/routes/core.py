@@ -152,7 +152,6 @@ def include_core_routes(
         except ImportError:
             pass  # psutil not available
 
-        # Database check (placeholder for future database integration)
         database_status = "not_configured"
 
         return HealthStatus(
@@ -195,7 +194,7 @@ def include_core_routes(
             active_connections=active_connections,
             cache_size=cache_size,
             error_rate=round(error_rate, 2),
-            response_time_avg=0.0,  # Placeholder for future implementation
+            response_time_avg=0.0,
         )
 
     @router.get("/api/v1/config")

@@ -502,7 +502,7 @@ def run_orchestrator_mode(
     )
     selected = orchestrator.start()
     logger.info(f"Orchestrator started adapters: {selected}")
-    # For now, block on CLI loop to keep process alive if no web/gui
+    # Block on CLI loop to keep process alive
     if not args.web and not args.gui:
         try:
             while True:

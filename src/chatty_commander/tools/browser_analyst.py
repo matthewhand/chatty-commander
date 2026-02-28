@@ -38,10 +38,7 @@ class AnalystResult:
 
 
 def summarize_url(request: AnalystRequest) -> AnalystResult:
-    """Deterministic placeholder that avoids network for tests.
-
-    Real implementation would fetch, extract, and summarize content with allowlists and timeouts.
-    """
+    """Return a minimal deterministic result for the given URL request."""
     # Minimal deterministic result for tests
     return AnalystResult(
         title="Snapshot Title", summary="Snapshot Summary", url=request.url

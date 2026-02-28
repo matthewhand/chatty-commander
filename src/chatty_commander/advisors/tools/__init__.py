@@ -21,5 +21,5 @@
 # SOFTWARE.
 
 """
-Tools used by AdvisorsService (stub implementations for tests).
+Tools used by AdvisorsService.
 """

@@ -86,10 +86,7 @@ class TextInputAdapter:
 
 
 class DummyAdapter:
-    """Placeholder adapters for GUI/WEB/CV/WakeWord/Discord bridge.
-
-    Real implementations exist or will be provided elsewhere (e.g., WebMode server, Node bridge).
-    """
+    """Minimal no-op adapter used when a full adapter implementation is not loaded."""
 
     def __init__(self, name: str) -> None:
         self.name = name
@@ -235,8 +232,6 @@ class ModeOrchestrator:
 
     def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection."""
-        # For now, treat wake word as a command trigger
-        # In the future, this could activate voice input or advisor mode
         command_name = f"wake_word_{wake_word}"
         try:
             self._dispatch_command(command_name)

@@ -285,7 +285,6 @@ async def avatar_ws_endpoint(websocket: WebSocket):
                 await manager.send_personal_message(
                     {"type": "ack", "data": "ok"}, websocket
                 )
-            # Future: map avatar_id to agent_id etc
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:

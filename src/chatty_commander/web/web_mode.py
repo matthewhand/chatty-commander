@@ -760,7 +760,7 @@ class WebModeServer:
             if not x_bridge_token or x_bridge_token != expected_token:
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
-            # For now, just echo back the event
+            # Echo the event back to the caller
             return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 
     # --------------------------

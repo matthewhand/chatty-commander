@@ -75,7 +75,7 @@ class DefaultConfigGenerator:
         for wakeword_file in self.default_wakewords.keys():
             wakeword_path = self.wakewords_dir / wakeword_file
             if not wakeword_path.exists():
-                # Create a placeholder file (in practice, these would be actual ONNX models)
+                # Create stub model files for development/testing
                 with open(wakeword_path, "w") as f:
                     f.write(f"# Placeholder for {wakeword_file}\n")
                     f.write(

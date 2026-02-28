@@ -52,10 +52,7 @@ def resolve_persona(
 
 
 def build_prompt(persona: Persona, user_text: str) -> str:
-    """Create a deterministic prompt envelope; stubbed for tests.
-
-    Real implementation would format for a given provider model.
-    """
+    """Create a prompt envelope combining the persona system instruction and user text."""
     return f"[system:{persona.name}] {persona.system}\n[user] {user_text}"
 
 
