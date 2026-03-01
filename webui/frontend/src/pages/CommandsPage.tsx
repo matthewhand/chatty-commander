@@ -42,10 +42,10 @@ export default function CommandsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-           <button className="btn btn-ghost" onClick={() => refetch()} title="Refresh Commands">
-             <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
-           </button>
-           <button className="btn btn-primary glass">
+          <button className="btn btn-ghost" onClick={() => refetch()} title="Refresh Commands">
+            <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+          </button>
+          <button className="btn btn-primary glass">
             <Plus size={18} />
             New Command
           </button>
@@ -56,9 +56,9 @@ export default function CommandsPage() {
 
       {/* Loading / Error States */}
       {isLoading && (
-         <div className="flex justify-center p-12">
-           <span className="loading loading-spinner loading-lg text-primary"></span>
-         </div>
+        <div className="flex justify-center p-12">
+          <span className="loading loading-spinner loading-lg text-primary"></span>
+        </div>
       )}
 
       {isError && (
@@ -91,7 +91,7 @@ export default function CommandsPage() {
                       <div className="flex gap-2 text-xs font-mono text-base-content/60">
                         <span className="px-2 py-1 rounded bg-base-300">{config.action}</span>
                         <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[200px]" title={
-                             config.keys || config.url || config.cmd || config.message || ""
+                          config.keys || config.url || config.cmd || config.message || ""
                         }>
                           {config.keys || config.url || config.cmd || config.message || "-"}
                         </span>
@@ -120,7 +120,7 @@ export default function CommandsPage() {
 
                 {/* Triggers Section */}
                 <div className="p-6 space-y-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-base-content/50 flex flex-items-center gap-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-base-content/50 flex items-center gap-2">
                     <Settings2 size={14} /> Activation Triggers
                   </h3>
 
@@ -139,9 +139,9 @@ export default function CommandsPage() {
           ))}
         </AnimatePresence>
         {!isLoading && commands && Object.keys(commands).length === 0 && (
-            <div className="col-span-full text-center p-12 opacity-50 italic">
-                No commands configured.
-            </div>
+          <div className="col-span-full text-center p-12 opacity-50 italic">
+            No commands configured.
+          </div>
         )}
       </div>
     </div>
