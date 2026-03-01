@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   TerminalSquare,
@@ -27,6 +27,12 @@ export default function CommandsPage() {
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
   });
+
+  // Memoize the derived array to prevent expensive Object.entries() and array reallocation
+  // on every render cycle, which improves performance on this page.
+  const commandsList = useMemo(() => {
+    return commands ? Object.entries(commands) : [];
+  }, [commands]);
 
   if (isLoading) {
     return (
@@ -101,7 +107,7 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {commands && Object.entries(commands).map(([name, config], idx) => (
+          {commandsList.map(([name, config], idx) => (
             <motion.div
               key={name}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -169,7 +175,7 @@ export default function CommandsPage() {
             </motion.div>
           ))}
         </AnimatePresence>
-        {!isLoading && commands && Object.keys(commands).length === 0 && (
+        {!isLoading && commandsList.length === 0 && (
           <div className="col-span-full text-center p-12 opacity-50 italic">
             No commands configured.
           </div>
