@@ -484,6 +484,7 @@ class WebModeServer:
             get_config_manager=lambda: self.config_manager,
             get_last_command=lambda: self.last_command,
             get_last_state_change=lambda: self.last_state_change,
+            # Wrap execution to increment counter + return result
             execute_command_fn=self._execute_command_wrapper,
             get_active_connections=lambda: len(self.active_connections),
             get_cache_size=lambda: len(self._command_cache) + len(self._state_cache),

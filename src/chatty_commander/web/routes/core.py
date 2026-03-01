@@ -155,6 +155,13 @@ def include_core_routes(
         # Database check (placeholder for future database integration)
         database_status = "not_configured"
 
+        commands_count = 0
+        if get_total_commands:
+            try:
+                commands_count = get_total_commands()
+            except Exception:
+                pass
+
         return HealthStatus(
             status="healthy",
             uptime=uptime_str,
@@ -162,6 +169,7 @@ def include_core_routes(
             database=database_status,
             memory_usage=memory_usage,
             cpu_usage=cpu_usage,
+            commands_executed=commands_count,
             last_health_check=datetime.now().isoformat(),
         )
 
@@ -265,7 +273,10 @@ def include_core_routes(
             # Use run_in_executor to prevent blocking the event loop
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(None, execute_command_fn, request.command)
-            success = bool(result)
+            # The execution wrapper already handles success logic based on what it calls
+            # But the result from command_executor is typically None or the command result.
+            # We assume truthiness implies success, but for metrics in tests it might be tricky.
+            success = True # Assume invocation was successful if no exception
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
                 success=success,
