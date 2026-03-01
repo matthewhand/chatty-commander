@@ -62,9 +62,25 @@ from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.web.routes.core import include_core_routes
+from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
+from chatty_commander.web.routes.system import include_system_routes
+try:
+    from chatty_commander.obs.metrics import (
+        RequestMetricsMiddleware,
+        create_metrics_router,
+    )
+    _OBS_METRICS_AVAILABLE = True
+except Exception:  # pragma: no cover - optional dependency path
+    RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
+    create_metrics_router = None  # type: ignore[assignment]
+    _OBS_METRICS_AVAILABLE = False
+try:
+    from chatty_commander.web.routes.audio import include_audio_routes
+except ImportError:
+    include_audio_routes = None
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.ws import include_ws_routes
+from chatty_commander.web.routes.voice import include_voice_routes
 
 # Avatar routes (optional)
 try:
@@ -376,10 +392,60 @@ class WebModeServer:
         # WebSocket connection management
         self.active_connections: set[WebSocket] = set()
 
+        # Telemetry task lifecycle management
+        self._telemetry_task: asyncio.Task | None = None  # type: ignore[type-arg]
+        self._telemetry_running: bool = False
+
         # Initialize FastAPI app and register routes
         self.app = self._create_app()
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
+
+        # Register startup/shutdown handlers for telemetry lifecycle
+        @self.app.on_event("startup")
+        async def start_telemetry_loop() -> None:
+            self._telemetry_running = True
+            self._telemetry_task = asyncio.create_task(self._telemetry_loop())
+
+        @self.app.on_event("shutdown")
+        async def stop_telemetry_loop() -> None:
+            self._telemetry_running = False
+            if self._telemetry_task and not self._telemetry_task.done():
+                self._telemetry_task.cancel()
+                try:
+                    await self._telemetry_task
+                except asyncio.CancelledError:
+                    pass
+            self._telemetry_task = None
+
+    async def _telemetry_loop(self) -> None:
+        """Background task to broadcast system telemetry.
+
+        Runs until _telemetry_running is False or the task is cancelled.
+        """
+        while self._telemetry_running:
+            try:
+                import psutil
+
+                cpu = psutil.cpu_percent(interval=None)
+                memory = psutil.virtual_memory().percent
+
+                await self._broadcast_message(
+                    WebSocketMessage(
+                        type="telemetry",
+                        data={
+                            "cpu": cpu,
+                            "memory": memory,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                    )
+                )
+            except asyncio.CancelledError:
+                raise  # Allow cancellation to propagate
+            except Exception as e:  # noqa: BLE001
+                logger.debug("Telemetry loop error: %s", e)
+
+            await asyncio.sleep(2.0)
 
     @property
     def config(self) -> Config:
@@ -445,6 +511,11 @@ class WebModeServer:
             redoc_url="/redoc" if self.no_auth else None,
         )
 
+        # Observability: request metrics middleware (must be added before other middleware
+        # so it wraps the full request lifecycle)
+        if _OBS_METRICS_AVAILABLE and RequestMetricsMiddleware is not None:
+            app.add_middleware(RequestMetricsMiddleware)
+
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
 
@@ -467,6 +538,8 @@ class WebModeServer:
             requests_per_minute=10000,
             trusted_proxies=trusted_proxies,
         )
+
+        app.add_middleware(ResponseTimeMiddleware)
 
         # CORS policy
         app.add_middleware(
@@ -491,8 +564,29 @@ class WebModeServer:
         )
         app.include_router(core)
 
+        # Audio endpoints
+        if include_audio_routes:
+            audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
+            app.include_router(audio)
+
+        # Voice routing
+        voice = include_voice_routes(
+            get_config_manager=lambda: self.config_manager,
+        )
+        app.include_router(voice)
+
         # Version endpoint
         app.include_router(version_router)
+
+        # System info endpoints
+        system_routes = include_system_routes(
+            get_start_time=lambda: self.start_time
+        )
+        app.include_router(system_routes)
+
+        # Observability: expose /metrics/json and /metrics/prom endpoints
+        if _OBS_METRICS_AVAILABLE and create_metrics_router is not None:
+            app.include_router(create_metrics_router())
 
         # Agents endpoints
         if agents_router:

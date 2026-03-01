@@ -14,13 +14,13 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 | Endpoint | Used By | Status |
 |----------|---------|--------|
 | `/api/audio/devices` | AudioSettingsPage.tsx | ❌ Missing |
-| `/api/voice/status` | apiService.js | ❌ Missing |
-| `/api/voice/start` | apiService.js | ❌ Missing |
-| `/api/voice/stop` | apiService.js | ❌ Missing |
+| `/api/voice/status` | apiService.js | ✅ Working |
+| `/api/voice/start` | apiService.js | ✅ Working |
+| `/api/voice/stop` | apiService.js | ✅ Working |
 | `/api/themes` | apiService.js | ❌ Missing |
 | `/api/theme` | apiService.js | ❌ Missing |
 | `/api/preferences` | apiService.js | ❌ Missing |
-| `/api/system/info` | apiService.js | ❌ Missing |
+| `/api/system/info` | apiService.js | ✅ Working |
 | `/api/system/restart` | apiService.js | ❌ Missing |
 | `/api/system/shutdown` | apiService.js | ❌ Missing |
 | `/api/backup` | apiService.js | ❌ Missing |
@@ -42,13 +42,14 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 | `/api/v1/state` | ✅ Working |
 | `/api/v1/metrics` | ✅ Working |
 | `/api/v1/advisors/personas` | ✅ Working |
+| `/api/system/info` | ✅ Working |
 
 ## Recommendations
 
 ### Priority 1: Add Missing Audio Endpoints
 
 The AudioSettingsPage.tsx needs:
-- `GET /api/audio/devices` - List available audio input/output devices
+- `GET /api/audio/devices` - List available audio input devices
 - `POST /api/audio/device` - Set active audio device
 
 ### Priority 2: Add Voice Status Endpoints
@@ -61,7 +62,6 @@ For voice control features:
 ### Priority 3: Add System Info Endpoints
 
 For dashboard and system management:
-- `GET /api/system/info` - Get system information (CPU, memory, disk)
 - `GET /api/preferences` - Get user preferences
 - `PUT /api/preferences` - Update user preferences
 

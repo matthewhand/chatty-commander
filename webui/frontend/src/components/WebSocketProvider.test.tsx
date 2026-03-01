@@ -1,11 +1,12 @@
 import React from "react";
 import { render, act } from "@testing-library/react";
 import { WebSocketProvider } from "./WebSocketProvider";
+import { vi, it } from 'vitest';
 
-jest.useFakeTimers();
+vi.useFakeTimers();
 
 // Mock useAuth to authenticate
-jest.mock("../hooks/useAuth", () => ({
+vi.mock("../hooks/useAuth", () => ({
   useAuth: () => ({ isAuthenticated: true }),
 }));
 
@@ -41,7 +42,7 @@ it("connects and then closes (reconnect handled by component lifecycle)", () => 
     </WebSocketProvider>,
   );
   act(() => {
-    jest.advanceTimersByTime(100);
+    vi.advanceTimersByTime(100);
   });
   unmount();
 });

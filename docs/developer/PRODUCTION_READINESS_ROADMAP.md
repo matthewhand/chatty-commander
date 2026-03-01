@@ -224,6 +224,9 @@ This document outlines the work required to achieve production readiness.
 - [ ] **Voice pipeline stability**
   - Wake word accuracy metrics
   - Fallback to text input
+- [ ] **Audio Output Support**
+  - Select output device
+  - Text-to-Speech playback
 - [ ] **LLM integration**
   - Multiple provider support
   - Model switching at runtime

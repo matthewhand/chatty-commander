@@ -102,7 +102,7 @@ class TestServerImportSafety:
             # The server.py has a fallback stub that may return empty routes
             # or FastAPI may have default routes like openapi/docs
             route_count = len(app.routes)
-            assert route_count <= 10  # Allow for openapi, docs, redoc, root, bridge, health, status, state, metrics etc
+            assert route_count <= 12  # Allow for openapi, docs, redoc, root, bridge, health, status, state, metrics etc
 
         finally:
             # Restore original globals

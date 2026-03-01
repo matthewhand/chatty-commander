@@ -474,7 +474,7 @@ paths:
     get:
       tags: [Audio]
       summary: List audio devices
-      description: Get available microphone and speaker devices
+      description: List available audio input devices
       security:
         - bearerAuth: []
       responses:
@@ -486,10 +486,6 @@ paths:
                 type: object
                 properties:
                   microphones:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/AudioDevice"
-                  speakers:
                     type: array
                     items:
                       $ref: "#/components/schemas/AudioDevice"
