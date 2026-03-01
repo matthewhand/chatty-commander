@@ -39,6 +39,10 @@ Design principles
   isolatable registries for tests.
 - Defensive coding: invalid inputs are clamped/sanitized; errors in metrics collection
   never break the application path (best-effort philosophy).
+
+This module is wired into the running server via web_mode.py:
+- RequestMetricsMiddleware is added to the FastAPI app on startup
+- create_metrics_router() exposes /metrics/json and /metrics/prom endpoints
 """
 
 from __future__ import annotations
