@@ -136,6 +136,8 @@ try:
     from fastapi import Request, Response
     from starlette.middleware.base import BaseHTTPMiddleware
 
+    REQUEST_ID_HEADER = "X-Request-ID"
+
     class RequestIdMiddleware(BaseHTTPMiddleware):
         """Middleware that assigns a UUID request ID to each incoming request.
 
@@ -150,11 +152,11 @@ try:
         async def dispatch(
             self, request: Request, call_next: Callable[[Request], Any]
         ) -> Response:
-            request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+            request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
             token = _request_id_var.set(request_id)
             try:
                 response = await call_next(request)
-                response.headers["X-Request-ID"] = request_id
+                response.headers[REQUEST_ID_HEADER] = request_id
                 return response
             finally:
                 _request_id_var.reset(token)
