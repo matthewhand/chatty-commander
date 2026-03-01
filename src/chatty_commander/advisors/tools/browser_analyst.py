@@ -49,12 +49,12 @@ logger = logging.getLogger(__name__)
 
 
 def _deterministic_fallback(url: str) -> str:
-    domain = urlparse(url).netloc
-    if "github.com" in domain:
+    hostname = urlparse(url).hostname or ""
+    if hostname == "github.com" or hostname.endswith(".github.com"):
         return f"GitHub repository: {url}. This appears to be an open source project with documentation, issues, and pull requests."
-    elif "stackoverflow.com" in domain:
+    elif hostname == "stackoverflow.com" or hostname.endswith(".stackoverflow.com"):
         return f"Stack Overflow question: {url}. This contains programming questions and answers from the developer community."
-    elif "wikipedia.org" in domain:
+    elif hostname == "wikipedia.org" or hostname.endswith(".wikipedia.org"):
         return f"Wikipedia article: {url}. This is an encyclopedia entry providing factual information on the topic."
     else:
         return f"Web page at {url}: This appears to be a general web page with content related to the URL's domain."
@@ -77,10 +77,10 @@ def browser_analyst_tool(url: str) -> str:
         allowlist = config_data.get("advisors", {}).get("browser_analyst", {}).get("allowlist", None)
         timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
 
-        domain = urlparse(url).netloc
-        if allowlist is not None and domain not in allowlist:
-            logger.warning(f"Domain {domain} is not in the allowlist.")
-            return f"Error: Domain {domain} is not allowed."
+        hostname = urlparse(url).hostname or ""
+        if allowlist is not None and hostname not in allowlist:
+            logger.warning(f"Domain {hostname} is not in the allowlist.")
+            return f"Error: Domain {hostname} is not allowed."
 
         response = httpx.get(url, timeout=timeout, follow_redirects=False)
         response.raise_for_status()

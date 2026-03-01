@@ -61,9 +61,9 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
     allowlist = config_data.get("advisors", {}).get("browser_analyst", {}).get("allowlist", None)
     timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
 
-    domain = urlparse(request.url).netloc
-    if allowlist is not None and domain not in allowlist:
-        logger.warning(f"Domain {domain} is not in the allowlist.")
+    hostname = urlparse(request.url).hostname or ""
+    if allowlist is not None and hostname not in allowlist:
+        logger.warning(f"Domain {hostname} is not in the allowlist.")
         return AnalystResult(title="Error", summary="Domain not allowed.", url=request.url)
 
     try:
