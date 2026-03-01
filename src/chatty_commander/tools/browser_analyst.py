@@ -61,21 +61,34 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
     allowlist = config_data.get("advisors", {}).get("browser_analyst", {}).get("allowlist", None)
     timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
 
-    hostname = urlparse(request.url).hostname or ""
+    parsed_url = urlparse(request.url)
+    if parsed_url.scheme not in ("http", "https"):
+        return AnalystResult(title="Error", summary=f"Invalid URL scheme '{parsed_url.scheme}'.", url=request.url)
+    hostname = parsed_url.hostname or ""
     if allowlist is not None and hostname not in allowlist:
         logger.warning(f"Domain {hostname} is not in the allowlist.")
         return AnalystResult(title="Error", summary="Domain not allowed.", url=request.url)
 
     try:
-        response = httpx.get(request.url, timeout=timeout, follow_redirects=False)
-        response.raise_for_status()
-        text = response.text
+        # Prevent DoS via memory exhaustion with a 2MB limit
+        MAX_SIZE = 2 * 1024 * 1024
+        text = ""
+        with httpx.stream("GET", request.url, timeout=timeout, follow_redirects=False) as response:
+            response.raise_for_status()
+            content_pieces = []
+            size = 0
+            for chunk in response.iter_text(chunk_size=8192):
+                content_pieces.append(chunk)
+                size += len(chunk.encode("utf-8"))
+                if size > MAX_SIZE:
+                    break
+            text = "".join(content_pieces)
 
-        title_match = re.search(r'<title.*?>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
+        title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
         title = title_match.group(1).strip() if title_match else "No Title"
 
-        # Remove script and style elements first to avoid extracting their content
-        body_text = re.sub(r'<(script|style).*?>.*?</\1>', ' ', text, flags=re.IGNORECASE | re.DOTALL)
+        # Prevent ReDoS by avoiding .*? within tags
+        body_text = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', text, flags=re.IGNORECASE | re.DOTALL)
         # Strip other HTML tags
         body_text = re.sub(r'<[^>]+>', ' ', body_text)
         # Clean whitespace
