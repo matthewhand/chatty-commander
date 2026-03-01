@@ -9,6 +9,7 @@ import {
   Trash2,
   RefreshCw
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 
@@ -75,10 +76,10 @@ export default function CommandsPage() {
           <button className="btn btn-ghost" onClick={() => refetch()} title="Refresh Commands">
             <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
           </button>
-          <button className="btn btn-primary glass">
+          <Link to="/commands/authoring" className="btn btn-primary glass">
             <Plus size={18} />
             New Command
-          </button>
+          </Link>
         </div>
       </motion.div>
 
