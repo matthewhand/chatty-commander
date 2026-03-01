@@ -42,8 +42,22 @@ export default function CommandsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center p-8">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <div className="h-10 w-64 skeleton mb-2 rounded-lg"></div>
+            <div className="h-5 w-96 skeleton rounded"></div>
+          </div>
+          <div className="h-12 w-32 skeleton rounded-lg"></div>
+        </div>
+
+        <div className="divider divider-accent"></div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="card glass-card overflow-hidden h-64 skeleton rounded-box"></div>
+          ))}
+        </div>
       </div>
     );
   }
