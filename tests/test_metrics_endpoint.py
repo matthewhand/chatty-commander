@@ -26,6 +26,7 @@ from chatty_commander.web.web_mode import create_app
 
 
 def test_metrics_counts_increment():
+    """Test that metrics count values increment when various endpoints are called."""
     app = create_app(no_auth=True)
     client = TestClient(app)
 
