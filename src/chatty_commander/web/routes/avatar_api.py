@@ -61,6 +61,7 @@ _CATEGORY_HINTS = {
 
 
 def _default_animations_dir() -> Path:
+    """Resolve and return the default directory containing avatar animations."""
     # Default to the avatar webui directory; callers can override via query param.
     here = Path(__file__).resolve()
     # src/chatty_commander/web/routes/avatar_api.py -> up to src/chatty_commander
