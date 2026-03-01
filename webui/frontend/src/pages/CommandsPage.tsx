@@ -73,7 +73,7 @@ export default function CommandsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="btn btn-ghost" onClick={() => refetch()} title="Refresh Commands">
+          <button className="btn btn-ghost" onClick={() => refetch()} title="Refresh Commands" aria-label="Refresh Commands">
             <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
           </button>
           <Link to="/commands/authoring" className="btn btn-primary glass">
