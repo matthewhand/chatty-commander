@@ -376,3 +376,26 @@ def cleanup_mocks() -> Generator[None, None, None]:
     from unittest.mock import _patch_stopall
 
     _patch_stopall()
+
+
+@pytest.fixture(autouse=True)
+def clear_agents_store() -> Generator[None, None, None]:
+    """Clear the in-memory agent blueprint store before each test.
+
+    Prevents test pollution from the module-level _STORE and _TEAM dicts
+    that persist across tests when the agents module is imported once.
+    """
+    try:
+        import chatty_commander.web.routes.agents as _agents_mod
+        _agents_mod._STORE.clear()
+        _agents_mod._TEAM.clear()
+    except Exception:
+        pass  # Module not yet imported or unavailable — no-op
+    yield
+    # Also clear after the test to leave a clean state
+    try:
+        import chatty_commander.web.routes.agents as _agents_mod
+        _agents_mod._STORE.clear()
+        _agents_mod._TEAM.clear()
+    except Exception:
+        pass
