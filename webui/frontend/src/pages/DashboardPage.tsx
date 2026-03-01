@@ -161,8 +161,26 @@ const DashboardPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading dashboard">
+        <div className="h-10 w-48 skeleton rounded-lg"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box"></div>
+          ))}
+        </div>
+
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-80 skeleton rounded-box"></div>
+
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-96 skeleton rounded-box"></div>
+
+        <div className="h-8 w-48 skeleton mt-8 mb-4 rounded-lg"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box"></div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -279,12 +297,12 @@ const DashboardPage: React.FC = () => {
               <AreaChart data={history}>
                 <defs>
                   <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
