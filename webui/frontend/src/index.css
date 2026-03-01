@@ -689,6 +689,7 @@ textarea {
   animation: dropdownSlide 0.15s ease-out;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   max-width: calc(100vw - 2rem);
   max-height: calc(100vh - 2rem);
 }

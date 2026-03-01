@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -380,6 +381,12 @@ export default function CommandAuthoringPage() {
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
         <div>
+          <div className="text-sm breadcrumbs mb-2 text-base-content/60" aria-label="breadcrumbs">
+            <ul>
+              <li><Link to="/commands">Commands</Link></li>
+              <li>Command Authoring</li>
+            </ul>
+          </div>
           <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-3">
             <Wand2 size={32} />
             Command Authoring
@@ -421,7 +428,7 @@ export default function CommandAuthoringPage() {
           >
             <AlertCircle size={20} />
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle">
+            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error">
               <X size={16} />
             </button>
           </motion.div>
