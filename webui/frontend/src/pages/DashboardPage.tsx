@@ -161,7 +161,7 @@ const DashboardPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading dashboard">
         <div className="h-10 w-48 skeleton rounded-lg"></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
@@ -297,12 +297,12 @@ const DashboardPage: React.FC = () => {
               <AreaChart data={history}>
                 <defs>
                   <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
