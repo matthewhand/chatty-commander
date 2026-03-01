@@ -91,7 +91,7 @@ async def list_animations(
         if dir:
             # Resolve the requested path and ensure it's within base_dir
             root = (base_dir / dir).resolve()
-            if not str(root).startswith(str(base_dir)):
+            if not root.is_relative_to(base_dir):
                 raise HTTPException(
                     status_code=403, detail="Access denied: Invalid directory path"
                 )
