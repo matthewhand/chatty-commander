@@ -10,6 +10,7 @@ import {
   Trash2,
   FileAudio
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 
@@ -70,10 +71,10 @@ export default function CommandsPage() {
             Manage system commands and configure the Wakewords or API endpoints that trigger them.
           </p>
         </div>
-        <button className="btn btn-primary glass">
+        <Link to="/commands/authoring" className="btn btn-primary glass">
           <Plus size={18} />
           New Command
-        </button>
+        </Link>
       </motion.div>
 
       <div className="divider divider-accent"></div>

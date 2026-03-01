@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -380,6 +381,12 @@ export default function CommandAuthoringPage() {
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
         <div>
+          <div className="text-sm breadcrumbs mb-2 text-base-content/60">
+            <ul>
+              <li><Link to="/commands">Commands</Link></li>
+              <li>Command Authoring</li>
+            </ul>
+          </div>
           <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-3">
             <Wand2 size={32} />
             Command Authoring
