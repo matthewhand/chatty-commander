@@ -809,7 +809,7 @@ class WebModeServer:
                         )
                     )
                 except Exception as e:
-                    logger.debug(f"Telemetry error: {e}")
+                    logger.warning(f"Telemetry error: {e}", exc_info=True)
 
                 # Push updates every 2 seconds
                 await asyncio.sleep(2)
