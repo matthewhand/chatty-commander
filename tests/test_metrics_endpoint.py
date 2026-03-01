@@ -49,6 +49,7 @@ def test_metrics_counts_increment():
 
 
 def test_metrics_json_endpoint():
+    """Verify that the JSON metrics endpoint returns correct structure and data."""
     app = create_app(no_auth=True)
     client = TestClient(app)
 
@@ -69,6 +70,7 @@ def test_metrics_json_endpoint():
 
 
 def test_metrics_prom_endpoint():
+    """Verify that the Prometheus metrics endpoint exposes metrics in plain text."""
     app = create_app(no_auth=True)
     client = TestClient(app)
 
