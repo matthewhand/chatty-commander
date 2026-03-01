@@ -687,7 +687,10 @@ textarea {
     0 20px 40px rgba(0, 0, 0, 0.3),
     0 0 1px rgba(255, 255, 255, 0.1);
   animation: dropdownSlide 0.15s ease-out;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
 }
 
 .dropdown-content li>a,
