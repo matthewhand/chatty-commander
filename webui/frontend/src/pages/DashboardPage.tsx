@@ -359,6 +359,7 @@ const DashboardPage: React.FC = () => {
             <input
               type="text"
               placeholder="Type a command to execute..."
+              aria-label="Command input"
               className="input input-bordered w-full focus:input-primary"
               value={commandInput}
               onChange={(e) => setCommandInput(e.target.value)}
