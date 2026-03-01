@@ -14,10 +14,10 @@ test.describe("Functional Flows", () => {
         // We'll check if the link is visible and URL is correct, which is robust enough for functional flow.
         await expect(page.getByRole("heading", { name: "Configuration" })).toBeVisible();
 
-        // Go to Audio Settings
-        await page.getByRole("link", { name: "Audio Settings" }).click();
-        await expect(page).toHaveURL(/audio-settings/);
-        await expect(page.getByRole("heading", { name: "Audio Settings" })).toBeVisible();
+        // Go to Commands
+        await page.getByRole("link", { name: "Commands" }).click();
+        await expect(page).toHaveURL(/commands/);
+        await expect(page.getByRole("heading", { name: "Commands & Triggers" })).toBeVisible();
     });
 
     test("invalid route redirects or shows 404", async ({ page }) => {

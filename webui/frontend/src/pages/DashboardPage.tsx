@@ -1,17 +1,45 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
 const MAX_MESSAGES = 100;
+
+interface PerfMetric {
+  time: string;
+  cpu: number;
+  memory: number;
+}
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs">
+        <p className="font-mono mb-2 text-base-content/60">{label}</p>
+        {payload.map((entry: any) => (
+          <div key={entry.name} className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} />
+            <span className="font-semibold" style={{ color: entry.stroke }}>
+              {entry.name}: {entry.value.toFixed(1)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 const DashboardPage: React.FC = () => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [history, setHistory] = useState<PerfMetric[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
 
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,11 +76,41 @@ const DashboardPage: React.FC = () => {
         memory: data.memory_usage ?? "N/A",
       };
     },
-    refetchInterval: 30000,
+    refetchInterval: 5000,
   });
 
   const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
   const systemStatus = { ...initialSystemStatus, ...realtimeStatus };
+
+  // Update history chart from telemetry
+  useEffect(() => {
+    if (systemStatus && !isPaused) {
+      const cpuStr = String(systemStatus.cpu).replace("%", "");
+      const memStr = String(systemStatus.memory).replace("%", "");
+      const cpuVal = parseFloat(cpuStr) || 0;
+      const memVal = parseFloat(memStr) || 0;
+      const now = new Date().toLocaleTimeString();
+
+      setHistory(prev => {
+        const next = [...prev, { time: now, cpu: cpuVal, memory: memVal }];
+        return next.slice(-20); // Keep last 20 points
+      });
+    }
+  }, [systemStatus, isPaused]);
+
+  const handleExport = () => {
+    const headers = "Time,CPU,Memory\n";
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + headers
+      + history.map(row => `${row.time},${row.cpu},${row.memory}`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "performance_history.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const { data: agentData, isLoading: agentsLoading, isError: agentsError, error: agentsErrObj } = useQuery<Agent[]>({
     queryKey: ["agentStatus"],
@@ -190,6 +248,76 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Real-time Performance History Chart */}
+      <div className="card bg-base-100 shadow-xl border border-base-content/10">
+        <div className="card-body">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="card-title text-xl">Real-time Performance History</h3>
+            <div className="flex gap-2">
+              <div className="tooltip" data-tip={isPaused ? "Resume" : "Pause"}>
+                <button
+                  className="btn btn-sm btn-ghost btn-square"
+                  onClick={() => setIsPaused(!isPaused)}
+                  aria-label={isPaused ? "Resume Chart" : "Pause Chart"}
+                >
+                  {isPaused ? <Play size={18} /> : <Pause size={18} />}
+                </button>
+              </div>
+              <div className="tooltip" data-tip="Export CSV">
+                <button
+                  className="btn btn-sm btn-ghost btn-square"
+                  onClick={handleExport}
+                  aria-label="Export Data as CSV"
+                >
+                  <Download size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={history}>
+                <defs>
+                  <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                <XAxis dataKey="time" hide />
+                <YAxis
+                  domain={[0, 100]}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="cpu"
+                  stroke="#3abff8"
+                  fillOpacity={1}
+                  fill="url(#colorCpu)"
+                  name="CPU"
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="memory"
+                  stroke="#fbbd23"
+                  fillOpacity={1}
+                  fill="url(#colorMem)"
+                  name="Memory"
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="card bg-base-100 shadow-xl border border-base-content/10">
         <div className="card-body">
@@ -289,3 +417,4 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
+
