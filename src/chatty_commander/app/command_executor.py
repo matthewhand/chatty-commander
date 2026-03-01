@@ -271,8 +271,8 @@ class CommandExecutor:
             self.report_error(command_name, "requests not available")
             return
         try:
-            # Match tests: do not pass extra kwargs like timeout
-            resp = requests.get(url)
+            # Add timeout and disable redirects for security
+            resp = requests.get(url, timeout=10, allow_redirects=False)
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
             else:

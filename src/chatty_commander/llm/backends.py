@@ -173,7 +173,7 @@ class OllamaBackend(LLMBackend):
             import requests
 
             # Check if Ollama server is running
-            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            response = requests.get(f"{self.base_url}/api/tags", timeout=5, allow_redirects=False)
             if response.status_code == 200:
                 # Check if our model is available
                 models = response.json().get("models", [])
@@ -190,7 +190,7 @@ class OllamaBackend(LLMBackend):
                     self._try_pull_model()
                     self._available = self.model in [
                         m.get("name", "")
-                        for m in requests.get(f"{self.base_url}/api/tags")
+                        for m in requests.get(f"{self.base_url}/api/tags", timeout=5, allow_redirects=False)
                         .json()
                         .get("models", [])
                     ]
@@ -217,6 +217,7 @@ class OllamaBackend(LLMBackend):
                 f"{self.base_url}/api/pull",
                 json={"name": self.model},
                 timeout=300,  # 5 minutes timeout for model download
+                allow_redirects=False,
             )
 
             if response.status_code == 200:
@@ -252,6 +253,7 @@ class OllamaBackend(LLMBackend):
                     },
                 },
                 timeout=30,
+                allow_redirects=False,
             )
 
             if response.status_code == 200:
