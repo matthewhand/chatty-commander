@@ -28,7 +28,5 @@ test("navigation menu items are visible", async ({ page }) => {
   // Check that main navigation items are present in the navigation
   await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Configuration' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Audio Settings' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Personas' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Agent Status' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Commands' })).toBeVisible();
 });

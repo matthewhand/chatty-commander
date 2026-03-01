@@ -72,7 +72,7 @@ test.describe("Documentation Screenshots", () => {
 
     test("commands", async ({ page }) => {
         await page.goto("/");
-        const commandsLink = page.locator("text=Commands").first();
+        const commandsLink = page.getByRole('link', { name: "Commands" }).first();
         if (await commandsLink.isVisible()) {
             await commandsLink.click();
             await page.waitForTimeout(500);

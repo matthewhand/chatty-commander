@@ -461,9 +461,14 @@ const ConfigurationPage: React.FC = () => {
                                 className="btn btn-ghost btn-xs text-error"
                                 onClick={() => deleteMutation.mutate(model.name)}
                                 title="Delete Model"
+                                aria-label={`Delete model ${model.name}`}
                                 disabled={deleteMutation.isPending}
                               >
-                                <TrashIcon size={14} />
+                                {deleteMutation.isPending && deleteMutation.variables === model.name ? (
+                                  <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                  <TrashIcon size={14} />
+                                )}
                               </button>
                             </td>
                           </tr>
@@ -504,6 +509,7 @@ const ConfigurationPage: React.FC = () => {
                    <input
                     type="file"
                     accept=".onnx"
+                    aria-label="Select ONNX voice model file"
                     className="file-input file-input-bordered file-input-primary file-input-sm w-full"
                     onChange={handleFileUpload}
                     disabled={isUploading}
