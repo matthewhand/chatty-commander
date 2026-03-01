@@ -381,7 +381,7 @@ export default function CommandAuthoringPage() {
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
         <div>
-          <div className="text-sm breadcrumbs mb-2 text-base-content/60">
+          <div className="text-sm breadcrumbs mb-2 text-base-content/60" aria-label="breadcrumbs">
             <ul>
               <li><Link to="/commands">Commands</Link></li>
               <li>Command Authoring</li>
@@ -428,7 +428,7 @@ export default function CommandAuthoringPage() {
           >
             <AlertCircle size={20} />
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle">
+            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error">
               <X size={16} />
             </button>
           </motion.div>
