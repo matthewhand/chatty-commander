@@ -367,10 +367,10 @@ const DashboardPage: React.FC = () => {
             />
             <button
               type="submit"
-              className={`btn btn-primary ${isSending ? 'loading' : ''}`}
+              className="btn btn-primary"
               disabled={!commandInput.trim() || isSending || !isConnected}
             >
-              {!isSending && <Send size={18} />}
+              {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
               Execute
             </button>
           </form>
