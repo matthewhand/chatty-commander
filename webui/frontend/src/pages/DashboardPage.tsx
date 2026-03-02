@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
 import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download } from "lucide-react";
@@ -14,7 +14,7 @@ interface PerfMetric {
   memory: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs">
@@ -31,9 +31,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
   }
   return null;
-};
+});
 
-const DashboardPage: React.FC = () => {
+const DashboardPage = React.memo(() => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
   const [commandInput, setCommandInput] = useState("");
@@ -50,12 +50,12 @@ const DashboardPage: React.FC = () => {
     setCommandInput("");
 
     // Optimistically add to log
-    setMessages(prev => [...prev, `> Executing: ${cmd}`].slice(-MAX_MESSAGES));
+    setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `> Executing: ${cmd}`] : [...prev, `> Executing: ${cmd}`]);
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
-      setMessages(prev => [...prev, `Error: ${err.message}`].slice(-MAX_MESSAGES));
+      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `Error: ${err.message}`] : [...prev, `Error: ${err.message}`]);
     } finally {
       setIsSending(false);
     }
@@ -80,7 +80,7 @@ const DashboardPage: React.FC = () => {
   });
 
   const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
-  const systemStatus = { ...initialSystemStatus, ...realtimeStatus };
+  const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
 
   // Update history chart from telemetry
   useEffect(() => {
@@ -142,11 +142,11 @@ const DashboardPage: React.FC = () => {
       }
       // Fallback for non-JSON or other messages
       if (msg.data && typeof msg.data === "string") {
-        setMessages((prev) => [...prev, msg.data].slice(-MAX_MESSAGES));
+        setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg.data as string] : [...prev, msg.data as string]);
       }
     } catch {
       // Plain text message
-      setMessages((prev) => [...prev, event.data].slice(-MAX_MESSAGES));
+      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), event.data as string] : [...prev, event.data as string]);
     }
   }, []); // setRealtimeStatus and setMessages are stable; no external deps
 
@@ -433,7 +433,7 @@ const DashboardPage: React.FC = () => {
       )}
     </div>
   );
-};
+});
 
 export default DashboardPage;
 
