@@ -302,21 +302,26 @@ class TestOllamaBackend:
 
         assert backend.is_available() is False
 
-    def test_is_available_server_responding_model_found(self):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_is_available_server_responding_model_found(self, mock_is_safe):
         """Test is_available when server responds and model is found."""
         from chatty_commander.llm.backends import OllamaBackend
 
+        mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"models": [{"name": "llama2"}]}
+        mock_client.get.return_value = mock_response
 
-        with patch("requests.get", return_value=mock_response):
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
             backend = OllamaBackend(model="llama2")
             result = backend.is_available()
 
         assert result is True
 
-    def test_is_available_server_responding_model_not_found(self):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_is_available_server_responding_model_not_found(self, mock_is_safe):
         """Test is_available when server responds but model not found."""
         from chatty_commander.llm.backends import OllamaBackend
 
@@ -340,10 +345,14 @@ class TestOllamaBackend:
                 return mock_response
             return mock_tags_after_pull
 
-        with patch("requests.get", side_effect=get_side_effect):
-            with patch("requests.post", return_value=mock_pull_response):
-                backend = OllamaBackend(model="llama2")
-                result = backend.is_available()
+        mock_client = MagicMock()
+        mock_client.get.side_effect = get_side_effect
+        mock_client.post.return_value = mock_pull_response
+
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
+            backend = OllamaBackend(model="llama2")
+            result = backend.is_available()
 
         # Should try to pull and succeed
         assert result is True
@@ -371,46 +380,62 @@ class TestOllamaBackend:
 
         assert result is False
 
-    def test_is_available_import_error(self):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_is_available_import_error(self, mock_is_safe):
         """Test is_available handles ImportError."""
         from chatty_commander.llm.backends import OllamaBackend
 
         backend = OllamaBackend()
 
-        with patch.dict("sys.modules", {"requests": None}):
+        with patch.dict("sys.modules", {"httpx": None}):
             result = backend.is_available()
 
         assert result is False
 
-    def test_try_pull_model_success(self):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_try_pull_model_success(self, mock_is_safe):
         """Test _try_pull_model succeeds."""
         from chatty_commander.llm.backends import OllamaBackend
 
+        mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_client.post.return_value = mock_response
 
-        with patch("requests.post", return_value=mock_response):
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
             backend = OllamaBackend(model="llama2")
             backend._try_pull_model()
 
-    def test_try_pull_model_failure(self):
-        """Test _try_pull_model handles failure."""
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_try_pull_model_failure(self, mock_is_safe):
+        """Test _try_pull_model handles failure gracefully."""
         from chatty_commander.llm.backends import OllamaBackend
 
+        mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 500
+        mock_client.post.return_value = mock_response
 
-        with patch("requests.post", return_value=mock_response):
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
             backend = OllamaBackend(model="llama2")
-            backend._try_pull_model()  # Should not raise
+            backend._try_pull_model()
+            # Should not raise
 
-    def test_try_pull_model_exception(self):
-        """Test _try_pull_model handles exception."""
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_try_pull_model_exception(self, mock_is_safe):
+        """Test _try_pull_model handles exception gracefully."""
         from chatty_commander.llm.backends import OllamaBackend
 
-        with patch("requests.post", side_effect=Exception("Network error")):
+        mock_client = MagicMock()
+        mock_client.post.side_effect = Exception("API Error")
+
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
             backend = OllamaBackend(model="llama2")
-            backend._try_pull_model()  # Should not raise
+            backend._try_pull_model()
+            # Should not raise
 
     def test_generate_response_not_available(self):
         """Test generate_response raises when not available."""
@@ -422,66 +447,83 @@ class TestOllamaBackend:
         with pytest.raises(RuntimeError, match="not available"):
             backend.generate_response("test prompt")
 
-    def test_generate_response_success(self):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_generate_response_success(self, mock_is_safe):
         """Test generate_response returns response."""
         from chatty_commander.llm.backends import OllamaBackend
 
+        mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"response": "  Test response  "}
+        mock_client.post.return_value = mock_response
 
         backend = OllamaBackend()
         backend._available = True
 
-        with patch("requests.post", return_value=mock_response):
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
             result = backend.generate_response("test prompt")
 
         assert result == "Test response"
 
-    def test_generate_response_with_custom_params(self):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_generate_response_with_custom_params(self, mock_is_safe):
         """Test generate_response passes custom parameters."""
         from chatty_commander.llm.backends import OllamaBackend
 
+        mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"response": "Response"}
+        mock_client.post.return_value = mock_response
 
         backend = OllamaBackend()
         backend._available = True
 
-        with patch("requests.post", return_value=mock_response) as mock_post:
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
             result = backend.generate_response(
                 "test prompt",
                 max_tokens=500,
                 temperature=0.5,
             )
 
-        call_kwargs = mock_post.call_args[1]["json"]
+        call_kwargs = mock_client.post.call_args[1]["json"]
         assert call_kwargs["options"]["num_predict"] == 500
         assert call_kwargs["options"]["temperature"] == 0.5
 
-    def test_generate_response_failure(self):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_generate_response_failure(self, mock_is_safe):
         """Test generate_response handles failure."""
         from chatty_commander.llm.backends import OllamaBackend
 
+        mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 500
+        mock_client.post.return_value = mock_response
 
         backend = OllamaBackend()
         backend._available = True
 
-        with patch("requests.post", return_value=mock_response):
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
             with pytest.raises(RuntimeError, match="request failed"):
                 backend.generate_response("test prompt")
 
-    def test_generate_response_exception(self):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    def test_generate_response_exception(self, mock_is_safe):
         """Test generate_response handles exception."""
         from chatty_commander.llm.backends import OllamaBackend
 
         backend = OllamaBackend()
         backend._available = True
 
-        with patch("requests.post", side_effect=Exception("Network error")):
+        mock_client = MagicMock()
+        mock_client.post.side_effect = Exception("Network error")
+
+        with patch("httpx.Client") as MockClient:
+            MockClient.return_value.__enter__.return_value = mock_client
             with pytest.raises(Exception, match="Network error"):
                 backend.generate_response("test prompt")
 
