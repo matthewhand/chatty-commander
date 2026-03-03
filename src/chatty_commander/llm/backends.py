@@ -170,36 +170,44 @@ class OllamaBackend(LLMBackend):
             return self._available
 
         try:
-            import requests
+            import httpx
+
+            from chatty_commander.utils.url_validator import is_safe_url
+
+            if not is_safe_url(f"{self.base_url}/api/tags"):
+                logger.warning(f"Ollama base URL {self.base_url} rejected by security policy.")
+                self._available = False
+                return self._available
 
             # Check if Ollama server is running
-            response = requests.get(f"{self.base_url}/api/tags", timeout=5, allow_redirects=False)
-            if response.status_code == 200:
-                # Check if our model is available
-                models = response.json().get("models", [])
-                model_names = [m.get("name", "") for m in models]
+            with httpx.Client() as client:
+                response = client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
+                if response.status_code == 200:
+                    # Check if our model is available
+                    models = response.json().get("models", [])
+                    model_names = [m.get("name", "") for m in models]
 
-                if self.model in model_names:
-                    self._available = True
-                    logger.info(f"Ollama model {self.model} is available")
+                    if self.model in model_names:
+                        self._available = True
+                        logger.info(f"Ollama model {self.model} is available")
+                    else:
+                        logger.info(
+                            f"Ollama server running but model {self.model} not found. Available: {model_names}"
+                        )
+                        # Try to pull the model
+                        self._try_pull_model()
+                        self._available = self.model in [
+                            m.get("name", "")
+                            for m in client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
+                            .json()
+                            .get("models", [])
+                        ]
                 else:
-                    logger.info(
-                        f"Ollama server running but model {self.model} not found. Available: {model_names}"
-                    )
-                    # Try to pull the model
-                    self._try_pull_model()
-                    self._available = self.model in [
-                        m.get("name", "")
-                        for m in requests.get(f"{self.base_url}/api/tags", timeout=5, allow_redirects=False)
-                        .json()
-                        .get("models", [])
-                    ]
-            else:
-                self._available = False
-                logger.debug(f"Ollama server not responding: {response.status_code}")
+                    self._available = False
+                    logger.debug(f"Ollama server not responding: {response.status_code}")
 
         except ImportError:
-            logger.warning("Requests library not available for Ollama backend")
+            logger.warning("httpx library not available for Ollama backend")
             self._available = False
         except Exception as e:
             logger.debug(f"Ollama availability check failed: {e}")
@@ -210,22 +218,23 @@ class OllamaBackend(LLMBackend):
     def _try_pull_model(self):
         """Try to pull the model if not available."""
         try:
-            import requests
+            import httpx
 
             logger.info(f"Attempting to pull model {self.model}...")
-            response = requests.post(
-                f"{self.base_url}/api/pull",
-                json={"name": self.model},
-                timeout=300,  # 5 minutes timeout for model download
-                allow_redirects=False,
-            )
-
-            if response.status_code == 200:
-                logger.info(f"Successfully pulled model {self.model}")
-            else:
-                logger.warning(
-                    f"Failed to pull model {self.model}: {response.status_code}"
+            with httpx.Client() as client:
+                response = client.post(
+                    f"{self.base_url}/api/pull",
+                    json={"name": self.model},
+                    timeout=300,  # 5 minutes timeout for model download
+                    follow_redirects=False,
                 )
+
+                if response.status_code == 200:
+                    logger.info(f"Successfully pulled model {self.model}")
+                else:
+                    logger.warning(
+                        f"Failed to pull model {self.model}: {response.status_code}"
+                    )
 
         except Exception as e:
             logger.warning(f"Error pulling model {self.model}: {e}")
@@ -236,31 +245,32 @@ class OllamaBackend(LLMBackend):
             raise RuntimeError("Ollama backend not available")
 
         try:
-            import requests
+            import httpx
 
             max_tokens = kwargs.get("max_tokens", 150)
             temperature = kwargs.get("temperature", 0.7)
 
-            response = requests.post(
-                f"{self.base_url}/api/generate",
-                json={
-                    "model": self.model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "num_predict": max_tokens,
-                        "temperature": temperature,
+            with httpx.Client() as client:
+                response = client.post(
+                    f"{self.base_url}/api/generate",
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {
+                            "num_predict": max_tokens,
+                            "temperature": temperature,
+                        },
                     },
-                },
-                timeout=30,
-                allow_redirects=False,
-            )
+                    timeout=30,
+                    follow_redirects=False,
+                )
 
-            if response.status_code == 200:
-                result = response.json()
-                return result.get("response", "").strip()
-            else:
-                raise RuntimeError(f"Ollama request failed: {response.status_code}")
+                if response.status_code == 200:
+                    result = response.json()
+                    return result.get("response", "").strip()
+                else:
+                    raise RuntimeError(f"Ollama request failed: {response.status_code}")
 
         except Exception as e:
             logger.error(f"Ollama generation failed: {e}")

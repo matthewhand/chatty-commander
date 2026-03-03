@@ -42,9 +42,9 @@ except Exception:  # pragma: no cover - catch Xlib.error.DisplayConnectionError 
     pyautogui = None
 
 try:  # pragma: no cover - optional
-    import requests
+    import httpx
 except Exception:  # pragma: no cover - optional
-    requests = None
+    httpx = None
 
 # Allow tests to patch legacy shim module attributes if present
 try:  # pragma: no cover
@@ -59,7 +59,8 @@ try:  # pragma: no cover
 except Exception:  # pragma: no cover - optional
     _shim_requests = None
 if _shim_requests is not None:  # pragma: no cover - optional
-    requests = _shim_requests
+    # Map legacy tests to our httpx var for test compatibility if needed
+    httpx = _shim_requests
 
 
 class CommandExecutor:
@@ -267,12 +268,19 @@ class CommandExecutor:
         if not url:
             self.report_error(command_name, "missing URL")
             return
-        if requests is None:  # pragma: no cover - optional
-            self.report_error(command_name, "requests not available")
+
+        from chatty_commander.utils.url_validator import is_safe_url
+        if not is_safe_url(url):
+            self.report_error(command_name, "unsafe URL rejected")
+            return
+
+        if httpx is None:  # pragma: no cover - optional
+            self.report_error(command_name, "httpx not available")
             return
         try:
             # Add timeout and disable redirects for security
-            resp = requests.get(url, timeout=10, allow_redirects=False)
+            with httpx.Client() as client:
+                resp = client.get(url, timeout=10, follow_redirects=False)
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
             else:
