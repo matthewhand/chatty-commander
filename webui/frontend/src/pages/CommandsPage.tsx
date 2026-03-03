@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   TerminalSquare,
@@ -7,7 +7,8 @@ import {
   Plus,
   Edit3,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Search
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -27,6 +28,28 @@ export default function CommandsPage() {
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
   });
+
+  // Memoize the derived array to prevent expensive Object.entries() and array reallocation
+  // on every render cycle, which improves performance on this page.
+  const commandsList = useMemo(() => {
+    return commands ? Object.entries(commands) : [];
+  }, [commands]);
+
+  // Memoize the empty check to avoid recalculating on each render
+  const isEmpty = useMemo(() => !isLoading && commandsList.length === 0, [isLoading, commandsList.length]);
+
+  // Search filter state
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Memoize filtered commands for search functionality
+  const filteredCommands = useMemo(() => {
+    if (!searchQuery.trim()) return commandsList;
+    const query = searchQuery.toLowerCase();
+    return commandsList.filter(([name, config]) =>
+      name.toLowerCase().includes(query) ||
+      (config.action && config.action.toLowerCase().includes(query))
+    );
+  }, [commandsList, searchQuery]);
 
   if (isLoading) {
     return (
@@ -73,7 +96,13 @@ export default function CommandsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="btn btn-ghost" onClick={() => refetch()} title="Refresh Commands" aria-label="Refresh Commands">
+          <button
+            className="btn btn-ghost"
+            onClick={() => refetch()}
+            onKeyDown={(e) => e.key === 'Enter' && refetch()}
+            title="Refresh Commands"
+            aria-label="Refresh Commands"
+          >
             <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
           </button>
           <Link to="/commands/authoring" className="btn btn-primary glass">
@@ -84,6 +113,35 @@ export default function CommandsPage() {
       </motion.div>
 
       <div className="divider divider-accent"></div>
+
+      {/* Search Filter */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={18} />
+          <input
+            type="text"
+            placeholder="Search commands..."
+            aria-label="Search commands"
+            className="input input-bordered w-full pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <span className="text-sm text-base-content/60">
+            Showing {filteredCommands.length} of {commandsList.length} commands
+          </span>
+        )}
+      </div>
 
       {/* Loading / Error States */}
       {isLoading && (
@@ -101,7 +159,7 @@ export default function CommandsPage() {
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
-          {commands && Object.entries(commands).map(([name, config], idx) => (
+          {filteredCommands.map(([name, config], idx) => (
             <motion.div
               key={name}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -169,9 +227,14 @@ export default function CommandsPage() {
             </motion.div>
           ))}
         </AnimatePresence>
-        {!isLoading && commands && Object.keys(commands).length === 0 && (
+        {isEmpty && (
           <div className="col-span-full text-center p-12 opacity-50 italic">
             No commands configured.
+          </div>
+        )}
+        {searchQuery && filteredCommands.length === 0 && !isEmpty && (
+          <div className="col-span-full text-center p-12 opacity-50 italic">
+            No commands match your search.
           </div>
         )}
       </div>
