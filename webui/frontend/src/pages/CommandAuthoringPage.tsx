@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -370,7 +370,7 @@ export default function CommandAuthoringPage() {
     setMode('manual');
   }, [generatedCommand]);
 
-  const currentCommand = mode === 'ai' && generatedCommand ? generatedCommand : manualCommand;
+  const currentCommand = useMemo(() => mode === 'ai' && generatedCommand ? generatedCommand : manualCommand, [mode, generatedCommand, manualCommand]);
 
   return (
     <div className="space-y-6">
