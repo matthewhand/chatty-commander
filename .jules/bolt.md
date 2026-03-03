@@ -5,3 +5,7 @@
 ## 2024-03-01 - [CommandsList React Render Optimization]
 **Learning:** In a dashboard where real-time Websocket data causes frequent global re-renders, mapping objects directly inside JSX using `Object.entries()` without memoization can cause unexpected performance degradation because array reallocation forces React to fully re-reconcile that subtree despite matching keys.
 **Action:** When deriving arrays from objects in React (`Object.entries`, `Object.keys`, `Object.values`), always wrap the transformation in `useMemo` if the parent component is subject to frequent re-renders from polling or websockets.
+
+## 2026-03-03 - [Dashboard Array Allocation Optimization]
+**Learning:** In a dashboard where real-time Websocket telemetry data causes high-frequency global re-renders, inline array operations like `.slice()` in JSX lead to unnecessary reallocations on the main thread.
+**Action:** When deriving sliced arrays or rendering recent items from a growing array in a component subject to high-frequency updates, always wrap the slice operation in `useMemo` to prevent reallocating on every render.

@@ -50,6 +50,12 @@ const DashboardPage = React.memo(() => {
   const [history, setHistory] = useState<PerfMetric[]>([]);
   const [isPaused, setIsPaused] = useState(false);
 
+  // Memoize the derived array to prevent expensive array reallocation (.slice)
+  // on every render cycle caused by frequent telemetry updates.
+  const recentMessages = useMemo(() => {
+    return messages.slice(-15);
+  }, [messages]);
+
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commandInput.trim()) return;
