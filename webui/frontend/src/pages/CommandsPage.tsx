@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   TerminalSquare,
   Settings2,
@@ -7,6 +8,7 @@ import {
   Plus,
   Edit3,
   Trash2,
+  FileAudio,
   RefreshCw,
   Search
 } from 'lucide-react';
@@ -24,10 +26,21 @@ interface CommandConfig {
 }
 
 export default function CommandsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
   });
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value) {
+      setSearchParams({ q: value });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Memoize the derived array to prevent expensive Object.entries() and array reallocation
   // on every render cycle, which improves performance on this page.
@@ -37,9 +50,6 @@ export default function CommandsPage() {
 
   // Memoize the empty check to avoid recalculating on each render
   const isEmpty = useMemo(() => !isLoading && commandsList.length === 0, [isLoading, commandsList.length]);
-
-  // Search filter state
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Memoize filtered commands for search functionality
   const filteredCommands = useMemo(() => {
@@ -123,12 +133,12 @@ export default function CommandsPage() {
             aria-label="Search commands"
             className="input input-bordered w-full pl-10"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
           />
           {searchQuery && (
             <button
               className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
-              onClick={() => setSearchQuery('')}
+              onClick={() => setSearchParams({})}
               aria-label="Clear search"
             >
               ×
