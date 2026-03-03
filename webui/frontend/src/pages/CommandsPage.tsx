@@ -50,7 +50,6 @@ export default function CommandsPage() {
       (config.action && config.action.toLowerCase().includes(query))
     );
   }, [commandsList, searchQuery]);
-
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading commands">
