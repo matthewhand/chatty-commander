@@ -49,20 +49,26 @@ class TestCommandExecutor:
         assert executor.execute_command("simple_key") is True
         mock_pyautogui.press.assert_called_once_with("a")
 
-    @patch("chatty_commander.app.command_executor.requests")
-    def test_execute_url_success(self, mock_requests, executor):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    @patch("chatty_commander.app.command_executor.httpx")
+    def test_execute_url_success(self, mock_httpx, mock_is_safe, executor):
+        mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
         # Configure the mock to return this response
-        mock_requests.get.return_value = mock_response
+        mock_client.get.return_value = mock_response
+        mock_httpx.Client.return_value.__enter__.return_value = mock_client
 
         assert executor.execute_command("test_url") is True
-        mock_requests.get.assert_called_once_with("http://example.com")
+        mock_client.get.assert_called_once_with("http://example.com", timeout=10, follow_redirects=False)
 
-    @patch("chatty_commander.app.command_executor.requests")
-    def test_execute_url_failure(self, mock_requests, executor):
+    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
+    @patch("chatty_commander.app.command_executor.httpx")
+    def test_execute_url_failure(self, mock_httpx, mock_is_safe, executor):
+        mock_client = MagicMock()
         # Setup mock to raise an exception
-        mock_requests.get.side_effect = Exception("Network error")
+        mock_client.get.side_effect = Exception("Network error")
+        mock_httpx.Client.return_value.__enter__.return_value = mock_client
 
         # Should return True because the exception is caught and logged,
         # but technically the method returns success=True for URL type if it attempted it?
@@ -71,7 +77,7 @@ class TestCommandExecutor:
         # The exception in _execute_url is caught and reported, but the return in execute_command is hardcoded True for URL.
         # Let's verify this behavior.
         assert executor.execute_command("test_url") is True
-        mock_requests.get.assert_called_once()
+        mock_client.get.assert_called_once_with("http://example.com", timeout=10, follow_redirects=False)
 
     @patch("chatty_commander.app.command_executor.subprocess.run")
     def test_execute_shell_success(self, mock_run, executor):

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Save as SaveIcon,
@@ -10,7 +10,6 @@ import {
   Volume2 as VolumeUpIcon,
   Headphones as HeadphonesIcon,
   Server as ServerIcon,
-  Activity as ActivityIcon,
   Trash2 as TrashIcon,
   Upload as UploadIcon,
   FileAudio as FileAudioIcon,
@@ -198,24 +197,24 @@ const ConfigurationPage: React.FC = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setConfig({ ...config, [e.target.name]: e.target.value });
-    if (e.target.name === "theme") {
-      setTheme(e.target.value);
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setConfig((prev) => ({ ...prev, [name]: value }));
+    if (name === "theme") {
+      setTheme(value);
     }
-  };
-  const handleSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig({ ...config, [e.target.name]: e.target.checked });
-  };
-  const handleServiceSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig({
-      ...config,
+  }, [setTheme]);
+
+  const handleServiceSwitch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setConfig((prev) => ({
+      ...prev,
       services: {
-        ...config.services,
-        [e.target.name]: e.target.checked,
+        ...prev.services,
+        [name]: checked,
       },
-    });
-  };
+    }));
+  }, []);
 
   const handleFetchModels = async () => {
     setFetchingModels(true);
@@ -461,9 +460,14 @@ const ConfigurationPage: React.FC = () => {
                                 className="btn btn-ghost btn-xs text-error"
                                 onClick={() => deleteMutation.mutate(model.name)}
                                 title="Delete Model"
+                                aria-label={`Delete model ${model.name}`}
                                 disabled={deleteMutation.isPending}
                               >
-                                <TrashIcon size={14} />
+                                {deleteMutation.isPending && deleteMutation.variables === model.name ? (
+                                  <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                  <TrashIcon size={14} />
+                                )}
                               </button>
                             </td>
                           </tr>
@@ -504,6 +508,7 @@ const ConfigurationPage: React.FC = () => {
                    <input
                     type="file"
                     accept=".onnx"
+                    aria-label="Select ONNX voice model file"
                     className="file-input file-input-bordered file-input-primary file-input-sm w-full"
                     onChange={handleFileUpload}
                     disabled={isUploading}
@@ -584,12 +589,12 @@ const ConfigurationPage: React.FC = () => {
                     </span>
                     <button
                       type="button"
-                      className={`btn btn-xs btn-ghost gap-1 ${fetchingModels ? "loading" : ""}`}
+                      className="btn btn-xs btn-ghost gap-1"
                       onClick={handleFetchModels}
                       disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                       title="Fetch available models from endpoint"
                     >
-                      {!fetchingModels && <RefreshIcon size={12} />}
+                      {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
                       {fetchingModels ? "Fetching..." : "Fetch list"}
                     </button>
                   </label>

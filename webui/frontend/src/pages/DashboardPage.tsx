@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
 import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download } from "lucide-react";
@@ -14,7 +14,7 @@ interface PerfMetric {
   memory: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs">
@@ -31,9 +31,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
   }
   return null;
-};
+});
 
-const DashboardPage: React.FC = () => {
+const DashboardPage = React.memo(() => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
   const [commandInput, setCommandInput] = useState("");
@@ -50,12 +50,12 @@ const DashboardPage: React.FC = () => {
     setCommandInput("");
 
     // Optimistically add to log
-    setMessages(prev => [...prev, `> Executing: ${cmd}`].slice(-MAX_MESSAGES));
+    setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `> Executing: ${cmd}`] : [...prev, `> Executing: ${cmd}`]);
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
-      setMessages(prev => [...prev, `Error: ${err.message}`].slice(-MAX_MESSAGES));
+      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `Error: ${err.message}`] : [...prev, `Error: ${err.message}`]);
     } finally {
       setIsSending(false);
     }
@@ -80,7 +80,7 @@ const DashboardPage: React.FC = () => {
   });
 
   const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
-  const systemStatus = { ...initialSystemStatus, ...realtimeStatus };
+  const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
 
   // Update history chart from telemetry
   useEffect(() => {
@@ -142,11 +142,11 @@ const DashboardPage: React.FC = () => {
       }
       // Fallback for non-JSON or other messages
       if (msg.data && typeof msg.data === "string") {
-        setMessages((prev) => [...prev, msg.data].slice(-MAX_MESSAGES));
+        setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg.data as string] : [...prev, msg.data as string]);
       }
     } catch {
       // Plain text message
-      setMessages((prev) => [...prev, event.data].slice(-MAX_MESSAGES));
+      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), event.data as string] : [...prev, event.data as string]);
     }
   }, []); // setRealtimeStatus and setMessages are stable; no external deps
 
@@ -161,8 +161,26 @@ const DashboardPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading dashboard">
+        <div className="h-10 w-48 skeleton rounded-lg"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box"></div>
+          ))}
+        </div>
+
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-80 skeleton rounded-box"></div>
+
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-96 skeleton rounded-box"></div>
+
+        <div className="h-8 w-48 skeleton mt-8 mb-4 rounded-lg"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box"></div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -279,12 +297,12 @@ const DashboardPage: React.FC = () => {
               <AreaChart data={history}>
                 <defs>
                   <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
@@ -341,6 +359,7 @@ const DashboardPage: React.FC = () => {
             <input
               type="text"
               placeholder="Type a command to execute..."
+              aria-label="Type and execute a command"
               className="input input-bordered w-full focus:input-primary"
               value={commandInput}
               onChange={(e) => setCommandInput(e.target.value)}
@@ -348,10 +367,10 @@ const DashboardPage: React.FC = () => {
             />
             <button
               type="submit"
-              className={`btn btn-primary ${isSending ? 'loading' : ''}`}
+              className="btn btn-primary"
               disabled={!commandInput.trim() || isSending || !isConnected}
             >
-              {!isSending && <Send size={18} />}
+              {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
               Execute
             </button>
           </form>
@@ -414,7 +433,7 @@ const DashboardPage: React.FC = () => {
       )}
     </div>
   );
-};
+});
 
 export default DashboardPage;
 
