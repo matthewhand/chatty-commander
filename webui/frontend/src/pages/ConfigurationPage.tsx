@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Save as SaveIcon,
@@ -10,7 +10,6 @@ import {
   Volume2 as VolumeUpIcon,
   Headphones as HeadphonesIcon,
   Server as ServerIcon,
-  Activity as ActivityIcon,
   Trash2 as TrashIcon,
   Upload as UploadIcon,
   FileAudio as FileAudioIcon,
@@ -198,24 +197,24 @@ const ConfigurationPage: React.FC = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setConfig({ ...config, [e.target.name]: e.target.value });
-    if (e.target.name === "theme") {
-      setTheme(e.target.value);
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setConfig((prev) => ({ ...prev, [name]: value }));
+    if (name === "theme") {
+      setTheme(value);
     }
-  };
-  const handleSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig({ ...config, [e.target.name]: e.target.checked });
-  };
-  const handleServiceSwitch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig({
-      ...config,
+  }, [setTheme]);
+
+  const handleServiceSwitch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setConfig((prev) => ({
+      ...prev,
       services: {
-        ...config.services,
-        [e.target.name]: e.target.checked,
+        ...prev.services,
+        [name]: checked,
       },
-    });
-  };
+    }));
+  }, []);
 
   const handleFetchModels = async () => {
     setFetchingModels(true);
