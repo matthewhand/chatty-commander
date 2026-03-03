@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   TerminalSquare,
   Settings2,
@@ -8,19 +9,30 @@ import {
   Plus,
   Edit3,
   Trash2,
-  FileAudio
+  FileAudio,
+  Search
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 
 export default function CommandsPage() {
-  const [activeTab, setActiveTab] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
 
   // Fetch real commands from the backend
   const { data: commandsData, isLoading, isError } = useQuery({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
   });
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value) {
+      setSearchParams({ q: value });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Transform backend dictionary to array for display
   const commandsList = commandsData ? Object.entries(commandsData).map(([key, value]) => {
@@ -39,6 +51,12 @@ export default function CommandsPage() {
       wakewords: [] as string[],
     };
   }) : [];
+
+  const filteredCommands = commandsList.filter(cmd =>
+    cmd.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    cmd.actionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (cmd.payload && cmd.payload.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   if (isLoading) {
     return (
@@ -78,6 +96,21 @@ export default function CommandsPage() {
 
       <div className="divider divider-accent"></div>
 
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="relative w-full max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-base-content/50" />
+          </div>
+          <input
+            type="text"
+            className="input input-bordered w-full pl-10"
+            placeholder="Search commands..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+        </div>
+      </div>
+
       {/* Commands Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimatePresence>
@@ -85,8 +118,12 @@ export default function CommandsPage() {
              <div className="col-span-full text-center p-8 text-base-content/50 italic">
                No commands configured.
              </div>
+          ) : filteredCommands.length === 0 ? (
+             <div className="col-span-full text-center p-8 text-base-content/50 italic">
+               No commands matching "{searchQuery}" found.
+             </div>
           ) : (
-            commandsList.map((command, idx) => (
+            filteredCommands.map((command, idx) => (
             <motion.div
               key={command.id}
               initial={{ opacity: 0, scale: 0.95 }}
