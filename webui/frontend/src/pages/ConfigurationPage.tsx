@@ -590,12 +590,12 @@ const ConfigurationPage: React.FC = () => {
                     </span>
                     <button
                       type="button"
-                      className={`btn btn-xs btn-ghost gap-1 ${fetchingModels ? "loading" : ""}`}
+                      className="btn btn-xs btn-ghost gap-1"
                       onClick={handleFetchModels}
                       disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                       title="Fetch available models from endpoint"
                     >
-                      {!fetchingModels && <RefreshIcon size={12} />}
+                      {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
                       {fetchingModels ? "Fetching..." : "Fetch list"}
                     </button>
                   </label>
