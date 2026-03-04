@@ -397,8 +397,10 @@ export default function CommandAuthoringPage() {
         </div>
 
         {/* Mode Toggle */}
-        <div className="tabs tabs-boxed bg-base-200">
+        <div className="tabs tabs-boxed bg-base-200" role="tablist">
           <button
+            role="tab"
+            aria-selected={mode === 'ai'}
             className={`tab ${mode === 'ai' ? 'tab-active' : ''}`}
             onClick={() => setMode('ai')}
           >
@@ -406,6 +408,8 @@ export default function CommandAuthoringPage() {
             AI Mode
           </button>
           <button
+            role="tab"
+            aria-selected={mode === 'manual'}
             className={`tab ${mode === 'manual' ? 'tab-active' : ''}`}
             onClick={() => setMode('manual')}
           >
