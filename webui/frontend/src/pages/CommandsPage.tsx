@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
+import { DynamicDropdown } from '../components/DynamicDropdown';
 
 export default function CommandsPage() {
   const [activeTab, setActiveTab] = useState('all');
@@ -111,22 +112,27 @@ export default function CommandsPage() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <div className="tooltip tooltip-bottom" data-tip="Edit Command">
-                      <button
-                        className="btn btn-ghost btn-sm btn-circle"
-                        aria-label={`Edit ${command.displayName}`}
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                    </div>
-                    <div className="tooltip tooltip-bottom tooltip-error" data-tip="Delete Command">
-                      <button
-                        className="btn btn-ghost btn-sm btn-circle text-error"
-                        aria-label={`Delete ${command.displayName}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    <DynamicDropdown
+                      buttonContent={
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                        </svg>
+                      }
+                      menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
+                    >
+                      <li>
+                        <button aria-label={`Edit ${command.displayName}`}>
+                          <Edit3 size={16} className="text-primary" />
+                          Edit Command
+                        </button>
+                      </li>
+                      <li>
+                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${command.displayName}`}>
+                          <Trash2 size={16} />
+                          Delete Command
+                        </button>
+                      </li>
+                    </DynamicDropdown>
                   </div>
                 </div>
 
