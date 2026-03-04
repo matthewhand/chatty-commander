@@ -23,7 +23,6 @@
 """Additional tests to improve coverage for cli/cli.py."""
 
 import sys
-from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -283,12 +282,12 @@ class TestRunWebMode:
             # Need to patch the actual import inside the function
             import builtins
             original_import = builtins.__import__
-            
+
             def mock_import(name, *args, **kwargs):
                 if "web_mode" in name:
                     raise ImportError("No module")
                 return original_import(name, *args, **kwargs)
-            
+
             with patch("builtins.__import__", side_effect=mock_import):
                 with pytest.raises(SystemExit) as exc_info:
                     run_web_mode(
@@ -772,7 +771,6 @@ class TestCLIMainHelp:
         """Test cli_main handles --help flag."""
         # --help triggers argparse to exit with code 0
         # We test this by checking that argparse exits properly
-        import argparse
         from chatty_commander.cli.cli import create_parser
 
         parser = create_parser()

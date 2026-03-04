@@ -1,8 +1,8 @@
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from chatty_commander.web.auth import enable_no_auth_docs, apply_cors
+from chatty_commander.web.auth import enable_no_auth_docs
+
 
 def test_enable_no_auth_docs_no_auth():
     app = FastAPI(docs_url=None, redoc_url=None)

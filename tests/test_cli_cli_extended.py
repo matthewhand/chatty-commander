@@ -22,8 +22,6 @@
 
 """Extended tests to improve coverage for cli/cli.py - targeting 80%+."""
 
-import sys
-from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import pytest

@@ -28,6 +28,7 @@ PYTHON = sys.executable
 
 import os
 
+
 def run_cmd(args, timeout=10):
     env = os.environ.copy()
     env["PYTHONPATH"] = "src"

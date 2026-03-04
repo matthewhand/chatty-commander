@@ -43,6 +43,7 @@ class DummyConfig:
 
 import unittest.mock
 
+
 def test_avatar_animations_lists_allowed_files(tmp_path: Path):
     # Create temporary animation directory with a few files
     (tmp_path / "anims").mkdir()

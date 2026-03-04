@@ -1,8 +1,8 @@
+import json
 import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
-import json
 
 from chatty_commander.web.routes.agents import AgentBlueprintModel
 
@@ -15,8 +15,9 @@ def test_agent_persistence():
         # Patch the environment variable to use our temporary store path
         with patch.dict(os.environ, {"CHATTY_AGENTS_STORE": str(store_path)}):
             # Important: import module *inside* the patch so the initial path is correct
-            import chatty_commander.web.routes.agents as agents_mod
             import importlib
+
+            import chatty_commander.web.routes.agents as agents_mod
 
             # Force reload to pick up the mocked env var
             importlib.reload(agents_mod)
@@ -41,8 +42,9 @@ def test_agent_persistence():
             # We bypass the endpoints for a pure persistence check,
             # or we could use TestClient.
             # Let's mock the endpoint's behavior manually first
-            from chatty_commander.web.routes.agents import AgentBlueprint
             from uuid import uuid4
+
+            from chatty_commander.web.routes.agents import AgentBlueprint
 
             uid = str(uuid4())
             ent = AgentBlueprint(id=uid, **bp.model_dump())

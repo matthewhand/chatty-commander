@@ -133,7 +133,7 @@ def include_core_routes(
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
     get_total_commands: Callable[[], int] | None = None,
-    response_time_middleware: "ResponseTimeMiddleware | None" = None,
+    response_time_middleware: ResponseTimeMiddleware | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls

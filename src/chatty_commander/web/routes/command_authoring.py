@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -127,42 +126,42 @@ Output ONLY valid JSON in this format:
 
 def _sanitize_user_input(description: str) -> str:
     """Sanitize user input to prevent prompt injection attacks.
-    
+
     Removes or escapes potentially harmful characters and patterns that
     could be used to manipulate the LLM's behavior.
-    
+
     Args:
         description: Raw user input
-        
+
     Returns:
         Sanitized input safe for embedding in prompts
     """
     # Remove null bytes
     cleaned = description.replace('\x00', '')
-    
+
     # Remove control characters except newlines and tabs
     cleaned = ''.join(char for char in cleaned if ord(char) >= 32 or char in '\n\t')
-    
+
     # Escape triple backticks that could break out of the context
     cleaned = cleaned.replace('```', '``\u200B`')
-    
+
     # Limit length to prevent DoS via extremely long inputs
     max_length = 2000
     if len(cleaned) > max_length:
         cleaned = cleaned[:max_length]
-    
+
     return cleaned
 
 
 def _build_prompt(description: str) -> str:
     """Build a safe prompt with sanitized user input.
-    
+
     Uses JSON encoding for the user description to prevent prompt injection.
     The description is wrapped in delimiters to establish clear boundaries.
-    
+
     Args:
         description: Raw user description
-        
+
     Returns:
         Safe prompt string ready for LLM generation
     """
