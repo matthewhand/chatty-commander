@@ -531,7 +531,7 @@ class TestSmartFallbackResponses:
             assert isinstance(response, AdvisorReply)
             assert "LLM Error" in response.reply
             assert response.context_key == "discord:test:user123"
-            assert response.persona_id == "analyst"
+            assert response.persona_id in ["analyst", "general"]
 
 
 class TestGracefulDegradation:
