@@ -32,6 +32,8 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
+
+from chatty_commander.utils.security import mask_sensitive_data
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -277,6 +279,9 @@ def include_core_routes(
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
         config_data = dict(getattr(cfg_mgr, "config", {}))
+
+        # Mask sensitive data before returning
+        config_data = mask_sensitive_data(config_data)
 
         # Expose which fields are overridden by the environment
         env_overrides = {
