@@ -7,6 +7,8 @@ import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
 const MAX_MESSAGES = 100;
+const MAX_RECENT_MESSAGES = 15;
+const MAX_HISTORY_ITEMS = 20;
 
 interface PerfMetric {
   time: string;
@@ -40,7 +42,7 @@ const DashboardPage = React.memo(() => {
   // Performance optimization: Memoize the recent messages derived array
   // to avoid inline `messages.slice(-15)` during frequent real-time re-renders.
   const recentMessages = useMemo(() => {
-    return messages.length > 15 ? messages.slice(-15) : messages;
+    return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
   }, [messages]);
 
   const [commandInput, setCommandInput] = useState("");
@@ -102,7 +104,7 @@ const DashboardPage = React.memo(() => {
       // by slicing `prev` conditionally before creating the new array.
       setHistory(prev => {
         const item = { time: now, cpu: cpuVal, memory: memVal };
-        return prev.length >= 20 ? [...prev.slice(1), item] : [...prev, item];
+        return prev.length >= MAX_HISTORY_ITEMS ? [...prev.slice(1), item] : [...prev, item];
       });
     }
   }, [systemStatus, isPaused]);
