@@ -397,8 +397,12 @@ export default function CommandAuthoringPage() {
         </div>
 
         {/* Mode Toggle */}
-        <div className="tabs tabs-boxed bg-base-200">
+        <div className="tabs tabs-boxed bg-base-200" role="tablist" aria-label="Command Creation Mode">
           <button
+            id="tab-ai-mode"
+            role="tab"
+            aria-selected={mode === 'ai'}
+            aria-controls="ai-mode-panel"
             className={`tab ${mode === 'ai' ? 'tab-active' : ''}`}
             onClick={() => setMode('ai')}
           >
@@ -406,6 +410,10 @@ export default function CommandAuthoringPage() {
             AI Mode
           </button>
           <button
+            id="tab-manual-mode"
+            role="tab"
+            aria-selected={mode === 'manual'}
+            aria-controls="manual-mode-panel"
             className={`tab ${mode === 'manual' ? 'tab-active' : ''}`}
             onClick={() => setMode('manual')}
           >
@@ -438,6 +446,9 @@ export default function CommandAuthoringPage() {
       {/* AI Mode: Natural Language Input */}
       {mode === 'ai' && (
         <motion.div
+          id="ai-mode-panel"
+          role="tabpanel"
+          aria-labelledby="tab-ai-mode"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="card glass-card"
@@ -569,6 +580,9 @@ export default function CommandAuthoringPage() {
       {/* Manual Mode: Form */}
       {mode === 'manual' && (
         <motion.div
+          id="manual-mode-panel"
+          role="tabpanel"
+          aria-labelledby="tab-manual-mode"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="card glass-card"
