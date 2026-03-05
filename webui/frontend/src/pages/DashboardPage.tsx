@@ -36,6 +36,13 @@ const CustomTooltip = React.memo(({ active, payload, label }: any) => {
 const DashboardPage = React.memo(() => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
+
+  // Performance optimization: Memoize the recent messages derived array
+  // to avoid inline `messages.slice(-15)` during frequent real-time re-renders.
+  const recentMessages = useMemo(() => {
+    return messages.length > 15 ? messages.slice(-15) : messages;
+  }, [messages]);
+
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [history, setHistory] = useState<PerfMetric[]>([]);
@@ -91,9 +98,11 @@ const DashboardPage = React.memo(() => {
       const memVal = parseFloat(memStr) || 0;
       const now = new Date().toLocaleTimeString();
 
+      // Performance optimization: prevent unnecessary intermediate array allocation
+      // by slicing `prev` conditionally before creating the new array.
       setHistory(prev => {
-        const next = [...prev, { time: now, cpu: cpuVal, memory: memVal }];
-        return next.slice(-20); // Keep last 20 points
+        const item = { time: now, cpu: cpuVal, memory: memVal };
+        return prev.length >= 20 ? [...prev.slice(1), item] : [...prev, item];
       });
     }
   }, [systemStatus, isPaused]);
@@ -342,8 +351,8 @@ const DashboardPage = React.memo(() => {
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
           <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
-            {messages.length > 0 ? (
-              messages.slice(-15).map((msg, index) => (
+            {recentMessages.length > 0 ? (
+              recentMessages.map((msg, index) => (
                 <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
                   <code>{msg}</code>
                 </pre>
