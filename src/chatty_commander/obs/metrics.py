@@ -327,6 +327,9 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
     - GET /metrics/json
     - GET /metrics/prom
     """
+    if APIRouter is None:
+        return None
+
     reg = registry or DEFAULT_REGISTRY
     router = APIRouter()
 

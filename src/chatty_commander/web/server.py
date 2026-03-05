@@ -135,15 +135,29 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
 
     # Add bridge endpoint for tests
     try:
-        from fastapi import HTTPException
+        from fastapi import Header, HTTPException
 
         @app.post("/bridge/event")
-        async def bridge_event():
-            # For tests, always return 401 when no_auth=True (simulating missing token)
+        async def bridge_event(
+            x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
+        ):
+            # In production, ensure bridge token is validated if auth is enabled.
+            # When no_auth=True, we simulate an unauthorized request if no token is provided.
             if no_auth:
-                raise HTTPException(
-                    status_code=401, detail="Unauthorized bridge request"
-                )
+                if not x_bridge_token:
+                    raise HTTPException(
+                        status_code=401, detail="Unauthorized bridge request"
+                    )
+            else:
+                # If auth is enabled, validate the token from config
+                expected_token = None
+                if config_manager and hasattr(config_manager, "web_server"):
+                    expected_token = config_manager.web_server.get("bridge_token")
+
+                if not expected_token or x_bridge_token != expected_token:
+                    raise HTTPException(
+                        status_code=401, detail="Invalid or missing bridge token"
+                    )
 
             return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 
