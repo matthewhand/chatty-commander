@@ -123,6 +123,31 @@ class TestModelLoading(unittest.TestCase):
             result = self.model_manager.listen_for_commands()
             self.assertIsNone(result)
 
+    def test_async_listen_for_commands_timing(self):
+        """Test async_listen_for_commands uses correct delay (0.1s not 1.0s)."""
+        self.model_manager.active_models = {"cmd1": "model1"}
+        with (
+            patch("chatty_commander.app.model_manager.random.random", return_value=0.1),
+            patch("chatty_commander.app.model_manager.asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+        ):
+            import asyncio
+            result = asyncio.run(self.model_manager.async_listen_for_commands())
+            # Verify sleep was called with 0.1 seconds (the optimized delay)
+            mock_sleep.assert_called_once_with(0.1)
+            self.assertIsNone(result)
+
+    def test_async_listen_for_commands_returns_command(self):
+        """Test async_listen_for_commands returns a command when detected."""
+        self.model_manager.active_models = {"wake_cmd": "model1", "stop_cmd": "model2"}
+        with (
+            patch("chatty_commander.app.model_manager.random.random", return_value=0.01),
+            patch("chatty_commander.app.model_manager.random.choice", return_value="wake_cmd"),
+            patch("chatty_commander.app.model_manager.asyncio.sleep", new_callable=AsyncMock),
+        ):
+            import asyncio
+            result = asyncio.run(self.model_manager.async_listen_for_commands())
+            self.assertEqual(result, "wake_cmd")
+
     def test_get_models(self):
         """Test get_models method."""
         self.model_manager.models["test"] = {"model1": "instance"}
