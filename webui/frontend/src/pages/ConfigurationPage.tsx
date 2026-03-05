@@ -633,11 +633,11 @@ const ConfigurationPage: React.FC = () => {
               {mutation.isError && "✗ Save failed"}
             </span>
             <button
-              className={`btn btn-primary gap-2 ${mutation.isPending ? "loading" : ""}`}
+              className="btn btn-primary gap-2"
               onClick={() => mutation.mutate(config)}
               disabled={mutation.isPending}
             >
-              <SaveIcon size={20} />
+              {mutation.isPending ? <span className="loading loading-spinner"></span> : <SaveIcon size={20} />}
               {mutation.isPending ? "Saving..." : "Save Changes"}
             </button>
           </div>
