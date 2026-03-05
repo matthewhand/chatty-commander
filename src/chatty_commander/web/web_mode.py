@@ -64,6 +64,7 @@ from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
 from chatty_commander.web.routes.system import include_system_routes
+
 try:
     from chatty_commander.utils.logging_config import (
         RequestIdMiddleware,
@@ -89,8 +90,8 @@ try:
 except ImportError:
     include_audio_routes = None
 from chatty_commander.web.routes.version import router as version_router
-from chatty_commander.web.routes.ws import include_ws_routes
 from chatty_commander.web.routes.voice import include_voice_routes
+from chatty_commander.web.routes.ws import include_ws_routes
 
 # Avatar routes (optional)
 try:

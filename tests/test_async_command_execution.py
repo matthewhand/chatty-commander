@@ -1,12 +1,14 @@
 
 import asyncio
 import time
-from unittest.mock import MagicMock, AsyncMock, patch
-from chatty_commander.web.routes.core import include_core_routes
+from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
-from datetime import datetime
+
+from chatty_commander.web.routes.core import include_core_routes
 
 # Setup minimal app with the route
 app = FastAPI()

@@ -1,7 +1,6 @@
 """Tests verifying that obs/metrics middleware and router are wired into the FastAPI app."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
 
@@ -70,6 +69,7 @@ def test_request_metrics_middleware_tracks_requests():
     """
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
     from chatty_commander.obs.metrics import (
         MetricsRegistry,
         RequestMetricsMiddleware,

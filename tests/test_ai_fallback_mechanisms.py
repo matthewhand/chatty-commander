@@ -32,6 +32,7 @@ from src.chatty_commander.advisors.service import (
     AdvisorsService,
 )
 
+
 @pytest.fixture(autouse=True)
 def disable_llm_manager():
     """Disable the new LLMManager for these legacy fallback tests."""

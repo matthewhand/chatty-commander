@@ -10,6 +10,7 @@ def test_generate_command_endpoint_exists():
     """Test that the endpoint exists and accepts requests."""
     # Import the router directly to create a minimal app
     from fastapi import FastAPI
+
     from chatty_commander.web.routes.command_authoring import router
 
     app = FastAPI()
@@ -30,6 +31,7 @@ def test_generate_command_endpoint_exists():
 def test_generate_command_endpoint_validates_request():
     """Test that the endpoint validates the request body."""
     from fastapi import FastAPI
+
     from chatty_commander.web.routes.command_authoring import router
 
     app = FastAPI()
@@ -48,6 +50,7 @@ def test_generate_command_endpoint_validates_request():
 def test_generate_command_endpoint_accepts_valid_request():
     """Test that the endpoint accepts a valid request."""
     from fastapi import FastAPI
+
     from chatty_commander.web.routes.command_authoring import router
 
     app = FastAPI()
@@ -70,6 +73,7 @@ def test_generate_command_endpoint_accepts_valid_request():
 def client_with_router():
     """Create a test client with the command authoring router."""
     from fastapi import FastAPI
+
     from chatty_commander.web.routes.command_authoring import router
 
     app = FastAPI()

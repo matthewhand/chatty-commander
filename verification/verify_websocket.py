@@ -1,6 +1,8 @@
 import asyncio
 import os
+
 from playwright.async_api import async_playwright
+
 
 async def verify_websocket_connection():
     async with async_playwright() as p:

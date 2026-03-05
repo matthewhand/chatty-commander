@@ -99,7 +99,7 @@ class TestServerImportSafety:
 
             # create_metrics_router might also need to be unset if imported directly
             if "create_metrics_router" in server_module.__dict__:
-                setattr(server_module, "create_metrics_router", None)
+                server_module.create_metrics_router = None
 
             # Import should not raise
             app = server_module.create_app()

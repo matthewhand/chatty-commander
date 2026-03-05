@@ -149,6 +149,7 @@ def test_request_id_middleware_sets_header():
     """RequestIdMiddleware adds X-Request-ID to response headers."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
     from chatty_commander.utils.logging_config import RequestIdMiddleware
 
     if RequestIdMiddleware is None:
@@ -175,6 +176,7 @@ def test_request_id_middleware_preserves_incoming_id():
     """RequestIdMiddleware uses X-Request-ID from request if provided."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
     from chatty_commander.utils.logging_config import RequestIdMiddleware
 
     if RequestIdMiddleware is None:

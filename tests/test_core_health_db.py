@@ -1,8 +1,10 @@
 from datetime import datetime
 from unittest.mock import MagicMock
+
 from fastapi.testclient import TestClient
 
 from chatty_commander.web.routes.core import include_core_routes
+
 
 def test_health_db_not_configured():
     config_mock = MagicMock()

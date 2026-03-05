@@ -92,6 +92,7 @@ class TestOpenAIBackend:
             ):
                 # Force re-import to trigger ImportError path
                 import importlib
+
                 import chatty_commander.llm.backends as backends_mod
                 importlib.reload(backends_mod)
 
@@ -180,7 +181,7 @@ class TestOpenAIBackend:
                 backend = OpenAIBackend(api_key="test-key")
                 backend._client = mock_client
 
-        result = backend.generate_response(
+        backend.generate_response(
             "test prompt",
             model="gpt-4",
             max_tokens=500,
@@ -483,7 +484,7 @@ class TestOllamaBackend:
 
         with patch("httpx.Client") as MockClient:
             MockClient.return_value.__enter__.return_value = mock_client
-            result = backend.generate_response(
+            backend.generate_response(
                 "test prompt",
                 max_tokens=500,
                 temperature=0.5,
