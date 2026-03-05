@@ -40,12 +40,12 @@ class DummyConfig:
         self.advisors = {"enabled": True}
 
 
-@patch("chatty_commander.web.routes.agents._LLMManager")
-def test_create_agent_blueprint_from_description(mock_llm_manager_class):
+@patch("chatty_commander.web.routes.agents._get_llm_manager")
+def test_create_agent_blueprint_from_description(mock_get_llm):
     # Test fallback directly when LLM is unavailable
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = False
-    mock_llm_manager_class.return_value = mock_llm
+    mock_get_llm.return_value = mock_llm
 
     cfg = DummyConfig()
     sm = StateManager()
@@ -63,8 +63,8 @@ def test_create_agent_blueprint_from_description(mock_llm_manager_class):
     assert data["persona_prompt"] == "My helpful agent who summarizes docs"
 
 
-@patch("chatty_commander.web.routes.agents._LLMManager")
-def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_class):
+@patch("chatty_commander.web.routes.agents._get_llm_manager")
+def test_create_agent_blueprint_from_description_llm_success(mock_get_llm):
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = True
 
@@ -78,7 +78,7 @@ def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_cl
     }
     ```"""
     mock_llm.generate_response.return_value = mock_json_response
-    mock_llm_manager_class.return_value = mock_llm
+    mock_get_llm.return_value = mock_llm
 
     cfg = DummyConfig()
     sm = StateManager()
@@ -99,13 +99,13 @@ def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_cl
     assert data["team_role"] == "summarizer"
 
 
-@patch("chatty_commander.web.routes.agents._LLMManager")
-def test_create_agent_blueprint_from_description_llm_fallback(mock_llm_manager_class):
+@patch("chatty_commander.web.routes.agents._get_llm_manager")
+def test_create_agent_blueprint_from_description_llm_fallback(mock_get_llm):
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = True
     # Return invalid json
     mock_llm.generate_response.return_value = "This is not JSON at all."
-    mock_llm_manager_class.return_value = mock_llm
+    mock_get_llm.return_value = mock_llm
 
     cfg = DummyConfig()
     sm = StateManager()
