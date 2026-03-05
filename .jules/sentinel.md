@@ -1,0 +1,4 @@
+## 2024-03-05 - FastAPI/Starlette Middleware Path Traversal Bypass
+**Vulnerability:** Authentication middlewares in FastAPI/Starlette using `request.url.path.startswith()` for public endpoint checks can be bypassed using path traversal (e.g., `/docs/../api/v1/secret`).
+**Learning:** `request.url.path` is not pre-normalized by the framework before hitting the middleware stack. If the middleware does not normalize it but uses simple string matching (`startswith`), malicious actors can embed a public endpoint prefix and traverse out of it to reach a protected route.
+**Prevention:** Always normalize `request.url.path` using `posixpath.normpath(request.url.path)` before performing access control checks. Furthermore, use strict directory boundary matching (e.g., exact match or `path.startswith(endpoint + "/")`) rather than simple string prefixes to prevent partial path bypasses like `/docs_secret`.
