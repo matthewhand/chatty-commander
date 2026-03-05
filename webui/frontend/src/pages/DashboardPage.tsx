@@ -50,12 +50,6 @@ const DashboardPage = React.memo(() => {
   const [history, setHistory] = useState<PerfMetric[]>([]);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Memoize the derived array to prevent expensive array reallocation (.slice)
-  // on every render cycle caused by frequent telemetry updates.
-  const recentMessages = useMemo(() => {
-    return messages.slice(-15);
-  }, [messages]);
-
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commandInput.trim()) return;
@@ -359,8 +353,8 @@ const DashboardPage = React.memo(() => {
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
           <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
-            {recentMessages.length > 0 ? (
-              recentMessages.map((msg, index) => (
+            {messages.length > 0 ? (
+              messages.slice(-15).map((msg, index) => (
                 <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
                   <code>{msg}</code>
                 </pre>

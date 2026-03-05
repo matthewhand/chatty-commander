@@ -122,8 +122,12 @@ class ContextManager:
     def __init__(self, config: dict[str, Any]):
         self.config = config
         self.contexts: dict[str, ContextState] = {}
-        self.personas: dict[str, dict[str, Any]] = config.get("personas", {})
-        self.default_persona = config.get("default_persona", "general")
+
+        # Support both direct 'personas' key or nested under 'context'
+        personas_dict = config.get("personas", {}) or config.get("context", {}).get("personas", {})
+        self.personas: dict[str, dict[str, Any]] = personas_dict
+
+        self.default_persona = config.get("default_persona") or config.get("context", {}).get("default_persona", "general")
 
         # Persistence settings
         self.persistence_enabled = config.get("persistence_enabled", True)
@@ -293,6 +297,10 @@ class ContextManager:
 
         if platform_persona in self.personas:
             return platform_persona
+
+        # If the platform itself is defined as a persona, use it
+        if identity.platform.value in self.personas:
+            return identity.platform.value
 
         # Fall back to default persona
         return self.default_persona
