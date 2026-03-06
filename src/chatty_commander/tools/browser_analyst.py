@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from chatty_commander.app.config import Config
+from chatty_commander.utils.url_validator import is_safe_url
 
 try:
     import httpx
@@ -68,6 +69,11 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
     if allowlist is not None and hostname not in allowlist:
         logger.warning(f"Domain {hostname} is not in the allowlist.")
         return AnalystResult(title="Error", summary="Domain not allowed.", url=request.url)
+
+    # Prevent Server-Side Request Forgery (SSRF)
+    if not is_safe_url(request.url):
+        logger.warning(f"URL {request.url} resolved to a restricted or invalid IP address.")
+        return AnalystResult(title="Error", summary="URL resolves to a restricted or invalid IP address.", url=request.url)
 
     try:
         # Prevent DoS via memory exhaustion with a 2MB limit
