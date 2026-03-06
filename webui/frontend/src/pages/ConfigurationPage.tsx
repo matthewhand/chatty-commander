@@ -593,6 +593,7 @@ const ConfigurationPage: React.FC = () => {
                       onClick={handleFetchModels}
                       disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                       title="Fetch available models from endpoint"
+                      aria-label="Fetch available models from endpoint"
                     >
                       {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
                       {fetchingModels ? "Fetching..." : "Fetch list"}
