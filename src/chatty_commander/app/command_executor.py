@@ -27,7 +27,6 @@ Handles the execution of commands in response to recognized voice commands from 
 This includes executing system commands, sending HTTP requests, and emulating keystrokes.
 """
 
-from __future__ import annotations
 
 import logging
 import os

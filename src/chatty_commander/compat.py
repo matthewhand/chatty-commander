@@ -27,7 +27,6 @@ base can pull in the modern implementations from a single place.  This avoids
 hand-maintaining nearly identical wrappers for each legacy module.
 """
 
-from __future__ import annotations
 
 import importlib
 import warnings

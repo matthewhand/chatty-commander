@@ -28,7 +28,6 @@ tests could import ``chatty_commander.main`` from the repository root. Now that
 relevant functions for any lingering imports of :mod:`chatty_commander.main_shim`.
 """
 
-from __future__ import annotations
 
 from chatty_commander import main as _root_main
 

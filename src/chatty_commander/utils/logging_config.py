@@ -37,7 +37,6 @@ Usage:
     app.add_middleware(RequestIdMiddleware)
 """
 
-from __future__ import annotations
 
 import json
 import logging

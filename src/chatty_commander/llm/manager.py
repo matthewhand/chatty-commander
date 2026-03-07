@@ -30,7 +30,6 @@ Tries backends in order:
 4. Mock (always available)
 """
 
-from __future__ import annotations
 
 import logging
 import os
