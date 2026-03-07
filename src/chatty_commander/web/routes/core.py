@@ -32,10 +32,10 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-
-from chatty_commander.utils.security import mask_sensitive_data
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from chatty_commander.utils.security import mask_sensitive_data
 
 
 class SystemStatus(BaseModel):
@@ -224,15 +224,6 @@ def include_core_routes(
             cpu_usage=cpu_usage,
             last_health_check=datetime.now().isoformat(),
         )
-
-    @router.get("/api/v1/commands")
-    async def get_commands():
-        try:
-            cfg_mgr = get_config_manager()
-            return getattr(cfg_mgr, "commands", {}) or {}
-        except Exception as exc:
-            logger.warning("Failed to retrieve commands config: %s", exc)
-            return {}
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
