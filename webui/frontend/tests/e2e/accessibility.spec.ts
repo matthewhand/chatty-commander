@@ -12,6 +12,11 @@ test('Commands page accessibility test', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'take_screenshot' }).first()).toBeVisible();
 
   // 1. Check for Aria Labels on buttons
+  // First, open the action dropdown menu for the command
+  const actionsBtn = page.getByRole('button', { name: 'Actions for take_screenshot' });
+  await expect(actionsBtn).toBeVisible();
+  await actionsBtn.click();
+
   // The aria-label is on the button itself
   const editBtn = page.getByRole('button', { name: 'Edit take_screenshot' });
   await expect(editBtn).toBeVisible();
@@ -20,13 +25,12 @@ test('Commands page accessibility test', async ({ page }) => {
   await expect(deleteBtn).toBeVisible();
 
   // 2. Check for Tooltips (CSS based)
-  // The button is wrapped in a div with .tooltip class and data-tip attribute
-  // But our wait mechanism above might be too strict with filters. Let's simplify.
-  const tooltip = page.locator('.tooltip-bottom').first();
-  await expect(tooltip).toBeVisible();
+  // The refresh button has a title attribute and aria-label
+  const refreshBtn = page.getByRole('button', { name: 'Refresh Commands' });
+  await expect(refreshBtn).toBeVisible();
 
   // Hover to trigger visual tooltip (for screenshot)
-  await tooltip.hover();
+  await refreshBtn.hover();
 
   // 3. Check Toggle Accessibility
   // The updated page structure doesn't expose toggles for this particular command.
