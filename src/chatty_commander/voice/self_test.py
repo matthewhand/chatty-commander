@@ -30,7 +30,6 @@ ChattyCommander can improve itself by:
 4. Automatically tune parameters and improve
 """
 
-from __future__ import annotations
 
 import json
 import logging

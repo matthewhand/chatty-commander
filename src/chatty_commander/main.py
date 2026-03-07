@@ -22,7 +22,6 @@
 
 """Thin wrapper around :mod:`chatty_commander.cli.cli` for backward compatibility."""
 
-from __future__ import annotations
 
 from typing import Any
 
