@@ -7,7 +7,6 @@ import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
 const MAX_MESSAGES = 100;
-const MAX_RECENT_MESSAGES = 15;
 const MAX_HISTORY_ITEMS = 20;
 
 interface PerfMetric {
@@ -39,10 +38,10 @@ const DashboardPage = React.memo(() => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
 
-  // Performance optimization: Memoize the recent messages derived array
-  // to avoid inline `messages.slice(-15)` during frequent real-time re-renders.
+  // ⚡ Bolt: Memoize the recent messages derived array to prevent expensive inline slicing (`messages.slice(-15)`)
+  // and subsequent reallocation on every high-frequency render cycle triggered by websocket events.
   const recentMessages = useMemo(() => {
-    return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
+    return messages.length > 15 ? messages.slice(-15) : messages;
   }, [messages]);
 
   const [commandInput, setCommandInput] = useState("");
@@ -129,6 +128,50 @@ const DashboardPage = React.memo(() => {
     refetchInterval: 30000,
     retry: 2,
   });
+
+  // ⚡ Bolt: Memoize the Recharts component to prevent expensive SVG reconciliations
+  // on every keystroke in `commandInput` and on every new WebSocket message log.
+  const memoizedChart = useMemo(() => (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={history}>
+        <defs>
+          <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#3abff8" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#fbbd23" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+        <XAxis dataKey="time" hide />
+        <YAxis
+          domain={[0, 100]}
+          tickFormatter={(value) => `${value}%`}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Area
+          type="monotone"
+          dataKey="cpu"
+          stroke="#3abff8"
+          fillOpacity={1}
+          fill="url(#colorCpu)"
+          name="CPU"
+          isAnimationActive={false}
+        />
+        <Area
+          type="monotone"
+          dataKey="memory"
+          stroke="#fbbd23"
+          fillOpacity={1}
+          fill="url(#colorMem)"
+          name="Memory"
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  ), [history]);
 
   const getAgentStatusColor = (status: Agent["status"]) => {
     switch (status) {
@@ -304,45 +347,7 @@ const DashboardPage = React.memo(() => {
             </div>
           </div>
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={history}>
-                <defs>
-                  <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                <XAxis dataKey="time" hide />
-                <YAxis
-                  domain={[0, 100]}
-                  tickFormatter={(value) => `${value}%`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="cpu"
-                  stroke="#3abff8"
-                  fillOpacity={1}
-                  fill="url(#colorCpu)"
-                  name="CPU"
-                  isAnimationActive={false}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="memory"
-                  stroke="#fbbd23"
-                  fillOpacity={1}
-                  fill="url(#colorMem)"
-                  name="Memory"
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {memoizedChart}
           </div>
         </div>
       </div>
