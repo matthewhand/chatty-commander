@@ -22,7 +22,6 @@
 
 """Command authoring routes for LLM-assisted command generation."""
 
-from __future__ import annotations
 
 import json
 import logging
