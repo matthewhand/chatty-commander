@@ -32,10 +32,10 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from chatty_commander.utils.security import mask_sensitive_data
+from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class SystemStatus(BaseModel):
