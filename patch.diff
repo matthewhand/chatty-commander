@@ -1,0 +1,8 @@
+--- webui/frontend/src/hooks/useWebSocket.test.ts
++++ webui/frontend/src/hooks/useWebSocket.test.ts
+@@ -1,4 +1,4 @@
+-import { renderHook, act, waitFor } from "@testing-library/react";
++import { renderHook, act } from "@testing-library/react";
+ import { useWebSocket } from "./useWebSocket";
+
+ type WSHandler = ((ev?: any) => void) | null;
