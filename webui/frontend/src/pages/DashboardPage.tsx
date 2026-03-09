@@ -40,7 +40,7 @@ const DashboardPage = React.memo(() => {
   const [messages, setMessages] = useState<string[]>([]);
 
   // Performance optimization: Memoize the recent messages derived array
-  // to avoid inline `messages.slice(-15)` during frequent real-time re-renders.
+  // to avoid inline `messages.slice(-15)` during frequent real-time re-renders
   const recentMessages = useMemo(() => {
     return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
   }, [messages]);
@@ -353,8 +353,8 @@ const DashboardPage = React.memo(() => {
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
           <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
-            {messages.length > 0 ? (
-              messages.slice(-15).map((msg, index) => (
+            {recentMessages.length > 0 ? (
+              recentMessages.map((msg, index) => (
                 <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
                   <code>{msg}</code>
                 </pre>
