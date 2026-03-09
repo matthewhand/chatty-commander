@@ -79,3 +79,7 @@ __all__ = [
     "setup_logger",
     "generate_default_config_if_needed",
 ]
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

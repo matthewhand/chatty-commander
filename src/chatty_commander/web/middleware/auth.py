@@ -23,6 +23,7 @@
 """Authentication middleware for FastAPI."""
 
 import logging
+import posixpath
 from collections.abc import Callable
 
 from fastapi import Request, Response
@@ -58,10 +59,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if self.no_auth:
             return await call_next(request)
 
+        # Normalize path to prevent path traversal bypasses
+        # Use exact match or explicit trailing slash check to prevent partial path matching
+        path = posixpath.normpath(request.url.path)
+
         # Skip auth for public endpoints
-        path = request.url.path
         if (
-            any(path.startswith(endpoint) for endpoint in self.public_endpoints)
+            any(path == endpoint or path.startswith(endpoint + "/") for endpoint in self.public_endpoints)
             or path in self.public_exact_endpoints
         ):
             return await call_next(request)
@@ -71,7 +75,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Validate API key for protected endpoints
-        if path.startswith("/api/"):
+        if path == "/api" or path.startswith("/api/"):
             api_key = request.headers.get("X-API-Key")
             logger.debug(
                 f"API request to {path}, API key present: {api_key is not None}"
@@ -83,15 +87,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
             # Check for DummyConfig pattern (test configs)
             if hasattr(self.config_manager, "auth"):
                 expected_key = self.config_manager.auth.get("api_key")
-                logger.debug(f"Found auth config in DummyConfig: {expected_key}")
+                logger.debug("Found auth config in DummyConfig: key present=%s", bool(expected_key))
             # Check for regular Config pattern
             elif hasattr(self.config_manager, "config") and self.config_manager.config:
                 auth_config = self.config_manager.config.get("auth", {})
                 expected_key = auth_config.get("api_key")
-                logger.debug(f"Found auth config in regular Config: {expected_key}")
+                logger.debug("Found auth config in regular Config: key present=%s", bool(expected_key))
             else:
                 logger.debug(
-                    f"No auth config found, config_manager type: {type(self.config_manager)}"
+                    "No auth config found, config_manager type: %s", type(self.config_manager).__name__
                 )
 
             # Check if API key is required and valid
@@ -101,9 +105,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 return await call_next(request)
 
             if not api_key or api_key != expected_key:
-                logger.debug(
-                    f"Auth failed - provided: {api_key}, expected: {expected_key}"
-                )
+                logger.debug("Auth failed for %s - API key mismatch or missing", path)
                 # Return 401 response directly instead of raising exception
                 from fastapi.responses import JSONResponse
 

@@ -36,7 +36,7 @@ const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="w-full space-y-4">
             <div className="form-control w-full">
-              <label className="label" htmlFor="username">
+              <label htmlFor="username" className="label">
                 <span className="label-text">Username</span>
               </label>
               <input
@@ -52,7 +52,7 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div className="form-control w-full">
-              <label className="label" htmlFor="password">
+              <label htmlFor="password" className="label">
                 <span className="label-text">Password</span>
               </label>
               <input
@@ -67,16 +67,17 @@ const LoginPage: React.FC = () => {
             </div>
 
             {error && (
-              <div className="alert alert-error shadow-lg py-2" role="alert" aria-live="polite">
+              <div className="alert alert-error shadow-lg py-2">
                 <span>{error}</span>
               </div>
             )}
 
             <button
               type="submit"
-              className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
+              className="btn btn-primary w-full"
               disabled={loading}
             >
+              {loading && <span className="loading loading-spinner"></span>}
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>

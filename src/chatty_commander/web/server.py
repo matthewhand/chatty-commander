@@ -20,7 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from __future__ import annotations
 
+import logging
 from typing import Any
 
 try:
@@ -59,6 +61,11 @@ except ImportError:
     include_avatar_settings_routes = None
 
 try:
+    from .routes.audio import include_audio_routes
+except ImportError:
+    include_audio_routes = None
+
+try:
     from .routes.version import router as version_router
 except ImportError:
     version_router = None
@@ -74,6 +81,11 @@ except ImportError:
     models_router = None
 
 try:
+    from .routes.command_authoring import router as command_authoring_router
+except ImportError:
+    command_authoring_router = None
+
+try:
     from ..obs.metrics import create_metrics_router
 
     metrics_router = create_metrics_router()
@@ -82,6 +94,7 @@ except ImportError:
 
 # Settings router needs to be created with config manager
 settings_router = None
+audio_router = None
 
 
 def _include_optional(app: FastAPI, name: str) -> None:
@@ -102,6 +115,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         "metrics_router",
         "agents_router",
         "models_router",
+        "command_authoring_router",
     ):
         _include_optional(app, nm)
 
@@ -113,19 +127,68 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         )
         _include_optional(app, "settings_router")
 
+    if include_audio_routes and config_manager:
+        global audio_router
+        audio_router = include_audio_routes(
+            get_config_manager=lambda: config_manager
+        )
+        _include_optional(app, "audio_router")
+
     # Add bridge endpoint for tests
     try:
-        from fastapi import HTTPException
+        from fastapi import Header, HTTPException
+
+        # Logger for security events on bridge endpoint
+        _bridge_logger = logging.getLogger("chatty_commander.bridge")
 
         @app.post("/bridge/event")
-        async def bridge_event():
-            # For tests, always return 401 when no_auth=True (simulating missing token)
-            if no_auth:
-                raise HTTPException(
-                    status_code=401, detail="Unauthorized bridge request"
-                )
+        async def bridge_event(
+            x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
+        ):
+            """Bridge event endpoint for external integrations (e.g., Discord).
 
-            return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
+            Security behavior:
+            - no_auth=True (dev mode): Requires X-Bridge-Token header. Requests without
+              token are rejected with 401. This ensures even dev environments require
+              authentication to prevent accidental exposure.
+            - no_auth=False (production): Requires valid bridge_token from config.
+              If bridge_token is missing/empty in config, requests are rejected with 401
+              and a warning is logged (secure-by-default).
+            """
+            if no_auth:
+                # Dev mode: token required, reject if missing
+                if not x_bridge_token:
+                    _bridge_logger.warning("Bridge request rejected: missing X-Bridge-Token in dev mode")
+                    raise HTTPException(
+                        status_code=401, detail="Unauthorized bridge request"
+                    )
+                return {"ok": True, "reply": {"text": "Bridge response (dev)", "meta": {}}}
+            else:
+                # Production mode: validate token from config
+                expected_token: str | None = None
+                if config_manager and hasattr(config_manager, "web_server"):
+                    expected_token = config_manager.web_server.get("bridge_token")
+
+                # Secure-by-default: reject if token not configured
+                if not expected_token:
+                    _bridge_logger.warning(
+                        "Bridge request rejected: bridge_token not configured in web_server settings"
+                    )
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Bridge authentication not configured. Contact administrator.",
+                    )
+
+                # Validate token
+                if x_bridge_token != expected_token:
+                    _bridge_logger.warning(
+                        "Bridge request rejected: invalid token provided"
+                    )
+                    raise HTTPException(
+                        status_code=401, detail="Invalid bridge token"
+                    )
+
+                return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 
     except ImportError:
         pass

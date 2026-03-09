@@ -20,13 +20,41 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from __future__ import annotations
 
+import json
+import logging
+import os
+import re
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel, Field
+
+try:
+    from chatty_commander.llm.manager import LLMManager as _LLMManager
+except ImportError:
+    _LLMManager = None  # type: ignore[assignment]
+
+logger = logging.getLogger(__name__)
+
+# Module-level singleton to avoid creating a new LLMManager on every request
+_llm_manager: Any = None
+
+
+def _get_llm_manager() -> Any:
+    """Return a cached LLMManager instance, or None if unavailable."""
+    global _llm_manager
+    if _llm_manager is None and _LLMManager is not None:
+        try:
+            _llm_manager = _LLMManager()
+        except Exception as exc:
+            logger.debug("LLMManager init failed: %s", exc)
+    return _llm_manager
+
 
 router = APIRouter()
 
@@ -55,14 +83,87 @@ class AgentBlueprintResponse(AgentBlueprintModel):
     id: str
 
 
-# In-memory store (replace with persistence later)
+_STORE_PATH = Path(os.path.expanduser(os.environ.get("CHATTY_AGENTS_STORE", "~/.chatty_commander/agents.json")))
+
 _STORE: dict[str, AgentBlueprint] = {}
 _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
 
 
-# Placeholder natural language parser (stub for LLM)
+def _load_store() -> None:
+    global _STORE, _TEAM
+    if not _STORE_PATH.exists():
+        return
+    try:
+        with _STORE_PATH.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+            _STORE.clear()
+            _TEAM.clear()
+
+            for agent_dict in data.get("agents", []):
+                agent = AgentBlueprint(**agent_dict)
+                _STORE[agent.id] = agent
+                if agent.team_role:
+                    _TEAM.setdefault(agent.team_role, []).append(agent.id)
+    except Exception as e:
+        logger.warning("Error loading agent store from %s: %s", _STORE_PATH, e)
+
+def _save_store() -> None:
+    try:
+        _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        agents = [asdict(agent) for agent in _STORE.values()]
+        data = {"agents": agents}
+        with _STORE_PATH.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
+
+_load_store()
+
+
+def _extract_json_from_response(response: str) -> str:
+    """Extract JSON content from a response that may contain markdown code blocks."""
+    # Use regex to safely extract content between ```json ... ``` or ``` ... ```
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)```", response)
+    if match:
+        return match.group(1).strip()
+    return response.strip()
+
+
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
-    # Very naive heuristic parser for now
+    llm = _get_llm_manager()
+    if llm is not None and llm.is_available():
+        try:
+            prompt = f"""
+Extract an agent blueprint from the following text.
+Return a JSON object with EXACTLY these keys:
+- "name" (string, short)
+- "description" (string, short summary)
+- "persona_prompt" (string, detailed prompt)
+- "capabilities" (list of strings, inferred abilities)
+- "team_role" (string or null, inferred role if any)
+
+Text:
+{text}
+
+Return ONLY valid JSON.
+"""
+            response = llm.generate_response(prompt)
+            # Safely extract JSON from possible markdown code block
+            json_str = _extract_json_from_response(response)
+            data = json.loads(json_str)
+            return AgentBlueprintModel(
+                name=data.get("name", "Agent")[:48],
+                description=data.get("description", text.strip()[:256]),
+                persona_prompt=data.get("persona_prompt", text.strip()),
+                capabilities=data.get("capabilities", []),
+                team_role=data.get("team_role"),
+                handoff_triggers=[],
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            logger.debug("LLM blueprint parsing failed, using heuristic fallback: %s", exc)
+
+    # Very naive heuristic parser fallback
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
     name = lines[0][:48] if lines else "Agent"
     description = text.strip()[:256]
@@ -101,6 +202,7 @@ async def create_blueprint(
         _STORE[uid] = ent
         if ent.team_role:
             _TEAM.setdefault(ent.team_role, []).append(uid)
+        _save_store()
         return AgentBlueprintResponse(id=uid, **model.model_dump())
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -120,6 +222,7 @@ async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
         raise HTTPException(status_code=404, detail="Agent not found")
     ent = AgentBlueprint(id=agent_id, **bp.model_dump())
     _STORE[agent_id] = ent
+    _save_store()
     return AgentBlueprintResponse(id=agent_id, **bp.model_dump())
 
 
@@ -134,6 +237,7 @@ async def delete_blueprint(agent_id: str):
             if not ids:
                 _TEAM.pop(role, None)
     _STORE.pop(agent_id, None)
+    _save_store()
     return {"deleted": True, "id": agent_id}
 
 

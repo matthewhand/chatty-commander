@@ -27,14 +27,15 @@ import sys
 PYTHON = sys.executable
 
 
-def run_cmd(args, timeout=10):
+def run_cmd(args, timeout=10, input_data=None):
     """Run a command in a clean environment and capture output."""
     env = os.environ.copy()
     # Some tests set DISPLAY which can cause headless runs to fail when
     # downstream libraries (e.g., pyautogui) try to connect to an X server.
     env.pop("DISPLAY", None)
+    env["PYTHONPATH"] = "src"
     proc = subprocess.run(
-        args, capture_output=True, text=True, timeout=timeout, env=env
+        args, capture_output=True, text=True, timeout=timeout, env=env, input=input_data
     )
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -56,7 +57,7 @@ def test_cli_help_lists_key_flags():
 
 
 def test_no_args_prints_intro_and_does_not_crash():
-    rc, out, err = run_cmd([PYTHON, "-m", "chatty_commander.main"])
+    rc, out, err = run_cmd([PYTHON, "-m", "chatty_commander.main"], input_data="exit\n")
     assert rc == 0
     text = out + err
     assert "ChattyCommander - Voice Command System" in text

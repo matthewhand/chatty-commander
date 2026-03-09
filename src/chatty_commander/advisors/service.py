@@ -26,8 +26,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..avatars.thinking_state import get_thinking_manager
-
-# from .prompting import build_provider_prompt  # Currently unused
 from . import providers as providers_module
 from .context import ContextManager, PlatformType
 from .conversation_engine import create_conversation_engine

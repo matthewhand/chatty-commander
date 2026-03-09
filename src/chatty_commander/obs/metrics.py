@@ -40,8 +40,9 @@ Design principles
 - Defensive coding: invalid inputs are clamped/sanitized; errors in metrics collection
   never break the application path (best-effort philosophy).
 
-Note: This module is not yet wired into the running server by default to avoid test
-flake risk; consumers can import and install the middleware/routers on demand.
+This module is wired into the running server via web_mode.py:
+- RequestMetricsMiddleware is added to the FastAPI app on startup
+- create_metrics_router() exposes /metrics/json and /metrics/prom endpoints
 """
 
 from __future__ import annotations
@@ -176,13 +177,12 @@ class Histogram(Metric):
                 self._count[key] = 0
             self._sum[key] += v
             self._count[key] += 1
-            # cumulative counts: increment all buckets >= v
+            # cumulative counts: increment all buckets where le >= v
             placed = False
             for idx, edge in enumerate(self._buckets.edges):
                 if v <= edge:
                     counts[idx] += 1
                     placed = True
-                    break
             if not placed:
                 counts[-1] += 1
 
@@ -327,6 +327,9 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
     - GET /metrics/json
     - GET /metrics/prom
     """
+    if APIRouter is None:
+        return None
+
     reg = registry or DEFAULT_REGISTRY
     router = APIRouter()
 

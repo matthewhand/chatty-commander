@@ -61,12 +61,19 @@ class TestWebServer:
 
     def test_create_app_with_auth(self):
         """Test app creation with authentication enabled."""
-        app = create_app(no_auth=False)
+        # When no_auth=False but no config_manager is provided,
+        # bridge_token cannot be retrieved - should reject (secure-by-default)
+        mock_config = Mock()
+        mock_config.web_server = {"bridge_token": "test-token"}
+        app = create_app(no_auth=False, config_manager=mock_config)
         assert isinstance(app, FastAPI)
 
-        # Test the bridge endpoint with auth enabled
+        # Test the bridge endpoint with auth enabled and correct token
         client = TestClient(app)
-        response = client.post("/bridge/event")
+        response = client.post(
+            "/bridge/event",
+            headers={"X-Bridge-Token": "test-token"},
+        )
         assert response.status_code == 200
         assert response.json() == {
             "ok": True,
@@ -165,11 +172,17 @@ class TestWebServer:
 
     def test_bridge_endpoint_error_handling(self):
         """Test bridge endpoint error handling."""
-        app = create_app(no_auth=False)
+        # Test with proper config for successful request
+        mock_config = Mock()
+        mock_config.web_server = {"bridge_token": "valid-token"}
+        app = create_app(no_auth=False, config_manager=mock_config)
         client = TestClient(app)
 
-        # Test successful bridge request
-        response = client.post("/bridge/event")
+        # Test successful bridge request with correct token
+        response = client.post(
+            "/bridge/event",
+            headers={"X-Bridge-Token": "valid-token"},
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["ok"] is True
@@ -228,3 +241,94 @@ class TestWebServer:
         app = create_app()
         assert isinstance(app, FastAPI)
         # The bridge endpoint should not be created if HTTPException import fails
+
+
+class TestBridgeEndpointSecurity:
+    """Security tests for /bridge/event endpoint."""
+
+    def test_no_auth_missing_token_returns_401(self):
+        """When no_auth=True (dev), missing token should return 401."""
+        app = create_app(no_auth=True)
+        client = TestClient(app)
+        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        assert response.status_code == 401
+        assert "Unauthorized bridge request" in response.json()["detail"]
+
+    def test_no_auth_correct_token_returns_200(self):
+        """When no_auth=True (dev), correct token should return 200."""
+        app = create_app(no_auth=True)
+        client = TestClient(app)
+        response = client.post(
+            "/bridge/event",
+            headers={"X-Bridge-Token": "any-token"},
+            json={"platform": "discord", "text": "hi"},
+        )
+        assert response.status_code == 200
+        assert response.json()["ok"] is True
+        assert "dev" in response.json()["reply"]["text"]
+
+    def test_auth_missing_bridge_token_config_returns_401(self):
+        """When no_auth=False and bridge_token not in config, should return 401."""
+        # No config_manager means no bridge_token
+        app = create_app(no_auth=False)
+        client = TestClient(app)
+        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        assert response.status_code == 401
+        assert "not configured" in response.json()["detail"].lower()
+
+    def test_auth_empty_bridge_token_config_returns_401(self):
+        """When no_auth=False and bridge_token is empty, should return 401."""
+        mock_config = Mock()
+        mock_config.web_server = {"bridge_token": ""}  # Empty token
+        app = create_app(no_auth=False, config_manager=mock_config)
+        client = TestClient(app)
+        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        assert response.status_code == 401
+        assert "not configured" in response.json()["detail"].lower()
+
+    def test_auth_wrong_token_returns_401(self):
+        """When no_auth=False with valid config, wrong token should return 401."""
+        mock_config = Mock()
+        mock_config.web_server = {"bridge_token": "correct-token"}
+        app = create_app(no_auth=False, config_manager=mock_config)
+        client = TestClient(app)
+        response = client.post(
+            "/bridge/event",
+            headers={"X-Bridge-Token": "wrong-token"},
+            json={"platform": "discord", "text": "hi"},
+        )
+        assert response.status_code == 401
+        assert "Invalid bridge token" in response.json()["detail"]
+
+    def test_auth_correct_token_returns_200(self):
+        """When no_auth=False with valid config, correct token should return 200."""
+        mock_config = Mock()
+        mock_config.web_server = {"bridge_token": "secret-token"}
+        app = create_app(no_auth=False, config_manager=mock_config)
+        client = TestClient(app)
+        response = client.post(
+            "/bridge/event",
+            headers={"X-Bridge-Token": "secret-token"},
+            json={"platform": "discord", "text": "hi"},
+        )
+        assert response.status_code == 200
+        assert response.json()["ok"] is True
+
+    def test_auth_no_token_provided_returns_401(self):
+        """When no_auth=False with valid config but no token provided, should return 401."""
+        mock_config = Mock()
+        mock_config.web_server = {"bridge_token": "secret-token"}
+        app = create_app(no_auth=False, config_manager=mock_config)
+        client = TestClient(app)
+        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        assert response.status_code == 401
+
+    def test_auth_none_bridge_token_config_returns_401(self):
+        """When no_auth=False and bridge_token is explicitly None, should return 401."""
+        mock_config = Mock()
+        mock_config.web_server = {"bridge_token": None}  # type: ignore
+        app = create_app(no_auth=False, config_manager=mock_config)
+        client = TestClient(app)
+        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        assert response.status_code == 401
+        assert "not configured" in response.json()["detail"].lower()

@@ -198,7 +198,7 @@ class ModelManager:
 
     async def async_listen_for_commands(self) -> str | None:
         """Asynchronously simulate listening for voice commands."""
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
         if self.active_models and random.random() < 0.05:
             return random.choice(list(self.active_models.keys()))
         return None

@@ -26,6 +26,7 @@ from chatty_commander.web.web_mode import create_app
 
 
 def test_metrics_counts_increment():
+    """Test that metrics count values increment when various endpoints are called."""
     app = create_app(no_auth=True)
     client = TestClient(app)
 
@@ -42,7 +43,46 @@ def test_metrics_counts_increment():
     m2 = client.get("/api/v1/metrics").json()
 
     assert m2["status"] >= (m1.get("status", 0) + 1)
+    assert m2["response_time_avg"] >= 0.0
     assert m2["config_get"] >= m1.get("config_get", 0)
     assert m2["state_get"] >= (m1.get("state_get", 0) + 1)
     assert m2["state_post"] >= (m1.get("state_post", 0) + 1)
     assert m2["command_post"] >= (m1.get("command_post", 0) + 1)
+
+
+def test_metrics_json_endpoint():
+    """Verify that the JSON metrics endpoint returns correct structure and data."""
+    app = create_app(no_auth=True)
+    client = TestClient(app)
+
+    # Hit an endpoint to ensure some metrics are recorded
+    client.get("/api/v1/health")
+
+    response = client.get("/metrics/json")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "counters" in data
+    assert "gauges" in data
+    assert "histograms" in data
+
+    # Check if the RequestMetricsMiddleware recorded the request
+    assert "http_requests_total" in data["counters"]
+    assert "http_request_duration_seconds" in data["histograms"]
+
+
+def test_metrics_prom_endpoint():
+    """Verify that the Prometheus metrics endpoint exposes metrics in plain text."""
+    app = create_app(no_auth=True)
+    client = TestClient(app)
+
+    # Hit an endpoint to ensure some metrics are recorded
+    client.get("/api/v1/health")
+
+    response = client.get("/metrics/prom")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+
+    text = response.text
+    assert "http_requests_total" in text
+    assert "http_request_duration_seconds" in text

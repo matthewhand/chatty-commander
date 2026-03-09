@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from __future__ import annotations
 
 import asyncio
 import logging
@@ -60,6 +61,7 @@ _CATEGORY_HINTS = {
 
 
 def _default_animations_dir() -> Path:
+    """Resolve and return the default directory containing avatar animations."""
     # Default to the avatar webui directory; callers can override via query param.
     here = Path(__file__).resolve()
     # src/chatty_commander/web/routes/avatar_api.py -> up to src/chatty_commander
@@ -84,7 +86,18 @@ async def list_animations(
     ),
 ) -> dict[str, Any]:
     try:
-        root = Path(dir) if dir else _default_animations_dir()
+        base_dir = _default_animations_dir().resolve()
+
+        if dir:
+            # Resolve the requested path and ensure it's within base_dir
+            root = (base_dir / dir).resolve()
+            if not root.is_relative_to(base_dir):
+                raise HTTPException(
+                    status_code=403, detail="Access denied: Invalid directory path"
+                )
+        else:
+            root = base_dir
+
         if not root.exists() or not root.is_dir():
             raise HTTPException(
                 status_code=404, detail=f"Animations directory not found: {root}"

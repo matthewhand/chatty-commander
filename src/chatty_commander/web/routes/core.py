@@ -20,15 +20,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from __future__ import annotations
 
+import asyncio
 import os
+import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+
+from chatty_commander.utils.security import mask_sensitive_data
 from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class SystemStatus(BaseModel):
@@ -72,7 +79,36 @@ class HealthStatus(BaseModel):
     database: str = Field(default="unknown", description="Database status")
     memory_usage: str = Field(default="unknown", description="Memory usage")
     cpu_usage: str = Field(default="unknown", description="CPU usage")
+    commands_executed: int = Field(default=0, description="Total commands executed")
     last_health_check: str = Field(..., description="Last health check timestamp")
+
+
+class ResponseTimeMiddleware(BaseHTTPMiddleware):
+    """Middleware to track the rolling average of request response times.
+
+    Uses instance-level state so multiple app instances in tests don't
+    share the same deque (avoids cross-contamination between test cases).
+    """
+
+    def __init__(self, app: Any, maxlen: int = 100) -> None:
+        super().__init__(app)
+        self._response_times: deque[float] = deque(maxlen=maxlen)
+        self._lock = threading.Lock()
+
+    def get_average_ms(self) -> float:
+        """Return the current rolling average response time in milliseconds."""
+        with self._lock:
+            return sum(self._response_times) / len(self._response_times) if self._response_times else 0.0
+
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
+        start_time = time.time()
+        response = await call_next(request)
+        duration_ms = (time.time() - start_time) * 1000.0
+
+        with self._lock:
+            self._response_times.append(duration_ms)
+
+        return response
 
 
 class MetricsData(BaseModel):
@@ -98,6 +134,8 @@ def include_core_routes(
     execute_command_fn: Callable[[str], Any],
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
+    get_total_commands: Callable[[], int] | None = None,
+    response_time_middleware: ResponseTimeMiddleware | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -148,8 +186,34 @@ def include_core_routes(
         except ImportError:
             pass  # psutil not available
 
-        # Database check (placeholder for future database integration)
+        # Database connectivity check
         database_status = "not_configured"
+
+        cfg_mgr = get_config_manager()
+        cfg = getattr(cfg_mgr, "config", {})
+        # Look for database_url in general_settings or root
+        db_url = cfg.get("database_url") or cfg.get("general_settings", {}).get("database_url")
+
+        if db_url:
+            def _check_db():
+                try:
+                    from sqlalchemy import create_engine, text
+                    from sqlalchemy.pool import NullPool
+                    engine = create_engine(db_url, poolclass=NullPool)
+                    with engine.connect() as conn:
+                        conn.execute(text("SELECT 1")).scalar()
+                    engine.dispose()
+                    return "healthy"
+                except Exception:
+                    return "unreachable"
+
+            try:
+                database_status = await asyncio.wait_for(
+                    asyncio.to_thread(_check_db),
+                    timeout=2.0
+                )
+            except Exception:
+                database_status = "unreachable"
 
         return HealthStatus(
             status="healthy",
@@ -160,6 +224,15 @@ def include_core_routes(
             cpu_usage=cpu_usage,
             last_health_check=datetime.now().isoformat(),
         )
+
+    @router.get("/api/v1/commands")
+    async def get_commands():
+        try:
+            cfg_mgr = get_config_manager()
+            return getattr(cfg_mgr, "commands", {}) or {}
+        except Exception as exc:
+            logger.warning("Failed to retrieve commands config: %s", exc)
+            return {}
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
@@ -185,13 +258,20 @@ def include_core_routes(
         error_count = counters.get("errors", 0)
         error_rate = (error_count / max(total_requests, 1)) * 100
 
+        # Get average response time from middleware instance (avoids global state)
+        avg_duration = (
+            response_time_middleware.get_average_ms()
+            if response_time_middleware is not None
+            else 0.0
+        )
+
         return MetricsData(
             total_requests=total_requests,
             uptime_seconds=uptime_seconds,
             active_connections=active_connections,
             cache_size=cache_size,
             error_rate=round(error_rate, 2),
-            response_time_avg=0.0,  # Placeholder for future implementation
+            response_time_avg=round(avg_duration, 2),
         )
 
     @router.get("/api/v1/config")
@@ -199,6 +279,9 @@ def include_core_routes(
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
         config_data = dict(getattr(cfg_mgr, "config", {}))
+
+        # Mask sensitive data before returning
+        config_data = mask_sensitive_data(config_data)
 
         # Expose which fields are overridden by the environment
         env_overrides = {
@@ -227,6 +310,14 @@ def include_core_routes(
             return {"message": "Configuration updated successfully"}
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
+
+    @router.get("/api/v1/commands")
+    async def get_commands():
+        """Get the configured commands."""
+        counters["config_get"] += 1
+        cfg_mgr = get_config_manager()
+        # Return the 'commands' dictionary directly from the config
+        return getattr(cfg_mgr, "commands", {})
 
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
@@ -258,7 +349,10 @@ def include_core_routes(
         start_time = time.time()
         try:
             # Delegate to provided executor bridge to ensure consistent integration surface
-            success = bool(execute_command_fn(request.command))
+            # Use run_in_executor to prevent blocking the event loop
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, execute_command_fn, request.command)
+            success = bool(result)
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
                 success=success,
@@ -287,18 +381,21 @@ def include_core_routes(
         "command_post": 0,
     }
 
-    @router.get("/api/v1/health", operation_id="health_check_core")
+    @router.get("/api/v1/health", operation_id="health_check_core", response_model=HealthStatus)
     async def health_check_core():
         counters["status"] += 1
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "uptime": _format_uptime(time.time() - get_start_time()),
-        }
+        return await health_check()
 
     @router.get("/api/v1/metrics")
     async def metrics():
         # Shallow copy to avoid external mutation
-        return {**counters}
+        metrics_dict = {**counters}
+        avg_duration = (
+            response_time_middleware.get_average_ms()
+            if response_time_middleware is not None
+            else 0.0
+        )
+        metrics_dict["response_time_avg"] = round(avg_duration, 2)
+        return metrics_dict
 
     return router

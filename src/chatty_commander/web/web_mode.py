@@ -33,6 +33,7 @@ stable surface used by tests:
 - create_app(no_auth: bool) convenience to spin up a minimal app
 """
 
+from __future__ import annotations
 
 import asyncio
 import logging
@@ -61,8 +62,35 @@ from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.web.routes.core import include_core_routes
+from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
+from chatty_commander.web.routes.system import include_system_routes
+
+try:
+    from chatty_commander.utils.logging_config import (
+        RequestIdMiddleware,
+        configure_logging,
+    )
+    _LOGGING_CONFIG_AVAILABLE = True
+except Exception:  # pragma: no cover
+    RequestIdMiddleware = None  # type: ignore[assignment,misc]
+    configure_logging = None  # type: ignore[assignment]
+    _LOGGING_CONFIG_AVAILABLE = False
+try:
+    from chatty_commander.obs.metrics import (
+        RequestMetricsMiddleware,
+        create_metrics_router,
+    )
+    _OBS_METRICS_AVAILABLE = True
+except Exception:  # pragma: no cover - optional dependency path
+    RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
+    create_metrics_router = None  # type: ignore[assignment]
+    _OBS_METRICS_AVAILABLE = False
+try:
+    from chatty_commander.web.routes.audio import include_audio_routes
+except ImportError:
+    include_audio_routes = None
 from chatty_commander.web.routes.version import router as version_router
+from chatty_commander.web.routes.voice import include_voice_routes
 from chatty_commander.web.routes.ws import include_ws_routes
 
 # Avatar routes (optional)
@@ -140,16 +168,138 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Simple rate limiting middleware."""
+def get_client_ip(
+    request: Request,
+    trusted_proxies: list[str] | None = None,
+) -> str:
+    """
+    Securely extract the client IP from a request.
 
-    def __init__(self, app, requests_per_minute: int = 60):
+    This function prevents IP spoofing by only trusting X-Forwarded-For
+    headers when the immediate connection comes from a trusted proxy.
+
+    Args:
+        request: The FastAPI/Starlette request object
+        trusted_proxies: List of trusted proxy IP addresses or CIDR ranges.
+            If None or empty, only the direct connection IP is used.
+
+    Returns:
+        The client IP address (or "unknown" if unavailable)
+    """
+    # Get the direct connection IP
+    direct_ip = request.client.host if request.client else None
+    if not direct_ip:
+        return "unknown"
+
+    # If no trusted proxies are configured, always use the direct connection IP
+    # This prevents IP spoofing attacks via forged headers
+    if not trusted_proxies:
+        return direct_ip
+
+    # Check if the direct connection is from a trusted proxy
+    from ipaddress import ip_address, ip_network
+
+    try:
+        direct_addr = ip_address(direct_ip)
+    except ValueError:
+        return direct_ip  # Invalid IP format, fall back to direct
+
+    is_trusted_proxy = False
+    for proxy in trusted_proxies:
+        try:
+            if "/" in proxy:
+                # CIDR range (e.g., "10.0.0.0/8")
+                network = ip_network(proxy, strict=False)
+                if direct_addr in network:
+                    is_trusted_proxy = True
+                    break
+            else:
+                # Single IP address
+                if direct_addr == ip_address(proxy):
+                    is_trusted_proxy = True
+                    break
+        except ValueError:
+            continue  # Skip invalid proxy definitions
+
+    # If not from a trusted proxy, use direct IP (ignore headers to prevent spoofing)
+    if not is_trusted_proxy:
+        return direct_ip
+
+    # From a trusted proxy - safely extract real client IP from headers
+    # X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2, ...
+    # The rightmost non-trusted IP is the actual client
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        # Parse the header value (format: "client, proxy1, proxy2")
+        ips = [ip.strip() for ip in forwarded_for.split(",")]
+        # Walk backwards from the rightmost IP to find the first non-trusted one
+        for ip_str in reversed(ips):
+            try:
+                ip_addr = ip_address(ip_str)
+                # Check if this IP is NOT a trusted proxy
+                is_proxy = False
+                for proxy in trusted_proxies:
+                    try:
+                        if "/" in proxy:
+                            if ip_addr in ip_network(proxy, strict=False):
+                                is_proxy = True
+                                break
+                        else:
+                            if ip_addr == ip_address(proxy):
+                                is_proxy = True
+                                break
+                    except ValueError:
+                        continue
+                if not is_proxy:
+                    return ip_str
+            except ValueError:
+                continue  # Skip invalid IPs
+
+    # Fall back to X-Real-IP if X-Forwarded-For didn't yield a valid client IP
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        try:
+            ip_addr = ip_address(real_ip)
+            # Verify it's not a trusted proxy IP
+            is_proxy = False
+            for proxy in trusted_proxies:
+                try:
+                    if "/" in proxy:
+                        if ip_addr in ip_network(proxy, strict=False):
+                            is_proxy = True
+                            break
+                    else:
+                        if ip_addr == ip_address(proxy):
+                            is_proxy = True
+                            break
+                except ValueError:
+                    continue
+            if not is_proxy:
+                return real_ip
+        except ValueError:
+            pass
+
+    # If we couldn't extract a valid client IP from headers, use direct IP
+    return direct_ip
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Simple rate limiting middleware with secure client IP extraction."""
+
+    def __init__(
+        self,
+        app,
+        requests_per_minute: int = 60,
+        trusted_proxies: list[str] | None = None,
+    ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
-        self.requests = defaultdict(list)
+        self.requests: defaultdict[str, list[float]] = defaultdict(list)
+        self.trusted_proxies = trusted_proxies or []
 
     async def dispatch(self, request: Request, call_next):
-        client_ip = request.client.host if request.client else "unknown"
+        # Use secure IP extraction to prevent spoofing
+        client_ip = get_client_ip(request, self.trusted_proxies)
 
         # Clean old requests
         current_time = time.time()
@@ -232,6 +382,7 @@ class WebModeServer:
         self.no_auth = bool(no_auth)
         self.start_time = time.time()
         self.last_command: str | None = None
+        self.commands_executed: int = 0
         self.last_state_change = datetime.now()
 
         # Performance optimizations
@@ -252,15 +403,69 @@ class WebModeServer:
         # WebSocket connection management
         self.active_connections: set[WebSocket] = set()
 
+        # Telemetry task lifecycle management
+        self._telemetry_task: asyncio.Task | None = None  # type: ignore[type-arg]
+        self._telemetry_running: bool = False
+
         # Initialize FastAPI app and register routes
         self.app = self._create_app()
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+        # Register startup/shutdown handlers for telemetry lifecycle
+        @self.app.on_event("startup")
+        async def start_telemetry_loop() -> None:
+            self._telemetry_running = True
+            self._telemetry_task = asyncio.create_task(self._telemetry_loop())
+
+        @self.app.on_event("shutdown")
+        async def stop_telemetry_loop() -> None:
+            self._telemetry_running = False
+            if self._telemetry_task and not self._telemetry_task.done():
+                self._telemetry_task.cancel()
+                try:
+                    await self._telemetry_task
+                except asyncio.CancelledError:
+                    pass
+            self._telemetry_task = None
+
+    async def _telemetry_loop(self) -> None:
+        """Background task to broadcast system telemetry.
+
+        Runs until _telemetry_running is False or the task is cancelled.
+        """
+        while self._telemetry_running:
+            try:
+                import psutil
+
+                cpu = psutil.cpu_percent(interval=None)
+                memory = psutil.virtual_memory().percent
+
+                await self._broadcast_message(
+                    WebSocketMessage(
+                        type="telemetry",
+                        data={
+                            "cpu": cpu,
+                            "memory": memory,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                    )
+                )
+            except asyncio.CancelledError:
+                raise  # Allow cancellation to propagate
+            except Exception as e:  # noqa: BLE001
+                logger.debug("Telemetry loop error: %s", e)
+
+            await asyncio.sleep(2.0)
+
     @property
     def config(self) -> Config:
         """Access config manager as 'config' for compatibility."""
         return self.config_manager
+
+    def _execute_command_wrapper(self, cmd: str) -> Any:
+        self.commands_executed += 1
+        return self.command_executor.execute_command(cmd)
 
     def _clear_expired_cache(self) -> None:
         """Clear expired cache entries to prevent memory leaks."""
@@ -309,6 +514,11 @@ class WebModeServer:
     # App and routing
     # --------------------------
     def _create_app(self) -> FastAPI:
+        # Configure logging based on environment variables (LOG_FORMAT, LOG_LEVEL)
+        # This is idempotent — safe to call multiple times.
+        if _LOGGING_CONFIG_AVAILABLE and configure_logging is not None:
+            configure_logging()
+
         app = FastAPI(
             title="ChattyCommander API",
             description="Voice command automation system with web interface",
@@ -317,9 +527,40 @@ class WebModeServer:
             redoc_url="/redoc" if self.no_auth else None,
         )
 
+        # Request ID middleware — must be outermost so all downstream middleware
+        # and handlers see the request_id in their log context.
+        if _LOGGING_CONFIG_AVAILABLE and RequestIdMiddleware is not None:
+            app.add_middleware(RequestIdMiddleware)
+
+        # Observability: request metrics middleware (must be added before other middleware
+        # so it wraps the full request lifecycle)
+        if _OBS_METRICS_AVAILABLE and RequestMetricsMiddleware is not None:
+            app.add_middleware(RequestMetricsMiddleware)
+
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
-        app.add_middleware(RateLimitMiddleware, requests_per_minute=10000)
+
+        # Get trusted proxies from config (for secure IP extraction behind proxies)
+        trusted_proxies: list[str] = []
+        if hasattr(self.config_manager, "web_server"):
+            trusted_proxies = self.config_manager.web_server.get("trusted_proxies", [])
+        if not trusted_proxies:
+            # Default: trust common private proxy ranges for Docker/Kubernetes
+            trusted_proxies = [
+                "127.0.0.1",
+                "::1",
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16",
+            ]
+
+        app.add_middleware(
+            RateLimitMiddleware,
+            requests_per_minute=10000,
+            trusted_proxies=trusted_proxies,
+        )
+
+        app.add_middleware(ResponseTimeMiddleware)
 
         # CORS policy
         app.add_middleware(
@@ -337,14 +578,36 @@ class WebModeServer:
             get_config_manager=lambda: self.config_manager,
             get_last_command=lambda: self.last_command,
             get_last_state_change=lambda: self.last_state_change,
-            execute_command_fn=lambda cmd: self.command_executor.execute_command(cmd),
+            execute_command_fn=self._execute_command_wrapper,
             get_active_connections=lambda: len(self.active_connections),
             get_cache_size=lambda: len(self._command_cache) + len(self._state_cache),
+            get_total_commands=lambda: self.commands_executed,
         )
         app.include_router(core)
 
+        # Audio endpoints
+        if include_audio_routes:
+            audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
+            app.include_router(audio)
+
+        # Voice routing
+        voice = include_voice_routes(
+            get_config_manager=lambda: self.config_manager,
+        )
+        app.include_router(voice)
+
         # Version endpoint
         app.include_router(version_router)
+
+        # System info endpoints
+        system_routes = include_system_routes(
+            get_start_time=lambda: self.start_time
+        )
+        app.include_router(system_routes)
+
+        # Observability: expose /metrics/json and /metrics/prom endpoints
+        if _OBS_METRICS_AVAILABLE and create_metrics_router is not None:
+            app.include_router(create_metrics_router())
 
         # Agents endpoints
         if agents_router:
@@ -604,7 +867,11 @@ class WebModeServer:
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
             # Check for bridge token in header
-            expected_token = "secret"  # TODO: Make configurable
+            expected_token = self.config_manager.web_server.get("bridge_token")
+            if not expected_token:
+                logger.warning("Bridge token not configured; rejecting request")
+                raise HTTPException(status_code=401, detail="Bridge not configured")
+
             if not x_bridge_token or x_bridge_token != expected_token:
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
@@ -657,6 +924,7 @@ class WebModeServer:
 
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:
+        self.commands_executed += 1
         self.last_command = command
         try:
             loop = asyncio.get_event_loop()

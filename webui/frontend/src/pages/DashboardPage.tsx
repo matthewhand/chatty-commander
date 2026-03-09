@@ -1,15 +1,54 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 
-const DashboardPage: React.FC = () => {
+const MAX_MESSAGES = 100;
+const MAX_RECENT_MESSAGES = 15;
+const MAX_HISTORY_ITEMS = 20;
+
+interface PerfMetric {
+  time: string;
+  cpu: number;
+  memory: number;
+}
+
+const CustomTooltip = React.memo(({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs">
+        <p className="font-mono mb-2 text-base-content/60">{label}</p>
+        {payload.map((entry: any) => (
+          <div key={entry.name} className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} />
+            <span className="font-semibold" style={{ color: entry.stroke }}>
+              {entry.name}: {entry.value.toFixed(1)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+});
+
+const DashboardPage = React.memo(() => {
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
+
+  // Performance optimization: Memoize the recent messages derived array
+  // to avoid inline `messages.slice(-15)` during frequent real-time re-renders.
+  const recentMessages = useMemo(() => {
+    return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
+  }, [messages]);
+
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [history, setHistory] = useState<PerfMetric[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
 
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,32 +59,69 @@ const DashboardPage: React.FC = () => {
     setCommandInput("");
 
     // Optimistically add to log
-    setMessages(prev => [...prev, `> Executing: ${cmd}`]);
+    setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `> Executing: ${cmd}`] : [...prev, `> Executing: ${cmd}`]);
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
-      setMessages(prev => [...prev, `Error: ${err.message}`]);
+      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `Error: ${err.message}`] : [...prev, `Error: ${err.message}`]);
     } finally {
       setIsSending(false);
     }
   };
 
-  const { data: systemStatus, isLoading } = useQuery({
+  const { data: initialSystemStatus, isLoading } = useQuery({
     queryKey: ["systemStatus"],
     queryFn: async () => {
       const res = await fetch("/health");
-      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0 };
+      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0, cpu: "N/A", memory: "N/A" };
       const data = await res.json();
       return {
         status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
         uptime: data.uptime ?? "N/A",
         commandsExecuted: data.commands_executed ?? 0,
         version: data.version,
+        cpu: data.cpu_usage ?? "N/A",
+        memory: data.memory_usage ?? "N/A",
       };
     },
-    refetchInterval: 30000,
+    refetchInterval: 5000,
   });
+
+  const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
+  const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
+
+  // Update history chart from telemetry
+  useEffect(() => {
+    if (systemStatus && !isPaused) {
+      const cpuStr = String(systemStatus.cpu).replace("%", "");
+      const memStr = String(systemStatus.memory).replace("%", "");
+      const cpuVal = parseFloat(cpuStr) || 0;
+      const memVal = parseFloat(memStr) || 0;
+      const now = new Date().toLocaleTimeString();
+
+      // Performance optimization: prevent unnecessary intermediate array allocation
+      // by slicing `prev` conditionally before creating the new array.
+      setHistory(prev => {
+        const item = { time: now, cpu: cpuVal, memory: memVal };
+        return prev.length >= MAX_HISTORY_ITEMS ? [...prev.slice(1), item] : [...prev, item];
+      });
+    }
+  }, [systemStatus, isPaused]);
+
+  const handleExport = () => {
+    const headers = "Time,CPU,Memory\n";
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + headers
+      + history.map(row => `${row.time},${row.cpu},${row.memory}`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "performance_history.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const { data: agentData, isLoading: agentsLoading, isError: agentsError, error: agentsErrObj } = useQuery<Agent[]>({
     queryKey: ["agentStatus"],
@@ -64,18 +140,58 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (ws) {
-      ws.onmessage = (event) => {
-        setMessages((prev) => [...prev, event.data]);
-      };
+  const handleWsMessage = useCallback((event: MessageEvent) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "telemetry" && msg.data) {
+        setRealtimeStatus((prev: any) => ({
+          ...prev,
+          cpu: msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu,
+          memory: msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory,
+        }));
+        return;
+      }
+      // Fallback for non-JSON or other messages
+      if (msg.data && typeof msg.data === "string") {
+        setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg.data as string] : [...prev, msg.data as string]);
+      }
+    } catch {
+      // Plain text message
+      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), event.data as string] : [...prev, event.data as string]);
     }
-  }, [ws]);
+  }, []); // setRealtimeStatus and setMessages are stable; no external deps
+
+  useEffect(() => {
+    if (!ws) return;
+    // Use addEventListener to avoid overwriting other handlers
+    ws.addEventListener("message", handleWsMessage);
+    return () => {
+      ws.removeEventListener("message", handleWsMessage);
+    };
+  }, [ws, handleWsMessage]);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading dashboard">
+        <div className="h-10 w-48 skeleton rounded-lg"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box"></div>
+          ))}
+        </div>
+
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-80 skeleton rounded-box"></div>
+
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-96 skeleton rounded-box"></div>
+
+        <div className="h-8 w-48 skeleton mt-8 mb-4 rounded-lg"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box"></div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -87,7 +203,7 @@ const DashboardPage: React.FC = () => {
       </h2>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
@@ -124,6 +240,28 @@ const DashboardPage: React.FC = () => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
+            <div className="stat-figure text-info">
+              <div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>
+            </div>
+            <div className="stat-title">CPU Load</div>
+            <div className="stat-value text-info text-2xl">{systemStatus?.cpu || "N/A"}</div>
+            <div className="stat-desc">Processor usage</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
+            <div className="stat-figure text-warning">
+              <div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>
+            </div>
+            <div className="stat-title">Memory</div>
+            <div className="stat-value text-warning text-2xl">{systemStatus?.memory || "N/A"}</div>
+            <div className="stat-desc">RAM usage</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100 border border-base-content/10">
+          <div className="stat">
             <div className="stat-figure">
               {isConnected ?
                 <Wifi size={32} className="text-success" /> :
@@ -135,6 +273,76 @@ const DashboardPage: React.FC = () => {
               {isConnected ? "Connected" : "Offline"}
             </div>
             <div className="stat-desc">Realtime stream</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Real-time Performance History Chart */}
+      <div className="card bg-base-100 shadow-xl border border-base-content/10">
+        <div className="card-body">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="card-title text-xl">Real-time Performance History</h3>
+            <div className="flex gap-2">
+              <div className="tooltip" data-tip={isPaused ? "Resume" : "Pause"}>
+                <button
+                  className="btn btn-sm btn-ghost btn-square"
+                  onClick={() => setIsPaused(!isPaused)}
+                  aria-label={isPaused ? "Resume Chart" : "Pause Chart"}
+                >
+                  {isPaused ? <Play size={18} /> : <Pause size={18} />}
+                </button>
+              </div>
+              <div className="tooltip" data-tip="Export CSV">
+                <button
+                  className="btn btn-sm btn-ghost btn-square"
+                  onClick={handleExport}
+                  aria-label="Export Data as CSV"
+                >
+                  <Download size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={history}>
+                <defs>
+                  <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3abff8" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3abff8" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#fbbd23" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#fbbd23" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                <XAxis dataKey="time" hide />
+                <YAxis
+                  domain={[0, 100]}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="cpu"
+                  stroke="#3abff8"
+                  fillOpacity={1}
+                  fill="url(#colorCpu)"
+                  name="CPU"
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="memory"
+                  stroke="#fbbd23"
+                  fillOpacity={1}
+                  fill="url(#colorMem)"
+                  name="Memory"
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
@@ -162,6 +370,7 @@ const DashboardPage: React.FC = () => {
             <input
               type="text"
               placeholder="Type a command to execute..."
+              aria-label="Type and execute a command"
               className="input input-bordered w-full focus:input-primary"
               value={commandInput}
               onChange={(e) => setCommandInput(e.target.value)}
@@ -169,10 +378,10 @@ const DashboardPage: React.FC = () => {
             />
             <button
               type="submit"
-              className={`btn btn-primary ${isSending ? 'loading' : ''}`}
+              className="btn btn-primary"
               disabled={!commandInput.trim() || isSending || !isConnected}
             >
-              {!isSending && <Send size={18} />}
+              {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
               Execute
             </button>
           </form>
@@ -235,6 +444,6 @@ const DashboardPage: React.FC = () => {
       )}
     </div>
   );
-};
+});
 
 export default DashboardPage;
