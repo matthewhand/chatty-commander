@@ -25,7 +25,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import shlex
 import subprocess
 from typing import Any
 
@@ -260,14 +259,6 @@ class Config:
     # Helpers
     def _apply_env_overrides(self) -> None:
         # API endpoint overrides
-        if os.environ.get("CHATTY_BRIDGE_TOKEN"):
-            # Update web_server config data so _apply_web_server_config picks it up
-            if "web_server" not in self.config_data:
-                self.config_data["web_server"] = {}
-            self.config_data["web_server"]["bridge_token"] = os.environ[
-                "CHATTY_BRIDGE_TOKEN"
-            ]
-
         if os.environ.get("CHATBOT_ENDPOINT"):
             self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
         if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
@@ -301,13 +292,7 @@ class Config:
         host = web_cfg.get("host", "0.0.0.0")
         port = int(web_cfg.get("port", 8100))
         auth = bool(web_cfg.get("auth_enabled", True))
-        bridge_token = web_cfg.get("bridge_token")
-        self.web_server = {
-            "host": host,
-            "port": port,
-            "auth_enabled": auth,
-            "bridge_token": bridge_token,
-        }
+        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
         self.web_host = host
         self.web_port = port
         self.web_auth_enabled = auth
@@ -408,7 +393,7 @@ class Config:
                 actions[name] = {"url": url}
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
-                actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
+                actions[name] = {"shell": f"echo {msg}"}
             elif action_type == "voice_chat":
                 # Voice chat action - pass through the entire config
                 actions[name] = {"action": "voice_chat"}

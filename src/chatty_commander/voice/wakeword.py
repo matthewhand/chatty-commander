@@ -225,7 +225,7 @@ class WakeWordDetector:
 
     def is_listening(self) -> bool:
         """Check if detector is currently listening."""
-        return bool(self._running and self._thread and self._thread.is_alive())
+        return self._running and self._thread and self._thread.is_alive()
 
 
 class MockWakeWordDetector:

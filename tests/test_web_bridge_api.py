@@ -52,7 +52,6 @@ class DummyConfig:
             },
             "bridge": {"token": "secret", "url": "http://localhost:3001"},
         }
-        self.web_server = {"bridge_token": "secret"}
 
 
 def build_server():

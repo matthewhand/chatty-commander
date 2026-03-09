@@ -99,7 +99,7 @@ class CommandProcessor:
         user_lower = user_input.lower()
 
         # Direct command name match
-        for cmd_name in self._available_commands:
+        for cmd_name in self._available_commands.keys():
             if cmd_name.lower() in user_lower:
                 return cmd_name, 0.9
 
@@ -231,7 +231,7 @@ Response:"""
             "hello": ["greeting", "say hello"],
         }
 
-        for cmd_name in self._available_commands:
+        for cmd_name in self._available_commands.keys():
             if cmd_name in keyword_map:
                 for desc in keyword_map[cmd_name]:
                     if partial_lower in desc.lower():

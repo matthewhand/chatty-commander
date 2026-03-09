@@ -1,65 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard as DashboardIcon,
     Settings as SettingsIcon,
     Terminal as TerminalIcon,
-    LogOut as LogoutIcon,
-    Wand2,
-    Menu as MenuIcon,
-    X as CloseIcon
+    LogOut as LogoutIcon
 } from "lucide-react";
 import { useAuth } from '../hooks/useAuth';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { logout } = useAuth();
     const location = useLocation();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // Close sidebar when route changes
-    useEffect(() => {
-        setIsSidebarOpen(false);
-    }, [location.pathname]);
 
     const navItems = [
         { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon size={20} /> },
         { label: 'Commands', path: '/commands', icon: <TerminalIcon size={20} /> },
-        { label: 'Command Authoring', path: '/commands/authoring', icon: <Wand2 size={20} /> },
         { label: 'Configuration', path: '/configuration', icon: <SettingsIcon size={20} /> },
     ];
 
     return (
-        <div className="flex h-screen bg-base-200 font-sans text-base-content overflow-hidden">
-            {/* Mobile Backdrop */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
-
+        <div className="flex h-screen bg-base-200 font-sans text-base-content">
             {/* Sidebar */}
-            <aside className={`
-                w-64 bg-base-300 flex flex-col border-r border-base-content/10 fixed h-full z-30 overflow-y-auto
-                transition-transform duration-300 ease-in-out
-                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                lg:translate-x-0
-            `}>
+            <aside className="w-64 bg-base-300 flex flex-col border-r border-base-content/10 fixed h-full z-20 overflow-y-auto hidden lg:flex">
                 {/* Header */}
-                <div className="p-4 border-b border-base-content/10 bg-base-300 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                            Chatty
-                        </h1>
-                        <p className="text-xs text-base-content/60">Voice Commander</p>
-                    </div>
-                    <button
-                        className="lg:hidden p-2 hover:bg-base-content/10 rounded-lg"
-                        onClick={() => setIsSidebarOpen(false)}
-                        aria-label="Close sidebar"
-                    >
-                        <CloseIcon size={20} />
-                    </button>
+                <div className="p-4 border-b border-base-content/10 bg-base-300">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                        Chatty
+                    </h1>
+                    <p className="text-xs text-base-content/60">Voice Commander</p>
                 </div>
 
                 {/* Menu */}
@@ -97,15 +65,8 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
             {/* Main Content */}
             <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-                {/* Mobile Header */}
-                <header className="lg:hidden h-16 bg-base-300 flex items-center px-4 border-b border-base-content/10 gap-4">
-                    <button
-                        className="p-2 hover:bg-base-content/10 rounded-lg"
-                        onClick={() => setIsSidebarOpen(true)}
-                        aria-label="Open sidebar"
-                    >
-                        <MenuIcon size={24} />
-                    </button>
+                {/* Mobile Header (TODO: implement drawer toggle for mobile if needed) */}
+                <header className="lg:hidden h-16 bg-base-300 flex items-center px-4 border-b border-base-content/10">
                     <div className="font-bold">Chatty Commander</div>
                 </header>
 

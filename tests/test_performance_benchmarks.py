@@ -409,10 +409,10 @@ class TestPerformanceBenchmarks:
 
             # Performance assertions
             assert (
-                broadcast_time < 500
+                broadcast_time < 100
             ), f"Broadcast time too high: {broadcast_time:.2f}ms"
             assert (
-                broadcast_time / num_connections < 10
+                broadcast_time / num_connections < 2
             ), f"Per-connection time too high: {broadcast_time / num_connections:.2f}ms"
         finally:
             loop.close()

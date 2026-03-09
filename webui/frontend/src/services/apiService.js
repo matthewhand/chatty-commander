@@ -114,42 +114,42 @@ class ApiService {
    * Get system status
    */
   async getStatus() {
-    return this.get("/api/v1/status");
+    return this.get("/api/status");
   }
 
   /**
    * Get system configuration
    */
   async getConfig() {
-    return this.get("/api/v1/config");
+    return this.get("/api/config");
   }
 
   /**
    * Update system configuration
    */
   async updateConfig(config) {
-    return this.put("/api/v1/config", config);
+    return this.put("/api/config", config);
   }
 
   /**
    * Get current state information
    */
   async getState() {
-    return this.get("/api/v1/state");
+    return this.get("/api/state");
   }
 
   /**
    * Change system state
    */
   async changeState(newState) {
-    return this.post("/api/v1/state", { new_state: newState });
+    return this.post("/api/state", { new_state: newState });
   }
 
   /**
    * Execute a command
    */
   async executeCommand(command, parameters = {}) {
-    return this.post("/api/v1/command", {
+    return this.post("/api/command", {
       command,
       parameters,
     });
@@ -159,7 +159,7 @@ class ApiService {
    * Get available commands
    */
   async getCommands() {
-    return this.get("/api/v1/commands");
+    return this.get("/api/commands");
   }
 
   /**
@@ -253,7 +253,7 @@ class ApiService {
    * Get system metrics
    */
   async getMetrics() {
-    return this.get("/api/v1/metrics");
+    return this.get("/api/metrics");
   }
 
   /**

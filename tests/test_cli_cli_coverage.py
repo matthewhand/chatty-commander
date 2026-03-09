@@ -23,6 +23,7 @@
 """Additional tests to improve coverage for cli/cli.py."""
 
 import sys
+from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -771,6 +772,7 @@ class TestCLIMainHelp:
         """Test cli_main handles --help flag."""
         # --help triggers argparse to exit with code 0
         # We test this by checking that argparse exits properly
+        import argparse
         from chatty_commander.cli.cli import create_parser
 
         parser = create_parser()

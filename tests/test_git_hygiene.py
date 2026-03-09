@@ -261,17 +261,17 @@ class TestProjectStructure:
 
     def test_contributing_md_exists(self):
         """Test that CONTRIBUTING.md exists and has required content."""
-        contributing_path = Path("docs/developer/CONTRIBUTING.md")
-        assert contributing_path.exists(), "CONTRIBUTING.md should exist in docs/developer/"
+        contributing_path = Path("CONTRIBUTING.md")
+        assert contributing_path.exists(), "CONTRIBUTING.md should exist"
 
         content = contributing_path.read_text(encoding="utf-8")
 
         # Check for key sections
         required_sections = [
-            "Branch Naming",
+            "Branch Naming Conventions",
             "Conventional Commits",
-            "Pull Request Process",
-            "Linting and Formatting",
+            "Git Workflow",
+            "Pre-commit Hooks",
         ]
 
         for section in required_sections:
@@ -281,8 +281,8 @@ class TestProjectStructure:
 
     def test_precommit_config_exists(self):
         """Test that pre-commit configuration exists and is valid."""
-        precommit_path = Path("config/.pre-commit-config.yaml")
-        assert precommit_path.exists(), ".pre-commit-config.yaml should exist in config/"
+        precommit_path = Path(".pre-commit-config.yaml")
+        assert precommit_path.exists(), ".pre-commit-config.yaml should exist"
 
         content = precommit_path.read_text(encoding="utf-8")
 

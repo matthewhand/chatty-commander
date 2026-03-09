@@ -1,0 +1,846 @@
+openapi: 3.0.3
+info:
+  title: ChattyCommander WebUI API
+  description: |
+    RESTful API for ChattyCommander web interface providing complete configuration
+    and service management capabilities. This API mirrors all desktop GUI functionality
+    and adds real-time monitoring through WebSocket connections.
+
+    ## Features
+    - Complete configuration management (commands, states, models)
+    - Real-time service monitoring and control
+    - Voice command testing and validation
+    - Multi-user authentication and authorization
+    - Live audio level monitoring
+    - WebSocket integration for real-time updates
+
+    ## Authentication
+    All endpoints require JWT authentication except for login and health checks.
+    Include the JWT token in the Authorization header: `Bearer <token>`
+  version: 1.0.0
+  contact:
+    name: ChattyCommander API Support
+    url: https://github.com/chatty-commander/webui
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8100/api/v1
+    description: Development server
+  - url: https://chatty.yourdomain.com/api/v1
+    description: Production server
+
+paths:
+  # Authentication
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticate user and return JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  example: password123
+              required: [username, password]
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  token_type:
+                    type: string
+                    example: bearer
+                  expires_in:
+                    type: integer
+                    example: 3600
+        "401":
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh JWT token
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+
+  # Configuration Management
+  /config:
+    get:
+      tags: [Configuration]
+      summary: Get complete configuration
+      description: Retrieve the entire ChattyCommander configuration
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Configuration"
+
+    put:
+      tags: [Configuration]
+      summary: Update configuration
+      description: Update the complete configuration or specific sections
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Configuration"
+      responses:
+        "200":
+          description: Configuration updated successfully
+        "400":
+          description: Invalid configuration data
+        "422":
+          description: Validation error
+
+  # Commands Management
+  /config/commands:
+    get:
+      tags: [Commands]
+      summary: List all commands
+      description: Get all configured voice commands with their actions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by command type
+          schema:
+            type: string
+            enum: [keypress, url, system]
+      responses:
+        "200":
+          description: Commands retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commands:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Command"
+                  total:
+                    type: integer
+                    example: 15
+
+    post:
+      tags: [Commands]
+      summary: Add new command
+      description: Create a new voice command with associated action
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommandCreate"
+      responses:
+        "201":
+          description: Command created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Command"
+        "400":
+          description: Invalid command data
+        "409":
+          description: Command already exists
+
+  /config/commands/{command_id}:
+    get:
+      tags: [Commands]
+      summary: Get specific command
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: command_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: take_screenshot
+      responses:
+        "200":
+          description: Command retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Command"
+        "404":
+          description: Command not found
+
+    put:
+      tags: [Commands]
+      summary: Update command
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: command_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommandUpdate"
+      responses:
+        "200":
+          description: Command updated successfully
+        "404":
+          description: Command not found
+
+    delete:
+      tags: [Commands]
+      summary: Delete command
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: command_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Command deleted successfully
+        "404":
+          description: Command not found
+
+  # States Management
+  /config/states:
+    get:
+      tags: [States]
+      summary: Get state configurations
+      description: Retrieve all state configurations and their associated models
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: States retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  states:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      idle: ["hey_chat_tee", "hey_khum_puter", "okay_stop"]
+                      computer: ["oh_kay_screenshot", "okay_stop"]
+                      chatty: ["wax_poetic", "thanks_chat_tee", "okay_stop"]
+
+    put:
+      tags: [States]
+      summary: Update state models
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state:
+                  type: string
+                  enum: [idle, computer, chatty]
+                  example: idle
+                models:
+                  type: array
+                  items:
+                    type: string
+                  example: ["hey_chat_tee", "hey_khum_puter"]
+      responses:
+        "200":
+          description: State models updated successfully
+        "400":
+          description: Invalid state or models
+
+  # Service Management
+  /service/status:
+    get:
+      tags: [Service]
+      summary: Get service status
+      description: Get current status of the voice recognition service
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Service status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceStatus"
+
+  /service/start:
+    post:
+      tags: [Service]
+      summary: Start voice service
+      description: Start the ChattyCommander voice recognition service
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                debug_mode:
+                  type: boolean
+                  default: false
+                  description: Enable debug logging
+      responses:
+        "200":
+          description: Service started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Service started successfully
+                  pid:
+                    type: integer
+                    example: 12345
+        "409":
+          description: Service already running
+
+  /service/stop:
+    post:
+      tags: [Service]
+      summary: Stop voice service
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Service stopped successfully
+        "404":
+          description: Service not running
+
+  /service/restart:
+    post:
+      tags: [Service]
+      summary: Restart voice service
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Service restarted successfully
+
+  # Models Management
+  /models:
+    get:
+      tags: [Models]
+      summary: List available models
+      description: Get all available voice recognition models
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: state
+          in: query
+          description: Filter by state
+          schema:
+            type: string
+            enum: [idle, computer, chatty]
+      responses:
+        "200":
+          description: Models retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Model"
+
+  /models/test:
+    post:
+      tags: [Models]
+      summary: Test voice recognition
+      description: Test voice recognition with uploaded audio or live microphone
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                audio_file:
+                  type: string
+                  format: binary
+                  description: Audio file for testing (optional)
+                model_name:
+                  type: string
+                  example: hey_chat_tee
+                use_microphone:
+                  type: boolean
+                  default: false
+      responses:
+        "200":
+          description: Recognition test completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recognized:
+                    type: boolean
+                    example: true
+                  confidence:
+                    type: number
+                    format: float
+                    example: 0.95
+                  model_used:
+                    type: string
+                    example: hey_chat_tee
+                  processing_time:
+                    type: number
+                    format: float
+                    example: 0.123
+
+  # Audio Settings
+  /audio/settings:
+    get:
+      tags: [Audio]
+      summary: Get audio settings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Audio settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AudioSettings"
+
+    put:
+      tags: [Audio]
+      summary: Update audio settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AudioSettings"
+      responses:
+        "200":
+          description: Audio settings updated successfully
+
+  /audio/devices:
+    get:
+      tags: [Audio]
+      summary: List audio devices
+      description: Get available microphone and speaker devices
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Audio devices retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  microphones:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AudioDevice"
+                  speakers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AudioDevice"
+
+  /audio/level:
+    get:
+      tags: [Audio]
+      summary: Get current audio level
+      description: Get real-time microphone audio level
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Audio level retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  level:
+                    type: number
+                    format: float
+                    minimum: 0
+                    maximum: 1
+                    example: 0.65
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # System Information
+  /system/info:
+    get:
+      tags: [System]
+      summary: Get system information
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: System information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemInfo"
+
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      description: Check API health status (no authentication required)
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: 1.0.0
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Configuration:
+      type: object
+      properties:
+        model_actions:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: object
+                properties:
+                  keypress:
+                    type: string
+                    example: ctrl+c
+              - type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    example: http://localhost:3000/
+        state_models:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        api_endpoints:
+          type: object
+          properties:
+            home_assistant:
+              type: string
+              format: uri
+            chatbot_endpoint:
+              type: string
+              format: uri
+        audio_settings:
+          $ref: "#/components/schemas/AudioSettings"
+        general_settings:
+          type: object
+          properties:
+            debug_mode:
+              type: boolean
+            default_state:
+              type: string
+              enum: [idle, computer, chatty]
+
+    Command:
+      type: object
+      properties:
+        id:
+          type: string
+          example: take_screenshot
+        name:
+          type: string
+          example: take_screenshot
+        action:
+          oneOf:
+            - type: object
+              properties:
+                keypress:
+                  type: string
+                  example: alt+print_screen
+            - type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: http://localhost:3000/
+        type:
+          type: string
+          enum: [keypress, url, system]
+        description:
+          type: string
+          example: Take a screenshot of the current screen
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CommandCreate:
+      type: object
+      required: [name, action]
+      properties:
+        name:
+          type: string
+          example: new_command
+        action:
+          oneOf:
+            - type: object
+              properties:
+                keypress:
+                  type: string
+            - type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+        description:
+          type: string
+
+    CommandUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        action:
+          oneOf:
+            - type: object
+              properties:
+                keypress:
+                  type: string
+            - type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+        description:
+          type: string
+
+    ServiceStatus:
+      type: object
+      properties:
+        running:
+          type: boolean
+          example: true
+        pid:
+          type: integer
+          example: 12345
+        uptime:
+          type: integer
+          description: Uptime in seconds
+          example: 3600
+        current_state:
+          type: string
+          enum: [idle, computer, chatty]
+          example: idle
+        loaded_models:
+          type: array
+          items:
+            type: string
+          example: ["hey_chat_tee", "hey_khum_puter", "okay_stop"]
+        memory_usage:
+          type: number
+          format: float
+          description: Memory usage in MB
+          example: 256.5
+        cpu_usage:
+          type: number
+          format: float
+          description: CPU usage percentage
+          example: 15.2
+
+    Model:
+      type: object
+      properties:
+        name:
+          type: string
+          example: hey_chat_tee
+        file_path:
+          type: string
+          example: /path/to/models/hey_chat_tee.onnx
+        size:
+          type: integer
+          description: File size in bytes
+          example: 1048576
+        state:
+          type: string
+          enum: [idle, computer, chatty]
+        loaded:
+          type: boolean
+          example: true
+        last_used:
+          type: string
+          format: date-time
+
+    AudioSettings:
+      type: object
+      properties:
+        mic_chunk_size:
+          type: integer
+          example: 1024
+        sample_rate:
+          type: integer
+          example: 16000
+        audio_format:
+          type: string
+          example: int16
+        input_device:
+          type: integer
+          description: Microphone device index
+          example: 0
+        threshold:
+          type: number
+          format: float
+          description: Voice activation threshold
+          example: 0.5
+
+    AudioDevice:
+      type: object
+      properties:
+        index:
+          type: integer
+          example: 0
+        name:
+          type: string
+          example: Built-in Microphone
+        channels:
+          type: integer
+          example: 2
+        default:
+          type: boolean
+          example: true
+
+    SystemInfo:
+      type: object
+      properties:
+        version:
+          type: string
+          example: 1.0.0
+        python_version:
+          type: string
+          example: 3.11.0
+        platform:
+          type: string
+          example: Linux-5.15.0-generic-x86_64
+        memory_total:
+          type: integer
+          description: Total system memory in MB
+          example: 8192
+        memory_available:
+          type: integer
+          description: Available system memory in MB
+          example: 4096
+        disk_usage:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total disk space in GB
+            used:
+              type: integer
+              description: Used disk space in GB
+            free:
+              type: integer
+              description: Free disk space in GB
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          example: 3600
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid request
+        message:
+          type: string
+          example: The provided data is invalid
+        details:
+          type: object
+          additionalProperties: true
+# WebSocket Events (documented for reference)
+# WebSocket endpoint: /ws/status
+# Events:
+# - service_status: Real-time service status updates
+# - audio_level: Live microphone audio level
+# - command_recognized: When a voice command is recognized
+# - state_changed: When the system state changes
+# - error: Error notifications
+# - log: Real-time log messages

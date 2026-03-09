@@ -26,13 +26,8 @@ import sys
 PYTHON = sys.executable
 
 
-import os
-
-
 def run_cmd(args, timeout=10):
-    env = os.environ.copy()
-    env["PYTHONPATH"] = "src"
-    proc = subprocess.run(args, capture_output=True, text=True, timeout=timeout, env=env)
+    proc = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
     return proc.returncode, proc.stdout, proc.stderr
 
 
