@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -8,7 +8,6 @@ import {
   Plus,
   Edit3,
   Trash2,
-  FileAudio,
   RefreshCw,
   Search
 } from 'lucide-react';
