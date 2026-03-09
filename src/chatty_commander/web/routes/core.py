@@ -29,7 +29,7 @@ import time
 from collections import deque
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any, List, Dict, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -41,7 +41,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 class SystemStatus(BaseModel):
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
-    active_models: List[str] = Field(..., description="List of loaded models")
+    active_models: list[str] = Field(..., description="List of loaded models")
     uptime: str = Field(..., description="System uptime")
     version: str = Field(default="0.2.0", description="Application version")
 
@@ -54,7 +54,7 @@ class StateChangeRequest(BaseModel):
 
 class CommandRequest(BaseModel):
     command: str = Field(..., description="Command name to execute")
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default=None, description="Optional parameters"
     )
 
@@ -67,8 +67,8 @@ class CommandResponse(BaseModel):
 
 class StateInfo(BaseModel):
     current_state: str = Field(..., description="Current operational state")
-    active_models: List[str] = Field(..., description="List of active models")
-    last_command: Optional[str] = Field(default=None, description="Last detected command")
+    active_models: list[str] = Field(..., description="List of active models")
+    last_command: str | None = Field(default=None, description="Last detected command")
     timestamp: str = Field(..., description="Timestamp of last state change")
 
 

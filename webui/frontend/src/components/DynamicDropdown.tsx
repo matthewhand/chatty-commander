@@ -4,7 +4,7 @@ import { useFloating, shift, flip, offset, autoUpdate } from '@floating-ui/react
 interface DropdownProps {
   buttonContent: React.ReactNode;
   children: React.ReactNode;
-  ariaLabel: string;
+  ariaLabel?: string;
   buttonClassName?: string;
   menuClassName?: string;
 }
