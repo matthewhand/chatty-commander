@@ -309,6 +309,8 @@ class TestGitConfiguration:
 
     def test_main_branch_exists(self):
         """Test that main branch exists."""
+        # Note: in GitHub Actions, PRs may be checked out in detached HEAD state
+        # without full local branches. We use 'git ls-remote' to check origin if 'branch -a' fails.
         result = subprocess.run(
             ["git", "branch", "-a"], capture_output=True, text=True, timeout=10
         )
@@ -317,6 +319,14 @@ class TestGitConfiguration:
             pytest.skip("Could not list Git branches")
 
         branches = result.stdout
+
+        # Check remote branches as fallback
+        if "main" not in branches and "master" not in branches:
+            remote_result = subprocess.run(
+                ["git", "ls-remote", "--heads", "origin"], capture_output=True, text=True, timeout=10
+            )
+            if remote_result.returncode == 0:
+                branches += remote_result.stdout
 
         # Should have either main or master branch
         has_main = "main" in branches
