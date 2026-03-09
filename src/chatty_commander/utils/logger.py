@@ -103,8 +103,14 @@ class HTTPLogHandler(logging.Handler):
         Args:
             record: The log record to send
         """
+        from chatty_commander.utils.url_validator import is_safe_url
+
         if self._requests is None:
             return
+
+        if not is_safe_url(self.url):
+            return
+
         try:
             log_entry = self.format(record)
             self._requests.post(
