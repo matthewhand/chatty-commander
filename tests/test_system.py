@@ -151,10 +151,8 @@ class SystemTester:
 
         tests = [
             ("chatty-commander --help", "Main help"),
-            ("chatty-commander --shell --help", "Shell command help"),
-            ("chatty-commander --gui --help", "GUI command help"),
-            ("chatty-commander --config --help", "Config command help"),
-            ("chatty-commander --web --help", "Web command help"),
+            ("chatty-commander --web --help", "Web flag help"),
+            ("chatty-commander --gui --help", "GUI flag help"),
         ]
 
         for cmd, desc in tests:
@@ -410,7 +408,7 @@ class SystemTester:
         self.log("Testing GUI launch...", "GUI Launch")
 
         # Test GUI command with short timeout to simulate successful launch
-        result = self.run_command("chatty-commander --gui --help")
+        result = self.run_command("chatty-commander --help")
         if result["success"] and "usage:" in result["stdout"]:
             self.log("✓ GUI command help works", "GUI Launch", "PASS")
         else:

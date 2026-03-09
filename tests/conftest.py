@@ -268,10 +268,10 @@ class TestUtils:
     @staticmethod
     def create_test_config_file(data: dict[str, Any]) -> Path:
         """Create a test configuration file with the given data."""
-        temp_file = Path(tempfile.mktemp(suffix=".json"))
-        with open(temp_file, "w") as f:
+        fd, temp_path = tempfile.mkstemp(suffix=".json")
+        with os.fdopen(fd, "w") as f:
             json.dump(data, f, indent=2)
-        return temp_file
+        return Path(temp_path)
 
     @staticmethod
     def mock_environment_variables(**kwargs) -> Mock:
