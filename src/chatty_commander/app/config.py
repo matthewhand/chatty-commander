@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from __future__ import annotations
 
 import json
 import logging
@@ -531,13 +530,13 @@ class Config:
             return None
 
     @classmethod
-    def load(cls, config_file: str = "config.json") -> Config:
+    def load(cls, config_file: str = "config.json") -> "Config":
         return cls(config_file)
 
     @classmethod
     def from_dict(
         cls, data: dict[str, Any], config_file: str = "config.json"
-    ) -> Config:
+    ) -> "Config":
         """Create a Config instance from a dictionary."""
         # Create a new instance and set the config data directly
         instance = cls.__new__(cls)

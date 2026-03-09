@@ -44,7 +44,6 @@ Notes
 - Transparency and frameless support varies by OS/backend; code falls back when needed.
 """
 
-from __future__ import annotations
 
 from pathlib import Path
 

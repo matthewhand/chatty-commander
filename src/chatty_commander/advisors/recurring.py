@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -40,7 +39,7 @@ class RecurringPrompt:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @staticmethod
-    def from_dict(data: dict[str, Any]) -> RecurringPrompt:
+    def from_dict(data: dict[str, Any]) -> "RecurringPrompt":
         required = [
             "id",
             "name",

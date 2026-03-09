@@ -25,7 +25,6 @@
 Prefer importing from ``chatty_commander.app.config``.
 """
 
-from __future__ import annotations
 
 try:
     from .app.config import *  # type: ignore  # noqa: F401,F403

@@ -45,7 +45,6 @@ This module is wired into the running server via web_mode.py:
 - create_metrics_router() exposes /metrics/json and /metrics/prom endpoints
 """
 
-from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -209,7 +208,7 @@ class Timer:
         self._l = labels or {}
         self._t0 = 0.0
 
-    def __enter__(self) -> Timer:
+    def __enter__(self) -> "Timer":
         self._t0 = monotonic()
         return self
 

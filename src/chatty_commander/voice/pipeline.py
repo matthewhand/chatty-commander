@@ -30,7 +30,6 @@ Provides a complete voice interface:
 4. Provide audio feedback
 """
 
-from __future__ import annotations
 
 import logging
 import threading

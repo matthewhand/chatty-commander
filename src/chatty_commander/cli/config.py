@@ -28,7 +28,6 @@ loads/saves :class:`chatty_commander.app.config.Config` instances and mutates
 their typed attributes directly.
 """
 
-from __future__ import annotations
 
 import json
 import os
