@@ -29,7 +29,6 @@ missing the system gracefully falls back to an in‑memory mock backend so unit
 tests can run without additional requirements.
 """
 
-from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod

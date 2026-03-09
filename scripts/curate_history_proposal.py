@@ -41,7 +41,6 @@ Usage:
 Note: Run this from the root of a git repo.
 """
 
-from __future__ import annotations
 
 import argparse
 import dataclasses as dc

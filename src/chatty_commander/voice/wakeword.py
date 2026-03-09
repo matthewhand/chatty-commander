@@ -26,7 +26,6 @@ Wake word detection using OpenWakeWord.
 Supports multiple wake words and provides confidence scoring.
 """
 
-from __future__ import annotations
 
 import logging
 import threading
