@@ -20,8 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from __future__ import annotations
-
 import asyncio
 import os
 import threading
@@ -153,8 +151,8 @@ def include_core_routes(
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
 
-    @router.get("/api/v1/status", response_model=SystemStatus)
-    async def get_status():
+    @router.get("/api/v1/status")
+    async def get_status() -> SystemStatus:
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
         sm = get_state_manager()
