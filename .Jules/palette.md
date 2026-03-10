@@ -9,3 +9,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2024-05-23 - Accessibility & Micro-UX Additions
 **Learning:** Icon-only buttons (like error dismissals and model deletions) frequently lack `aria-label`s, preventing screen readers from understanding their purpose. Also, async operations (like deletions) bound to lists without granular loading states can leave users wondering if their action registered.
 **Action:** Always add `aria-label`s to icon-only buttons. Consider conditionally rendering a small spinner component in place of an icon for actions bound to `useMutation` that take noticeable time.
+
+## 2026-03-10 - Enforcing Accessibility at the Component Level
+**Learning:** Icon-only trigger elements (like dynamic dropdown buttons) frequently lack ARIA labels, making them inaccessible to screen reader users. Developers often forget to add these attributes when instantiating the component.
+**Action:** Enforce the presence of `ariaLabel` on custom components (e.g., `DynamicDropdown`) by making it a required prop in the TypeScript interface. This moves the responsibility to the component level, creating a compiler error if the label is omitted and ensuring accessibility is built-in by default.
