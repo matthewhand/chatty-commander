@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import platform
 import sys
 import time
@@ -26,8 +28,8 @@ def include_system_routes(
 ) -> APIRouter:
     router = APIRouter()
 
-    @router.get("/api/system/info")
-    async def get_system_info() -> SystemInfo:
+    @router.get("/api/system/info", response_model=SystemInfo)
+    async def get_system_info():
         uptime_seconds = time.time() - get_start_time()
 
         info = SystemInfo(
