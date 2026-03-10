@@ -1,0 +1,3 @@
+## 2024-03-10 - HTML Forms and Screen Reader Linking
+**Learning:** For frontend accessibility, form inputs must use standard HTML linking by assigning an `id` to the `<input>` and a matching `htmlFor` to the associated `<label>`. This is required to support screen readers and click-to-focus behavior. DaisyUI structure requires you manually do this.
+**Action:** Always verify `id` and `htmlFor` exist in pairs on login forms and similar data input patterns.
