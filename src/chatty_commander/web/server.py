@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from typing import Any
 
 try:
@@ -179,8 +180,8 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
                         detail="Bridge authentication not configured. Contact administrator.",
                     )
 
-                # Validate token
-                if x_bridge_token != expected_token:
+                # Validate token (use secrets.compare_digest to prevent timing attacks)
+                if not x_bridge_token or not secrets.compare_digest(x_bridge_token, expected_token):
                     _bridge_logger.warning(
                         "Bridge request rejected: invalid token provided"
                     )
