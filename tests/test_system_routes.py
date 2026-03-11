@@ -51,15 +51,20 @@ def test_system_info_with_psutil(mock_disk, mock_mem, mock_cpu, mock_platform, m
 @patch("time.time", return_value=1100.0)
 @patch("platform.platform", return_value="TestPlatform-1.0")
 def test_system_info_without_psutil(mock_platform, mock_time):
-    # We mock __import__ to raise ImportError when 'psutil' is imported
-    original_import = __import__
-    def mock_import(name, *args, **kwargs):
-        if name == 'psutil':
-            raise ImportError("No module named 'psutil'")
-        return original_import(name, *args, **kwargs)
+    import sys
 
-    with patch("builtins.__import__", side_effect=mock_import):
+    # Save the original module if it exists and simulate it being missing
+    original_psutil = sys.modules.get('psutil')
+    sys.modules['psutil'] = None
+
+    try:
         response = client.get("/api/system/info")
+    finally:
+        # Restore the original module state
+        if original_psutil is not None:
+            sys.modules['psutil'] = original_psutil
+        else:
+            del sys.modules['psutil']
 
     assert response.status_code == 200
     data = response.json()
