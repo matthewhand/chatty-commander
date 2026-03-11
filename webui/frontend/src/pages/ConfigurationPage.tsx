@@ -541,13 +541,14 @@ const ConfigurationPage: React.FC = () => {
             </h3>
             <div className="space-y-4">
               <div className="form-control w-full">
-                <label className="label">
+                <label className="label" htmlFor="llmBaseUrl">
                   <span className="label-text font-medium text-base-content flex items-center gap-2">
                     API Base URL {config.envOverrides.baseUrl && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                   </span>
                   <span className="label-text-alt text-base-content/40">OpenAI-compatible</span>
                 </label>
                 <input
+                  id="llmBaseUrl"
                   type="url"
                   name="llmBaseUrl"
                   placeholder={config.envOverrides.baseUrl ? "(Configured via environment variable)" : "http://localhost:11434/v1"}
@@ -565,12 +566,13 @@ const ConfigurationPage: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control w-full">
-                  <label className="label">
+                  <label className="label" htmlFor="apiKey">
                     <span className="label-text font-medium flex items-center gap-2">
                       API Key {config.envOverrides.apiKey && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                     </span>
                   </label>
                   <input
+                    id="apiKey"
                     type="password"
                     name="apiKey"
                     placeholder={config.envOverrides.apiKey ? "(Configured via environment variable)" : "sk-... or Bearer token"}
@@ -583,7 +585,7 @@ const ConfigurationPage: React.FC = () => {
                 </div>
 
                 <div className="form-control w-full">
-                  <label className="label">
+                  <label className="label" htmlFor="llmModel">
                     <span className="label-text font-medium flex items-center gap-2">
                       Model {config.envOverrides.model && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                     </span>
@@ -600,6 +602,7 @@ const ConfigurationPage: React.FC = () => {
                   </label>
                   {modelList.length > 0 && !config.envOverrides.model ? (
                     <select
+                      id="llmModel"
                       name="llmModel"
                       className="select select-bordered w-full"
                       value={config.llmModel}
@@ -612,6 +615,7 @@ const ConfigurationPage: React.FC = () => {
                     </select>
                   ) : (
                     <input
+                      id="llmModel"
                       type="text"
                       name="llmModel"
                       placeholder={config.envOverrides.model ? "(Configured via environment variable)" : "gpt-4o-mini · llama-3.1-8b-instant · …"}
