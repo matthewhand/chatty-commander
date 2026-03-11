@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from __future__ import annotations
 
 import asyncio
 import os
@@ -153,8 +152,8 @@ def include_core_routes(
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
 
-    @router.get("/api/v1/status", response_model=SystemStatus)
-    async def get_status():
+    @router.get("/api/v1/status")
+    async def get_status() -> SystemStatus:
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
         sm = get_state_manager()
@@ -167,8 +166,8 @@ def include_core_routes(
             uptime=uptime_str,
         )
 
-    @router.get("/health", response_model=HealthStatus)
-    async def health_check():
+    @router.get("/health")
+    async def health_check() -> HealthStatus:
         """Comprehensive health check endpoint."""
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
@@ -234,8 +233,8 @@ def include_core_routes(
             logger.warning("Failed to retrieve commands config: %s", exc)
             return {}
 
-    @router.get("/metrics", response_model=MetricsData)
-    async def get_metrics():
+    @router.get("/metrics")
+    async def get_metrics() -> MetricsData:
         """Get application metrics and performance data."""
         uptime_seconds = time.time() - get_start_time()
         total_requests = sum(counters.values())
@@ -319,8 +318,8 @@ def include_core_routes(
         # Return the 'commands' dictionary directly from the config
         return getattr(cfg_mgr, "commands", {})
 
-    @router.get("/api/v1/state", response_model=StateInfo)
-    async def get_state():
+    @router.get("/api/v1/state")
+    async def get_state() -> StateInfo:
         counters["state_get"] += 1
         sm = get_state_manager()
         return StateInfo(
@@ -343,8 +342,8 @@ def include_core_routes(
         except Exception as err:
             raise HTTPException(status_code=400, detail=str(err)) from err
 
-    @router.post("/api/v1/command", response_model=CommandResponse)
-    async def execute_command(request: CommandRequest):
+    @router.post("/api/v1/command")
+    async def execute_command(request: CommandRequest) -> CommandResponse:
         counters["command_post"] += 1
         start_time = time.time()
         try:
@@ -381,8 +380,8 @@ def include_core_routes(
         "command_post": 0,
     }
 
-    @router.get("/api/v1/health", operation_id="health_check_core", response_model=HealthStatus)
-    async def health_check_core():
+    @router.get("/api/v1/health", operation_id="health_check_core")
+    async def health_check_core() -> HealthStatus:
         counters["status"] += 1
         return await health_check()
 
