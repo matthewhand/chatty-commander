@@ -4,6 +4,7 @@ import { useFloating, shift, flip, offset, autoUpdate } from '@floating-ui/react
 interface DropdownProps {
   buttonContent: React.ReactNode;
   children: React.ReactNode;
+  ariaLabel?: string;
   buttonClassName?: string;
   menuClassName?: string;
 }
@@ -11,6 +12,7 @@ interface DropdownProps {
 export function DynamicDropdown({
   buttonContent,
   children,
+  ariaLabel = "Toggle dropdown options",
   buttonClassName = "btn btn-ghost btn-sm btn-circle",
   menuClassName = "menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
 }: DropdownProps) {
@@ -53,6 +55,7 @@ export function DynamicDropdown({
         className={buttonClassName}
         aria-expanded={isOpen}
         aria-haspopup="true"
+        aria-label={ariaLabel}
       >
         {buttonContent}
       </button>
