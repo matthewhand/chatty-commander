@@ -80,36 +80,41 @@ class TestDependencyFailures:
 
     def test_audio_hardware_failure(self):
         """Test audio hardware failure handling."""
-        import sys
+        with patch("builtins.__import__") as mock_import:
 
-        modules_to_mock = ["whisper", "speech_recognition", "noisereduce", "webrtcvad"]
-        original_modules = {name: sys.modules.get(name) for name in modules_to_mock}
+            def side_effect(name, *args, **kwargs):
+                if name in [
+                    "whisper",
+                    "speech_recognition",
+                    "noisereduce",
+                    "webrtcvad",
+                ]:
+                    raise ImportError("Audio libraries not available")
+                return __import__(name, *args, **kwargs)
 
-        for name in modules_to_mock:
-            sys.modules[name] = None
+            mock_import.side_effect = side_effect
 
-        try:
             config = VoiceProcessingConfig()
             processor = EnhancedVoiceProcessor(config)
 
             # Should handle initialization failure gracefully - processor should still be created
             assert processor is not None
-        finally:
-            for name in modules_to_mock:
-                if original_modules[name] is not None:
-                    sys.modules[name] = original_modules[name]
-                else:
-                    del sys.modules[name]
 
     def test_transcription_engine_failure(self):
         """Test handling when transcription engines are unavailable."""
-        import sys
+        # Create a mock that simulates import failures
+        original_import = __import__
 
-        modules_to_mock = ["whisper", "speech_recognition"]
-        original_modules = {name: sys.modules.get(name) for name in modules_to_mock}
+        def mock_import(name, *args, **kwargs):
+            if name in ["whisper", "speech_recognition"]:
+                raise ImportError("Offline - no internet connection")
+            return original_import(name, *args, **kwargs)
 
-        for name in modules_to_mock:
-            sys.modules[name] = None
+        # Temporarily replace __import__
+        import builtins
+
+        original_builtin_import = builtins.__import__
+        builtins.__import__ = mock_import
 
         try:
             # Create processor - should handle missing transcription gracefully
@@ -125,11 +130,8 @@ class TestDependencyFailures:
             assert result.confidence == 0.0
 
         finally:
-            for name in modules_to_mock:
-                if original_modules[name] is not None:
-                    sys.modules[name] = original_modules[name]
-                else:
-                    del sys.modules[name]
+            # Restore original import
+            builtins.__import__ = original_builtin_import
 
     def test_memory_service_failure(self):
         """Test memory service failure handling."""
@@ -250,13 +252,19 @@ class TestNetworkConnectivity:
 
     def test_voice_processing_offline_mode(self):
         """Test voice processing in offline mode."""
-        import sys
+        # Create a mock that simulates import failures
+        original_import = __import__
 
-        modules_to_mock = ["whisper", "speech_recognition"]
-        original_modules = {name: sys.modules.get(name) for name in modules_to_mock}
+        def mock_import(name, *args, **kwargs):
+            if name in ["whisper", "speech_recognition"]:
+                raise ImportError("Offline - no internet connection")
+            return original_import(name, *args, **kwargs)
 
-        for name in modules_to_mock:
-            sys.modules[name] = None
+        # Temporarily replace __import__
+        import builtins
+
+        original_builtin_import = builtins.__import__
+        builtins.__import__ = mock_import
 
         try:
             config = VoiceProcessingConfig(
@@ -274,11 +282,8 @@ class TestNetworkConnectivity:
             )  # Should fallback to no transcription
 
         finally:
-            for name in modules_to_mock:
-                if original_modules[name] is not None:
-                    sys.modules[name] = original_modules[name]
-                else:
-                    del sys.modules[name]
+            # Restore original import
+            builtins.__import__ = original_builtin_import
 
 
 class TestFallbackMechanisms:

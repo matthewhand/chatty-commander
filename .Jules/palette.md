@@ -10,6 +10,6 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 **Learning:** Icon-only buttons (like error dismissals and model deletions) frequently lack `aria-label`s, preventing screen readers from understanding their purpose. Also, async operations (like deletions) bound to lists without granular loading states can leave users wondering if their action registered.
 **Action:** Always add `aria-label`s to icon-only buttons. Consider conditionally rendering a small spinner component in place of an icon for actions bound to `useMutation` that take noticeable time.
 
-## 2024-05-23 - Enforcing Accessibility via Interfaces
-**Learning:** Adding optional ARIA attributes isn't enough; developers frequently forget them when building custom icon-only triggers.
-**Action:** Enforce accessibility by making properties like `ariaLabel` strictly required in the component's TypeScript interface. This surfaces accessibility omissions as compilation errors, guaranteeing better screen reader support.
+## 2024-05-23 - Safe Accessibility Defaults for Shared Components
+**Learning:** Making accessibility props strictly required on widely used, shared components can inadvertently break builds or cause massive refactoring overhead if call sites aren't uniformly updated.
+**Action:** Use optional props like `ariaLabel?: string` combined with sensible, default fallback strings within the component (e.g. `ariaLabel = "Toggle dropdown options"`). This guarantees baseline screen reader support instantly while allowing specific instances to provide better, contextual overrides safely.
