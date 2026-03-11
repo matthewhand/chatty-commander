@@ -279,24 +279,14 @@ class TestRunWebMode:
         with patch.dict(
             sys.modules, {"chatty_commander.web.web_mode": None}
         ):
-            # Need to patch the actual import inside the function
-            import builtins
-            original_import = builtins.__import__
-
-            def mock_import(name, *args, **kwargs):
-                if "web_mode" in name:
-                    raise ImportError("No module")
-                return original_import(name, *args, **kwargs)
-
-            with patch("builtins.__import__", side_effect=mock_import):
-                with pytest.raises(SystemExit) as exc_info:
-                    run_web_mode(
-                        mock_config,
-                        mock_model_manager,
-                        mock_state_manager,
-                        mock_command_executor,
-                        mock_logger,
-                    )
+            with pytest.raises(SystemExit) as exc_info:
+                run_web_mode(
+                    mock_config,
+                    mock_model_manager,
+                    mock_state_manager,
+                    mock_command_executor,
+                    mock_logger,
+                )
 
         assert exc_info.value.code == 1
 

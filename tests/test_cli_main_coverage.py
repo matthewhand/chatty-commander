@@ -241,16 +241,11 @@ class TestMainRunWebMode:
         mock_command_executor = MagicMock()
         mock_logger = MagicMock()
 
-        # Patch the import to raise ImportError
-        import builtins
-        original_import = builtins.__import__
+        import sys
+        original_module = sys.modules.get("chatty_commander.web.web_mode")
+        sys.modules["chatty_commander.web.web_mode"] = None
 
-        def mock_import(name, *args, **kwargs):
-            if "web_mode" in name:
-                raise ImportError("No module")
-            return original_import(name, *args, **kwargs)
-
-        with patch("builtins.__import__", side_effect=mock_import):
+        try:
             with pytest.raises(SystemExit) as exc_info:
                 run_web_mode(
                     mock_config,
@@ -259,6 +254,11 @@ class TestMainRunWebMode:
                     mock_command_executor,
                     mock_logger,
                 )
+        finally:
+            if original_module is not None:
+                sys.modules["chatty_commander.web.web_mode"] = original_module
+            else:
+                del sys.modules["chatty_commander.web.web_mode"]
 
         assert exc_info.value.code == 1
 
