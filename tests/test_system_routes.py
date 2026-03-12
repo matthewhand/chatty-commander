@@ -51,14 +51,8 @@ def test_system_info_with_psutil(mock_disk, mock_mem, mock_cpu, mock_platform, m
 @patch("time.time", return_value=1100.0)
 @patch("platform.platform", return_value="TestPlatform-1.0")
 def test_system_info_without_psutil(mock_platform, mock_time):
-    # We mock __import__ to raise ImportError when 'psutil' is imported
-    original_import = __import__
-    def mock_import(name, *args, **kwargs):
-        if name == 'psutil':
-            raise ImportError("No module named 'psutil'")
-        return original_import(name, *args, **kwargs)
-
-    with patch("builtins.__import__", side_effect=mock_import):
+    # Use sys.modules to simulate missing psutil without breaking other lazy imports
+    with patch.dict("sys.modules", {"psutil": None}):
         response = client.get("/api/system/info")
 
     assert response.status_code == 200

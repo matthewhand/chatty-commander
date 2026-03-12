@@ -8,9 +8,10 @@ import {
   Plus,
   Edit3,
   Trash2,
-  FileAudio,
+  Terminal,
   RefreshCw,
-  Search
+  Search,
+  SearchX
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -243,13 +244,24 @@ export default function CommandsPage() {
           ))}
         </AnimatePresence>
         {isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands configured.
+          <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/30 rounded-box border-2 border-dashed border-base-content/10">
+            <Terminal size={48} className="text-base-content/20 mb-4" />
+            <h3 className="text-lg font-bold mb-2">No commands configured</h3>
+            <p className="text-base-content/60 mb-6 text-center max-w-sm">Get started by creating your first voice command to control your system.</p>
+            <Link to="/commands/authoring" className="btn btn-primary">
+              <Plus size={18} />
+              Create Command
+            </Link>
           </div>
         )}
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands match your search.
+          <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/30 rounded-box border-2 border-dashed border-base-content/10">
+            <SearchX size={48} className="text-base-content/20 mb-4" />
+            <h3 className="text-lg font-bold mb-2">No matches found</h3>
+            <p className="text-base-content/60 mb-6 text-center max-w-sm">We couldn't find any commands matching "{searchQuery}".</p>
+            <button className="btn btn-ghost" onClick={() => setSearchParams({})}>
+              Clear Search
+            </button>
           </div>
         )}
       </div>
