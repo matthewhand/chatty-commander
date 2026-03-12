@@ -27,7 +27,6 @@ Manages loading and utilization of wakeword models for the ChattyCommander appli
 Supports dynamic reloading and provides a patchable Model symbol for tests.
 """
 
-from __future__ import annotations
 
 import asyncio
 import logging

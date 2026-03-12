@@ -1,6 +1,5 @@
 """Tests for the command authoring API endpoint."""
 
-from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
