@@ -22,7 +22,6 @@
 
 """Model file management routes for ONNX voice command models."""
 
-from __future__ import annotations
 
 import logging
 from datetime import datetime
