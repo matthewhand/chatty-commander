@@ -1,3 +1,4 @@
+from __future__ import annotations
 # MIT License
 #
 # Copyright (c) 2024 mhand
@@ -20,7 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from __future__ import annotations
 
 import logging
 from typing import Any
