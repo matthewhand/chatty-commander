@@ -26,7 +26,6 @@ except ImportError:
     pytest = None
 from chatty_commander.utils.security import mask_sensitive_data
 
-
 def test_mask_sensitive_data():
     """Test that sensitive configuration data is correctly masked."""
     test_data = {
