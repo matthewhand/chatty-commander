@@ -22,7 +22,6 @@
 
 """Model file management routes for ONNX voice command models."""
 
-from __future__ import annotations
 
 import logging
 from datetime import datetime
@@ -200,11 +199,11 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         # Verify the resolved path is still within the target directory
         try:
             file_path.resolve().relative_to(target_dir.resolve())
-        except ValueError:
+        except ValueError as err:
             raise HTTPException(
                 status_code=400,
                 detail="Invalid filename: path escapes target directory"
-            )
+            ) from err
 
         # Check if file already exists
         if file_path.exists():
