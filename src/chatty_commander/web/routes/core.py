@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 import asyncio
 import os
 import threading
@@ -223,6 +224,7 @@ def include_core_routes(
             last_health_check=datetime.now().isoformat(),
         )
 
+
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
         """Get application metrics and performance data."""
@@ -300,11 +302,6 @@ def include_core_routes(
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
 
-    @router.get("/api/v1/commands")
-    async def get_commands():
-        """Get the configured commands."""
-        counters["config_get"] += 1
-        cfg_mgr = get_config_manager()
         # Return the 'commands' dictionary directly from the config
         return getattr(cfg_mgr, "commands", {})
 

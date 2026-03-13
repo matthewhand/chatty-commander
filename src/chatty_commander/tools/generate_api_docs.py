@@ -33,7 +33,6 @@ Backwards compatibility:
 - Keeps module name stable for tests importing this path
 """
 
-from __future__ import annotations
 
 import sys
 
