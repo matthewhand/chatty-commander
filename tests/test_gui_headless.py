@@ -53,7 +53,7 @@ class TestGuiHeadless(unittest.TestCase):
             import chatty_commander.gui as gui
 
             importlib.reload(gui)
-        output = f.getvalue()
+        f.getvalue()
         # The project seems to no longer have a `__init__.py` file under `chatty_commander/gui/`
         # that emits a "Warning: DISPLAY environment variable not set".
         # This test may have bitrotten, checking to see if skipping it is valid.
