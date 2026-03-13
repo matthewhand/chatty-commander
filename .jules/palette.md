@@ -1,0 +1,3 @@
+## 2024-03-13 - [Accessibility] DaisyUI form-control explicit HTML linking
+**Learning:** For frontend accessibility, especially when using DaisyUI `form-control` wrappers, form inputs must use standard HTML linking by assigning an `id` to the `<input>` and a matching `htmlFor` to the associated `<label>` to support screen readers, automated testing selections (e.g., Playwright's `get_by_label`), and click-to-focus behavior.
+**Action:** Always ensure any `<input>` elements inside a `<form>` or `form-control` wrapper have a distinct `id` attribute, and ensure the adjacent or wrapping `<label>` points to that ID using `htmlFor`.
