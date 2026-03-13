@@ -26,7 +26,7 @@ import sys
 PYTHON = sys.executable
 
 
-import os
+import os  # noqa: E402
 
 
 def run_cmd(args, timeout=10):

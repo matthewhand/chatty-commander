@@ -26,7 +26,6 @@ Command processor that uses LLM to interpret natural language commands.
 Converts voice/text input into structured commands that can be executed.
 """
 
-from __future__ import annotations
 
 import json
 import logging

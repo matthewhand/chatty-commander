@@ -41,7 +41,7 @@ class DummyConfig:
         self.advisors = {"enabled": True}
 
 
-import unittest.mock
+import unittest.mock  # noqa: E402
 
 
 def test_avatar_animations_lists_allowed_files(tmp_path: Path):
