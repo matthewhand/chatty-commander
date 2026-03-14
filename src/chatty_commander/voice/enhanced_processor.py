@@ -191,7 +191,10 @@ class EnhancedVoiceProcessor:
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
         """Energy-based voice activity detection."""
         audio_data = np.frombuffer(audio_chunk, dtype=np.int16)
-        energy = np.sum(audio_data.astype(np.float32) ** 2) / len(audio_data)
+        # Performance optimization: np.dot(arr, arr) is significantly faster than np.sum(arr ** 2)
+        # as it avoids allocating a large intermediate memory array and leverages optimized C-level BLAS routines.
+        audio_float = audio_data.astype(np.float32)
+        energy = np.dot(audio_float, audio_float) / len(audio_data)
 
         # Dynamic threshold based on recent energy levels
         threshold = 1000  # Adjust based on your environment
