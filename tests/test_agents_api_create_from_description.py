@@ -42,6 +42,8 @@ class DummyConfig:
 
 @patch("chatty_commander.web.routes.agents._LLMManager")
 def test_create_agent_blueprint_from_description(mock_llm_manager_class):
+    import chatty_commander.web.routes.agents
+    chatty_commander.web.routes.agents._llm_manager = None
     # Test fallback directly when LLM is unavailable
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = False
@@ -65,6 +67,10 @@ def test_create_agent_blueprint_from_description(mock_llm_manager_class):
 
 @patch("chatty_commander.web.routes.agents._LLMManager")
 def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_class):
+    # Reset the singleton caching logic to ensure the patch takes effect
+    import chatty_commander.web.routes.agents
+    chatty_commander.web.routes.agents._llm_manager = None
+
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = True
 
@@ -101,6 +107,10 @@ def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_cl
 
 @patch("chatty_commander.web.routes.agents._LLMManager")
 def test_create_agent_blueprint_from_description_llm_fallback(mock_llm_manager_class):
+    # Reset the singleton caching logic to ensure the patch takes effect
+    import chatty_commander.web.routes.agents
+    chatty_commander.web.routes.agents._llm_manager = None
+
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = True
     # Return invalid json
