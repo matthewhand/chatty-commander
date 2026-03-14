@@ -1,5 +1,7 @@
 // Jest-dom adds custom jest matchers for asserting on DOM nodes.
 import "@testing-library/jest-dom";
+import { vi } from 'vitest';
+global.jest = vi;
 
 // Mock WebSocket for testing
 global.WebSocket = class MockWebSocket {
