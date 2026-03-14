@@ -652,9 +652,18 @@ export default function CommandAuthoringPage() {
 
             <AnimatePresence>
               {manualCommand.actions.length === 0 ? (
-                <div className="text-center py-8 text-base-content/50">
-                  <Terminal size={32} className="mx-auto mb-2 opacity-50" />
-                  <p>No actions defined yet. Click "Add Action" to get started.</p>
+                <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-base-content/10 rounded-xl bg-base-200/50 my-4">
+                  <div className="p-4 bg-base-100 rounded-full mb-4 shadow-sm border border-base-content/5">
+                    <Terminal size={32} className="opacity-60" />
+                  </div>
+                  <h4 className="font-medium text-lg text-base-content/80 mb-1">No actions defined yet</h4>
+                  <p className="text-sm text-base-content/50 mb-6 text-center max-w-sm">
+                    Add an action to define what this command should do when triggered.
+                  </p>
+                  <button className="btn btn-primary btn-sm gap-2" onClick={addManualAction}>
+                    <Plus size={16} />
+                    Add First Action
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-3 mt-4">
