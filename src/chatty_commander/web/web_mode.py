@@ -71,7 +71,6 @@ try:
         RequestIdMiddleware,
         configure_logging,
     )
-
     _LOGGING_CONFIG_AVAILABLE = True
 except Exception:  # pragma: no cover
     RequestIdMiddleware = None  # type: ignore[assignment,misc]
@@ -82,7 +81,6 @@ try:
         RequestMetricsMiddleware,
         create_metrics_router,
     )
-
     _OBS_METRICS_AVAILABLE = True
 except Exception:  # pragma: no cover - optional dependency path
     RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
@@ -603,7 +601,9 @@ class WebModeServer:
         app.include_router(version_router)
 
         # System info endpoints
-        system_routes = include_system_routes(get_start_time=lambda: self.start_time)
+        system_routes = include_system_routes(
+            get_start_time=lambda: self.start_time
+        )
         app.include_router(system_routes)
 
         # Observability: expose /metrics/json and /metrics/prom endpoints
@@ -651,51 +651,28 @@ class WebModeServer:
         if not frontend_path.exists():
             frontend_path = Path("webui/frontend/build")
         if not frontend_path.exists():
-            logger.info(
-                "Frontend build not found. Automagically building the frontend UI..."
-            )
+            logger.info("Frontend build not found. Automagically building the frontend UI...")
             try:
                 import subprocess
                 import sys
 
                 # Check if npm is available
-                subprocess.run(
-                    ["npm", "--version"],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    check=True,
-                )
+                subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
                 logger.info("Installing frontend dependencies...")
-                subprocess.run(
-                    ["npm", "install", "--no-audit", "--no-fund", "--legacy-peer-deps"],
-                    cwd="webui/frontend",
-                    stdout=sys.stdout,
-                    stderr=sys.stderr,
-                    check=True,
-                )
+                subprocess.run(["npm", "install", "--no-audit", "--no-fund", "--legacy-peer-deps"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
 
                 logger.info("Building frontend assets...")
-                subprocess.run(
-                    ["npm", "run", "build"],
-                    cwd="webui/frontend",
-                    stdout=sys.stdout,
-                    stderr=sys.stderr,
-                    check=True,
-                )
+                subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
 
                 if Path("webui/frontend/dist").exists():
                     frontend_path = Path("webui/frontend/dist")
                 elif Path("webui/frontend/build").exists():
                     frontend_path = Path("webui/frontend/build")
             except FileNotFoundError:
-                logger.error(
-                    "Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/."
-                )
+                logger.error("Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/.")
             except Exception as e:
-                logger.error(
-                    f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/."
-                )
+                logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
 
         if frontend_path.exists():
             static_assets = frontend_path / "assets"
@@ -724,24 +701,18 @@ class WebModeServer:
         # SPA Catch-all: serve index.html for any non-API routes
         # This allows React Router to handle deep linking (e.g. /dashboard)
         if frontend_path.exists():
-
             @app.exception_handler(404)
             async def spa_fallback(request: Request, exc: HTTPException):
                 # If API or static file request fails, let it 404.
                 # Otherwise, serve index.html for SPA routing.
-                if request.url.path.startswith("/api") or request.url.path.startswith(
-                    "/assets"
-                ):
-                    return (
-                        await app.exception_handler_default(request, exc)
-                        if hasattr(app, "exception_handler_default")
-                        else HTMLResponse("Not Found", status_code=404)
-                    )
+                if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
+                     return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
 
                 index_file = frontend_path / "index.html"
                 if index_file.exists():
                     return FileResponse(str(index_file))
                 return HTMLResponse("Not Found", status_code=404)
+
 
         # Optional avatar UI
         avatar_path = Path("src/chatty_commander/webui/avatar")
@@ -772,28 +743,11 @@ class WebModeServer:
         async def advisor_personas():
             # Return seed data for testing
             if self.no_auth:
-                return {
-                    "personas": [
-                        {
-                            "id": "jarvis",
-                            "name": "Jarvis",
-                            "is_default": True,
-                            "system_prompt": "You are a helpful AI assistant named Jarvis.",
-                        },
-                        {
-                            "id": "friday",
-                            "name": "Friday",
-                            "is_default": False,
-                            "system_prompt": "You are a witty AI named Friday.",
-                        },
-                        {
-                            "id": "hal",
-                            "name": "HAL 9000",
-                            "is_default": False,
-                            "system_prompt": "You are a calm, ominous AI.",
-                        },
-                    ]
-                }
+                return {"personas": [
+                    {"id": "jarvis", "name": "Jarvis", "is_default": True, "system_prompt": "You are a helpful AI assistant named Jarvis."},
+                    {"id": "friday", "name": "Friday", "is_default": False, "system_prompt": "You are a witty AI named Friday."},
+                    {"id": "hal", "name": "HAL 9000", "is_default": False, "system_prompt": "You are a calm, ominous AI."},
+                ]}
             # Production: use advisors_service if available
             svc = self.advisors_service
             if not svc:
@@ -811,11 +765,7 @@ class WebModeServer:
                 if hasattr(self.config_manager, "auth"):
                     expected_key = self.config_manager.auth.get("api_key")
 
-                if (
-                    not x_api_key
-                    or not expected_key
-                    or not secrets.compare_digest(x_api_key, expected_key)
-                ):
+                if not x_api_key or not expected_key or not secrets.compare_digest(x_api_key, expected_key):
                     raise HTTPException(status_code=401, detail="Unauthorized")
 
             if not self.advisors_service:
@@ -923,11 +873,7 @@ class WebModeServer:
                 logger.warning("Bridge token not configured; rejecting request")
                 raise HTTPException(status_code=401, detail="Bridge not configured")
 
-            if (
-                not x_bridge_token
-                or not expected_token
-                or not secrets.compare_digest(x_bridge_token, expected_token)
-            ):
+            if not x_bridge_token or not expected_token or not secrets.compare_digest(x_bridge_token, expected_token):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
             # For now, just echo back the event
