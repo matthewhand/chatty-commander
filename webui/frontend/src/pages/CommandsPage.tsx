@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -8,7 +8,6 @@ import {
   Plus,
   Edit3,
   Trash2,
-  FileAudio,
   RefreshCw,
   Search
 } from 'lucide-react';
@@ -243,13 +242,35 @@ export default function CommandsPage() {
           ))}
         </AnimatePresence>
         {isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands configured.
+          <div className="col-span-full flex flex-col items-center justify-center p-16 text-center border-2 border-dashed border-base-content/10 rounded-xl bg-base-200/20">
+            <div className="bg-primary/10 p-4 rounded-full mb-4">
+              <TerminalSquare size={32} className="text-primary" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">No Commands Configured</h3>
+            <p className="text-base-content/60 mb-6 max-w-md">
+              You haven't added any voice commands yet. Create your first command to start interacting with Chatty.
+            </p>
+            <Link to="/commands/authoring" className="btn btn-primary gap-2">
+              <Plus size={18} />
+              Create First Command
+            </Link>
           </div>
         )}
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands match your search.
+          <div className="col-span-full flex flex-col items-center justify-center p-16 text-center border-2 border-dashed border-base-content/10 rounded-xl bg-base-200/20">
+            <div className="bg-base-content/5 p-4 rounded-full mb-4">
+              <Search size={32} className="text-base-content/40" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">No Matches Found</h3>
+            <p className="text-base-content/60 mb-6 max-w-md">
+              We couldn't find any commands matching "{searchQuery}". Try a different search term or clear the filter.
+            </p>
+            <button
+              className="btn btn-outline gap-2"
+              onClick={() => setSearchParams({})}
+            >
+              Clear Search
+            </button>
           </div>
         )}
       </div>
