@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
+
 import asyncio
 import os
 import threading
@@ -36,10 +38,12 @@ from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
+from typing import List, Dict, Optional, Any
+
 class SystemStatus(BaseModel):
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
-    active_models: list[str] = Field(..., description="List of loaded models")
+    active_models: List[str] = Field(..., description="List of loaded models")
     uptime: str = Field(..., description="System uptime")
     version: str = Field(default="0.2.0", description="Application version")
 
@@ -52,7 +56,7 @@ class StateChangeRequest(BaseModel):
 
 class CommandRequest(BaseModel):
     command: str = Field(..., description="Command name to execute")
-    parameters: dict[str, Any] | None = Field(
+    parameters: Optional[Dict[str, Any]] = Field(
         default=None, description="Optional parameters"
     )
 
@@ -65,8 +69,8 @@ class CommandResponse(BaseModel):
 
 class StateInfo(BaseModel):
     current_state: str = Field(..., description="Current operational state")
-    active_models: list[str] = Field(..., description="List of active models")
-    last_command: str | None = Field(default=None, description="Last detected command")
+    active_models: List[str] = Field(..., description="List of active models")
+    last_command: Optional[str] = Field(default=None, description="Last detected command")
     timestamp: str = Field(..., description="Timestamp of last state change")
 
 
