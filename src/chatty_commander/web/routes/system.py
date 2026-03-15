@@ -7,10 +7,11 @@ from collections.abc import Callable
 from pathlib import Path
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class SystemInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     cpu_percent: float | None = Field(None, description="Current CPU utilization as a percentage")
     memory_total_mb: int | None = Field(None, description="Total physical memory in MB")
     memory_used_mb: int | None = Field(None, description="Used physical memory in MB")

@@ -34,11 +34,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 
 from chatty_commander.utils.security import mask_sensitive_data
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class SystemStatus(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of loaded models")
@@ -47,12 +48,14 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     state: str = Field(
         ..., description="Target state", pattern="^(idle|computer|chatty)$"
     )
 
 
 class CommandRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     command: str = Field(..., description="Command name to execute")
     parameters: dict[str, Any] | None = Field(
         default=None, description="Optional parameters"
@@ -60,12 +63,14 @@ class CommandRequest(BaseModel):
 
 
 class CommandResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
     execution_time: float = Field(..., description="Execution time in milliseconds")
 
 
 class StateInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
     last_command: str | None = Field(default=None, description="Last detected command")
@@ -73,6 +78,7 @@ class StateInfo(BaseModel):
 
 
 class HealthStatus(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     status: str = Field(..., description="Health status")
     uptime: str = Field(..., description="System uptime")
     version: str = Field(..., description="Application version")
