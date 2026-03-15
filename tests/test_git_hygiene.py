@@ -319,9 +319,22 @@ class TestGitConfiguration:
         branches = result.stdout
 
         # Should have either main or master branch
-        # Allow for remote branches (e.g. remotes/origin/main)
-        has_main = "main" in branches or "origin/main" in branches
-        has_master = "master" in branches or "origin/master" in branches
+        # Check carefully to handle `* (HEAD detached at ...)` and remote tracking branches
+        # e.g. "  remotes/origin/main" or "* main"
+        lines = [line.strip() for line in branches.splitlines()]
+
+        has_main = False
+        has_master = False
+
+        for line in lines:
+            # Strip off the current branch asterisk and any whitespace
+            clean_branch = line.replace("*", "").strip()
+
+            # Check exact match or remote branch format
+            if clean_branch == "main" or clean_branch.endswith("/main"):
+                has_main = True
+            if clean_branch == "master" or clean_branch.endswith("/master"):
+                has_master = True
 
         assert has_main or has_master, "Repository should have a main or master branch"
 
