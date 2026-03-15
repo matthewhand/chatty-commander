@@ -147,10 +147,11 @@ const ActionField: React.FC<{
       </div>
 
       <div className="form-control">
-        <label className="label">
+        <label htmlFor={`action-type-${index}`} className="label">
           <span className="label-text text-sm">Type</span>
         </label>
         <select
+          id={`action-type-${index}`}
           className="select select-sm select-bordered w-full"
           value={action.type}
           onChange={(e) => handleTypeChange(e.target.value as CommandAction['type'])}
@@ -164,10 +165,11 @@ const ActionField: React.FC<{
 
       {action.type === 'keypress' && (
         <div className="form-control">
-          <label className="label">
+          <label htmlFor={`action-keys-${index}`} className="label">
             <span className="label-text text-sm">Keys</span>
           </label>
           <input
+            id={`action-keys-${index}`}
             type="text"
             className="input input-sm input-bordered"
             placeholder="e.g., ctrl+alt+t"
@@ -179,10 +181,11 @@ const ActionField: React.FC<{
 
       {action.type === 'url' && (
         <div className="form-control">
-          <label className="label">
+          <label htmlFor={`action-url-${index}`} className="label">
             <span className="label-text text-sm">URL</span>
           </label>
           <input
+            id={`action-url-${index}`}
             type="text"
             className="input input-sm input-bordered"
             placeholder="https://example.com"
@@ -194,10 +197,11 @@ const ActionField: React.FC<{
 
       {action.type === 'shell' && (
         <div className="form-control">
-          <label className="label">
+          <label htmlFor={`action-cmd-${index}`} className="label">
             <span className="label-text text-sm">Command</span>
           </label>
           <input
+            id={`action-cmd-${index}`}
             type="text"
             className="input input-sm input-bordered"
             placeholder="e.g., npm start"
@@ -209,10 +213,11 @@ const ActionField: React.FC<{
 
       {action.type === 'custom_message' && (
         <div className="form-control">
-          <label className="label">
+          <label htmlFor={`action-msg-${index}`} className="label">
             <span className="label-text text-sm">Message</span>
           </label>
           <input
+            id={`action-msg-${index}`}
             type="text"
             className="input input-sm input-bordered"
             placeholder="Enter message to display"
@@ -464,7 +469,11 @@ export default function CommandAuthoringPage() {
             </p>
 
             <div className="form-control">
+              <label htmlFor="ai-description" className="sr-only">
+                Describe Your Command
+              </label>
               <textarea
+                id="ai-description"
                 className="textarea textarea-bordered h-32 font-normal"
                 placeholder="When I say 'start my day', open my email client, my code editor, and the project management website..."
                 value={description}
@@ -595,10 +604,11 @@ export default function CommandAuthoringPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <div className="form-control">
-                <label className="label">
+                <label htmlFor="manual-cmd-name" className="label">
                   <span className="label-text">Command Name (snake_case)</span>
                 </label>
                 <input
+                  id="manual-cmd-name"
                   type="text"
                   className="input input-bordered"
                   placeholder="my_command"
@@ -610,10 +620,11 @@ export default function CommandAuthoringPage() {
               </div>
 
               <div className="form-control">
-                <label className="label">
+                <label htmlFor="manual-cmd-display" className="label">
                   <span className="label-text">Display Name</span>
                 </label>
                 <input
+                  id="manual-cmd-display"
                   type="text"
                   className="input input-bordered"
                   placeholder="My Command"
@@ -625,10 +636,11 @@ export default function CommandAuthoringPage() {
               </div>
 
               <div className="form-control">
-                <label className="label">
+                <label htmlFor="manual-cmd-wakeword" className="label">
                   <span className="label-text">Wakeword</span>
                 </label>
                 <input
+                  id="manual-cmd-wakeword"
                   type="text"
                   className="input input-bordered"
                   placeholder="Trigger phrase"
