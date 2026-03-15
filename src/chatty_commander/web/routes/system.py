@@ -1,4 +1,4 @@
-
+from __future__ import annotations
 
 import platform
 import sys
@@ -10,16 +10,14 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 
-from typing import Optional
-
 class SystemInfo(BaseModel):
-    cpu_percent: Optional[float] = Field(None, description="Current CPU utilization as a percentage")
-    memory_total_mb: Optional[int] = Field(None, description="Total physical memory in MB")
-    memory_used_mb: Optional[int] = Field(None, description="Used physical memory in MB")
-    memory_percent: Optional[float] = Field(None, description="Used memory as a percentage")
-    disk_total_gb: Optional[float] = Field(None, description="Total disk space in GB")
-    disk_used_gb: Optional[float] = Field(None, description="Used disk space in GB")
-    disk_percent: Optional[float] = Field(None, description="Used disk space as a percentage")
+    cpu_percent: float | None = Field(None, description="Current CPU utilization as a percentage")
+    memory_total_mb: int | None = Field(None, description="Total physical memory in MB")
+    memory_used_mb: int | None = Field(None, description="Used physical memory in MB")
+    memory_percent: float | None = Field(None, description="Used memory as a percentage")
+    disk_total_gb: float | None = Field(None, description="Total disk space in GB")
+    disk_used_gb: float | None = Field(None, description="Used disk space in GB")
+    disk_percent: float | None = Field(None, description="Used disk space as a percentage")
     python_version: str = Field(..., description="Python version string")
     platform: str = Field(..., description="Platform identifier")
     uptime_seconds: float = Field(..., description="System uptime in seconds")

@@ -33,7 +33,7 @@ stable surface used by tests:
 - create_app(no_auth: bool) convenience to spin up a minimal app
 """
 
-
+from __future__ import annotations
 
 import asyncio
 import logging
