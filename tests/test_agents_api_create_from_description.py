@@ -80,6 +80,10 @@ def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_cl
     mock_llm.generate_response.return_value = mock_json_response
     mock_llm_manager_class.return_value = mock_llm
 
+    # Reset the singleton state
+    import chatty_commander.web.routes.agents as agents_routes
+    agents_routes._llm_manager = None
+
     cfg = DummyConfig()
     sm = StateManager()
     mm = ModelManager(cfg)
@@ -106,6 +110,10 @@ def test_create_agent_blueprint_from_description_llm_fallback(mock_llm_manager_c
     # Return invalid json
     mock_llm.generate_response.return_value = "This is not JSON at all."
     mock_llm_manager_class.return_value = mock_llm
+
+    # Reset the singleton state
+    import chatty_commander.web.routes.agents as agents_routes
+    agents_routes._llm_manager = None
 
     cfg = DummyConfig()
     sm = StateManager()
