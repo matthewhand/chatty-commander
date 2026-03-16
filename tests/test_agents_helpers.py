@@ -29,6 +29,7 @@ import pytest
 # without polluting sys.modules for subsequent tests.
 _missing_fastapi = "fastapi" not in sys.modules
 _missing_pydantic = "pydantic" not in sys.modules
+_original_modules = sys.modules.copy()
 
 try:
     if _missing_fastapi:
@@ -38,6 +39,12 @@ try:
 
     from chatty_commander.web.routes.agents import _extract_json_from_response
 finally:
+    # Remove any module that was imported while fastapi/pydantic were mocked
+    # to ensure they are cleanly re-imported by subsequent tests that need the real ones.
+    for mod_name in list(sys.modules.keys()):
+        if mod_name not in _original_modules:
+            del sys.modules[mod_name]
+
     if _missing_fastapi and "fastapi" in sys.modules:
         del sys.modules["fastapi"]
     if _missing_pydantic and "pydantic" in sys.modules:

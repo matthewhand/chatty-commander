@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 from unittest.mock import MagicMock, patch
+import pytest
 
 from fastapi.testclient import TestClient
 
@@ -38,6 +39,14 @@ class DummyConfig:
         self.chat_models_path = "models-chatty"
         self.config = {"model_actions": {}}
         self.advisors = {"enabled": True}
+
+@pytest.fixture(autouse=True)
+def reset_llm_manager():
+    """Reset the module-level LLMManager singleton before each test."""
+    import chatty_commander.web.routes.agents
+    chatty_commander.web.routes.agents._llm_manager = None
+    yield
+    chatty_commander.web.routes.agents._llm_manager = None
 
 
 @patch("chatty_commander.web.routes.agents._LLMManager")
