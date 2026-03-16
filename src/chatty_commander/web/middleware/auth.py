@@ -24,6 +24,7 @@
 
 import logging
 import posixpath
+import secrets
 from collections.abc import Callable
 
 from fastapi import Request, Response
@@ -104,7 +105,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 logger.debug("No API key configured, allowing request")
                 return await call_next(request)
 
-            if not api_key or api_key != expected_key:
+            # Prevent timing attacks using secrets.compare_digest
+            # Encode to utf-8 to avoid TypeError with non-ASCII characters
+            if not api_key or not secrets.compare_digest(api_key.encode('utf-8'), expected_key.encode('utf-8')):
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
                 # Return 401 response directly instead of raising exception
                 from fastapi.responses import JSONResponse
