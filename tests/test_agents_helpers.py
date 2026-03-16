@@ -22,15 +22,26 @@
 
 import sys
 from unittest.mock import MagicMock
-
-# Mock fastapi and pydantic before importing the module under test
-mock_fastapi = MagicMock()
-sys.modules["fastapi"] = mock_fastapi
-mock_pydantic = MagicMock()
-sys.modules["pydantic"] = mock_pydantic
-
 import pytest
-from chatty_commander.web.routes.agents import _extract_json_from_response
+
+# Safely mock fastapi and pydantic for this specific module's import
+# to allow testing _extract_json_from_response even if dependencies are missing,
+# without polluting sys.modules for subsequent tests.
+_missing_fastapi = "fastapi" not in sys.modules
+_missing_pydantic = "pydantic" not in sys.modules
+
+try:
+    if _missing_fastapi:
+        sys.modules["fastapi"] = MagicMock()
+    if _missing_pydantic:
+        sys.modules["pydantic"] = MagicMock()
+
+    from chatty_commander.web.routes.agents import _extract_json_from_response
+finally:
+    if _missing_fastapi and "fastapi" in sys.modules:
+        del sys.modules["fastapi"]
+    if _missing_pydantic and "pydantic" in sys.modules:
+        del sys.modules["pydantic"]
 
 def test_extract_json_standard_markdown():
     """Test extraction from a standard ```json ... ``` block."""
