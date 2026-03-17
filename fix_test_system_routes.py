@@ -1,4 +1,9 @@
-# MIT License
+import sys
+with open("tests/test_system_routes.py", "r") as f:
+    content = f.read()
+
+# Replace with safe mock
+new_content = """# MIT License
 # ... (omitted license for brevity, keeping only functionality changes)
 import sys
 import pytest
@@ -41,14 +46,17 @@ def client(app):
     return TestClient(app)
 
 def test_system_info(client):
-    with patch("time.time", return_value=1100.0), \
-         patch("psutil.cpu_percent", return_value=25.0), \
+    with patch("time.time", return_value=1100.0), \\
+         patch("psutil.cpu_percent", return_value=25.0), \\
          patch("psutil.virtual_memory") as mock_mem:
         mock_mem.return_value.percent = 40.0
         response = client.get("/api/system/info")
         assert response.status_code == 200
         data = response.json()
-        assert "uptime_seconds" in data
+        assert data["status"] == "running"
+        assert data["uptime"] == 100.0
+        assert data["cpu_percent"] == 25.0
+        assert data["memory_percent"] == 40.0
 
 def test_system_info_psutil_missing(app):
     with patch.dict("sys.modules", {"psutil": None}):
@@ -59,3 +67,7 @@ def test_system_info_psutil_missing(app):
             data = response.json()
             assert data["cpu_percent"] is None
             assert data["memory_percent"] is None
+"""
+
+with open("tests/test_system_routes.py", "w") as f:
+    f.write(new_content)

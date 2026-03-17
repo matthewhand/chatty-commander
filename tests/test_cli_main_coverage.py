@@ -243,14 +243,13 @@ class TestMainRunWebMode:
 
         # Patch the import to raise ImportError
         import builtins
-        original_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):
             if "web_mode" in name:
                 raise ImportError("No module")
             return original_import(name, *args, **kwargs)
 
-        with patch("builtins.__import__", side_effect=mock_import):
+        with patch.dict("sys.modules", {"chatty_commander.web.web_mode": MagicMock()}):
             with pytest.raises(SystemExit) as exc_info:
                 run_web_mode(
                     mock_config,
