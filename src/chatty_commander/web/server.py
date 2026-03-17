@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from typing import Any
 
 try:
@@ -129,9 +130,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
 
     if include_audio_routes and config_manager:
         global audio_router
-        audio_router = include_audio_routes(
-            get_config_manager=lambda: config_manager
-        )
+        audio_router = include_audio_routes(get_config_manager=lambda: config_manager)
         _include_optional(app, "audio_router")
 
     # Add bridge endpoint for tests
@@ -158,11 +157,16 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             if no_auth:
                 # Dev mode: token required, reject if missing
                 if not x_bridge_token:
-                    _bridge_logger.warning("Bridge request rejected: missing X-Bridge-Token in dev mode")
+                    _bridge_logger.warning(
+                        "Bridge request rejected: missing X-Bridge-Token in dev mode"
+                    )
                     raise HTTPException(
                         status_code=401, detail="Unauthorized bridge request"
                     )
-                return {"ok": True, "reply": {"text": "Bridge response (dev)", "meta": {}}}
+                return {
+                    "ok": True,
+                    "reply": {"text": "Bridge response (dev)", "meta": {}},
+                }
             else:
                 # Production mode: validate token from config
                 expected_token: str | None = None
@@ -180,13 +184,13 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
                     )
 
                 # Validate token
-                if x_bridge_token != expected_token:
+                if not x_bridge_token or not secrets.compare_digest(
+                    x_bridge_token.encode("utf-8"), expected_token.encode("utf-8")
+                ):
                     _bridge_logger.warning(
                         "Bridge request rejected: invalid token provided"
                     )
-                    raise HTTPException(
-                        status_code=401, detail="Invalid bridge token"
-                    )
+                    raise HTTPException(status_code=401, detail="Invalid bridge token")
 
                 return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 
