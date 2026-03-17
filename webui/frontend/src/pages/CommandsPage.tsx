@@ -205,6 +205,7 @@ export default function CommandsPage() {
                         </svg>
                       }
                       menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
+                      ariaLabel={`Options for ${name}`}
                     >
                       <li>
                         <button aria-label={`Edit ${name}`}>
@@ -243,13 +244,31 @@ export default function CommandsPage() {
           ))}
         </AnimatePresence>
         {isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands configured.
+          <div className="col-span-full flex flex-col items-center justify-center p-16 text-center border-2 border-dashed border-base-content/10 rounded-box bg-base-200/20">
+            <TerminalSquare size={48} className="text-base-content/20 mb-4" />
+            <h3 className="text-lg font-bold mb-2">No commands configured</h3>
+            <p className="text-base-content/60 mb-6 max-w-sm">
+              Get started by creating your first voice command to control your system.
+            </p>
+            <Link to="/commands/authoring" className="btn btn-primary btn-sm">
+              <Plus size={16} />
+              Create First Command
+            </Link>
           </div>
         )}
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands match your search.
+          <div className="col-span-full flex flex-col items-center justify-center p-16 text-center border-2 border-dashed border-base-content/10 rounded-box bg-base-200/20">
+            <Search size={48} className="text-base-content/20 mb-4" />
+            <h3 className="text-lg font-bold mb-2">No matching commands</h3>
+            <p className="text-base-content/60 mb-6 max-w-sm">
+              We couldn't find any commands matching "{searchQuery}".
+            </p>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setSearchParams({})}
+            >
+              Clear Search
+            </button>
           </div>
         )}
       </div>
