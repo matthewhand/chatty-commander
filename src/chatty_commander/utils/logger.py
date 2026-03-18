@@ -37,6 +37,8 @@ import os
 import sys as _sys
 from logging.handlers import RotatingFileHandler
 
+from chatty_commander.utils.url_validator import is_safe_url
+
 _sys.modules.setdefault("utils", _sys.modules.get("utils", type(_sys)("utils")))
 _sys.modules["utils.logger"] = _sys.modules[__name__]
 
@@ -89,6 +91,7 @@ class HTTPLogHandler(logging.Handler):
         super().__init__()
         self.url = url
         self.timeout = timeout
+        self._is_safe_url = is_safe_url(url)
         self._requests = None
         try:
             import requests
@@ -103,7 +106,7 @@ class HTTPLogHandler(logging.Handler):
         Args:
             record: The log record to send
         """
-        if self._requests is None:
+        if self._requests is None or not self._is_safe_url:
             return
         try:
             log_entry = self.format(record)
