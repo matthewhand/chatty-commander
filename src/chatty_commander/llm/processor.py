@@ -41,6 +41,18 @@ logger = logging.getLogger(__name__)
 class CommandProcessor:
     """Processes natural language commands using LLM."""
 
+    # Static keyword map for simple command matching
+    KEYWORD_MAP = {
+        "hello": ["hello", "hi", "hey", "greet", "greeting"],
+        "lights": ["light", "lights", "lamp", "illumination", "brightness"],
+        "music": ["music", "song", "play", "audio", "sound"],
+        "weather": ["weather", "temperature", "forecast", "climate"],
+        "time": ["time", "clock", "hour", "minute"],
+        "timer": ["timer", "alarm", "remind", "countdown"],
+        "volume": ["volume", "loud", "quiet", "sound"],
+        "help": ["help", "assist", "support"],
+    }
+
     def __init__(
         self, llm_manager: LLMManager | None = None, config_manager=None, **llm_kwargs
     ):
@@ -49,6 +61,8 @@ class CommandProcessor:
 
         # Cache available commands
         self._available_commands: dict[str, dict] = {}
+        self._available_commands_lower: dict[str, str] = {}
+        self._available_keyword_map: dict[str, list[str]] = {}
         self._update_available_commands()
 
         logger.info("Command processor initialized")
@@ -61,6 +75,19 @@ class CommandProcessor:
         try:
             model_actions = getattr(self.config_manager, "model_actions", {})
             self._available_commands = model_actions.copy()
+
+            # Pre-compute optimized data structures for fast command matching
+            self._available_commands_lower = {
+                cmd.lower(): cmd for cmd in self._available_commands
+            }
+
+            # Pre-filter keywords to only include available commands
+            self._available_keyword_map = {
+                cmd: keywords
+                for cmd, keywords in self.KEYWORD_MAP.items()
+                if cmd in self._available_commands
+            }
+
             logger.debug(
                 f"Updated available commands: {list(self._available_commands.keys())}"
             )
@@ -98,28 +125,18 @@ class CommandProcessor:
         """Simple keyword-based command matching."""
         user_lower = user_input.lower()
 
-        # Direct command name match
-        for cmd_name in self._available_commands:
-            if cmd_name.lower() in user_lower:
-                return cmd_name, 0.9
+        # Direct command name match - use cached lowercase keys to avoid repeated
+        # .lower() calls and dict view allocations in this hot path
+        for cmd_lower in self._available_commands_lower:
+            if cmd_lower in user_lower:
+                return self._available_commands_lower[cmd_lower], 0.9
 
-        # Keyword-based matching
-        keyword_map = {
-            "hello": ["hello", "hi", "hey", "greet", "greeting"],
-            "lights": ["light", "lights", "lamp", "illumination", "brightness"],
-            "music": ["music", "song", "play", "audio", "sound"],
-            "weather": ["weather", "temperature", "forecast", "climate"],
-            "time": ["time", "clock", "hour", "minute"],
-            "timer": ["timer", "alarm", "remind", "countdown"],
-            "volume": ["volume", "loud", "quiet", "sound"],
-            "help": ["help", "assist", "support"],
-        }
-
-        for cmd_name, keywords in keyword_map.items():
-            if cmd_name in self._available_commands:
-                for keyword in keywords:
-                    if keyword in user_lower:
-                        return cmd_name, 0.7
+        # Keyword-based matching - use pre-filtered map to avoid checking
+        # if cmd_name is in available_commands for every map entry
+        for cmd_name in self._available_keyword_map:
+            for keyword in self._available_keyword_map[cmd_name]:
+                if keyword in user_lower:
+                    return cmd_name, 0.7
 
         return None
 
