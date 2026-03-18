@@ -21,7 +21,6 @@
 # SOFTWARE.
 
 
-
 import asyncio
 import os
 import threading
@@ -29,7 +28,7 @@ import time
 from collections import deque
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -54,7 +53,7 @@ class StateChangeRequest(BaseModel):
 
 class CommandRequest(BaseModel):
     command: str = Field(..., description="Command name to execute")
-    parameters: dict[str, Any] | None = Field(
+    parameters: Optional[dict[str, Any]] = Field(
         default=None, description="Optional parameters"
     )
 
@@ -68,7 +67,9 @@ class CommandResponse(BaseModel):
 class StateInfo(BaseModel):
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
-    last_command: str | None = Field(default=None, description="Last detected command")
+    last_command: Optional[str] = Field(
+        default=None, description="Last detected command"
+    )
     timestamp: str = Field(..., description="Timestamp of last state change")
 
 
@@ -98,9 +99,15 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
     def get_average_ms(self) -> float:
         """Return the current rolling average response time in milliseconds."""
         with self._lock:
-            return sum(self._response_times) / len(self._response_times) if self._response_times else 0.0
+            return (
+                sum(self._response_times) / len(self._response_times)
+                if self._response_times
+                else 0.0
+            )
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Any]
+    ) -> Any:
         start_time = time.time()
         response = await call_next(request)
         duration_ms = (time.time() - start_time) * 1000.0
@@ -129,13 +136,13 @@ def include_core_routes(
     get_start_time: Callable[[], float],
     get_state_manager: Callable[[], Any],
     get_config_manager: Callable[[], Any],
-    get_last_command: Callable[[], str | None],
+    get_last_command: Callable[[], Optional[str]],
     get_last_state_change: Callable[[], datetime],
     execute_command_fn: Callable[[str], Any],
-    get_active_connections: Callable[[], int] | None = None,
-    get_cache_size: Callable[[], int] | None = None,
-    get_total_commands: Callable[[], int] | None = None,
-    response_time_middleware: ResponseTimeMiddleware | None = None,
+    get_active_connections: Optional[Callable[[], int]] = None,
+    get_cache_size: Optional[Callable[[], int]] = None,
+    get_total_commands: Optional[Callable[[], int]] = None,
+    response_time_middleware: Optional[ResponseTimeMiddleware] = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -192,13 +199,17 @@ def include_core_routes(
         cfg_mgr = get_config_manager()
         cfg = getattr(cfg_mgr, "config", {})
         # Look for database_url in general_settings or root
-        db_url = cfg.get("database_url") or cfg.get("general_settings", {}).get("database_url")
+        db_url = cfg.get("database_url") or cfg.get("general_settings", {}).get(
+            "database_url"
+        )
 
         if db_url:
+
             def _check_db():
                 try:
                     from sqlalchemy import create_engine, text
                     from sqlalchemy.pool import NullPool
+
                     engine = create_engine(db_url, poolclass=NullPool)
                     with engine.connect() as conn:
                         conn.execute(text("SELECT 1")).scalar()
@@ -209,8 +220,7 @@ def include_core_routes(
 
             try:
                 database_status = await asyncio.wait_for(
-                    asyncio.to_thread(_check_db),
-                    timeout=2.0
+                    asyncio.to_thread(_check_db), timeout=2.0
                 )
             except Exception:
                 database_status = "unreachable"
@@ -286,8 +296,10 @@ def include_core_routes(
         # Expose which fields are overridden by the environment
         env_overrides = {
             "api_key": bool(os.environ.get("OPENAI_API_KEY")),
-            "base_url": bool(os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")),
-            "model": bool(os.environ.get("OPENAI_MODEL"))
+            "base_url": bool(
+                os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")
+            ),
+            "model": bool(os.environ.get("OPENAI_MODEL")),
         }
         config_data["_env_overrides"] = env_overrides
         return config_data
@@ -351,7 +363,9 @@ def include_core_routes(
             # Delegate to provided executor bridge to ensure consistent integration surface
             # Use run_in_executor to prevent blocking the event loop
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(None, execute_command_fn, request.command)
+            result = await loop.run_in_executor(
+                None, execute_command_fn, request.command
+            )
             success = bool(result)
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
@@ -381,7 +395,9 @@ def include_core_routes(
         "command_post": 0,
     }
 
-    @router.get("/api/v1/health", operation_id="health_check_core", response_model=HealthStatus)
+    @router.get(
+        "/api/v1/health", operation_id="health_check_core", response_model=HealthStatus
+    )
     async def health_check_core():
         counters["status"] += 1
         return await health_check()
