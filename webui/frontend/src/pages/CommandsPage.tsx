@@ -243,13 +243,35 @@ export default function CommandsPage() {
           ))}
         </AnimatePresence>
         {isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands configured.
+          <div className="col-span-full flex flex-col items-center justify-center p-16 bg-base-200/50 rounded-box border border-base-content/10 border-dashed">
+            <div className="bg-base-100 p-4 rounded-full mb-4 shadow-sm border border-base-content/5 text-base-content/40">
+              <TerminalSquare size={32} />
+            </div>
+            <h3 className="text-xl font-bold mb-2">No commands configured</h3>
+            <p className="text-base-content/60 max-w-sm text-center mb-6">
+              You haven't added any commands yet. Create your first command to automate tasks and control your system.
+            </p>
+            <Link to="/commands/authoring" className="btn btn-primary">
+              <Plus size={18} />
+              Create First Command
+            </Link>
           </div>
         )}
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands match your search.
+          <div className="col-span-full flex flex-col items-center justify-center p-16 bg-base-200/50 rounded-box border border-base-content/10 border-dashed">
+            <div className="bg-base-100 p-4 rounded-full mb-4 shadow-sm border border-base-content/5 text-base-content/40">
+              <Search size={32} />
+            </div>
+            <h3 className="text-xl font-bold mb-2">No matches found</h3>
+            <p className="text-base-content/60 mb-6">
+              We couldn't find any commands matching "<span className="font-semibold text-base-content/80">{searchQuery}</span>".
+            </p>
+            <button
+              className="btn btn-outline"
+              onClick={() => setSearchParams({})}
+            >
+              Clear Search
+            </button>
           </div>
         )}
       </div>
