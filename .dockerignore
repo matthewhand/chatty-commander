@@ -1,0 +1,14 @@
+.git
+.github
+.Jules
+.benchmarks
+.coverage
+.pytest_cache
+.venv
+__pycache__
+*.log
+docs
+tests
+webui/frontend/node_modules
+webui/frontend/dist
+webui/frontend/build
