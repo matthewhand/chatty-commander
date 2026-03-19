@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,13 +8,6 @@ import {
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Import pages
-import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import ConfigurationPage from "./pages/ConfigurationPage";
-import CommandsPage from "./pages/CommandsPage";
-import CommandAuthoringPage from "./pages/CommandAuthoringPage";
-
 // Import components
 import MainLayout from "./components/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -23,6 +16,13 @@ import { WebSocketProvider } from "./components/WebSocketProvider";
 // Import hooks
 import { useAuth, AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/ThemeProvider";
+
+// Import pages lazily for code splitting
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const ConfigurationPage = lazy(() => import("./pages/ConfigurationPage"));
+const CommandsPage = lazy(() => import("./pages/CommandsPage"));
+const CommandAuthoringPage = lazy(() => import("./pages/CommandAuthoringPage"));
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -61,34 +61,42 @@ function AppContent() {
 
   return (
     <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route
-          path="/login"
-          element={
-            showNav ? <Navigate to="/dashboard" replace /> : <LoginPage />
-          }
-        />
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <span className="loading loading-spinner text-primary loading-lg"></span>
+          </div>
+        }
+      >
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={
+              showNav ? <Navigate to="/dashboard" replace /> : <LoginPage />
+            }
+          />
 
-        {/* Protected Routes (Wrapped in MainLayout) */}
-        <Route element={<ProtectedLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/configuration" element={<ConfigurationPage />} />
-          <Route path="/commands" element={<CommandsPage />} />
-          <Route path="/commands/authoring" element={<CommandAuthoringPage />} />
-        </Route>
+          {/* Protected Routes (Wrapped in MainLayout) */}
+          <Route element={<ProtectedLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/configuration" element={<ConfigurationPage />} />
+            <Route path="/commands" element={<CommandsPage />} />
+            <Route path="/commands/authoring" element={<CommandAuthoringPage />} />
+          </Route>
 
-        {/* Default Redirect */}
-        <Route
-          path="/"
-          element={
-            <Navigate to={showNav ? "/dashboard" : "/login"} replace />
-          }
-        />
+          {/* Default Redirect */}
+          <Route
+            path="/"
+            element={
+              <Navigate to={showNav ? "/dashboard" : "/login"} replace />
+            }
+          />
 
-        {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }
