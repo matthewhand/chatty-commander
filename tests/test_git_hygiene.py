@@ -309,18 +309,25 @@ class TestGitConfiguration:
 
     def test_main_branch_exists(self):
         """Test that main branch exists."""
+        # Use git ls-remote to query the remote directly to avoid detached HEAD/shallow clone issues in CI
         result = subprocess.run(
-            ["git", "branch", "-a"], capture_output=True, text=True, timeout=10
+            ["git", "ls-remote", "--heads", "origin"], capture_output=True, text=True, timeout=10
         )
 
         if result.returncode != 0:
-            pytest.skip("Could not list Git branches")
+            # If origin isn't defined or network fails, fallback to local branches
+            result = subprocess.run(
+                ["git", "branch", "-a"], capture_output=True, text=True, timeout=10
+            )
+            if result.returncode != 0:
+                pytest.skip("Could not list Git branches")
 
         branches = result.stdout
 
-        # Should have either main or master branch. In CI, it might only be remotes/origin/main
-        has_main = "main" in branches or "remotes/origin/main" in branches
-        has_master = "master" in branches or "remotes/origin/master" in branches
+        # Check for refs/heads/main or refs/heads/master in ls-remote output,
+        # or main/master in local branch output
+        has_main = "refs/heads/main" in branches or "main" in branches
+        has_master = "refs/heads/master" in branches or "master" in branches
 
         assert has_main or has_master, "Repository should have a main or master branch"
 
