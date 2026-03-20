@@ -112,8 +112,8 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
 
 
 class MetricsData(BaseModel):
-    total_requests: int = Field(..., description="Total API requests")
-    uptime_seconds: float = Field(..., description="Uptime in seconds")
+    total_requests: int = Field(description="Total API requests")
+    uptime_seconds: float = Field(description="Uptime in seconds")
     active_connections: int = Field(
         default=0, description="Active WebSocket connections"
     )
