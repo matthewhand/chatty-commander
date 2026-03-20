@@ -21,57 +21,68 @@
 # SOFTWARE.
 
 import sys
+import unittest.mock
 from unittest.mock import MagicMock
 
-# Mock fastapi and pydantic before importing the module under test
-mock_fastapi = MagicMock()
-sys.modules["fastapi"] = mock_fastapi
-mock_pydantic = MagicMock()
-sys.modules["pydantic"] = mock_pydantic
-
 import pytest
-from chatty_commander.web.routes.agents import _extract_json_from_response
+
+# We import the module under test inside the functions, but we must also patch sys.modules
+# before importing so it doesn't fail.
+
+@pytest.fixture(autouse=True)
+def mock_dependencies():
+    with unittest.mock.patch.dict(sys.modules, {"fastapi": MagicMock(), "pydantic": MagicMock()}):
+        yield
 
 def test_extract_json_standard_markdown():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction from a standard ```json ... ``` block."""
     response = 'Here is the JSON: ```json {"key": "value"} ```'
     assert _extract_json_from_response(response) == '{"key": "value"}'
 
 def test_extract_json_generic_markdown():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction from a generic ``` ... ``` block."""
     response = 'Some data: ``` {"key": "value"} ```'
     assert _extract_json_from_response(response) == '{"key": "value"}'
 
 def test_extract_json_plain_text():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction from a response without markdown blocks."""
     response = '{"key": "value"}'
     assert _extract_json_from_response(response) == '{"key": "value"}'
 
 def test_extract_json_with_whitespace():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction with extra whitespace and newlines."""
     response = '\n  ```json\n  {"key": "value"}\n  ```  \n'
     assert _extract_json_from_response(response) == '{"key": "value"}'
 
 def test_extract_json_text_around_block():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction when there is text before and after the code block."""
     response = 'Prefix text\n```json\n{"key": "value"}\n```\nSuffix text'
     assert _extract_json_from_response(response) == '{"key": "value"}'
 
 def test_extract_json_multiple_blocks():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction when there are multiple code blocks (should pick the first)."""
     # Current implementation uses re.search which finds the first match
     response = 'First: ```json {"a": 1} ``` Second: ```json {"b": 2} ```'
     assert _extract_json_from_response(response) == '{"a": 1}'
 
 def test_extract_json_empty_input():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction from an empty string."""
     assert _extract_json_from_response("") == ""
 
 def test_extract_json_whitespace_only():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction from a whitespace-only string."""
     assert _extract_json_from_response("   \n  ") == ""
 
 def test_extract_json_unclosed_block():
+    from chatty_commander.web.routes.agents import _extract_json_from_response
     """Test extraction when a block is not properly closed (should return stripped response)."""
     response = '```json {"key": "value"}'
     assert _extract_json_from_response(response) == response.strip()
