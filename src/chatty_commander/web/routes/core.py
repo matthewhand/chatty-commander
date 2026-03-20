@@ -39,48 +39,48 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class SystemStatus(BaseModel):
-    status: str = Field(..., description="Overall system status")
-    current_state: str = Field(..., description="Current operational state")
-    active_models: list[str] = Field(..., description="List of loaded models")
-    uptime: str = Field(..., description="System uptime")
+    status: str = Field(description="Overall system status")
+    current_state: str = Field(description="Current operational state")
+    active_models: list[str] = Field(description="List of loaded models")
+    uptime: str = Field(description="System uptime")
     version: str = Field(default="0.2.0", description="Application version")
 
 
 class StateChangeRequest(BaseModel):
     state: str = Field(
-        ..., description="Target state", pattern="^(idle|computer|chatty)$"
+        description="Target state", pattern="^(idle|computer|chatty)$"
     )
 
 
 class CommandRequest(BaseModel):
-    command: str = Field(..., description="Command name to execute")
+    command: str = Field(description="The command to execute")
     parameters: dict[str, Any] | None = Field(
         default=None, description="Optional parameters"
     )
 
 
 class CommandResponse(BaseModel):
-    success: bool = Field(..., description="Whether command executed successfully")
-    message: str = Field(..., description="Execution result message")
-    execution_time: float = Field(..., description="Execution time in milliseconds")
+    success: bool = Field(description="Whether command executed successfully")
+    message: str = Field(description="Execution result message")
+    execution_time: float = Field(description="Execution time in milliseconds")
 
 
 class StateInfo(BaseModel):
-    current_state: str = Field(..., description="Current operational state")
-    active_models: list[str] = Field(..., description="List of active models")
+    current_state: str = Field(description="Current operational state")
+    active_models: list[str] = Field(description="List of active models")
     last_command: str | None = Field(default=None, description="Last detected command")
-    timestamp: str = Field(..., description="Timestamp of last state change")
+    timestamp: str = Field(description="Timestamp of last state change")
 
 
 class HealthStatus(BaseModel):
-    status: str = Field(..., description="Health status")
-    uptime: str = Field(..., description="System uptime")
-    version: str = Field(..., description="Application version")
+    status: str = Field(description="Health status")
+    uptime: str = Field(description="System uptime")
+    version: str = Field(description="Application version")
     database: str = Field(default="unknown", description="Database status")
     memory_usage: str = Field(default="unknown", description="Memory usage")
     cpu_usage: str = Field(default="unknown", description="CPU usage")
     commands_executed: int = Field(default=0, description="Total commands executed")
-    last_health_check: str = Field(..., description="Last health check timestamp")
+    last_health_check: str = Field(description="Last health check timestamp")
 
 
 class ResponseTimeMiddleware(BaseHTTPMiddleware):

@@ -18,9 +18,9 @@ class SystemInfo(BaseModel):
     disk_total_gb: float | None = Field(None, description="Total disk space in GB")
     disk_used_gb: float | None = Field(None, description="Used disk space in GB")
     disk_percent: float | None = Field(None, description="Used disk space as a percentage")
-    python_version: str = Field(..., description="Python version string")
-    platform: str = Field(..., description="Platform identifier")
-    uptime_seconds: float = Field(..., description="System uptime in seconds")
+    python_version: str = Field(description="Python version string")
+    platform: str = Field(description="Platform identifier")
+    uptime_seconds: float = Field(description="System uptime in seconds")
 
 def include_system_routes(
     *,
