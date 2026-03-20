@@ -68,15 +68,13 @@ def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_cl
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = True
 
-    mock_json_response = """```json
-    {
+    mock_json_response = """{
         "name": "Doc Summarizer",
         "description": "An expert at summarizing technical documentation.",
         "persona_prompt": "You are Doc Summarizer. You summarize docs.",
         "capabilities": ["summarize", "read_files"],
         "team_role": "summarizer"
-    }
-    ```"""
+    }"""
     mock_llm.generate_response.return_value = mock_json_response
     mock_llm_manager_class.return_value = mock_llm
 
