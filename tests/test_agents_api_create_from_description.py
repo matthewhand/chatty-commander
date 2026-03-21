@@ -22,12 +22,23 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from chatty_commander.app import CommandExecutor
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
+
+
+@pytest.fixture(autouse=True)
+def reset_llm_manager_singleton():
+    """Reset the module-level LLM manager singleton before and after each test
+    to prevent mock state from leaking between test functions."""
+    import chatty_commander.web.routes.agents
+    chatty_commander.web.routes.agents._llm_manager = None
+    yield
+    chatty_commander.web.routes.agents._llm_manager = None
 
 
 class DummyConfig:
