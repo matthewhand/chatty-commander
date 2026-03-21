@@ -1,0 +1,3 @@
+## 2025-03-21 - Link form labels to inputs in Login Page
+**Learning:** Form `<label>`s (like "Username" and "Password" in `LoginPage.tsx`) were visually wrapping or neighboring the inputs but lacked standard HTML explicit linking (`htmlFor` and `id`). This limits the clickable hit area for mouse users to focus the input, and significantly degrades the experience for screen reader users by preventing proper context association for form inputs.
+**Action:** Always ensure that form `<label>` elements have an `htmlFor` attribute that strictly corresponds to an `id` attribute on their target interactive element to ensure accessibility compliance and better UX.
