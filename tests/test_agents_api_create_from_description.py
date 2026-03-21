@@ -41,6 +41,7 @@ class DummyConfig:
 
 
 @patch("chatty_commander.web.routes.agents._LLMManager")
+@patch("chatty_commander.web.routes.agents._llm_manager", None)
 def test_create_agent_blueprint_from_description(mock_llm_manager_class):
     # Test fallback directly when LLM is unavailable
     mock_llm = MagicMock()
@@ -64,6 +65,7 @@ def test_create_agent_blueprint_from_description(mock_llm_manager_class):
 
 
 @patch("chatty_commander.web.routes.agents._LLMManager")
+@patch("chatty_commander.web.routes.agents._llm_manager", None)
 def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_class):
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = True
@@ -100,6 +102,7 @@ def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_cl
 
 
 @patch("chatty_commander.web.routes.agents._LLMManager")
+@patch("chatty_commander.web.routes.agents._llm_manager", None)
 def test_create_agent_blueprint_from_description_llm_fallback(mock_llm_manager_class):
     mock_llm = MagicMock()
     mock_llm.is_available.return_value = True
