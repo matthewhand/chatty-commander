@@ -23,14 +23,12 @@
 import sys
 from unittest.mock import MagicMock
 
-# Mock fastapi and pydantic before importing the module under test
-mock_fastapi = MagicMock()
-sys.modules["fastapi"] = mock_fastapi
-mock_pydantic = MagicMock()
-sys.modules["pydantic"] = mock_pydantic
-
 import pytest
-from chatty_commander.web.routes.agents import _extract_json_from_response
+from unittest.mock import patch
+
+# Mock fastapi and pydantic using patch.dict to avoid leaking into global state
+with patch.dict("sys.modules", {"fastapi": MagicMock(), "pydantic": MagicMock()}):
+    from chatty_commander.web.routes.agents import _extract_json_from_response
 
 def test_extract_json_standard_markdown():
     """Test extraction from a standard ```json ... ``` block."""
