@@ -296,10 +296,30 @@ def include_core_routes(
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
         try:
+            # Only allow updating specific, non-sensitive configuration keys
+            ALLOWED_CONFIG_KEYS = {
+                "default_state",
+                "general_models_path",
+                "system_models_path",
+                "chat_models_path",
+                "mic_chunk_size",
+                "sample_rate",
+                "audio_format",
+                "wake_words",
+                "wake_word_threshold",
+                "voice_only",
+                "general",
+            }
+
+            filtered_config = {k: v for k, v in config_data.items() if k in ALLOWED_CONFIG_KEYS}
+
+            if not filtered_config:
+                return {"message": "No valid configuration keys provided"}
+
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
             if isinstance(cfg, dict):
-                cfg.update(config_data)
+                cfg.update(filtered_config)
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:
@@ -307,7 +327,7 @@ def include_core_routes(
                 except TypeError:
                     # Some implementations require the cfg param
                     save(cfg)  # type: ignore[arg-type]
-            return {"message": "Configuration updated successfully"}
+            return {"message": "Configuration updated successfully", "updated_keys": list(filtered_config.keys())}
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
 
