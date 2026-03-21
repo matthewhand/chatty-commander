@@ -23,14 +23,27 @@
 import sys
 from unittest.mock import MagicMock
 
-# Mock fastapi and pydantic before importing the module under test
+# Safely mock fastapi and pydantic for this specific test suite
+# We must use a try/finally block around the import to ensure we don't
+# permanently pollute sys.modules, which causes `issubclass` TypeErrors
+# during pytest collection for other FastAPI/Pydantic-based test files.
 mock_fastapi = MagicMock()
-sys.modules["fastapi"] = mock_fastapi
 mock_pydantic = MagicMock()
-sys.modules["pydantic"] = mock_pydantic
+
+try:
+    if "fastapi" not in sys.modules:
+        sys.modules["fastapi"] = mock_fastapi
+    if "pydantic" not in sys.modules:
+        sys.modules["pydantic"] = mock_pydantic
+
+    from chatty_commander.web.routes.agents import _extract_json_from_response
+finally:
+    if sys.modules.get("fastapi") is mock_fastapi:
+        del sys.modules["fastapi"]
+    if sys.modules.get("pydantic") is mock_pydantic:
+        del sys.modules["pydantic"]
 
 import pytest
-from chatty_commander.web.routes.agents import _extract_json_from_response
 
 def test_extract_json_standard_markdown():
     """Test extraction from a standard ```json ... ``` block."""
