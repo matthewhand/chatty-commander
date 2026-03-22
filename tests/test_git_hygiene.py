@@ -322,6 +322,11 @@ class TestGitConfiguration:
         has_main = "main" in branches or "remotes/origin/main" in branches
         has_master = "master" in branches or "remotes/origin/master" in branches
 
+        # In GitHub Actions, actions/checkout by default only fetches a single commit (detached HEAD),
+        # so local `git branch -a` might not contain 'main' or 'master'.
+        if not (has_main or has_master) and os.environ.get("GITHUB_ACTIONS") == "true":
+            pytest.skip("Skipping in GitHub Actions due to detached HEAD shallow clone")
+
         assert has_main or has_master, "Repository should have a main or master branch"
 
     def test_no_large_files_tracked(self):
