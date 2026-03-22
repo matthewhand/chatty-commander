@@ -21,16 +21,19 @@
 # SOFTWARE.
 
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-# Mock fastapi and pydantic before importing the module under test
+# Mock fastapi and pydantic in sys.modules during import to prevent them from
+# trying to do real imports if they aren't available, but we must restore
+# sys.modules immediately after to avoid cross-test pollution that causes
+# TypeErrors in issubclass() evaluations in other tests later in the suite.
 mock_fastapi = MagicMock()
-sys.modules["fastapi"] = mock_fastapi
 mock_pydantic = MagicMock()
-sys.modules["pydantic"] = mock_pydantic
+
+with patch.dict(sys.modules, {"fastapi": mock_fastapi, "pydantic": mock_pydantic}):
+    from chatty_commander.web.routes.agents import _extract_json_from_response
 
 import pytest
-from chatty_commander.web.routes.agents import _extract_json_from_response
 
 def test_extract_json_standard_markdown():
     """Test extraction from a standard ```json ... ``` block."""
