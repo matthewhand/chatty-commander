@@ -21,15 +21,13 @@
 # SOFTWARE.
 
 import sys
-from unittest.mock import MagicMock
-
-# Mock fastapi and pydantic before importing the module under test
-mock_fastapi = MagicMock()
-sys.modules["fastapi"] = mock_fastapi
-mock_pydantic = MagicMock()
-sys.modules["pydantic"] = mock_pydantic
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+# We only need to mock for this specific file, not globally across all tests
+# But since we're just testing a pure function, we can import it locally inside the test
+# or use a scoped patch if we still need to mock dependencies
 from chatty_commander.web.routes.agents import _extract_json_from_response
 
 def test_extract_json_standard_markdown():
