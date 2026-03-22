@@ -318,9 +318,9 @@ class TestGitConfiguration:
 
         branches = result.stdout
 
-        # Should have either main or master branch
-        has_main = "main" in branches
-        has_master = "master" in branches
+        # Should have either main or master branch (local or remote)
+        has_main = "main" in branches or "remotes/origin/main" in branches
+        has_master = "master" in branches or "remotes/origin/master" in branches
 
         assert has_main or has_master, "Repository should have a main or master branch"
 

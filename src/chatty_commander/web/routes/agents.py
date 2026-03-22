@@ -153,10 +153,10 @@ Return ONLY valid JSON.
             json_str = _extract_json_from_response(response)
             data = json.loads(json_str)
             return AgentBlueprintModel(
-                name=data.get("name", "Agent")[:48],
-                description=data.get("description", text.strip()[:256]),
-                persona_prompt=data.get("persona_prompt", text.strip()),
-                capabilities=data.get("capabilities", []),
+                name=data.get("name", "Agent")[:48] if data.get("name") else "Agent",
+                description=data.get("description", text.strip()[:256]) if data.get("description") else text.strip()[:256],
+                persona_prompt=data.get("persona_prompt", text.strip()) if data.get("persona_prompt") else text.strip(),
+                capabilities=data.get("capabilities", []) if data.get("capabilities") is not None else [],
                 team_role=data.get("team_role"),
                 handoff_triggers=[],
             )
