@@ -11,6 +11,12 @@ test('Commands page accessibility test', async ({ page }) => {
   // Wait until we actually fetch the commands and they render
   await expect(page.getByRole('heading', { name: 'take_screenshot' }).first()).toBeVisible();
 
+  // Open the dropdown first since actions are now inside a DynamicDropdown
+  const optionsBtn = page.getByRole('button', { name: 'Options for take_screenshot' });
+  await optionsBtn.click();
+  // Wait for the dropdown content to be visible
+  await expect(page.locator('.dropdown-content')).toBeVisible();
+
   // 1. Check for Aria Labels on buttons
   // The aria-label is on the button itself
   const editBtn = page.getByRole('button', { name: 'Edit take_screenshot' });
@@ -18,15 +24,6 @@ test('Commands page accessibility test', async ({ page }) => {
 
   const deleteBtn = page.getByRole('button', { name: 'Delete take_screenshot' });
   await expect(deleteBtn).toBeVisible();
-
-  // 2. Check for Tooltips (CSS based)
-  // The button is wrapped in a div with .tooltip class and data-tip attribute
-  // But our wait mechanism above might be too strict with filters. Let's simplify.
-  const tooltip = page.locator('.tooltip-bottom').first();
-  await expect(tooltip).toBeVisible();
-
-  // Hover to trigger visual tooltip (for screenshot)
-  await tooltip.hover();
 
   // 3. Check Toggle Accessibility
   // The updated page structure doesn't expose toggles for this particular command.
