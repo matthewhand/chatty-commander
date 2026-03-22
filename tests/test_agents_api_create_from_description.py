@@ -63,6 +63,16 @@ def test_create_agent_blueprint_from_description(mock_llm_manager_class):
     assert data["persona_prompt"] == "My helpful agent who summarizes docs"
 
 
+import pytest
+@pytest.fixture(autouse=True)
+def reset_llm_singleton():
+    """Ensure the module-level LLM singleton is reset before each test."""
+    from chatty_commander.web.routes import agents
+    agents._llm_manager = None
+    yield
+    agents._llm_manager = None
+
+
 @patch("chatty_commander.web.routes.agents._LLMManager")
 def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_class):
     mock_llm = MagicMock()
