@@ -63,6 +63,7 @@ def test_create_agent_blueprint_from_description(mock_llm_manager_class):
     assert data["persona_prompt"] == "My helpful agent who summarizes docs"
 
 
+@patch("chatty_commander.web.routes.agents._llm_manager", None)
 @patch("chatty_commander.web.routes.agents._LLMManager")
 def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_class):
     mock_llm = MagicMock()
