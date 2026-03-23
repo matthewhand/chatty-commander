@@ -28,6 +28,12 @@ from chatty_commander.app import CommandExecutor
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
+from chatty_commander.web.routes import agents
+
+import pytest
+@pytest.fixture(autouse=True)
+def reset_llm_manager():
+    agents._llm_manager = None
 
 
 class DummyConfig:
