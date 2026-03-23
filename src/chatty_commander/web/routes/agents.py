@@ -160,7 +160,7 @@ Return ONLY valid JSON.
                 team_role=data.get("team_role"),
                 handoff_triggers=[],
             )
-        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, Exception) as exc:
             logger.debug("LLM blueprint parsing failed, using heuristic fallback: %s", exc)
 
     # Very naive heuristic parser fallback

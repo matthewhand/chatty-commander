@@ -20,17 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-from unittest.mock import MagicMock, patch
-
 import pytest
 
-# Mock fastapi and pydantic for the module under test without leaking global state
-mock_fastapi = MagicMock()
-mock_pydantic = MagicMock()
-
-with patch.dict(sys.modules, {"fastapi": mock_fastapi, "pydantic": mock_pydantic}):
-    from chatty_commander.web.routes.agents import _extract_json_from_response
+from chatty_commander.web.routes.agents import _extract_json_from_response
 
 def test_extract_json_standard_markdown():
     """Test extraction from a standard ```json ... ``` block."""

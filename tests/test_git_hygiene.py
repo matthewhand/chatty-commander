@@ -322,7 +322,11 @@ class TestGitConfiguration:
         has_main = "main" in branches
         has_master = "master" in branches
 
-        assert has_main or has_master, "Repository should have a main or master branch"
+        if not (has_main or has_master):
+            if os.environ.get("GITHUB_ACTIONS") == "true":
+                pytest.skip("Repository in detached HEAD state on GitHub Actions, skipping branch existence check.")
+            else:
+                pytest.fail("Repository should have a main or master branch")
 
     def test_no_large_files_tracked(self):
         """Test that no large files are tracked (>10MB)."""
