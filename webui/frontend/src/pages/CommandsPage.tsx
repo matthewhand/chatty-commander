@@ -243,8 +243,16 @@ export default function CommandsPage() {
           ))}
         </AnimatePresence>
         {isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands configured.
+          <div className="col-span-full text-center p-12 bg-base-200/50 rounded-xl border border-base-content/10">
+            <TerminalSquare size={48} className="mx-auto mb-4 text-base-content/30" />
+            <h3 className="text-xl font-semibold mb-2">No commands yet</h3>
+            <p className="text-base-content/60 mb-6 max-w-md mx-auto">
+              Get started by creating your first voice command to control your system.
+            </p>
+            <Link to="/commands/authoring" className="btn btn-primary">
+              <Plus size={18} className="mr-2" />
+              Create Command
+            </Link>
           </div>
         )}
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
