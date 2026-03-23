@@ -875,7 +875,7 @@ class WebModeServer:
                 logger.warning("Bridge token not configured; rejecting request")
                 raise HTTPException(status_code=401, detail="Bridge not configured")
 
-            if not x_bridge_token or not secrets.compare_digest(
+            if not expected_token or not x_bridge_token or not secrets.compare_digest(
                 x_bridge_token.encode("utf-8"), str(expected_token).encode("utf-8")
             ):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
