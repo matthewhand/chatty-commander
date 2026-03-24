@@ -1,0 +1,3 @@
+## 2024-03-24 - Login Form Missing Label Associations
+**Learning:** The login page's inputs lacked explicit `id` to `<label htmlFor="...">` bindings, which prevents screen readers from properly announcing the inputs and blocks users from clicking the labels to focus the fields.
+**Action:** Always link form labels using standard HTML `id` and `htmlFor` attributes in DaisyUI `form-control` wrappers, and add `cursor-pointer` to labels to enhance the visual interactivity.
