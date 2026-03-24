@@ -205,15 +205,16 @@ export default function CommandsPage() {
                         </svg>
                       }
                       menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
+                      ariaLabel={`Actions for ${name}`}
                     >
                       <li>
-                        <button aria-label={`Edit ${name}`}>
+                        <button>
                           <Edit3 size={16} className="text-primary" />
                           Edit Command
                         </button>
                       </li>
                       <li>
-                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`}>
+                        <button className="text-error hover:bg-error/10 hover:text-error">
                           <Trash2 size={16} />
                           Delete Command
                         </button>
