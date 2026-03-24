@@ -71,7 +71,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          npm install -g pnpm && pnpm i
 
       - name: Install Playwright browsers
         run: |
@@ -81,7 +81,7 @@ jobs:
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          npx playwright test
+          pnpm exec playwright test
 
       - name: Stop backend server
         if: always()
@@ -165,6 +165,7 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: chatty-commander:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

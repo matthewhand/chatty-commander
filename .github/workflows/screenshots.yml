@@ -36,11 +36,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: webui/frontend/package-lock.json
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm install -g pnpm && pnpm i
         working-directory: webui/frontend
 
       - name: Install Playwright browsers
@@ -48,7 +46,7 @@ jobs:
         working-directory: webui/frontend
 
       - name: Generate screenshots
-        run: npx playwright test tests/e2e/screenshots.spec.ts --reporter=list
+        run: pnpm exec playwright test tests/e2e/screenshots.spec.ts --reporter=list
         working-directory: webui/frontend
         env:
           BASE_URL: http://localhost:8100
