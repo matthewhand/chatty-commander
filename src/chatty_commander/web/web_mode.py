@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import secrets
 import time
 from datetime import datetime
 from pathlib import Path
@@ -764,7 +765,7 @@ class WebModeServer:
                 if hasattr(self.config_manager, "auth"):
                     expected_key = self.config_manager.auth.get("api_key")
 
-                if not expected_key or x_api_key != expected_key:
+                if not expected_key or not x_api_key or not secrets.compare_digest(x_api_key.encode("utf-8"), str(expected_key).encode("utf-8")):
                     raise HTTPException(status_code=401, detail="Unauthorized")
 
             if not self.advisors_service:
@@ -872,7 +873,7 @@ class WebModeServer:
                 logger.warning("Bridge token not configured; rejecting request")
                 raise HTTPException(status_code=401, detail="Bridge not configured")
 
-            if not x_bridge_token or x_bridge_token != expected_token:
+            if not x_bridge_token or not secrets.compare_digest(x_bridge_token.encode("utf-8"), str(expected_token).encode("utf-8")):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
             # For now, just echo back the event
