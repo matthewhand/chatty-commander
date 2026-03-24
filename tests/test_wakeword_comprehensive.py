@@ -39,48 +39,46 @@ _root_src = os.path.abspath(os.path.join(_pkg_dir, "src"))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
 
+# Patch sys.modules to mock openwakeword and related modules for test imports
+sys.modules["openwakeword"] = types.ModuleType("openwakeword")
+mock_model_mod = types.ModuleType("openwakeword.model")
+mock_model_mod.Model = MagicMock()
+sys.modules["openwakeword.model"] = mock_model_mod
+sys.modules["pyaudio"] = types.ModuleType("pyaudio")
+sys.modules["numpy"] = types.ModuleType("numpy")
+
 import importlib  # noqa: E402
 
-@pytest.fixture(autouse=True)
-def mock_dependencies():
-    openwakeword_mock = types.ModuleType("openwakeword")
-    mock_model_mod = types.ModuleType("openwakeword.model")
-    mock_model_mod.Model = MagicMock()
-    pyaudio_mock = types.ModuleType("pyaudio")
-    numpy_mock = types.ModuleType("numpy")
-    with patch.dict(sys.modules, {
-        "openwakeword": openwakeword_mock,
-        "openwakeword.model": mock_model_mod,
-        "pyaudio": pyaudio_mock,
-        "numpy": numpy_mock
-    }):
-        yield
+import chatty_commander.voice.wakeword  # noqa: E402
+
+importlib.reload(chatty_commander.voice.wakeword)
+
+from chatty_commander.voice.wakeword import (  # noqa: E402 - imported after sys.modules patching
+    VOICE_DEPS_AVAILABLE,
+    MockWakeWordDetector,
+    WakeWordDetector,
+    logger,
+)
 
 
 class TestVoiceDependencies:
     """Test voice dependency detection."""
 
     def test_voice_deps_available(self):
-        import chatty_commander.voice.wakeword as ww
-        import importlib
-        importlib.reload(ww)
-
         """Test that voice dependencies are detected as available."""
-        assert ww.VOICE_DEPS_AVAILABLE is True
+        assert VOICE_DEPS_AVAILABLE is True
 
 
 class TestMockWakeWordDetector:
     """Test the MockWakeWordDetector class - this is the working implementation."""
 
     def test_init(self):
-        from chatty_commander.voice.wakeword import MockWakeWordDetector
         """Test MockWakeWordDetector initialization."""
         detector = MockWakeWordDetector()
         assert detector._callbacks == []
         assert detector._running is False
 
     def test_add_remove_callback(self):
-        from chatty_commander.voice.wakeword import MockWakeWordDetector
         """Test adding and removing callbacks."""
         detector = MockWakeWordDetector()
         callback = MagicMock()
@@ -92,7 +90,6 @@ class TestMockWakeWordDetector:
         assert callback not in detector._callbacks
 
     def test_start_stop_listening(self):
-        from chatty_commander.voice.wakeword import MockWakeWordDetector
         """Test starting and stopping listening."""
         detector = MockWakeWordDetector()
 
@@ -103,7 +100,6 @@ class TestMockWakeWordDetector:
         assert detector._running is False
 
     def test_trigger_wake_word(self):
-        from chatty_commander.voice.wakeword import MockWakeWordDetector
         """Test manually triggering wake word detection."""
         detector = MockWakeWordDetector()
         callback = MagicMock()
@@ -116,7 +112,6 @@ class TestMockWakeWordDetector:
         callback.assert_called_once_with("hey_jarvis", 0.9)
 
     def test_trigger_wake_word_not_running(self):
-        from chatty_commander.voice.wakeword import MockWakeWordDetector
         """Test triggering wake word when not running."""
         detector = MockWakeWordDetector()
         callback = MagicMock()
@@ -129,14 +124,12 @@ class TestMockWakeWordDetector:
         callback.assert_not_called()
 
     def test_get_available_models(self):
-        from chatty_commander.voice.wakeword import MockWakeWordDetector
         """Test getting available models from mock detector."""
         detector = MockWakeWordDetector()
         models = detector.get_available_models()
         assert models == ["hey_jarvis", "alexa", "hey_google"]
 
     def test_is_listening(self):
-        from chatty_commander.voice.wakeword import MockWakeWordDetector
         """Test checking if mock detector is listening."""
         detector = MockWakeWordDetector()
 
@@ -153,14 +146,12 @@ class TestWakeWordDetectorBasic:
     """Test basic WakeWordDetector functionality without complex mocking."""
 
     def test_init_no_voice_deps(self):
-        from chatty_commander.voice.wakeword import WakeWordDetector
         """Test initialization fails when voice dependencies not available."""
         with patch("chatty_commander.voice.wakeword.VOICE_DEPS_AVAILABLE", False):
             with pytest.raises(ImportError, match="Voice dependencies not available"):
                 WakeWordDetector()
 
     def test_default_wake_words(self):
-        from chatty_commander.voice.wakeword import WakeWordDetector
         """Test default wake words are set correctly."""
         with patch("chatty_commander.voice.wakeword.VOICE_DEPS_AVAILABLE", False):
             # This will fail but we can check the defaults were set
@@ -170,7 +161,6 @@ class TestWakeWordDetectorBasic:
                 pass  # Expected
 
     def test_default_threshold(self):
-        from chatty_commander.voice.wakeword import WakeWordDetector
         """Test default threshold is set correctly."""
         with patch("chatty_commander.voice.wakeword.VOICE_DEPS_AVAILABLE", False):
             try:
@@ -183,7 +173,6 @@ class TestLogger:
     """Test logger configuration."""
 
     def test_logger_exists(self):
-        from chatty_commander.voice.wakeword import logger
         """Test that logger is properly configured."""
         assert logger is not None
         assert logger.name == "chatty_commander.voice.wakeword"

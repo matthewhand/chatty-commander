@@ -23,22 +23,17 @@
 import sys
 import types
 from unittest.mock import MagicMock, patch
-import pytest
 
-@pytest.fixture(autouse=True)
-def mock_openwakeword():
-    openwakeword_mock = types.ModuleType("openwakeword")
-    mock_model_mod = types.ModuleType("openwakeword.model")
-    mock_model_mod.Model = type("Model", (), {})
-    with patch.dict(sys.modules, {
-        "openwakeword": openwakeword_mock,
-        "openwakeword.model": mock_model_mod
-    }):
-        yield
+# Patch sys.modules to mock openwakeword for imports
+sys.modules["openwakeword"] = types.ModuleType("openwakeword")
+mock_model_mod = types.ModuleType("openwakeword.model")
+mock_model_mod.Model = type("Model", (), {})
+sys.modules["openwakeword.model"] = mock_model_mod
+
+from chatty_commander.cli.cli import cli_main  # noqa: E402
 
 
 def test_cli_help(monkeypatch, capsys):
-    from chatty_commander.cli.cli import cli_main  # noqa: E402
     """Test that --help prints usage and exits with 0."""
     monkeypatch.setattr(sys, "argv", ["chatty-commander", "--help"])
     ret = cli_main()
@@ -49,7 +44,6 @@ def test_cli_help(monkeypatch, capsys):
 
 
 def test_cli_web_mode(monkeypatch):
-    from chatty_commander.cli.cli import cli_main  # noqa: E402
     """Test that --web launches web mode."""
     monkeypatch.setattr(sys, "argv", ["chatty-commander", "--web", "--no-auth"])
 
@@ -62,7 +56,6 @@ def test_cli_web_mode(monkeypatch):
 
 
 def test_cli_gui_mode(monkeypatch):
-    from chatty_commander.cli.cli import cli_main  # noqa: E402
     """Test that --gui launches gui mode."""
     monkeypatch.setattr(sys, "argv", ["chatty-commander", "--gui", "--no-gui"])
 
@@ -74,7 +67,6 @@ def test_cli_gui_mode(monkeypatch):
 
 
 def test_cli_config_wizard(monkeypatch):
-    from chatty_commander.cli.cli import cli_main  # noqa: E402
     """Test that --config launches config wizard."""
     monkeypatch.setattr(sys, "argv", ["chatty-commander", "--config"])
 
@@ -90,7 +82,6 @@ def test_cli_config_wizard(monkeypatch):
 
 
 def test_cli_interactive_shell(monkeypatch):
-    from chatty_commander.cli.cli import cli_main  # noqa: E402
     """Test that running with no args starts interactive shell."""
     monkeypatch.setattr(sys, "argv", ["chatty-commander"])
 

@@ -55,6 +55,11 @@ from chatty_commander.app.state_manager import (
     StateManager,
 )
 
+# Patch sys.modules to mock openwakeword and openwakeword.model for test imports
+sys.modules["openwakeword"] = types.ModuleType("openwakeword")
+mock_model_mod = types.ModuleType("openwakeword.model")
+mock_model_mod.Model = type("Model", (), {})
+sys.modules["openwakeword.model"] = mock_model_mod
 # Add project root to path (parent of tests dir)
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
@@ -558,15 +563,6 @@ Detailed Results:
 
 
 def main():
-    from unittest.mock import patch
-    import types
-    openwakeword_mock = types.ModuleType("openwakeword")
-    mock_model_mod = types.ModuleType("openwakeword.model")
-    mock_model_mod.Model = type("Model", (), {})
-    with patch.dict("sys.modules", {"openwakeword": openwakeword_mock, "openwakeword.model": mock_model_mod}):
-        _run_main()
-
-def _run_main():
     parser = argparse.ArgumentParser(description="ChattyCommander System Testing Suite")
     parser.add_argument(
         "--mode",
