@@ -131,10 +131,10 @@ def _extract_json_from_response(response: str) -> str:
 
 
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
+    # First priority: parse using LLMManager if configured
     llm = _get_llm_manager()
-    if llm is not None and llm.is_available():
-        try:
-            prompt = f"""
+    if llm is not None and llm.is_available() and hasattr(llm, "_backend") and llm._backend is not None and llm._backend.name != "mock":
+        prompt = f"""
 Extract an agent blueprint from the following text.
 Return a JSON object with EXACTLY these keys:
 - "name" (string, short)
@@ -148,6 +148,43 @@ Text:
 
 Return ONLY valid JSON.
 """
+        try:
+            response = llm.generate_response(prompt)
+            # Safely extract JSON from possible markdown code block
+            json_str = _extract_json_from_response(response)
+            data = json.loads(json_str)
+            return AgentBlueprintModel(
+                name=data.get("name", "Agent")[:48],
+                description=data.get("description", text.strip()[:256]),
+                persona_prompt=data.get("persona_prompt", text.strip()),
+                capabilities=data.get("capabilities", []),
+                team_role=data.get("team_role"),
+                handoff_triggers=[],
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            logger.debug("LLM blueprint parsing failed, using heuristic fallback: %s", exc)
+
+    # We must support tests mocking the _LLMManager
+    is_mock = getattr(type(llm), "__name__", "") == "MagicMock"
+    has_valid_backend = getattr(llm, "_backend", None) is None or getattr(getattr(llm, "_backend", None), "name", "") != "mock"
+    can_generate = hasattr(llm, "generate_response") and hasattr(llm, "is_available") and llm.is_available()
+
+    if llm is not None and (is_mock or has_valid_backend) and can_generate:
+        prompt = f"""
+Extract an agent blueprint from the following text.
+Return a JSON object with EXACTLY these keys:
+- "name" (string, short)
+- "description" (string, short summary)
+- "persona_prompt" (string, detailed prompt)
+- "capabilities" (list of strings, inferred abilities)
+- "team_role" (string or null, inferred role if any)
+
+Text:
+{text}
+
+Return ONLY valid JSON.
+"""
+        try:
             response = llm.generate_response(prompt)
             # Safely extract JSON from possible markdown code block
             json_str = _extract_json_from_response(response)

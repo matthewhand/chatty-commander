@@ -61,9 +61,12 @@ class TestVoiceDependencies:
     """Test voice dependency detection."""
 
     def test_voice_deps_available(self):
-        from chatty_commander.voice.wakeword import VOICE_DEPS_AVAILABLE
+        import chatty_commander.voice.wakeword as ww
+        import importlib
+        importlib.reload(ww)
+
         """Test that voice dependencies are detected as available."""
-        assert VOICE_DEPS_AVAILABLE is True
+        assert ww.VOICE_DEPS_AVAILABLE is True
 
 
 class TestMockWakeWordDetector:
