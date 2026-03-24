@@ -322,6 +322,9 @@ class TestGitConfiguration:
         has_main = "main" in branches
         has_master = "master" in branches
 
+        if not (has_main or has_master) and os.environ.get("GITHUB_ACTIONS") == "true":
+            pytest.skip("Main/master branches may be absent in detached HEAD actions clones")
+
         assert has_main or has_master, "Repository should have a main or master branch"
 
     def test_no_large_files_tracked(self):
