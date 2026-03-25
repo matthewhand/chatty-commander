@@ -40,12 +40,10 @@ class DummyConfig:
         self.advisors = {"enabled": True}
 
 
-@patch("chatty_commander.web.routes.agents._LLMManager")
-def test_create_agent_blueprint_from_description(mock_llm_manager_class):
+@patch("chatty_commander.web.routes.agents._llm_manager")
+def test_create_agent_blueprint_from_description(mock_llm_manager):
     # Test fallback directly when LLM is unavailable
-    mock_llm = MagicMock()
-    mock_llm.is_available.return_value = False
-    mock_llm_manager_class.return_value = mock_llm
+    mock_llm_manager.is_available.return_value = False
 
     cfg = DummyConfig()
     sm = StateManager()
@@ -63,10 +61,9 @@ def test_create_agent_blueprint_from_description(mock_llm_manager_class):
     assert data["persona_prompt"] == "My helpful agent who summarizes docs"
 
 
-@patch("chatty_commander.web.routes.agents._LLMManager")
-def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_class):
-    mock_llm = MagicMock()
-    mock_llm.is_available.return_value = True
+@patch("chatty_commander.web.routes.agents._llm_manager")
+def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager):
+    mock_llm_manager.is_available.return_value = True
 
     mock_json_response = """```json
     {
@@ -77,8 +74,7 @@ def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_cl
         "team_role": "summarizer"
     }
     ```"""
-    mock_llm.generate_response.return_value = mock_json_response
-    mock_llm_manager_class.return_value = mock_llm
+    mock_llm_manager.generate_response.return_value = mock_json_response
 
     cfg = DummyConfig()
     sm = StateManager()
@@ -99,13 +95,11 @@ def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_cl
     assert data["team_role"] == "summarizer"
 
 
-@patch("chatty_commander.web.routes.agents._LLMManager")
-def test_create_agent_blueprint_from_description_llm_fallback(mock_llm_manager_class):
-    mock_llm = MagicMock()
-    mock_llm.is_available.return_value = True
+@patch("chatty_commander.web.routes.agents._llm_manager")
+def test_create_agent_blueprint_from_description_llm_fallback(mock_llm_manager):
+    mock_llm_manager.is_available.return_value = True
     # Return invalid json
-    mock_llm.generate_response.return_value = "This is not JSON at all."
-    mock_llm_manager_class.return_value = mock_llm
+    mock_llm_manager.generate_response.return_value = "This is not JSON at all."
 
     cfg = DummyConfig()
     sm = StateManager()
