@@ -309,6 +309,10 @@ class TestGitConfiguration:
 
     def test_main_branch_exists(self):
         """Test that main branch exists."""
+        import os
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            pytest.skip("GitHub actions detached head state")
+
         result = subprocess.run(
             ["git", "branch", "-a"], capture_output=True, text=True, timeout=10
         )
