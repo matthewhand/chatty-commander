@@ -28,7 +28,6 @@ router = include_core_routes(
 app.include_router(router)
 client = TestClient(app)
 
-@patch.dict("sys.modules", {"fastapi": None})
 @pytest.mark.asyncio
 async def test_execute_command_calls_run_in_executor():
     """
