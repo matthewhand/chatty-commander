@@ -58,7 +58,7 @@ jobs:
 
       - name: Start backend server
         run: |
-          uv run python -m src.chatty_commander.main --web --no-auth --port 8100 &
+          PYTHONPATH=src uv run python -m chatty_commander.main --web --no-auth --port 8100 &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           sleep 10
@@ -71,7 +71,8 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          npm install -g pnpm
+          pnpm i
 
       - name: Install Playwright browsers
         run: |
@@ -85,7 +86,7 @@ jobs:
 
       - name: Stop backend server
         if: always()
-        run: kill $SERVER_PID
+        run: kill $SERVER_PID || true
 
   performance-test:
     runs-on: ubuntu-latest
@@ -165,6 +166,7 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: chatty-commander:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

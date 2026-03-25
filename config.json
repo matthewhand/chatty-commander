@@ -158,8 +158,28 @@
   "web_server": {
     "host": "0.0.0.0",
     "port": 8100,
-    "auth_enabled": true,
+    "auth_enabled": false,
     "bridge_token": null
   },
-  "voice_only": false
+  "voice_only": false,
+  "advisors": {
+    "providers": {
+      "api_key": "********",
+      "base_url": "http://localhost:11434/v1",
+      "model": ""
+    }
+  },
+  "voice": {
+    "enabled": true
+  },
+  "ui": {
+    "theme": "dark"
+  },
+  "services": {
+    "voiceCommands": true,
+    "restApi": true
+  },
+  "audio": {
+    "device": "Mock Microphone 1"
+  }
 }

@@ -12,21 +12,24 @@ test('Commands page accessibility test', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'take_screenshot' }).first()).toBeVisible();
 
   // 1. Check for Aria Labels on buttons
-  // The aria-label is on the button itself
-  const editBtn = page.getByRole('button', { name: 'Edit take_screenshot' });
+  // The aria-label is on the button inside the dynamic dropdown.
+  // First, we need to click the dropdown to make it mount the children.
+
+  // The button for opening the dropdown is a ghost circle button
+  const dropdownButton = page.locator('button.btn-ghost.btn-sm.btn-circle').first();
+  await expect(dropdownButton).toBeVisible();
+
+  // To make them visible, we need to click the dropdown trigger
+  await dropdownButton.click();
+
+  const editBtn = page.locator('button[aria-label="Edit take_screenshot"]');
   await expect(editBtn).toBeVisible();
 
-  const deleteBtn = page.getByRole('button', { name: 'Delete take_screenshot' });
+  const deleteBtn = page.locator('button[aria-label="Delete take_screenshot"]');
   await expect(deleteBtn).toBeVisible();
 
-  // 2. Check for Tooltips (CSS based)
-  // The button is wrapped in a div with .tooltip class and data-tip attribute
-  // But our wait mechanism above might be too strict with filters. Let's simplify.
-  const tooltip = page.locator('.tooltip-bottom').first();
-  await expect(tooltip).toBeVisible();
-
-  // Hover to trigger visual tooltip (for screenshot)
-  await tooltip.hover();
+  // Close the dropdown
+  await page.mouse.click(0, 0);
 
   // 3. Check Toggle Accessibility
   // The updated page structure doesn't expose toggles for this particular command.

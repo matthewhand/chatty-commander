@@ -23,16 +23,25 @@ test.describe("Telemetry", () => {
         console.log("Waiting for telemetry frame...");
         const telemetryFrame = await ws.waitForEvent("framereceived", {
             predicate: (frame) => {
-                const payload = frame.payload();
-                if (!payload) return false;
-                try {
-                    const text = payload.toString();
-                    // console.log("WS RECV:", text);
-                    const json = JSON.parse(text);
-                    return json.type === "telemetry" && json.data;
-                } catch (e) {
-                    return false;
+                const payload = frame.payload;
+                if (typeof payload === 'function') {
+                  try {
+                      const text = payload().toString();
+                      const json = JSON.parse(text);
+                      return json.type === "telemetry" && json.data;
+                  } catch (e) {
+                      return false;
+                  }
+                } else if (payload) {
+                   try {
+                      const text = payload.toString();
+                      const json = JSON.parse(text);
+                      return json.type === "telemetry" && json.data;
+                  } catch (e) {
+                      return false;
+                  }
                 }
+                return false;
             },
             timeout: 20000
         });
