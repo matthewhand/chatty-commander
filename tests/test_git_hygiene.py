@@ -309,6 +309,16 @@ class TestGitConfiguration:
 
     def test_main_branch_exists(self):
         """Test that main branch exists."""
+        import os
+        if os.environ.get("GITHUB_ACTIONS"):
+            pytest.skip("Skipping branch check in GitHub Actions (shallow clone)")
+
+        shallow_check = subprocess.run(
+            ["git", "rev-parse", "--is-shallow-repository"], capture_output=True, text=True, timeout=10
+        )
+        if shallow_check.stdout.strip() == "true":
+            pytest.skip("Skipping branch check in shallow repository")
+
         result = subprocess.run(
             ["git", "branch", "-a"], capture_output=True, text=True, timeout=10
         )
