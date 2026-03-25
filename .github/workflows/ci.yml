@@ -63,15 +63,20 @@ jobs:
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           sleep 10
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+          cache: "pnpm"
+          cache-dependency-path: webui/frontend/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          pnpm i
 
       - name: Install Playwright browsers
         run: |
@@ -165,6 +170,7 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: chatty-commander:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
