@@ -2,3 +2,8 @@
 **Vulnerability:** The authentication middleware was using `path.startswith("/api/")` to protect endpoints and checking `path.startswith()` for public endpoints, but it did not normalize paths, allowing a path traversal bypass like `/docs/../api/secret`. Additionally, it allowed partial matches like `/docs-bypassed` to pass as public endpoints.
 **Learning:** ASGI applications (like FastAPI/Starlette) do not always pre-normalize `request.url.path` before custom middleware is called. The `.startswith()` string method is insecure for checking URL paths because it does not understand directory boundaries and doesn't handle `..` components.
 **Prevention:** Always normalize incoming HTTP paths using `posixpath.normpath(request.url.path)` before access control checks. Always use exact path matching (`path == endpoint`) or strict directory boundary checks (`path.startswith(endpoint + "/")`) when verifying route access.
+
+## 2024-03-25 - Fix Mass Assignment Vulnerability in Config Endpoint
+**Vulnerability:** The configuration update endpoint `PUT /api/v1/config` took a raw dictionary payload (`config_data: dict[str, Any]`) and directly updated the application's configuration without verifying whether the user was attempting to modify sensitive internal properties like `commands` or `api_endpoints`.
+**Learning:** Automatically merging request payload dictionaries directly into internal configuration objects exposes a mass assignment vulnerability, as an attacker can provide unexpected but valid JSON keys to bypass intended UI-based restrictions.
+**Prevention:** Always use an explicit allowlist (e.g. `ALLOWED_CONFIG_KEYS`) to filter incoming keys from dictionary payloads before passing them to internal storage or update functions.

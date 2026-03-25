@@ -46,6 +46,25 @@ class SystemStatus(BaseModel):
     version: str = Field(default="0.2.0", description="Application version")
 
 
+ALLOWED_CONFIG_KEYS = {
+    "general_settings",
+    "ui",
+    "voice",
+    "advisors",
+    "audio_settings",
+    "logging",
+    "web_server",
+    "voice_only",
+    "default_state",
+    "general",
+    "keybindings",
+    "model_paths",
+    "state_models",
+    "state_transitions",
+    "wakeword_state_map",
+}
+
+
 class StateChangeRequest(BaseModel):
     state: str = Field(
         ..., description="Target state", pattern="^(idle|computer|chatty)$"
@@ -299,7 +318,10 @@ def include_core_routes(
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
             if isinstance(cfg, dict):
-                cfg.update(config_data)
+                filtered_data = {
+                    k: v for k, v in config_data.items() if k in ALLOWED_CONFIG_KEYS
+                }
+                cfg.update(filtered_data)
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:
