@@ -20,10 +20,66 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+"""OpenAPI endpoint availability and runtime-vs-docs parity tests."""
+
 import json
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from chatty_commander.web.web_mode import create_app
+import pytest
+from fastapi.testclient import TestClient
+
+from chatty_commander.app import CommandExecutor
+from chatty_commander.app.config import Config
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.web_mode import WebModeServer, create_app
+
+
+@pytest.fixture
+def client():
+    """Create a test client with mocked advisors service."""
+    with patch(
+        "chatty_commander.web.web_mode.AdvisorsService"
+    ) as mock_advisors_service:
+        mock_service = MagicMock()
+        mock_advisors_service.return_value = mock_service
+
+        _config = Config()
+        _state = StateManager()
+        _models = ModelManager(_config)
+        _executor = CommandExecutor(_config, _models, _state)
+        _server = WebModeServer(
+            config_manager=_config,
+            state_manager=_state,
+            model_manager=_models,
+            command_executor=_executor,
+            no_auth=True,
+        )
+        app = _server.app
+
+        return TestClient(app)
+
+
+# --- Endpoint availability ---
+
+
+def test_swagger_ui_docs_available(client):
+    resp = client.get("/docs")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers.get("content-type", "")
+
+
+def test_openapi_json_available_and_has_paths(client):
+    resp = client.get("/openapi.json")
+    assert resp.status_code == 200
+    assert "application/json" in resp.headers.get("content-type", "")
+    data = resp.json()
+    assert isinstance(data, dict)
+    assert "paths" in data and isinstance(data["paths"], dict)
+
+
+# --- Runtime-vs-docs parity ---
 
 
 def test_runtime_openapi_matches_docs_file_on_key_paths():

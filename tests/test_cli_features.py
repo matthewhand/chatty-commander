@@ -53,9 +53,7 @@ def replace_config_with_dummy(monkeypatch):
             config_module, "Config", staticmethod(lambda: DummyConfigDirect(actions))
         )
         # Patch the global Config variable in cli module
-        monkeypatch.setattr(
-            cli_module, "Config", lambda: DummyConfigDirect(actions)
-        )
+        monkeypatch.setattr(cli_module, "Config", lambda: DummyConfigDirect(actions))
 
         # Mock ModelManager to avoid path issues
         class DummyModelManager:
