@@ -292,6 +292,16 @@ def include_core_routes(
         config_data["_env_overrides"] = env_overrides
         return config_data
 
+    ALLOWED_CONFIG_KEYS = {
+        "general",
+        "audio_settings",
+        "ui",
+        "logging",
+        "voice_only",
+        "default_state",
+        "voice"
+    }
+
     @router.put("/api/v1/config")
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
@@ -299,7 +309,8 @@ def include_core_routes(
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
             if isinstance(cfg, dict):
-                cfg.update(config_data)
+                filtered_data = {k: v for k, v in config_data.items() if k in ALLOWED_CONFIG_KEYS}
+                cfg.update(filtered_data)
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:

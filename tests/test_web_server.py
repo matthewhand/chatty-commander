@@ -616,13 +616,34 @@ class TestWebModeServer:
         config, _, _, _ = mock_managers
         config.save_config = Mock()
 
-        new_config = {"new_key": "new_value"}
+        new_config = {"ui": {"theme": "light"}}
         response = test_client.put("/api/v1/config", json=new_config)
         assert response.status_code == 200
 
         data = response.json()
         assert data["message"] == "Configuration updated successfully"
         config.save_config.assert_called_once()
+        assert "ui" in config.config
+        assert config.config["ui"] == {"theme": "light"}
+
+    def test_update_config_reject_disallowed_keys(self, test_client, mock_managers):
+        config, _, _, _ = mock_managers
+        config.save_config = Mock()
+
+        original_config = dict(config.config)
+        new_config = {"commands": {"test": "override"}, "general": {"debug_mode": True}}
+        response = test_client.put("/api/v1/config", json=new_config)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["message"] == "Configuration updated successfully"
+        config.save_config.assert_called_once()
+
+        # Check that allowed key was updated
+        assert "general" in config.config
+
+        # Check that disallowed key was NOT updated
+        assert "commands" not in config.config
 
     def test_update_config_failure(self, test_client, mock_managers):
         """Test update config endpoint failure when config saving fails."""
