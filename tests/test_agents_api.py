@@ -36,7 +36,11 @@ from fastapi.testclient import TestClient
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes import agents as _agents_mod
-from chatty_commander.web.routes.agents import AgentBlueprint, AgentBlueprintModel
+from chatty_commander.web.routes.agents import (
+    AgentBlueprint,
+    AgentBlueprintModel,
+    _extract_json_from_response,
+)
 from chatty_commander.web.server import create_app
 from chatty_commander.web.web_mode import WebModeServer
 
@@ -313,3 +317,44 @@ def test_create_agent_blueprint_from_description_llm_fallback(mock_llm_manager_c
     assert "id" in data
     assert data["name"] == "My helpful agent who summarizes docs"
     assert data["persona_prompt"] == "My helpful agent who summarizes docs"
+
+
+# ── JSON extraction helpers (from test_agents_helpers) ───────────────────
+
+
+class TestExtractJsonFromResponse:
+    """Tests for _extract_json_from_response utility."""
+
+    def test_standard_markdown(self):
+        response = 'Here is the JSON: ```json {"key": "value"} ```'
+        assert _extract_json_from_response(response) == '{"key": "value"}'
+
+    def test_generic_markdown(self):
+        response = 'Some data: ``` {"key": "value"} ```'
+        assert _extract_json_from_response(response) == '{"key": "value"}'
+
+    def test_plain_text(self):
+        response = '{"key": "value"}'
+        assert _extract_json_from_response(response) == '{"key": "value"}'
+
+    def test_with_whitespace(self):
+        response = '\n  ```json\n  {"key": "value"}\n  ```  \n'
+        assert _extract_json_from_response(response) == '{"key": "value"}'
+
+    def test_text_around_block(self):
+        response = 'Prefix text\n```json\n{"key": "value"}\n```\nSuffix text'
+        assert _extract_json_from_response(response) == '{"key": "value"}'
+
+    def test_multiple_blocks(self):
+        response = 'First: ```json {"a": 1} ``` Second: ```json {"b": 2} ```'
+        assert _extract_json_from_response(response) == '{"a": 1}'
+
+    def test_empty_input(self):
+        assert _extract_json_from_response("") == ""
+
+    def test_whitespace_only(self):
+        assert _extract_json_from_response("   \n  ") == ""
+
+    def test_unclosed_block(self):
+        response = '```json {"key": "value"}'
+        assert _extract_json_from_response(response) == response.strip()

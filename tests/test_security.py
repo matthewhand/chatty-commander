@@ -31,6 +31,7 @@ from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
+from chatty_commander.utils.security import mask_sensitive_data
 from chatty_commander.web.web_mode import WebModeServer
 
 
@@ -167,9 +168,7 @@ class TestClientIPSecurity:
 
         mock_request = MagicMock()
         mock_request.client.host = "10.0.0.5"  # Last proxy in chain
-        mock_request.headers = {
-            "X-Forwarded-For": "203.0.113.50, 10.0.0.1, 10.0.0.5"
-        }
+        mock_request.headers = {"X-Forwarded-For": "203.0.113.50, 10.0.0.1, 10.0.0.5"}
 
         # Should find the first non-trusted IP (the real client)
         result = get_client_ip(mock_request, trusted_proxies=["10.0.0.0/8"])
@@ -264,3 +263,45 @@ class TestClientIPSecurity:
             ],
         )
         assert result == "203.0.113.50"
+
+
+# ── mask_sensitive_data (from test_security_utils) ───────────────────────
+
+
+class TestMaskSensitiveData:
+    """Tests for the mask_sensitive_data utility function."""
+
+    def test_mask_sensitive_data(self):
+        test_data = {
+            "api_key": "sk-sensitive-key",
+            "OPENAI_API_TOKEN": "token-123",
+            "db_password": "mypassword",
+            "database_url": "postgresql://user:pass@host/db",
+            "normal_field": "visible-value",
+            "nested": {"bridge_token": "secret-bridge", "count": 10},
+            "auth": {"username": "admin", "password": "hidden-password"},
+            "secrets_list": [{"secret": "val1"}, {"public": "val2"}],
+        }
+
+        masked = mask_sensitive_data(test_data)
+
+        assert masked["api_key"] == "********"
+        assert masked["OPENAI_API_TOKEN"] == "********"
+        assert masked["db_password"] == "********"
+        assert masked["database_url"] == "********"
+        assert masked["normal_field"] == "visible-value"
+        assert masked["nested"]["bridge_token"] == "********"
+        assert masked["nested"]["count"] == 10
+        assert masked["auth"]["username"] == "admin"
+        assert masked["auth"]["password"] == "********"
+        assert masked["secrets_list"] == "********"
+
+    def test_mask_sensitive_data_non_dict(self):
+        assert mask_sensitive_data("string") == "string"
+        assert mask_sensitive_data(123) == 123
+        assert mask_sensitive_data([1, 2, 3]) == [1, 2, 3]
+
+        data_list = [{"api_key": "secret"}, {"other": "public"}]
+        masked_list = mask_sensitive_data(data_list)
+        assert masked_list[0]["api_key"] == "********"
+        assert masked_list[1]["other"] == "public"

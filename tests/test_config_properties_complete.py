@@ -33,30 +33,30 @@ class TestConfigPropertiesComplete:
 
         # Test inference_framework property and setter
         framework = gs.inference_framework
-        assert isinstance(framework, str)
+        assert isinstance(framework, str) and len(framework) > 0
         gs.inference_framework = "pytorch"
         assert gs.inference_framework == "pytorch"
         gs.inference_framework = "onnx"  # Reset
 
-        # Test start_on_boot property and setter
+        # Test start_on_boot property and setter (default may vary with config file)
         start_boot = gs.start_on_boot
-        assert isinstance(start_boot, bool)
+        assert type(start_boot) is bool
         gs.start_on_boot = True
         assert gs.start_on_boot is True
         gs.start_on_boot = False
         assert gs.start_on_boot is False
 
-        # Test check_for_updates property and setter
+        # Test check_for_updates property and setter (default may vary with config file)
         check_updates = gs.check_for_updates
-        assert isinstance(check_updates, bool)
+        assert type(check_updates) is bool
         gs.check_for_updates = True
         assert gs.check_for_updates is True
         gs.check_for_updates = False
         assert gs.check_for_updates is False
 
-        # Test debug_mode property and setter
+        # Test debug_mode property and setter (default may vary with config file)
         debug = gs.debug_mode
-        assert isinstance(debug, bool)
+        assert type(debug) is bool
         gs.debug_mode = True
         assert gs.debug_mode is True
         gs.debug_mode = False
@@ -136,7 +136,7 @@ class TestConfigPropertiesComplete:
         assert isinstance(general, dict)
 
         framework = general.get("inference_framework", "onnx")
-        assert isinstance(framework, str)
+        assert isinstance(framework, str) and len(framework) > 0
 
         debug = general.get("debug_mode", True)
-        assert isinstance(debug, bool)
+        assert type(debug) is bool

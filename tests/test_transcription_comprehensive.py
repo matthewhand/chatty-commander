@@ -84,8 +84,7 @@ class TestWhisperLocalBackend:
             pytest.skip("Whisper not available")
 
         backend = WhisperLocalBackend(model_size="base")
-        # Just test that it initializes without error
-        assert backend is not None
+        assert isinstance(backend, WhisperLocalBackend)
         assert backend.model_size == "base"
 
     def test_initialization_import_error_handling(self):
@@ -94,7 +93,7 @@ class TestWhisperLocalBackend:
         # The actual import error testing is hard to mock properly
         backend = WhisperLocalBackend()
         # The backend will try to initialize and may fail, but shouldn't crash
-        assert backend is not None
+        assert isinstance(backend, WhisperLocalBackend)
 
     @patch("chatty_commander.voice.transcription.np")
     def test_transcribe_success(self, mock_np):
@@ -135,8 +134,7 @@ class TestWhisperAPIBackend:
             pytest.skip("OpenAI not available")
 
         backend = WhisperAPIBackend(api_key="test-key")
-        # Just test that it initializes without error
-        assert backend is not None
+        assert isinstance(backend, WhisperAPIBackend)
         assert backend.api_key == "test-key"
 
     def test_initialization_import_error_handling(self):
@@ -144,7 +142,7 @@ class TestWhisperAPIBackend:
         # This test is mainly to ensure the error handling code is covered
         backend = WhisperAPIBackend()
         # The backend will try to initialize and may fail, but shouldn't crash
-        assert backend is not None
+        assert isinstance(backend, WhisperAPIBackend)
 
     def test_transcribe_no_client(self):
         """Test transcription when client is not available."""
@@ -208,7 +206,7 @@ class TestVoiceTranscriber:
         """Test transcribing raw audio data."""
         transcriber = VoiceTranscriber(backend="mock")
         result = transcriber.transcribe_audio_data(b"test data")
-        assert isinstance(result, str)
+        assert result == "hello world"
 
     def test_get_backend_info(self):
         """Test getting backend information."""
@@ -329,9 +327,9 @@ class TestVoiceTranscriber:
         result2 = transcriber.transcribe_audio_data(b"test")
         result3 = transcriber.transcribe_audio_data(b"test")
 
-        assert isinstance(result1, str)
-        assert isinstance(result2, str)
-        assert isinstance(result3, str)
+        assert result1 == "hello world"
+        assert result2 == "turn on the lights"
+        assert result3 == "what's the weather like"
 
     def test_backend_kwargs_passing(self):
         """Test that backend kwargs are passed correctly."""
@@ -359,7 +357,8 @@ class TestVoiceTranscriber:
         """Test transcribing empty audio data."""
         transcriber = VoiceTranscriber(backend="mock")
         result = transcriber.transcribe_audio_data(b"")
-        assert isinstance(result, str)
+        # Mock backend returns first default response regardless of input
+        assert result == "hello world"
 
     def test_backend_availability_check(self):
         """Test backend availability checking."""
@@ -367,10 +366,10 @@ class TestVoiceTranscriber:
         assert transcriber.is_available() is True
 
         # Test with a backend that might not be available
-        transcriber_unavailable = VoiceTranscriber(backend="whisper_local")
-        # This will depend on whether whisper is actually installed
-        availability = transcriber_unavailable.is_available()
-        assert isinstance(availability, bool)
+        transcriber_local = VoiceTranscriber(backend="whisper_local")
+        # Availability depends on whether whisper model loaded
+        availability = transcriber_local.is_available()
+        assert availability is True or availability is False
 
     def test_get_backend_info_comprehensive(self):
         """Test comprehensive backend info retrieval."""

@@ -1,6 +1,6 @@
 """
 Tests for advisors context management, service, provider selection, memory API,
-and tool call functionality.
+tool call functionality, and web API endpoints.
 
 Consolidated from:
 - test_advisors_context.py (context management tests)
@@ -10,6 +10,7 @@ Consolidated from:
 - test_advisors_provider_selection.py (provider build tests)
 - test_advisors_service.py (service echo/disabled tests)
 - test_advisors_tool_call.py (stub provider happy-path test)
+- test_web_advisors_api.py (web endpoint message/auth tests)
 """
 
 import sys
@@ -18,9 +19,10 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from chatty_commander.advisors.providers import build_provider_safe
+from chatty_commander.advisors.providers import LLMProvider, build_provider_safe
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
 from chatty_commander.app import CommandExecutor
+from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.web_mode import WebModeServer
@@ -495,9 +497,7 @@ class TestAdvisorsProviderSelection:
         with patch("chatty_commander.advisors.providers.AGENTS_AVAILABLE", False):
             provider = build_provider_safe(config)
 
-            assert provider is not None
-            assert hasattr(provider, "generate")
-            assert hasattr(provider, "generate_stream")
+            assert isinstance(provider, LLMProvider)
 
     def test_build_provider_safe_with_sdk_and_key(self):
         """When SDK is available and API key is present, use build_provider."""
@@ -514,7 +514,7 @@ class TestAdvisorsProviderSelection:
                 mock_build.return_value = Mock()
                 provider = build_provider_safe(config)
 
-                assert provider is not None
+                assert provider is mock_build.return_value
                 mock_build.assert_called_once_with(config)
 
     def test_build_provider_safe_without_key(self):
@@ -524,9 +524,7 @@ class TestAdvisorsProviderSelection:
         with patch("chatty_commander.advisors.providers.AGENTS_AVAILABLE", True):
             provider = build_provider_safe(config)
 
-            assert provider is not None
-            assert hasattr(provider, "generate")
-            assert hasattr(provider, "generate_stream")
+            assert isinstance(provider, LLMProvider)
 
 
 # ---------------------------------------------------------------------------
@@ -562,7 +560,6 @@ class TestAdvisorsService:
         svc = AdvisorsService(config=_DummyConfigService())
         msg = AdvisorMessage(platform="discord", channel="c1", user="u1", text="hello")
         reply = svc.handle_message(msg)
-        assert reply is not None
         assert isinstance(reply.reply, str)
         assert reply.model == "gpt-oss20b"
         assert reply.api_mode in ("completion", "responses")
@@ -625,5 +622,110 @@ class TestAdvisorsToolCall:
             # api_mode is internally converted to "chat" by the service
             assert reply.api_mode in ("completion", "chat")
 
-            # Follow-up: persona switch path returns bool
-            assert isinstance(svc.switch_persona(reply.context_key, "default"), bool)
+            # Follow-up: persona "default" does not exist in config, so switch fails
+            assert svc.switch_persona(reply.context_key, "default") is False
+
+
+# ---------------------------------------------------------------------------
+# Web API endpoint tests (from test_web_advisors_api.py)
+# ---------------------------------------------------------------------------
+
+
+class _DummyConfigWebAPI(Config):
+    """Config for web advisors API endpoint tests."""
+
+    def __init__(self):
+        self.general_models_path = "models-idle"
+        self.system_models_path = "models-computer"
+        self.chat_models_path = "models-chatty"
+        self.config = {"model_actions": {}}
+        self.auth = {"enabled": True, "api_key": "secret", "allowed_origins": ["*"]}
+        self.advisors = {
+            "enabled": True,
+            "providers": {
+                "llm_api_mode": "completion",
+                "model": "gpt-oss20b",
+            },
+            "context": {
+                "personas": {
+                    "general": {"system_prompt": "You are helpful."},
+                    "discord_default": {"system_prompt": "You are a Discord bot."},
+                },
+                "default_persona": "general",
+            },
+        }
+
+
+def _build_web_server(cfg, *, no_auth: bool = True):
+    with patch(
+        "chatty_commander.advisors.providers.build_provider_safe"
+    ) as mock_build_provider:
+        mock_provider = MagicMock()
+        mock_provider.model = "test-model"
+        mock_provider.api_mode = "completion"
+        mock_provider.generate.return_value = "hello from test provider"
+        mock_build_provider.return_value = mock_provider
+        sm = StateManager()
+        mm = ModelManager(cfg)
+        ce = CommandExecutor(cfg, mm, sm)
+        return WebModeServer(cfg, sm, mm, ce, no_auth=no_auth)
+
+
+class TestWebAdvisorsAPI:
+    """Test advisors web API endpoints (message and auth)."""
+
+    def test_advisors_message_endpoint_echo(self):
+        cfg = _DummyConfigWebAPI()
+        server = _build_web_server(cfg)
+        client = TestClient(server.app)
+        resp = client.post(
+            "/api/v1/advisors/message",
+            json={
+                "platform": "discord",
+                "channel": "c1",
+                "user": "u1",
+                "text": "hello advisors",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["reply"] is not None
+
+    def test_advisors_message_endpoint_summarize(self):
+        cfg = _DummyConfigWebAPI()
+        cfg.advisors["features"] = {"browser_analyst": True}
+        server = _build_web_server(cfg)
+        client = TestClient(server.app)
+        resp = client.post(
+            "/api/v1/advisors/message",
+            json={
+                "platform": "discord",
+                "channel": "c1",
+                "user": "u1",
+                "text": "summarize https://example.com/x",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["reply"] is not None
+
+    def test_advisors_message_authentication(self):
+        cfg = _DummyConfigWebAPI()
+        server = _build_web_server(cfg, no_auth=False)
+        client = TestClient(server.app)
+        payload = {
+            "platform": "discord",
+            "channel": "c1",
+            "user": "u1",
+            "text": "hello advisors",
+        }
+        # Missing API key should be unauthorized
+        resp = client.post("/api/v1/advisors/message", json=payload)
+        assert resp.status_code == 401
+        # Providing correct key should succeed
+        resp = client.post(
+            "/api/v1/advisors/message",
+            json=payload,
+            headers={"X-API-Key": cfg.auth["api_key"]},
+        )
+        assert resp.status_code == 200

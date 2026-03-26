@@ -72,8 +72,9 @@ class TestDependencyFailures:
                         username="test_user",
                     )
                 )
-                # If it doesn't raise an exception, it should return some response
-                assert response is not None
+                # If it doesn't raise an exception, it should return a reply with error info
+                assert isinstance(response.reply, str)
+                assert len(response.reply) > 0
             except ConnectionError:
                 # This is also acceptable - the error is being propagated
                 pass
@@ -98,7 +99,7 @@ class TestDependencyFailures:
             processor = EnhancedVoiceProcessor(config)
 
             # Should handle initialization failure gracefully - processor should still be created
-            assert processor is not None
+            assert isinstance(processor, EnhancedVoiceProcessor)
 
     def test_transcription_engine_failure(self):
         """Test handling when transcription engines are unavailable."""
@@ -194,13 +195,21 @@ class TestInvalidInputHandling:
             "SQL injection: ' OR '1'='1",
         ]
 
-        for input_text in test_inputs:
+        expected_intents = [
+            "greeting",  # "Hello! @#$%^&*()" contains "hello"
+            "general_conversation",  # null byte text
+            "general_conversation",  # unicode text
+            "general_conversation",  # SQL injection text
+        ]
+        for input_text, expected_intent in zip(
+            test_inputs, expected_intents, strict=False
+        ):
             # Should not crash and should return valid analysis
             intent = conversation_engine.analyze_intent(input_text)
             sentiment = conversation_engine.analyze_sentiment(input_text)
 
-            assert intent is not None
-            assert sentiment is not None
+            assert intent == expected_intent, f"Unexpected intent for {input_text!r}"
+            assert sentiment in ("positive", "negative", "neutral")
 
     def test_numeric_input_handling(self):
         """Test handling of numeric input."""
@@ -214,8 +223,8 @@ class TestInvalidInputHandling:
             intent = conversation_engine.analyze_intent(input_text)
             sentiment = conversation_engine.analyze_sentiment(input_text)
 
-            assert intent is not None
-            assert sentiment is not None
+            assert intent == "general_conversation"
+            assert sentiment == "neutral"
 
 
 class TestNetworkConnectivity:
@@ -244,8 +253,9 @@ class TestNetworkConnectivity:
                         username="test_user",
                     )
                 )
-                # If it doesn't raise an exception, it should return some response
-                assert response is not None
+                # If it doesn't raise an exception, it should return a reply with error info
+                assert isinstance(response.reply, str)
+                assert len(response.reply) > 0
             except TimeoutError:
                 # This is also acceptable - the error is being propagated
                 pass
@@ -322,7 +332,8 @@ class TestFallbackMechanisms:
                         )
                     )
                     # Should get some response (even if it's from cache)
-                    assert response.reply is not None
+                    assert isinstance(response.reply, str)
+                    assert len(response.reply) > 0
                 except Exception:
                     # If it fails, it should be a graceful failure
                     pass
@@ -343,7 +354,7 @@ class TestFallbackMechanisms:
 
             # Should still initialize with basic VAD
             processor = EnhancedVoiceProcessor(config)
-            assert processor is not None
+            assert isinstance(processor, EnhancedVoiceProcessor)
 
             # Basic VAD should still work
             audio_data = b"\x00\x01\x02\x03"
@@ -373,8 +384,9 @@ class TestFallbackMechanisms:
                         username="test_user",
                     )
                 )
-                # If it doesn't raise an exception, it should return some response
-                assert response is not None
+                # If it doesn't raise an exception, it should return a reply with error info
+                assert isinstance(response.reply, str)
+                assert len(response.reply) > 0
             except Exception as e:
                 # Invalid API key should be handled gracefully
                 assert "Invalid API key" in str(e) or "API key" in str(e)

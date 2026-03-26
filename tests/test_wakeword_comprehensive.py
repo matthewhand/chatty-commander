@@ -166,7 +166,9 @@ class TestLogger:
 
     def test_logger_exists(self):
         """Test that logger is properly configured."""
-        assert logger is not None
+        import logging
+
+        assert isinstance(logger, logging.Logger)
         assert logger.name == "chatty_commander.voice.wakeword"
 
 
