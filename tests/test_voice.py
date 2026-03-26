@@ -1,25 +1,3 @@
-# MIT License
-#
-# Copyright (c) 2024 mhand
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 """Consolidated voice tests: pipeline, transcription, wakeword, routes, chat integration."""
 
 from unittest.mock import Mock, patch
@@ -334,9 +312,9 @@ class TestVoiceChatIntegration:
                     voice_pipeline = mock_voice_pipeline_class()
                     state_manager = mock_state_manager_class()
 
-                    assert llm_manager is not None
-                    assert voice_pipeline is not None
-                    assert state_manager is not None
+                    assert llm_manager is mock_llm_manager_class.return_value
+                    assert voice_pipeline is mock_voice_pipeline_class.return_value
+                    assert state_manager is mock_state_manager_class.return_value
 
                     assert llm_manager.is_available()
                     assert llm_manager.get_active_backend_name() == "ollama"
@@ -384,7 +362,6 @@ class TestVoiceChatIntegration:
         )
 
         agent_state = thinking_state_manager.get_agent_state("test_agent")
-        assert agent_state is not None
         assert agent_state.state == ThinkingState.IDLE
         assert agent_state.message == "Voice chat ended"
 

@@ -120,7 +120,7 @@ class TestConfigStabilization:
         config = Config(missing_file)
 
         # Should start with defaults and not crash
-        assert config.commands is not None
+        assert isinstance(config.commands, dict)
         assert len(config.commands) > 0
         # defaults might inject general settings, so config_data is not empty
         assert isinstance(config.config_data, dict)
