@@ -36,3 +36,4 @@ def test_version_endpoint_ok():
     assert data.get("version") == "0.2.0"
     # git_sha may be None if git is unavailable in the environment
     assert "git_sha" in data
+    assert (data["git_sha"] is None) or isinstance(data["git_sha"], str)

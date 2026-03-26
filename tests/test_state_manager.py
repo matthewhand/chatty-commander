@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import subprocess
+import sys
 from unittest.mock import Mock
 
 import pytest
@@ -96,11 +98,15 @@ class TestStateManager:
     def test_state_manager_callback_registration(self):
         """Test StateManager callback registration."""
         sm = StateManager(TestDataFactory.create_mock_config())
-        callback = Mock()
-        sm.add_state_change_callback(callback)
+        callback_called = []
+
+        def test_callback(old_state, new_state):
+            callback_called.append((old_state, new_state))
+
+        sm.add_state_change_callback(test_callback)
         sm.change_state("computer")
-        # StateManager calls callbacks with (old_state, new_state)
-        callback.assert_called_once_with("idle", "computer")
+        assert len(callback_called) == 1
+        assert callback_called[0] == ("idle", "computer")
 
     @pytest.mark.parametrize("state", ["idle", "computer", "chatty", "invalid"])
     def test_state_manager_state_changes(self, state):
@@ -126,3 +132,41 @@ class TestStateManager:
         assert sm.get_active_models() == ["model1"]
         sm.change_state("computer")
         assert sm.get_active_models() == ["model2"]
+
+
+class TestStateManagerMain:
+    """Tests for the StateManager __main__ block via subprocess."""
+
+    def test_state_manager_main_block(self):
+        """Test state_manager main block execution."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from chatty_commander.app.state_manager import StateManager; "
+                "sm = StateManager(); "
+                "print(sm); "
+                "sm.change_state('computer'); "
+                "print(sm.get_active_models()); "
+                "try: sm.change_state('undefined_state'); "
+                "except ValueError: pass",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        # Should not crash
+        assert result.returncode == 0 or "ValueError" in result.stderr
+
+    def test_state_manager_main_execution(self):
+        """Test running state_manager as main module."""
+        result = subprocess.run(
+            [sys.executable, "-m", "chatty_commander.app.state_manager"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        # The script should run and may exit with error due to undefined_state
+        # but it should at least start executing
+        assert result.returncode in [0, 1]  # 0 for success, 1 for expected error

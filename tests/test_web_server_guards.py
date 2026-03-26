@@ -71,7 +71,7 @@ class TestServerImportSafety:
     def test_import_without_optional_routers(self):
         """Ensure server imports cleanly without optional routers defined."""
         # Clear any existing router globals that might interfere
-        import src.chatty_commander.web.server as server_module
+        import chatty_commander.web.server as server_module
 
         # Store original globals
         original_globals = dict(server_module.__dict__)
@@ -111,7 +111,9 @@ class TestServerImportSafety:
             # The server.py has a fallback stub that may return empty routes
             # or FastAPI may have default routes like openapi/docs
             route_count = len(app.routes)
-            assert route_count <= 12  # Allow for openapi, docs, redoc, root, bridge, health, status, state, metrics etc
+            assert (
+                route_count <= 12
+            )  # Allow for openapi, docs, redoc, root, bridge, health, status, state, metrics etc
 
         finally:
             # Restore original globals
@@ -120,7 +122,7 @@ class TestServerImportSafety:
 
     def test_create_app_returns_fastapi_instance(self):
         """Verify create_app returns a proper FastAPI instance."""
-        from src.chatty_commander.web.server import create_app
+        from chatty_commander.web.server import create_app
 
         app = create_app()
         assert isinstance(app, FastAPI)
@@ -134,7 +136,7 @@ class TestRouterInclusion:
 
     def test_router_inclusion_with_dummy_routers(self):
         """Verify routers are included when present."""
-        import src.chatty_commander.web.server as server_module
+        import chatty_commander.web.server as server_module
 
         # Store original globals
         original_globals = dict(server_module.__dict__)
@@ -183,8 +185,8 @@ class TestRouterInclusion:
 
     def test_include_optional_function(self):
         """Test the _include_optional helper function directly."""
-        import src.chatty_commander.web.server as server_module
-        from src.chatty_commander.web.server import _include_optional
+        import chatty_commander.web.server as server_module
+        from chatty_commander.web.server import _include_optional
 
         # Store original globals
         original_globals = dict(server_module.__dict__)
@@ -236,7 +238,7 @@ class TestIdempotency:
 
     def test_multiple_app_creation_idempotent(self):
         """Creating multiple apps should not interfere with each other."""
-        from src.chatty_commander.web.server import create_app
+        from chatty_commander.web.server import create_app
 
         app1 = create_app()
         app2 = create_app()
@@ -253,7 +255,7 @@ class TestIdempotency:
 
     def test_router_inclusion_not_duplicated(self):
         """Verify that creating multiple apps doesn't duplicate router inclusions."""
-        import src.chatty_commander.web.server as server_module
+        import chatty_commander.web.server as server_module
 
         # Create a dummy router
         test_router = APIRouter(prefix="/idempotency-test", tags=["test"])
@@ -372,7 +374,7 @@ class TestContractCompliance:
 
     def test_create_app_basic_contract(self):
         """Test that create_app meets basic contract requirements."""
-        from src.chatty_commander.web.server import create_app
+        from chatty_commander.web.server import create_app
 
         app = create_app()
 
@@ -408,7 +410,7 @@ class TestContractCompliance:
 
     def test_create_app_no_auth_parameter(self):
         """Test that no_auth parameter is accepted and doesn't break the app."""
-        from src.chatty_commander.web.server import create_app
+        from chatty_commander.web.server import create_app
 
         app_with_auth = create_app(no_auth=False)
         app_without_auth = create_app(no_auth=True)

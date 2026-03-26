@@ -24,9 +24,11 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from chatty_commander.web.routes.avatar_selector import router as selector_router
+from chatty_commander.web.server import create_app
 
 
 def test_animation_selector_basic():
+    """Test animation selector using a minimal FastAPI app with the router directly."""
     app = FastAPI()
     app.include_router(selector_router)
     client = TestClient(app)
@@ -47,3 +49,31 @@ def test_animation_selector_basic():
     )
     assert resp2.status_code == 200
     assert resp2.json()["label"] == "error"
+
+
+def test_avatar_selector_labels():
+    """Test animation selector using the full create_app factory."""
+    app = create_app(no_auth=True)
+    client = TestClient(app)
+
+    r = client.post("/avatar/animation/choose", json={"text": "calling tool now"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["label"] in {
+        "hacking",
+        "neutral",
+        "error",
+        "warning",
+        "success",
+        "excited",
+        "curious",
+        "calm",
+    }
+
+    r2 = client.post(
+        "/avatar/animation/choose",
+        json={"text": "oops failure", "candidate_labels": ["error"]},
+    )
+    assert r2.status_code == 200
+    data2 = r2.json()
+    assert data2["label"] == "error"

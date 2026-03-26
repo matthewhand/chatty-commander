@@ -32,7 +32,7 @@ try:
 except ImportError:
     pytest.skip("FastAPI not available", allow_module_level=True)
 
-from src.chatty_commander.web.server import (
+from chatty_commander.web.server import (
     _include_optional,
     create_app,
     settings_router,
@@ -80,14 +80,14 @@ class TestWebServer:
             "reply": {"text": "Bridge response", "meta": {}},
         }
 
-    @patch("src.chatty_commander.web.server.avatar_ws_router")
+    @patch("chatty_commander.web.server.avatar_ws_router")
     def test_include_optional_with_router(self, mock_router):
         """Test _include_optional function with available router."""
         mock_app = Mock(spec=FastAPI)
         mock_router.return_value = Mock()
 
         # Mock globals to return the router
-        with patch("src.chatty_commander.web.server.globals") as mock_globals:
+        with patch("chatty_commander.web.server.globals") as mock_globals:
             mock_globals.return_value.get.return_value = mock_router
             _include_optional(mock_app, "avatar_ws_router")
             mock_app.include_router.assert_called_once_with(mock_router)
@@ -97,12 +97,12 @@ class TestWebServer:
         mock_app = Mock(spec=FastAPI)
 
         # Mock globals to return None
-        with patch("src.chatty_commander.web.server.globals") as mock_globals:
+        with patch("chatty_commander.web.server.globals") as mock_globals:
             mock_globals.return_value.get.return_value = None
             _include_optional(mock_app, "nonexistent_router")
             mock_app.include_router.assert_not_called()
 
-    @patch("src.chatty_commander.web.server.include_avatar_settings_routes")
+    @patch("chatty_commander.web.server.include_avatar_settings_routes")
     def test_create_app_with_config_manager(self, mock_include_settings):
         """Test app creation with config manager for settings router."""
         mock_config_manager = Mock()
@@ -121,18 +121,18 @@ class TestWebServer:
         mock_include_settings.assert_called_once()
         assert isinstance(app, FastAPI)
 
-    @patch("src.chatty_commander.web.server.include_avatar_settings_routes", None)
+    @patch("chatty_commander.web.server.include_avatar_settings_routes", None)
     def test_create_app_without_settings_routes(self):
         """Test app creation when avatar settings routes are not available."""
         mock_config_manager = Mock()
         app = create_app(config_manager=mock_config_manager)
         assert isinstance(app, FastAPI)
 
-    @patch("src.chatty_commander.web.server.avatar_api_router")
-    @patch("src.chatty_commander.web.server.avatar_selector_router")
-    @patch("src.chatty_commander.web.server.version_router")
-    @patch("src.chatty_commander.web.server.metrics_router")
-    @patch("src.chatty_commander.web.server.agents_router")
+    @patch("chatty_commander.web.server.avatar_api_router")
+    @patch("chatty_commander.web.server.avatar_selector_router")
+    @patch("chatty_commander.web.server.version_router")
+    @patch("chatty_commander.web.server.metrics_router")
+    @patch("chatty_commander.web.server.agents_router")
     def test_create_app_with_all_routers(
         self, mock_agents, mock_metrics, mock_version, mock_selector, mock_api
     ):
@@ -197,7 +197,7 @@ class TestWebServer:
         # Test that it starts as None
         assert settings_router is None
 
-    @patch("src.chatty_commander.web.server.include_avatar_settings_routes")
+    @patch("chatty_commander.web.server.include_avatar_settings_routes")
     def test_settings_router_global_assignment(self, mock_include_settings):
         """Test that settings_router global is properly assigned."""
         mock_config_manager = Mock()
@@ -212,7 +212,7 @@ class TestWebServer:
         create_app(config_manager=mock_config_manager)
 
         # Import the global after app creation
-        from src.chatty_commander.web import server
+        from chatty_commander.web import server
 
         # Verify the global was set
         assert server.settings_router is not None
@@ -250,7 +250,9 @@ class TestBridgeEndpointSecurity:
         """When no_auth=True (dev), missing token should return 401."""
         app = create_app(no_auth=True)
         client = TestClient(app)
-        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        response = client.post(
+            "/bridge/event", json={"platform": "discord", "text": "hi"}
+        )
         assert response.status_code == 401
         assert "Unauthorized bridge request" in response.json()["detail"]
 
@@ -272,7 +274,9 @@ class TestBridgeEndpointSecurity:
         # No config_manager means no bridge_token
         app = create_app(no_auth=False)
         client = TestClient(app)
-        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        response = client.post(
+            "/bridge/event", json={"platform": "discord", "text": "hi"}
+        )
         assert response.status_code == 401
         assert "not configured" in response.json()["detail"].lower()
 
@@ -282,7 +286,9 @@ class TestBridgeEndpointSecurity:
         mock_config.web_server = {"bridge_token": ""}  # Empty token
         app = create_app(no_auth=False, config_manager=mock_config)
         client = TestClient(app)
-        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        response = client.post(
+            "/bridge/event", json={"platform": "discord", "text": "hi"}
+        )
         assert response.status_code == 401
         assert "not configured" in response.json()["detail"].lower()
 
@@ -320,7 +326,9 @@ class TestBridgeEndpointSecurity:
         mock_config.web_server = {"bridge_token": "secret-token"}
         app = create_app(no_auth=False, config_manager=mock_config)
         client = TestClient(app)
-        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        response = client.post(
+            "/bridge/event", json={"platform": "discord", "text": "hi"}
+        )
         assert response.status_code == 401
 
     def test_auth_none_bridge_token_config_returns_401(self):
@@ -329,6 +337,8 @@ class TestBridgeEndpointSecurity:
         mock_config.web_server = {"bridge_token": None}  # type: ignore
         app = create_app(no_auth=False, config_manager=mock_config)
         client = TestClient(app)
-        response = client.post("/bridge/event", json={"platform": "discord", "text": "hi"})
+        response = client.post(
+            "/bridge/event", json={"platform": "discord", "text": "hi"}
+        )
         assert response.status_code == 401
         assert "not configured" in response.json()["detail"].lower()

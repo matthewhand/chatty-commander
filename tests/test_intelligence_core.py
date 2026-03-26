@@ -28,11 +28,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.chatty_commander.ai.intelligence_core import (
+from chatty_commander.ai.intelligence_core import (
     AIResponse,
     IntelligenceCore,
 )
-from src.chatty_commander.app.config import Config
+from chatty_commander.app.config import Config
 
 
 class TestAIResponse:
@@ -88,9 +88,9 @@ class TestIntelligenceCore:
         config.voice.noise_reduction = True
         return config
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.create_enhanced_voice_processor")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_init_success(
         self, mock_state_manager, mock_voice_processor, mock_advisors, mock_config
     ):
@@ -111,9 +111,9 @@ class TestIntelligenceCore:
         assert core.on_mode_change is None
         assert core.on_error is None
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.create_enhanced_voice_processor")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_init_voice_processor_failure(
         self, mock_state_manager, mock_voice_processor, mock_advisors, mock_config
     ):
@@ -124,9 +124,9 @@ class TestIntelligenceCore:
 
         assert core.voice_processor is None
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.create_enhanced_voice_processor")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_voice_processor_callbacks_setup(
         self, mock_state_manager, mock_voice_processor, mock_advisors, mock_config
     ):
@@ -142,14 +142,14 @@ class TestIntelligenceCore:
         assert mock_voice_proc.on_speech_start == core._handle_speech_start
         assert mock_voice_proc.on_speech_end == core._handle_speech_end
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_voice_input_low_confidence(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test handling voice input with low confidence."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -163,14 +163,14 @@ class TestIntelligenceCore:
                 core._handle_voice_input(voice_result)
                 mock_process.assert_not_called()
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_voice_input_high_confidence(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test handling voice input with high confidence."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -200,14 +200,14 @@ class TestIntelligenceCore:
                     },
                 )
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_voice_input_with_callback(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test handling voice input with response callback."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -229,14 +229,14 @@ class TestIntelligenceCore:
 
                 callback.assert_called_once_with(mock_response)
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_voice_input_with_error(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test handling voice input when processing fails."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -257,14 +257,14 @@ class TestIntelligenceCore:
                     "Voice processing error: Processing failed"
                 )
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_wake_word_chatty(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test handling 'chatty' wake word."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -282,14 +282,14 @@ class TestIntelligenceCore:
             mock_state_manager_instance.change_state.assert_called_once_with("chatty")
             mode_callback.assert_called_once_with("chatty")
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_wake_word_computer(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test handling 'computer' wake word."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -302,14 +302,14 @@ class TestIntelligenceCore:
 
             mock_state_manager_instance.change_state.assert_called_once_with("computer")
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_wake_word_same_mode(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test handling wake word when already in target mode."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -323,14 +323,14 @@ class TestIntelligenceCore:
             # Should not change state if already in target mode
             mock_state_manager_instance.change_state.assert_not_called()
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_wake_word_state_change_error(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test handling wake word when state change fails."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -345,36 +345,36 @@ class TestIntelligenceCore:
             # Should not raise exception
             core._handle_wake_word("chatty")
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_speech_start(self, mock_state_manager, mock_advisors, mock_config):
         """Test handling speech start event."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
             # Should not raise exception
             core._handle_speech_start()
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_handle_speech_end(self, mock_state_manager, mock_advisors, mock_config):
         """Test handling speech end event."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
             # Should not raise exception
             core._handle_speech_end()
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_process_input_text(self, mock_state_manager, mock_advisors, mock_config):
         """Test processing text input."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -410,14 +410,14 @@ class TestIntelligenceCore:
                         mock_analyze.assert_called_once_with("Hello")
                         mock_execute.assert_called_once_with([])
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_process_input_voice_with_metadata(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test processing voice input with metadata."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -445,14 +445,14 @@ class TestIntelligenceCore:
                         assert response.metadata["language"] == "en"
                         assert response.metadata["input_type"] == "voice"
 
-    @patch("src.chatty_commander.ai.intelligence_core.AdvisorsService")
-    @patch("src.chatty_commander.ai.intelligence_core.StateManager")
+    @patch("chatty_commander.ai.intelligence_core.AdvisorsService")
+    @patch("chatty_commander.ai.intelligence_core.StateManager")
     def test_process_input_error_handling(
         self, mock_state_manager, mock_advisors, mock_config
     ):
         """Test processing input when an error occurs."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
             core = IntelligenceCore(mock_config)
 
@@ -475,10 +475,10 @@ class TestIntelligenceCore:
     def test_extract_actions_placeholder(self, mock_config):
         """Test _extract_actions method (placeholder implementation)."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
-            with patch("src.chatty_commander.ai.intelligence_core.AdvisorsService"):
-                with patch("src.chatty_commander.ai.intelligence_core.StateManager"):
+            with patch("chatty_commander.ai.intelligence_core.AdvisorsService"):
+                with patch("chatty_commander.ai.intelligence_core.StateManager"):
                     core = IntelligenceCore(mock_config)
 
                     # This method should exist but may be a placeholder
@@ -492,10 +492,10 @@ class TestIntelligenceCore:
     def test_analyze_intent_placeholder(self, mock_config):
         """Test _analyze_intent method (placeholder implementation)."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
-            with patch("src.chatty_commander.ai.intelligence_core.AdvisorsService"):
-                with patch("src.chatty_commander.ai.intelligence_core.StateManager"):
+            with patch("chatty_commander.ai.intelligence_core.AdvisorsService"):
+                with patch("chatty_commander.ai.intelligence_core.StateManager"):
                     core = IntelligenceCore(mock_config)
 
                     # This method should exist but may be a placeholder
@@ -509,10 +509,10 @@ class TestIntelligenceCore:
     def test_execute_actions_placeholder(self, mock_config):
         """Test _execute_actions method (placeholder implementation)."""
         with patch(
-            "src.chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
         ):
-            with patch("src.chatty_commander.ai.intelligence_core.AdvisorsService"):
-                with patch("src.chatty_commander.ai.intelligence_core.StateManager"):
+            with patch("chatty_commander.ai.intelligence_core.AdvisorsService"):
+                with patch("chatty_commander.ai.intelligence_core.StateManager"):
                     core = IntelligenceCore(mock_config)
 
                     # This method should exist but may be a placeholder
