@@ -27,6 +27,8 @@ from __future__ import annotations
 import time
 from unittest.mock import MagicMock
 
+from fastapi.testclient import TestClient
+
 from chatty_commander.obs.metrics import (
     Counter,
     Gauge,
@@ -295,3 +297,59 @@ def test_request_metrics_middleware_tracks_requests():
     samples = counters["http_requests_total"]
     total = sum(s.get("value", 0) for s in samples)
     assert total > 0, "Expected at least one request to be counted"
+
+
+# ── Full-app metrics endpoint tests (from test_metrics_endpoint) ─────────
+
+
+class TestMetricsEndpoints:
+    """Integration tests for /api/v1/metrics, /metrics/json, /metrics/prom via create_app."""
+
+    def _client(self):
+        from chatty_commander.web.web_mode import create_app
+
+        app = create_app(no_auth=True)
+        return TestClient(app)
+
+    def test_metrics_counts_increment(self):
+        client = self._client()
+        m1 = client.get("/api/v1/metrics").json()
+
+        client.get("/api/v1/health")
+        client.get("/api/v1/status")
+        client.get("/api/v1/state")
+        client.post("/api/v1/state", json={"state": "chatty"})
+        client.post("/api/v1/command", json={"command": "hello"})
+
+        m2 = client.get("/api/v1/metrics").json()
+
+        assert m2["status"] >= (m1.get("status", 0) + 1)
+        assert m2["response_time_avg"] >= 0.0
+        assert m2["config_get"] >= m1.get("config_get", 0)
+        assert m2["state_get"] >= (m1.get("state_get", 0) + 1)
+        assert m2["state_post"] >= (m1.get("state_post", 0) + 1)
+        assert m2["command_post"] >= (m1.get("command_post", 0) + 1)
+
+    def test_metrics_json_endpoint(self):
+        client = self._client()
+        client.get("/api/v1/health")
+
+        response = client.get("/metrics/json")
+        assert response.status_code == 200
+        data = response.json()
+        assert "counters" in data
+        assert "gauges" in data
+        assert "histograms" in data
+        assert "http_requests_total" in data["counters"]
+        assert "http_request_duration_seconds" in data["histograms"]
+
+    def test_metrics_prom_endpoint(self):
+        client = self._client()
+        client.get("/api/v1/health")
+
+        response = client.get("/metrics/prom")
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/plain")
+        text = response.text
+        assert "http_requests_total" in text
+        assert "http_request_duration_seconds" in text

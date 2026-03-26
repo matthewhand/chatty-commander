@@ -101,9 +101,9 @@ class TestIntelligenceCore:
         core = IntelligenceCore(mock_config)
 
         assert core.config == mock_config
-        assert core.advisors_service is not None
+        assert core.advisors_service is mock_advisors.return_value
         assert core.voice_processor == mock_voice_proc
-        assert core.state_manager is not None
+        assert core.state_manager is mock_state_manager.return_value
         assert core.current_conversation_context == {}
         assert core.active_persona == "chatty"
         assert core.listening_mode == "continuous"

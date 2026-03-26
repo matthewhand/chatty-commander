@@ -20,11 +20,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Consolidated tests for core API v1 routes."""
+"""Consolidated tests for core API v1 routes and health/db checks."""
+
+from datetime import datetime
+from unittest.mock import MagicMock
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from chatty_commander.web.routes.core import include_core_routes
 from chatty_commander.web.web_mode import create_app
 
 
@@ -91,3 +96,49 @@ def test_metrics_increment_on_unknown_command(client):
 def test_state_change_invalid_value_returns_422(client):
     r = client.post("/api/v1/state", json={"state": "invalid"})
     assert r.status_code == 422
+
+
+# -- health / database (from test_core_health_db) -------------------------
+
+
+def _health_app(config_dict):
+    """Build a minimal FastAPI app with core routes for health testing."""
+    config_mock = MagicMock()
+    config_mock.config = config_dict
+
+    router = include_core_routes(
+        get_start_time=lambda: 0,
+        get_state_manager=MagicMock(),
+        get_config_manager=lambda: config_mock,
+        get_last_command=lambda: None,
+        get_last_state_change=datetime.now,
+        execute_command_fn=lambda x: True,
+    )
+    app = FastAPI()
+    app.include_router(router)
+    return TestClient(app)
+
+
+def test_health_db_not_configured():
+    c = _health_app({})
+    r = c.get("/health")
+    assert r.status_code == 200
+    assert r.json()["database"] == "not_configured"
+
+
+def test_health_db_healthy():
+    c = _health_app({"database_url": "sqlite:///:memory:"})
+    r = c.get("/health")
+    assert r.status_code == 200
+    assert r.json()["database"] == "healthy"
+
+
+def test_health_db_unreachable():
+    c = _health_app(
+        {
+            "database_url": "postgresql://invalid_user:invalid_pass@localhost:1/invalid_db"
+        }
+    )
+    r = c.get("/health")
+    assert r.status_code == 200
+    assert r.json()["database"] == "unreachable"
