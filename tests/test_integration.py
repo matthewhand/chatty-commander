@@ -21,8 +21,11 @@
 # SOFTWARE.
 
 
+import json
+import tempfile
+from pathlib import Path
+
 import pytest
-from test_utils import TestUtils
 
 from chatty_commander.app.config import Config
 from chatty_commander.app.state_manager import StateManager
@@ -72,9 +75,10 @@ class TestIntegration:
 
     def test_full_system_integration_config_persistence(self):
         """Test full system integration with configuration persistence."""
-        temp_file = TestUtils.create_test_config_file(
-            TestDataFactory.create_valid_config_data()
-        )
+        data = TestDataFactory.create_valid_config_data()
+        temp_file = Path(tempfile.mktemp(suffix=".json"))
+        with open(temp_file, "w") as f:
+            json.dump(data, f, indent=2)
         config = Config(str(temp_file))
         sm = StateManager(config)
         sm.change_state("computer")

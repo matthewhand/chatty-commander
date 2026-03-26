@@ -108,3 +108,35 @@ class TestConfigPropertiesComplete:
         gs.inference_framework = "custom"
         general = config.config_data.get("general", {})
         assert general.get("inference_framework") == "custom"
+
+    def test_inference_framework_repeated_access(self):
+        """Test that inference_framework returns consistent values."""
+        config = Config()
+        gs = config.general_settings
+
+        framework = gs.inference_framework
+        assert isinstance(framework, str) and len(framework) > 0
+        assert gs.inference_framework == framework  # consistent on re-read
+
+    def test_debug_mode_string_conversion(self):
+        """Test debug_mode setter with string values."""
+        config = Config()
+        gs = config.general_settings
+
+        gs.debug_mode = "true"
+        assert gs.debug_mode is True
+
+        gs.debug_mode = ""
+        assert gs.debug_mode is False
+
+    def test_config_general_data_defaults(self):
+        """Test accessing general config data defaults."""
+        config = Config()
+        general = config.config_data.get("general", {})
+        assert isinstance(general, dict)
+
+        framework = general.get("inference_framework", "onnx")
+        assert isinstance(framework, str)
+
+        debug = general.get("debug_mode", True)
+        assert isinstance(debug, bool)

@@ -1,5 +1,6 @@
 import json
 import os
+from itertools import product
 from unittest.mock import patch
 
 import pytest
@@ -41,7 +42,7 @@ class TestConfigStabilization:
         data = {
             "state_transitions": {
                 "idle": {"wakeword_1": "active"},
-                "active": {"wakeword_2": "idle"}
+                "active": {"wakeword_2": "idle"},
             }
         }
         with open(mock_config_file, "w") as f:
@@ -56,7 +57,7 @@ class TestConfigStabilization:
         data = {
             "state_models": "not_a_dict",  # Should warn and reset to {}
             "api_endpoints": ["not", "a", "dict"],  # Should warn and reset to {}
-            "commands": 123  # Should warn and reset to {}
+            "commands": 123,  # Should warn and reset to {}
         }
         with open(mock_config_file, "w") as f:
             json.dump(data, f)
@@ -83,11 +84,9 @@ class TestConfigStabilization:
         data = {
             "commands": {
                 "cmd1": {"action": "keypress", "keys": "ctrl+c"},
-                "cmd2": {"action": "custom_message", "message": "hi"}
+                "cmd2": {"action": "custom_message", "message": "hi"},
             },
-            "keybindings": {
-                "ctrl+c": "mapped_ctrl_c"
-            }
+            "keybindings": {"ctrl+c": "mapped_ctrl_c"},
         }
         with open(mock_config_file, "w") as f:
             json.dump(data, f)
@@ -125,3 +124,61 @@ class TestConfigStabilization:
         assert len(config.commands) > 0
         # defaults might inject general settings, so config_data is not empty
         assert isinstance(config.config_data, dict)
+
+    def test_env_endpoint_overrides(self, mock_config_file):
+        """Test environment variable overrides for API endpoints."""
+        with open(mock_config_file, "w") as f:
+            json.dump({}, f)
+
+        with patch.dict(
+            os.environ,
+            {
+                "CHATBOT_ENDPOINT": "http://override.local/",
+                "HOME_ASSISTANT_ENDPOINT": "http://ha.local/api",
+            },
+        ):
+            c = Config(config_file=mock_config_file)
+            assert c.api_endpoints["chatbot_endpoint"] == "http://override.local/"
+            assert c.api_endpoints["home_assistant"] == "http://ha.local/api"
+
+    def test_env_general_setting_overrides(self, mock_config_file):
+        """Test environment variable overrides for general settings."""
+        data = {
+            "general_settings": {
+                "debug_mode": False,
+                "default_state": "idle",
+                "inference_framework": "onnx",
+                "start_on_boot": False,
+                "check_for_updates": True,
+            }
+        }
+        with open(mock_config_file, "w") as f:
+            json.dump(data, f)
+
+        with patch.dict(
+            os.environ,
+            {
+                "CHATCOMM_DEBUG": "TrUe",
+                "CHATCOMM_DEFAULT_STATE": "computer",
+                "CHATCOMM_INFERENCE_FRAMEWORK": "pytorch",
+                "CHATCOMM_START_ON_BOOT": "YeS",
+                "CHATCOMM_CHECK_FOR_UPDATES": "0",
+            },
+        ):
+            c = Config(config_file=mock_config_file)
+
+            assert c.debug_mode is True
+            assert c.default_state == "computer"
+            assert c.inference_framework == "pytorch"
+            assert c.start_on_boot is True
+            assert c.check_for_updates is False
+
+    def test_state_model_permutations(self):
+        """Test state model permutations with various state/model combos."""
+        config = Config()
+        states = ["idle", "computer", "chatty"]
+        models = [["model1"], ["model1", "model2"], []]
+        for state, model_list in product(states, models):
+            config.state_models[state] = model_list
+            config.validate()
+            assert config.state_models[state] == model_list
