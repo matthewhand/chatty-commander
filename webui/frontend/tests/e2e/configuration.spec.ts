@@ -107,6 +107,20 @@ async function mockAllRoutes(page: Page) {
   );
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Locate the inner card-body for an audio device card by its card-title text. */
+function audioCardBody(page: Page, heading: string) {
+  return page.locator(".card-body").filter({
+    has: page.locator(".card-title", { hasText: heading }),
+  });
+}
+
+/** Locate the "Fetch list" button inside the LLM section (inside a <label>). */
+function fetchListBtn(page: Page) {
+  return page.locator("button", { hasText: "Fetch list" });
+}
+
 // ─── Theme Dropdown ──────────────────────────────────────────────────────────
 
 test.describe("Configuration Page - Theme Dropdown", () => {
@@ -206,8 +220,8 @@ test.describe("Configuration Page - Audio Devices", () => {
     const audioSection = page.locator("h3", { hasText: "Audio Devices" });
     await expect(audioSection).toBeVisible();
 
-    const inputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Input Device" }) });
-    const inputSelect = inputCard.locator("select");
+    const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
+    const inputSelect = inputCardBody.locator("select");
     await expect(inputSelect).toBeVisible();
     await expect(inputSelect).toContainText("Mock Microphone 1");
     await expect(inputSelect).toContainText("Mock Microphone 2");
@@ -217,8 +231,8 @@ test.describe("Configuration Page - Audio Devices", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const outputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Output Device" }) });
-    const outputSelect = outputCard.locator("select");
+    const outputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Output Device" }) });
+    const outputSelect = outputCardBody.locator("select");
     await expect(outputSelect).toBeVisible();
     await expect(outputSelect).toContainText("Mock Speaker 1");
     await expect(outputSelect).toContainText("Mock Speaker 2");
@@ -229,8 +243,8 @@ test.describe("Configuration Page - Audio Devices", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const inputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Input Device" }) });
-    const inputSelect = inputCard.locator("select");
+    const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
+    const inputSelect = inputCardBody.locator("select");
     await expect(inputSelect).toContainText("Mock Microphone 1");
 
     await inputSelect.selectOption("Mock Microphone 2");
@@ -241,8 +255,8 @@ test.describe("Configuration Page - Audio Devices", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const outputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Output Device" }) });
-    const outputSelect = outputCard.locator("select");
+    const outputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Output Device" }) });
+    const outputSelect = outputCardBody.locator("select");
     await expect(outputSelect).toContainText("HDMI Output");
 
     await outputSelect.selectOption("HDMI Output");
@@ -253,8 +267,8 @@ test.describe("Configuration Page - Audio Devices", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const inputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Input Device" }) });
-    const testBtn = inputCard.getByRole("button", { name: "Test" });
+    const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
+    const testBtn = inputCardBody.getByRole("button", { name: "Test" });
     await expect(testBtn).toBeVisible();
     await expect(testBtn).toBeDisabled();
   });
@@ -263,9 +277,9 @@ test.describe("Configuration Page - Audio Devices", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const inputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Input Device" }) });
-    const inputSelect = inputCard.locator("select");
-    const testBtn = inputCard.getByRole("button", { name: "Test" });
+    const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
+    const inputSelect = inputCardBody.locator("select");
+    const testBtn = inputCardBody.getByRole("button", { name: "Test" });
 
     await expect(testBtn).toBeDisabled();
     await inputSelect.selectOption("Mock Microphone 1");
@@ -276,26 +290,26 @@ test.describe("Configuration Page - Audio Devices", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const inputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Input Device" }) });
-    const inputSelect = inputCard.locator("select");
+    const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
+    const inputSelect = inputCardBody.locator("select");
     await inputSelect.selectOption("Mock Microphone 1");
 
-    const testBtn = inputCard.getByRole("button", { name: "Test" });
+    const testBtn = inputCardBody.getByRole("button", { name: "Test" });
     await testBtn.click();
 
     // Should show "Testing..." text while mic test is active
-    await expect(inputCard.getByText("Testing...")).toBeVisible();
+    await expect(inputCardBody.getByText("Testing...")).toBeVisible();
 
     // After the 3s timeout it should revert back to "Test"
-    await expect(inputCard.getByRole("button", { name: "Test" })).toBeVisible({ timeout: 5000 });
+    await expect(inputCardBody.getByRole("button", { name: "Test" })).toBeVisible({ timeout: 5000 });
   });
 
   test("Test button for output device is disabled when no device is selected", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const outputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Output Device" }) });
-    const testBtn = outputCard.getByRole("button", { name: "Test" });
+    const outputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Output Device" }) });
+    const testBtn = outputCardBody.getByRole("button", { name: "Test" });
     await expect(testBtn).toBeDisabled();
   });
 
@@ -303,17 +317,17 @@ test.describe("Configuration Page - Audio Devices", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const outputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Output Device" }) });
-    const outputSelect = outputCard.locator("select");
+    const outputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Output Device" }) });
+    const outputSelect = outputCardBody.locator("select");
     await outputSelect.selectOption("Mock Speaker 1");
 
-    const testBtn = outputCard.getByRole("button", { name: "Test" });
+    const testBtn = outputCardBody.getByRole("button", { name: "Test" });
     await testBtn.click();
 
-    await expect(outputCard.getByText("Playing...")).toBeVisible();
+    await expect(outputCardBody.getByText("Playing...")).toBeVisible();
 
     // After the 2s timeout it should revert
-    await expect(outputCard.getByRole("button", { name: "Test" })).toBeVisible({ timeout: 4000 });
+    await expect(outputCardBody.getByRole("button", { name: "Test" })).toBeVisible({ timeout: 4000 });
   });
 });
 
@@ -346,10 +360,10 @@ test.describe("Configuration Page - Voice Models (ONNX)", () => {
     await expect(table.getByText("ok_computer_v2.onnx")).toBeVisible();
     await expect(table.getByText("chatty_wake_v1.onnx")).toBeVisible();
 
-    // Check state badges
-    await expect(table.getByText("idle")).toBeVisible();
-    await expect(table.getByText("computer")).toBeVisible();
-    await expect(table.getByText("chatty")).toBeVisible();
+    // Check state badges (use .badge selector to avoid matching model file names)
+    await expect(table.locator(".badge", { hasText: "idle" })).toBeVisible();
+    await expect(table.locator(".badge", { hasText: "computer" })).toBeVisible();
+    await expect(table.locator(".badge", { hasText: "chatty" })).toBeVisible();
 
     // Check sizes
     await expect(table.getByText("1.4 MB")).toBeVisible();
@@ -502,7 +516,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const fetchBtn = page.getByRole("button", { name: "Fetch list" });
+    const fetchBtn = page.locator("button", { hasText: "Fetch list" });
     await expect(fetchBtn).toBeVisible();
 
     await fetchBtn.click();
@@ -522,7 +536,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     await page.goto("/configuration");
 
     // Fetch models first
-    await page.getByRole("button", { name: "Fetch list" }).click();
+    await page.locator("button", { hasText: "Fetch list" }).click();
 
     const modelSelect = page.locator('select[name="llmModel"]');
     await expect(modelSelect).toBeVisible({ timeout: 5000 });
@@ -541,7 +555,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     const baseUrlInput = page.locator('input[name="llmBaseUrl"]');
     await baseUrlInput.clear();
 
-    const fetchBtn = page.getByRole("button", { name: "Fetch list" });
+    const fetchBtn = page.locator("button", { hasText: "Fetch list" });
     await expect(fetchBtn).toBeDisabled();
   });
 });
@@ -625,8 +639,8 @@ test.describe("Configuration Page - Save Changes", () => {
     await page.goto("/configuration");
 
     // Select an input device
-    const inputCard = page.locator(".card", { has: page.locator("h4", { hasText: "Input Device" }) });
-    const inputSelect = inputCard.locator("select");
+    const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
+    const inputSelect = inputCardBody.locator("select");
     await expect(inputSelect).toContainText("Mock Microphone 1");
     await inputSelect.selectOption("Mock Microphone 1");
 

@@ -129,6 +129,11 @@ test.describe("Dashboard - Stats Cards", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Dashboard - Command Execution", () => {
+  // The command log's .mockup-code shares the class with agent card mockup-code
+  // sections, so we scope to the card that contains the "Real-time Command Log" heading.
+  const commandLogCard = (page: Page) =>
+    page.locator(".card", { has: page.getByText("Real-time Command Log") });
+
   test("executes a command and shows it in the log", async ({ page }) => {
     await mockDashboardAPIs(page);
 
@@ -160,7 +165,7 @@ test.describe("Dashboard - Command Execution", () => {
     await executeButton.click();
 
     // Verify the command appears in the log
-    await expect(page.locator(".mockup-code")).toContainText("> Executing: take_screenshot");
+    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: take_screenshot");
 
     // Input should be cleared after submission
     await expect(commandInput).toHaveValue("");
@@ -190,7 +195,7 @@ test.describe("Dashboard - Command Execution", () => {
     await commandInput.fill("cycle_window");
     await commandInput.press("Enter");
 
-    await expect(page.locator(".mockup-code")).toContainText("> Executing: cycle_window");
+    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: cycle_window");
   });
 
   test("does not execute with empty input", async ({ page }) => {
@@ -208,7 +213,7 @@ test.describe("Dashboard - Command Execution", () => {
     await expect(executeButton).toBeDisabled();
 
     // Log should still show the "Waiting for commands..." placeholder
-    await expect(page.locator(".mockup-code")).toContainText("Waiting for commands...");
+    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("Waiting for commands...");
   });
 
   test("shows error in log when command execution fails", async ({ page }) => {
@@ -236,10 +241,10 @@ test.describe("Dashboard - Command Execution", () => {
     await commandInput.press("Enter");
 
     // Should show the executing message first
-    await expect(page.locator(".mockup-code")).toContainText("> Executing: bad_command");
+    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: bad_command");
 
     // Should also show an error message (text-error styled)
-    await expect(page.locator(".mockup-code pre.text-error")).toBeVisible({ timeout: 5000 });
+    await expect(commandLogCard(page).locator(".mockup-code pre.text-error")).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -373,9 +378,34 @@ test.describe("Dashboard - WebSocket Status", () => {
   test("shows Offline when WebSocket cannot connect", async ({ page }) => {
     await mockDashboardAPIs(page);
 
-    // Block the WebSocket upgrade to simulate disconnection
-    await page.route("**/ws", (route) => route.abort());
-    await page.route("**/ws/**", (route) => route.abort());
+    // page.route() cannot intercept WebSocket upgrades, so we stub the
+    // WebSocket constructor in the browser context before the page loads.
+    await page.addInitScript(() => {
+      const OriginalWebSocket = window.WebSocket;
+      // @ts-ignore
+      window.WebSocket = function (url: string, protocols?: string | string[]) {
+        if (typeof url === "string" && url.includes("/ws")) {
+          // Return a WebSocket-like object that immediately errors/closes
+          const fake = new EventTarget() as any;
+          fake.readyState = 3; // CLOSED
+          fake.send = () => {};
+          fake.close = () => {};
+          fake.addEventListener = EventTarget.prototype.addEventListener;
+          fake.removeEventListener = EventTarget.prototype.removeEventListener;
+          // Fire error + close asynchronously so consumers attach handlers first
+          setTimeout(() => {
+            fake.dispatchEvent(new Event("error"));
+            fake.readyState = 3;
+            const closeEvent = new CloseEvent("close", { code: 1006, reason: "blocked" });
+            if (fake.onerror) fake.onerror(new Event("error"));
+            if (fake.onclose) fake.onclose(closeEvent);
+            fake.dispatchEvent(closeEvent);
+          }, 0);
+          return fake;
+        }
+        return new OriginalWebSocket(url, protocols);
+      } as any;
+    });
 
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
