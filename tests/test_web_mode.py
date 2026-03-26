@@ -24,9 +24,9 @@
 from unittest.mock import MagicMock
 
 import pytest
-from test_data_factories import TestDataFactory
 
 from chatty_commander.web.web_mode import WebModeServer
+from conftest import TestDataFactory
 
 
 class TestWebMode:
@@ -69,7 +69,11 @@ class TestWebMode:
             }
         )
         server = WebModeServer(
-            config, mock_state_manager, mock_model_manager, mock_command_executor, no_auth=no_auth
+            config,
+            mock_state_manager,
+            mock_model_manager,
+            mock_command_executor,
+            no_auth=no_auth,
         )
         assert server is not None
 
@@ -131,7 +135,11 @@ class TestWebMode:
 
     @pytest.mark.parametrize("uptime_seconds", [0, 60, 3600, 86400, 604800])
     def test_web_mode_server_uptime_formatting(
-        self, uptime_seconds, mock_state_manager, mock_model_manager, mock_command_executor
+        self,
+        uptime_seconds,
+        mock_state_manager,
+        mock_model_manager,
+        mock_command_executor,
     ):
         """Test WebModeServer uptime formatting."""
         config = TestDataFactory.create_mock_config()

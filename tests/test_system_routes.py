@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from chatty_commander.web.routes.system import include_system_routes
+from chatty_commander.web.web_mode import create_app
 
 # Create a minimal app to mount the router
 app = FastAPI()
@@ -12,24 +13,29 @@ router = include_system_routes(get_start_time=lambda: 1000.0)
 app.include_router(router)
 client = TestClient(app)
 
+
 class MockMemory:
     def __init__(self):
         self.total = 16 * 1024 * 1024 * 1024  # 16 GB
-        self.used = 8 * 1024 * 1024 * 1024   # 8 GB
+        self.used = 8 * 1024 * 1024 * 1024  # 8 GB
         self.percent = 50.0
+
 
 class MockDisk:
     def __init__(self):
         self.total = 500 * 1024 * 1024 * 1024  # 500 GB
-        self.used = 250 * 1024 * 1024 * 1024   # 250 GB
+        self.used = 250 * 1024 * 1024 * 1024  # 250 GB
         self.percent = 50.0
+
 
 @patch("time.time", return_value=1100.0)
 @patch("platform.platform", return_value="TestPlatform-1.0")
 @patch("psutil.cpu_percent", return_value=25.5)
 @patch("psutil.virtual_memory", return_value=MockMemory())
 @patch("psutil.disk_usage", return_value=MockDisk())
-def test_system_info_with_psutil(mock_disk, mock_mem, mock_cpu, mock_platform, mock_time):
+def test_system_info_with_psutil(
+    mock_disk, mock_mem, mock_cpu, mock_platform, mock_time
+):
     # Ensure psutil is 'available' by letting imports succeed
     response = client.get("/api/system/info")
     assert response.status_code == 200
@@ -48,13 +54,15 @@ def test_system_info_with_psutil(mock_disk, mock_mem, mock_cpu, mock_platform, m
     assert data["disk_used_gb"] == 250.0
     assert data["disk_percent"] == 50.0
 
+
 @patch("time.time", return_value=1100.0)
 @patch("platform.platform", return_value="TestPlatform-1.0")
 def test_system_info_without_psutil(mock_platform, mock_time):
     # We mock __import__ to raise ImportError when 'psutil' is imported
     original_import = __import__
+
     def mock_import(name, *args, **kwargs):
-        if name == 'psutil':
+        if name == "psutil":
             raise ImportError("No module named 'psutil'")
         return original_import(name, *args, **kwargs)
 
@@ -77,3 +85,17 @@ def test_system_info_without_psutil(mock_platform, mock_time):
     assert data["disk_total_gb"] is None
     assert data["disk_used_gb"] is None
     assert data["disk_percent"] is None
+
+
+def test_version_endpoint_ok():
+    version_app = create_app(no_auth=True)
+    version_client = TestClient(version_app)
+
+    resp = version_client.get("/api/v1/version")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, dict)
+    assert data.get("version") == "0.2.0"
+    # git_sha may be None if git is unavailable in the environment
+    assert "git_sha" in data
+    assert (data["git_sha"] is None) or isinstance(data["git_sha"], str)

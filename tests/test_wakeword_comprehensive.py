@@ -25,19 +25,11 @@ Tests for wakeword module to improve coverage.
 Focuses on MockWakeWordDetector and basic functionality.
 """
 
-import os
 import sys
-import sys as _sys
 import types
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-# Replicate the path setup
-_pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_root_src = os.path.abspath(os.path.join(_pkg_dir, "src"))
-if _root_src not in _sys.path:
-    _sys.path.insert(0, _root_src)
 
 # Patch sys.modules to mock openwakeword and related modules for test imports
 sys.modules["openwakeword"] = types.ModuleType("openwakeword")

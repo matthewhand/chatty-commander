@@ -60,10 +60,6 @@ sys.modules["openwakeword"] = types.ModuleType("openwakeword")
 mock_model_mod = types.ModuleType("openwakeword.model")
 mock_model_mod.Model = type("Model", (), {})
 sys.modules["openwakeword.model"] = mock_model_mod
-# Add project root to path (parent of tests dir)
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
 
 
 class SystemTester:
@@ -167,16 +163,28 @@ class SystemTester:
     def test_config_management(self):
         """Test configuration management"""
         if self.is_ci:
-            self.log("⏭ Skipping config management tests in CI (interactive commands timeout)", "Config Management", "PASS")
+            self.log(
+                "⏭ Skipping config management tests in CI (interactive commands timeout)",
+                "Config Management",
+                "PASS",
+            )
             return
         self.log("Testing configuration management...", "Config Management")
 
         # For now, skip config management testing via CLI since the new CLI is an interactive wizard.
-        self.log("⏭ Config CLI tests skipped as it is now an interactive wizard", "Config Management", "PASS")
+        self.log(
+            "⏭ Config CLI tests skipped as it is now an interactive wizard",
+            "Config Management",
+            "PASS",
+        )
 
     def test_system_management(self):
         """Test system management commands"""
-        self.log("⏭ Skipping system management tests (commands deprecated/removed)", "System Management", "PASS")
+        self.log(
+            "⏭ Skipping system management tests (commands deprecated/removed)",
+            "System Management",
+            "PASS",
+        )
 
     def test_state_transitions(self):
         """Test state manager and transitions"""
@@ -201,7 +209,7 @@ class SystemTester:
             state_manager.config.wakeword_state_map = {
                 "hey_chat_tee": "chatty",
                 "hey_khum_puter": "computer",
-                "okay_stop": "idle"
+                "okay_stop": "idle",
             }
             # Also add valid states so change_state works
             if not isinstance(state_manager.config.state_models, dict):
@@ -299,7 +307,9 @@ class SystemTester:
             if isinstance(config.model_actions, dict):
                 self.log("✓ model_actions is a dictionary", "Config Loading", "PASS")
             else:
-                self.log("✗ model_actions is not a dictionary", "Config Loading", "FAIL")
+                self.log(
+                    "✗ model_actions is not a dictionary", "Config Loading", "FAIL"
+                )
 
         except Exception as e:
             self.log(f"✗ Config loading failed: {str(e)}", "Config Loading", "ERROR")
@@ -325,9 +335,15 @@ class SystemTester:
                 else:
                     # Model directories are not committed to repo, expected in CI
                     if self.is_ci:
-                        self.log(f"⚠ Model path missing (expected in CI): {path}", "Model Manager", "PASS")
+                        self.log(
+                            f"⚠ Model path missing (expected in CI): {path}",
+                            "Model Manager",
+                            "PASS",
+                        )
                     else:
-                        self.log(f"✗ Model path missing: {path}", "Model Manager", "FAIL")
+                        self.log(
+                            f"✗ Model path missing: {path}", "Model Manager", "FAIL"
+                        )
 
             # Test model loading for each state
             for state in ["idle", "computer", "chatty"]:
@@ -415,7 +431,9 @@ class SystemTester:
             self.log("✓ GUI command help works", "GUI Launch", "PASS")
         else:
             # Try a quick non-blocking test
-            result = self.run_command("timeout 2 chatty-commander --gui || true", timeout=5)
+            result = self.run_command(
+                "timeout 2 chatty-commander --gui || true", timeout=5
+            )
             if result["returncode"] in [0, 124]:  # Success or timeout
                 self.log(
                     "✓ GUI command accepts launch (terminated as expected)",
@@ -440,7 +458,9 @@ class SystemTester:
                 "PASS",
             )
         else:
-            self.log("✗ 'chatty-commander' command not found in PATH", "Installation", "FAIL")
+            self.log(
+                "✗ 'chatty-commander' command not found in PATH", "Installation", "FAIL"
+            )
 
         # Test Python module imports
         modules = [
