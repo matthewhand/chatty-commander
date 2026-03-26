@@ -1,25 +1,3 @@
-# MIT License
-#
-# Copyright (c) 2024 mhand
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 """Tests for web/server.py module.
 
 Consolidated from:
@@ -182,7 +160,7 @@ class TestWebServer:
         create_app(config_manager=mock_config_manager)
         from chatty_commander.web import server
 
-        assert server.settings_router is not None
+        assert server.settings_router is mock_settings_router
 
     def test_router_import_error_handling(self):
         app = create_app()
@@ -352,7 +330,7 @@ class TestServerImportSafety:
                 server_module.create_metrics_router = None
 
             app = server_module.create_app()
-            assert app is not None
+            assert isinstance(app, FastAPI)
             route_count = len(app.routes)
             assert route_count <= 12
         finally:
@@ -521,9 +499,8 @@ class TestContractCompliance:
 
     def test_create_app_basic_contract(self):
         app = create_app()
-        assert app is not None
-        assert hasattr(app, "routes")
         assert isinstance(app, FastAPI)
+        assert hasattr(app, "routes")
         client = TestClient(app)
         response = client.get("/docs")
         assert response.status_code in [200, 307, 404]
@@ -533,8 +510,6 @@ class TestContractCompliance:
     def test_create_app_no_auth_parameter(self):
         app_with_auth = create_app(no_auth=False)
         app_without_auth = create_app(no_auth=True)
-        assert app_with_auth is not None
-        assert app_without_auth is not None
         assert isinstance(app_with_auth, FastAPI)
         assert isinstance(app_without_auth, FastAPI)
         client_with_auth = TestClient(app_with_auth)

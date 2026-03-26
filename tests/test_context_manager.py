@@ -1,25 +1,3 @@
-# MIT License
-#
-# Copyright (c) 2024 mhand
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 """
 Unit tests for tab-aware context switching system.
 """
@@ -75,7 +53,6 @@ class TestContextIdentity:
             platform=PlatformType.WEB, channel="chat", user_id="user789"
         )
 
-        assert identity.created_at is not None
         assert isinstance(identity.created_at, float)
 
 
@@ -120,7 +97,6 @@ class TestContextState:
             metadata={},
         )
 
-        assert state.last_activity is not None
         assert isinstance(state.last_activity, float)
 
 
@@ -216,7 +192,7 @@ class TestContextManager:
         )
 
         context_key = context.identity.context_key
-        assert context_manager.get_context(context_key) is not None
+        assert context_manager.get_context(context_key) is context
 
         # Clear the context
         success = context_manager.clear_context(context_key)
@@ -243,7 +219,7 @@ class TestContextManager:
 
         assert cleared_count == 1
         assert context_manager.get_context(context1.identity.context_key) is None
-        assert context_manager.get_context(context2.identity.context_key) is not None
+        assert context_manager.get_context(context2.identity.context_key) is context2
 
     def test_get_stats(self, context_manager):
         """Test getting context statistics."""
@@ -289,7 +265,6 @@ class TestContextManager:
             manager2 = ContextManager(config)
             loaded_context = manager2.get_context(context.identity.context_key)
 
-            assert loaded_context is not None
             assert loaded_context.identity.context_key == context.identity.context_key
             assert loaded_context.persona_id == context.persona_id
 

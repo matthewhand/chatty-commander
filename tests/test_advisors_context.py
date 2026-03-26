@@ -689,7 +689,7 @@ class TestWebAdvisorsAPI:
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["reply"] is not None
+        assert isinstance(data["reply"], str)
 
     def test_advisors_message_endpoint_summarize(self):
         cfg = _DummyConfigWebAPI()
@@ -707,7 +707,7 @@ class TestWebAdvisorsAPI:
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["reply"] is not None
+        assert isinstance(data["reply"], str)
 
     def test_advisors_message_authentication(self):
         cfg = _DummyConfigWebAPI()
