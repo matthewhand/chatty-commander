@@ -1,6 +1,6 @@
 ## 2024-03-02 - [React Callback In-place Array Slice Bottleneck]
-**Learning:** Frequent array creation operations (like `.slice(-MAX_MESSAGES)`) executed inline within a React state setter callback triggered by high-frequency events (like WebSockets) cause multiple rapid allocations/destructuring that can block the main thread.
-**Action:** When working with high-frequency WebSocket data streams in React, conditionally slice the array before allocating a new copy (e.g. `prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg] : [...prev, msg]`) to skip redundant operations, or use a circular buffer pattern for maximum efficiency.
+**Learning:** Frequent array creation operations executed inline within a React state setter callback triggered by high-frequency events (like WebSockets) cause rapid allocations that can block the main thread. Specifically, the spread operator used inline with array slicing `[...prev.slice(1), item]` doubles the array allocation overhead because `.slice(1)` creates a new array and `[...]` creates yet another new array over it.
+**Action:** When working with high-frequency WebSocket data streams in React, avoid the second array allocation by slicing to a new variable and mutating it with `.push()` (e.g. `const next = prev.slice(1); next.push(item); return next;`). This avoids the redundant allocation caused by the spread operator.
 
 ## 2024-03-01 - [CommandsList React Render Optimization]
 **Learning:** In a dashboard where real-time Websocket data causes frequent global re-renders, mapping objects directly inside JSX using `Object.entries()` without memoization can cause unexpected performance degradation because array reallocation forces React to fully re-reconcile that subtree despite matching keys.

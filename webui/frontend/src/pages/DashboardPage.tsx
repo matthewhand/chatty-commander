@@ -59,7 +59,12 @@ const DashboardPage = React.memo(() => {
     setCommandInput("");
 
     // Optimistically add to log
-    setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `> Executing: ${cmd}`] : [...prev, `> Executing: ${cmd}`]);
+    setMessages((prev) => {
+      if (prev.length < MAX_MESSAGES) return [...prev, `> Executing: ${cmd}`];
+      const next = prev.slice(1);
+      next.push(`> Executing: ${cmd}`);
+      return next;
+    });
 
     try {
       await apiService.executeCommand(cmd);
@@ -100,11 +105,15 @@ const DashboardPage = React.memo(() => {
       const memVal = parseFloat(memStr) || 0;
       const now = new Date().toLocaleTimeString();
 
-      // Performance optimization: prevent unnecessary intermediate array allocation
-      // by slicing `prev` conditionally before creating the new array.
+      // Performance optimization: prevent unnecessary double array allocation.
+      // `prev.slice(1)` creates a new array, so mutating it with `.push()` avoids
+      // the second array allocation that `[...prev.slice(1), item]` would cause.
       setHistory(prev => {
         const item = { time: now, cpu: cpuVal, memory: memVal };
-        return prev.length >= MAX_HISTORY_ITEMS ? [...prev.slice(1), item] : [...prev, item];
+        if (prev.length < MAX_HISTORY_ITEMS) return [...prev, item];
+        const next = prev.slice(1);
+        next.push(item);
+        return next;
       });
     }
   }, [systemStatus, isPaused]);
@@ -153,11 +162,21 @@ const DashboardPage = React.memo(() => {
       }
       // Fallback for non-JSON or other messages
       if (msg.data && typeof msg.data === "string") {
-        setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg.data as string] : [...prev, msg.data as string]);
+        setMessages((prev) => {
+          if (prev.length < MAX_MESSAGES) return [...prev, msg.data as string];
+          const next = prev.slice(1);
+          next.push(msg.data as string);
+          return next;
+        });
       }
     } catch {
       // Plain text message
-      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), event.data as string] : [...prev, event.data as string]);
+      setMessages((prev) => {
+        if (prev.length < MAX_MESSAGES) return [...prev, event.data as string];
+        const next = prev.slice(1);
+        next.push(event.data as string);
+        return next;
+      });
     }
   }, []); // setRealtimeStatus and setMessages are stable; no external deps
 
@@ -353,8 +372,8 @@ const DashboardPage = React.memo(() => {
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
           <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
-            {messages.length > 0 ? (
-              messages.slice(-15).map((msg, index) => (
+            {recentMessages.length > 0 ? (
+              recentMessages.map((msg, index) => (
                 <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
                   <code>{msg}</code>
                 </pre>
