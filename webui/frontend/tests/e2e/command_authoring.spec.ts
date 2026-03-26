@@ -129,8 +129,8 @@ test.describe("Command Authoring - AI Mode Flow", () => {
     // Verify generated command preview shows all fields
     await expect(page.getByText("Generated Command").first()).toBeVisible();
     await expect(page.getByText("start_my_day")).toBeVisible();
-    await expect(page.getByText("Start My Day")).toBeVisible();
-    await expect(page.getByText("start my day")).toBeVisible();
+    await expect(page.getByText("Start My Day", { exact: true })).toBeVisible();
+    await expect(page.getByText("start my day", { exact: true })).toBeVisible();
 
     // Verify actions are shown
     await expect(page.getByText("code ~/projects")).toBeVisible();
