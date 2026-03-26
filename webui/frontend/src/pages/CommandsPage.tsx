@@ -243,13 +243,35 @@ export default function CommandsPage() {
           ))}
         </AnimatePresence>
         {isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands configured.
+          <div className="col-span-full flex flex-col items-center justify-center p-16 text-center">
+            <div className="bg-base-200 p-6 rounded-full mb-4">
+              <TerminalSquare size={48} className="text-base-content/30" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-base-content/80">No commands configured</h3>
+            <p className="text-base-content/60 max-w-md mb-6">
+              You haven't added any custom voice commands or triggers yet. Create your first command to start automating tasks.
+            </p>
+            <Link to="/commands/authoring" className="btn btn-primary">
+              <Plus size={18} />
+              Create Your First Command
+            </Link>
           </div>
         )}
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands match your search.
+          <div className="col-span-full flex flex-col items-center justify-center p-16 text-center">
+            <div className="bg-base-200 p-6 rounded-full mb-4">
+              <Search size={48} className="text-base-content/30" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-base-content/80">No results found</h3>
+            <p className="text-base-content/60 max-w-md mb-6">
+              We couldn't find any commands matching "{searchQuery}". Try adjusting your search or create a new command.
+            </p>
+            <button
+              className="btn btn-outline"
+              onClick={() => setSearchParams({})}
+            >
+              Clear Search
+            </button>
           </div>
         )}
       </div>
