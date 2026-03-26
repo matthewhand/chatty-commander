@@ -205,6 +205,7 @@ export default function CommandsPage() {
                         </svg>
                       }
                       menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
+                      ariaLabel={`Command Options for ${name}`}
                     >
                       <li>
                         <button aria-label={`Edit ${name}`}>
