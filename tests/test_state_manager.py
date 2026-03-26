@@ -1,3 +1,4 @@
+import logging
 import subprocess
 import sys
 from unittest.mock import Mock
@@ -110,6 +111,123 @@ class TestStateManager:
         assert sm.get_active_models() == ["model1"]
         sm.change_state("computer")
         assert sm.get_active_models() == ["model2"]
+
+
+class TestStateTransitions:
+    """Tests for state transitions, toggle cycling, repr, and hooks.
+
+    Migrated from test_states.py (unique tests only, converted to pytest style).
+    """
+
+    @pytest.fixture
+    def sm(self) -> StateManager:
+        """Provide a StateManager with the default mock config."""
+        return StateManager(TestDataFactory.create_mock_config())
+
+    @pytest.fixture
+    def config(self) -> Mock:
+        return TestDataFactory.create_mock_config()
+
+    def test_update_state_no_change_unknown_command(self, sm):
+        """Unknown command returns None and keeps current state."""
+        assert sm.update_state("unknown_command") is None
+        assert sm.current_state == "idle"
+
+    def test_update_state_self_loop(self, sm, config):
+        """Command mapping to the same state returns that state."""
+        # Set up a transition that maps back to the same state
+        config_with_loop = TestDataFactory.create_mock_config(
+            {"state_transitions": {"idle": {"stay": "idle"}}}
+        )
+        sm_loop = StateManager(config_with_loop)
+        assert sm_loop.update_state("stay") == "idle"
+        assert sm_loop.current_state == "idle"
+
+    def test_toggle_mode_cycles_states(self, sm):
+        """toggle_mode cycles through states in order."""
+        sm.update_state("toggle_mode")
+        assert sm.current_state == "computer"
+        sm.update_state("toggle_mode")
+        assert sm.current_state == "chatty"
+        sm.update_state("toggle_mode")
+        assert sm.current_state == "idle"
+
+    def test_multiple_toggle_cycles(self, sm, config):
+        """Two full toggle cycles return to the starting state."""
+        states = list(config.state_models.keys())
+        for _ in range(2 * len(states)):
+            current = sm.current_state
+            sm.update_state("toggle_mode")
+            idx = states.index(current)
+            assert sm.current_state == states[(idx + 1) % len(states)]
+        assert sm.current_state == "idle"
+
+    def test_all_state_transitions(self, config):
+        """Every transition defined in config produces the expected state."""
+        for start_state, cmds in config.state_transitions.items():
+            for cmd, end_state in cmds.items():
+                sm = StateManager(config)
+                sm.change_state(start_state)
+                new_state = sm.update_state(cmd)
+                assert new_state == end_state
+                assert sm.current_state == end_state
+
+    def test_invalid_commands_in_all_states(self, config):
+        """Invalid commands do not change state in any state."""
+        for state in config.state_transitions:
+            sm = StateManager(config)
+            sm.change_state(state)
+            assert sm.update_state("invalid_command") is None
+            assert sm.current_state == state
+
+    def test_state_preserved_after_error(self, sm):
+        """State remains unchanged after a failed change_state call."""
+        sm.change_state("computer")
+        with pytest.raises(ValueError):
+            sm.change_state("nonexistent")
+        assert sm.current_state == "computer"
+
+    def test_post_state_change_hook_logged(self, sm):
+        """post_state_change_hook emits the expected log message."""
+        with _capture_logs() as logs:
+            sm.change_state("chatty")
+        assert any("Post state change actions for chatty" in r.message for r in logs)
+
+    def test_change_state_with_direct_callback(self, sm):
+        """change_state invokes the optional callback argument."""
+        callback = Mock()
+        sm.change_state("computer", callback)
+        callback.assert_called_once_with("computer")
+        assert sm.current_state == "computer"
+
+    def test_repr_output(self, sm):
+        """__repr__ shows state and model count."""
+        sm.active_models = ["m1", "m2"]
+        assert repr(sm) == "<StateManager(current_state=idle, active_models=2)>"
+
+    def test_repr_with_varying_models(self, sm):
+        """__repr__ reflects different active model counts."""
+        sm.active_models = []
+        assert repr(sm) == "<StateManager(current_state=idle, active_models=0)>"
+        sm.active_models = ["one"]
+        assert repr(sm) == "<StateManager(current_state=idle, active_models=1)>"
+
+
+class _capture_logs:
+    """Minimal context manager to capture log records from state_manager."""
+
+    def __enter__(self):
+        self.handler = logging.Handler()
+        self.records: list[logging.LogRecord] = []
+        self.handler.emit = self.records.append  # type: ignore[assignment]
+        logger = logging.getLogger("chatty_commander.app.state_manager")
+        logger.addHandler(self.handler)
+        self._logger = logger
+        return self.records
+
+    def __exit__(self, *exc):
+        self._logger.removeHandler(self.handler)
+        return False
 
 
 class TestStateManagerMain:
