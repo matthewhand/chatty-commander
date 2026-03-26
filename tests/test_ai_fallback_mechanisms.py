@@ -26,7 +26,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.chatty_commander.advisors.service import (
+from chatty_commander.advisors.service import (
     AdvisorMessage,
     AdvisorReply,
     AdvisorsService,
@@ -36,11 +36,15 @@ from src.chatty_commander.advisors.service import (
 @pytest.fixture(autouse=True)
 def disable_llm_manager():
     """Disable the new LLMManager for these legacy fallback tests."""
-    with patch("src.chatty_commander.llm.manager.get_global_llm_manager", return_value=None):
+    with patch(
+        "chatty_commander.llm.manager.get_global_llm_manager", return_value=None
+    ):
         yield
 
 
-def _create_mock_provider(side_effect=None, return_value=None, model="gpt-4", api_mode="completion"):
+def _create_mock_provider(
+    side_effect=None, return_value=None, model="gpt-4", api_mode="completion"
+):
     """Helper to create a mock provider that generates responses."""
     provider = Mock()
     provider.model = model
@@ -58,7 +62,7 @@ class TestLLMFallbackMechanisms:
     def test_llm_provider_failure_fallback(self):
         """Test fallback when LLM provider fails completely."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 side_effect=Exception("LLM service unavailable")
@@ -97,11 +101,11 @@ class TestLLMFallbackMechanisms:
     def test_llm_timeout_fallback(self):
         """Test fallback when LLM times out."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 side_effect=TimeoutError("Request timed out after 30 seconds"),
-                model="gpt-3.5-turbo"
+                model="gpt-3.5-turbo",
             )
 
             config = {
@@ -136,11 +140,11 @@ class TestLLMFallbackMechanisms:
     def test_llm_rate_limit_fallback(self):
         """Test fallback when LLM hits rate limits."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 side_effect=Exception("Rate limit exceeded. Please try again later."),
-                model="claude-3"
+                model="claude-3",
             )
 
             config = {
@@ -175,11 +179,10 @@ class TestLLMFallbackMechanisms:
     def test_llm_network_error_fallback(self):
         """Test fallback when network connectivity fails."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
-                side_effect=ConnectionError("Network unreachable"),
-                model="llama2"
+                side_effect=ConnectionError("Network unreachable"), model="llama2"
             )
 
             config = {
@@ -216,7 +219,7 @@ class TestLLMFallbackMechanisms:
     def test_llm_invalid_response_fallback(self):
         """Test fallback when LLM returns invalid response format."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             # Create a provider that returns an empty string (invalid but not None)
             mock_build.return_value = _create_mock_provider(return_value="")
@@ -254,7 +257,7 @@ class TestLLMFallbackMechanisms:
     def test_llm_with_memory_fallback(self):
         """Test fallback with memory context when LLM fails."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 side_effect=Exception("LLM error with memory context")
@@ -303,7 +306,7 @@ class TestLLMFallbackMechanisms:
     def test_llm_mode_switch_fallback_failure(self):
         """Test mode switch directive handling when it fails."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             # Return a response with SWITCH_MODE directive
             mock_build.return_value = _create_mock_provider(
@@ -342,7 +345,7 @@ class TestLLMFallbackMechanisms:
     def test_llm_conversation_engine_fallback(self):
         """Test conversation engine error handling."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 side_effect=Exception("Conversation engine error")
@@ -380,18 +383,16 @@ class TestLLMFallbackMechanisms:
         """Test fallback works with different API modes."""
         for api_mode in ["completion", "chat"]:
             with patch(
-                "src.chatty_commander.advisors.service.build_provider_safe"
+                "chatty_commander.advisors.service.build_provider_safe"
             ) as mock_build:
                 mock_build.return_value = _create_mock_provider(
                     side_effect=Exception(f"API mode {api_mode} failed"),
-                    api_mode=api_mode
+                    api_mode=api_mode,
                 )
 
                 config = {
                     "enabled": True,
-                    "providers": {
-                        "openai": {"api_key": "test", "api_mode": api_mode}
-                    },
+                    "providers": {"openai": {"api_key": "test", "api_mode": api_mode}},
                     "context": {
                         "personas": {
                             "analyst": {
@@ -424,7 +425,7 @@ class TestSmartFallbackResponses:
     def test_cached_response_fallback(self):
         """Test using cached response when LLM fails."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 side_effect=Exception("LLM error for cache test")
@@ -461,7 +462,7 @@ class TestSmartFallbackResponses:
     def test_pattern_based_fallback_responses(self):
         """Test pattern-based fallback response generation."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 side_effect=Exception("LLM error for pattern test")
@@ -498,7 +499,7 @@ class TestSmartFallbackResponses:
     def test_fallback_response_formatting(self):
         """Test that fallback responses are properly formatted."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 side_effect=Exception("LLM error for formatting test")
@@ -532,7 +533,11 @@ class TestSmartFallbackResponses:
             assert isinstance(response, AdvisorReply)
             assert "LLM Error" in response.reply
             assert response.context_key == "discord:test:user123"
-            assert response.persona_id == "analyst" or response.persona_id == "discord" or response.persona_id == "general" # In fallback error case, depending on logic, persona might evaluate back to general
+            assert (
+                response.persona_id == "analyst"
+                or response.persona_id == "discord"
+                or response.persona_id == "general"
+            )  # In fallback error case, depending on logic, persona might evaluate back to general
 
 
 class TestGracefulDegradation:
@@ -541,7 +546,7 @@ class TestGracefulDegradation:
     def test_memory_failure_graceful_degradation(self):
         """Test graceful degradation when memory fails."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 return_value="This is a test response"
@@ -578,7 +583,7 @@ class TestGracefulDegradation:
     def test_context_switching_during_degradation(self):
         """Test context switching works during degraded mode."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             mock_build.return_value = _create_mock_provider(
                 return_value="Response with default persona"
@@ -616,7 +621,7 @@ class TestGracefulDegradation:
     def test_multiple_provider_fallback_chain(self):
         """Test fallback chain through multiple providers."""
         with patch(
-            "src.chatty_commander.advisors.service.build_provider_safe"
+            "chatty_commander.advisors.service.build_provider_safe"
         ) as mock_build:
             # Simulate fallback chain
             call_count = [0]
@@ -627,9 +632,7 @@ class TestGracefulDegradation:
                     raise Exception("Provider 1 failed")
                 return "Fallback response"
 
-            mock_build.return_value = _create_mock_provider(
-                side_effect=fallback_chain
-            )
+            mock_build.return_value = _create_mock_provider(side_effect=fallback_chain)
 
             config = {
                 "enabled": True,
@@ -661,4 +664,6 @@ class TestGracefulDegradation:
 
             assert isinstance(response, AdvisorReply)
             # First call fails, error response returned
-            assert "LLM Error" in response.reply or "Fallback response" in response.reply
+            assert (
+                "LLM Error" in response.reply or "Fallback response" in response.reply
+            )

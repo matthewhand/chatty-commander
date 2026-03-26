@@ -22,7 +22,7 @@
 
 import asyncio
 
-from src.chatty_commander.web.routes.avatar_ws import AvatarAudioQueue
+from chatty_commander.web.routes.avatar_ws import AvatarAudioQueue
 
 
 class StubManager:

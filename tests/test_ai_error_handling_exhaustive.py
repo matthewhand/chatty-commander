@@ -37,9 +37,9 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from src.chatty_commander.advisors.conversation_engine import ConversationEngine
-from src.chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
-from src.chatty_commander.voice.enhanced_processor import (
+from chatty_commander.advisors.conversation_engine import ConversationEngine
+from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
+from chatty_commander.voice.enhanced_processor import (
     EnhancedVoiceProcessor,
     VoiceProcessingConfig,
 )
@@ -51,7 +51,7 @@ class TestDependencyFailures:
     def test_llm_client_network_failure(self):
         """Test LLM client network failure handling."""
         with patch(
-            "src.chatty_commander.advisors.providers.build_provider_safe"
+            "chatty_commander.advisors.providers.build_provider_safe"
         ) as mock_build:
             mock_provider = Mock()
             mock_provider.generate.side_effect = ConnectionError("Network unreachable")
@@ -135,7 +135,7 @@ class TestDependencyFailures:
 
     def test_memory_service_failure(self):
         """Test memory service failure handling."""
-        with patch("src.chatty_commander.advisors.service.MemoryStore") as mock_memory:
+        with patch("chatty_commander.advisors.service.MemoryStore") as mock_memory:
             mock_memory.side_effect = RuntimeError("Memory service unavailable")
 
             # Create advisors service with failing memory - should not crash
@@ -224,7 +224,7 @@ class TestNetworkConnectivity:
     def test_llm_timeout_handling(self):
         """Test LLM timeout handling."""
         with patch(
-            "src.chatty_commander.advisors.providers.build_provider_safe"
+            "chatty_commander.advisors.providers.build_provider_safe"
         ) as mock_build:
             mock_provider = Mock()
             mock_provider.generate.side_effect = TimeoutError("Request timed out")
@@ -292,16 +292,14 @@ class TestFallbackMechanisms:
     def test_llm_fallback_to_cached_responses(self):
         """Test fallback to cached responses when LLM is unavailable."""
         with patch(
-            "src.chatty_commander.advisors.providers.build_provider_safe"
+            "chatty_commander.advisors.providers.build_provider_safe"
         ) as mock_build:
             mock_provider = Mock()
             mock_provider.generate.side_effect = Exception("LLM service down")
             mock_build.return_value = mock_provider
 
             # Mock memory to return cached responses
-            with patch(
-                "src.chatty_commander.advisors.service.MemoryStore"
-            ) as mock_memory:
+            with patch("chatty_commander.advisors.service.MemoryStore") as mock_memory:
                 mock_memory_instance = Mock()
                 mock_memory_instance.get.return_value = [
                     Mock(role="user", content="Hello", timestamp=time.time()),
@@ -332,7 +330,7 @@ class TestFallbackMechanisms:
     def test_voice_processing_fallback_basic_vad(self):
         """Test fallback to basic VAD when enhanced features fail."""
         with patch(
-            "src.chatty_commander.voice.enhanced_processor.EnhancedVoiceProcessor._initialize_noise_reduction"
+            "chatty_commander.voice.enhanced_processor.EnhancedVoiceProcessor._initialize_noise_reduction"
         ) as mock_noise:
             mock_noise.side_effect = Exception("Noise reduction failed")
 
@@ -355,7 +353,7 @@ class TestFallbackMechanisms:
     def test_llm_api_key_invalid_error_handling(self):
         """Test handling of invalid API key errors."""
         with patch(
-            "src.chatty_commander.advisors.providers.build_provider_safe"
+            "chatty_commander.advisors.providers.build_provider_safe"
         ) as mock_build:
             mock_provider = Mock()
             mock_provider.generate.side_effect = Exception("Invalid API key")

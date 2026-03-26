@@ -71,7 +71,12 @@ def test_state_manager_focus_mode():
     # Test toggle_mode
     new_state = sm.update_state("toggle_mode")
     # Just verify it returns something valid
-    assert new_state is not None or sm.current_state in ("idle", "focus", "computer", "chatty")
+    assert new_state is not None or sm.current_state in (
+        "idle",
+        "focus",
+        "computer",
+        "chatty",
+    )
 
 
 def test_modes_chatty_no_wakewords_in_default_config():
@@ -94,7 +99,7 @@ def test_advisors_switch_mode_directive(monkeypatch):
             return "SWITCH_MODE:idle"
 
     # Patch AdvisorsService provider builder to return DummyProvider
-    import src.chatty_commander.advisors.service as svc_mod
+    import chatty_commander.advisors.service as svc_mod
 
     monkeypatch.setattr(
         svc_mod, "build_provider_safe", lambda cfg: DummyProvider(), raising=False
@@ -112,7 +117,7 @@ def test_advisors_switch_mode_directive(monkeypatch):
             calls.last = new_state
 
     # Patch the class inside the state_manager module so runtime import picks it up
-    import src.chatty_commander.app.state_manager as sm_mod2
+    import chatty_commander.app.state_manager as sm_mod2
 
     monkeypatch.setattr(sm_mod2, "StateManager", FakeSM, raising=True)
 
@@ -123,10 +128,10 @@ def test_advisors_switch_mode_directive(monkeypatch):
     mock_manager.active_backend.model = "test-model"
     mock_manager.get_active_backend_name.return_value = "test-model"
 
-    with patch("src.chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
+    with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
         mock_get_llm.return_value = mock_manager
 
-        from src.chatty_commander.advisors.service import (
+        from chatty_commander.advisors.service import (
             AdvisorMessage,
             AdvisorsService,
         )
