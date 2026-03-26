@@ -56,6 +56,13 @@ def test_cli_help_lists_key_flags():
         assert token in text, f"missing {token} in --help output"
 
 
+def test_cli_help_includes_examples_section():
+    rc, out, err = run_cmd([PYTHON, "-m", "chatty_commander.main", "--help"])
+    assert rc == 0
+    text = (out or "") + (err or "")
+    assert "Examples:" in text
+
+
 def test_no_args_prints_intro_and_does_not_crash():
     rc, out, err = run_cmd([PYTHON, "-m", "chatty_commander.main"], input_data="exit\n")
     assert rc == 0

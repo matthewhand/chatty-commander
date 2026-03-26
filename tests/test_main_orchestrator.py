@@ -20,9 +20,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+"""Orchestrator tests: CLI flag parsing and run_orchestrator_mode behaviour."""
+
 from types import SimpleNamespace
 
-from chatty_commander.main import run_orchestrator_mode
+from chatty_commander.main import create_parser, run_orchestrator_mode
+
+# --- CLI flag parsing ---
+
+
+def test_orchestrator_flags_in_parser():
+    parser = create_parser()
+    args = parser.parse_args(
+        [
+            "--orchestrate",
+            "--enable-text",
+            "--enable-openwakeword",
+            "--enable-computer-vision",
+            "--enable-discord-bridge",
+        ]
+    )
+    assert args.orchestrate is True
+    assert args.enable_text is True
+    assert args.enable_openwakeword is True
+    assert args.enable_computer_vision is True
+    assert args.enable_discord_bridge is True
+
+
+# --- run_orchestrator_mode ---
 
 
 class DummyExecutor:

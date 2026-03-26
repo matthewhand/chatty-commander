@@ -20,9 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Comprehensive tests for obs/metrics.py to increase coverage."""
+"""Tests for obs/metrics: unit coverage and wired-into-app integration."""
+
+from __future__ import annotations
 
 import time
+from unittest.mock import MagicMock
 
 from chatty_commander.obs.metrics import (
     Counter,
@@ -31,6 +34,8 @@ from chatty_commander.obs.metrics import (
     MetricsRegistry,
     Timer,
 )
+
+# ─── Counter ────────────────────────────────────────────────────────────────
 
 
 class TestCounter:
@@ -58,7 +63,6 @@ class TestCounter:
 
         samples = counter.samples()
         assert len(samples) == 2
-        # Check that samples contain the expected data
         sample_dict = {
             tuple(sorted(labels.items())): value for labels, value in samples
         }
@@ -66,15 +70,16 @@ class TestCounter:
         assert sample_dict[(("method", "POST"),)] == 2
 
 
+# ─── Gauge ──────────────────────────────────────────────────────────────────
+
+
 class TestGauge:
     def test_gauge_set_and_get(self):
-        """Test gauge set and get operations"""
         gauge = Gauge("test_gauge", "Test gauge")
         gauge.set(42.5)
         assert gauge.get() == 42.5
 
     def test_gauge_with_labels(self):
-        """Test gauge with labels"""
         gauge = Gauge("test_gauge", "Test gauge")
         gauge.set(10.0, {"region": "us-east-1"})
         gauge.set(20.0, {"region": "us-west-2"})
@@ -84,14 +89,12 @@ class TestGauge:
         assert gauge.get({"region": "eu-west-1"}) == 0.0
 
     def test_gauge_samples(self):
-        """Test gauge samples method"""
         gauge = Gauge("test_gauge", "Test gauge")
         gauge.set(10.0, {"region": "us-east-1"})
         gauge.set(20.0, {"region": "us-west-2"})
 
         samples = gauge.samples()
         assert len(samples) == 2
-        # Check that samples contain the expected data
         sample_dict = {
             tuple(sorted(labels.items())): value for labels, value in samples
         }
@@ -99,36 +102,29 @@ class TestGauge:
         assert sample_dict[(("region", "us-west-2"),)] == 20.0
 
 
+# ─── MetricsRegistry ───────────────────────────────────────────────────────
+
+
 class TestMetricsRegistry:
     def test_registry_counter(self):
-        """Test registry counter creation and retrieval"""
         registry = MetricsRegistry()
         counter = registry.counter("test_counter", "Test counter")
-
-        # Should return the same instance on subsequent calls
         counter2 = registry.counter("test_counter", "Test counter")
         assert counter is counter2
 
     def test_registry_gauge(self):
-        """Test registry gauge creation and retrieval"""
         registry = MetricsRegistry()
         gauge = registry.gauge("test_gauge", "Test gauge")
-
-        # Should return the same instance on subsequent calls
         gauge2 = registry.gauge("test_gauge", "Test gauge")
         assert gauge is gauge2
 
     def test_registry_histogram(self):
-        """Test registry histogram creation and retrieval"""
         registry = MetricsRegistry()
         histogram = registry.histogram("test_histogram", "Test histogram")
-
-        # Should return the same instance on subsequent calls
         histogram2 = registry.histogram("test_histogram", "Test histogram")
         assert histogram is histogram2
 
     def test_registry_to_json(self):
-        """Test registry JSON export"""
         registry = MetricsRegistry()
         counter = registry.counter("test_counter", "Test counter")
         gauge = registry.gauge("test_gauge", "Test gauge")
@@ -148,9 +144,11 @@ class TestMetricsRegistry:
         assert "test_histogram" in json_data["histograms"]
 
 
+# ─── Key generation ─────────────────────────────────────────────────────────
+
+
 class TestMetricKeyGeneration:
     def test_key_generation_empty_labels(self):
-        """Test key generation with empty labels"""
         counter = Counter("test", "test")
         key1 = counter._key(None)
         key2 = counter._key({})
@@ -158,7 +156,6 @@ class TestMetricKeyGeneration:
         assert key2 == ()
 
     def test_key_generation_sorted_labels(self):
-        """Test that keys are generated in sorted order"""
         counter = Counter("test", "test")
         key1 = counter._key({"b": "2", "a": "1"})
         key2 = counter._key({"a": "1", "b": "2"})
@@ -166,15 +163,16 @@ class TestMetricKeyGeneration:
         assert key1 == (("a", "1"), ("b", "2"))
 
     def test_key_generation_string_conversion(self):
-        """Test that label values are converted to strings"""
         counter = Counter("test", "test")
         key = counter._key({"num": 123, "bool": True})
         assert key == (("bool", "True"), ("num", "123"))
 
 
+# ─── Histogram & Timer ──────────────────────────────────────────────────────
+
+
 class TestHistogramBuckets:
     def test_bucket_clamp_and_snapshot(self):
-        """Test histogram buckets clamp values and snapshot structure."""
         buckets = HistogramBuckets([0.1, 0.5, 1.0])
         assert buckets.clamp(-1.0) == 0.0
         assert buckets.clamp(0.3) == 0.3
@@ -191,14 +189,11 @@ class TestHistogramBuckets:
 
 class TestHistogramAndTimer:
     def test_histogram_and_timer_records_observations(self):
-        """Test that histogram observe() and Timer context manager both record data."""
         reg = MetricsRegistry()
         h = reg.histogram("work_seconds")
 
-        # Observe manually
         h.observe(0.01, labels={"op": "manual"})
 
-        # Observe via timer context
         with Timer(h, labels={"op": "ctx"}):
             time.sleep(0.001)
 
@@ -208,3 +203,95 @@ class TestHistogramAndTimer:
             s["count"] for s in [{"count": s.get("count", 0)} for s in snap["series"]]
         )
         assert total >= 2
+
+
+# ─── Wired-into-app integration ─────────────────────────────────────────────
+
+
+def _make_app():
+    """Create a minimal WebModeServer app for testing."""
+    from chatty_commander.web.web_mode import WebModeServer
+
+    config = MagicMock()
+    config.web_server = {}
+    config.advisors = {}
+    config.default_state = "idle"
+    config.state_models = {}
+    config.api_endpoints = {}
+    config.commands = {}
+    config.llm_manager = None
+    config.voice_pipeline = None
+
+    state_manager = MagicMock()
+    state_manager.current_state = "idle"
+    state_manager.add_state_change_callback = MagicMock()
+
+    model_manager = MagicMock()
+    command_executor = MagicMock()
+
+    server = WebModeServer(
+        config_manager=config,
+        state_manager=state_manager,
+        model_manager=model_manager,
+        command_executor=command_executor,
+        no_auth=True,
+    )
+    return server.app
+
+
+def test_metrics_json_endpoint_registered():
+    """GET /metrics/json should be registered and return a dict."""
+    from fastapi.testclient import TestClient
+
+    app = _make_app()
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get("/metrics/json")
+    assert response.status_code == 200
+    data = response.json()
+    assert "counters" in data
+    assert "gauges" in data
+    assert "histograms" in data
+
+
+def test_metrics_prom_endpoint_registered():
+    """GET /metrics/prom should be registered and return Prometheus text format."""
+    from fastapi.testclient import TestClient
+
+    app = _make_app()
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get("/metrics/prom")
+    assert response.status_code == 200
+    assert "text/plain" in response.headers.get("content-type", "")
+
+
+def test_request_metrics_middleware_tracks_requests():
+    """After making a request, http_requests_total counter should be non-zero."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from chatty_commander.obs.metrics import (
+        RequestMetricsMiddleware,
+        create_metrics_router,
+    )
+
+    registry = MetricsRegistry()
+
+    app = FastAPI()
+    app.add_middleware(RequestMetricsMiddleware, registry=registry)
+    app.include_router(create_metrics_router(registry=registry))
+
+    @app.get("/ping")
+    async def ping():
+        return {"ok": True}
+
+    client = TestClient(app, raise_server_exceptions=False)
+    client.get("/ping")
+
+    response = client.get("/metrics/json")
+    assert response.status_code == 200
+    data = response.json()
+    counters = data.get("counters", {})
+    assert "http_requests_total" in counters
+    samples = counters["http_requests_total"]
+    total = sum(s.get("value", 0) for s in samples)
+    assert total > 0, "Expected at least one request to be counted"

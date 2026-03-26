@@ -20,14 +20,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Consolidated agents API tests: CRUD, errors, team/handoff, 404s."""
+"""Consolidated agents API tests: CRUD, errors, team/handoff, persistence, create-from-description."""
+
+import importlib
+import json
+import os
+import tempfile
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
+from chatty_commander.app.model_manager import ModelManager
+from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.routes import agents as _agents_mod
-from chatty_commander.web.routes.agents import AgentBlueprintModel
+from chatty_commander.web.routes.agents import AgentBlueprint, AgentBlueprintModel
 from chatty_commander.web.server import create_app
+from chatty_commander.web.web_mode import WebModeServer
 
 
 @pytest.fixture(autouse=True)
@@ -160,3 +171,145 @@ def test_team_info_and_handoff(client):
         json={"from_agent_id": aid, "to_agent_id": bid, "reason": "needs_coding"},
     )
     assert r.status_code == 200
+
+
+# ── Persistence ──────────────────────────────────────────────────────────
+
+
+def test_agent_persistence():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        store_path = Path(tmpdir) / "agents.json"
+
+        with patch.dict(os.environ, {"CHATTY_AGENTS_STORE": str(store_path)}):
+            importlib.reload(_agents_mod)
+
+            _agents_mod._STORE.clear()
+            _agents_mod._TEAM.clear()
+
+            assert not store_path.exists()
+
+            bp = AgentBlueprintModel(
+                name="TestAgent",
+                description="Test description",
+                persona_prompt="You are a test agent.",
+                capabilities=["test"],
+                team_role="tester",
+            )
+
+            uid = str(uuid4())
+            ent = AgentBlueprint(id=uid, **bp.model_dump())
+            _agents_mod._STORE[uid] = ent
+            if ent.team_role:
+                _agents_mod._TEAM.setdefault(ent.team_role, []).append(uid)
+            _agents_mod._save_store()
+
+            assert store_path.exists()
+            with store_path.open("r", encoding="utf-8") as f:
+                saved_data = json.load(f)
+                assert "agents" in saved_data
+                assert len(saved_data["agents"]) == 1
+                assert saved_data["agents"][0]["name"] == "TestAgent"
+
+            _agents_mod._STORE.clear()
+            _agents_mod._TEAM.clear()
+            assert len(_agents_mod._STORE) == 0
+
+            importlib.reload(_agents_mod)
+
+            assert len(_agents_mod._STORE) == 1
+            assert uid in _agents_mod._STORE
+            loaded_ent = _agents_mod._STORE[uid]
+            assert loaded_ent.name == "TestAgent"
+            assert loaded_ent.team_role == "tester"
+            assert "tester" in _agents_mod._TEAM
+            assert uid in _agents_mod._TEAM["tester"]
+
+
+# ── Create from description ──────────────────────────────────────────────
+
+
+class _DummyConfig:
+    def __init__(self) -> None:
+        self.general_models_path = "models-idle"
+        self.system_models_path = "models-computer"
+        self.chat_models_path = "models-chatty"
+        self.config = {"model_actions": {}}
+        self.advisors = {"enabled": True}
+
+
+def _description_client():
+    """Build a TestClient with full WebModeServer for description tests."""
+    from chatty_commander.app import CommandExecutor
+
+    cfg = _DummyConfig()
+    sm = StateManager()
+    mm = ModelManager(cfg)
+    ce = CommandExecutor(cfg, mm, sm)
+    server = WebModeServer(cfg, sm, mm, ce, no_auth=True)
+    return TestClient(server.app)
+
+
+@patch("chatty_commander.web.routes.agents._llm_manager", None)
+@patch("chatty_commander.web.routes.agents._LLMManager")
+def test_create_agent_blueprint_from_description(mock_llm_manager_class):
+    mock_llm = MagicMock()
+    mock_llm.is_available.return_value = False
+    mock_llm_manager_class.return_value = mock_llm
+
+    client = _description_client()
+    payload = {"description": "My helpful agent who summarizes docs"}
+    r = client.post("/api/v1/agents/blueprints", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert "id" in data
+    assert data["name"] == "My helpful agent who summarizes docs"
+    assert data["persona_prompt"] == "My helpful agent who summarizes docs"
+
+
+@patch("chatty_commander.web.routes.agents._llm_manager", None)
+@patch("chatty_commander.web.routes.agents._LLMManager")
+def test_create_agent_blueprint_from_description_llm_success(mock_llm_manager_class):
+    mock_llm = MagicMock()
+    mock_llm.is_available.return_value = True
+
+    mock_json_response = """```json
+    {
+        "name": "Doc Summarizer",
+        "description": "An expert at summarizing technical documentation.",
+        "persona_prompt": "You are Doc Summarizer. You summarize docs.",
+        "capabilities": ["summarize", "read_files"],
+        "team_role": "summarizer"
+    }
+    ```"""
+    mock_llm.generate_response.return_value = mock_json_response
+    mock_llm_manager_class.return_value = mock_llm
+
+    client = _description_client()
+    payload = {"description": "My helpful agent who summarizes docs"}
+    r = client.post("/api/v1/agents/blueprints", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert "id" in data
+    assert data["name"] == "Doc Summarizer"
+    assert data["description"] == "An expert at summarizing technical documentation."
+    assert data["persona_prompt"] == "You are Doc Summarizer. You summarize docs."
+    assert data["capabilities"] == ["summarize", "read_files"]
+    assert data["team_role"] == "summarizer"
+
+
+@patch("chatty_commander.web.routes.agents._llm_manager", None)
+@patch("chatty_commander.web.routes.agents._LLMManager")
+def test_create_agent_blueprint_from_description_llm_fallback(mock_llm_manager_class):
+    mock_llm = MagicMock()
+    mock_llm.is_available.return_value = True
+    mock_llm.generate_response.return_value = "This is not JSON at all."
+    mock_llm_manager_class.return_value = mock_llm
+
+    client = _description_client()
+    payload = {"description": "My helpful agent who summarizes docs"}
+    r = client.post("/api/v1/agents/blueprints", json=payload)
+    assert r.status_code == 200
+    data = r.json()
+    assert "id" in data
+    assert data["name"] == "My helpful agent who summarizes docs"
+    assert data["persona_prompt"] == "My helpful agent who summarizes docs"
