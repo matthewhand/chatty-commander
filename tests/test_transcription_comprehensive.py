@@ -26,12 +26,7 @@ Tests all backends, error conditions, and edge cases.
 """
 
 import importlib.util
-import os
-import sys
 from unittest.mock import MagicMock, patch
-
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import pytest
 

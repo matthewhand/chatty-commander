@@ -21,13 +21,10 @@
 # SOFTWARE.
 
 import json
-import os
-import sys
 from unittest.mock import mock_open, patch
 
 import pytest
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from chatty_commander.config_cli import (
     ConfigCLI,  # Assuming the class or main function in config_cli.py
 )

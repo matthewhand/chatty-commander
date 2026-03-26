@@ -22,12 +22,14 @@
 
 """Comprehensive tests for obs/metrics.py to increase coverage."""
 
+import time
 
 from chatty_commander.obs.metrics import (
     Counter,
     Gauge,
     HistogramBuckets,
     MetricsRegistry,
+    Timer,
 )
 
 
@@ -185,3 +187,24 @@ class TestHistogramBuckets:
         assert snapshot["buckets"] == [0.1, 0.5, 1.0]
         assert snapshot["series"]
         assert snapshot["series"][0]["counts"][-1] == 1
+
+
+class TestHistogramAndTimer:
+    def test_histogram_and_timer_records_observations(self):
+        """Test that histogram observe() and Timer context manager both record data."""
+        reg = MetricsRegistry()
+        h = reg.histogram("work_seconds")
+
+        # Observe manually
+        h.observe(0.01, labels={"op": "manual"})
+
+        # Observe via timer context
+        with Timer(h, labels={"op": "ctx"}):
+            time.sleep(0.001)
+
+        snap = h.snapshot()
+        assert snap["series"], "expected at least one series in histogram snapshot"
+        total = sum(
+            s["count"] for s in [{"count": s.get("count", 0)} for s in snap["series"]]
+        )
+        assert total >= 2

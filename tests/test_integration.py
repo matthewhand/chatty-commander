@@ -22,11 +22,11 @@
 
 
 import pytest
-from test_data_factories import TestDataFactory
 from test_utils import TestUtils
 
 from chatty_commander.app.config import Config
 from chatty_commander.app.state_manager import StateManager
+from conftest import TestDataFactory
 
 
 @pytest.mark.integration

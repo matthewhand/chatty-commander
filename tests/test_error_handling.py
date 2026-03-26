@@ -24,11 +24,11 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from test_data_factories import TestDataFactory
 
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.state_manager import StateManager
+from conftest import TestDataFactory
 
 
 class TestErrorHandling:

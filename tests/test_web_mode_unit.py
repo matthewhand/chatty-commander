@@ -26,10 +26,6 @@ Unit tests for web_mode.py module.
 Tests FastAPI endpoints, WebSocket functionality, and server configuration.
 """
 
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 

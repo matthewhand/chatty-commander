@@ -25,9 +25,9 @@ import sys
 from unittest.mock import Mock
 
 import pytest
-from test_data_factories import TestDataFactory
 
 from chatty_commander.app.state_manager import StateManager
+from conftest import TestDataFactory
 
 
 class TestStateManager:

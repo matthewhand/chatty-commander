@@ -27,6 +27,7 @@ from fastapi.testclient import TestClient
 from chatty_commander.app import CommandExecutor
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.server import create_app
 from chatty_commander.web.web_mode import WebModeServer
 
 
@@ -94,3 +95,14 @@ def test_bridge_event_ok_with_secret():
     data = resp.json()
     assert data["ok"] is True
     assert data["reply"]["text"] is not None
+
+
+def test_bridge_unauthorized_without_token():
+    """Bridge endpoint rejects requests when no token is provided (via create_app)."""
+    bridge_app = create_app(no_auth=True)
+    bridge_client = TestClient(bridge_app)
+    r = bridge_client.post(
+        "/bridge/event",
+        json={"platform": "x", "channel": "y", "user": "u", "text": "hi"},
+    )
+    assert r.status_code == 401
