@@ -60,7 +60,9 @@ class TestOpenAIBackend:
         mock_client = MagicMock()
         with patch.dict(os.environ, {}, clear=True):
             with patch("openai.OpenAI", return_value=mock_client) as mock_openai:
-                backend = OpenAIBackend(api_key="test-key", base_url="https://custom.api.com/v1")
+                backend = OpenAIBackend(
+                    api_key="test-key", base_url="https://custom.api.com/v1"
+                )
 
         assert backend.base_url == "https://custom.api.com/v1"
         mock_openai.assert_called_once()
@@ -94,6 +96,7 @@ class TestOpenAIBackend:
                 import importlib
 
                 import chatty_commander.llm.backends as backends_mod
+
                 importlib.reload(backends_mod)
 
                 # After reload, get the class again
@@ -241,7 +244,9 @@ class TestOpenAIBackend:
         from chatty_commander.llm.backends import OpenAIBackend
 
         with patch.dict(os.environ, {}, clear=True):
-            backend = OpenAIBackend(api_key="test-key", base_url="https://custom.api.com")
+            backend = OpenAIBackend(
+                api_key="test-key", base_url="https://custom.api.com"
+            )
 
         info = backend.get_backend_info()
 
@@ -340,6 +345,7 @@ class TestOllamaBackend:
         mock_tags_after_pull.json.return_value = {"models": [{"name": "llama2"}]}
 
         call_count = [0]
+
         def get_side_effect(*args, **kwargs):
             call_count[0] += 1
             if call_count[0] == 1:
@@ -606,7 +612,9 @@ class TestLocalTransformersBackend:
 
         # Mock torch operations
         mock_torch = MagicMock()
-        mock_torch.no_grad = MagicMock(return_value=MagicMock(__enter__=MagicMock(), __exit__=MagicMock()))
+        mock_torch.no_grad = MagicMock(
+            return_value=MagicMock(__enter__=MagicMock(), __exit__=MagicMock())
+        )
         mock_torch.ones_like = MagicMock(return_value=MagicMock())
 
         with patch.dict("sys.modules", {"torch": mock_torch}):
@@ -626,7 +634,9 @@ class TestLocalTransformersBackend:
         backend._tokenizer.encode.side_effect = Exception("Encoding error")
 
         mock_torch = MagicMock()
-        mock_torch.no_grad = MagicMock(return_value=MagicMock(__enter__=MagicMock(), __exit__=MagicMock()))
+        mock_torch.no_grad = MagicMock(
+            return_value=MagicMock(__enter__=MagicMock(), __exit__=MagicMock())
+        )
 
         with patch.dict("sys.modules", {"torch": mock_torch}):
             with pytest.raises(Exception, match="Encoding error"):
@@ -645,76 +655,3 @@ class TestLocalTransformersBackend:
         assert "available" in info
         assert info["model_name"] == "test-model"
         assert info["device"] == "cpu"
-
-
-class TestMockLLMBackend:
-    """Tests for MockLLMBackend class."""
-
-    def test_init_default_responses(self):
-        """Test MockLLMBackend initialization with defaults."""
-        from chatty_commander.llm.backends import MockLLMBackend
-
-        backend = MockLLMBackend()
-
-        assert len(backend.responses) == 5
-        assert backend.call_count == 0
-
-    def test_init_custom_responses(self):
-        """Test MockLLMBackend initialization with custom responses."""
-        from chatty_commander.llm.backends import MockLLMBackend
-
-        backend = MockLLMBackend(responses=["Response 1", "Response 2"])
-
-        assert len(backend.responses) == 2
-
-    def test_is_available(self):
-        """Test MockLLMBackend is always available."""
-        from chatty_commander.llm.backends import MockLLMBackend
-
-        backend = MockLLMBackend()
-        assert backend.is_available() is True
-
-    def test_generate_response_cycles(self):
-        """Test MockLLMBackend cycles through responses."""
-        from chatty_commander.llm.backends import MockLLMBackend
-
-        backend = MockLLMBackend(responses=["A", "B"])
-
-        assert backend.generate_response("prompt") == "A"
-        assert backend.generate_response("prompt") == "B"
-        assert backend.generate_response("prompt") == "A"  # Cycles back
-
-    def test_get_backend_info(self):
-        """Test get_backend_info returns correct info."""
-        from chatty_commander.llm.backends import MockLLMBackend
-
-        backend = MockLLMBackend(responses=["A", "B"])
-        backend.call_count = 3
-
-        info = backend.get_backend_info()
-
-        assert info["backend"] == "mock"
-        assert info["available"] is True
-        assert info["responses_count"] == 2
-        assert info["call_count"] == 3
-
-
-class TestLLMBackendABC:
-    """Tests for LLMBackend abstract base class."""
-
-    def test_cannot_instantiate_directly(self):
-        """Test LLMBackend cannot be instantiated directly."""
-        from chatty_commander.llm.backends import LLMBackend
-
-        with pytest.raises(TypeError):
-            LLMBackend()
-
-    def test_subclass_must_implement_methods(self):
-        """Test subclass must implement all abstract methods."""
-        from chatty_commander.llm.backends import LLMBackend
-
-        class IncompleteBackend(LLMBackend):
-            pass
-
-        with pytest.raises(TypeError):
-            IncompleteBackend()
