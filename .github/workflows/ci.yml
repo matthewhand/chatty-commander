@@ -53,30 +53,37 @@ jobs:
 
       - name: Start backend server
         run: |
-          uv run python -m src.chatty_commander.main --web --no-auth --port 8100 &
+          PYTHONPATH=src uv run python -m chatty_commander.main --web --no-auth --port 8100 &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           sleep 10
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+          cache: 'pnpm'
+          cache-dependency-path: 'webui/frontend/pnpm-lock.yaml'
 
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          pnpm install
 
       - name: Install Playwright browsers
         run: |
           cd webui/frontend
-          npx playwright install --with-deps
+          pnpm exec playwright install --with-deps
 
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          npx playwright test
+          pnpm run test:e2e
 
       - name: Stop backend server
         if: always()
@@ -159,6 +166,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          load: true
           push: false
           tags: chatty-commander:latest
           cache-from: type=gha
