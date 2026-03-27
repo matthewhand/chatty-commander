@@ -352,9 +352,13 @@ const DashboardPage = React.memo(() => {
         <div className="card-body">
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
+          {/* ⚡ Bolt Optimization: Use the memoized `recentMessages` array instead of
+              calling `messages.slice(-15)` inline on every render.
+              Impact: Prevents unnecessary array allocations and garbage collection overhead
+              during high-frequency WebSocket state updates. */}
           <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
-            {messages.length > 0 ? (
-              messages.slice(-15).map((msg, index) => (
+            {recentMessages.length > 0 ? (
+              recentMessages.map((msg, index) => (
                 <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
                   <code>{msg}</code>
                 </pre>
