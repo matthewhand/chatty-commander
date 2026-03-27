@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +29,7 @@ jobs:
       - name: Run quick system smoke
         run: |
           echo "$PWD" >> $GITHUB_PATH
-          PATH=$PWD:$PATH python tests/test_system.py --verbose
+          PATH=$PWD:$PATH pytest tests/test_system_routes.py -v
 
       - name: Run pytest (skip heavy perf)
         run: |
