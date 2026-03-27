@@ -24,6 +24,11 @@ jobs:
           pip install -e .
           pip install pytest pytest-asyncio anyio pytest-cov respx
 
+      - name: Run quick system smoke
+        run: |
+          echo "$PWD" >> $GITHUB_PATH
+          PATH=$PWD:$PATH python -m pytest tests/test_system_routes.py --verbose
+
       - name: Run pytest (skip heavy perf)
         run: |
           pytest -q -k "not performance"
@@ -66,17 +71,17 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          npm install -g pnpm && pnpm i
 
       - name: Install Playwright browsers
         run: |
           cd webui/frontend
-          npx playwright install --with-deps
+          pnpm exec playwright install --with-deps
 
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          npx playwright test
+          pnpm exec playwright test
 
       - name: Stop backend server
         if: always()
@@ -160,6 +165,7 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: chatty-commander:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
