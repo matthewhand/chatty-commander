@@ -24,11 +24,6 @@ jobs:
           pip install -e .
           pip install pytest pytest-asyncio anyio pytest-cov respx
 
-      - name: Run quick system smoke
-        run: |
-          echo "$PWD" >> $GITHUB_PATH
-          PATH=$PWD:$PATH python tests/test_system.py --verbose
-
       - name: Run pytest (skip heavy perf)
         run: |
           pytest -q -k "not performance"
