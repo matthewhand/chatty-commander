@@ -76,12 +76,12 @@ jobs:
       - name: Install Playwright browsers
         run: |
           cd webui/frontend
-          pnpm exec playwright install --with-deps
+          pnpm dlx playwright install --with-deps
 
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          pnpm exec playwright test
+          pnpm run test:e2e
 
       - name: Stop backend server
         if: always()
@@ -172,7 +172,7 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander --help
+          docker run --rm chatty-commander python main.py --help
 
   release:
     runs-on: ubuntu-latest
