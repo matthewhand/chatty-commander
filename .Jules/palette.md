@@ -9,3 +9,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2024-05-23 - Accessibility & Micro-UX Additions
 **Learning:** Icon-only buttons (like error dismissals and model deletions) frequently lack `aria-label`s, preventing screen readers from understanding their purpose. Also, async operations (like deletions) bound to lists without granular loading states can leave users wondering if their action registered.
 **Action:** Always add `aria-label`s to icon-only buttons. Consider conditionally rendering a small spinner component in place of an icon for actions bound to `useMutation` that take noticeable time.
+
+## 2026-03-27 - ARIA labels in reusable components
+**Learning:** Reusable components like `DynamicDropdown` that encapsulate icon-only toggle buttons must explicitly accept and pass down an `ariaLabel` prop. Otherwise, screen readers won't be able to provide meaningful context for the component instances.
+**Action:** Ensure all reusable UI components with internal icon-only toggles expose an `ariaLabel` prop and apply it to their interactive elements.
