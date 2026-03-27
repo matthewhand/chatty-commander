@@ -6,13 +6,15 @@ interface DropdownProps {
   children: React.ReactNode;
   buttonClassName?: string;
   menuClassName?: string;
+  ariaLabel?: string;
 }
 
 export function DynamicDropdown({
   buttonContent,
   children,
   buttonClassName = "btn btn-ghost btn-sm btn-circle",
-  menuClassName = "menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
+  menuClassName = "menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10",
+  ariaLabel = "Open options menu"
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -53,6 +55,7 @@ export function DynamicDropdown({
         className={buttonClassName}
         aria-expanded={isOpen}
         aria-haspopup="true"
+        aria-label={ariaLabel}
       >
         {buttonContent}
       </button>
