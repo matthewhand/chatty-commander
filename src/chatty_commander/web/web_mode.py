@@ -303,18 +303,31 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests_per_minute = requests_per_minute
         self.requests: defaultdict[str, list[float]] = defaultdict(list)
         self.trusted_proxies = trusted_proxies or []
+        self._last_cleanup = time.time()
 
     async def dispatch(self, request: Request, call_next):
         # Use secure IP extraction to prevent spoofing
         client_ip = get_client_ip(request, self.trusted_proxies)
 
-        # Clean old requests
         current_time = time.time()
-        self.requests[client_ip] = [
-            req_time
-            for req_time in self.requests[client_ip]
-            if current_time - req_time < 60
-        ]
+
+        # Periodic global cleanup: evict stale IP entries to prevent
+        # memory exhaustion from many unique IPs
+        if current_time - self._last_cleanup > 60:
+            self._last_cleanup = current_time
+            for ip in list(self.requests):
+                self.requests[ip] = [
+                    t for t in self.requests[ip] if current_time - t < 60
+                ]
+                if not self.requests[ip]:
+                    del self.requests[ip]
+        else:
+            # Clean only current IP's old requests
+            self.requests[client_ip] = [
+                req_time
+                for req_time in self.requests[client_ip]
+                if current_time - req_time < 60
+            ]
 
         # Check rate limit
         if len(self.requests[client_ip]) >= self.requests_per_minute:
