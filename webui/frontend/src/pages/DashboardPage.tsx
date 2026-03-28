@@ -353,8 +353,8 @@ const DashboardPage = React.memo(() => {
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
           <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
-            {recentMessages.length > 0 ? (
-              recentMessages.map((msg, index) => (
+            {messages.length > 0 ? (
+              messages.slice(-15).map((msg, index) => (
                 <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
                   <code>{msg}</code>
                 </pre>
