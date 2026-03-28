@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -26,6 +26,10 @@ interface CommandConfig {
 }
 
 export default function CommandsPage() {
+  useEffect(() => {
+    document.title = "Commands | ChattyCommander";
+  }, []);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
@@ -42,6 +46,13 @@ export default function CommandsPage() {
     }
   };
 
+  // Debounce the search query by 300ms so filtering is delayed while typing
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Memoize the derived array to prevent expensive Object.entries() and array reallocation
   // on every render cycle, which improves performance on this page.
   const commandsList = useMemo(() => {
@@ -51,15 +62,15 @@ export default function CommandsPage() {
   // Memoize the empty check to avoid recalculating on each render
   const isEmpty = useMemo(() => !isLoading && commandsList.length === 0, [isLoading, commandsList.length]);
 
-  // Memoize filtered commands for search functionality
+  // Memoize filtered commands for search functionality (uses debounced value)
   const filteredCommands = useMemo(() => {
-    if (!searchQuery.trim()) return commandsList;
-    const query = searchQuery.toLowerCase();
+    if (!debouncedSearch.trim()) return commandsList;
+    const query = debouncedSearch.toLowerCase();
     return commandsList.filter(([name, config]) =>
       name.toLowerCase().includes(query) ||
       (config.action && config.action.toLowerCase().includes(query))
     );
-  }, [commandsList, searchQuery]);
+  }, [commandsList, debouncedSearch]);
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading commands">
