@@ -11,6 +11,23 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 
+class EnvVarInfo(BaseModel):
+    name: str = Field(..., description="Environment variable name")
+    set: bool = Field(..., description="Whether the variable is currently set")
+    description: str = Field(..., description="Human-readable description of the variable")
+
+
+# Recognised environment variables and their descriptions
+_ENV_VAR_DESCRIPTIONS: dict[str, str] = {
+    "OPENAI_API_KEY": "OpenAI API key for LLM access",
+    "OPENAI_BASE_URL": "Custom base URL for OpenAI-compatible API",
+    "OPENAI_API_BASE": "Legacy base URL for OpenAI-compatible API",
+    "OPENAI_MODEL": "Default OpenAI model to use",
+    "CHATTY_AGENTS_STORE": "Path to the agents store directory",
+    "OLLAMA_HOST": "Host address for a local Ollama instance",
+}
+
+
 class SystemInfo(BaseModel):
     cpu_percent: float | None = Field(None, description="Current CPU utilization as a percentage")
     memory_total_mb: int | None = Field(None, description="Total physical memory in MB")
@@ -24,6 +41,10 @@ class SystemInfo(BaseModel):
     architecture: str = Field(..., description="Machine architecture")
     pid: int = Field(..., description="Current process ID")
     uptime_seconds: float = Field(..., description="System uptime in seconds")
+    env_vars: list[EnvVarInfo] = Field(
+        default_factory=list,
+        description="Recognised environment variables and whether they are set",
+    )
 
 def include_system_routes(
     *,
@@ -35,12 +56,18 @@ def include_system_routes(
     async def get_system_info():
         uptime_seconds = time.time() - get_start_time()
 
+        env_vars = [
+            EnvVarInfo(name=name, set=(name in os.environ), description=desc)
+            for name, desc in _ENV_VAR_DESCRIPTIONS.items()
+        ]
+
         info = SystemInfo(
             python_version=sys.version,
             platform=platform.platform(),
             architecture=platform.machine(),
             pid=os.getpid(),
             uptime_seconds=uptime_seconds,
+            env_vars=env_vars,
         )
 
         try:
