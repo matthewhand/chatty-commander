@@ -295,11 +295,26 @@ def include_core_routes(
     @router.put("/api/v1/config")
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
+
+        ALLOWED_CONFIG_KEYS = {
+            "general",
+            "audio_settings",
+            "ui",
+            "logging",
+            "voice_only",
+            "default_state",
+            "voice"
+        }
+
+        filtered_data = {
+            k: v for k, v in config_data.items() if k in ALLOWED_CONFIG_KEYS
+        }
+
         try:
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
             if isinstance(cfg, dict):
-                cfg.update(config_data)
+                cfg.update(filtered_data)
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:
