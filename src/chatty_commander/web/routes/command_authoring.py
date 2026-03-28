@@ -1,4 +1,3 @@
-from __future__ import annotations
 # MIT License
 #
 # Copyright (c) 2024 mhand
@@ -23,6 +22,7 @@ from __future__ import annotations
 
 """Command authoring routes for LLM-assisted command generation."""
 
+from __future__ import annotations
 
 import json
 import logging

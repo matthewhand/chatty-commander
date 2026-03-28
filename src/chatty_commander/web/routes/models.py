@@ -1,4 +1,3 @@
-from __future__ import annotations
 # MIT License
 #
 # Copyright (c) 2024 mhand
@@ -23,6 +22,7 @@ from __future__ import annotations
 
 """Model file management routes for ONNX voice command models."""
 
+from __future__ import annotations
 
 import logging
 from datetime import datetime

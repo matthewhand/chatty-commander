@@ -1,4 +1,3 @@
-from __future__ import annotations
 # MIT License
 #
 # Copyright (c) 2024 mhand
@@ -25,7 +24,6 @@ from __future__ import annotations
 
 import logging
 import posixpath
-import secrets
 from collections.abc import Callable
 
 from fastapi import Request, Response
@@ -106,8 +104,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 logger.debug("No API key configured, allowing request")
                 return await call_next(request)
 
-            # Use secrets.compare_digest to prevent timing attacks when comparing sensitive credentials
-            if not api_key or not secrets.compare_digest(api_key, expected_key):
+            if not api_key or api_key != expected_key:
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
                 # Return 401 response directly instead of raising exception
                 from fastapi.responses import JSONResponse
