@@ -264,10 +264,11 @@ const ConfigurationPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-control w-full">
-                <label className="label">
+                <label className="label" htmlFor="config-theme">
                   <span className="label-text font-medium">Theme</span>
                 </label>
                 <select
+                  id="config-theme"
                   name="theme"
                   className="select select-bordered w-full"
                   value={config.theme}
@@ -541,13 +542,14 @@ const ConfigurationPage: React.FC = () => {
             </h3>
             <div className="space-y-4">
               <div className="form-control w-full">
-                <label className="label">
+                <label className="label" htmlFor="config-llm-base-url">
                   <span className="label-text font-medium text-base-content flex items-center gap-2">
                     API Base URL {config.envOverrides.baseUrl && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                   </span>
                   <span className="label-text-alt text-base-content/40">OpenAI-compatible</span>
                 </label>
                 <input
+                  id="config-llm-base-url"
                   type="url"
                   name="llmBaseUrl"
                   placeholder={config.envOverrides.baseUrl ? "(Configured via environment variable)" : "http://localhost:11434/v1"}
@@ -565,12 +567,13 @@ const ConfigurationPage: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control w-full">
-                  <label className="label">
+                  <label className="label" htmlFor="config-api-key">
                     <span className="label-text font-medium flex items-center gap-2">
                       API Key {config.envOverrides.apiKey && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                     </span>
                   </label>
                   <input
+                    id="config-api-key"
                     type="password"
                     name="apiKey"
                     placeholder={config.envOverrides.apiKey ? "(Configured via environment variable)" : "sk-... or Bearer token"}
@@ -583,7 +586,7 @@ const ConfigurationPage: React.FC = () => {
                 </div>
 
                 <div className="form-control w-full">
-                  <label className="label">
+                  <label className="label" htmlFor="config-model">
                     <span className="label-text font-medium flex items-center gap-2">
                       Model {config.envOverrides.model && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                     </span>
@@ -600,6 +603,7 @@ const ConfigurationPage: React.FC = () => {
                   </label>
                   {modelList.length > 0 && !config.envOverrides.model ? (
                     <select
+                      id="config-model"
                       name="llmModel"
                       className="select select-bordered w-full"
                       value={config.llmModel}
@@ -612,6 +616,7 @@ const ConfigurationPage: React.FC = () => {
                     </select>
                   ) : (
                     <input
+                      id="config-model"
                       type="text"
                       name="llmModel"
                       placeholder={config.envOverrides.model ? "(Configured via environment variable)" : "gpt-4o-mini · llama-3.1-8b-instant · …"}

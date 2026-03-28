@@ -595,10 +595,11 @@ export default function CommandAuthoringPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <div className="form-control">
-                <label className="label">
+                <label className="label" htmlFor="cmd-name">
                   <span className="label-text">Command Name (snake_case)</span>
                 </label>
                 <input
+                  id="cmd-name"
                   type="text"
                   className="input input-bordered"
                   placeholder="my_command"
@@ -610,10 +611,11 @@ export default function CommandAuthoringPage() {
               </div>
 
               <div className="form-control">
-                <label className="label">
+                <label className="label" htmlFor="cmd-display-name">
                   <span className="label-text">Display Name</span>
                 </label>
                 <input
+                  id="cmd-display-name"
                   type="text"
                   className="input input-bordered"
                   placeholder="My Command"
@@ -625,10 +627,11 @@ export default function CommandAuthoringPage() {
               </div>
 
               <div className="form-control">
-                <label className="label">
+                <label className="label" htmlFor="cmd-wakeword">
                   <span className="label-text">Wakeword</span>
                 </label>
                 <input
+                  id="cmd-wakeword"
                   type="text"
                   className="input input-bordered"
                   placeholder="Trigger phrase"
