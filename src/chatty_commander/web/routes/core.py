@@ -32,13 +32,25 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, ConfigDict, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from chatty_commander.utils.security import mask_sensitive_data
-from pydantic import BaseModel, Field
-from starlette.middleware.base import BaseHTTPMiddleware
+
+ALLOWED_CONFIG_KEYS = frozenset({
+    "general",
+    "audio_settings",
+    "ui",
+    "logging",
+    "voice_only",
+    "default_state",
+    "voice",
+})
 
 
 class SystemStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of loaded models")
@@ -47,12 +59,16 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     state: str = Field(
         ..., description="Target state", pattern="^(idle|computer|chatty)$"
     )
 
 
 class CommandRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     command: str = Field(..., description="Command name to execute")
     parameters: dict[str, Any] | None = Field(
         default=None, description="Optional parameters"
@@ -296,15 +312,12 @@ def include_core_routes(
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
 
-        ALLOWED_CONFIG_KEYS = {
-            "general",
-            "audio_settings",
-            "ui",
-            "logging",
-            "voice_only",
-            "default_state",
-            "voice"
-        }
+        rejected_keys = sorted(set(config_data) - ALLOWED_CONFIG_KEYS)
+        if rejected_keys:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Disallowed config keys: {', '.join(rejected_keys)}",
+            )
 
         filtered_data = {
             k: v for k, v in config_data.items() if k in ALLOWED_CONFIG_KEYS

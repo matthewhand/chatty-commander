@@ -43,6 +43,21 @@ def test_config_put_increments_metrics_and_applies(client):
     assert "ui" in cfg and isinstance(cfg["ui"], dict)
 
 
+def test_config_put_rejects_disallowed_keys(client):
+    r = client.put("/api/v1/config", json={"commands": {"evil": True}})
+    assert r.status_code == 422
+    assert "commands" in r.json()["detail"]
+
+
+def test_config_put_rejects_mixed_keys(client):
+    r = client.put(
+        "/api/v1/config",
+        json={"ui": {"theme": "dark"}, "__internal__": "hack"},
+    )
+    assert r.status_code == 422
+    assert "__internal__" in r.json()["detail"]
+
+
 # -- command -----------------------------------------------------------------
 
 
