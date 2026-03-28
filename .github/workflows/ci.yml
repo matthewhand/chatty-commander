@@ -26,8 +26,7 @@ jobs:
 
       - name: Run quick system smoke
         run: |
-          echo "$PWD" >> $GITHUB_PATH
-          PATH=$PWD:$PATH python tests/test_system.py --verbose
+          pytest tests/test_system_routes.py -v
 
       - name: Run pytest (skip heavy perf)
         run: |
