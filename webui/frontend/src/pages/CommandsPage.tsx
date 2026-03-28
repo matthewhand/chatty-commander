@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   TerminalSquare,
   Settings2,
@@ -12,7 +12,6 @@ import {
   RefreshCw,
   Search
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 import { DynamicDropdown } from '../components/DynamicDropdown';
