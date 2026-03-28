@@ -62,6 +62,7 @@ from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
+from chatty_commander.utils.security import constant_time_compare
 from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
 from chatty_commander.web.routes.system import include_system_routes
 
@@ -764,7 +765,7 @@ class WebModeServer:
                 if hasattr(self.config_manager, "auth"):
                     expected_key = self.config_manager.auth.get("api_key")
 
-                if not expected_key or x_api_key != expected_key:
+                if not expected_key or not constant_time_compare(x_api_key, expected_key):
                     raise HTTPException(status_code=401, detail="Unauthorized")
 
             if not self.advisors_service:
@@ -872,7 +873,7 @@ class WebModeServer:
                 logger.warning("Bridge token not configured; rejecting request")
                 raise HTTPException(status_code=401, detail="Bridge not configured")
 
-            if not x_bridge_token or x_bridge_token != expected_token:
+            if not constant_time_compare(x_bridge_token, expected_token):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
             # For now, just echo back the event

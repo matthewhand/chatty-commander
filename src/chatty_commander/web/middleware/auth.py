@@ -29,6 +29,8 @@ from collections.abc import Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from chatty_commander.utils.security import constant_time_compare
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +106,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 logger.debug("No API key configured, allowing request")
                 return await call_next(request)
 
-            if not api_key or api_key != expected_key:
+            if not constant_time_compare(api_key, expected_key):
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
                 # Return 401 response directly instead of raising exception
                 from fastapi.responses import JSONResponse
