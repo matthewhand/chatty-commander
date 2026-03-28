@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   TerminalSquare,
   Settings2,
@@ -12,7 +12,6 @@ import {
   RefreshCw,
   Search
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 import { DynamicDropdown } from '../components/DynamicDropdown';
@@ -205,6 +204,7 @@ export default function CommandsPage() {
                         </svg>
                       }
                       menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
+                      ariaLabel={`Options for ${name}`}
                     >
                       <li>
                         <button aria-label={`Edit ${name}`}>
@@ -243,13 +243,28 @@ export default function CommandsPage() {
           ))}
         </AnimatePresence>
         {isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands configured.
+          <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
+            <TerminalSquare size={48} className="text-base-content/20 mb-4" />
+            <h3 className="text-lg font-semibold text-base-content/70">No commands configured.</h3>
+            <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
+              Get started by creating your first command to automate tasks and streamline your workflow.
+            </p>
+            <Link to="/commands/authoring" className="btn btn-primary">
+              <Plus size={18} />
+              Create Command
+            </Link>
           </div>
         )}
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
-          <div className="col-span-full text-center p-12 opacity-50 italic">
-            No commands match your search.
+          <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
+            <Search size={48} className="text-base-content/20 mb-4" />
+            <h3 className="text-lg font-semibold text-base-content/70">No commands match your search.</h3>
+            <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
+              Try adjusting your search terms or clearing the search filter to see all commands.
+            </p>
+            <button className="btn btn-outline" onClick={() => setSearchParams({})}>
+              Clear Search
+            </button>
           </div>
         )}
       </div>
