@@ -12,6 +12,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { WebSocketProvider } from "./components/WebSocketProvider";
 import { useAuth, AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { ToastProvider } from "./components/ToastProvider";
 
 // Lazy-loaded pages for route-level code splitting
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -105,9 +106,11 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <WebSocketProvider>
-            <div className="min-h-screen bg-base-100 text-base-content">
-              <AppContent />
-            </div>
+            <ToastProvider>
+              <div className="min-h-screen bg-base-100 text-base-content">
+                <AppContent />
+              </div>
+            </ToastProvider>
           </WebSocketProvider>
         </ThemeProvider>
       </AuthProvider>
