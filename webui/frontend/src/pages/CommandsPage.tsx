@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -33,6 +33,8 @@ export default function CommandsPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
+  const [pendingDeleteCommand, setPendingDeleteCommand] = useState<string | null>(null);
+  const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
@@ -53,6 +55,25 @@ export default function CommandsPage() {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  const handleDeleteClick = (commandName: string) => {
+    setPendingDeleteCommand(commandName);
+    deleteDialogRef.current?.showModal();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (pendingDeleteCommand) {
+      await apiService.deleteCommand(pendingDeleteCommand);
+      refetch();
+    }
+    deleteDialogRef.current?.close();
+    setPendingDeleteCommand(null);
+  };
+
+  const handleDeleteCancel = () => {
+    deleteDialogRef.current?.close();
+    setPendingDeleteCommand(null);
+  };
 
   // Memoize the derived array to prevent expensive Object.entries() and array reallocation
   // on every render cycle, which improves performance on this page.
@@ -251,7 +272,7 @@ export default function CommandsPage() {
                         </button>
                       </li>
                       <li>
-                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`}>
+                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} onClick={() => handleDeleteClick(name)}>
                           <Trash2 size={16} />
                           Delete Command
                         </button>
@@ -306,6 +327,21 @@ export default function CommandsPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <dialog ref={deleteDialogRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Confirm Deletion</h3>
+          <p className="py-4">Are you sure you want to delete <strong>{pendingDeleteCommand}</strong>?</p>
+          <div className="modal-action">
+            <button className="btn" onClick={handleDeleteCancel}>Cancel</button>
+            <button className="btn btn-error" onClick={handleDeleteConfirm}>Delete</button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleDeleteCancel}>close</button>
+        </form>
+      </dialog>
     </div>
   );
 };
