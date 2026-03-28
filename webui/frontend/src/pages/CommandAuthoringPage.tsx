@@ -244,6 +244,41 @@ export default function CommandAuthoringPage() {
   });
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateField = useCallback((field: string, value: string) => {
+    let errorMsg = '';
+    switch (field) {
+      case 'name':
+        if (value && !/^[a-z][a-z0-9_]*$/.test(value)) {
+          errorMsg = 'Must be snake_case (lowercase letters, digits, underscores; must start with a letter)';
+        } else if (!value) {
+          errorMsg = 'Command name is required';
+        }
+        break;
+      case 'display_name':
+        if (!value || value.length < 2) {
+          errorMsg = 'Display name is required (min 2 characters)';
+        }
+        break;
+      case 'wakeword':
+        if (!value || value.length < 2) {
+          errorMsg = 'Wakeword is required (min 2 characters)';
+        }
+        break;
+    }
+    setFormErrors((prev) => {
+      const next = { ...prev };
+      if (errorMsg) {
+        next[field] = errorMsg;
+      } else {
+        delete next[field];
+      }
+      return next;
+    });
+  }, []);
+
+  const hasFormErrors = useMemo(() => Object.keys(formErrors).length > 0, [formErrors]);
 
   // Generate command mutation
   const generateMutation = useMutation({
@@ -268,6 +303,7 @@ export default function CommandAuthoringPage() {
       setDescription('');
       setGeneratedCommand(null);
       setManualCommand({ name: '', display_name: '', wakeword: '', actions: [] });
+      setFormErrors({});
       setError(null);
     },
     onError: (err: Error) => {
@@ -605,13 +641,17 @@ export default function CommandAuthoringPage() {
                 <input
                   id="cmd-name"
                   type="text"
-                  className="input input-bordered"
+                  className={`input input-bordered${formErrors.name ? ' input-error' : ''}`}
                   placeholder="my_command"
                   value={manualCommand.name}
                   onChange={(e) =>
                     setManualCommand((prev) => ({ ...prev, name: e.target.value }))
                   }
+                  onBlur={(e) => validateField('name', e.target.value)}
                 />
+                {formErrors.name && (
+                  <span className="text-error text-xs mt-1">{formErrors.name}</span>
+                )}
               </div>
 
               <div className="form-control">
@@ -621,13 +661,17 @@ export default function CommandAuthoringPage() {
                 <input
                   id="cmd-display-name"
                   type="text"
-                  className="input input-bordered"
+                  className={`input input-bordered${formErrors.display_name ? ' input-error' : ''}`}
                   placeholder="My Command"
                   value={manualCommand.display_name}
                   onChange={(e) =>
                     setManualCommand((prev) => ({ ...prev, display_name: e.target.value }))
                   }
+                  onBlur={(e) => validateField('display_name', e.target.value)}
                 />
+                {formErrors.display_name && (
+                  <span className="text-error text-xs mt-1">{formErrors.display_name}</span>
+                )}
               </div>
 
               <div className="form-control">
@@ -637,13 +681,17 @@ export default function CommandAuthoringPage() {
                 <input
                   id="cmd-wakeword"
                   type="text"
-                  className="input input-bordered"
+                  className={`input input-bordered${formErrors.wakeword ? ' input-error' : ''}`}
                   placeholder="Trigger phrase"
                   value={manualCommand.wakeword}
                   onChange={(e) =>
                     setManualCommand((prev) => ({ ...prev, wakeword: e.target.value }))
                   }
+                  onBlur={(e) => validateField('wakeword', e.target.value)}
                 />
+                {formErrors.wakeword && (
+                  <span className="text-error text-xs mt-1">{formErrors.wakeword}</span>
+                )}
               </div>
             </div>
 
@@ -682,7 +730,7 @@ export default function CommandAuthoringPage() {
               <button
                 className="btn btn-primary"
                 onClick={handleSave}
-                disabled={saveMutation.isPending || manualCommand.actions.length === 0}
+                disabled={saveMutation.isPending || manualCommand.actions.length === 0 || hasFormErrors}
               >
                 {saveMutation.isPending ? (
                   <>
