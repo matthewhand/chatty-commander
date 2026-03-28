@@ -11,7 +11,8 @@ import {
   FileAudio,
   RefreshCw,
   Search,
-  Download
+  Download,
+  Upload
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
@@ -35,6 +36,7 @@ export default function CommandsPage() {
   const searchQuery = searchParams.get('q') || '';
   const [pendingDeleteCommand, setPendingDeleteCommand] = useState<string | null>(null);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
@@ -94,6 +96,28 @@ export default function CommandsPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+          alert('Invalid JSON: expected an object.');
+          return;
+        }
+        await apiService.updateConfig({ commands: parsed });
+        refetch();
+      } catch (err) {
+        alert(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    };
+    reader.readAsText(file);
+    // Reset so the same file can be re-imported if needed
+    e.target.value = '';
   };
 
   // Memoize filtered commands for search functionality (uses debounced value)
@@ -168,6 +192,22 @@ export default function CommandsPage() {
           >
             <Download size={16} />
             Export JSON
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleImportJson}
+          />
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => fileInputRef.current?.click()}
+            title="Import JSON"
+            aria-label="Import commands from JSON"
+          >
+            <Upload size={16} />
+            Import JSON
           </button>
           <Link to="/commands/authoring" className="btn btn-primary glass">
             <Plus size={18} />
