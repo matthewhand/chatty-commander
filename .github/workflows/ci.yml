@@ -71,12 +71,12 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          npm install -g pnpm && pnpm i
 
       - name: Install Playwright browsers
         run: |
           cd webui/frontend
-          npx playwright install --with-deps
+          pnpm exec playwright install --with-deps chromium
 
       - name: Run E2E tests
         run: |
@@ -165,13 +165,14 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: chatty-commander:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander --help
+          docker run --rm chatty-commander python main.py --help
 
   release:
     runs-on: ubuntu-latest
