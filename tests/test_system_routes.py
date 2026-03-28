@@ -43,8 +43,10 @@ def test_system_info_with_psutil(
     assert response.status_code == 200
     data = response.json()
 
-    assert data["python_version"] == sys.version.split(" ")[0]
+    assert data["python_version"] == sys.version
     assert data["platform"] == "TestPlatform-1.0"
+    assert "architecture" in data
+    assert "pid" in data
     assert data["uptime_seconds"] == 100.0
 
     # Check psutil fields
@@ -75,8 +77,10 @@ def test_system_info_without_psutil(mock_platform, mock_time):
     data = response.json()
 
     # Basic info should still be present
-    assert data["python_version"] == sys.version.split(" ")[0]
+    assert data["python_version"] == sys.version
     assert data["platform"] == "TestPlatform-1.0"
+    assert "architecture" in data
+    assert "pid" in data
     assert data["uptime_seconds"] == 100.0
 
     # psutil fields should be None
