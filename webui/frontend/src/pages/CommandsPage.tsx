@@ -131,10 +131,14 @@ export default function CommandsPage() {
             type="text"
             placeholder="Search commands..."
             aria-label="Search commands"
-            className="input input-bordered w-full pl-10"
+            className="input input-bordered w-full pl-10 pr-20"
             value={searchQuery}
             onChange={handleSearchChange}
+            autoFocus
           />
+          <kbd className="kbd kbd-sm absolute right-10 top-1/2 -translate-y-1/2 text-base-content/40">
+            Ctrl+K
+          </kbd>
           {searchQuery && (
             <button
               className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"

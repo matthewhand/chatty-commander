@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard as DashboardIcon,
     Settings as SettingsIcon,
@@ -14,12 +14,30 @@ import { useAuth } from '../hooks/useAuth';
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { logout } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Close sidebar when route changes
     useEffect(() => {
         setIsSidebarOpen(false);
     }, [location.pathname]);
+
+    // Global Ctrl+K / Cmd+K shortcut to navigate to Commands and focus search
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                navigate('/commands');
+                // Focus the search input after navigation completes
+                requestAnimationFrame(() => {
+                    const searchInput = document.querySelector<HTMLInputElement>('input[aria-label="Search commands"]');
+                    searchInput?.focus();
+                });
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [navigate]);
 
     const navItems = [
         { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon size={20} /> },
