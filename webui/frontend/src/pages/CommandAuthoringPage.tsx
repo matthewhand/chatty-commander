@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -228,6 +228,10 @@ const ActionField: React.FC<{
 // --- Main Page Component ---
 
 export default function CommandAuthoringPage() {
+  useEffect(() => {
+    document.title = "Command Editor | ChattyCommander";
+  }, []);
+
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
   const [description, setDescription] = useState('');

@@ -104,6 +104,10 @@ async function persistConfig(cfg: AppConfig): Promise<void> {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const ConfigurationPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Configuration | ChattyCommander";
+  }, []);
+
   const queryClient = useQueryClient();
   const { setTheme } = useTheme();
   const [config, setConfig] = useState<AppConfig>({

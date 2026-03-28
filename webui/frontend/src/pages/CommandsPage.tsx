@@ -26,6 +26,10 @@ interface CommandConfig {
 }
 
 export default function CommandsPage() {
+  useEffect(() => {
+    document.title = "Commands | ChattyCommander";
+  }, []);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
