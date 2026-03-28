@@ -49,6 +49,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     return (
         <div className="flex h-screen bg-base-200 font-sans text-base-content overflow-hidden">
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:p-2 focus:bg-primary focus:text-primary-content focus:rounded">Skip to main content</a>
             {/* Mobile Backdrop */}
             {isSidebarOpen && (
                 <div
@@ -129,7 +130,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </header>
 
                 {/* Content Scroll Area */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 ml-0">
+                <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6 ml-0">
                     <div className="max-w-7xl mx-auto space-y-6 animate-on-load">
                         <Breadcrumbs />
                         {children}
