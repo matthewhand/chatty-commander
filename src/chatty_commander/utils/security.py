@@ -20,7 +20,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import secrets
 from typing import Any
+
+
+def constant_time_compare(provided: str | None, expected: str | None) -> bool:
+    """Compare two credential strings in constant time.
+
+    Returns False if either value is None or empty, preventing both
+    timing attacks and NoneType bypass issues.
+    """
+    if not provided or not expected:
+        return False
+    return secrets.compare_digest(
+        provided.encode("utf-8"),
+        str(expected).encode("utf-8"),
+    )
 
 
 def mask_sensitive_data(data: Any) -> Any:

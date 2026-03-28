@@ -25,6 +25,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from chatty_commander.utils.security import constant_time_compare
+
 try:
     from fastapi import FastAPI
 except Exception:  # very minimal stub if FastAPI missing (tests won't hit real HTTP)
@@ -180,7 +182,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
                     )
 
                 # Validate token
-                if x_bridge_token != expected_token:
+                if not constant_time_compare(x_bridge_token, expected_token):
                     _bridge_logger.warning(
                         "Bridge request rejected: invalid token provided"
                     )
