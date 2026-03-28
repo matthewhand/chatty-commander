@@ -57,7 +57,7 @@ jobs:
 
       - name: Start backend server
         run: |
-          uv run python -m src.chatty_commander.main --web --no-auth --port 8100 &
+          uv run chatty-commander --web --no-auth --port 8100 &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           sleep 10
@@ -70,7 +70,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          npm install --no-audit --no-fund
 
       - name: Install Playwright browsers
         run: |
@@ -164,13 +164,14 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: chatty-commander:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander --help
+          docker run --rm chatty-commander python main.py --help
 
   release:
     runs-on: ubuntu-latest
