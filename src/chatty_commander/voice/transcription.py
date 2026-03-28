@@ -280,8 +280,8 @@ class VoiceTranscriber:
                     frames.append(data)
 
                     # Check for silence (simple volume-based detection)
-                    audio_array = np.frombuffer(data, dtype=np.int16)
-                    volume = np.sqrt(np.mean(audio_array**2))
+                    audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
+                    volume = np.sqrt(np.dot(audio_array, audio_array) / len(audio_array))
 
                     if volume < 500:  # Silence threshold
                         if silence_start is None:
