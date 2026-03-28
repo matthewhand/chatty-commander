@@ -32,7 +32,7 @@ from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 try:
     from chatty_commander.llm.manager import LLMManager as _LLMManager
@@ -71,12 +71,14 @@ class AgentBlueprint:
 
 
 class AgentBlueprintModel(BaseModel):
-    name: str = Field(...)
-    description: str = Field(...)
-    persona_prompt: str = Field(...)
-    capabilities: list[str] = Field(default_factory=list)
-    team_role: str | None = Field(default=None)
-    handoff_triggers: list[str] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., max_length=200)
+    description: str = Field(..., max_length=2000)
+    persona_prompt: str = Field(..., max_length=10000)
+    capabilities: list[str] = Field(default_factory=list, max_length=50)
+    team_role: str | None = Field(default=None, max_length=200)
+    handoff_triggers: list[str] = Field(default_factory=list, max_length=50)
 
 
 class AgentBlueprintResponse(AgentBlueprintModel):

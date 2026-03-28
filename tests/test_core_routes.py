@@ -31,7 +31,7 @@ def test_config_get_increments_metrics(client):
 
 def test_config_put_increments_metrics_and_applies(client):
     m1 = client.get("/api/v1/metrics").json()
-    r = client.put("/api/v1/config", json={"foo": {"bar": 1}})
+    r = client.put("/api/v1/config", json={"ui": {"theme": "light"}})
     assert r.status_code == 200
     m2 = client.get("/api/v1/metrics").json()
     assert m2["config_put"] >= m1.get("config_put", 0) + 1
@@ -40,7 +40,22 @@ def test_config_put_increments_metrics_and_applies(client):
     r = client.get("/api/v1/config")
     assert r.status_code == 200
     cfg = r.json()
-    assert "foo" in cfg and isinstance(cfg["foo"], dict)
+    assert "ui" in cfg and isinstance(cfg["ui"], dict)
+
+
+def test_config_put_rejects_disallowed_keys(client):
+    r = client.put("/api/v1/config", json={"commands": {"evil": True}})
+    assert r.status_code == 422
+    assert "commands" in r.json()["detail"]
+
+
+def test_config_put_rejects_mixed_keys(client):
+    r = client.put(
+        "/api/v1/config",
+        json={"ui": {"theme": "dark"}, "__internal__": "hack"},
+    )
+    assert r.status_code == 422
+    assert "__internal__" in r.json()["detail"]
 
 
 # -- command -----------------------------------------------------------------

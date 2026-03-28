@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -25,9 +25,11 @@ jobs:
           pip install pytest pytest-asyncio anyio pytest-cov respx
 
       - name: Run quick system smoke
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: |
           echo "$PWD" >> $GITHUB_PATH
-          PATH=$PWD:$PATH python tests/test_system.py --verbose
+          PATH=$PWD:$PATH pytest tests/test_system_routes.py --verbose
 
       - name: Run pytest (skip heavy perf)
         run: |
@@ -44,7 +46,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -71,17 +73,18 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          npm install -g pnpm
+          pnpm i
 
       - name: Install Playwright browsers
         run: |
           cd webui/frontend
-          npx playwright install --with-deps
+          pnpm exec playwright install --with-deps
 
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          npx playwright test
+          pnpm run test:e2e
 
       - name: Stop backend server
         if: always()
@@ -165,13 +168,14 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: chatty-commander:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander --help
+          docker run --rm chatty-commander python main.py --help
 
   release:
     runs-on: ubuntu-latest

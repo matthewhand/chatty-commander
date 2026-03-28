@@ -26,10 +26,11 @@ from collections.abc import Callable
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AvatarConfigModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     animations_dir: str | None = Field(
         default=None, description="Directory to scan for animations"
     )
