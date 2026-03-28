@@ -124,6 +124,7 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
         with self._lock:
             self._response_times.append(duration_ms)
 
+        response.headers["X-API-Version"] = "0.2.0"
         return response
 
 
