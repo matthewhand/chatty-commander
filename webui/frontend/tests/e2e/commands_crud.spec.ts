@@ -164,6 +164,6 @@ test.describe("Commands Page - Empty State", () => {
       page.getByRole("heading", { name: "Commands & Triggers" })
     ).toBeVisible();
 
-    await expect(page.getByText("No commands configured.")).toBeVisible();
+    await expect(page.getByRole('heading', { name: "No commands configured." })).toBeVisible();
   });
 });
