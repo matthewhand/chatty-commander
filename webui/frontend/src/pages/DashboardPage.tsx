@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
@@ -41,9 +41,27 @@ const DashboardPage = React.memo(() => {
     document.title = "Dashboard | ChattyCommander";
   }, []);
 
-  const { ws, isConnected, reconnectAttempt } = useWebSocket();
+  const { ws, isConnected, reconnectAttempt, lastMessageTime } = useWebSocket();
   const isReconnecting = !isConnected && reconnectAttempt > 0;
   const [messages, setMessages] = useState<string[]>([]);
+  const [lastMsgAgo, setLastMsgAgo] = useState<string>("No messages yet");
+
+  // Update "last message ago" display every second
+  useEffect(() => {
+    if (!lastMessageTime) return;
+    const update = () => {
+      const seconds = Math.round((Date.now() - lastMessageTime) / 1000);
+      if (seconds < 60) {
+        setLastMsgAgo(`${seconds}s ago`);
+      } else {
+        const minutes = Math.floor(seconds / 60);
+        setLastMsgAgo(`${minutes}m ${seconds % 60}s ago`);
+      }
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [lastMessageTime]);
 
   // Performance optimization: Memoize the recent messages derived array
   // to avoid inline `messages.slice(-15)` during frequent real-time re-renders.
@@ -284,7 +302,10 @@ const DashboardPage = React.memo(() => {
             <div className={`stat-value text-2xl ${isConnected ? 'text-success' : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}`}>
               {isConnected ? "Connected" : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
             </div>
-            <div className="stat-desc">Realtime stream</div>
+            <div className="stat-desc flex items-center gap-1">
+              <Zap size={14} className="text-accent" />
+              <span>Last msg: {lastMsgAgo}</span>
+            </div>
           </div>
         </div>
       </div>
