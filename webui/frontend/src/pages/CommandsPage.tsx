@@ -10,7 +10,8 @@ import {
   Trash2,
   FileAudio,
   RefreshCw,
-  Search
+  Search,
+  Download
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
@@ -61,6 +62,18 @@ export default function CommandsPage() {
 
   // Memoize the empty check to avoid recalculating on each render
   const isEmpty = useMemo(() => !isLoading && commandsList.length === 0, [isLoading, commandsList.length]);
+
+  const handleExportJson = () => {
+    const blob = new Blob([JSON.stringify(commands, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'commands.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // Memoize filtered commands for search functionality (uses debounced value)
   const filteredCommands = useMemo(() => {
@@ -124,6 +137,16 @@ export default function CommandsPage() {
             aria-label="Refresh Commands"
           >
             <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+          </button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={handleExportJson}
+            title="Export JSON"
+            aria-label="Export commands as JSON"
+            disabled={!commands || commandsList.length === 0}
+          >
+            <Download size={16} />
+            Export JSON
           </button>
           <Link to="/commands/authoring" className="btn btn-primary glass">
             <Plus size={18} />
