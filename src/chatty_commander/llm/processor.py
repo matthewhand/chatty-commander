@@ -53,6 +53,14 @@ class CommandProcessor:
         "help": ["help", "assist", "support"],
     }
 
+    # Static suggestion descriptions for get_command_suggestions
+    SUGGESTION_MAP = {
+        "lights": ["control lights", "toggle illumination"],
+        "music": ["play audio", "control music"],
+        "weather": ["get weather", "check forecast"],
+        "hello": ["greeting", "say hello"],
+    }
+
     def __init__(
         self, llm_manager: LLMManager | None = None, config_manager=None, **llm_kwargs
     ):
@@ -241,16 +249,9 @@ Response:"""
                 )
 
         # Keyword matches
-        keyword_map = {
-            "lights": ["control lights", "toggle illumination"],
-            "music": ["play audio", "control music"],
-            "weather": ["get weather", "check forecast"],
-            "hello": ["greeting", "say hello"],
-        }
-
         for cmd_name in self._available_commands:
-            if cmd_name in keyword_map:
-                for desc in keyword_map[cmd_name]:
+            if cmd_name in self.SUGGESTION_MAP:
+                for desc in self.SUGGESTION_MAP[cmd_name]:
                     if partial_lower in desc.lower():
                         suggestions.append(
                             {
