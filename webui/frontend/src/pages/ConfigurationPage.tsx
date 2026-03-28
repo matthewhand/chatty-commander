@@ -13,6 +13,8 @@ import {
   Trash2 as TrashIcon,
   Upload as UploadIcon,
   FileAudio as FileAudioIcon,
+  Copy as CopyIcon,
+  Check as CheckIcon,
 } from "lucide-react";
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
@@ -132,6 +134,14 @@ const ConfigurationPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = useCallback((field: string, value: string) => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  }, []);
 
   const { data: devices } = useQuery({
     queryKey: ["audioDevices"],
@@ -552,16 +562,29 @@ const ConfigurationPage: React.FC = () => {
                   </span>
                   <span className="label-text-alt text-base-content/40">OpenAI-compatible</span>
                 </label>
-                <input
-                  id="config-llm-base-url"
-                  type="url"
-                  name="llmBaseUrl"
-                  placeholder={config.envOverrides.baseUrl ? "(Configured via environment variable)" : "http://localhost:11434/v1"}
-                  className="input input-bordered w-full focus:input-secondary disabled:opacity-50"
-                  value={config.envOverrides.baseUrl ? "################" : config.llmBaseUrl}
-                  onChange={handleChange}
-                  disabled={config.envOverrides.baseUrl}
-                />
+                <div className="flex gap-1 items-center">
+                  <input
+                    id="config-llm-base-url"
+                    type="url"
+                    name="llmBaseUrl"
+                    placeholder={config.envOverrides.baseUrl ? "(Configured via environment variable)" : "http://localhost:11434/v1"}
+                    className="input input-bordered w-full focus:input-secondary disabled:opacity-50"
+                    value={config.envOverrides.baseUrl ? "################" : config.llmBaseUrl}
+                    onChange={handleChange}
+                    disabled={config.envOverrides.baseUrl}
+                  />
+                  {!config.envOverrides.baseUrl && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => handleCopy("baseUrl", config.llmBaseUrl)}
+                      title="Copy to clipboard"
+                      aria-label="Copy API Base URL"
+                    >
+                      {copiedField === "baseUrl" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+                    </button>
+                  )}
+                </div>
                 <label className="label">
                   <span className="label-text-alt text-base-content/40">
                     Free options: openrouter.ai/api/v1 · api.groq.com/openai/v1 · api.together.xyz/v1
@@ -606,29 +629,53 @@ const ConfigurationPage: React.FC = () => {
                     </button>
                   </label>
                   {modelList.length > 0 && !config.envOverrides.model ? (
-                    <select
-                      id="config-model"
-                      name="llmModel"
-                      className="select select-bordered w-full"
-                      value={config.llmModel}
-                      onChange={handleChange}
-                    >
-                      <option value="">— select model —</option>
-                      {modelList.map((m) => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
+                    <div className="flex gap-1 items-center">
+                      <select
+                        id="config-model"
+                        name="llmModel"
+                        className="select select-bordered w-full"
+                        value={config.llmModel}
+                        onChange={handleChange}
+                      >
+                        <option value="">— select model —</option>
+                        {modelList.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => handleCopy("model", config.llmModel)}
+                        title="Copy to clipboard"
+                        aria-label="Copy Model"
+                      >
+                        {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+                      </button>
+                    </div>
                   ) : (
-                    <input
-                      id="config-model"
-                      type="text"
-                      name="llmModel"
-                      placeholder={config.envOverrides.model ? "(Configured via environment variable)" : "gpt-4o-mini · llama-3.1-8b-instant · …"}
-                      className="input input-bordered w-full disabled:opacity-50"
-                      value={config.envOverrides.model ? "################" : config.llmModel}
-                      onChange={handleChange}
-                      disabled={config.envOverrides.model}
-                    />
+                    <div className="flex gap-1 items-center">
+                      <input
+                        id="config-model"
+                        type="text"
+                        name="llmModel"
+                        placeholder={config.envOverrides.model ? "(Configured via environment variable)" : "gpt-4o-mini · llama-3.1-8b-instant · …"}
+                        className="input input-bordered w-full disabled:opacity-50"
+                        value={config.envOverrides.model ? "################" : config.llmModel}
+                        onChange={handleChange}
+                        disabled={config.envOverrides.model}
+                      />
+                      {!config.envOverrides.model && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => handleCopy("model", config.llmModel)}
+                          title="Copy to clipboard"
+                          aria-label="Copy Model"
+                        >
+                          {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
