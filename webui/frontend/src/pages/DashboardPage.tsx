@@ -40,7 +40,8 @@ const DashboardPage = React.memo(() => {
     document.title = "Dashboard | ChattyCommander";
   }, []);
 
-  const { ws, isConnected } = useWebSocket();
+  const { ws, isConnected, reconnectAttempt } = useWebSocket();
+  const isReconnecting = !isConnected && reconnectAttempt > 0;
   const [messages, setMessages] = useState<string[]>([]);
 
   // Performance optimization: Memoize the recent messages derived array
@@ -269,12 +270,14 @@ const DashboardPage = React.memo(() => {
             <div className="stat-figure">
               {isConnected ?
                 <Wifi size={32} className="text-success" /> :
-                <WifiOff size={32} className="text-error" />
+                isReconnecting ?
+                  <Wifi size={32} className="text-warning animate-pulse" /> :
+                  <WifiOff size={32} className="text-error" />
               }
             </div>
             <div className="stat-title">WebSocket</div>
-            <div className={`stat-value text-2xl ${isConnected ? 'text-success' : 'text-error'}`}>
-              {isConnected ? "Connected" : "Offline"}
+            <div className={`stat-value text-2xl ${isConnected ? 'text-success' : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}`}>
+              {isConnected ? "Connected" : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
             </div>
             <div className="stat-desc">Realtime stream</div>
           </div>
