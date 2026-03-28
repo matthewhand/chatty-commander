@@ -10,6 +10,7 @@ import {
     X as CloseIcon
 } from "lucide-react";
 import { useAuth } from '../hooks/useAuth';
+import ScrollToTop from './ScrollToTop';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { logout } = useAuth();
@@ -112,6 +113,8 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </ul>
                 </div>
             </aside>
+
+            <ScrollToTop />
 
             {/* Main Content */}
             <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
