@@ -1,5 +1,4 @@
 """Tests verifying that obs/metrics middleware and router are wired into the FastAPI app."""
-from __future__ import annotations
 
 from unittest.mock import MagicMock
 
