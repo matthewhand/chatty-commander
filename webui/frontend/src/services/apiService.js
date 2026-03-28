@@ -163,6 +163,13 @@ class ApiService {
   }
 
   /**
+   * Delete a command by name
+   */
+  async deleteCommand(commandName) {
+    return this.delete(`/api/v1/commands/${encodeURIComponent(commandName)}`);
+  }
+
+  /**
    * Get command history
    */
   async getCommandHistory(limit = 50) {
