@@ -5,6 +5,7 @@ import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIco
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
+import { formatTimestamp } from "../utils/formatTime";
 
 const MAX_MESSAGES = 100;
 const MAX_RECENT_MESSAGES = 15;
@@ -64,12 +65,14 @@ const DashboardPage = React.memo(() => {
     setCommandInput("");
 
     // Optimistically add to log
-    setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `> Executing: ${cmd}`] : [...prev, `> Executing: ${cmd}`]);
+    const ts = formatTimestamp(new Date());
+    setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${ts}] > Executing: ${cmd}`] : [...prev, `[${ts}] > Executing: ${cmd}`]);
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
-      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `Error: ${err.message}`] : [...prev, `Error: ${err.message}`]);
+      const errTs = formatTimestamp(new Date());
+      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${errTs}] Error: ${err.message}`] : [...prev, `[${errTs}] Error: ${err.message}`]);
     } finally {
       setIsSending(false);
     }
@@ -158,11 +161,13 @@ const DashboardPage = React.memo(() => {
       }
       // Fallback for non-JSON or other messages
       if (msg.data && typeof msg.data === "string") {
-        setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg.data as string] : [...prev, msg.data as string]);
+        const wsTs = formatTimestamp(new Date());
+        setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${wsTs}] ${msg.data as string}`] : [...prev, `[${wsTs}] ${msg.data as string}`]);
       }
     } catch {
       // Plain text message
-      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), event.data as string] : [...prev, event.data as string]);
+      const wsTs = formatTimestamp(new Date());
+      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${wsTs}] ${event.data as string}`] : [...prev, `[${wsTs}] ${event.data as string}`]);
     }
   }, []); // setRealtimeStatus and setMessages are stable; no external deps
 
