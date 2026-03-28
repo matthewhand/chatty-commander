@@ -90,12 +90,18 @@ class HTTPLogHandler(logging.Handler):
         self.url = url
         self.timeout = timeout
         self._requests = None
+        self._url_safe = False
         try:
             import requests
 
             self._requests = requests
         except ImportError:
             pass
+        try:
+            from chatty_commander.utils.url_validator import is_safe_url
+            self._url_safe = is_safe_url(url)
+        except Exception:
+            self._url_safe = False
 
     def emit(self, record):
         """Send a log record to the HTTP endpoint.
@@ -103,7 +109,7 @@ class HTTPLogHandler(logging.Handler):
         Args:
             record: The log record to send
         """
-        if self._requests is None:
+        if self._requests is None or not self._url_safe:
             return
         try:
             log_entry = self.format(record)

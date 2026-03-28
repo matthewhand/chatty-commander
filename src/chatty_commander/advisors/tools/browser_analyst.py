@@ -31,6 +31,7 @@ import re
 from urllib.parse import urlparse
 
 from chatty_commander.app.config import Config
+from chatty_commander.utils.url_validator import is_safe_url
 
 try:
     from agents import FunctionTool
@@ -84,6 +85,10 @@ def browser_analyst_tool(url: str) -> str:
         if allowlist is not None and hostname not in allowlist:
             logger.warning(f"Domain {hostname} is not in the allowlist.")
             return f"Error: Domain {hostname} is not allowed."
+
+        if not is_safe_url(url):
+            logger.warning(f"SSRF blocked: URL resolves to private/internal address: {url}")
+            return "Error: URL blocked — resolves to internal address."
 
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
