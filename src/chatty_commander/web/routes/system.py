@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import platform
 import sys
 import time
@@ -20,6 +21,8 @@ class SystemInfo(BaseModel):
     disk_percent: float | None = Field(None, description="Used disk space as a percentage")
     python_version: str = Field(..., description="Python version string")
     platform: str = Field(..., description="Platform identifier")
+    architecture: str = Field(..., description="Machine architecture")
+    pid: int = Field(..., description="Current process ID")
     uptime_seconds: float = Field(..., description="System uptime in seconds")
 
 def include_system_routes(
@@ -33,8 +36,10 @@ def include_system_routes(
         uptime_seconds = time.time() - get_start_time()
 
         info = SystemInfo(
-            python_version=sys.version.split(" ")[0],
+            python_version=sys.version,
             platform=platform.platform(),
+            architecture=platform.machine(),
+            pid=os.getpid(),
             uptime_seconds=uptime_seconds,
         )
 
