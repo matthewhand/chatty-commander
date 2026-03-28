@@ -50,7 +50,6 @@ except ImportError:
 from collections import defaultdict
 
 from fastapi import FastAPI, Header, HTTPException, Request, WebSocket
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -156,10 +155,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = (
             "geolocation=(), microphone=(), camera=()"
+        )
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self' ws: wss:; "
+            "frame-ancestors 'none'"
         )
 
         # Remove server header for security
@@ -563,14 +569,9 @@ class WebModeServer:
 
         app.add_middleware(ResponseTimeMiddleware)
 
-        # CORS policy
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"] if self.no_auth else ["http://localhost:3000"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+        # CORS policy — delegate to shared apply_cors() for consistency
+        from chatty_commander.web.auth import apply_cors
+        apply_cors(app, no_auth=self.no_auth)
 
         # Core REST via extracted router (status/config/state/command)
         core = include_core_routes(

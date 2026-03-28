@@ -82,10 +82,13 @@ def apply_cors(
         m for m in app.user_middleware if m.cls is not CORSMiddleware
     ]
 
+    # RFC 6454: credentials must not be combined with wildcard origins
+    allow_credentials = "*" not in allow_origins
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_credentials=allow_credentials,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Bridge-Token"],
     )
