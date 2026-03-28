@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Mic as MicIcon } from "lucide-react";
 
 const LoginPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Login | ChattyCommander";
+  }, []);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

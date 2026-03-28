@@ -36,6 +36,10 @@ const CustomTooltip = React.memo(({ active, payload, label }: any) => {
 });
 
 const DashboardPage = React.memo(() => {
+  useEffect(() => {
+    document.title = "Dashboard | ChattyCommander";
+  }, []);
+
   const { ws, isConnected } = useWebSocket();
   const [messages, setMessages] = useState<string[]>([]);
 

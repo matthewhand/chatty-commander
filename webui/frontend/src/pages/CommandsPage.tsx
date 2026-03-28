@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -26,6 +26,10 @@ interface CommandConfig {
 }
 
 export default function CommandsPage() {
+  useEffect(() => {
+    document.title = "Commands | ChattyCommander";
+  }, []);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
