@@ -29,7 +29,7 @@ jobs:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: |
           echo "$PWD" >> $GITHUB_PATH
-          PATH=$PWD:$PATH python scripts/test_system.py --verbose
+          PATH=$PWD:$PATH pytest tests/test_system_routes.py --verbose
 
       - name: Run pytest (skip heavy perf)
         run: |
