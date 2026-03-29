@@ -100,12 +100,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     "No auth config found, config_manager type: %s", type(self.config_manager).__name__
                 )
 
-            # Check if API key is required and valid
-            if not expected_key:
-                # No API key configured, allow request
-                logger.debug("No API key configured, allowing request")
-                return await call_next(request)
-
+            # Check if API key is valid
             if not constant_time_compare(api_key, expected_key):
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
                 # Return 401 response directly instead of raising exception
