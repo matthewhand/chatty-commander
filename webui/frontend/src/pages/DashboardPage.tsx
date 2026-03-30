@@ -166,6 +166,45 @@ const DashboardPage = React.memo(() => {
     }
   };
 
+  // Performance optimization: Memoize the agent list render mapping
+  // to prevent unnecessary re-creation of React components during frequent
+  // parent component re-renders triggered by WebSocket events (like system status updates).
+  const agentListRender = useMemo(() => agentData?.map((agent) => (
+    <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
+      <div className="card-body p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="card-title text-xl font-bold">{agent.name}</h3>
+          <div className={`badge ${getAgentStatusColor(agent.status)} badge-lg font-bold uppercase`}>
+            {agent.status}
+          </div>
+        </div>
+
+        {agent.error && (
+          <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg">
+            <span>{agent.error}</span>
+          </div>
+        )}
+
+        <div className="mockup-code bg-base-300 text-xs mt-2 before:hidden p-0">
+          <div className="px-4 py-3 space-y-3">
+            <div className="flex flex-col">
+              <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Sent</span>
+              <span className="font-mono text-primary">{agent.lastMessageSent || "-"}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Received</span>
+              <span className="font-mono text-secondary">{agent.lastMessageReceived || "-"}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Content</span>
+              <span className="font-mono text-base-content/70 break-words mt-1">{agent.lastMessageContent || "-"}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )), [agentData]);
+
   const handleWsMessage = useCallback((event: MessageEvent) => {
     try {
       const msg = JSON.parse(event.data);
@@ -438,41 +477,7 @@ const DashboardPage = React.memo(() => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agentData?.map((agent) => (
-            <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
-              <div className="card-body p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="card-title text-xl font-bold">{agent.name}</h3>
-                  <div className={`badge ${getAgentStatusColor(agent.status)} badge-lg font-bold uppercase`}>
-                    {agent.status}
-                  </div>
-                </div>
-
-                {agent.error && (
-                  <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg">
-                    <span>{agent.error}</span>
-                  </div>
-                )}
-
-                <div className="mockup-code bg-base-300 text-xs mt-2 before:hidden p-0">
-                  <div className="px-4 py-3 space-y-3">
-                    <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Sent</span>
-                      <span className="font-mono text-primary">{agent.lastMessageSent || "-"}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Received</span>
-                      <span className="font-mono text-secondary">{agent.lastMessageReceived || "-"}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Content</span>
-                      <span className="font-mono text-base-content/70 break-words mt-1">{agent.lastMessageContent || "-"}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+          {agentListRender}
         </div>
       )}
     </div>
