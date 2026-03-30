@@ -150,7 +150,7 @@
     "diagnostics_file": "logs/diagnostics.jsonl"
   },
   "general": {
-    "debug_mode": false,
+    "debug_mode": true,
     "inference_framework": "custom",
     "start_on_boot": true,
     "check_for_updates": false
