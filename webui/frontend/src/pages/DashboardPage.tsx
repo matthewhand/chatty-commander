@@ -156,7 +156,7 @@ const DashboardPage = React.memo(() => {
     retry: 2,
   });
 
-  const getAgentStatusColor = (status: Agent["status"]) => {
+  const getAgentStatusColor = useCallback((status: Agent["status"]) => {
     switch (status) {
       case "online": return "badge-success";
       case "offline": return "badge-ghost";
@@ -164,7 +164,7 @@ const DashboardPage = React.memo(() => {
       case "processing": return "badge-warning";
       default: return "badge-ghost";
     }
-  };
+  }, []);
 
   // Performance optimization: Memoize the agent cards JSX array to prevent
   // reallocation and re-rendering on every high-frequency websocket telemetry tick.
@@ -205,7 +205,7 @@ const DashboardPage = React.memo(() => {
         </div>
       </div>
     ));
-  }, [agentData]);
+  }, [agentData, getAgentStatusColor]);
 
   const handleWsMessage = useCallback((event: MessageEvent) => {
     try {

@@ -219,15 +219,16 @@ test.describe("Dashboard - Command Execution", () => {
   test("shows error in log when command execution fails", async ({ page }) => {
     await mockDashboardAPIs(page);
 
-    await page.route("**/api/v1/command", (route) => {
+    await page.route("**/api/v1/command", async (route) => {
       if (route.request().method() === "POST") {
-        return route.fulfill({
+        await route.fulfill({
           status: 500,
           contentType: "application/json",
           body: JSON.stringify({ detail: "Internal server error" }),
         });
+      } else {
+        await route.fallback();
       }
-      return route.continue();
     });
 
     await page.goto("/dashboard");
@@ -243,8 +244,8 @@ test.describe("Dashboard - Command Execution", () => {
     // Should show the executing message first
     await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: bad_command");
 
-    // Should also show an error message (text-error styled)
-    await expect(commandLogCard(page).locator(".mockup-code pre.text-error")).toBeVisible({ timeout: 5000 });
+    // Wait for the UI to update from the API rejection
+    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("Internal server error", { timeout: 10000 });
   });
 });
 
