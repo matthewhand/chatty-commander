@@ -97,12 +97,14 @@ def browser_analyst_tool(url: str) -> str:
             response.raise_for_status()
             content_pieces = []
             size = 0
-            for chunk in response.iter_text(chunk_size=8192):
+            # ⚡ Bolt: Iterate over bytes directly to avoid CPU overhead from repeated string encoding/decoding
+            # in the loop. Byte chunks are concatenated first and decoded once at the end.
+            for chunk in response.iter_bytes(chunk_size=8192):
                 content_pieces.append(chunk)
-                size += len(chunk.encode("utf-8"))
+                size += len(chunk)
                 if size > MAX_SIZE:
                     break
-            text = "".join(content_pieces)
+            text = b"".join(content_pieces).decode("utf-8", errors="replace")
 
         title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
         title = title_match.group(1).strip() if title_match else "No Title"

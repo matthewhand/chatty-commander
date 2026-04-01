@@ -9,3 +9,7 @@
 ## 2024-03-18 - [LLM Command Processor Matcher Optimization]
 **Learning:** High-frequency validation/matching loops (e.g., matching keywords to available commands in `_simple_command_matching`) can slow down significantly due to redundant allocations (like `.lower()`) and repeated iteration over large dict views (`.items()`).
 **Action:** Pre-compute cached lowercase dict keys and pre-filter relationship maps into simple dictionaries during class instantiation/initialization. Iterating over keys directly is also slightly faster than allocating view objects with `.items()`.
+
+## 2024-05-18 - [HTTP Stream Repeated Encoding Bottleneck]
+**Learning:** When enforcing response body size limits while streaming in `httpx` via `response.iter_text()`, calculating the string length byte size repeatedly inside the loop (e.g. `len(chunk.encode('utf-8'))`) creates a massive CPU overhead as chunks are continuously decoded by `iter_text()` and instantly re-encoded.
+**Action:** Iterate directly using `response.iter_bytes()`, accumulate and measure the byte strings directly without transformation, and then decode the final concatenated bytes once using `.decode("utf-8", errors="replace")`.
