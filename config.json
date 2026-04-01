@@ -158,8 +158,11 @@
   "web_server": {
     "host": "0.0.0.0",
     "port": 8100,
-    "auth_enabled": true,
+    "auth_enabled": false,
     "bridge_token": null
   },
-  "voice_only": false
+  "voice_only": false,
+  "audio": {
+    "device": "Mock Microphone 1"
+  }
 }
