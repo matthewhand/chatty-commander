@@ -24,9 +24,11 @@
 
 import logging
 import posixpath
+import urllib.parse
 from collections.abc import Callable
 
 from fastapi import Request, Response
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from chatty_commander.utils.security import constant_time_compare
@@ -61,9 +63,17 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if self.no_auth:
             return await call_next(request)
 
+        # Decode path to prevent URL-encoded or double-encoded path traversal bypasses
+        raw_path = request.url.path
+        for _ in range(3):
+            decoded_path = urllib.parse.unquote(raw_path)
+            if decoded_path == raw_path:
+                break
+            raw_path = decoded_path
+
         # Normalize path to prevent path traversal bypasses
         # Use exact match or explicit trailing slash check to prevent partial path matching
-        path = posixpath.normpath(request.url.path)
+        path = posixpath.normpath(raw_path)
 
         # Skip auth for public endpoints
         if (
@@ -102,15 +112,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
             # Check if API key is required and valid
             if not expected_key:
-                # No API key configured, allow request
-                logger.debug("No API key configured, allowing request")
-                return await call_next(request)
+                # No API key configured, fail-closed
+                logger.debug("No API key configured, rejecting request")
+                return JSONResponse(
+                    status_code=401, content={"detail": "API key not configured"}
+                )
 
             if not constant_time_compare(api_key, expected_key):
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
                 # Return 401 response directly instead of raising exception
-                from fastapi.responses import JSONResponse
-
                 return JSONResponse(
                     status_code=401, content={"detail": "Invalid or missing API key"}
                 )
