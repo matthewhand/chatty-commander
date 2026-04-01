@@ -244,7 +244,7 @@ test.describe("Dashboard - Command Execution", () => {
     await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: bad_command");
 
     // Should also show an error message (text-error styled)
-    await expect(commandLogCard(page).locator(".mockup-code pre.text-error")).toBeVisible({ timeout: 5000 });
+    await expect(commandLogCard(page).locator(".mockup-code pre.text-error, .mockup-code .text-error")).toBeVisible({ timeout: 5000 });
   });
 });
 

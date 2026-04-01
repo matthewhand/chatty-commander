@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap, Copy, Check } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
@@ -16,6 +16,33 @@ interface PerfMetric {
   cpu: number;
   memory: number;
 }
+
+const LogMessageRow = React.memo(({ msg }: { msg: string }) => {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(msg).then(() => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    });
+  }, [msg]);
+
+  return (
+    <div className="group relative">
+      <pre data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
+        <code>{msg}</code>
+      </pre>
+      <button
+        onClick={handleCopy}
+        className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-xs btn-ghost btn-circle opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity bg-base-100/50 hover:bg-base-100"
+        aria-label="Copy message"
+        title="Copy message"
+      >
+        {isCopied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+      </button>
+    </div>
+  );
+});
 
 const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -388,9 +415,7 @@ const DashboardPage = React.memo(() => {
           <div className="mockup-code bg-base-300 text-base-content h-[20rem] overflow-y-auto w-full custom-scrollbar">
             {recentMessages.length > 0 ? (
               recentMessages.map((msg, index) => (
-                <pre key={index} data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
-                  <code>{msg}</code>
-                </pre>
+                <LogMessageRow key={index} msg={msg} />
               ))
             ) : (
               <div className="p-4 text-base-content/50 italic text-center pt-24">
