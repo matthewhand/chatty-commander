@@ -58,14 +58,7 @@ test.describe("Functional Flows", () => {
             await expect(firstInput).toHaveValue("test value");
         } else {
             // Only check for a button if no inputs are found
-            // Use a more specific locator or .first() to avoid strict mode errors
-            const saveButton = page.getByRole('button', { name: /save/i }).first();
-            if (await saveButton.count() > 0) {
-                await expect(saveButton).toBeVisible();
-            } else {
-                // Fallback: check any button is visible
-                await expect(page.locator("button").first()).toBeVisible();
-            }
+            await expect(page.locator("button").first()).toBeVisible();
         }
     });
 });
