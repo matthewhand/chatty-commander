@@ -8,7 +8,6 @@ import {
   Plus,
   Edit3,
   Trash2,
-  FileAudio,
   RefreshCw,
   Search,
   Download,
@@ -35,6 +34,7 @@ export default function CommandsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const [pendingDeleteCommand, setPendingDeleteCommand] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
@@ -65,11 +65,16 @@ export default function CommandsPage() {
 
   const handleDeleteConfirm = async () => {
     if (pendingDeleteCommand) {
-      await apiService.deleteCommand(pendingDeleteCommand);
-      refetch();
+      setIsDeleting(true);
+      try {
+        await apiService.deleteCommand(pendingDeleteCommand);
+        refetch();
+      } finally {
+        setIsDeleting(false);
+        deleteDialogRef.current?.close();
+        setPendingDeleteCommand(null);
+      }
     }
-    deleteDialogRef.current?.close();
-    setPendingDeleteCommand(null);
   };
 
   const handleDeleteCancel = () => {
@@ -374,8 +379,11 @@ export default function CommandsPage() {
           <h3 className="font-bold text-lg">Confirm Deletion</h3>
           <p className="py-4">Are you sure you want to delete <strong>{pendingDeleteCommand}</strong>?</p>
           <div className="modal-action">
-            <button className="btn" onClick={handleDeleteCancel}>Cancel</button>
-            <button className="btn btn-error" onClick={handleDeleteConfirm}>Delete</button>
+            <button className="btn" onClick={handleDeleteCancel} disabled={isDeleting}>Cancel</button>
+            <button className="btn btn-error" onClick={handleDeleteConfirm} disabled={isDeleting}>
+              {isDeleting ? <span className="loading loading-spinner loading-xs mr-2"></span> : null}
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
