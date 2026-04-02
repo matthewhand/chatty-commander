@@ -73,18 +73,17 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm install -g pnpm
-          pnpm i
+          npm ci
 
       - name: Install Playwright browsers
         run: |
           cd webui/frontend
-          pnpm exec playwright install --with-deps
+          npx playwright install --with-deps
 
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          pnpm run test:e2e
+          npm run test:e2e
 
       - name: Stop backend server
         if: always()
@@ -175,7 +174,7 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander python main.py --help
+          docker run --rm chatty-commander python src/main.py --help
 
   release:
     runs-on: ubuntu-latest
