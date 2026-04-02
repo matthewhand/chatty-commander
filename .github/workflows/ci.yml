@@ -175,7 +175,7 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander python main.py --help
+          docker run --rm chatty-commander python -m chatty_commander.main --help
 
   release:
     runs-on: ubuntu-latest
