@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
 import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap, Copy, Check } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 import { formatTimestamp } from "../utils/formatTime";
+import Tooltip from "../components/DaisyUI/Tooltip";
+import Button from "../components/DaisyUI/Button";
 
 const MAX_MESSAGES = 100;
 const MAX_RECENT_MESSAGES = 15;
@@ -20,10 +22,19 @@ interface PerfMetric {
 const LogMessageRow = React.memo(({ msg }: { msg: string }) => {
   const [isCopied, setIsCopied] = useState(false);
 
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (isCopied) {
+      timeoutId = setTimeout(() => setIsCopied(false), 2000);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isCopied]);
+
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(msg).then(() => {
       setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
     });
   }, [msg]);
 
@@ -32,14 +43,17 @@ const LogMessageRow = React.memo(({ msg }: { msg: string }) => {
       <pre data-prefix=">" className={msg.startsWith("Error:") ? "text-error" : "text-success"}>
         <code>{msg}</code>
       </pre>
-      <button
-        onClick={handleCopy}
-        className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-xs btn-ghost btn-circle opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity bg-base-100/50 hover:bg-base-100"
-        aria-label="Copy message"
-        title="Copy message"
-      >
-        {isCopied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
-      </button>
+      <Tooltip content="Copy message" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <Button
+          onClick={handleCopy}
+          variant="ghost"
+          size="xs"
+          className="btn-circle bg-base-100/50 hover:bg-base-100"
+          aria-label="Copy message"
+        >
+          {isCopied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+        </Button>
+      </Tooltip>
     </div>
   );
 });
@@ -382,7 +396,7 @@ const DashboardPage = React.memo(() => {
                   domain={[0, 100]}
                   tickFormatter={(value) => `${value}%`}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <RechartsTooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="cpu"

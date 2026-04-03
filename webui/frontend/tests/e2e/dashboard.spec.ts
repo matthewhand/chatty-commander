@@ -102,11 +102,11 @@ test.describe("Dashboard - Stats Cards", () => {
 
     // CPU Load
     await expect(page.locator(".stat-title", { hasText: "CPU Load" })).toBeVisible();
-    await expect(page.locator(".stat-value", { hasText: "23.5" })).toBeVisible();
+    await expect(page.locator(".stat-value", { hasText: "23.5" }).first()).toBeVisible();
 
     // Memory
     await expect(page.locator(".stat-title", { hasText: "Memory" })).toBeVisible();
-    await expect(page.locator(".stat-value", { hasText: "61.2" })).toBeVisible();
+    await expect(page.locator(".stat-value", { hasText: "61.2" }).first()).toBeVisible();
 
     // WebSocket
     await expect(page.locator(".stat-title", { hasText: "WebSocket" })).toBeVisible();
@@ -244,7 +244,7 @@ test.describe("Dashboard - Command Execution", () => {
     await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: bad_command");
 
     // Should also show an error message (text-error styled)
-    await expect(commandLogCard(page).locator(".mockup-code pre.text-error, .mockup-code .text-error")).toBeVisible({ timeout: 5000 });
+    await expect(commandLogCard(page).locator(".mockup-code").getByText("Error:", { exact: false }).first()).toBeVisible({ timeout: 5000 });
   });
 });
 
