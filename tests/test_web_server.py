@@ -290,6 +290,59 @@ class TestBridgeEndpointSecurity:
         assert "not configured" in response.json()["detail"].lower()
 
 
+class TestAuthMiddlewarePathTraversal:
+    """Security tests for AuthMiddleware URL-encoded traversal and fail-closed logic."""
+
+    def test_auth_middleware_fail_closed(self):
+        from chatty_commander.web.middleware.auth import AuthMiddleware
+        from fastapi.responses import JSONResponse
+        app = FastAPI()
+
+        class DummyConfig:
+            auth = {}
+
+        app.add_middleware(AuthMiddleware, config_manager=DummyConfig(), no_auth=False)
+
+        @app.get("/api/v1/secure")
+        async def secure():
+            return {"message": "secure data"}
+
+        client = TestClient(app)
+        response = client.get("/api/v1/secure", headers={"X-API-Key": "anything"})
+        assert response.status_code == 401
+        assert response.json()["detail"] == "API key not configured"
+
+    def test_auth_middleware_path_traversal_encoded(self):
+        from chatty_commander.web.middleware.auth import AuthMiddleware
+        app = FastAPI()
+
+        class DummyConfig:
+            auth = {"api_key": "secret"}
+
+        app.add_middleware(AuthMiddleware, config_manager=DummyConfig(), no_auth=False)
+
+        @app.get("/docs")
+        async def docs():
+            return {"message": "docs"}
+
+        @app.get("/api/v1/secure")
+        async def secure():
+            return {"message": "secure"}
+
+        client = TestClient(app)
+
+        # 1. Normal access requires auth
+        res = client.get("/api/v1/secure")
+        assert res.status_code == 401
+
+        # 2. Single-encoded path traversal bypassing auth
+        res = client.get("/docs/..%2fapi/v1/secure")
+        assert res.status_code == 401
+
+        # 3. Double-encoded path traversal bypassing auth
+        res = client.get("/docs/..%252fapi/v1/secure")
+        assert res.status_code == 401
+
 # ---------------------------------------------------------------------------
 # Server guards, import safety, and static analysis
 # (from test_web_server_guards.py)
