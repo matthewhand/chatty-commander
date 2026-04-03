@@ -36,6 +36,16 @@ const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   return null;
 });
 
+const getAgentStatusColor = (status: Agent["status"]) => {
+  switch (status) {
+    case "online": return "badge-success";
+    case "offline": return "badge-ghost";
+    case "error": return "badge-error";
+    case "processing": return "badge-warning";
+    default: return "badge-ghost";
+  }
+};
+
 const DashboardPage = React.memo(() => {
   useEffect(() => {
     document.title = "Dashboard | ChattyCommander";
@@ -155,16 +165,6 @@ const DashboardPage = React.memo(() => {
     refetchInterval: 30000,
     retry: 2,
   });
-
-  const getAgentStatusColor = (status: Agent["status"]) => {
-    switch (status) {
-      case "online": return "badge-success";
-      case "offline": return "badge-ghost";
-      case "error": return "badge-error";
-      case "processing": return "badge-warning";
-      default: return "badge-ghost";
-    }
-  };
 
   // Performance optimization: Memoize the agent list render mapping
   // to prevent unnecessary re-creation of React components during frequent
