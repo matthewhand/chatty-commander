@@ -84,7 +84,7 @@ jobs:
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          pnpm dlx vitest run --exclude 'tests/e2e/**'
+          pnpm run test:e2e
 
       - name: Stop backend server
         if: always()
