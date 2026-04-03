@@ -7,3 +7,7 @@
 **Vulnerability:** Mass assignment vulnerability in `/api/v1/config` `PUT` endpoint due to lack of allowlist. Any configuration item could be updated by a malicious user.
 **Learning:** The core issue is that user input in the `config_data` JSON payload was passed without filtering directly into the application's configuration `cfg.update(config_data)`.
 **Prevention:** Use an explicit allowlist (like `ALLOWED_CONFIG_KEYS`) to filter user-supplied configuration payloads before updating the underlying configuration store. This enforces strict boundaries on what can be changed via the API.
+## 2024-04-03 - URL-encoded Path Traversal Bypass in AuthMiddleware
+**Vulnerability:** The API key authentication middleware `AuthMiddleware` used `posixpath.normpath(request.url.path)` to normalize paths. However, an attacker could bypass authentication by URL-encoding path traversal payloads (e.g. `%2f..%2f`), because `normpath` operates on the raw URL string without unquoting it first.
+**Learning:** In ASGI applications like FastAPI or Starlette, `request.url.path` might retain URL-encoded characters. Any custom security logic (like path traversal checks) must manually decode the URL using `urllib.parse.unquote`.
+**Prevention:** Implement a bounded loop `while '%' in decoded_path` using `urllib.parse.unquote` to fully resolve URL encoding before applying `posixpath.normpath` and executing path-based security checks.
