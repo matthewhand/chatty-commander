@@ -33,7 +33,7 @@ jobs:
 
       - name: Run pytest (skip heavy perf)
         run: |
-          pytest -q -k "not performance"
+          PYTHONPATH=src pytest -q -k "not performance"
 
   e2e-test:
     runs-on: ubuntu-latest
