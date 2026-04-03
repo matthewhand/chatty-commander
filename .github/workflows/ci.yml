@@ -60,7 +60,7 @@ jobs:
 
       - name: Start backend server
         run: |
-          uv run python -m src.chatty_commander.main --web --no-auth --port 8100 &
+          PYTHONPATH=src uv run python -m chatty_commander.main --web --no-auth --port 8100 &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           sleep 10
@@ -175,7 +175,7 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander python main.py --help
+          docker run --rm chatty-commander python src/main.py --help
 
   release:
     runs-on: ubuntu-latest
