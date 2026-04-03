@@ -51,3 +51,9 @@ export type { BreadcrumbItem, BreadcrumbsProps } from './Breadcrumbs';
 
 export { default as Drawer } from './Drawer';
 export type { DrawerNavItem, DrawerProps } from './Drawer';
+
+export { PageHeader } from './PageHeader';
+export type { PageHeaderProps } from './PageHeader';
+
+export { StatsCard } from './StatsCard';
+export type { StatsCardProps } from './StatsCard';
