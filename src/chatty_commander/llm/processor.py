@@ -71,7 +71,7 @@ class CommandProcessor:
         self._available_commands: dict[str, dict] = {}
         self._available_commands_lower: dict[str, str] = {}
         self._available_keyword_map: dict[str, list[str]] = {}
-        self._available_suggestions_map: dict[str, list[str]] = {}
+        self._available_suggestions_map: dict[str, list[tuple[str, str]]] = {}
         self._update_available_commands()
 
         logger.info("Command processor initialized")
@@ -99,7 +99,7 @@ class CommandProcessor:
 
             # Pre-filter suggestion map and cache lowercase descriptions
             self._available_suggestions_map = {
-                cmd: [desc.lower() for desc in descs]
+                cmd: [(desc, desc.lower()) for desc in descs]
                 for cmd, descs in self.SUGGESTION_MAP.items()
                 if cmd in self._available_commands
             }
@@ -258,12 +258,12 @@ Response:"""
 
         # Keyword matches
         for cmd_name, descs in self._available_suggestions_map.items():
-            for i, desc_lower in enumerate(descs):
+            for desc, desc_lower in descs:
                 if partial_lower in desc_lower:
                     suggestions.append(
                         {
                             "command": cmd_name,
-                            "description": self.SUGGESTION_MAP[cmd_name][i],
+                            "description": desc,
                             "confidence": 0.7,
                             "match_type": "keyword",
                         }
