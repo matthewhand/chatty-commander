@@ -98,7 +98,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 EXPOSE 8000
 
 # Default command with production settings
-CMD ["python", "src/main.py", "--web", "--no-auth", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "main.py", "--web", "--no-auth", "--host", "0.0.0.0", "--port", "8000"]
 
 # Metadata labels
 LABEL org.opencontainers.image.title="ChattyCommander" \

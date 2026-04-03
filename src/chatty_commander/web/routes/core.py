@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import atexit
 import threading
 import time
 from collections import deque
@@ -37,10 +38,26 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from chatty_commander.utils.security import mask_sensitive_data
 
-# Performance Optimization: Cache SQLAlchemy engines to avoid repeated initialization
-# and connection pool setup overhead during frequent health checks.
-_ENGINES: dict[str, Any] = {}
-_ENGINES_LOCK = threading.Lock()
+# Performance Optimization: Cache a single SQLAlchemy engine to avoid repeated
+# initialization and connection pool setup overhead during frequent health checks.
+_CACHED_DB_URL: str | None = None
+_CACHED_ENGINE: Any = None
+_ENGINE_LOCK = threading.Lock()
+
+
+def _cleanup_engine() -> None:
+    """Cleanup cached SQLAlchemy engine on application exit."""
+    global _CACHED_ENGINE
+    with _ENGINE_LOCK:
+        if _CACHED_ENGINE is not None:
+            try:
+                _CACHED_ENGINE.dispose()
+            except Exception:
+                pass
+            _CACHED_ENGINE = None
+
+
+atexit.register(_cleanup_engine)
 
 ALLOWED_CONFIG_KEYS = frozenset({
     "general",
@@ -218,14 +235,23 @@ def include_core_routes(
 
         if db_url:
             def _check_db():
+                global _CACHED_DB_URL, _CACHED_ENGINE
                 try:
                     from sqlalchemy import create_engine, text
                     from sqlalchemy.pool import NullPool
 
-                    with _ENGINES_LOCK:
-                        if db_url not in _ENGINES:
-                            _ENGINES[db_url] = create_engine(db_url, poolclass=NullPool)
-                        engine = _ENGINES[db_url]
+                    with _ENGINE_LOCK:
+                        # Re-create engine if the database URL changed
+                        if _CACHED_DB_URL != db_url:
+                            if _CACHED_ENGINE is not None:
+                                try:
+                                    _CACHED_ENGINE.dispose()
+                                except Exception:
+                                    pass
+                            _CACHED_ENGINE = create_engine(db_url, poolclass=NullPool)
+                            _CACHED_DB_URL = db_url
+
+                        engine = _CACHED_ENGINE
 
                     with engine.connect() as conn:
                         conn.execute(text("SELECT 1")).scalar()
