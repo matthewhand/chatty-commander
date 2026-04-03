@@ -9,3 +9,6 @@
 ## 2024-03-18 - [LLM Command Processor Matcher Optimization]
 **Learning:** High-frequency validation/matching loops (e.g., matching keywords to available commands in `_simple_command_matching`) can slow down significantly due to redundant allocations (like `.lower()`) and repeated iteration over large dict views (`.items()`).
 **Action:** Pre-compute cached lowercase dict keys and pre-filter relationship maps into simple dictionaries during class instantiation/initialization. Iterating over keys directly is also slightly faster than allocating view objects with `.items()`.
+## 2024-04-03 - [SQLAlchemy Engine Initialization Bottleneck]
+**Learning:** Calling `create_engine()` on every health check request causes expensive dialect initialization queries (e.g., checking database version and capabilities) even if the connection itself is short-lived.
+**Action:** When performing frequent, lightweight database operations like health checks, cache the SQLAlchemy engine at the module level (using a `threading.Lock()` for safety). Crucially, instantiate it with `poolclass=NullPool` to prevent holding persistent connections open, balancing initialization speed with connection resource safety.
