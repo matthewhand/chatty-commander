@@ -1,9 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: dark --default, night, light, dracula, cupcake, emerald, corporate, synthwave, cyberpunk, forest, aqua, business, coffee, dim, nord, sunset;
+}
 
 /* ============================================
-   Open Hivemind - Modern UI Styles
+   Chatty Commander - Modern UI Styles
    ============================================ */
 
 /* Base styles - let DaisyUI handle theming */
