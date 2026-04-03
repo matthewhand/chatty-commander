@@ -75,20 +75,25 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         return AnalystResult(title="Error", summary="URL blocked: resolves to internal address.", url=request.url)
 
     try:
+        import codecs
+
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
         with httpx.stream("GET", request.url, timeout=timeout, follow_redirects=False) as response:
             response.raise_for_status()
+
+            # ⚡ Bolt Optimization: Use iter_bytes to avoid repeatedly encoding text chunks inside the loop
+            decoder = codecs.getincrementaldecoder(response.encoding or "utf-8")("replace")
             content_pieces = []
             size = 0
-            # ⚡ Bolt Optimization: Use iter_bytes to avoid repeatedly encoding text chunks inside the loop
             for chunk in response.iter_bytes(chunk_size=8192):
-                content_pieces.append(chunk)
                 size += len(chunk)
+                # Decode chunk, handling multi-byte chars correctly across boundaries
+                content_pieces.append(decoder.decode(chunk, final=(size > MAX_SIZE)))
                 if size > MAX_SIZE:
                     break
-            text = b"".join(content_pieces).decode(response.encoding or "utf-8", errors="replace")
+            text = "".join(content_pieces)
 
         title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
         title = title_match.group(1).strip() if title_match else "No Title"

@@ -133,3 +133,44 @@ def test_allowlist_empty_blocking(monkeypatch):
 
     result_tool = browser_analyst_tool("https://example.com/page")
     assert "Error: Domain example.com is not allowed." in result_tool
+
+
+def test_summarize_url_multibyte_split_chunk(monkeypatch):
+    """Test the incremental decoder by splitting a multi-byte character (emoji)
+    exactly in half across two chunks in an httpx stream."""
+
+    mock_data = {"advisors": {"browser_analyst": {"allowlist": None}}}
+    monkeypatch.setattr(Config, "__init__", lambda self, *a, **k: setattr(self, "config_data", mock_data))
+
+    class MockResponse:
+        def __init__(self):
+            self.encoding = "utf-8"
+
+        def raise_for_status(self):
+            pass
+
+        def iter_bytes(self, chunk_size):
+            yield b"<html><title>Emoji Split</title><body>"
+            yield b"Start \xf0\x9f"  # First half of grinning face (U+1F600)
+            yield b"\x98\x80 End"    # Second half
+            yield b"</body></html>"
+
+    class MockStreamContext:
+        def __enter__(self):
+            return MockResponse()
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+    def mock_stream(*args, **kwargs):
+        return MockStreamContext()
+
+    monkeypatch.setattr(httpx, "stream", mock_stream)
+
+    # Allow testing SSRF bypass by mocking url validator just for this test
+    monkeypatch.setattr("chatty_commander.tools.browser_analyst.is_safe_url", lambda x: True)
+
+    req = AnalystRequest(url="http://test.com/emoji")
+    result = summarize_url(req)
+
+    assert result.title == "Emoji Split"
+    assert "Start 😀 End" in result.summary
