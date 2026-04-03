@@ -13,3 +13,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2026-03-28 - Actionable Empty States and Custom Component A11y
 **Learning:** Bare text for empty states or zero-results states is unhelpful. Users benefit from clear visual indicators (icons) and actionable next steps. Also, custom reusable components like dropdown triggers often forget `ariaLabel` props, making them inaccessible when they wrap icon-only buttons.
 **Action:** Always replace bare text empty states with an illustrative icon (e.g., from `lucide-react`), explanatory text, and a primary call-to-action button, utilizing existing DaisyUI utility classes (`bg-base-200/50`, `rounded-box`). Ensure custom UI components with icon-only triggers accept an optional `ariaLabel` prop with sensible default fallbacks.
+
+## 2026-03-30 - Form Label Linking and Accessibility
+**Learning:** When using DaisyUI `form-control` wrappers, visual labels are frequently implemented without explicit `id` to `htmlFor` bindings. This breaks screen reader associations and reduces the clickable area of the input.
+**Action:** Always ensure standard HTML linking is present: assign a unique `id` to the `<input>` (or `<select>`) and set a matching `htmlFor` on the `<label>`. Enhance usability by adding the `cursor-pointer` class to the label to indicate clickability.
