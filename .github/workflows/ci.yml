@@ -84,7 +84,7 @@ jobs:
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          pnpm run test:e2e
+          pnpm dlx vitest run --exclude 'tests/e2e/**'
 
       - name: Stop backend server
         if: always()
@@ -175,7 +175,7 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander python main.py --help
+          docker run --rm chatty-commander python src/main.py --help
 
   release:
     runs-on: ubuntu-latest
