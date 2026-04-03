@@ -690,23 +690,23 @@ class WebModeServer:
                 import subprocess
                 import sys
 
-                # Check if npm is available
-                subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                # Check if pnpm is available
+                subprocess.run(["pnpm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
                 logger.info("Installing frontend dependencies...")
-                subprocess.run(["npm", "install", "--no-audit", "--no-fund", "--legacy-peer-deps"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
+                subprocess.run(["pnpm", "install", "--no-frozen-lockfile"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
 
                 logger.info("Building frontend assets...")
-                subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
+                subprocess.run(["pnpm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
 
                 if Path("webui/frontend/dist").exists():
                     frontend_path = Path("webui/frontend/dist")
                 elif Path("webui/frontend/build").exists():
                     frontend_path = Path("webui/frontend/build")
             except FileNotFoundError:
-                logger.error("Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/.")
+                logger.error("Could not find 'pnpm' executable. Please install Node.js/pnpm and run 'pnpm run build' manually in webui/frontend/.")
             except Exception as e:
-                logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
+                logger.error(f"Automagic frontend build failed: {e}. Please run 'pnpm run build' manually in webui/frontend/.")
 
         if frontend_path.exists():
             static_assets = frontend_path / "assets"
@@ -721,7 +721,7 @@ class WebModeServer:
                 if index_file.exists():
                     return FileResponse(str(index_file))
                 return HTMLResponse(
-                    "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
+                    "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>pnpm run build</code> in webui/frontend/</p>"
                 )
 
         else:
@@ -729,7 +729,7 @@ class WebModeServer:
             @app.get("/", response_class=HTMLResponse)
             async def _serve_frontend_fallback():  # pragma: no cover
                 return HTMLResponse(
-                    "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
+                    "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>pnpm run build</code> in webui/frontend/</p>"
                 )
 
         # SPA Catch-all: serve index.html for any non-API routes

@@ -75,6 +75,7 @@ jobs:
           cd webui/frontend
           npm install -g pnpm
           pnpm i
+          pnpm run build
 
       - name: Install Playwright browsers
         run: |
