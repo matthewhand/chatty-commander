@@ -28,6 +28,11 @@ import {
   Badge,
   Progress,
   LoadingSpinner,
+  Diff,
+  PageHeader,
+  LoadingOverlay,
+  SkeletonTableLayout,
+  FileInput,
 } from "../components/DaisyUI";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -165,13 +170,13 @@ const ConfigurationPage: React.FC = () => {
     queryFn: getAudioDevices,
   });
 
-  const { data: voiceModels, refetch: refetchVoiceModels } = useQuery({
+  const { data: voiceModels, refetch: refetchVoiceModels, isLoading: isVoiceModelsLoading } = useQuery({
     queryKey: ["voiceModels"],
     queryFn: fetchVoiceModels,
   });
 
   // Load config on mount
-  const { data: remoteConfig } = useQuery({
+  const { data: remoteConfig, isLoading: isConfigLoading } = useQuery({
     queryKey: ["config"],
     queryFn: loadConfig,
   });
@@ -272,20 +277,19 @@ const ConfigurationPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-primary/10 rounded-xl text-primary">
-          <SettingsIcon size={32} />
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Configuration
-          </h2>
-          <p className="text-base-content/60">Manage application settings</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Configuration"
+        subtitle="Manage application settings"
+        icon={
+          <div className="p-3 bg-primary/10 rounded-xl text-primary mr-3">
+            <SettingsIcon size={32} />
+          </div>
+        }
+      />
 
       <Card className="shadow-xl border border-base-content/10 overflow-visible">
-        <Card.Body className="card-body p-0">
+        <LoadingOverlay isLoading={isConfigLoading} message="Loading configuration...">
+          <Card.Body className="card-body p-0">
 
           {/* General Settings */}
           <div className="p-6 border-b border-base-content/10">
@@ -309,6 +313,27 @@ const ConfigurationPage: React.FC = () => {
                   <option value="cyberpunk">Cyberpunk</option>
                   <option value="synthwave">Synthwave</option>
                 </Select>
+              </div>
+
+              <div className="form-control w-full">
+                 <label className="label">
+                   <span className="label-text font-medium">Theme Preview (Light vs Dark)</span>
+                 </label>
+                 <Diff 
+                   className="h-24 rounded-box border border-base-content/10 shadow-sm text-sm"
+                   oldLabel="Light"
+                   newLabel="Dark"
+                   oldContent={
+                     <div data-theme="light" className="bg-base-100 text-base-content w-full h-full flex flex-col items-center justify-center font-bold">
+                       <Button size="sm" active className="pointer-events-none">Primary</Button>
+                     </div>
+                   }
+                   newContent={
+                     <div data-theme="dark" className="bg-base-100 text-base-content w-full h-full flex flex-col items-center justify-center font-bold">
+                       <Button size="sm" active className="pointer-events-none">Primary</Button>
+                     </div>
+                   }
+                 />
               </div>
             </div>
           </div>
@@ -475,7 +500,13 @@ const ConfigurationPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {voiceModels && voiceModels.length > 0 ? (
+                      {isVoiceModelsLoading ? (
+                        <tr>
+                          <td colSpan={4} className="p-0">
+                            <SkeletonTableLayout rows={3} columns={4} className="bg-transparent" />
+                          </td>
+                        </tr>
+                      ) : voiceModels && voiceModels.length > 0 ? (
                         voiceModels.map((model: ModelFileInfo) => (
                           <tr key={model.name} className="hover:bg-base-200/50">
                             <td className="font-mono text-xs">{model.name}</td>
@@ -549,11 +580,11 @@ const ConfigurationPage: React.FC = () => {
                    </div>
 
                    <div className="form-control w-full">
-                     <input
-                      type="file"
+                     <FileInput
                       accept=".onnx"
                       aria-label="Select ONNX voice model file"
-                      className="file-input file-input-bordered file-input-primary file-input-sm w-full"
+                      variant="primary"
+                      size="sm"
                       onChange={handleFileUpload}
                       disabled={isUploading}
                      />
@@ -761,6 +792,7 @@ const ConfigurationPage: React.FC = () => {
           </div>
 
         </Card.Body>
+        </LoadingOverlay>
       </Card>
     </div>
   );

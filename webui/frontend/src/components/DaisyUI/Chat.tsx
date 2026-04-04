@@ -6,6 +6,7 @@ export interface ChatMessage {
   timestamp?: string;
   isUser: boolean;
   avatar?: string;
+  variant?: 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error';
 }
 
 export interface ChatProps {
@@ -15,11 +16,13 @@ export interface ChatProps {
 }
 
 export const Chat = memo(({ messages, variant, className = '' }: ChatProps) => {
-  const bubbleVariant = variant ? `chat-bubble-${variant}` : '';
+  const defaultBubbleVariant = variant ? `chat-bubble-${variant}` : '';
 
   return (
     <div className={`flex flex-col gap-1 ${className}`.trim()}>
-      {messages.map((msg, idx) => (
+      {messages.map((msg, idx) => {
+        const bubbleVariant = msg.variant ? `chat-bubble-${msg.variant}` : defaultBubbleVariant;
+        return (
         <div key={idx} className={`chat ${msg.isUser ? 'chat-end' : 'chat-start'}`}>
           {msg.avatar && (
             <div className="chat-image avatar">
@@ -38,7 +41,7 @@ export const Chat = memo(({ messages, variant, className = '' }: ChatProps) => {
             {msg.content}
           </div>
         </div>
-      ))}
+      )})}
     </div>
   );
 });

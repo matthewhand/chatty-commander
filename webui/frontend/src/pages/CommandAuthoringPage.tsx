@@ -28,6 +28,9 @@ import {
   Tabs,
   ConfirmModal,
   LoadingSpinner,
+  Steps,
+  PageHeader,
+  LoadingModal,
 } from '../components/DaisyUI';
 
 // --- TypeScript Interfaces ---
@@ -159,7 +162,8 @@ const ActionField: React.FC<{
               size="sm"
               onClick={onRemove}
               aria-label="Remove action"
-              className="btn-circle text-error"
+              shape="circle"
+              className="text-error"
             >
               <Trash2 size={16} />
             </Button>
@@ -450,42 +454,42 @@ export default function CommandAuthoringPage() {
   return (
     <div className="space-y-6">
       {/* Steps Wizard Indicator */}
-      <ul className="steps steps-horizontal w-full mb-6" aria-label="Authoring progress">
-        <li className={`step ${currentStep >= 1 ? 'step-primary' : ''}`}>Choose Mode</li>
-        <li className={`step ${currentStep >= 2 ? 'step-primary' : ''}`}>Define Command</li>
-        <li className={`step ${currentStep >= 3 ? 'step-primary' : ''}`}>Configure Actions</li>
-        <li className={`step ${currentStep >= 4 ? 'step-primary' : ''}`}>Review &amp; Save</li>
-      </ul>
+      <Steps
+        steps={[
+          { label: 'Choose Mode' },
+          { label: 'Define Command' },
+          { label: 'Configure Actions' },
+          { label: 'Review & Save' }
+        ]}
+        currentStep={currentStep - 1}
+        className="w-full mb-6"
+        aria-label="Authoring progress"
+      />
 
       {/* Header Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
-        <div>
-          <div className="text-sm breadcrumbs mb-2 text-base-content/60" aria-label="breadcrumbs">
-            <ul>
-              <li><Link to="/commands">Commands</Link></li>
-              <li>Command Authoring</li>
-            </ul>
-          </div>
-          <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-3">
-            <Wand2 size={32} />
-            Command Authoring
-          </h1>
-          <p className="text-base-content/60 mt-1">
-            Create new voice commands using AI assistance or manual configuration.
-          </p>
+        <div className="text-sm breadcrumbs mb-2 text-base-content/60" aria-label="breadcrumbs">
+          <ul>
+            <li><Link to="/commands">Commands</Link></li>
+            <li>Command Authoring</li>
+          </ul>
         </div>
-
-        {/* Mode Toggle */}
-        <Tabs
-          tabs={MODE_TABS}
-          activeTab={mode}
-          onChange={(key) => setMode(key as 'ai' | 'manual')}
-          variant="boxed"
-          className="bg-base-200"
+        <PageHeader
+          title="Command Authoring"
+          subtitle="Create new voice commands using AI assistance or manual configuration."
+          icon={<Wand2 size={32} className="text-primary" />}
+          actions={
+            <Tabs
+              tabs={MODE_TABS}
+              activeTab={mode}
+              onChange={(key) => setMode(key as 'ai' | 'manual')}
+              variant="boxed"
+              className="bg-base-200"
+            />
+          }
         />
       </motion.div>
 
@@ -756,6 +760,14 @@ export default function CommandAuthoringPage() {
         cancelText="Cancel"
         confirmVariant="primary"
         loading={saveMutation.isPending}
+      />
+
+      {/* AI Generation Loading Modal */}
+      <LoadingModal
+        isOpen={generateMutation.isPending}
+        onClose={() => {}}
+        title="Generating Command"
+        message="Please wait while the AI analyzes your description and generates the command configuration..."
       />
     </div>
   );

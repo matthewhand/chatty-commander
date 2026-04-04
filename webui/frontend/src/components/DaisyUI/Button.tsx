@@ -1,40 +1,54 @@
-import React, { memo } from 'react';
+import React, { memo, ElementType, ReactNode, ButtonHTMLAttributes, AnchorHTMLAttributes } from 'react';
+import { Link, LinkProps } from 'react-router-dom';
 
-export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'color' | 'style'> {
-  children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'link';
+export interface ButtonProps {
+  children?: ReactNode;
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'link' | 'info' | 'success' | 'warning' | 'error' | 'neutral';
   size?: 'xs' | 'sm' | 'md' | 'lg';
-  buttonStyle?: 'solid' | 'outline';
+  shape?: 'circle' | 'square' | 'wide' | 'block';
+  buttonStyle?: 'solid' | 'outline' | 'ghost' | 'glass';
   loading?: boolean;
-  icon?: React.ReactNode;
-  iconRight?: React.ReactNode;
-  startIcon?: React.ReactNode;
-  endIcon?: React.ReactNode;
+  disabled?: boolean;
+  active?: boolean;
+  icon?: ReactNode;
+  iconRight?: ReactNode;
+  startIcon?: ReactNode;
+  endIcon?: ReactNode;
   className?: string;
   loadingText?: string;
+  as?: ElementType;
+  to?: string;
+  type?: 'button' | 'submit' | 'reset';
+  onClick?: (event: React.MouseEvent<any>) => void;
+  [key: string]: any;
 }
 
 export const Button = memo(({
   children,
   variant = 'primary',
   size = 'md',
+  shape,
   buttonStyle = 'solid',
   loading = false,
   disabled = false,
+  active = false,
   icon,
   iconRight,
   startIcon,
   endIcon,
   className = '',
   loadingText,
+  as: Component = 'button',
+  to,
+  type = 'button',
   onClick,
   ...props
 }: ButtonProps) => {
   const getVariantClass = () => {
-    if (buttonStyle === 'outline') {
-      return `btn-outline btn-${variant}`;
-    }
-    return `btn-${variant}`;
+    let classes = `btn-${variant}`;
+    if (buttonStyle === 'outline') classes += ' btn-outline';
+    if (buttonStyle === 'glass') classes += ' glass';
+    return classes;
   };
 
   const getSizeClass = () => {
@@ -42,6 +56,16 @@ export const Button = memo(({
       case 'xs': return 'btn-xs';
       case 'sm': return 'btn-sm';
       case 'lg': return 'btn-lg';
+      default: return '';
+    }
+  };
+
+  const getShapeClass = () => {
+    switch (shape) {
+      case 'circle': return 'btn-circle';
+      case 'square': return 'btn-square';
+      case 'wide': return 'btn-wide';
+      case 'block': return 'btn-block';
       default: return '';
     }
   };
@@ -55,7 +79,7 @@ export const Button = memo(({
     }
   };
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (event: React.MouseEvent<any>) => {
     if (loading || disabled) {
       event.preventDefault();
       return;
@@ -64,20 +88,26 @@ export const Button = memo(({
   };
 
   const hasTextContent = Boolean(loadingText || (children && React.Children.count(children) > 0));
+  const isLink = Component === Link || Component === 'a' || !!to;
+  const FinalComponent = to ? Link : Component;
+
+  const combinedClassName = `btn ${getVariantClass()} ${getSizeClass()} ${getShapeClass()} ${active ? 'btn-active' : ''} ${disabled || loading ? 'btn-disabled' : ''} ${className}`.trim();
 
   return (
-    <button
-      className={`btn ${getVariantClass()} ${getSizeClass()} ${disabled || loading ? 'btn-disabled' : ''} ${className}`.trim()}
+    <FinalComponent
+      className={combinedClassName}
       disabled={disabled || loading}
       aria-busy={loading}
       onClick={handleClick}
+      to={to}
+      type={!isLink ? type : undefined}
       {...props}
     >
       {loading && <span className={`loading loading-spinner ${getSpinnerSizeClass()} ${hasTextContent ? 'mr-2' : ''}`.trim()} aria-hidden="true" />}
       {(icon || startIcon) && !loading && <span className="mr-2">{icon || startIcon}</span>}
       {loading && loadingText ? loadingText : children}
       {(iconRight || endIcon) && !loading && <span className="ml-2">{iconRight || endIcon}</span>}
-    </button>
+    </FinalComponent>
   );
 });
 

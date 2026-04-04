@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Mic as MicIcon } from "lucide-react";
-import { Button, Card, Input, Alert } from "../components/DaisyUI";
+import { Button, Card, Input, Alert, Avatar, Checkbox } from "../components/DaisyUI";
 
 const LoginPage: React.FC = () => {
   useEffect(() => {
@@ -29,11 +29,9 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-base-300 pattern-isometric">
       <Card className="w-96 shadow-xl border border-primary/20">
         <div className="items-center text-center">
-          <div className="avatar placeholder mb-4">
-            <div className="bg-primary text-primary-content rounded-full w-20 ring ring-primary ring-offset-2 ring-offset-base-100">
-              <MicIcon size={48} />
-            </div>
-          </div>
+          <Avatar placeholder shape="circle" size="xl" className="mb-4" innerClassName="bg-primary text-primary-content ring ring-primary ring-offset-2 ring-offset-base-100">
+            <MicIcon size={48} />
+          </Avatar>
           <h2 className="card-title text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent justify-center">
             Chatty Commander
           </h2>
@@ -62,6 +60,11 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+
+            <div className="flex items-center justify-between text-sm w-full px-1">
+              <Checkbox label="Remember me" size="sm" variant="primary" />
+              <a href="#" className="link link-hover text-base-content/60" onClick={(e) => e.preventDefault()}>Forgot password?</a>
+            </div>
 
             {error && (
               <Alert variant="error" className="shadow-lg py-2">

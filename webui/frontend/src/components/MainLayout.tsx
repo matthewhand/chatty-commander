@@ -8,12 +8,12 @@ import {
     Wand2,
     Bot as BotIcon,
     Menu as MenuIcon,
-    X as CloseIcon
+    X as CloseIcon,
+    Layers as ShowcaseIcon
 } from "lucide-react";
 import { useAuth } from '../hooks/useAuth';
-import { Button } from './DaisyUI';
+import { Button, Dock, Breadcrumbs } from './DaisyUI';
 import ScrollToTop from './ScrollToTop';
-import Breadcrumbs from './Breadcrumbs';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { logout } = useAuth();
@@ -49,6 +49,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { label: 'Command Authoring', path: '/commands/authoring', icon: <Wand2 size={20} /> },
         { label: 'Agents', path: '/agents', icon: <BotIcon size={20} /> },
         { label: 'Configuration', path: '/configuration', icon: <SettingsIcon size={20} /> },
+        { label: 'UI Showcase', path: '/showcase', icon: <ShowcaseIcon size={20} /> },
     ];
 
     return (
@@ -146,20 +147,29 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
 
             {/* Mobile Bottom Dock Navigation */}
-            <div className="dock dock-bottom lg:hidden">
-                <button className={location.pathname === '/dashboard' ? 'dock-active' : ''} onClick={() => navigate('/dashboard')}>
-                    <DashboardIcon size={20} />
-                    <span className="dock-label">Dashboard</span>
-                </button>
-                <button className={location.pathname === '/commands' ? 'dock-active' : ''} onClick={() => navigate('/commands')}>
-                    <TerminalIcon size={20} />
-                    <span className="dock-label">Commands</span>
-                </button>
-                <button className={location.pathname === '/configuration' ? 'dock-active' : ''} onClick={() => navigate('/configuration')}>
-                    <SettingsIcon size={20} />
-                    <span className="dock-label">Settings</span>
-                </button>
-            </div>
+            <Dock
+                className="dock-bottom lg:hidden"
+                items={[
+                    {
+                        label: 'Dashboard',
+                        icon: <DashboardIcon size={20} />,
+                        onClick: () => navigate('/dashboard'),
+                        active: location.pathname === '/dashboard'
+                    },
+                    {
+                        label: 'Commands',
+                        icon: <TerminalIcon size={20} />,
+                        onClick: () => navigate('/commands'),
+                        active: location.pathname === '/commands'
+                    },
+                    {
+                        label: 'Settings',
+                        icon: <SettingsIcon size={20} />,
+                        onClick: () => navigate('/configuration'),
+                        active: location.pathname === '/configuration'
+                    }
+                ]}
+            />
         </div>
     );
 };

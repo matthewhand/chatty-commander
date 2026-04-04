@@ -25,6 +25,7 @@ import {
   Alert,
   Badge,
   Input,
+  Textarea,
   EmptyState,
   Accordion,
   Avatar,
@@ -32,6 +33,9 @@ import {
   Tooltip,
   Drawer,
   SkeletonCard,
+  SkeletonText,
+  Skeleton,
+  PageHeader,
 } from '../components/DaisyUI';
 import { ConfirmModal } from '../components/DaisyUI/Modal';
 import Modal from '../components/DaisyUI/Modal';
@@ -208,11 +212,11 @@ export default function AgentsPage() {
     return (
       <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading agents">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <div className="h-10 w-64 skeleton mb-2 rounded-lg"></div>
-            <div className="h-5 w-96 skeleton rounded"></div>
+          <div className="space-y-2">
+            <SkeletonText lines={1} className="h-10 w-64 rounded-lg" />
+            <SkeletonText lines={1} className="h-5 w-96 rounded" />
           </div>
-          <div className="h-12 w-32 skeleton rounded-lg"></div>
+          <Skeleton width="8rem" height="3rem" className="rounded-lg" />
         </div>
         <div className="divider divider-accent"></div>
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -239,23 +243,22 @@ export default function AgentsPage() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">Agent Blueprints</h1>
-          <p className="text-base-content/60 mt-1">
-            Manage AI agent personas, capabilities, and team handoffs.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => refetch()} title="Refresh Agents" aria-label="Refresh Agents">
-            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-          </Button>
-          <Button variant="primary" onClick={() => setCreateModalOpen(true)}>
-            <Plus size={18} />
-            New Agent
-          </Button>
-        </div>
+        <PageHeader
+          title="Agent Blueprints"
+          subtitle="Manage AI agent personas, capabilities, and team handoffs."
+          actions={
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => refetch()} title="Refresh Agents" aria-label="Refresh Agents">
+                <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+              </Button>
+              <Button variant="primary" onClick={() => setCreateModalOpen(true)}>
+                <Plus size={18} />
+                New Agent
+              </Button>
+            </div>
+          }
+        />
       </motion.div>
 
       <div className="divider divider-accent"></div>
@@ -323,7 +326,8 @@ export default function AgentsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="btn-circle text-error"
+                          shape="circle"
+                          className="text-error"
                           onClick={() => setPendingDelete(agent)}
                           aria-label={`Delete ${agent.name}`}
                         >
@@ -431,9 +435,10 @@ export default function AgentsPage() {
           </div>
           <div>
             <label className="label font-semibold" htmlFor="agent-prompt">Persona Prompt</label>
-            <textarea
+            <Textarea
               id="agent-prompt"
-              className="textarea textarea-bordered w-full h-28"
+              className="w-full h-28"
+              bordered
               placeholder="Detailed system instructions for this agent..."
               value={form.persona_prompt}
               onChange={(e) => setForm((f) => ({ ...f, persona_prompt: e.target.value }))}

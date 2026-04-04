@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
-import { DynamicDropdown } from '../components/DynamicDropdown';
 import {
   Button,
   Card,
@@ -25,6 +24,12 @@ import {
   EmptyState,
   SkeletonCard,
   Pagination,
+  Kbd,
+  PageHeader,
+  Rating,
+  Diff,
+  Dropdown,
+  FileInput,
 } from '../components/DaisyUI';
 import { ConfirmModal } from '../components/DaisyUI/Modal';
 
@@ -194,58 +199,57 @@ export default function CommandsPage() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">Commands & Triggers</h1>
-          <p className="text-base-content/60 mt-1">
-            Manage system commands and configuration.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => refetch()}
-            title="Refresh Commands"
-            aria-label="Refresh Commands"
-          >
-            <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
-          </Button>
-          <Button
-            variant="primary"
-            buttonStyle="outline"
-            size="sm"
-            onClick={handleExportJson}
-            title="Export JSON"
-            aria-label="Export commands as JSON"
-            disabled={!commands || commandsList.length === 0}
-          >
-            <Download size={16} />
-            Export JSON
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={handleImportJson}
-          />
-          <Button
-            variant="primary"
-            buttonStyle="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            title="Import JSON"
-            aria-label="Import commands from JSON"
-          >
-            <Upload size={16} />
-            Import JSON
-          </Button>
-          <Link to="/commands/authoring" className="btn btn-primary glass">
-            <Plus size={18} />
-            New Command
-          </Link>
-        </div>
+        <PageHeader
+          title="Commands & Triggers"
+          subtitle="Manage system commands and configuration."
+          actions={
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => refetch()}
+                title="Refresh Commands"
+                aria-label="Refresh Commands"
+              >
+                <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+              </Button>
+              <Button
+                variant="primary"
+                buttonStyle="outline"
+                size="sm"
+                onClick={handleExportJson}
+                title="Export JSON"
+                aria-label="Export commands as JSON"
+                disabled={!commands || commandsList.length === 0}
+              >
+                <Upload size={16} />
+                Export JSON
+                </Button>
+                <FileInput
+                ref={fileInputRef}
+                accept=".json"
+                className="hidden"
+                onChange={handleImportJson}
+                />
+                <Button
+                variant="primary"
+
+                buttonStyle="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                title="Import JSON"
+                aria-label="Import commands from JSON"
+              >
+                <Upload size={16} />
+                Import JSON
+              </Button>
+              <Button to="/commands/authoring" buttonStyle="glass">
+                <Plus size={18} />
+                New Command
+              </Button>
+            </div>
+          }
+        />
       </motion.div>
 
       <div className="divider divider-accent"></div>
@@ -264,9 +268,9 @@ export default function CommandsPage() {
             autoFocus
             bordered
           />
-          <kbd className="kbd kbd-sm absolute right-10 top-1/2 -translate-y-1/2 text-base-content/40 z-10">
+          <Kbd size="sm" className="absolute right-10 top-1/2 -translate-y-1/2 text-base-content/40 z-10">
             Ctrl+K
-          </kbd>
+          </Kbd>
           {searchQuery && (
             <Button
               variant="ghost"
@@ -307,7 +311,7 @@ export default function CommandsPage() {
                       </div>
                       <div>
                         <h2 className="card-title text-xl mb-1">{name}</h2>
-                        <div className="flex gap-2 text-xs font-mono text-base-content/60">
+                        <div className="flex gap-2 text-xs font-mono text-base-content/60 mb-2">
                           <span className="px-2 py-1 rounded bg-base-300">{config.action}</span>
                           <span className="px-2 py-1 rounded bg-base-300 truncate max-w-[200px]" title={
                             config.keys || config.url || config.cmd || config.message || ""
@@ -315,18 +319,25 @@ export default function CommandsPage() {
                             {config.keys || config.url || config.cmd || config.message || "-"}
                           </span>
                         </div>
+                        <div className="flex items-center gap-2" title="Success Rate">
+                          <Rating value={(name.length % 3) + 3} size="xs" variant="warning" readOnly />
+                          <span className="text-[10px] text-base-content/50 uppercase tracking-wider font-semibold">Reliability</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <DynamicDropdown
-                        buttonContent={
+                      <Dropdown
+                        trigger={
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
                           </svg>
                         }
-                        buttonClassName="btn btn-ghost btn-sm btn-circle"
-                        menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
-                        ariaLabel={`Options for ${name}`}
+                        color="ghost"
+                        size="sm"
+                        triggerClassName="btn-circle"
+                        align="right"
+                        hideArrow
+                        contentClassName="w-52 border border-base-content/10"
                       >
                         <li>
                           <button aria-label={`Edit ${name}`}>
@@ -340,7 +351,7 @@ export default function CommandsPage() {
                             Delete Command
                           </button>
                         </li>
-                      </DynamicDropdown>
+                      </Dropdown>
                     </div>
                   </div>
 

@@ -31,6 +31,9 @@ export type { ToggleProps } from './Toggle';
 export { Checkbox } from './Checkbox';
 export type { CheckboxProps } from './Checkbox';
 
+export { FileInput } from './FileInput';
+export type { FileInputProps } from './FileInput';
+
 export { default as Tooltip } from './Tooltip';
 
 export { default as Avatar } from './Avatar';
@@ -80,6 +83,7 @@ export { Countdown } from './Countdown';
 export type { CountdownProps } from './Countdown';
 export { PageHeader } from './PageHeader';
 export type { PageHeaderProps } from './PageHeader';
+export { default as Breadcrumbs } from './Breadcrumbs';
 
 export { StatsCard } from './StatsCard';
 export type { StatsCardProps } from './StatsCard';

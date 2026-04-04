@@ -5,6 +5,7 @@ type DropdownProps = {
   trigger: React.ReactNode;
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
+  align?: 'left' | 'right';
   color?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'none';
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'none';
   isOpen?: boolean;
@@ -17,7 +18,7 @@ type DropdownProps = {
 };
 
 const Dropdown: React.FC<DropdownProps> = ({
-  trigger, children, position = 'bottom', color = 'ghost', size = 'md',
+  trigger, children, position = 'bottom', align = 'left', color = 'ghost', size = 'md',
   isOpen: controlledIsOpen, onToggle, className = '', triggerClassName = '',
   contentClassName = '', disabled = false, hideArrow = false,
 }) => {
@@ -47,11 +48,12 @@ const Dropdown: React.FC<DropdownProps> = ({
   }, [isOpen, setIsOpen]);
 
   const positionCls = { top: 'dropdown-top', bottom: 'dropdown-bottom', left: 'dropdown-left', right: 'dropdown-right' }[position];
+  const alignCls = align === 'right' ? 'dropdown-end' : '';
   const sizeCls = size === 'none' ? '' : `btn-${size}`;
   const colorCls = color === 'none' ? '' : `btn-${color}`;
 
   return (
-    <div className={`dropdown ${positionCls} ${className}`} ref={dropdownRef}>
+    <div className={`dropdown ${positionCls} ${alignCls} ${className}`} ref={dropdownRef}>
       <div tabIndex={disabled ? -1 : 0} role="button"
         className={`btn ${sizeCls} ${colorCls} ${disabled ? 'btn-disabled opacity-50' : ''} ${triggerClassName}`}
         onClick={handleToggle} aria-haspopup="true" aria-expanded={isOpen}>

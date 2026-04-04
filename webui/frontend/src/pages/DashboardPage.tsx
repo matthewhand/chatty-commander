@@ -16,6 +16,10 @@ import {
   Skeleton,
   SkeletonStatsCards,
   StatsCard,
+  Chat,
+  PageHeader,
+  Hero,
+  Countdown,
 } from "../components/DaisyUI";
 import TooltipWrapper from "../components/DaisyUI/Tooltip";
 
@@ -349,16 +353,28 @@ const DashboardPage = React.memo(() => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-          Dashboard
-        </h2>
-        <TooltipWrapper content={latencyBadge.tip}>
-          <Badge variant={latencyBadge.variant} size="small" icon={<Wifi size={12} />}>
-            {latencyBadge.label}
-          </Badge>
-        </TooltipWrapper>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Real-time system overview and command logs"
+        actions={
+          <TooltipWrapper content={latencyBadge.tip}>
+            <Badge variant={latencyBadge.variant} size="small" icon={<Wifi size={12} />}>
+              {latencyBadge.label}
+            </Badge>
+          </TooltipWrapper>
+        }
+      />
+
+      <Hero
+        title="Welcome to Chatty Commander!"
+        subtitle="Your AI-powered voice control and automation system is ready. View your real-time telemetry below, or issue commands directly via the integrated chat log."
+        className="bg-base-200/50 rounded-box border border-base-content/10 shadow-sm mb-6"
+      >
+        <div className="flex gap-2 justify-center mt-4">
+          <Button variant="primary" onClick={() => window.location.href = '/commands'}>View Commands</Button>
+          <Button variant="ghost" onClick={() => window.location.href = '/agents'}>Manage Agents</Button>
+        </div>
+      </Hero>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -374,7 +390,12 @@ const DashboardPage = React.memo(() => {
         <StatsCard
           title="Uptime"
           value={systemStatus?.uptime || "N/A"}
-          description="Since last restart"
+          description={
+            <div className="flex items-center gap-1 mt-1 opacity-75">
+              <span>Next check in</span>
+              <Countdown seconds={3600} />
+            </div>
+          }
           icon={<Clock size={32} />}
           color="text-secondary"
           className=""
@@ -388,48 +409,40 @@ const DashboardPage = React.memo(() => {
           color="text-accent"
         />
 
-        <div className="stats shadow bg-base-100 border border-base-content/10">
-          <div className="stat">
-            <div className="stat-figure text-info">
-              <div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>
-            </div>
-            <div className="stat-title">CPU Load</div>
-            <div className="stat-value text-info text-2xl">{systemStatus?.cpu || "N/A"}</div>
-            <div className="stat-desc">Processor usage</div>
-          </div>
-        </div>
+        <StatsCard
+          title="CPU Load"
+          value={systemStatus?.cpu || "N/A"}
+          description="Processor usage"
+          icon={<div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>}
+          color="text-info"
+        />
 
-        <div className="stats shadow bg-base-100 border border-base-content/10">
-          <div className="stat">
-            <div className="stat-figure text-warning">
-              <div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>
-            </div>
-            <div className="stat-title">Memory</div>
-            <div className="stat-value text-warning text-2xl">{systemStatus?.memory || "N/A"}</div>
-            <div className="stat-desc">RAM usage</div>
-          </div>
-        </div>
+        <StatsCard
+          title="Memory"
+          value={systemStatus?.memory || "N/A"}
+          description="RAM usage"
+          icon={<div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>}
+          color="text-warning"
+        />
 
-        <div className="stats shadow bg-base-100 border border-base-content/10">
-          <div className="stat">
-            <div className="stat-figure">
-              {isConnected ?
-                <Wifi size={32} className="text-success" /> :
-                isReconnecting ?
-                  <Wifi size={32} className="text-warning animate-pulse" /> :
-                  <WifiOff size={32} className="text-error" />
-              }
-            </div>
-            <div className="stat-title">WebSocket</div>
-            <div className={`stat-value text-2xl ${isConnected ? 'text-success' : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}`}>
-              {isConnected ? "Connected" : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
-            </div>
-            <div className="stat-desc flex items-center gap-1">
+        <StatsCard
+          title="WebSocket"
+          value={isConnected ? "Connected" : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
+          description={
+            <div className="flex items-center gap-1">
               <Zap size={14} className="text-accent" />
               <span>Last msg: {lastMsgAgo}</span>
             </div>
-          </div>
-        </div>
+          }
+          icon={
+            isConnected ?
+              <Wifi size={32} className="text-success" /> :
+              isReconnecting ?
+                <Wifi size={32} className="text-warning animate-pulse" /> :
+                <WifiOff size={32} className="text-error" />
+          }
+          color={isConnected ? 'text-success' : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}
+        />
       </div>
 
       {/* Real-time Performance History Chart */}
@@ -442,23 +455,24 @@ const DashboardPage = React.memo(() => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="btn-square"
+                  shape="square"
                   onClick={() => setIsPaused(!isPaused)}
                   aria-label={isPaused ? "Resume Chart" : "Pause Chart"}
                 >
                   {isPaused ? <Play size={18} /> : <Pause size={18} />}
                 </Button>
-              </TooltipWrapper>
-              <TooltipWrapper content="Export CSV">
+                </TooltipWrapper>
+                <TooltipWrapper content="Export CSV">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="btn-square"
+                  shape="square"
                   onClick={handleExport}
-                  aria-label="Export Data as CSV"
+                  aria-label="Export Data"
                 >
                   <Download size={18} />
                 </Button>
+
               </TooltipWrapper>
             </div>
           </div>
@@ -513,15 +527,15 @@ const DashboardPage = React.memo(() => {
 
           <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4">
             {recentMessages.length > 0 ? (
-              recentMessages.map((msg, index) => (
-                <div key={index} className={`chat ${msg.isCommand ? 'chat-end' : 'chat-start'}`}>
-                  <div className="chat-header">{msg.source || 'System'}</div>
-                  <div className={`chat-bubble ${msg.isCommand ? 'chat-bubble-primary' : msg.isError ? 'chat-bubble-error' : 'chat-bubble-secondary'}`}>
-                    {msg.content}
-                  </div>
-                  <div className="chat-footer opacity-50">{formatTimestamp(msg.timestamp)}</div>
-                </div>
-              ))
+              <Chat 
+                messages={recentMessages.map((msg) => ({
+                  content: msg.content,
+                  sender: msg.source || 'System',
+                  timestamp: formatTimestamp(msg.timestamp),
+                  isUser: msg.isCommand,
+                  variant: msg.isCommand ? 'primary' : msg.isError ? 'error' : 'secondary'
+                }))}
+              />
             ) : (
               <div className="p-4 text-base-content/50 italic text-center pt-24">
                 Waiting for commands...
