@@ -295,7 +295,7 @@ const ConfigurationPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-control w-full">
-                <label className="label" htmlFor="config-theme">
+                <label className="label cursor-pointer" htmlFor="config-theme">
                   <span className="label-text font-medium">Theme</span>
                 </label>
                 <Select
@@ -321,8 +321,9 @@ const ConfigurationPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
+                <label htmlFor="voice-commands-toggle" className="label cursor-pointer justify-start gap-4">
                   <Toggle
+                    id="voice-commands-toggle"
                     color="info"
                     checked={config.services.voiceCommands}
                     onChange={handleServiceSwitch}
@@ -336,8 +337,9 @@ const ConfigurationPage: React.FC = () => {
               </div>
 
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
+                <label htmlFor="rest-api-toggle" className="label cursor-pointer justify-start gap-4">
                   <Toggle
+                    id="rest-api-toggle"
                     color="info"
                     checked={config.services.restApi}
                     onChange={handleServiceSwitch}
@@ -381,7 +383,9 @@ const ConfigurationPage: React.FC = () => {
                     </Button>
                   </div>
 
+                  <label htmlFor="input-device" className="sr-only">Input Device</label>
                   <Select
+                    id="input-device"
                     size="sm"
                     variant="primary"
                     className="mb-4"
@@ -534,10 +538,11 @@ const ConfigurationPage: React.FC = () => {
                    </h4>
 
                    <div className="form-control w-full mb-3">
-                     <label className="label py-1">
+                     <label htmlFor="upload-state" className="label py-1 cursor-pointer">
                        <span className="label-text-alt">Target State</span>
                      </label>
                      <Select
+                      id="upload-state"
                       size="xs"
                       value={uploadState}
                       onChange={(e) => setUploadState(e.target.value as "idle" | "computer" | "chatty")}
@@ -549,7 +554,9 @@ const ConfigurationPage: React.FC = () => {
                    </div>
 
                    <div className="form-control w-full">
+                     <label htmlFor="onnx-file-upload" className="sr-only">Upload ONNX Voice Model</label>
                      <input
+                      id="onnx-file-upload"
                       type="file"
                       accept=".onnx"
                       aria-label="Select ONNX voice model file"
@@ -557,7 +564,7 @@ const ConfigurationPage: React.FC = () => {
                       onChange={handleFileUpload}
                       disabled={isUploading}
                      />
-                     <label className="label py-1">
+                     <label htmlFor="onnx-file-upload" className="label py-1 cursor-pointer">
                        <span className="label-text-alt text-warning">.onnx files only</span>
                      </label>
                    </div>

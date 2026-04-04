@@ -26,3 +26,24 @@ helpers.py
 Utility functions for the ChattyCommander application. This module contains helper functions that are used
 across different components of the application to perform common tasks.
 """
+import os
+
+def ensure_directory_exists(directory_path: str) -> None:
+    """Ensures that the given directory exists, creating it if necessary."""
+    os.makedirs(directory_path, exist_ok=True)
+
+def format_command_output(output: str) -> str:
+    """Formats a multi-line command output string into a single line separated by pipes."""
+    return " | ".join(line for line in output.splitlines() if line)
+
+def parse_model_keybindings(keybindings_str: str) -> dict[str, str]:
+    """Parses a comma-separated keybindings string into a dictionary mapping models to keys."""
+    if not keybindings_str:
+        return {}
+
+    result = {}
+    for binding in keybindings_str.split(","):
+        if "=" in binding:
+            model, key = binding.split("=", 1)
+            result[model.strip()] = key.strip()
+    return result

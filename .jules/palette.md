@@ -1,0 +1,3 @@
+## 2024-04-04 - DaisyUI Form Control Accessibility
+**Learning:** DaisyUI `form-control` wrappers often rely on structural nesting rather than semantic HTML linking for labels. The default text spans inside these labels do not visually indicate they are clickable.
+**Action:** Always explicitly define an `id` on the `<input>` or `<select>` and assign a matching `htmlFor` to the associated `<label>`. Enhance UX by adding the `cursor-pointer` utility class to labels so users know they can click the text to interact with the input. For inputs that require visual minimalism (like dropdowns without visible labels), provide a `<label>` with the `sr-only` class to ensure screen readers announce the field correctly.
