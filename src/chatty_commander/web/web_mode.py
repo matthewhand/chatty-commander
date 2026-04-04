@@ -329,18 +329,38 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 if current_time - req_time < 60
             ]
 
+        # Compute rate limit headers
+        request_count = len(self.requests[client_ip])
+        remaining = max(0, self.requests_per_minute - request_count)
+        if self.requests[client_ip]:
+            oldest = min(self.requests[client_ip])
+            reset_time = int(oldest + 60)
+        else:
+            reset_time = int(current_time + 60)
+        rate_limit_headers = {
+            "X-RateLimit-Limit": str(self.requests_per_minute),
+            "X-RateLimit-Remaining": str(remaining),
+            "X-RateLimit-Reset": str(reset_time),
+        }
+
         # Check rate limit
-        if len(self.requests[client_ip]) >= self.requests_per_minute:
+        if request_count >= self.requests_per_minute:
             return HTMLResponse(
                 content="Rate limit exceeded. Please try again later.",
                 status_code=429,
-                headers={"Retry-After": "60"},
+                headers={"Retry-After": "60", **rate_limit_headers},
             )
 
         # Add current request
         self.requests[client_ip].append(current_time)
+        # Update remaining after recording this request
+        rate_limit_headers["X-RateLimit-Remaining"] = str(
+            max(0, self.requests_per_minute - len(self.requests[client_ip]))
+        )
 
         response = await call_next(request)
+        for header_name, header_value in rate_limit_headers.items():
+            response.headers[header_name] = header_value
         return response
 
 

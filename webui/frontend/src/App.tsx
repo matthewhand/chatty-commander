@@ -12,6 +12,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { WebSocketProvider } from "./components/WebSocketProvider";
 import { useAuth, AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { ToastProvider } from "./components/ToastProvider";
 
 // Lazy-loaded pages for route-level code splitting
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -19,6 +20,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ConfigurationPage = lazy(() => import("./pages/ConfigurationPage"));
 const CommandsPage = lazy(() => import("./pages/CommandsPage"));
 const CommandAuthoringPage = lazy(() => import("./pages/CommandAuthoringPage"));
+const AgentsPage = lazy(() => import("./pages/AgentsPage"));
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -81,6 +83,7 @@ function AppContent() {
             <Route path="/configuration" element={<ConfigurationPage />} />
             <Route path="/commands" element={<CommandsPage />} />
             <Route path="/commands/authoring" element={<CommandAuthoringPage />} />
+            <Route path="/agents" element={<AgentsPage />} />
           </Route>
 
           {/* Default Redirect */}
@@ -105,9 +108,11 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <WebSocketProvider>
-            <div className="min-h-screen bg-base-100 text-base-content">
-              <AppContent />
-            </div>
+            <ToastProvider>
+              <div className="min-h-screen bg-base-100 text-base-content">
+                <AppContent />
+              </div>
+            </ToastProvider>
           </WebSocketProvider>
         </ThemeProvider>
       </AuthProvider>
