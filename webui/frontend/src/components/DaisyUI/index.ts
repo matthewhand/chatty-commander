@@ -81,3 +81,8 @@ export type { DiffProps } from './Diff';
 
 export { Countdown } from './Countdown';
 export type { CountdownProps } from './Countdown';
+export { PageHeader } from './PageHeader';
+export type { PageHeaderProps } from './PageHeader';
+
+export { StatsCard } from './StatsCard';
+export type { StatsCardProps } from './StatsCard';
