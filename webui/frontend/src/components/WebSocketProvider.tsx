@@ -5,6 +5,7 @@ type WebSocketContextType = {
   ws: WebSocket | null;
   isConnected: boolean;
   reconnectAttempt: number;
+  lastMessageTime: number | null;
 };
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
@@ -18,6 +19,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [lastMessageTime, setLastMessageTime] = useState<number | null>(null);
 
   // Refs to manage reconnection timer and state without triggering re-renders
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -72,6 +74,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
+    socket.onmessage = () => {
+      setLastMessageTime(Date.now());
+    };
+
     socket.onerror = (error) => {
       console.error("WebSocketProvider: Error", error);
     };
@@ -103,7 +109,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user, connect]); // Only re-run when user changes, not on every reconnect attempt
 
   return (
-    <WebSocketContext.Provider value={{ ws, isConnected, reconnectAttempt }}>
+    <WebSocketContext.Provider value={{ ws, isConnected, reconnectAttempt, lastMessageTime }}>
       {children}
     </WebSocketContext.Provider>
   );
