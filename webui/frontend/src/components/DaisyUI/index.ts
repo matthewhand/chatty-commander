@@ -46,9 +46,6 @@ export { Skeleton, SkeletonAvatar, SkeletonText, SkeletonCard, SkeletonTableLayo
 
 export { default as EmptyState } from './EmptyState';
 
-export { default as Breadcrumbs } from './Breadcrumbs';
-export type { BreadcrumbItem, BreadcrumbsProps } from './Breadcrumbs';
-
 export { default as Drawer } from './Drawer';
 export type { DrawerNavItem, DrawerProps } from './Drawer';
 
