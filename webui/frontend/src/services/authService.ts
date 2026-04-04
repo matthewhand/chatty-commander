@@ -42,7 +42,7 @@ class AuthService {
           return await response.json();
         }
       } catch (e) {
-        console.warn("Auth check failed with token", e);
+        // Auth check failed with token
       }
     }
 
@@ -52,19 +52,19 @@ class AuthService {
       // But usually relative path works if served by Vite proxy or same origin.
 
       const configUrl = `${this.baseUrl}/config`;
-      console.log(`Checking no-auth mode at ${configUrl}`);
+      // Checking no-auth mode
 
       const confRes = await fetch(configUrl);
       if (confRes.ok) {
-        console.log("No-auth mode detected via config endpoint");
+        // No-auth mode detected
         return { username: 'local_admin', roles: ['admin'], is_active: true, noAuth: true };
       } else {
-         console.log("Config endpoint returned non-200", confRes.status);
+         // Config endpoint returned non-200
          // Fallback: If we get a 200 from ANY public endpoint, we might assume no-auth if auth endpoints fail?
          // No, that's risky. But for this specific bug, maybe the URL is just missing the /api prefix or similar.
       }
     } catch (e) {
-      console.error("Failed to check no-auth mode", e);
+      // Failed to check no-auth mode
     }
 
     throw new Error("Authentication required");

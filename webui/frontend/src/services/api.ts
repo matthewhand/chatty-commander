@@ -90,7 +90,6 @@ export const fetchVoiceModels = async (): Promise<ModelFileInfo[]> => {
     const data: ModelListResponse = await res.json();
     return data.models;
   } catch (error) {
-    console.error("Failed to fetch voice models:", error);
     return [];
   }
 };
