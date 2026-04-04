@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
 import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap } from "lucide-react";
@@ -82,6 +82,65 @@ const DashboardPage = React.memo(() => {
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [lastMessageTime]);
+
+  // --- WebSocket Latency Ping/Pong ---
+  const [latency, setLatency] = useState<number | null>(null);
+  const pingTimestampRef = useRef<number | null>(null);
+
+  // Send a ping every 10 seconds when connected
+  useEffect(() => {
+    if (!ws || !isConnected) {
+      setLatency(null);
+      return;
+    }
+    const sendPing = () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        pingTimestampRef.current = Date.now();
+        try {
+          ws.send(JSON.stringify({ type: "ping", ts: pingTimestampRef.current }));
+        } catch {
+          // Ignore send errors; connection status will update separately
+        }
+      }
+    };
+    sendPing(); // Initial ping
+    const id = setInterval(sendPing, 10000);
+    return () => clearInterval(id);
+  }, [ws, isConnected]);
+
+  // Listen for pong responses
+  useEffect(() => {
+    if (!ws) return;
+    const handlePong = (event: MessageEvent) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "pong" && pingTimestampRef.current) {
+          setLatency(Date.now() - pingTimestampRef.current);
+          pingTimestampRef.current = null;
+        }
+      } catch {
+        // Not JSON or not a pong — ignore
+      }
+    };
+    ws.addEventListener("message", handlePong);
+    return () => ws.removeEventListener("message", handlePong);
+  }, [ws]);
+
+  const latencyBadge = useMemo(() => {
+    if (!isConnected) {
+      return { variant: "ghost" as const, label: "Disconnected", tip: "WebSocket disconnected" };
+    }
+    if (latency === null) {
+      return { variant: "ghost" as const, label: "Measuring...", tip: "Waiting for ping response" };
+    }
+    if (latency < 200) {
+      return { variant: "success" as const, label: "Connected", tip: `Latency: ${latency}ms` };
+    }
+    if (latency <= 500) {
+      return { variant: "warning" as const, label: "Slow", tip: `Latency: ${latency}ms` };
+    }
+    return { variant: "error" as const, label: "Degraded", tip: `Latency: ${latency}ms` };
+  }, [isConnected, latency]);
 
   // Performance optimization: Memoize the recent messages derived array
   // to avoid inline `messages.slice(-15)` during frequent real-time re-renders.
@@ -290,9 +349,16 @@ const DashboardPage = React.memo(() => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-        Dashboard
-      </h2>
+      <div className="flex items-center gap-3">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          Dashboard
+        </h2>
+        <TooltipWrapper content={latencyBadge.tip}>
+          <Badge variant={latencyBadge.variant} size="small" icon={<Wifi size={12} />}>
+            {latencyBadge.label}
+          </Badge>
+        </TooltipWrapper>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
