@@ -154,6 +154,12 @@ const ConfigurationPage: React.FC = () => {
     });
   }, []);
 
+  const { data: voiceStatus, refetch: refetchVoice } = useQuery({
+    queryKey: ['voiceStatus'],
+    queryFn: () => fetch('/api/voice/status').then(r => r.json()),
+    refetchInterval: 5000,
+  });
+
   const { data: devices } = useQuery({
     queryKey: ["audioDevices"],
     queryFn: getAudioDevices,
@@ -569,6 +575,36 @@ const ConfigurationPage: React.FC = () => {
                    )}
                 </Card.Body>
               </Card>
+            </div>
+          </div>
+
+          {/* Voice Pipeline Controls */}
+          <div className="p-6 border-b border-base-content/10 bg-base-200/30">
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+              <MicIcon className="w-5 h-5 text-success" />
+              Voice Pipeline
+              <Badge variant={voiceStatus?.running ? 'success' : 'ghost'} size="small">
+                {voiceStatus?.running ? 'Active' : 'Inactive'}
+              </Badge>
+            </h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-base-content/70">Enable real-time voice command detection</p>
+                {voiceStatus?.wake_words?.length > 0 && (
+                  <p className="text-xs text-base-content/50 mt-1">
+                    Wake words: {voiceStatus.wake_words.join(', ')}
+                  </p>
+                )}
+              </div>
+              <Toggle
+                checked={voiceStatus?.running || false}
+                onChange={async () => {
+                  const endpoint = voiceStatus?.running ? '/api/voice/stop' : '/api/voice/start';
+                  await fetch(endpoint, { method: 'POST' });
+                  refetchVoice();
+                }}
+                color="success"
+              />
             </div>
           </div>
 
