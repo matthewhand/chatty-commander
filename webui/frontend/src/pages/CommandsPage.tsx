@@ -302,6 +302,7 @@ export default function CommandsPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
                         </svg>
                       }
+                      buttonClassName="btn btn-ghost btn-sm btn-circle"
                       menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
                       ariaLabel={`Options for ${name}`}
                     >

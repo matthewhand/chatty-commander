@@ -102,3 +102,23 @@ class TestCommandProcessor:
         status = processor.get_processor_status()
         assert status["commands_count"] == 4
         assert "llm_available" in status
+
+    def test_suggestions_map_keys_subset_of_available_commands(self, processor):
+        """Verify _available_suggestions_map keys are correctly synced with available commands."""
+        # Initial sync check
+        suggestion_keys = set(processor._available_suggestions_map.keys())
+        cmd_keys = set(processor._available_commands.keys())
+        assert suggestion_keys.issubset(cmd_keys)
+
+        # Force a refresh with a new config
+        processor.config_manager.model_actions = {
+            "hello": {"greet": {}}  # "hello" is in SUGGESTION_MAP
+        }
+        processor.refresh_commands()
+
+        # Re-check sync
+        suggestion_keys = set(processor._available_suggestions_map.keys())
+        cmd_keys = set(processor._available_commands.keys())
+        assert suggestion_keys.issubset(cmd_keys)
+        assert "hello" in suggestion_keys
+        assert "lights" not in suggestion_keys # Ensure old keys were cleared

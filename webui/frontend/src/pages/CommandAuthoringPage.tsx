@@ -11,13 +11,24 @@ import {
   X,
   Plus,
   Trash2,
-  Loader2,
   Edit3,
   Save,
   RefreshCw,
   Code,
   Shield,
 } from 'lucide-react';
+import {
+  Button,
+  Card,
+  Alert,
+  Badge,
+  Input,
+  Select,
+  Textarea,
+  Tabs,
+  ConfirmModal,
+  LoadingSpinner,
+} from '../components/DaisyUI';
 
 // --- TypeScript Interfaces ---
 
@@ -99,20 +110,25 @@ const saveCommand = async (command: GeneratedCommand): Promise<void> => {
 
 // --- Components ---
 
-const ActionTypeBadge: React.FC<{ type: string }> = ({ type }) => {
-  const colors: Record<string, string> = {
-    keypress: 'badge-primary',
-    url: 'badge-secondary',
-    shell: 'badge-accent',
-    custom_message: 'badge-info',
-  };
-
-  return (
-    <span className={`badge ${colors[type] || 'badge-ghost'} badge-sm`}>
-      {type}
-    </span>
-  );
+const ACTION_TYPE_VARIANTS: Record<string, 'primary' | 'secondary' | 'info' | 'ghost'> = {
+  keypress: 'primary',
+  url: 'secondary',
+  shell: 'primary',
+  custom_message: 'info',
 };
+
+const ActionTypeBadge: React.FC<{ type: string }> = ({ type }) => (
+  <Badge variant={ACTION_TYPE_VARIANTS[type] || 'ghost'} size="small">
+    {type}
+  </Badge>
+);
+
+const ACTION_TYPE_OPTIONS = [
+  { label: 'Keypress', value: 'keypress' },
+  { label: 'URL', value: 'url' },
+  { label: 'Shell Command', value: 'shell' },
+  { label: 'Custom Message', value: 'custom_message' },
+];
 
 const ActionField: React.FC<{
   action: CommandAction;
@@ -133,99 +149,100 @@ const ActionField: React.FC<{
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="card bg-base-200/50 border border-base-content/10 p-4 space-y-3"
     >
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-base-content/60">Action {index + 1}</span>
-        <button
-          onClick={onRemove}
-          className="btn btn-ghost btn-sm btn-circle text-error"
-          aria-label="Remove action"
-        >
-          <Trash2 size={16} />
-        </button>
-      </div>
+      <Card className="bg-base-200/50 border border-base-content/10" compact>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-base-content/60">Action {index + 1}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              aria-label="Remove action"
+              className="btn-circle text-error"
+            >
+              <Trash2 size={16} />
+            </Button>
+          </div>
 
-      <div className="form-control">
-        <label className="label">
-          <span className="label-text text-sm">Type</span>
-        </label>
-        <select
-          className="select select-sm select-bordered w-full"
-          value={action.type}
-          onChange={(e) => handleTypeChange(e.target.value as CommandAction['type'])}
-        >
-          <option value="keypress">Keypress</option>
-          <option value="url">URL</option>
-          <option value="shell">Shell Command</option>
-          <option value="custom_message">Custom Message</option>
-        </select>
-      </div>
+          <div className="form-control">
+            <label className="label cursor-pointer">
+              <span className="label-text text-sm">Type</span>
+            </label>
+            <Select
+              size="sm"
+              options={ACTION_TYPE_OPTIONS}
+              value={action.type}
+              onChange={(e) => handleTypeChange(e.target.value as CommandAction['type'])}
+            />
+          </div>
 
-      {action.type === 'keypress' && (
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text text-sm">Keys</span>
-          </label>
-          <input
-            type="text"
-            className="input input-sm input-bordered"
-            placeholder="e.g., ctrl+alt+t"
-            value={action.keys || ''}
-            onChange={(e) => handleFieldChange('keys', e.target.value)}
-          />
+          {action.type === 'keypress' && (
+            <Input
+              label="Keys"
+              size="sm"
+              placeholder="e.g., ctrl+alt+t"
+              value={action.keys || ''}
+              onChange={(e) => handleFieldChange('keys', e.target.value)}
+            />
+          )}
+
+          {action.type === 'url' && (
+            <Input
+              label="URL"
+              size="sm"
+              placeholder="https://example.com"
+              value={action.url || ''}
+              onChange={(e) => handleFieldChange('url', e.target.value)}
+            />
+          )}
+
+          {action.type === 'shell' && (
+            <Input
+              label="Command"
+              size="sm"
+              placeholder="e.g., npm start"
+              value={action.cmd || action.command || ''}
+              onChange={(e) => handleFieldChange('cmd', e.target.value)}
+            />
+          )}
+
+          {action.type === 'custom_message' && (
+            <Input
+              label="Message"
+              size="sm"
+              placeholder="Enter message to display"
+              value={action.message || ''}
+              onChange={(e) => handleFieldChange('message', e.target.value)}
+            />
+          )}
         </div>
-      )}
-
-      {action.type === 'url' && (
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text text-sm">URL</span>
-          </label>
-          <input
-            type="text"
-            className="input input-sm input-bordered"
-            placeholder="https://example.com"
-            value={action.url || ''}
-            onChange={(e) => handleFieldChange('url', e.target.value)}
-          />
-        </div>
-      )}
-
-      {action.type === 'shell' && (
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text text-sm">Command</span>
-          </label>
-          <input
-            type="text"
-            className="input input-sm input-bordered"
-            placeholder="e.g., npm start"
-            value={action.cmd || action.command || ''}
-            onChange={(e) => handleFieldChange('cmd', e.target.value)}
-          />
-        </div>
-      )}
-
-      {action.type === 'custom_message' && (
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text text-sm">Message</span>
-          </label>
-          <input
-            type="text"
-            className="input input-sm input-bordered"
-            placeholder="Enter message to display"
-            value={action.message || ''}
-            onChange={(e) => handleFieldChange('message', e.target.value)}
-          />
-        </div>
-      )}
+      </Card>
     </motion.div>
   );
 };
 
+// --- Steps Wizard Helper ---
+
+function computeCurrentStep(mode: 'ai' | 'manual', description: string, generatedCommand: GeneratedCommand | null, manualCommand: GeneratedCommand): number {
+  if (mode === 'ai') {
+    if (generatedCommand && generatedCommand.actions.length > 0) return 4;
+    if (description.trim()) return 2;
+    return 1;
+  }
+  // manual mode
+  if (manualCommand.actions.length > 0 && manualCommand.name && manualCommand.display_name) return 4;
+  if (manualCommand.actions.length > 0) return 3;
+  if (manualCommand.name || manualCommand.display_name || manualCommand.wakeword) return 2;
+  return 1;
+}
+
 // --- Main Page Component ---
+
+const MODE_TABS = [
+  { key: 'ai', label: 'AI Mode', icon: <Sparkles size={16} /> },
+  { key: 'manual', label: 'Manual Mode', icon: <Code size={16} /> },
+];
 
 export default function CommandAuthoringPage() {
   useEffect(() => {
@@ -245,6 +262,11 @@ export default function CommandAuthoringPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const currentStep = useMemo(
+    () => computeCurrentStep(mode, description, generatedCommand, manualCommand),
+    [mode, description, generatedCommand, manualCommand],
+  );
 
   const validateField = useCallback((field: string, value: string) => {
     let errorMsg = '';
@@ -412,8 +434,29 @@ export default function CommandAuthoringPage() {
 
   const currentCommand = useMemo(() => mode === 'ai' && generatedCommand ? generatedCommand : manualCommand, [mode, generatedCommand, manualCommand]);
 
+  // Build ConfirmModal message content
+  const confirmMessage = useMemo(() => {
+    const lines = [
+      `Name: ${currentCommand.name}`,
+      `Display: ${currentCommand.display_name}`,
+      `Wakeword: ${currentCommand.wakeword}`,
+      `Actions (${currentCommand.actions.length}): ${currentCommand.actions.map((a) => a.type).join(', ')}`,
+      '',
+      'Commands can execute shell commands and open URLs. Please review carefully before saving.',
+    ];
+    return lines.join('\n');
+  }, [currentCommand]);
+
   return (
     <div className="space-y-6">
+      {/* Steps Wizard Indicator */}
+      <ul className="steps steps-horizontal w-full mb-6" aria-label="Authoring progress">
+        <li className={`step ${currentStep >= 1 ? 'step-primary' : ''}`}>Choose Mode</li>
+        <li className={`step ${currentStep >= 2 ? 'step-primary' : ''}`}>Define Command</li>
+        <li className={`step ${currentStep >= 3 ? 'step-primary' : ''}`}>Configure Actions</li>
+        <li className={`step ${currentStep >= 4 ? 'step-primary' : ''}`}>Review &amp; Save</li>
+      </ul>
+
       {/* Header Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -437,30 +480,13 @@ export default function CommandAuthoringPage() {
         </div>
 
         {/* Mode Toggle */}
-        <div className="tabs tabs-boxed bg-base-200" role="tablist" aria-label="Command Creation Mode">
-          <button
-            id="tab-ai-mode"
-            role="tab"
-            aria-selected={mode === 'ai'}
-            aria-controls="ai-mode-panel"
-            className={`tab ${mode === 'ai' ? 'tab-active' : ''}`}
-            onClick={() => setMode('ai')}
-          >
-            <Sparkles size={16} className="mr-2" />
-            AI Mode
-          </button>
-          <button
-            id="tab-manual-mode"
-            role="tab"
-            aria-selected={mode === 'manual'}
-            aria-controls="manual-mode-panel"
-            className={`tab ${mode === 'manual' ? 'tab-active' : ''}`}
-            onClick={() => setMode('manual')}
-          >
-            <Code size={16} className="mr-2" />
-            Manual Mode
-          </button>
-        </div>
+        <Tabs
+          tabs={MODE_TABS}
+          activeTab={mode}
+          onChange={(key) => setMode(key as 'ai' | 'manual')}
+          variant="boxed"
+          className="bg-base-200"
+        />
       </motion.div>
 
       <div className="divider divider-accent"></div>
@@ -472,13 +498,14 @@ export default function CommandAuthoringPage() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="alert alert-error"
           >
-            <AlertCircle size={20} />
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error">
-              <X size={16} />
-            </button>
+            <Alert
+              status="error"
+              icon={<AlertCircle size={20} />}
+              onClose={() => setError(null)}
+            >
+              <span>{error}</span>
+            </Alert>
           </motion.div>
         )}
       </AnimatePresence>
@@ -491,9 +518,8 @@ export default function CommandAuthoringPage() {
           aria-labelledby="tab-ai-mode"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card glass-card"
         >
-          <div className="card-body">
+          <Card className="glass-card">
             <h2 className="card-title flex items-center gap-2">
               <Sparkles className="text-primary" size={20} />
               Describe Your Command
@@ -504,34 +530,29 @@ export default function CommandAuthoringPage() {
             </p>
 
             <div className="form-control">
-              <textarea
-                className="textarea textarea-bordered h-32 font-normal"
+              <label htmlFor="ai-description" className="sr-only">AI command description</label>
+              <Textarea
+                id="ai-description"
+                className="h-32 font-normal"
                 placeholder="When I say 'start my day', open my email client, my code editor, and the project management website..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
-            <div className="card-actions justify-end mt-4">
-              <button
-                className="btn btn-primary"
+            <Card.Actions className="mt-4">
+              <Button
+                variant="primary"
                 onClick={handleGenerate}
                 disabled={!description.trim() || generateMutation.isPending}
+                loading={generateMutation.isPending}
+                loadingText="Generating..."
+                icon={<Wand2 size={18} />}
               >
-                {generateMutation.isPending ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 size={18} />
-                    Generate Command
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+                Generate Command
+              </Button>
+            </Card.Actions>
+          </Card>
         </motion.div>
       )}
 
@@ -540,23 +561,20 @@ export default function CommandAuthoringPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="card glass-card border-primary/30"
         >
-          <div className="card-body">
+          <Card className="glass-card border-primary/30">
             <div className="flex justify-between items-start">
               <h2 className="card-title flex items-center gap-2">
                 <Check className="text-success" size={20} />
                 Generated Command
               </h2>
               <div className="flex gap-2">
-                <button className="btn btn-ghost btn-sm" onClick={handleRegenerate}>
-                  <RefreshCw size={16} className="mr-1" />
+                <Button variant="ghost" size="sm" onClick={handleRegenerate} icon={<RefreshCw size={16} />}>
                   Regenerate
-                </button>
-                <button className="btn btn-secondary btn-sm" onClick={switchToManual}>
-                  <Edit3 size={16} className="mr-1" />
+                </Button>
+                <Button variant="secondary" size="sm" onClick={switchToManual} icon={<Edit3 size={16} />}>
                   Edit Manually
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -594,26 +612,19 @@ export default function CommandAuthoringPage() {
               </div>
             </div>
 
-            <div className="card-actions justify-end mt-4">
-              <button
-                className="btn btn-primary"
+            <Card.Actions className="mt-4">
+              <Button
+                variant="primary"
                 onClick={handleSave}
                 disabled={saveMutation.isPending}
+                loading={saveMutation.isPending}
+                loadingText="Saving..."
+                icon={<Save size={18} />}
               >
-                {saveMutation.isPending ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={18} />
-                    Save Command
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+                Save Command
+              </Button>
+            </Card.Actions>
+          </Card>
         </motion.div>
       )}
 
@@ -625,91 +636,62 @@ export default function CommandAuthoringPage() {
           aria-labelledby="tab-manual-mode"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card glass-card"
         >
-          <div className="card-body">
+          <Card className="glass-card">
             <h2 className="card-title flex items-center gap-2">
               <Terminal className="text-primary" size={20} />
               Manual Command Editor
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div className="form-control">
-                <label className="label" htmlFor="cmd-name">
-                  <span className="label-text">Command Name (snake_case)</span>
-                </label>
-                <input
-                  id="cmd-name"
-                  type="text"
-                  className={`input input-bordered${formErrors.name ? ' input-error' : ''}`}
-                  placeholder="my_command"
-                  value={manualCommand.name}
-                  onChange={(e) =>
-                    setManualCommand((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  onBlur={(e) => validateField('name', e.target.value)}
-                />
-                {formErrors.name && (
-                  <span className="text-error text-xs mt-1">{formErrors.name}</span>
-                )}
-              </div>
+              <Input
+                label="Command Name (snake_case)"
+                placeholder="my_command"
+                value={manualCommand.name}
+                error={formErrors.name}
+                onChange={(e) =>
+                  setManualCommand((prev) => ({ ...prev, name: e.target.value }))
+                }
+                onBlur={(e) => validateField('name', e.target.value)}
+              />
 
-              <div className="form-control">
-                <label className="label" htmlFor="cmd-display-name">
-                  <span className="label-text">Display Name</span>
-                </label>
-                <input
-                  id="cmd-display-name"
-                  type="text"
-                  className={`input input-bordered${formErrors.display_name ? ' input-error' : ''}`}
-                  placeholder="My Command"
-                  value={manualCommand.display_name}
-                  onChange={(e) =>
-                    setManualCommand((prev) => ({ ...prev, display_name: e.target.value }))
-                  }
-                  onBlur={(e) => validateField('display_name', e.target.value)}
-                />
-                {formErrors.display_name && (
-                  <span className="text-error text-xs mt-1">{formErrors.display_name}</span>
-                )}
-              </div>
+              <Input
+                label="Display Name"
+                placeholder="My Command"
+                value={manualCommand.display_name}
+                error={formErrors.display_name}
+                onChange={(e) =>
+                  setManualCommand((prev) => ({ ...prev, display_name: e.target.value }))
+                }
+                onBlur={(e) => validateField('display_name', e.target.value)}
+              />
 
-              <div className="form-control">
-                <label className="label" htmlFor="cmd-wakeword">
-                  <span className="label-text">Wakeword</span>
-                </label>
-                <input
-                  id="cmd-wakeword"
-                  type="text"
-                  className={`input input-bordered${formErrors.wakeword ? ' input-error' : ''}`}
-                  placeholder="Trigger phrase"
-                  value={manualCommand.wakeword}
-                  onChange={(e) =>
-                    setManualCommand((prev) => ({ ...prev, wakeword: e.target.value }))
-                  }
-                  onBlur={(e) => validateField('wakeword', e.target.value)}
-                />
-                {formErrors.wakeword && (
-                  <span className="text-error text-xs mt-1">{formErrors.wakeword}</span>
-                )}
-              </div>
+              <Input
+                label="Wakeword"
+                placeholder="Trigger phrase"
+                value={manualCommand.wakeword}
+                error={formErrors.wakeword}
+                onChange={(e) =>
+                  setManualCommand((prev) => ({ ...prev, wakeword: e.target.value }))
+                }
+                onBlur={(e) => validateField('wakeword', e.target.value)}
+              />
             </div>
 
             <div className="divider"></div>
 
             <div className="flex justify-between items-center">
               <h3 className="font-semibold">Actions</h3>
-              <button className="btn btn-secondary btn-sm" onClick={addManualAction}>
-                <Plus size={16} className="mr-1" />
+              <Button variant="secondary" size="sm" onClick={addManualAction} icon={<Plus size={16} />}>
                 Add Action
-              </button>
+              </Button>
             </div>
 
             <AnimatePresence>
               {manualCommand.actions.length === 0 ? (
                 <div className="text-center py-8 text-base-content/50">
                   <Terminal size={32} className="mx-auto mb-2 opacity-50" />
-                  <p>No actions defined yet. Click "Add Action" to get started.</p>
+                  <p>No actions defined yet. Click &quot;Add Action&quot; to get started.</p>
                 </div>
               ) : (
                 <div className="space-y-3 mt-4">
@@ -726,26 +708,19 @@ export default function CommandAuthoringPage() {
               )}
             </AnimatePresence>
 
-            <div className="card-actions justify-end mt-6">
-              <button
-                className="btn btn-primary"
+            <Card.Actions className="mt-6">
+              <Button
+                variant="primary"
                 onClick={handleSave}
                 disabled={saveMutation.isPending || manualCommand.actions.length === 0 || hasFormErrors}
+                loading={saveMutation.isPending}
+                loadingText="Saving..."
+                icon={<Save size={18} />}
               >
-                {saveMutation.isPending ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={18} />
-                    Save Command
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+                Save Command
+              </Button>
+            </Card.Actions>
+          </Card>
         </motion.div>
       )}
 
@@ -754,110 +729,34 @@ export default function CommandAuthoringPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="alert alert-warning"
         >
-          <AlertCircle size={20} />
-          <div className="flex-1">
-            <p className="font-medium">AI generation is currently unavailable</p>
-            <p className="text-sm">You can still create commands manually using the Manual Mode.</p>
-          </div>
-          <button className="btn btn-sm" onClick={() => setMode('manual')}>
-            Switch to Manual
-          </button>
+          <Alert
+            status="warning"
+            icon={<AlertCircle size={20} />}
+          >
+            <div className="flex-1">
+              <p className="font-medium">AI generation is currently unavailable</p>
+              <p className="text-sm">You can still create commands manually using the Manual Mode.</p>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setMode('manual')}>
+              Switch to Manual
+            </Button>
+          </Alert>
         </motion.div>
       )}
 
       {/* Confirmation Modal */}
-      <AnimatePresence>
-        {showConfirmModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-40"
-              onClick={() => setShowConfirmModal(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 flex items-center justify-center z-50 p-4"
-            >
-              <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl">
-                <div className="card-body">
-                  <div className="flex items-center gap-3 text-warning mb-4">
-                    <Shield size={28} />
-                    <h3 className="text-xl font-bold">Confirm Command Creation</h3>
-                  </div>
-
-                  <div className="alert alert-warning mb-4">
-                    <AlertCircle size={18} />
-                    <span className="text-sm">
-                      Commands can execute shell commands and open URLs. Please review carefully
-                      before saving.
-                    </span>
-                  </div>
-
-                  <div className="bg-base-200/50 rounded-xl p-4 space-y-2 mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-base-content/60">Name:</span>
-                      <span className="font-mono text-sm">{currentCommand.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-base-content/60">Display:</span>
-                      <span className="text-sm">{currentCommand.display_name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-base-content/60">Wakeword:</span>
-                      <span className="text-sm">{currentCommand.wakeword}</span>
-                    </div>
-                    <div className="pt-2 border-t border-base-content/10">
-                      <span className="text-sm text-base-content/60">Actions ({currentCommand.actions.length}):</span>
-                      <div className="mt-2 space-y-1">
-                        {currentCommand.actions.map((action, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-sm">
-                            <ActionTypeBadge type={action.type} />
-                            <span className="text-base-content/70 truncate">
-                              {action.keys || action.url || action.cmd || action.command || action.message || '—'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="card-actions justify-end gap-2">
-                    <button
-                      className="btn btn-ghost"
-                      onClick={() => setShowConfirmModal(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={confirmSave}
-                      disabled={saveMutation.isPending}
-                    >
-                      {saveMutation.isPending ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin mr-1" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Check size={16} className="mr-1" />
-                          Confirm Save
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmSave}
+        title="Confirm Command Creation"
+        message={confirmMessage}
+        confirmText="Confirm Save"
+        cancelText="Cancel"
+        confirmVariant="primary"
+        loading={saveMutation.isPending}
+      />
     </div>
   );
 }
