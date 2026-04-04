@@ -166,10 +166,11 @@ const ActionField: React.FC<{
           </div>
 
           <div className="form-control">
-            <label className="label cursor-pointer">
+            <label htmlFor={`action-type-${index}`} className="label cursor-pointer">
               <span className="label-text text-sm">Type</span>
             </label>
             <Select
+              id={`action-type-${index}`}
               size="sm"
               options={ACTION_TYPE_OPTIONS}
               value={action.type}

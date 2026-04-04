@@ -79,7 +79,7 @@ export const Input = memo(forwardRef<HTMLInputElement, InputProps>(
     if (label || error || helperText) {
       return (
         <div className="form-control w-full">
-          {label && <label htmlFor={id} className="label"><span className="label-text">{label}</span></label>}
+          {label && <label htmlFor={id} className="label cursor-pointer"><span className="label-text">{label}</span></label>}
           {inputContent}
           {error && <label className="label" id={`${id}-error`}><span className="label-text-alt text-error">{error}</span></label>}
           {helperText && !error && <label className="label" id={`${id}-helper`}><span className="label-text-alt text-base-content/60">{helperText}</span></label>}
