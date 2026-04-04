@@ -39,6 +39,13 @@ const Dropdown: React.FC<DropdownProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [setIsOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, setIsOpen]);
+
   const positionCls = { top: 'dropdown-top', bottom: 'dropdown-bottom', left: 'dropdown-left', right: 'dropdown-right' }[position];
   const sizeCls = size === 'none' ? '' : `btn-${size}`;
   const colorCls = color === 'none' ? '' : `btn-${color}`;

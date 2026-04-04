@@ -10,6 +10,7 @@ import {
     X as CloseIcon
 } from "lucide-react";
 import { useAuth } from '../hooks/useAuth';
+import { Button } from './DaisyUI';
 import ScrollToTop from './ScrollToTop';
 import Breadcrumbs from './Breadcrumbs';
 
@@ -74,13 +75,14 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         </h1>
                         <p className="text-xs text-base-content/60">Voice Commander</p>
                     </div>
-                    <button
-                        className="lg:hidden p-2 hover:bg-base-content/10 rounded-lg"
+                    <Button
+                        variant="ghost"
+                        className="lg:hidden"
                         onClick={() => setIsSidebarOpen(false)}
                         aria-label="Close sidebar"
                     >
                         <CloseIcon size={20} />
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Menu */}
@@ -107,10 +109,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className="p-4 border-t border-base-content/10 bg-base-300">
                     <ul className="menu w-full p-0">
                         <li>
-                            <button onClick={logout} className="text-error hover:bg-error/10">
+                            <Button variant="ghost" onClick={logout} className="text-error hover:bg-error/10">
                                 <LogoutIcon size={20} />
                                 Logout
-                            </button>
+                            </Button>
                         </li>
                     </ul>
                 </div>
@@ -122,13 +124,13 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
                 {/* Mobile Header */}
                 <header className="lg:hidden h-16 bg-base-300 flex items-center px-4 border-b border-base-content/10 gap-4">
-                    <button
-                        className="p-2 hover:bg-base-content/10 rounded-lg"
+                    <Button
+                        variant="ghost"
                         onClick={() => setIsSidebarOpen(true)}
                         aria-label="Open sidebar"
                     >
                         <MenuIcon size={24} />
-                    </button>
+                    </Button>
                     <div className="font-bold">Chatty Commander</div>
                 </header>
 
@@ -139,6 +141,22 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         {children}
                     </div>
                 </main>
+            </div>
+
+            {/* Mobile Bottom Dock Navigation */}
+            <div className="dock dock-bottom lg:hidden">
+                <button className={location.pathname === '/dashboard' ? 'dock-active' : ''} onClick={() => navigate('/dashboard')}>
+                    <DashboardIcon size={20} />
+                    <span className="dock-label">Dashboard</span>
+                </button>
+                <button className={location.pathname === '/commands' ? 'dock-active' : ''} onClick={() => navigate('/commands')}>
+                    <TerminalIcon size={20} />
+                    <span className="dock-label">Commands</span>
+                </button>
+                <button className={location.pathname === '/configuration' ? 'dock-active' : ''} onClick={() => navigate('/configuration')}>
+                    <SettingsIcon size={20} />
+                    <span className="dock-label">Settings</span>
+                </button>
             </div>
         </div>
     );
