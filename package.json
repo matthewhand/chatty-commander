@@ -1,6 +1,9 @@
 {
   "name": "chatty-commander-monorepo",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev:all": "pnpm --filter app dev & pnpm --filter server dev",
     "build:all": "pnpm --filter app build && pnpm --filter server build",
