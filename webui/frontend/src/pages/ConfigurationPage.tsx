@@ -104,6 +104,28 @@ async function persistConfig(cfg: AppConfig): Promise<void> {
   });
 }
 
+// ─── CopyButton helper ───────────────────────────────────────────────────────
+const CopyButton = ({ value, field, copiedField, onCopy }: {
+  value: string;
+  field: string;
+  copiedField: string | null;
+  onCopy: (field: string, value: string) => void;
+}) => {
+  const isCopied = copiedField === field;
+  return (
+    <div className="tooltip" data-tip={isCopied ? "Copied!" : "Copy"}>
+      <button
+        type="button"
+        className="btn btn-ghost btn-xs btn-circle"
+        onClick={() => onCopy(field, value)}
+        aria-label={`Copy ${field}`}
+      >
+        {isCopied ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+      </button>
+    </div>
+  );
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 const ConfigurationPage: React.FC = () => {
   useEffect(() => {
@@ -365,16 +387,21 @@ const ConfigurationPage: React.FC = () => {
                     </button>
                   </div>
 
-                  <select
-                    className="select select-bordered select-sm w-full select-primary mb-4"
-                    value={inputDevice}
-                    onChange={(e) => setInputDevice(e.target.value)}
-                  >
-                    <option value="" disabled>Select device...</option>
-                    {devices?.input.map((dev: string) => (
-                      <option key={dev} value={dev}>{dev}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-1 items-center mb-4">
+                    <select
+                      className="select select-bordered select-sm w-full select-primary"
+                      value={inputDevice}
+                      onChange={(e) => setInputDevice(e.target.value)}
+                    >
+                      <option value="" disabled>Select device...</option>
+                      {devices?.input.map((dev: string) => (
+                        <option key={dev} value={dev}>{dev}</option>
+                      ))}
+                    </select>
+                    {inputDevice && (
+                      <CopyButton value={inputDevice} field="inputDevice" copiedField={copiedField} onCopy={handleCopy} />
+                    )}
+                  </div>
 
                   {/* Visualizer Area */}
                   <div className="h-6 bg-base-200 rounded flex items-center px-4 gap-1 overflow-hidden">
@@ -412,16 +439,21 @@ const ConfigurationPage: React.FC = () => {
                     </button>
                   </div>
 
-                  <select
-                    className="select select-bordered select-sm w-full select-secondary mb-4"
-                    value={outputDevice}
-                    onChange={(e) => setOutputDevice(e.target.value)}
-                  >
-                    <option value="" disabled>Select device...</option>
-                    {devices?.output.map((dev: string) => (
-                      <option key={dev} value={dev}>{dev}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-1 items-center mb-4">
+                    <select
+                      className="select select-bordered select-sm w-full select-secondary"
+                      value={outputDevice}
+                      onChange={(e) => setOutputDevice(e.target.value)}
+                    >
+                      <option value="" disabled>Select device...</option>
+                      {devices?.output.map((dev: string) => (
+                        <option key={dev} value={dev}>{dev}</option>
+                      ))}
+                    </select>
+                    {outputDevice && (
+                      <CopyButton value={outputDevice} field="outputDevice" copiedField={copiedField} onCopy={handleCopy} />
+                    )}
+                  </div>
 
                   <div className="h-6 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
                     <span className="text-[10px] text-base-content/40 italic">
@@ -574,15 +606,7 @@ const ConfigurationPage: React.FC = () => {
                     disabled={config.envOverrides.baseUrl}
                   />
                   {!config.envOverrides.baseUrl && (
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-xs"
-                      onClick={() => handleCopy("baseUrl", config.llmBaseUrl)}
-                      title="Copy to clipboard"
-                      aria-label="Copy API Base URL"
-                    >
-                      {copiedField === "baseUrl" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
-                    </button>
+                    <CopyButton value={config.llmBaseUrl} field="baseUrl" copiedField={copiedField} onCopy={handleCopy} />
                   )}
                 </div>
                 <label className="label">
@@ -599,17 +623,22 @@ const ConfigurationPage: React.FC = () => {
                       API Key {config.envOverrides.apiKey && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                     </span>
                   </label>
-                  <input
-                    id="config-api-key"
-                    type="password"
-                    name="apiKey"
-                    placeholder={config.envOverrides.apiKey ? "(Configured via environment variable)" : "sk-... or Bearer token"}
-                    className="input input-bordered w-full disabled:opacity-50"
-                    value={config.envOverrides.apiKey ? "********" : config.apiKey}
-                    onChange={handleChange}
-                    autoComplete="off"
-                    disabled={config.envOverrides.apiKey}
-                  />
+                  <div className="flex gap-1 items-center">
+                    <input
+                      id="config-api-key"
+                      type="password"
+                      name="apiKey"
+                      placeholder={config.envOverrides.apiKey ? "(Configured via environment variable)" : "sk-... or Bearer token"}
+                      className="input input-bordered w-full disabled:opacity-50"
+                      value={config.envOverrides.apiKey ? "********" : config.apiKey}
+                      onChange={handleChange}
+                      autoComplete="off"
+                      disabled={config.envOverrides.apiKey}
+                    />
+                    {!config.envOverrides.apiKey && config.apiKey && (
+                      <CopyButton value={config.apiKey} field="apiKey" copiedField={copiedField} onCopy={handleCopy} />
+                    )}
+                  </div>
                 </div>
 
                 <div className="form-control w-full">
@@ -642,15 +671,7 @@ const ConfigurationPage: React.FC = () => {
                           <option key={m} value={m}>{m}</option>
                         ))}
                       </select>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-xs"
-                        onClick={() => handleCopy("model", config.llmModel)}
-                        title="Copy to clipboard"
-                        aria-label="Copy Model"
-                      >
-                        {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
-                      </button>
+                      <CopyButton value={config.llmModel} field="model" copiedField={copiedField} onCopy={handleCopy} />
                     </div>
                   ) : (
                     <div className="flex gap-1 items-center">
@@ -665,15 +686,7 @@ const ConfigurationPage: React.FC = () => {
                         disabled={config.envOverrides.model}
                       />
                       {!config.envOverrides.model && (
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-xs"
-                          onClick={() => handleCopy("model", config.llmModel)}
-                          title="Copy to clipboard"
-                          aria-label="Copy Model"
-                        >
-                          {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
-                        </button>
+                        <CopyButton value={config.llmModel} field="model" copiedField={copiedField} onCopy={handleCopy} />
                       )}
                     </div>
                   )}
