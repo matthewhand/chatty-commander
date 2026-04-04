@@ -1,3 +1,4 @@
+# NOTE: This module is superseded by advisors/tools/browser_analyst.py. Kept for test compatibility.
 # MIT License
 #
 # Copyright (c) 2024 mhand

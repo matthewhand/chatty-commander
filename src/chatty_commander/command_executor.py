@@ -48,7 +48,3 @@ def __getattr__(name: str):  # type: ignore[override]
 
         return CommandExecutor
     raise AttributeError(name)
-
-
-# Make these names visible to patchers; CommandExecutor is provided lazily via __getattr__
-__all__ = ["pyautogui", "requests"]
