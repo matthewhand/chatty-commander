@@ -15,6 +15,43 @@ class EnvVarInfo(BaseModel):
     name: str = Field(..., description="Environment variable name")
     set: bool = Field(..., description="Whether the variable is currently set")
     description: str = Field(..., description="Human-readable description of the variable")
+    default: str | None = Field(None, description="Default value when not set")
+    required: bool = Field(False, description="Whether the variable is required")
+
+
+# Recognised environment variables: (description, default, required)
+_ENV_VAR_CATALOG: dict[str, tuple[str, str | None, bool]] = {
+    # LLM / OpenAI
+    "OPENAI_API_KEY": ("OpenAI API key for LLM access", None, False),
+    "OPENAI_BASE_URL": ("Custom base URL for OpenAI-compatible API", "https://api.openai.com/v1", False),
+    "OPENAI_API_BASE": ("Legacy base URL for OpenAI-compatible API (fallback for OPENAI_BASE_URL)", "https://api.openai.com/v1", False),
+    "OPENAI_MODEL": ("Default OpenAI model to use", "gpt-3.5-turbo", False),
+    # Ollama
+    "OLLAMA_HOST": ("Host address for a local Ollama instance", "ollama:11434", False),
+    # LLM manager
+    "LLM_BACKEND": ("Preferred LLM backend (e.g. openai, ollama)", None, False),
+    # Agents
+    "CHATTY_AGENTS_STORE": ("Path to the agents store JSON file", "~/.chatty_commander/agents.json", False),
+    # Bridge / API endpoints
+    "CHATTY_BRIDGE_TOKEN": ("Authentication token for the web-server bridge", None, False),
+    "CHATBOT_ENDPOINT": ("Override URL for the chatbot API endpoint", None, False),
+    "HOME_ASSISTANT_ENDPOINT": ("Override URL for the Home Assistant API endpoint", None, False),
+    # General settings
+    "CHATCOMM_DEBUG": ("Enable debug mode (true/yes/1)", None, False),
+    "CHATCOMM_DEFAULT_STATE": ("Default application state on startup", "idle", False),
+    "CHATCOMM_INFERENCE_FRAMEWORK": ("Inference framework to use (e.g. onnx)", "onnx", False),
+    "CHATCOMM_START_ON_BOOT": ("Start application on system boot (true/yes/1)", None, False),
+    "CHATCOMM_CHECK_FOR_UPDATES": ("Enable automatic update checks (true/yes/1)", None, False),
+    # CLI
+    "CHATCOMM_HOST": ("Host address for the CLI to connect to", None, False),
+    "CHATCOMM_PORT": ("Port for the CLI to connect to", None, False),
+    "CHATCOMM_LOG_LEVEL": ("Log level for the CLI (e.g. info, debug)", "info", False),
+    # Logging
+    "LOG_LEVEL": ("Application log level", "INFO", False),
+    "LOG_FORMAT": ("Log output format (plain or json)", "plain", False),
+    # Misc
+    "CC_FAST": ("Enable fast/reduced test mode when set to 1", None, False),
+    "XDG_CONFIG_HOME": ("XDG base directory for user configuration", "~/.config", False),
 
 
 # Recognised environment variables and their descriptions
@@ -57,6 +94,14 @@ def include_system_routes(
         uptime_seconds = time.time() - get_start_time()
 
         env_vars = [
+            EnvVarInfo(
+                name=name,
+                set=(name in os.environ),
+                description=desc,
+                default=default,
+                required=required,
+            )
+            for name, (desc, default, required) in _ENV_VAR_CATALOG.items()
             EnvVarInfo(name=name, set=(name in os.environ), description=desc)
             for name, desc in _ENV_VAR_DESCRIPTIONS.items()
         ]
