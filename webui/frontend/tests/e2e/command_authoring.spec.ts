@@ -103,7 +103,7 @@ test.describe("Command Authoring - AI Mode Flow", () => {
   test("Generate Command button enables when description is entered", async ({ page }) => {
     await page.goto("/commands/authoring");
 
-    const textarea = page.getByPlaceholder("When I say 'start my day'");
+    const textarea = page.getByPlaceholder(/When I say.*start my day/);
     await textarea.fill("Open my email and code editor");
 
     const generateBtn = page.getByRole("button", { name: /Generate Command/i });
@@ -121,7 +121,7 @@ test.describe("Command Authoring - AI Mode Flow", () => {
 
     await page.goto("/commands/authoring");
 
-    const textarea = page.getByPlaceholder("When I say 'start my day'");
+    const textarea = page.getByPlaceholder(/When I say.*start my day/);
     await textarea.fill("start my day workflow");
 
     await page.getByRole("button", { name: /Generate Command/i }).click();
@@ -161,7 +161,7 @@ test.describe("Command Authoring - AI Mode Flow", () => {
 
     await page.goto("/commands/authoring");
 
-    const textarea = page.getByPlaceholder("When I say 'start my day'");
+    const textarea = page.getByPlaceholder(/When I say.*start my day/);
     await textarea.fill("start my day workflow");
 
     await page.getByRole("button", { name: /Generate Command/i }).click();
@@ -185,7 +185,7 @@ test.describe("Command Authoring - AI Mode Flow", () => {
 
     await page.goto("/commands/authoring");
 
-    const textarea = page.getByPlaceholder("When I say 'start my day'");
+    const textarea = page.getByPlaceholder(/When I say.*start my day/);
     await textarea.fill("start my day workflow");
 
     await page.getByRole("button", { name: /Generate Command/i }).click();
@@ -331,7 +331,7 @@ test.describe("Command Authoring - Save Flow", () => {
     await page.goto("/commands/authoring");
 
     // Generate a command via AI
-    await page.getByPlaceholder("When I say 'start my day'").fill("start my day");
+    await page.getByPlaceholder(/When I say.*start my day/).fill("start my day");
     await page.getByRole("button", { name: /Generate Command/i }).click();
     await expect(page.getByText("Generated Command").first()).toBeVisible();
 
@@ -362,7 +362,7 @@ test.describe("Command Authoring - Save Flow", () => {
 
     await page.goto("/commands/authoring");
 
-    await page.getByPlaceholder("When I say 'start my day'").fill("start my day");
+    await page.getByPlaceholder(/When I say.*start my day/).fill("start my day");
     await page.getByRole("button", { name: /Generate Command/i }).click();
     await expect(page.getByText("Generated Command").first()).toBeVisible();
 
@@ -414,7 +414,7 @@ test.describe("Command Authoring - Save Flow", () => {
 
     await page.goto("/commands/authoring");
 
-    await page.getByPlaceholder("When I say 'start my day'").fill("start my day");
+    await page.getByPlaceholder(/When I say.*start my day/).fill("start my day");
     await page.getByRole("button", { name: /Generate Command/i }).click();
     await expect(page.getByText("Generated Command").first()).toBeVisible();
 
@@ -560,7 +560,7 @@ test.describe("Command Authoring - Validation Errors", () => {
     await expect(page.getByText("Command name is required")).toBeVisible();
 
     // Dismiss the error
-    await page.getByRole("button", { name: "Dismiss error" }).click();
+    await page.getByRole("button", { name: "Close alert" }).click();
     await expect(page.getByText("Command name is required")).not.toBeVisible();
   });
 });
@@ -577,7 +577,7 @@ test.describe("Command Authoring - AI Error Handling", () => {
 
     await page.goto("/commands/authoring");
 
-    await page.getByPlaceholder("When I say 'start my day'").fill("open my browser");
+    await page.getByPlaceholder(/When I say.*start my day/).fill("open my browser");
     await page.getByRole("button", { name: /Generate Command/i }).click();
 
     // Error alert should appear
@@ -600,7 +600,7 @@ test.describe("Command Authoring - AI Error Handling", () => {
 
     await page.goto("/commands/authoring");
 
-    await page.getByPlaceholder("When I say 'start my day'").fill("open my browser");
+    await page.getByPlaceholder(/When I say.*start my day/).fill("open my browser");
     await page.getByRole("button", { name: /Generate Command/i }).click();
 
     // The error alert with the LLM message should appear
@@ -633,7 +633,7 @@ test.describe("Command Authoring - AI Error Handling", () => {
 
     await page.goto("/commands/authoring");
 
-    await page.getByPlaceholder("When I say 'start my day'").fill("x");
+    await page.getByPlaceholder(/When I say.*start my day/).fill("x");
     await page.getByRole("button", { name: /Generate Command/i }).click();
 
     // Generic error should show
