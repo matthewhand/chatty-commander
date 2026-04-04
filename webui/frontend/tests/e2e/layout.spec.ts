@@ -97,8 +97,9 @@ test.describe("MainLayout - Mobile Viewport", () => {
     await page.getByRole("button", { name: "Open sidebar" }).click();
     await expect(sidebar).toHaveClass(/translate-x-0/);
 
-    // The backdrop is a div with fixed inset-0 and bg-black/50
-    const backdrop = page.locator("div.fixed.inset-0");
+    // The backdrop overlay is rendered when sidebar is open on mobile.
+    // Use a CSS attribute selector to find the fixed backdrop div.
+    const backdrop = page.locator("div.fixed.z-20");
     await expect(backdrop).toBeVisible();
 
     // Click the backdrop

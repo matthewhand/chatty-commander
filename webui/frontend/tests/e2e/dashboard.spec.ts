@@ -129,8 +129,8 @@ test.describe("Dashboard - Stats Cards", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Dashboard - Command Execution", () => {
-  // The command log's .mockup-code shares the class with agent card mockup-code
-  // sections, so we scope to the card that contains the "Real-time Command Log" heading.
+  // The command log area is inside a card with the "Real-time Command Log" heading.
+  // The dashboard uses chat-style bubbles instead of mockup-code.
   const commandLogCard = (page: Page) =>
     page.locator(".card", { has: page.getByText("Real-time Command Log") });
 
@@ -165,7 +165,7 @@ test.describe("Dashboard - Command Execution", () => {
     await executeButton.click();
 
     // Verify the command appears in the log
-    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: take_screenshot");
+    await expect(commandLogCard(page).locator(".bg-base-300")).toContainText("Executing: take_screenshot");
 
     // Input should be cleared after submission
     await expect(commandInput).toHaveValue("");
@@ -195,7 +195,7 @@ test.describe("Dashboard - Command Execution", () => {
     await commandInput.fill("cycle_window");
     await commandInput.press("Enter");
 
-    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: cycle_window");
+    await expect(commandLogCard(page).locator(".bg-base-300")).toContainText("Executing: cycle_window");
   });
 
   test("does not execute with empty input", async ({ page }) => {
@@ -213,7 +213,7 @@ test.describe("Dashboard - Command Execution", () => {
     await expect(executeButton).toBeDisabled();
 
     // Log should still show the "Waiting for commands..." placeholder
-    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("Waiting for commands...");
+    await expect(commandLogCard(page).locator(".bg-base-300")).toContainText("Waiting for commands...");
   });
 
   test("shows error in log when command execution fails", async ({ page }) => {
@@ -241,10 +241,10 @@ test.describe("Dashboard - Command Execution", () => {
     await commandInput.press("Enter");
 
     // Should show the executing message first
-    await expect(commandLogCard(page).locator(".mockup-code")).toContainText("> Executing: bad_command");
+    await expect(commandLogCard(page).locator(".bg-base-300")).toContainText("Executing: bad_command");
 
-    // Should also show an error message (text-error styled)
-    await expect(commandLogCard(page).locator(".mockup-code pre.text-error")).toBeVisible({ timeout: 5000 });
+    // Should also show an error message (chat-bubble-error styled)
+    await expect(commandLogCard(page).locator(".chat-bubble-error")).toBeVisible({ timeout: 5000 });
   });
 });
 
