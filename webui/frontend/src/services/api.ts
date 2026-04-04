@@ -132,3 +132,55 @@ export const deleteVoiceModel = async (filename: string): Promise<void> => {
     throw new Error(err.detail || `HTTP ${res.status}`);
   }
 };
+
+// --- Agent Blueprint API ---
+
+export interface AgentBlueprint {
+  id: string;
+  name: string;
+  description: string;
+  persona_prompt: string;
+  capabilities: string[];
+  team_role: string | null;
+  handoff_triggers: string[];
+}
+
+export interface CreateAgentPayload {
+  name: string;
+  description: string;
+  persona_prompt: string;
+  capabilities?: string[];
+  team_role?: string | null;
+  handoff_triggers?: string[];
+}
+
+export const fetchAgentBlueprints = async (): Promise<AgentBlueprint[]> => {
+  const res = await fetch('/api/v1/agents/blueprints');
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  return res.json();
+};
+
+export const createAgentBlueprint = async (data: CreateAgentPayload): Promise<AgentBlueprint> => {
+  const res = await fetch('/api/v1/agents/blueprints', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Creation failed' }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+};
+
+export const deleteAgentBlueprint = async (agentId: string): Promise<void> => {
+  const res = await fetch(`/api/v1/agents/blueprints/${encodeURIComponent(agentId)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Deletion failed' }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+};
