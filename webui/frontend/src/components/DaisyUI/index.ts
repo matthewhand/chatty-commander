@@ -51,3 +51,33 @@ export type { BreadcrumbItem, BreadcrumbsProps } from './Breadcrumbs';
 
 export { default as Drawer } from './Drawer';
 export type { DrawerNavItem, DrawerProps } from './Drawer';
+
+export { Chat } from './Chat';
+export type { ChatMessage, ChatProps } from './Chat';
+
+export { Timeline } from './Timeline';
+export type { TimelineItem, TimelineProps } from './Timeline';
+
+export { Steps } from './Steps';
+export type { StepItem, StepsProps } from './Steps';
+
+export { Pagination } from './Pagination';
+export type { PaginationProps } from './Pagination';
+
+export { Rating } from './Rating';
+export type { RatingProps } from './Rating';
+
+export { Kbd } from './Kbd';
+export type { KbdProps } from './Kbd';
+
+export { Hero } from './Hero';
+export type { HeroProps } from './Hero';
+
+export { Dock } from './Dock';
+export type { DockItem, DockProps } from './Dock';
+
+export { Diff } from './Diff';
+export type { DiffProps } from './Diff';
+
+export { Countdown } from './Countdown';
+export type { CountdownProps } from './Countdown';
