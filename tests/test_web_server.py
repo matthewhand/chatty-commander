@@ -489,9 +489,9 @@ class TestStaticSafety:
             pytest.skip("Server file not found")
 
         content = server_file.read_text()
-        assert (
-            "except NameError:" not in content
-        ), "Found 'except NameError:' pattern in server code"
+        assert "except NameError:" not in content, (
+            "Found 'except NameError:' pattern in server code"
+        )
 
         tree = ast.parse(content)
 

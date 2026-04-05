@@ -124,10 +124,14 @@ class ContextManager:
         self.contexts: dict[str, ContextState] = {}
 
         # Support both direct 'personas' key or nested under 'context'
-        personas_dict = config.get("personas", {}) or config.get("context", {}).get("personas", {})
+        personas_dict = config.get("personas", {}) or config.get("context", {}).get(
+            "personas", {}
+        )
         self.personas: dict[str, dict[str, Any]] = personas_dict
 
-        self.default_persona = config.get("default_persona") or config.get("context", {}).get("default_persona", "general")
+        self.default_persona = config.get("default_persona") or config.get(
+            "context", {}
+        ).get("default_persona", "general")
 
         # Persistence settings
         self.persistence_enabled = config.get("persistence_enabled", True)

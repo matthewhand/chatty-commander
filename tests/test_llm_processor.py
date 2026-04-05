@@ -10,6 +10,7 @@ from chatty_commander.llm.processor import CommandProcessor
 def mock_llm_manager():
     return MagicMock()
 
+
 @pytest.fixture
 def mock_config_manager():
     config = MagicMock()
@@ -17,13 +18,17 @@ def mock_config_manager():
         "lights": {"action": "voice_chat"},
         "music": {"action": "voice_chat"},
         "weather": {"action": "voice_chat"},
-        "test_cmd": {"action": "voice_chat"}
+        "test_cmd": {"action": "voice_chat"},
     }
     return config
 
+
 @pytest.fixture
 def processor(mock_llm_manager, mock_config_manager):
-    return CommandProcessor(llm_manager=mock_llm_manager, config_manager=mock_config_manager)
+    return CommandProcessor(
+        llm_manager=mock_llm_manager, config_manager=mock_config_manager
+    )
+
 
 class TestCommandProcessor:
     def test_simple_match_exact(self, processor):
@@ -38,11 +43,9 @@ class TestCommandProcessor:
 
     def test_llm_interpretation_success(self, processor):
         processor.llm_manager.is_available.return_value = True
-        processor.llm_manager.generate_response.return_value = json.dumps({
-            "command": "test_cmd",
-            "confidence": 0.85,
-            "reasoning": "Test reasoning"
-        })
+        processor.llm_manager.generate_response.return_value = json.dumps(
+            {"command": "test_cmd", "confidence": 0.85, "reasoning": "Test reasoning"}
+        )
 
         cmd, conf, reason = processor.process_command("execute test command")
 
@@ -52,11 +55,9 @@ class TestCommandProcessor:
 
     def test_llm_interpretation_unknown_command(self, processor):
         processor.llm_manager.is_available.return_value = True
-        processor.llm_manager.generate_response.return_value = json.dumps({
-            "command": "unknown_cmd",
-            "confidence": 0.9,
-            "reasoning": "bad logic"
-        })
+        processor.llm_manager.generate_response.return_value = json.dumps(
+            {"command": "unknown_cmd", "confidence": 0.9, "reasoning": "bad logic"}
+        )
 
         cmd, conf, reason = processor.process_command("something weird")
 
@@ -121,4 +122,4 @@ class TestCommandProcessor:
         cmd_keys = set(processor._available_commands.keys())
         assert suggestion_keys.issubset(cmd_keys)
         assert "hello" in suggestion_keys
-        assert "lights" not in suggestion_keys # Ensure old keys were cleared
+        assert "lights" not in suggestion_keys  # Ensure old keys were cleared

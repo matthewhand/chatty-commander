@@ -56,11 +56,10 @@ class LLMBackend(ABC):
 class OpenAIBackend(LLMBackend):
     """OpenAI API backend."""
 
-    def __init__(self, api_key: str | None = None, base_url: str | None = None, **kwargs):
-        self.api_key = (
-            api_key
-            or os.getenv("OPENAI_API_KEY")
-        )
+    def __init__(
+        self, api_key: str | None = None, base_url: str | None = None, **kwargs
+    ):
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.base_url = (
             base_url
             or os.getenv("OPENAI_BASE_URL")
@@ -85,7 +84,7 @@ class OpenAIBackend(LLMBackend):
                 api_key=self.api_key,
                 base_url=self.base_url,
                 timeout=self.timeout,
-                max_retries=0  # We handle retries manually
+                max_retries=0,  # We handle retries manually
             )
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
         except ImportError:
@@ -138,10 +137,12 @@ class OpenAIBackend(LLMBackend):
                 last_error = e
                 logger.warning(f"OpenAI generation attempt {attempt + 1} failed: {e}")
                 if attempt < self.max_retries:
-                    sleep_time = 1.0 * (2 ** attempt)  # Exponential backoff
+                    sleep_time = 1.0 * (2**attempt)  # Exponential backoff
                     time.sleep(sleep_time)
 
-        raise RuntimeError(f"OpenAI generation failed after {self.max_retries} retries: {last_error}")
+        raise RuntimeError(
+            f"OpenAI generation failed after {self.max_retries} retries: {last_error}"
+        )
 
     def get_backend_info(self) -> dict[str, Any]:
         """Get OpenAI backend information."""
@@ -175,13 +176,17 @@ class OllamaBackend(LLMBackend):
             from chatty_commander.utils.url_validator import is_safe_url
 
             if not is_safe_url(f"{self.base_url}/api/tags"):
-                logger.warning(f"Ollama base URL {self.base_url} rejected by security policy.")
+                logger.warning(
+                    f"Ollama base URL {self.base_url} rejected by security policy."
+                )
                 self._available = False
                 return self._available
 
             # Check if Ollama server is running
             with httpx.Client() as client:
-                response = client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
+                response = client.get(
+                    f"{self.base_url}/api/tags", timeout=5, follow_redirects=False
+                )
                 if response.status_code == 200:
                     # Check if our model is available
                     models = response.json().get("models", [])
@@ -198,13 +203,19 @@ class OllamaBackend(LLMBackend):
                         self._try_pull_model()
                         self._available = self.model in [
                             m.get("name", "")
-                            for m in client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
+                            for m in client.get(
+                                f"{self.base_url}/api/tags",
+                                timeout=5,
+                                follow_redirects=False,
+                            )
                             .json()
                             .get("models", [])
                         ]
                 else:
                     self._available = False
-                    logger.debug(f"Ollama server not responding: {response.status_code}")
+                    logger.debug(
+                        f"Ollama server not responding: {response.status_code}"
+                    )
 
         except ImportError:
             logger.warning("httpx library not available for Ollama backend")

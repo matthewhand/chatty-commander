@@ -180,7 +180,7 @@ class CommandProcessor:
 
         prompt = f"""You are a voice assistant command interpreter.
 
-Available commands: {', '.join(available_commands)}
+Available commands: {", ".join(available_commands)}
 
 User said: "{user_input}"
 
@@ -203,9 +203,7 @@ Response:"""
 
         return prompt
 
-    def _parse_llm_response(
-        self, response: str
-    ) -> tuple[str | None, float, str]:
+    def _parse_llm_response(self, response: str) -> tuple[str | None, float, str]:
         """Parse LLM response to extract command information."""
         try:
             # Try to extract JSON from response

@@ -3,8 +3,7 @@ import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
 import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { apiService } from "../services/apiService";
-import { fetchAgentStatus, Agent } from "../services/api";
+import { apiService, fetchAgentStatus, type Agent } from "../services/apiService";
 import { formatTimestamp } from "../utils/formatTime";
 import {
   Button,

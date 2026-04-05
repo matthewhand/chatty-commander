@@ -79,9 +79,9 @@ def test_auth_middleware_partial_match():
     # The important security fix: /docs/../api/secret should require auth
     # This was the vulnerability - path traversal could bypass auth
     response = client.get("/docs/../api/secret")
-    assert (
-        response.status_code == 401
-    ), f"Expected 401 for traversal /docs/../api/secret, got {response.status_code}"
+    assert response.status_code == 401, (
+        f"Expected 401 for traversal /docs/../api/secret, got {response.status_code}"
+    )
 
     # Verify /docs itself is public
     @app.get("/docs")
@@ -107,15 +107,15 @@ def test_auth_middleware_url_encoded_traversal():
     # %2f = /, so /docs%2f..%2fapi becomes /docs/../api after decoding
     # After normalization this becomes /api which requires auth
     response = client.get("/docs%2f..%2fapi/secret")
-    assert (
-        response.status_code == 401
-    ), f"Expected 401 for URL-encoded traversal, got {response.status_code}"
+    assert response.status_code == 401, (
+        f"Expected 401 for URL-encoded traversal, got {response.status_code}"
+    )
 
     # Double encoding should also be handled
     response = client.get("/docs%252f..%252fapi%252fsecret")
-    assert (
-        response.status_code == 401
-    ), f"Expected 401 for double-encoded traversal, got {response.status_code}"
+    assert response.status_code == 401, (
+        f"Expected 401 for double-encoded traversal, got {response.status_code}"
+    )
 
 
 def test_auth_middleware_traversal_patterns():
@@ -140,6 +140,6 @@ def test_auth_middleware_traversal_patterns():
 
     for pattern in traversal_patterns_to_api:
         response = client.get(pattern)
-        assert (
-            response.status_code == 401
-        ), f"Expected 401 for {pattern}, got {response.status_code}"
+        assert response.status_code == 401, (
+            f"Expected 401 for {pattern}, got {response.status_code}"
+        )

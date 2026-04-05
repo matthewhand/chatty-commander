@@ -1,5 +1,5 @@
-import pytest
 from chatty_commander.advisors.tools.switch_mode import switch_mode
+
 
 def test_switch_mode():
     assert switch_mode("idle") == "SWITCH_MODE:idle"

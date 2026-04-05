@@ -99,9 +99,9 @@ class AdvisorsService:
 
         # Use global manager if available or create new one
         self.llm_manager = get_global_llm_manager(
-             openai_api_key=base_cfg.get("openai_api_key") or base_cfg.get("api_key"),
-             ollama_host=base_cfg.get("ollama_host"),
-             use_mock=False
+            openai_api_key=base_cfg.get("openai_api_key") or base_cfg.get("api_key"),
+            ollama_host=base_cfg.get("ollama_host"),
+            use_mock=False,
         )
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
@@ -189,22 +189,24 @@ class AdvisorsService:
                 # Use LLMManager to generate response
                 # We prioritize the manager if available, otherwise fallback to legacy provider
                 if hasattr(self, "llm_manager") and self.llm_manager:
-                     response = self.llm_manager.generate_response(
+                    response = self.llm_manager.generate_response(
                         enhanced_prompt,
-                        model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
+                        model=getattr(
+                            self.llm_manager.active_backend, "model", "gpt-3.5-turbo"
+                        ),
                         max_tokens=self.config.get("max_tokens", 150),
-                        temperature=self.config.get("temperature", 0.7)
+                        temperature=self.config.get("temperature", 0.7),
                     )
-                     # Use the backend name, but prefer provider's configured model when
-                     # the backend is a generic fallback (mock/none/unknown).
-                     _backend_name = self.llm_manager.get_active_backend_name()
-                     _fallback_names = {"mock", "none", "unknown"}
-                     if _backend_name in _fallback_names:
-                         model_name = getattr(self.provider, "model", _backend_name)
-                         api_mode = getattr(self.provider, "api_mode", "chat")
-                     else:
-                         model_name = _backend_name
-                         api_mode = "chat"
+                    # Use the backend name, but prefer provider's configured model when
+                    # the backend is a generic fallback (mock/none/unknown).
+                    _backend_name = self.llm_manager.get_active_backend_name()
+                    _fallback_names = {"mock", "none", "unknown"}
+                    if _backend_name in _fallback_names:
+                        model_name = getattr(self.provider, "model", _backend_name)
+                        api_mode = getattr(self.provider, "api_mode", "chat")
+                    else:
+                        model_name = _backend_name
+                        api_mode = "chat"
                 else:
                     # Legacy provider path
                     response = self.provider.generate(enhanced_prompt)

@@ -18,7 +18,7 @@ import {
   deleteAgentBlueprint,
   type AgentBlueprint,
   type CreateAgentPayload,
-} from '../services/api';
+} from '../services/apiService';
 import {
   Button,
   Card,

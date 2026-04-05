@@ -51,7 +51,9 @@ class Config:
             "chat_models_path", "models-chatty"
         )
 
-        self.state_models: dict[str, list[str]] = self.config_data.get("state_models", {})
+        self.state_models: dict[str, list[str]] = self.config_data.get(
+            "state_models", {}
+        )
         self.api_endpoints: dict[str, str] = self.config_data.get(
             "api_endpoints",
             {
@@ -89,8 +91,6 @@ class Config:
         # Voice/GUI behaviour
         self._voice_only: bool = bool(self.config_data.get("voice_only", False))
 
-
-
         # Audio configuration
         self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
         self.sample_rate: int = self.config_data.get("sample_rate", 16000)
@@ -114,7 +114,9 @@ class Config:
 
         # Commands for model actions
         default_commands = {}
-        if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
+        if (
+            not self.config_file or "commands" not in self.config_data
+        ):  # Use defaults if file missing or commands missing
             default_commands = {
                 "hello": {
                     "action": "custom_message",
@@ -327,7 +329,7 @@ class Config:
 
     def _load_config(self) -> dict[str, Any]:
         if not isinstance(self.config_file, str):
-             raise TypeError("config_file must be a string")
+            raise TypeError("config_file must be a string")
         try:
             with open(self.config_file, encoding="utf-8") as f:
                 config_data = json.load(f)
@@ -367,7 +369,9 @@ class Config:
         )
         self.default_state = os.getenv(
             "CHATCOMM_DEFAULT_STATE",
-            general_settings.get("default_state", self.config_data.get("default_state", "idle"))
+            general_settings.get(
+                "default_state", self.config_data.get("default_state", "idle")
+            ),
         )
         self.inference_framework = os.getenv(
             "CHATCOMM_INFERENCE_FRAMEWORK",
@@ -394,9 +398,9 @@ class Config:
             if action_type == "keypress":
                 keys = cfg.get("keys")
                 if isinstance(keys, str):
-                   mapped = keybindings.get(keys, keys)
-                   if mapped:
-                       actions[name] = {"keypress": mapped}
+                    mapped = keybindings.get(keys, keys)
+                    if mapped:
+                        actions[name] = {"keypress": mapped}
             elif action_type == "url":
                 url = cfg.get("url", "")
                 url = url.replace(

@@ -16,7 +16,7 @@ import {
   Copy as CopyIcon,
   Check as CheckIcon,
 } from "lucide-react";
-import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
+import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, type ModelFileInfo } from "../services/apiService";
 import { useTheme } from "../components/ThemeProvider";
 import {
   Button,

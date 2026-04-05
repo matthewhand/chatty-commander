@@ -137,13 +137,13 @@ def _sanitize_user_input(description: str) -> str:
         Sanitized input safe for embedding in prompts
     """
     # Remove null bytes
-    cleaned = description.replace('\x00', '')
+    cleaned = description.replace("\x00", "")
 
     # Remove control characters except newlines and tabs
-    cleaned = ''.join(char for char in cleaned if ord(char) >= 32 or char in '\n\t')
+    cleaned = "".join(char for char in cleaned if ord(char) >= 32 or char in "\n\t")
 
     # Escape triple backticks that could break out of the context
-    cleaned = cleaned.replace('```', '``\u200B`')
+    cleaned = cleaned.replace("```", "``\u200b`")
 
     # Limit length to prevent DoS via extremely long inputs
     max_length = 2000
@@ -244,9 +244,7 @@ def _validate_command_data(data: dict[str, Any]) -> GeneratedCommandResponse:
         503: {
             "description": "LLM service unavailable",
             "content": {
-                "application/json": {
-                    "example": {"detail": "LLM service not available"}
-                }
+                "application/json": {"example": {"detail": "LLM service not available"}}
             },
         },
         422: {

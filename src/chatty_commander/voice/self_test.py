@@ -264,7 +264,7 @@ class VoiceSelfTester:
         all_suggestions = []
 
         for i, phrase in enumerate(self.test_phrases):
-            logger.info(f"Testing {i+1}/{len(self.test_phrases)}: '{phrase}'")
+            logger.info(f"Testing {i + 1}/{len(self.test_phrases)}: '{phrase}'")
 
             # Test transcription
             transcription, basic_accuracy = self.test_transcription_accuracy(phrase)

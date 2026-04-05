@@ -2,161 +2,84 @@ import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useWebSocket } from "./useWebSocket";
 
-type WSHandler = ((ev?: any) => void) | null;
-
-// Deterministic MockWebSocket with explicit control over events and URL filtering
-class ControlledWebSocket {
-  public url: string;
-  public readyState: number = 0; // CONNECTING
-  public onopen: WSHandler = null;
-  public onmessage: WSHandler = null;
-  public onclose: WSHandler = null;
-  public onerror: WSHandler = null;
-  public sent: any[] = [];
-
-  static instances: ControlledWebSocket[] = [];
-
-  constructor(url: string) {
-    this.url = url;
-    ControlledWebSocket.instances.push(this);
+class MockWS {
+  onopen: any;
+  onclose: any;
+  onerror: any;
+  onmessage: any;
+  readyState: number = 0;
+  sent: any[] = [];
+  
+  constructor(public url: string) {
+    this.readyState = 0;
+    MockWS.instances.push(this);
   }
-
-  triggerOpen() {
-    this.readyState = 1; // OPEN
-    this.onopen && this.onopen({ type: "open" });
+  
+  send(data: any) { this.sent.push(data); }
+  close(code = 1000, reason = "") { 
+    this.readyState = 3; 
+    if (this.onclose) this.onclose({ code, reason });
   }
-
-  triggerError(err: any = new Error("boom")) {
-    // Do not auto-close on error
-    this.onerror && this.onerror(err);
-  }
-
-  triggerClose(code = 1000, reason = "Component unmounting") {
-    this.readyState = 3; // CLOSED
-    this.onclose && this.onclose({ code, reason, type: "close" });
-  }
-
-  triggerMessage(data: any) {
-    this.onmessage && this.onmessage({ data, type: "message" });
-  }
-
-  send(data: any) {
-    if (this.readyState !== 1) throw new Error("WebSocket not open");
-    this.sent.push(data);
-    Promise.resolve().then(
-      () => this.onmessage && this.onmessage({ data, type: "message" }),
-    );
-  }
-
-  close(code?: number, reason?: string) {
-    if (this.readyState === 3) return;
-    this.triggerClose(code, reason);
-  }
-
-  static reset() {
-    ControlledWebSocket.instances.length = 0;
-  }
+  
+  static instances: MockWS[] = [];
+  static CONNECTING = 0;
+  static OPEN = 1;
+  static CLOSING = 2;
+  static CLOSED = 3;
 }
 
-// Preserve original
-const RealWebSocket = (global as any).WebSocket;
+(MockWS as any).CONNECTING = 0;
+(MockWS as any).OPEN = 1;
+(MockWS as any).CLOSING = 2;
+(MockWS as any).CLOSED = 3;
 
-// Helper to install/uninstall the mock safely with URL-based behavior
-function installWSMock() {
-  ControlledWebSocket.reset();
-  // @ts-ignore
-  const MockWS = vi.fn().mockImplementation(function (url: string) {
-    const ws = new ControlledWebSocket(url);
-    // Auto-behavior based on URL to remove manual timing races (schedule on next tick):
-    // - ws://test-open and ws://test-send should OPEN automatically on next tick
-    // - ws://test-error should emit ERROR automatically on next tick
-    setTimeout(() => {
-      if (url.includes("test-open") || url.includes("test-send")) {
-        // Ensure the instance is still in CONNECTING before opening
-        if (ws.readyState === 0) ws.triggerOpen();
-      } else if (url.includes("test-error")) {
-        // Emit error, then close
-        ws.triggerError(new Error("boom"));
-        ws.triggerClose(1006, "test error");
-      }
-    }, 0);
-    return ws;
-  });
-
-  // Attach WebSocket constants to the mock
-  (MockWS as any).CONNECTING = 0;
-  (MockWS as any).OPEN = 1;
-  (MockWS as any).CLOSING = 2;
-  (MockWS as any).CLOSED = 3;
-
-  (global as any).WebSocket = MockWS;
-}
-function uninstallWSMock() {
-  (global as any).WebSocket = RealWebSocket as any;
-  ControlledWebSocket.reset();
-}
+const originalWS = global.WebSocket;
 
 beforeEach(() => {
-  installWSMock();
-  // Use fake timers so we can deterministically advance the macrotask tick used by the mock
-  vi.useFakeTimers();
+  MockWS.instances = [];
+  global.WebSocket = MockWS as any;
 });
 
 afterEach(() => {
-  // Ensure no pending timers leak across tests
-  try {
-    vi.runOnlyPendingTimers();
-  } catch { }
-  uninstallWSMock();
-  vi.useRealTimers();
+  global.WebSocket = originalWS;
   vi.restoreAllMocks();
 });
 
-describe("useWebSocket Hook", () => {
-  test("initializes with correct default state", () => {
-    const { result, unmount } = renderHook(() =>
-      useWebSocket("ws://test", { autoReconnect: false }),
-    );
-
+describe("useWebSocket", () => {
+  test("lifecycle", async () => {
+    const { result } = renderHook(() => useWebSocket("ws://test", { autoReconnect: false }));
+    const ws = MockWS.instances[0];
+    act(() => { ws.readyState = 1; ws.onopen({ type: "open" }); });
+    expect(result.current.isConnected).toBe(true);
+    act(() => { ws.onmessage({ data: "msg" }); });
+    expect(result.current.lastMessage?.data).toBe("msg");
+    act(() => { result.current.sendMessage("out"); });
+    expect(ws.sent).toContain("out");
+    act(() => { result.current.disconnect(); });
     expect(result.current.isConnected).toBe(false);
-    expect(result.current.connectionStatus).toBe("CONNECTING");
-    expect(result.current.sendMessage).toBeInstanceOf(Function);
-    expect(result.current.disconnect).toBeInstanceOf(Function);
-
-    unmount();
   });
 
-  test("provides sendMessage function", () => {
-    const { result, unmount } = renderHook(() =>
-      useWebSocket("ws://test", { autoReconnect: false }),
-    );
-
-    expect(typeof result.current.sendMessage).toBe("function");
-
-    // Should not throw when called (even if not connected)
-    expect(() => {
-      act(() => {
-        result.current.sendMessage({ type: "test" });
-      });
-    }).not.toThrow();
-
-    unmount();
+  test("auto reconnect", async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useWebSocket("ws://test", { reconnectInterval: 100 }));
+    const ws1 = MockWS.instances[0];
+    act(() => { ws1.onclose({ code: 1006 }); });
+    expect(result.current.connectionStatus).toBe("reconnecting");
+    act(() => { vi.advanceTimersByTime(100); });
+    expect(MockWS.instances.length).toBe(2);
+    vi.useRealTimers();
   });
 
-  test("provides disconnect function", () => {
-    const { result, unmount } = renderHook(() =>
-      useWebSocket("ws://test", { autoReconnect: false }),
-    );
+  test("manual reconnect", async () => {
+    const { result } = renderHook(() => useWebSocket("ws://test", { autoReconnect: false }));
+    act(() => { result.current.reconnect(); });
+    expect(MockWS.instances.length).toBe(2);
+  });
 
-    expect(typeof result.current.disconnect).toBe("function");
-
-    // Should not throw when called
-    expect(() => {
-      act(() => {
-        result.current.disconnect();
-      });
-    }).not.toThrow();
-
-    unmount();
+  test("getReadyState", async () => {
+    const { result } = renderHook(() => useWebSocket("ws://test", { autoReconnect: false }));
+    expect(result.current.getReadyState()).toBe(0);
+    act(() => { MockWS.instances[0].readyState = 1; });
+    expect(result.current.getReadyState()).toBe(1);
   });
 });

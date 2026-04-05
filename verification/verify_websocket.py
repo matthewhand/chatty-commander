@@ -10,7 +10,7 @@ async def verify_websocket_connection():
         page = await browser.new_page()
 
         # Navigate to the dashboard - use env var for port to match dynamic WebSocket URL behavior
-        port = os.environ.get('WEBUI_PORT', '8100')
+        port = os.environ.get("WEBUI_PORT", "8100")
         await page.goto(f"http://localhost:{port}/")
 
         # Wait for dashboard to load
@@ -20,7 +20,9 @@ async def verify_websocket_connection():
         # Wait for WebSocket connection indicator
         # We expect "Connected" which has class text-success
         # Use locator to target the element with specific text and class
-        connected_indicator = page.locator('div.stat-value.text-success', has_text="Connected")
+        connected_indicator = page.locator(
+            "div.stat-value.text-success", has_text="Connected"
+        )
         await connected_indicator.wait_for(state="visible", timeout=10000)
 
         # Take screenshot
@@ -28,6 +30,7 @@ async def verify_websocket_connection():
         print("Screenshot saved to verification/websocket_connected.png")
 
         await browser.close()
+
 
 if __name__ == "__main__":
     asyncio.run(verify_websocket_connection())
