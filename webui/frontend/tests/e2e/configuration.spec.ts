@@ -525,6 +525,9 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     const modelSelect = page.locator('select[name="llmModel"]');
     await expect(modelSelect).toBeVisible({ timeout: 5000 });
 
+    // Wait for the options to be added to the DOM
+    await expect(modelSelect.locator("option", { hasText: "gpt-4o-mini" })).toBeVisible({ timeout: 5000 });
+
     const options = await modelSelect.locator("option").allInnerTexts();
     expect(options).toContain("gpt-4o-mini");
     expect(options).toContain("llama-3.1-8b-instant");
@@ -540,6 +543,9 @@ test.describe("Configuration Page - LLM Endpoint", () => {
 
     const modelSelect = page.locator('select[name="llmModel"]');
     await expect(modelSelect).toBeVisible({ timeout: 5000 });
+
+    // Wait for options to populate before interacting
+    await expect(modelSelect.locator("option", { hasText: "gpt-4o-mini" })).toBeVisible({ timeout: 5000 });
 
     await modelSelect.selectOption("gpt-4o-mini");
     await expect(modelSelect).toHaveValue("gpt-4o-mini");
