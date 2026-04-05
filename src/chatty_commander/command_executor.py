@@ -34,7 +34,7 @@ except Exception:
 
 try:
     import requests  # type: ignore
-except Exception:
+except Exception:  # pragma: no cover
     requests = None  # type: ignore
 
 __all__ = ["pyautogui", "requests"]
