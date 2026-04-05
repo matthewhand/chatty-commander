@@ -16,12 +16,13 @@ type DropdownProps = {
   contentClassName?: string;
   disabled?: boolean;
   hideArrow?: boolean;
+  ariaLabel?: string;
 };
 
 const Dropdown: React.FC<DropdownProps> = ({
   trigger, children, position = 'bottom', align = 'left', color = 'ghost', variant, size = 'md',
   isOpen: controlledIsOpen, onToggle, className = '', triggerClassName = '',
-  contentClassName = '', disabled = false, hideArrow = false,
+  contentClassName = '', disabled = false, hideArrow = false, ariaLabel,
 }) => {
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -66,7 +67,7 @@ const Dropdown: React.FC<DropdownProps> = ({
     <div className={`dropdown ${positionCls} ${alignCls} ${className}`} ref={dropdownRef}>
       <div tabIndex={disabled ? -1 : 0} role="button"
         className={`btn ${sizeCls} ${colorCls} ${disabled ? 'btn-disabled opacity-50' : ''} ${triggerClassName}`}
-        onClick={handleToggle} aria-haspopup="true" aria-expanded={isOpen}>
+        onClick={handleToggle} aria-haspopup="true" aria-expanded={isOpen} aria-label={ariaLabel}>
         {trigger}
         {!hideArrow && <ChevronDown className="h-5 w-5" aria-hidden="true" />}
       </div>
