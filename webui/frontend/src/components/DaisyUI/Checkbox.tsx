@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   children?: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'accent';
+  variant?: 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   indeterminate?: boolean;
   className?: string;

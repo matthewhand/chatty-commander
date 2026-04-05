@@ -106,8 +106,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   );
 };
 
-export const LoadingModal: React.FC<Omit<BaseModalProps, 'children'> & { message?: string }> = ({
-  isOpen, onClose, title = 'Loading...', message = 'Please wait while we process your request.', ...props
+export const LoadingModal: React.FC<Omit<BaseModalProps, 'children' | 'onClose'> & { isOpen: boolean; onClose?: () => void; message?: string }> = ({
+  isOpen, onClose = () => {}, title = 'Loading...', message = 'Please wait while we process your request.', ...props
 }) => (
   <Modal isOpen={isOpen} onClose={onClose} title={title} closable={false} showCloseButton={false} {...props}>
     <div className="text-center py-8" role="status" aria-live="polite">

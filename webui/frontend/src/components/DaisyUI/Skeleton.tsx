@@ -5,14 +5,15 @@ interface SkeletonProps {
   width?: string | number;
   height?: string | number;
   className?: string;
+  style?: React.CSSProperties;
   lines?: number;
   animate?: boolean;
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({ shape = 'rectangle', width, height, className = '', lines = 1, animate = true }) => {
+export const Skeleton: React.FC<SkeletonProps> = ({ shape = 'rectangle', width, height, className = '', style, lines = 1, animate = true }) => {
   const shapeClass = shape === 'circle' ? 'rounded-full' : 'rounded';
   const getSizeStyles = (): React.CSSProperties => {
-    const styles: React.CSSProperties = {};
+    const styles: React.CSSProperties = { ...style };
     if (width) styles.width = typeof width === 'number' ? `${width}px` : width;
     if (height) styles.height = typeof height === 'number' ? `${height}px` : height;
     return styles;
@@ -33,7 +34,13 @@ export const Skeleton: React.FC<SkeletonProps> = ({ shape = 'rectangle', width, 
   return <div className={baseClasses} style={getSizeStyles()} aria-hidden="true" />;
 };
 
-export const SkeletonAvatar: React.FC<Omit<SkeletonProps, 'shape'>> = (props) => <Skeleton {...props} shape="circle" />;
+export const SkeletonAvatar: React.FC<Omit<SkeletonProps, 'shape'> & { size?: 'xs' | 'sm' | 'md' | 'lg' | number }> = ({ size = 'md', ...props }) => {
+  const sizeMap: Record<string, string> = { xs: 'w-8 h-8', sm: 'w-10 h-10', md: 'w-12 h-12', lg: 'w-16 h-16' };
+  const sizeClass = typeof size === 'string' ? sizeMap[size] : '';
+  const sizeStyle = typeof size === 'number' ? { width: size, height: size } : {};
+  
+  return <Skeleton {...props} shape="circle" className={`${sizeClass} ${props.className || ''}`} style={{ ...sizeStyle, ...props.style }} />;
+};
 export const SkeletonText: React.FC<Omit<SkeletonProps, 'shape'> & { lines?: number }> = (props) => <Skeleton {...props} shape="text" />;
 export const SkeletonCard: React.FC<{ className?: string; animate?: boolean; showImage?: boolean; showActions?: boolean }> = ({
   className = '', animate = true, showImage = true, showActions = true,

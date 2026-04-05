@@ -1,10 +1,28 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
+export interface WebSocketMessage {
+  data: string | ArrayBuffer | Blob;
+  timestamp: string;
+  type: "message";
+}
+
+export interface UseWebSocketOptions {
+  reconnectInterval?: number;
+  maxReconnectAttempts?: number;
+  onOpen?: (event: Event) => void;
+  onClose?: (event: CloseEvent) => void;
+  onError?: (event: Event) => void;
+  onMessage?: (message: WebSocketMessage) => void;
+  protocols?: string | string[];
+  autoReconnect?: boolean;
+  initialStatus?: "CONNECTING" | "OPEN" | "CLOSING" | "CLOSED" | "reconnecting" | "failed" | "error";
+}
+
 /**
  * Custom hook for WebSocket connection management
  * Provides automatic reconnection, connection status, and message handling
  */
-export const useWebSocket = (url, options = {}) => {
+export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => {
   const {
     reconnectInterval = 3000,
     maxReconnectAttempts = 10,
@@ -18,15 +36,15 @@ export const useWebSocket = (url, options = {}) => {
     initialStatus = "CONNECTING",
   } = options;
 
-  const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState(initialStatus);
-  const [lastMessage, setLastMessage] = useState(null);
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
-  const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [connectionStatus, setConnectionStatus] = useState<string>(initialStatus);
+  const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
+  const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
 
-  const ws = useRef(null);
-  const reconnectTimeoutId = useRef(null);
-  const shouldReconnect = useRef(true);
+  const ws = useRef<WebSocket | null>(null);
+  const reconnectTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shouldReconnect = useRef<boolean>(true);
 
   // Clear reconnection timeout
   const clearReconnectTimeout = useCallback(() => {
@@ -50,8 +68,11 @@ export const useWebSocket = (url, options = {}) => {
       // Create new WebSocket connection
       ws.current = new WebSocket(url, protocols);
 
-      ws.current.onopen = (event) => {
-        console.log("WebSocket connected:", url);
+      ws.current.onopen = (event: Event) => {
+        // Using console.info for development purposes
+        if (import.meta.env.DEV) {
+          console.info("WebSocket connected:", url);
+        }
         setIsConnected(true);
         setConnectionStatus("OPEN");
         setReconnectAttempts(0);
@@ -62,12 +83,14 @@ export const useWebSocket = (url, options = {}) => {
         }
       };
 
-      ws.current.onclose = (event) => {
-        console.log(
-          "WebSocket disconnected:",
-          event?.code ?? 1000,
-          event?.reason ?? "",
-        );
+      ws.current.onclose = (event: CloseEvent) => {
+        if (import.meta.env.DEV) {
+          console.info(
+            "WebSocket disconnected:",
+            event?.code ?? 1000,
+            event?.reason ?? "",
+          );
+        }
         setIsConnected(false);
         setConnectionStatus("CLOSED");
 
@@ -93,8 +116,10 @@ export const useWebSocket = (url, options = {}) => {
         }
       };
 
-      ws.current.onerror = (event) => {
-        console.error("WebSocket error:", event);
+      ws.current.onerror = (event: Event) => {
+        if (import.meta.env.DEV) {
+          console.error("WebSocket error:", event);
+        }
         setError("WebSocket connection error");
         setConnectionStatus("error");
 
@@ -103,9 +128,9 @@ export const useWebSocket = (url, options = {}) => {
         }
       };
 
-      ws.current.onmessage = (event) => {
+      ws.current.onmessage = (event: MessageEvent) => {
         try {
-          const message = {
+          const message: WebSocketMessage = {
             data: event.data,
             timestamp: new Date().toISOString(),
             type: "message",
@@ -117,12 +142,16 @@ export const useWebSocket = (url, options = {}) => {
             onMessage(message);
           }
         } catch (err) {
-          console.error("Error processing WebSocket message:", err);
+          if (import.meta.env.DEV) {
+            console.error("Error processing WebSocket message:", err);
+          }
           setError("Error processing message");
         }
       };
     } catch (err) {
-      console.error("Error creating WebSocket connection:", err);
+      if (import.meta.env.DEV) {
+        console.error("Error creating WebSocket connection:", err);
+      }
       setError("Failed to create WebSocket connection");
       setConnectionStatus("error");
     }
@@ -140,7 +169,7 @@ export const useWebSocket = (url, options = {}) => {
   ]);
 
   // Send message through WebSocket
-  const sendMessage = useCallback((message) => {
+  const sendMessage = useCallback((message: string | object) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       try {
         const messageToSend =
@@ -148,12 +177,16 @@ export const useWebSocket = (url, options = {}) => {
         ws.current.send(messageToSend);
         return true;
       } catch (err) {
-        console.error("Error sending WebSocket message:", err);
+        if (import.meta.env.DEV) {
+          console.error("Error sending WebSocket message:", err);
+        }
         setError("Failed to send message");
         return false;
       }
     } else {
-      console.warn("WebSocket is not connected. Cannot send message.");
+      if (import.meta.env.DEV) {
+        console.warn("WebSocket is not connected. Cannot send message.");
+      }
       setError("WebSocket not connected");
       return false;
     }

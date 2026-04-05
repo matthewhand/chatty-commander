@@ -23,5 +23,12 @@ export default defineConfig({
     },
     build: {
         outDir: 'build',
-    }
+    },
+    test: {
+        globals: true,
+        environment: 'jsdom',
+        setupFiles: './src/setupTests.js',
+        css: true,
+        exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**'],
+    },
 })

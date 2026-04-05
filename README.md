@@ -2,7 +2,7 @@
 
 An advanced AI-powered voice command system with a modern Web interface, capable of executing complex workflows, system interactions, and real-time communication.
 
-![Dashboard Preview](docs/images/dashboard.png)
+![Dashboard Preview](docs/screenshots/dashboard.png)
 
 ## Getting Started
 We have recently restructured our documentation to make onboarding easier!

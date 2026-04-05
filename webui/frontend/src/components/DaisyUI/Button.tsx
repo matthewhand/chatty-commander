@@ -1,7 +1,7 @@
-import React, { memo, ElementType, ReactNode, ButtonHTMLAttributes, AnchorHTMLAttributes } from 'react';
-import { Link, LinkProps } from 'react-router-dom';
+import React, { memo, ElementType, ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
-export interface ButtonProps {
+export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size' | 'color'> {
   children?: ReactNode;
   variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'link' | 'info' | 'success' | 'warning' | 'error' | 'neutral';
   size?: 'xs' | 'sm' | 'md' | 'lg';
@@ -19,8 +19,7 @@ export interface ButtonProps {
   as?: ElementType;
   to?: string;
   type?: 'button' | 'submit' | 'reset';
-  onClick?: (event: React.MouseEvent<any>) => void;
-  [key: string]: any;
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 export const Button = memo(({
@@ -79,7 +78,7 @@ export const Button = memo(({
     }
   };
 
-  const handleClick = (event: React.MouseEvent<any>) => {
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     if (loading || disabled) {
       event.preventDefault();
       return;

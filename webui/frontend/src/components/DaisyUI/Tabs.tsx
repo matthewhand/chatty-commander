@@ -2,7 +2,8 @@ import React, { memo, useCallback } from 'react';
 import classNames from 'classnames';
 
 export interface TabItem {
-  key: string;
+  key?: string;
+  id?: string; // Compatibility
   label: string | React.ReactNode;
   icon?: React.ReactNode;
   disabled?: boolean;
@@ -31,15 +32,18 @@ export const Tabs = memo(({ tabs, activeTab, onChange, variant = 'boxed', size =
 
   return (
     <div role="tablist" className={classNames('tabs', variantClasses[variant], sizeClasses[size], className)}>
-      {tabs.map((tab) => (
-        <button key={tab.key} role="tab"
-          className={classNames('tab', { 'tab-active': tab.key === activeTab, 'tab-disabled': tab.disabled })}
-          aria-selected={tab.key === activeTab} disabled={tab.disabled}
-          onClick={() => handleClick(tab.key, tab.disabled)}>
-          {tab.icon && <span className="mr-1" aria-hidden="true">{tab.icon}</span>}
-          {tab.label}
-        </button>
-      ))}
+      {tabs.map((tab) => {
+        const key = tab.key || tab.id || '';
+        return (
+          <button key={key} role="tab"
+            className={classNames('tab', { 'tab-active': key === activeTab, 'tab-disabled': tab.disabled })}
+            aria-selected={key === activeTab} disabled={tab.disabled}
+            onClick={() => handleClick(key, tab.disabled)}>
+            {tab.icon && <span className="mr-1" aria-hidden="true">{tab.icon}</span>}
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 });

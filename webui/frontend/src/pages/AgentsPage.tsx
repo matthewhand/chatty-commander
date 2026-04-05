@@ -29,7 +29,6 @@ import {
   EmptyState,
   Accordion,
   Avatar,
-  LoadingSpinner,
   Tooltip,
   Drawer,
   SkeletonCard,
@@ -189,7 +188,7 @@ export default function AgentsPage() {
         <div className="flex flex-wrap gap-2">
           {agent.handoff_triggers.length > 0 ? (
             agent.handoff_triggers.map((t) => (
-              <Badge key={t} variant="warning" size="small" style="outline">
+              <Badge key={t} variant="warning" size="small" badgeStyle="outline">
                 {t}
               </Badge>
             ))
@@ -319,7 +318,7 @@ export default function AgentsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Tooltip content={`Status: ${badge.label}`} position="left">
-                          <Badge variant={badge.variant} size="small" style="outline">
+                          <Badge variant={badge.variant} size="small" badgeStyle="outline">
                             {badge.label}
                           </Badge>
                         </Tooltip>
@@ -349,7 +348,7 @@ export default function AgentsPage() {
                     {/* Team role badge */}
                     {agent.team_role && (
                       <div className="px-6 pb-4">
-                        <Badge variant="secondary" size="small" style="outline">
+                        <Badge variant="secondary" size="small" badgeStyle="outline">
                           Role: {agent.team_role}
                         </Badge>
                       </div>
@@ -574,7 +573,7 @@ export default function AgentsPage() {
                 {selectedAgent.team_role && (
                   <div>
                     <h3 className="font-semibold mb-2">Team Role</h3>
-                    <Badge variant="secondary" style="outline">{selectedAgent.team_role}</Badge>
+                    <Badge variant="secondary" badgeStyle="outline">{selectedAgent.team_role}</Badge>
                   </div>
                 )}
               </div>

@@ -8,14 +8,12 @@ import {
   Terminal,
   AlertCircle,
   Check,
-  X,
   Plus,
   Trash2,
   Edit3,
   Save,
   RefreshCw,
   Code,
-  Shield,
 } from 'lucide-react';
 import {
   Button,
@@ -27,7 +25,6 @@ import {
   Textarea,
   Tabs,
   ConfirmModal,
-  LoadingSpinner,
   Steps,
   PageHeader,
   LoadingModal,

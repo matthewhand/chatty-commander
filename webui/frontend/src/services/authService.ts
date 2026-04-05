@@ -40,31 +40,29 @@ class AuthService {
         });
         if (response.ok) {
           return await response.json();
+        } else {
+          throw new Error("Failed to get user info");
         }
-      } catch (e) {
-        // Auth check failed with token
+      } catch (e: any) {
+        if (e.message === "Failed to get user info") throw e;
+        // Other fetch errors continue to no-auth check
       }
     }
 
     // Check for no-auth mode by hitting the config endpoint
     try {
-      // In development/test, window.location might not match API location if proxied incorrectly.
-      // But usually relative path works if served by Vite proxy or same origin.
-
       const configUrl = `${this.baseUrl}/config`;
-      // Checking no-auth mode
-
       const confRes = await fetch(configUrl);
       if (confRes.ok) {
         // No-auth mode detected
         return { username: 'local_admin', roles: ['admin'], is_active: true, noAuth: true };
-      } else {
-         // Config endpoint returned non-200
-         // Fallback: If we get a 200 from ANY public endpoint, we might assume no-auth if auth endpoints fail?
-         // No, that's risky. But for this specific bug, maybe the URL is just missing the /api prefix or similar.
       }
     } catch (e) {
       // Failed to check no-auth mode
+    }
+
+    if (!token) {
+      throw new Error("No token available");
     }
 
     throw new Error("Authentication required");

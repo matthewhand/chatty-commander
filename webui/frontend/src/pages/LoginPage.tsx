@@ -63,7 +63,7 @@ const LoginPage: React.FC = () => {
 
             <div className="flex items-center justify-between text-sm w-full px-1">
               <Checkbox label="Remember me" size="sm" variant="primary" />
-              <a href="#" className="link link-hover text-base-content/60" onClick={(e) => e.preventDefault()}>Forgot password?</a>
+              <button type="button" className="link link-hover text-base-content/60 bg-transparent border-0 p-0 cursor-pointer" onClick={(e) => e.preventDefault()}>Forgot password?</button>
             </div>
 
             {error && (

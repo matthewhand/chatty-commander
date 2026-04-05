@@ -5,39 +5,44 @@ export interface StatsCardProps {
   value: string | number;
   description?: React.ReactNode;
   icon?: React.ReactNode;
-  color?: string;
+  trend?: {
+    value: number | string;
+    isPositive: boolean;
+  };
+  color?: 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error';
   className?: string;
 }
 
-/**
- * Shared stats card component wrapping the DaisyUI `.stats > .stat` pattern.
- *
- * Matches the stat cards used on the DashboardPage:
- * `.stats shadow bg-base-100 border border-base-content/10`
- *
- * The `color` prop applies a text color class to the stat-figure and stat-value
- * (e.g. "text-primary", "text-info"). Defaults to "text-primary".
- */
 export const StatsCard: React.FC<StatsCardProps> = React.memo(({
   title,
   value,
   description,
   icon,
-  color = 'text-primary',
+  trend,
+  color = 'primary',
   className = '',
 }) => {
+  const colorClass = `text-${color}`;
+
   return (
     <div className={`stats shadow bg-base-100 border border-base-content/10 ${className}`.trim()}>
       <div className="stat">
         {icon && (
-          <div className={`stat-figure ${color}`}>
+          <div className={`stat-figure ${colorClass}`}>
             {icon}
           </div>
         )}
-        <div className="stat-title">{title}</div>
-        <div className={`stat-value ${color}`}>{value}</div>
-        {description && (
-          <div className="stat-desc">{description}</div>
+        <div className="stat-title text-base-content/60">{title}</div>
+        <div className={`stat-value ${colorClass}`}>{value}</div>
+        {(description || trend) && (
+          <div className="stat-desc mt-1 flex items-center gap-1">
+            {trend && (
+              <span className={trend.isPositive ? 'text-success' : 'text-error'}>
+                {trend.isPositive ? '↑' : '↓'} {trend.value}%
+              </span>
+            )}
+            {description}
+          </div>
         )}
       </div>
     </div>

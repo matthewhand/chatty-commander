@@ -1,6 +1,6 @@
 import re
 
-with open('src/chatty_commander/llm/processor.py', 'r') as f:
+with open('src/chatty_commander/llm/processor.py') as f:
     content = f.read()
 
 # Update init type hint

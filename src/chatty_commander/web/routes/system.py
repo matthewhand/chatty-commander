@@ -52,9 +52,9 @@ _ENV_VAR_CATALOG: dict[str, tuple[str, str | None, bool]] = {
     # Misc
     "CC_FAST": ("Enable fast/reduced test mode when set to 1", None, False),
     "XDG_CONFIG_HOME": ("XDG base directory for user configuration", "~/.config", False),
+}
 
-
-# Recognised environment variables and their descriptions
+# Legacy mapping (can be removed if all use _ENV_VAR_CATALOG)
 _ENV_VAR_DESCRIPTIONS: dict[str, str] = {
     "OPENAI_API_KEY": "OpenAI API key for LLM access",
     "OPENAI_BASE_URL": "Custom base URL for OpenAI-compatible API",
@@ -102,8 +102,6 @@ def include_system_routes(
                 required=required,
             )
             for name, (desc, default, required) in _ENV_VAR_CATALOG.items()
-            EnvVarInfo(name=name, set=(name in os.environ), description=desc)
-            for name, desc in _ENV_VAR_DESCRIPTIONS.items()
         ]
 
         info = SystemInfo(

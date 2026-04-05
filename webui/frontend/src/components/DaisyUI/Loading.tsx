@@ -2,14 +2,20 @@ import React from 'react';
 
 interface LoadingSpinnerProps {
   size?: 'xs' | 'sm' | 'md' | 'lg';
-  variant?: 'spinner' | 'dots' | 'ring' | 'ball' | 'bars' | 'infinity';
+  variant?: 'spinner' | 'dots' | 'ring' | 'ball' | 'bars' | 'infinity' | 'primary' | 'secondary' | 'accent' | 'neutral' | 'info' | 'success' | 'warning' | 'error';
   color?: 'primary' | 'secondary' | 'accent' | 'neutral' | 'info' | 'success' | 'warning' | 'error';
   className?: string;
 }
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'md', variant = 'spinner', color = 'primary', className = '' }) => (
-  <span className={`loading loading-${variant} loading-${size} text-${color} ${className}`} aria-hidden="true" />
-);
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'md', variant = 'spinner', color = 'primary', className = '' }) => {
+  const isColorVariant = ['primary', 'secondary', 'accent', 'neutral', 'info', 'success', 'warning', 'error'].includes(variant as string);
+  const type = isColorVariant ? 'spinner' : variant;
+  const appliedColor = isColorVariant ? variant : color;
+  
+  return (
+    <span className={`loading loading-${type} loading-${size} text-${appliedColor} ${className}`} aria-hidden="true" />
+  );
+};
 
 export const Loading: React.FC<{ type?: LoadingSpinnerProps['variant']; size?: LoadingSpinnerProps['size']; color?: LoadingSpinnerProps['color']; className?: string }> = ({
   type = 'spinner', size = 'md', color = 'primary', className = '',
@@ -51,4 +57,5 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isLoading, child
   </div>
 );
 
-export default { Loading, LoadingSpinner, Progress, LoadingOverlay };
+const LoadingComponents = { Loading, LoadingSpinner, Progress, LoadingOverlay };
+export default LoadingComponents;

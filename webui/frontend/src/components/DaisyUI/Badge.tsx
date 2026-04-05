@@ -2,9 +2,9 @@ import React from 'react';
 
 export interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'ghost';
-  size?: 'small' | 'normal' | 'large';
-  style?: 'solid' | 'outline';
+  variant?: 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'ghost';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'small' | 'normal' | 'large';
+  badgeStyle?: 'solid' | 'outline';
   icon?: React.ReactNode;
   avatar?: React.ReactNode;
   className?: string;
@@ -13,14 +13,26 @@ export interface BadgeProps {
 }
 
 export const Badge: React.FC<BadgeProps> = React.memo(({
-  children, variant = 'neutral', size = 'normal', style = 'solid',
+  children, variant = 'neutral', size = 'md', badgeStyle = 'solid',
   icon, avatar, className = '', 'aria-label': ariaLabel, role = 'status', ...props
 }) => {
-  const variantClass = style === 'outline' ? `badge-outline badge-${variant}` : `badge-${variant}`;
-  const sizeClass = size === 'small' ? 'badge-xs' : size === 'large' ? 'badge-lg' : 'badge-md';
+  const variantClass = badgeStyle === 'outline' ? `badge-outline badge-${variant}` : `badge-${variant}`;
+  
+  const getSizeClass = () => {
+    switch (size) {
+      case 'xs':
+      case 'small': return 'badge-xs';
+      case 'sm': return 'badge-sm';
+      case 'md':
+      case 'normal': return 'badge-md';
+      case 'lg':
+      case 'large': return 'badge-lg';
+      default: return 'badge-md';
+    }
+  };
 
   return (
-    <span className={`badge ${variantClass} ${sizeClass} ${className}`.trim()} role={role} aria-label={ariaLabel} {...props}>
+    <span className={`badge ${variantClass} ${getSizeClass()} ${className}`.trim()} role={role} aria-label={ariaLabel} {...props}>
       {avatar && <span className="avatar placeholder">{avatar}</span>}
       {icon && <span className="mr-1">{icon}</span>}
       {children}

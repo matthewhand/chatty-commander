@@ -1,13 +1,38 @@
+import { vi, describe, test, expect, beforeAll, beforeEach } from "vitest";
 import apiService from "./apiService";
 
 beforeAll(() => {
-  global.fetch = jest.fn();
+  global.fetch = vi.fn();
   apiService.setBaseURL("http://localhost:8100");
+
+  // Provide a minimal localStorage mock (forcing it to ensure it's used)
+  const mockLocalStorage = {
+    store: {},
+    getItem: vi.fn((k) => mockLocalStorage.store[k] ?? null),
+    setItem: vi.fn((k, v) => {
+      mockLocalStorage.store[k] = v;
+    }),
+    removeItem: vi.fn((k) => {
+      delete mockLocalStorage.store[k];
+    }),
+    clear: vi.fn(() => {
+      mockLocalStorage.store = {};
+    }),
+  };
+
+  Object.defineProperty(global, "localStorage", {
+    value: mockLocalStorage,
+    writable: true,
+    configurable: true,
+  });
 });
 
 describe("ApiService", () => {
   beforeEach(() => {
     fetch.mockClear();
+    if (global.localStorage.clear) {
+      global.localStorage.clear();
+    }
   });
 
   test("makes GET requests successfully", async () => {

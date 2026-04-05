@@ -41,16 +41,22 @@ interface CommandMessage {
   isError?: boolean;
 }
 
-const CustomTooltip = React.memo(({ active, payload, label }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}
+
+const CustomTooltip = React.memo(({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs">
         <p className="font-mono mb-2 text-base-content/60">{label}</p>
-        {payload.map((entry: any) => (
+        {payload.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} />
             <span className="font-semibold" style={{ color: entry.stroke }}>
-              {entry.name}: {entry.value.toFixed(1)}%
+              {entry.name}: {Number(entry.value).toFixed(1)}%
             </span>
           </div>
         ))}
@@ -59,6 +65,15 @@ const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   }
   return null;
 });
+
+interface SystemStatusData {
+  status?: string;
+  uptime?: string;
+  commandsExecuted?: number;
+  version?: string;
+  cpu?: string;
+  memory?: string;
+}
 
 const DashboardPage = React.memo(() => {
   useEffect(() => {
@@ -174,10 +189,11 @@ const DashboardPage = React.memo(() => {
 
     try {
       await apiService.executeCommand(cmd);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errTs = new Date();
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setMessages((prev) => {
-        const msg: CommandMessage = { content: `Error: ${err.message}`, isCommand: false, source: "System", timestamp: errTs, isError: true };
+        const msg: CommandMessage = { content: `Error: ${errorMessage}`, isCommand: false, source: "System", timestamp: errTs, isError: true };
         return prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg] : [...prev, msg];
       });
     } finally {
@@ -203,7 +219,7 @@ const DashboardPage = React.memo(() => {
     refetchInterval: 5000,
   });
 
-  const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
+  const [realtimeStatus, setRealtimeStatus] = useState<SystemStatusData | null>(null);
   const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
 
   // Update history chart from telemetry
@@ -295,7 +311,7 @@ const DashboardPage = React.memo(() => {
     try {
       const msg = JSON.parse(event.data);
       if (msg.type === "telemetry" && msg.data) {
-        setRealtimeStatus((prev: any) => ({
+        setRealtimeStatus((prev) => ({
           ...prev,
           cpu: msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu,
           memory: msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory,
@@ -384,7 +400,7 @@ const DashboardPage = React.memo(() => {
           value={systemStatus?.status || "Unknown"}
           description="Core services running"
           icon={<Server size={32} />}
-          color="text-primary"
+          color="primary"
         />
 
         <StatsCard
@@ -397,7 +413,7 @@ const DashboardPage = React.memo(() => {
             </div>
           }
           icon={<Clock size={32} />}
-          color="text-secondary"
+          color="secondary"
           className=""
         />
 
@@ -406,7 +422,7 @@ const DashboardPage = React.memo(() => {
           value={systemStatus?.commandsExecuted || 0}
           description="Total executed"
           icon={<Terminal size={32} />}
-          color="text-accent"
+          color="accent"
         />
 
         <StatsCard
@@ -414,7 +430,7 @@ const DashboardPage = React.memo(() => {
           value={systemStatus?.cpu || "N/A"}
           description="Processor usage"
           icon={<div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>}
-          color="text-info"
+          color="info"
         />
 
         <StatsCard
@@ -422,7 +438,7 @@ const DashboardPage = React.memo(() => {
           value={systemStatus?.memory || "N/A"}
           description="RAM usage"
           icon={<div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>}
-          color="text-warning"
+          color="warning"
         />
 
         <StatsCard
@@ -441,7 +457,7 @@ const DashboardPage = React.memo(() => {
                 <Wifi size={32} className="text-warning animate-pulse" /> :
                 <WifiOff size={32} className="text-error" />
           }
-          color={isConnected ? 'text-success' : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}
+          color={isConnected ? 'success' : 'error'}
         />
       </div>
 

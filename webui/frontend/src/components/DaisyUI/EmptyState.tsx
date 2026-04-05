@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { ElementType } from 'react';
 import Button from './Button';
 
 interface EmptyStateProps {
-  icon: any;
+  icon: ElementType | React.ReactNode;
   title: string;
   description: string;
   actionLabel?: string | React.ReactNode;
@@ -31,7 +31,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ icon: Icon, title, description,
       </div>
       <div className="relative z-10 flex flex-col items-center text-center">
         <div className={`p-4 rounded-2xl mb-6 ${styles.iconBg} transition-all duration-300 ease-out shadow-lg shadow-current/5`}>
-          {React.isValidElement(Icon) ? Icon : React.createElement(Icon as any, { className: 'w-12 h-12', strokeWidth: 1.5 })}
+          {React.isValidElement(Icon) ? Icon : React.createElement(Icon as ElementType, { className: 'w-12 h-12', strokeWidth: 1.5 })}
         </div>
         <h3 className="text-xl font-semibold mb-2 text-base-content">{title}</h3>
         <p className="text-base-content/60 max-w-md mb-8">{description}</p>

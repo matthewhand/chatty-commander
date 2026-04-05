@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 type DropdownProps = {
@@ -6,7 +6,8 @@ type DropdownProps = {
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   align?: 'left' | 'right';
-  color?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'none';
+  color?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'none' | 'info' | 'success' | 'warning' | 'error';
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'none' | 'info' | 'success' | 'warning' | 'error'; // Compatibility
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'none';
   isOpen?: boolean;
   onToggle?: (isOpen: boolean) => void;
@@ -18,14 +19,23 @@ type DropdownProps = {
 };
 
 const Dropdown: React.FC<DropdownProps> = ({
-  trigger, children, position = 'bottom', align = 'left', color = 'ghost', size = 'md',
+  trigger, children, position = 'bottom', align = 'left', color = 'ghost', variant, size = 'md',
   isOpen: controlledIsOpen, onToggle, className = '', triggerClassName = '',
   contentClassName = '', disabled = false, hideArrow = false,
 }) => {
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isOpen = controlledIsOpen ?? uncontrolledIsOpen;
-  const setIsOpen = onToggle ? () => onToggle(!isOpen) : setUncontrolledIsOpen;
+  
+  const setIsOpen = useCallback((newState: boolean) => {
+    if (onToggle) {
+      onToggle(newState);
+    } else {
+      setUncontrolledIsOpen(newState);
+    }
+  }, [onToggle]);
+
+  const appliedColor = variant || color;
 
   const handleToggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -50,7 +60,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   const positionCls = { top: 'dropdown-top', bottom: 'dropdown-bottom', left: 'dropdown-left', right: 'dropdown-right' }[position];
   const alignCls = align === 'right' ? 'dropdown-end' : '';
   const sizeCls = size === 'none' ? '' : `btn-${size}`;
-  const colorCls = color === 'none' ? '' : `btn-${color}`;
+  const colorCls = appliedColor === 'none' ? '' : `btn-${appliedColor}`;
 
   return (
     <div className={`dropdown ${positionCls} ${alignCls} ${className}`} ref={dropdownRef}>

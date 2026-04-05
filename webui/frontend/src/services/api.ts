@@ -43,13 +43,13 @@ export const fetchAgentStatus = async (): Promise<Agent[]> => {
     const data = await res.json();
     // data is typically { contexts: { [key]: { persona_id, platform, ... } }, total: N }
     if (!data || !data.contexts) return [];
-    return Object.entries(data.contexts).map(([key, ctx]: [string, any]) => ({
+    return Object.entries(data.contexts as Record<string, Record<string, unknown>>).map(([key, ctx]) => ({
       id: key,
-      name: `${ctx.persona_id ?? "advisor"} @ ${key}`,
+      name: `${String(ctx.persona_id ?? "advisor")} @ ${key}`,
       status: "online" as const,
-      lastMessageSent: ctx.last_updated ?? "-",
-      lastMessageReceived: ctx.last_updated ?? "-",
-      lastMessageContent: ctx.context_key ?? "-",
+      lastMessageSent: String(ctx.last_updated ?? "-"),
+      lastMessageReceived: String(ctx.last_updated ?? "-"),
+      lastMessageContent: String(ctx.context_key ?? "-"),
     }));
   } catch {
     return [];
@@ -72,7 +72,10 @@ export const fetchLLMModels = async (
     if (!res.ok) return [];
     const data = await res.json();
     if (data?.data && Array.isArray(data.data)) {
-      return data.data.map((m: any) => m.id ?? m.name ?? String(m));
+      return data.data.map((m: Record<string, unknown> | string) => {
+        if (typeof m === 'string') return m;
+        return String(m.id ?? m.name ?? String(m));
+      });
     }
     return [];
   } catch {

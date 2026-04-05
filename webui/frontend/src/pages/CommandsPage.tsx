@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   TerminalSquare,
   Settings2,
@@ -10,7 +10,6 @@ import {
   Trash2,
   RefreshCw,
   Search,
-  Download,
   Upload
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -27,7 +26,6 @@ import {
   Kbd,
   PageHeader,
   Rating,
-  Diff,
   Dropdown,
   FileInput,
 } from '../components/DaisyUI';
@@ -55,7 +53,7 @@ export default function CommandsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
+  const { data: commands, isLoading, isError, refetch } = useQuery<Record<string, CommandConfig>>({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
   });
@@ -368,7 +366,7 @@ export default function CommandsPage() {
                         <p className="font-medium text-sm">REST API Trigger</p>
                         <p className="text-xs text-base-content/60 font-mono mt-0.5">POST /api/v1/command</p>
                       </div>
-                      <Badge variant="success" size="small" style="outline">Enabled</Badge>
+                      <Badge variant="success" size="small" badgeStyle="outline">Enabled</Badge>
                     </div>
                   </div>
                 </div>
