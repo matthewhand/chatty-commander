@@ -10,7 +10,8 @@ import {
   Trash2,
   RefreshCw,
   Search,
-  Upload
+  Upload,
+  X as CloseIcon
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
@@ -277,7 +278,7 @@ export default function CommandsPage() {
               onClick={() => setSearchParams({})}
               aria-label="Clear search"
             >
-              x
+              <CloseIcon size={14} />
             </Button>
           )}
         </div>
