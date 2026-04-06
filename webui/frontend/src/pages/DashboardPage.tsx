@@ -172,7 +172,7 @@ const DashboardPage = React.memo(() => {
     return recentMessages.map((msg) => ({
       content: msg.content,
       sender: msg.source || 'System',
-      timestamp: formatTimestamp(msg.timestamp),
+      timestamp: msg.timestamp instanceof Date ? formatTimestamp(msg.timestamp) : (msg.timestamp || undefined),
       isUser: msg.isCommand,
       variant: msg.isCommand ? 'primary' : (msg.isError ? 'error' : 'secondary')
     }));
