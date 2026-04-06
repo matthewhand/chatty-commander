@@ -166,6 +166,18 @@ const DashboardPage = React.memo(() => {
     return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
   }, [messages]);
 
+  // Performance optimization: Memoize mapped chat messages to avoid allocating
+  // a new array and forcing `<Chat>` to re-render every time telemetry updates.
+  const chatMessages = useMemo(() => {
+    return recentMessages.map((msg) => ({
+      content: msg.content,
+      sender: msg.source || 'System',
+      timestamp: formatTimestamp(msg.timestamp),
+      isUser: msg.isCommand,
+      variant: msg.isCommand ? 'primary' : (msg.isError ? 'error' : 'secondary')
+    }));
+  }, [recentMessages]);
+
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [history, setHistory] = useState<PerfMetric[]>([]);
@@ -541,16 +553,8 @@ const DashboardPage = React.memo(() => {
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
           <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4">
-            {recentMessages.length > 0 ? (
-              <Chat 
-                messages={recentMessages.map((msg) => ({
-                  content: msg.content,
-                  sender: msg.source || 'System',
-                  timestamp: formatTimestamp(msg.timestamp),
-                  isUser: msg.isCommand,
-                  variant: msg.isCommand ? 'primary' : msg.isError ? 'error' : 'secondary'
-                }))}
-              />
+            {chatMessages.length > 0 ? (
+              <Chat messages={chatMessages} />
             ) : (
               <div className="p-4 text-base-content/50 italic text-center pt-24">
                 Waiting for commands...
