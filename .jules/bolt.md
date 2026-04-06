@@ -16,8 +16,4 @@
 
 ## 2024-05-15 - [React Inline Mapped Props Re-render Bottleneck]
 **Learning:** Mapping over an array inline as a component prop (e.g., `<Chat messages={recentMessages.map(...)} />`) creates a new array reference on *every* parent re-render. If the parent component re-renders frequently due to separate high-frequency state updates (like system telemetry polling), the child component will be forced to fully re-reconcile repeatedly, even if the underlying `recentMessages` data hasn't changed.
-**Action:** Always extract inline array mapping (`.map()`) into a `useMemo` hook when passing the result as a prop to a child component inside a frequently re-rendering parent component, especially for components representing complex UI like a chat log.
-
-## 2024-05-15 - [React Inline Mapped Props Re-render Bottleneck]
-**Learning:** Mapping over an array inline as a component prop (e.g., `<Chat messages={recentMessages.map(...)} />`) creates a new array reference on *every* parent re-render. If the parent component re-renders frequently due to separate high-frequency state updates (like system telemetry polling), the child component will be forced to fully re-reconcile repeatedly, even if the underlying `recentMessages` data hasn't changed.
 **Action:** Always extract inline array mapping (`.map()`) into a `useMemo` hook when passing the result as a prop to a child component inside a frequently re-rendering parent component, especially for components representing complex UI like a chat log. Ensure that any data transformations inside the memoized block handle edge cases (like strings vs Date objects) robustly to avoid runtime type errors.
