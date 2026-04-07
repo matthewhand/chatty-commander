@@ -73,7 +73,8 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm install --no-audit --no-fund
+          npm install -g pnpm
+          pnpm install --no-frozen-lockfile
 
       - name: Install Playwright browsers
         run: |
@@ -83,7 +84,7 @@ jobs:
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          npm run test:e2e
+          pnpm run test:e2e
 
       - name: Stop backend server
         if: always()
