@@ -663,9 +663,7 @@ def cli_main():
                 action_type = (
                     "shell"
                     if "shell" in action
-                    else "url"
-                    if "url" in action
-                    else "unknown"
+                    else "url" if "url" in action else "unknown"
                 )
                 result.append({"name": name, "type": action_type})
             print(json_module.dumps(result, indent=2))
