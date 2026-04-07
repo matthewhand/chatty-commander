@@ -10,6 +10,7 @@ import {
   Zap,
   ArrowRightLeft,
   Cpu,
+  X,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -531,7 +532,7 @@ export default function AgentsPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold">{selectedAgent.name}</h2>
                   <Button variant="ghost" size="sm" onClick={() => setDrawerOpen(false)} aria-label="Close drawer">
-                    X
+                    <X size={16} />
                   </Button>
                 </div>
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
 
 type AlertStatus = 'info' | 'success' | 'warning' | 'error';
 
@@ -38,7 +39,9 @@ export const Alert: React.FC<AlertProps> = ({
       {message && <span>{message}</span>}
       {children}
       {onClose && (
-        <button aria-label="Close alert" onClick={handleClose} className="btn btn-sm btn-circle btn-ghost">✕</button>
+        <button aria-label="Close alert" onClick={handleClose} className="btn btn-sm btn-circle btn-ghost">
+          <X size={16} />
+        </button>
       )}
     </div>
   );
