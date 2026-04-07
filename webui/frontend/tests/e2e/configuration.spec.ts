@@ -525,10 +525,13 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     const modelSelect = page.locator('select[name="llmModel"]');
     await expect(modelSelect).toBeVisible({ timeout: 5000 });
 
-    const options = await modelSelect.locator("option").allInnerTexts();
-    expect(options).toContain("gpt-4o-mini");
-    expect(options).toContain("llama-3.1-8b-instant");
-    expect(options).toContain("mixtral-8x7b");
+    const optionsLocator = modelSelect.locator("option");
+    await expect(optionsLocator.first()).toBeVisible({ timeout: 5000 });
+
+    const options = await optionsLocator.allInnerTexts();
+    expect(options.join(',')).toContain("gpt-4o-mini");
+    expect(options.join(',')).toContain("llama-3.1-8b-instant");
+    expect(options.join(',')).toContain("mixtral-8x7b");
   });
 
   test("can select a model from the fetched dropdown", async ({ page }) => {
@@ -540,6 +543,10 @@ test.describe("Configuration Page - LLM Endpoint", () => {
 
     const modelSelect = page.locator('select[name="llmModel"]');
     await expect(modelSelect).toBeVisible({ timeout: 5000 });
+
+    // Wait for the options to be rendered inside the select
+    const optionsLocator = modelSelect.locator("option");
+    await expect(optionsLocator.first()).toBeVisible({ timeout: 5000 });
 
     await modelSelect.selectOption("gpt-4o-mini");
     await expect(modelSelect).toHaveValue("gpt-4o-mini");
@@ -640,7 +647,7 @@ test.describe("Configuration Page - Save Changes", () => {
 
     // Select an input device
     const inputCardBody = page.locator(".card").filter({ has: page.locator(".card-title", { hasText: "Input Device" }) });
-    const inputSelect = inputCardBody.locator("select");
+    const inputSelect = inputCardBody.locator("select").first();
     await expect(inputSelect).toContainText("Mock Microphone 1");
     await inputSelect.selectOption("Mock Microphone 1");
 

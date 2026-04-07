@@ -312,15 +312,13 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 {
                     "name": d.name,
                     "path": str(d),
-                    "state": (
-                        "idle"
-                        if "idle" in d.name
-                        else (
-                            "computer"
-                            if "computer" in d.name
-                            else "chatty" if "chatty" in d.name else None
-                        )
-                    ),
+                    "state": "idle"
+                    if "idle" in d.name
+                    else "computer"
+                    if "computer" in d.name
+                    else "chatty"
+                    if "chatty" in d.name
+                    else None,
                 }
                 for d in dirs
             ]

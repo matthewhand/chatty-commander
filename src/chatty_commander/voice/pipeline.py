@@ -77,9 +77,9 @@ class VoicePipeline:
         # State
         self._listening = False
         self._processing = False
-        self._callbacks: list[Callable[[str, str], None]] = (
-            []
-        )  # (command, transcription)
+        self._callbacks: list[
+            Callable[[str, str], None]
+        ] = []  # (command, transcription)
 
         # Setup wake word detection
         self.wake_detector.add_callback(self._on_wake_word_detected)

@@ -64,7 +64,7 @@ test.describe("Functional Flows", () => {
                 await expect(saveButton).toBeVisible();
             } else {
                 // Fallback: check any button is visible
-                await expect(page.locator("button").first()).toBeVisible();
+                await expect(page.locator("button").filter({ hasText: /./ }).first()).toBeVisible();
             }
         }
     });
