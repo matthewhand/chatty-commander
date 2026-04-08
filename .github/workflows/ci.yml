@@ -58,13 +58,6 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --dev
 
-      - name: Start backend server
-        run: |
-          PYTHONPATH=src uv run python -m chatty_commander.main --web --no-auth --port 8100 &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-          sleep 10
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -89,10 +82,6 @@ jobs:
         run: |
           cd webui/frontend
           pnpm run test:e2e
-
-      - name: Stop backend server
-        if: always()
-        run: kill $SERVER_PID || true
 
   performance-test:
     runs-on: ubuntu-latest
