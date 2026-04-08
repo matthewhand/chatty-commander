@@ -60,7 +60,7 @@ jobs:
 
       - name: Start backend server
         run: |
-          uv run python -m src.chatty_commander.main --web --no-auth --port 8100 &
+          PYTHONPATH=src uv run python -m chatty_commander.main --web --no-auth --port 8100 &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           sleep 10
@@ -70,10 +70,15 @@ jobs:
         with:
           node-version: "18"
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm install --no-audit --no-fund
+          pnpm i
 
       - name: Install Playwright browsers
         run: |
@@ -83,11 +88,11 @@ jobs:
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          npm run test:e2e
+          pnpm run test:e2e
 
       - name: Stop backend server
         if: always()
-        run: kill $SERVER_PID
+        run: kill $SERVER_PID || true
 
   performance-test:
     runs-on: ubuntu-latest
