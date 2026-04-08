@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot,
+  X,
   Plus,
   Trash2,
   RefreshCw,
@@ -531,7 +532,7 @@ export default function AgentsPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold">{selectedAgent.name}</h2>
                   <Button variant="ghost" size="sm" onClick={() => setDrawerOpen(false)} aria-label="Close drawer">
-                    X
+                    <X size={18} />
                   </Button>
                 </div>
 
