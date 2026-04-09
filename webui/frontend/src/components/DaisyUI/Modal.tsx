@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { X as CloseIcon } from 'lucide-react';
 
 export interface ModalAction {
   label: string;
@@ -71,7 +72,9 @@ const Modal: React.FC<ModalProps> = ({
           <div className="flex items-center justify-between mb-4">
             {title && <h3 id="modal-dialog-title" className="font-bold text-lg">{title}</h3>}
             {showCloseButton && closable && (
-              <button className="btn btn-sm btn-circle btn-ghost" onClick={onClose} aria-label="Close modal">✕</button>
+              <button className="btn btn-sm btn-circle btn-ghost" onClick={onClose} aria-label="Close modal">
+                <CloseIcon size={20} />
+              </button>
             )}
           </div>
         )}
