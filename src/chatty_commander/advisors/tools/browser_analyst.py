@@ -111,12 +111,16 @@ def browser_analyst_tool(url: str) -> str:
             response.raise_for_status()
             content_pieces = []
             size = 0
-            for chunk in response.iter_text(chunk_size=8192):
+            # ⚡ Bolt optimization: Use iter_bytes to avoid the high CPU overhead of repeatedly
+            # encoding text back to bytes (chunk.encode('utf-8')) inside the streaming loop.
+            for chunk in response.iter_bytes(chunk_size=8192):
                 content_pieces.append(chunk)
-                size += len(chunk.encode("utf-8"))
+                size += len(chunk)
                 if size > MAX_SIZE:
                     break
-            text = "".join(content_pieces)
+            # Concatenate bytes first, then decode once
+            raw_bytes = b"".join(content_pieces)
+            text = raw_bytes.decode(response.encoding or "utf-8", errors="replace")
 
         title_match = re.search(
             r"<title[^>]*>(.*?)</title>", text, re.IGNORECASE | re.DOTALL
