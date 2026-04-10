@@ -13,3 +13,7 @@
 ## 2024-03-29 - [LLM Command Processor Suggestions Optimization]
 **Learning:** High-frequency input handling, such as fetching command suggestions based on partial input via `get_command_suggestions`, suffers from performance bottlenecks when repeatedly allocating lowercase copies of string descriptions inside loops (`desc.lower()`).
 **Action:** Pre-compute and cache lowercase string values during initialization (`_available_suggestions_map` from `SUGGESTION_MAP`) so the application avoids allocating new string instances in real-time user input loops. Iterating over pre-computed lower-case items directly avoids the redundant allocations.
+
+## 2024-05-18 - [Streaming HTTP Response Processing Optimization]
+**Learning:** When processing streaming HTTP responses to enforce a size limit, using `response.iter_text()` and subsequently encoding the chunks back to bytes (`chunk.encode('utf-8')`) inside the loop incurs significant CPU overhead.
+**Action:** Use `response.iter_bytes()` to iterate over byte chunks directly. Concatenate the byte chunks first, then decode the final result once at the end (e.g., `.decode(response.encoding or 'utf-8', errors='replace')`). This provides a measurable performance improvement for responses, particularly with non-ASCII content.
