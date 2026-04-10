@@ -582,6 +582,13 @@ class WebModeServer:
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
 
+        # Auth middleware (protects /api routes globally)
+        from chatty_commander.web.middleware.auth import AuthMiddleware
+
+        app.add_middleware(
+            AuthMiddleware, config_manager=self.config_manager, no_auth=self.no_auth
+        )
+
         # Get trusted proxies from config (for secure IP extraction behind proxies)
         trusted_proxies: list[str] = []
         if hasattr(self.config_manager, "web_server"):
