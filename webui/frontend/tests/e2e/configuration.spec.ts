@@ -97,7 +97,7 @@ async function mockAllRoutes(page: Page) {
   );
 
   // Mock the LLM /models endpoint (called via fetchLLMModels -> baseUrl + "/models")
-  await page.route("**/v1/models", (route) =>
+  await page.route("**/models", (route) =>
     route.fulfill({ status: 200, json: MOCK_LLM_MODELS }),
   );
 
