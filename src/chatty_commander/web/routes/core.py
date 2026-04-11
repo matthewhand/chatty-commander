@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import threading
 import time
@@ -36,6 +37,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from chatty_commander.utils.security import mask_sensitive_data
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_CONFIG_KEYS = frozenset({
     "general",
