@@ -32,7 +32,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
 
   return (
     <div className={`form-control ${className}`.trim()}>
-      <label className="label cursor-pointer">
+      <label htmlFor={inputId} className="label cursor-pointer">
         <input ref={inputRef} type="checkbox" id={inputId}
           className={`checkbox ${variantClass} ${sizeClass}`.trim()}
           checked={checked} disabled={disabled} onChange={handleChange}
