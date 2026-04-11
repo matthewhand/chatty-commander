@@ -77,6 +77,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Normalize path to prevent path traversal bypasses
         # Use exact match or explicit trailing slash check to prevent partial path matching
         path = posixpath.normpath(raw_path)
+        if path.startswith("//"):
+            path = "/" + path.lstrip("/")
 
         # Skip auth for public endpoints
         if (

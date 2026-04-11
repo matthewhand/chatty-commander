@@ -52,7 +52,7 @@ def test_configure_logging_json_format():
         logger.info("hello json")
 
         output = stream.getvalue()
-        lines = [l for l in output.splitlines() if l.strip()]
+        lines = [line for line in output.splitlines() if line.strip()]
         assert lines, "Expected at least one log line"
 
         parsed = json.loads(lines[-1])

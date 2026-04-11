@@ -344,7 +344,7 @@ def include_core_routes(
             raise HTTPException(status_code=500, detail=str(err)) from err
 
     @router.get("/api/v1/commands")  # type: ignore[no-redef]  # noqa: F811
-    async def get_commands():
+    async def get_commands_config():
         """Get the configured commands."""
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
