@@ -161,7 +161,7 @@ try:
             try:
                 response = await call_next(request)
                 response.headers[REQUEST_ID_HEADER] = request_id
-                return response
+                return response  # type: ignore[no-any-return]
             finally:
                 _request_id_var.reset(token)
 

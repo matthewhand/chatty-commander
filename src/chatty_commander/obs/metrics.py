@@ -317,7 +317,7 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
                 "service": self.service,
             },
         )
-        return response
+        return response  # type: ignore[no-any-return]
 
 
 def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:  # type: ignore[misc]
