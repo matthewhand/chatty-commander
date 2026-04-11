@@ -222,6 +222,9 @@ module = [
     "speech_recognition.*",
     "scipy.*",
     "librosa.*",
+    "torch.*",
+    "transformers.*",
+    "command_executor",
 ]
 ignore_missing_imports = true
 
