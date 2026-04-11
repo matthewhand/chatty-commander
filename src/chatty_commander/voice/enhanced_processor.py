@@ -68,8 +68,8 @@ class EnhancedVoiceProcessor:
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.is_listening = False
-        self.audio_queue = queue.Queue()
-        self.processing_thread = None
+        self.audio_queue: queue.Queue[np.ndarray[Any, np.dtype[Any]]] = queue.Queue()
+        self.processing_thread: threading.Thread | None = None
 
         # Voice activity detection state
         self.vad_enabled = config.voice_activity_detection
@@ -77,13 +77,14 @@ class EnhancedVoiceProcessor:
         self.speech_detected = False
 
         # Audio processing components
-        self.noise_reducer = None
-        self.echo_canceller = None
-        self.auto_gain = None
+        self.noise_reducer: Any = None
+        self.echo_canceller: Any = None
+        self.auto_gain: Any = None
 
         # Transcription components
-        self.transcriber = None
-        self.wake_word_detector = None
+        self.transcriber: Any = None
+        self.wake_word_detector: str | None = None
+        self.transcription_method: str | None = None
 
         # Callbacks
         self.on_speech_start: Callable | None = None
