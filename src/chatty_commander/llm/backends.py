@@ -133,7 +133,7 @@ class OpenAIBackend(LLMBackend):
                     max_tokens=max_tokens,
                     temperature=temperature,
                 )
-                return response.choices[0].message.content.strip()
+                return response.choices[0].message.content.strip()  # type: ignore[no-any-return]
             except Exception as e:
                 last_error = e
                 logger.warning(f"OpenAI generation attempt {attempt + 1} failed: {e}")
@@ -268,7 +268,7 @@ class OllamaBackend(LLMBackend):
 
                 if response.status_code == 200:
                     result = response.json()
-                    return result.get("response", "").strip()
+                    return result.get("response", "").strip()  # type: ignore[no-any-return]
                 else:
                     raise RuntimeError(f"Ollama request failed: {response.status_code}")
 
@@ -293,9 +293,9 @@ class LocalTransformersBackend(LLMBackend):
     def __init__(self, model_name: str = "microsoft/DialoGPT-medium"):
         # Use a smaller model that actually exists for now
         self.model_name = model_name
-        self._model = None
-        self._tokenizer = None
-        self._device = None
+        self._model: Any = None
+        self._tokenizer: Any = None
+        self._device: str | None = None
         self._initialize_model()
 
     def _initialize_model(self):
