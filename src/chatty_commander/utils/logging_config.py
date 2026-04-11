@@ -103,6 +103,10 @@ def configure_logging(
     effective_level = level or os.environ.get("LOG_LEVEL", "INFO")
     effective_format = log_format or os.environ.get("LOG_FORMAT", "plain")
 
+    # Type guards - these should never be None due to defaults above
+    assert effective_level is not None
+    assert effective_format is not None
+
     numeric_level = getattr(logging, effective_level.upper(), logging.INFO)
 
     root_logger = logging.getLogger()
