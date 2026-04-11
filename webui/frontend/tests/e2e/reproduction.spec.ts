@@ -25,8 +25,8 @@ test.describe("Reproduction of Issues", () => {
     );
 
     // Type and execute a command
-    await page.getByLabel("Type and execute a command").fill("hello");
-    await page.getByRole("button", { name: /Execute/ }).click();
+    await page.fill('input[placeholder="Type a command to execute..."]', "hello");
+    await page.click('button:has-text("Execute")');
 
     // Wait for the request and verify the URL
     const request = await requestPromise;

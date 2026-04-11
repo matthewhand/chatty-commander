@@ -39,9 +39,6 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-BroadcastCallback = Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]
-
-
 class ThinkingState(Enum):
     """States that an agent can be in during conversation."""
 
@@ -65,7 +62,7 @@ class AgentStateInfo:
     state: ThinkingState
     message: str | None = None
     progress: float | None = None  # 0.0 to 1.0 for progress bars
-    timestamp: float | None = None
+    timestamp: float = None
 
     def __post_init__(self):
         if self.timestamp is None:
@@ -94,7 +91,7 @@ class ThinkingStateManager:
     def __init__(self):
         self.agent_states: dict[str, AgentStateInfo] = {}
         self.avatar_mappings: dict[str, str] = {}  # agent_id -> avatar_id
-        self.broadcast_callbacks: set[BroadcastCallback] = set()
+        self.broadcast_callbacks: set[Callable[[dict[str, Any]], None]] = set()
 
     def register_agent(
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
@@ -150,14 +147,20 @@ class ThinkingStateManager:
 
     def add_broadcast_callback(
         self,
-        callback: BroadcastCallback,
+        callback: (
+            Callable[[dict[str, Any]], None]
+            | Callable[[dict[str, Any]], Awaitable[None]]
+        ),
     ) -> None:
         """Add a callback to receive state change broadcasts."""
         self.broadcast_callbacks.add(callback)
 
     def remove_broadcast_callback(
         self,
-        callback: BroadcastCallback,
+        callback: (
+            Callable[[dict[str, Any]], None]
+            | Callable[[dict[str, Any]], Awaitable[None]]
+        ),
     ) -> None:
         """Remove a broadcast callback."""
         self.broadcast_callbacks.discard(callback)

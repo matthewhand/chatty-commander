@@ -99,7 +99,6 @@ class HTTPLogHandler(logging.Handler):
             pass
         try:
             from chatty_commander.utils.url_validator import is_safe_url
-
             self._url_safe = is_safe_url(url)
         except Exception:
             self._url_safe = False
@@ -175,10 +174,10 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
             logger.addHandler(handler)
     else:
         # Add console handler if no log file
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(formatter)
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
         if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-            logger.addHandler(stream_handler)
+            logger.addHandler(handler)
 
     return logger
 

@@ -1,10 +1,9 @@
-import { vi, it, expect } from "vitest";
 import React from "react";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
-vi.mock("../hooks/useAuth", () => ({
+jest.mock("../hooks/useAuth", () => ({
   useAuth: () => ({ isAuthenticated: false }),
 }));
 

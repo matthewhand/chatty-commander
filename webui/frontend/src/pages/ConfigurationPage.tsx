@@ -16,24 +16,8 @@ import {
   Copy as CopyIcon,
   Check as CheckIcon,
 } from "lucide-react";
-import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, type ModelFileInfo } from "../services/apiService";
+import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
-import {
-  Button,
-  Card,
-  Select,
-  Toggle,
-  Input,
-  Alert,
-  Badge,
-  Progress,
-  LoadingSpinner,
-  Diff,
-  PageHeader,
-  LoadingOverlay,
-  SkeletonTableLayout,
-  FileInput,
-} from "../components/DaisyUI";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AppConfig {
@@ -159,24 +143,18 @@ const ConfigurationPage: React.FC = () => {
     });
   }, []);
 
-  const { data: voiceStatus, refetch: refetchVoice } = useQuery({
-    queryKey: ['voiceStatus'],
-    queryFn: () => fetch('/api/voice/status').then(r => r.json()),
-    refetchInterval: 5000,
-  });
-
   const { data: devices } = useQuery({
     queryKey: ["audioDevices"],
     queryFn: getAudioDevices,
   });
 
-  const { data: voiceModels, refetch: refetchVoiceModels, isLoading: isVoiceModelsLoading } = useQuery({
+  const { data: voiceModels, refetch: refetchVoiceModels } = useQuery({
     queryKey: ["voiceModels"],
     queryFn: fetchVoiceModels,
   });
 
   // Load config on mount
-  const { data: remoteConfig, isLoading: isConfigLoading } = useQuery({
+  const { data: remoteConfig } = useQuery({
     queryKey: ["config"],
     queryFn: loadConfig,
   });
@@ -277,19 +255,20 @@ const ConfigurationPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Configuration"
-        subtitle="Manage application settings"
-        icon={
-          <div className="p-3 bg-primary/10 rounded-xl text-primary mr-3">
-            <SettingsIcon size={32} />
-          </div>
-        }
-      />
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-primary/10 rounded-xl text-primary">
+          <SettingsIcon size={32} />
+        </div>
+        <div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            Configuration
+          </h2>
+          <p className="text-base-content/60">Manage application settings</p>
+        </div>
+      </div>
 
-      <Card className="shadow-xl border border-base-content/10 overflow-visible">
-        <LoadingOverlay isLoading={isConfigLoading} message="Loading configuration...">
-          <Card.Body className="card-body p-0">
+      <div className="card bg-base-100 shadow-xl border border-base-content/10 overflow-visible">
+        <div className="card-body p-0">
 
           {/* General Settings */}
           <div className="p-6 border-b border-base-content/10">
@@ -302,9 +281,10 @@ const ConfigurationPage: React.FC = () => {
                 <label className="label" htmlFor="config-theme">
                   <span className="label-text font-medium">Theme</span>
                 </label>
-                <Select
+                <select
                   id="config-theme"
                   name="theme"
+                  className="select select-bordered w-full"
                   value={config.theme}
                   onChange={handleChange}
                 >
@@ -312,28 +292,7 @@ const ConfigurationPage: React.FC = () => {
                   <option value="light">Light</option>
                   <option value="cyberpunk">Cyberpunk</option>
                   <option value="synthwave">Synthwave</option>
-                </Select>
-              </div>
-
-              <div className="form-control w-full">
-                 <label className="label">
-                   <span className="label-text font-medium">Theme Preview (Light vs Dark)</span>
-                 </label>
-                 <Diff 
-                   className="h-24 rounded-box border border-base-content/10 shadow-sm text-sm"
-                   oldLabel="Light"
-                   newLabel="Dark"
-                   oldContent={
-                     <div data-theme="light" className="bg-base-100 text-base-content w-full h-full flex flex-col items-center justify-center font-bold">
-                       <Button size="sm" active className="pointer-events-none">Primary</Button>
-                     </div>
-                   }
-                   newContent={
-                     <div data-theme="dark" className="bg-base-100 text-base-content w-full h-full flex flex-col items-center justify-center font-bold">
-                       <Button size="sm" active className="pointer-events-none">Primary</Button>
-                     </div>
-                   }
-                 />
+                </select>
               </div>
             </div>
           </div>
@@ -347,8 +306,9 @@ const ConfigurationPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-control">
                 <label className="label cursor-pointer justify-start gap-4">
-                  <Toggle
-                    color="info"
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-info"
                     checked={config.services.voiceCommands}
                     onChange={handleServiceSwitch}
                     name="voiceCommands"
@@ -362,8 +322,9 @@ const ConfigurationPage: React.FC = () => {
 
               <div className="form-control">
                 <label className="label cursor-pointer justify-start gap-4">
-                  <Toggle
-                    color="info"
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-info"
                     checked={config.services.restApi}
                     onChange={handleServiceSwitch}
                     name="restApi"
@@ -386,8 +347,8 @@ const ConfigurationPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Input Device Card */}
-              <Card className="shadow-sm border border-base-content/10">
-                <Card.Body className="card-body p-4">
+              <div className="card bg-base-100 shadow-sm border border-base-content/10">
+                <div className="card-body p-4">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h4 className="card-title text-sm text-primary">
@@ -395,21 +356,17 @@ const ConfigurationPage: React.FC = () => {
                       </h4>
                       <p className="text-xs opacity-70">Microphone source</p>
                     </div>
-                    <Button
-                      variant="primary"
-                      size="xs"
-                      buttonStyle="outline"
+                    <button
+                      className="btn btn-xs btn-outline btn-primary"
                       onClick={handleTestMic}
                       disabled={isTestingMic || !inputDevice}
                     >
                       {isTestingMic ? "Testing..." : "Test"}
-                    </Button>
+                    </button>
                   </div>
 
-                  <Select
-                    size="sm"
-                    variant="primary"
-                    className="mb-4"
+                  <select
+                    className="select select-bordered select-sm w-full select-primary mb-4"
                     value={inputDevice}
                     onChange={(e) => setInputDevice(e.target.value)}
                   >
@@ -417,7 +374,7 @@ const ConfigurationPage: React.FC = () => {
                     {devices?.input.map((dev: string) => (
                       <option key={dev} value={dev}>{dev}</option>
                     ))}
-                  </Select>
+                  </select>
 
                   {/* Visualizer Area */}
                   <div className="h-6 bg-base-200 rounded flex items-center px-4 gap-1 overflow-hidden">
@@ -433,12 +390,12 @@ const ConfigurationPage: React.FC = () => {
                       <span className="text-[10px] text-base-content/40 italic w-full text-center">Click Test</span>
                     )}
                   </div>
-                </Card.Body>
-              </Card>
+                </div>
+              </div>
 
               {/* Output Device Card */}
-              <Card className="shadow-sm border border-base-content/10">
-                <Card.Body className="card-body p-4">
+              <div className="card bg-base-100 shadow-sm border border-base-content/10">
+                <div className="card-body p-4">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h4 className="card-title text-sm text-secondary">
@@ -446,21 +403,17 @@ const ConfigurationPage: React.FC = () => {
                       </h4>
                       <p className="text-xs opacity-70">Playback endpoint</p>
                     </div>
-                    <Button
-                      variant="secondary"
-                      size="xs"
-                      buttonStyle="outline"
+                    <button
+                      className="btn btn-xs btn-outline btn-secondary"
                       onClick={handleTestOutput}
                       disabled={isTestingOutput || !outputDevice}
                     >
                       {isTestingOutput ? "Playing..." : "Test"}
-                    </Button>
+                    </button>
                   </div>
 
-                  <Select
-                    size="sm"
-                    variant="secondary"
-                    className="mb-4"
+                  <select
+                    className="select select-bordered select-sm w-full select-secondary mb-4"
                     value={outputDevice}
                     onChange={(e) => setOutputDevice(e.target.value)}
                   >
@@ -468,15 +421,15 @@ const ConfigurationPage: React.FC = () => {
                     {devices?.output.map((dev: string) => (
                       <option key={dev} value={dev}>{dev}</option>
                     ))}
-                  </Select>
+                  </select>
 
                   <div className="h-6 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
                     <span className="text-[10px] text-base-content/40 italic">
-                      {isTestingOutput ? "\uD83D\uDD0A Playing test sound..." : "Ready"}
+                      {isTestingOutput ? "🔊 Playing test sound..." : "Ready"}
                     </span>
                   </div>
-                </Card.Body>
-              </Card>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -500,49 +453,37 @@ const ConfigurationPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {isVoiceModelsLoading ? (
-                        <tr>
-                          <td colSpan={4} className="p-0">
-                            <SkeletonTableLayout rows={3} columns={4} className="bg-transparent" />
-                          </td>
-                        </tr>
-                      ) : voiceModels && voiceModels.length > 0 ? (
+                      {voiceModels && voiceModels.length > 0 ? (
                         voiceModels.map((model: ModelFileInfo) => (
                           <tr key={model.name} className="hover:bg-base-200/50">
                             <td className="font-mono text-xs">{model.name}</td>
                             <td>
                               {model.state ? (
-                                <Badge
-                                  size="small"
-                                  variant={
-                                    model.state === 'idle' ? 'primary' :
-                                    model.state === 'computer' ? 'secondary' : 'neutral'
-                                  }
-                                  className={model.state !== 'idle' && model.state !== 'computer' ? 'badge-accent' : ''}
-                                >
+                                <span className={`badge badge-xs ${
+                                  model.state === 'idle' ? 'badge-primary' :
+                                  model.state === 'computer' ? 'badge-secondary' : 'badge-accent'
+                                }`}>
                                   {model.state}
-                                </Badge>
+                                </span>
                               ) : (
                                 <span className="opacity-50">-</span>
                               )}
                             </td>
                             <td className="text-xs opacity-70">{model.size_human}</td>
                             <td className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="xs"
-                                className="text-error"
+                              <button
+                                className="btn btn-ghost btn-xs text-error"
                                 onClick={() => deleteMutation.mutate(model.name)}
                                 title="Delete Model"
                                 aria-label={`Delete model ${model.name}`}
                                 disabled={deleteMutation.isPending}
                               >
                                 {deleteMutation.isPending && deleteMutation.variables === model.name ? (
-                                  <LoadingSpinner size="xs" />
+                                  <span className="loading loading-spinner loading-xs"></span>
                                 ) : (
                                   <TrashIcon size={14} />
                                 )}
-                              </Button>
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -558,84 +499,52 @@ const ConfigurationPage: React.FC = () => {
                 </div>
               </div>
 
-              <Card className="bg-base-200/50 border border-base-content/5 h-fit">
-                <Card.Body className="p-4">
-                   <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                    <UploadIcon size={14}/> Upload Model
-                   </h4>
+              <div className="card bg-base-200/50 border border-base-content/5 p-4 h-fit">
+                 <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
+                  <UploadIcon size={14}/> Upload Model
+                 </h4>
 
-                   <div className="form-control w-full mb-3">
-                     <label className="label py-1">
-                       <span className="label-text-alt">Target State</span>
-                     </label>
-                     <Select
-                      size="xs"
-                      value={uploadState}
-                      onChange={(e) => setUploadState(e.target.value as "idle" | "computer" | "chatty")}
-                     >
-                       <option value="idle">Idle (Wake Word)</option>
-                       <option value="computer">Computer (Active)</option>
-                       <option value="chatty">Chatty (Conv.)</option>
-                     </Select>
+                 <div className="form-control w-full mb-3">
+                   <label className="label py-1">
+                     <span className="label-text-alt">Target State</span>
+                   </label>
+                   <select
+                    className="select select-bordered select-xs w-full"
+                    value={uploadState}
+                    onChange={(e) => setUploadState(e.target.value as "idle" | "computer" | "chatty")}
+                   >
+                     <option value="idle">Idle (Wake Word)</option>
+                     <option value="computer">Computer (Active)</option>
+                     <option value="chatty">Chatty (Conv.)</option>
+                   </select>
+                 </div>
+
+                 <div className="form-control w-full">
+                   <input
+                    type="file"
+                    accept=".onnx"
+                    aria-label="Select ONNX voice model file"
+                    className="file-input file-input-bordered file-input-primary file-input-sm w-full"
+                    onChange={handleFileUpload}
+                    disabled={isUploading}
+                   />
+                   <label className="label py-1">
+                     <span className="label-text-alt text-warning">.onnx files only</span>
+                   </label>
+                 </div>
+
+                 {isUploading && <progress className="progress progress-primary w-full mt-2"></progress>}
+                 {uploadError && (
+                   <div className="alert alert-error text-xs mt-2 py-2">
+                     <span>{uploadError}</span>
                    </div>
-
-                   <div className="form-control w-full">
-                     <FileInput
-                      accept=".onnx"
-                      aria-label="Select ONNX voice model file"
-                      variant="primary"
-                      size="sm"
-                      onChange={handleFileUpload}
-                      disabled={isUploading}
-                     />
-                     <label className="label py-1">
-                       <span className="label-text-alt text-warning">.onnx files only</span>
-                     </label>
+                 )}
+                 {deleteError && (
+                   <div className="alert alert-error text-xs mt-2 py-2">
+                     <span>{deleteError}</span>
                    </div>
-
-                   {isUploading && <Progress variant="primary" indeterminate className="w-full mt-2" />}
-                   {uploadError && (
-                     <Alert status="error" className="text-xs mt-2 py-2">
-                       <span>{uploadError}</span>
-                     </Alert>
-                   )}
-                   {deleteError && (
-                     <Alert status="error" className="text-xs mt-2 py-2">
-                       <span>{deleteError}</span>
-                     </Alert>
-                   )}
-                </Card.Body>
-              </Card>
-            </div>
-          </div>
-
-          {/* Voice Pipeline Controls */}
-          <div className="p-6 border-b border-base-content/10 bg-base-200/30">
-            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <MicIcon className="w-5 h-5 text-success" />
-              Voice Pipeline
-              <Badge variant={voiceStatus?.running ? 'success' : 'ghost'} size="small">
-                {voiceStatus?.running ? 'Active' : 'Inactive'}
-              </Badge>
-            </h3>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-base-content/70">Enable real-time voice command detection</p>
-                {voiceStatus?.wake_words?.length > 0 && (
-                  <p className="text-xs text-base-content/50 mt-1">
-                    Wake words: {voiceStatus.wake_words.join(', ')}
-                  </p>
-                )}
+                 )}
               </div>
-              <Toggle
-                checked={voiceStatus?.running || false}
-                onChange={async () => {
-                  const endpoint = voiceStatus?.running ? '/api/voice/stop' : '/api/voice/start';
-                  await fetch(endpoint, { method: 'POST' });
-                  refetchVoice();
-                }}
-                color="success"
-              />
             </div>
           </div>
 
@@ -649,31 +558,31 @@ const ConfigurationPage: React.FC = () => {
               <div className="form-control w-full">
                 <label className="label" htmlFor="config-llm-base-url">
                   <span className="label-text font-medium text-base-content flex items-center gap-2">
-                    API Base URL {config.envOverrides.baseUrl && <Badge variant="error" size="small">LOCKED BY ENV</Badge>}
+                    API Base URL {config.envOverrides.baseUrl && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                   </span>
                   <span className="label-text-alt text-base-content/40">OpenAI-compatible</span>
                 </label>
                 <div className="flex gap-1 items-center">
-                  <Input
+                  <input
                     id="config-llm-base-url"
                     type="url"
                     name="llmBaseUrl"
                     placeholder={config.envOverrides.baseUrl ? "(Configured via environment variable)" : "http://localhost:11434/v1"}
-                    className="focus:input-secondary disabled:opacity-50"
+                    className="input input-bordered w-full focus:input-secondary disabled:opacity-50"
                     value={config.envOverrides.baseUrl ? "################" : config.llmBaseUrl}
                     onChange={handleChange}
                     disabled={config.envOverrides.baseUrl}
                   />
                   {!config.envOverrides.baseUrl && (
-                    <Button
-                      variant="ghost"
-                      size="xs"
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs"
                       onClick={() => handleCopy("baseUrl", config.llmBaseUrl)}
                       title="Copy to clipboard"
                       aria-label="Copy API Base URL"
                     >
                       {copiedField === "baseUrl" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
-                    </Button>
+                    </button>
                   )}
                 </div>
                 <label className="label">
@@ -687,15 +596,15 @@ const ConfigurationPage: React.FC = () => {
                 <div className="form-control w-full">
                   <label className="label" htmlFor="config-api-key">
                     <span className="label-text font-medium flex items-center gap-2">
-                      API Key {config.envOverrides.apiKey && <Badge variant="error" size="small">LOCKED BY ENV</Badge>}
+                      API Key {config.envOverrides.apiKey && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                     </span>
                   </label>
-                  <Input
+                  <input
                     id="config-api-key"
                     type="password"
                     name="apiKey"
                     placeholder={config.envOverrides.apiKey ? "(Configured via environment variable)" : "sk-... or Bearer token"}
-                    className="disabled:opacity-50"
+                    className="input input-bordered w-full disabled:opacity-50"
                     value={config.envOverrides.apiKey ? "********" : config.apiKey}
                     onChange={handleChange}
                     autoComplete="off"
@@ -706,65 +615,65 @@ const ConfigurationPage: React.FC = () => {
                 <div className="form-control w-full">
                   <label className="label" htmlFor="config-model">
                     <span className="label-text font-medium flex items-center gap-2">
-                      Model {config.envOverrides.model && <Badge variant="error" size="small">LOCKED BY ENV</Badge>}
+                      Model {config.envOverrides.model && <span className="badge badge-error badge-xs">LOCKED BY ENV</span>}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      className="gap-1"
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost gap-1"
                       onClick={handleFetchModels}
                       disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                       title="Fetch available models from endpoint"
                     >
-                      {fetchingModels ? <LoadingSpinner size="xs" /> : <RefreshIcon size={12} />}
+                      {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
                       {fetchingModels ? "Fetching..." : "Fetch list"}
-                    </Button>
+                    </button>
                   </label>
                   {modelList.length > 0 && !config.envOverrides.model ? (
                     <div className="flex gap-1 items-center">
-                      <Select
+                      <select
                         id="config-model"
                         name="llmModel"
+                        className="select select-bordered w-full"
                         value={config.llmModel}
                         onChange={handleChange}
                       >
-                        <option value="">-- select model --</option>
+                        <option value="">— select model —</option>
                         {modelList.map((m) => (
                           <option key={m} value={m}>{m}</option>
                         ))}
-                      </Select>
-                      <Button
-                        variant="ghost"
-                        size="xs"
+                      </select>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
                         onClick={() => handleCopy("model", config.llmModel)}
                         title="Copy to clipboard"
                         aria-label="Copy Model"
                       >
                         {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
-                      </Button>
+                      </button>
                     </div>
                   ) : (
                     <div className="flex gap-1 items-center">
-                      <Input
+                      <input
                         id="config-model"
                         type="text"
                         name="llmModel"
-                        placeholder={config.envOverrides.model ? "(Configured via environment variable)" : "gpt-4o-mini · llama-3.1-8b-instant · ..."}
-                        className="disabled:opacity-50"
+                        placeholder={config.envOverrides.model ? "(Configured via environment variable)" : "gpt-4o-mini · llama-3.1-8b-instant · …"}
+                        className="input input-bordered w-full disabled:opacity-50"
                         value={config.envOverrides.model ? "################" : config.llmModel}
                         onChange={handleChange}
                         disabled={config.envOverrides.model}
                       />
                       {!config.envOverrides.model && (
-                        <Button
-                          variant="ghost"
-                          size="xs"
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
                           onClick={() => handleCopy("model", config.llmModel)}
                           title="Copy to clipboard"
                           aria-label="Copy Model"
                         >
                           {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
-                        </Button>
+                        </button>
                       )}
                     </div>
                   )}
@@ -776,24 +685,21 @@ const ConfigurationPage: React.FC = () => {
           {/* Save Footer */}
           <div className="p-4 bg-base-300/50 rounded-b-xl flex justify-between items-center">
             <span className="text-xs text-base-content/40">
-              {mutation.isSuccess && "\u2713 Saved"}
-              {mutation.isError && "\u2717 Save failed"}
+              {mutation.isSuccess && "✓ Saved"}
+              {mutation.isError && "✗ Save failed"}
             </span>
-            <Button
-              variant="primary"
-              className="gap-2"
+            <button
+              className="btn btn-primary gap-2"
               onClick={() => mutation.mutate(config)}
-              loading={mutation.isPending}
-              loadingText="Saving..."
-              icon={<SaveIcon size={20} />}
+              disabled={mutation.isPending}
             >
-              Save Changes
-            </Button>
+              {mutation.isPending ? <span className="loading loading-spinner"></span> : <SaveIcon size={20} />}
+              {mutation.isPending ? "Saving..." : "Save Changes"}
+            </button>
           </div>
 
-        </Card.Body>
-        </LoadingOverlay>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

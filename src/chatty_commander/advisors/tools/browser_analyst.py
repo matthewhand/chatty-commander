@@ -42,7 +42,6 @@ except ImportError:
 
 try:
     import httpx
-
     HTTPX_AVAILABLE = True
 except ImportError:
     HTTPX_AVAILABLE = False
@@ -61,7 +60,6 @@ def _deterministic_fallback(url: str) -> str:
     else:
         return f"Web page at {url}: This appears to be a general web page with content related to the URL's domain."
 
-
 def browser_analyst_tool(url: str) -> str:
     """
     Analyze and summarize web content from a given URL.
@@ -77,16 +75,8 @@ def browser_analyst_tool(url: str) -> str:
 
     try:
         config_data = Config().config_data
-        allowlist = (
-            config_data.get("advisors", {})
-            .get("browser_analyst", {})
-            .get("allowlist", None)
-        )
-        timeout = (
-            config_data.get("advisors", {})
-            .get("browser_analyst", {})
-            .get("timeout", 10.0)
-        )
+        allowlist = config_data.get("advisors", {}).get("browser_analyst", {}).get("allowlist", None)
+        timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
 
         parsed_url = urlparse(url)
         if parsed_url.scheme not in ("http", "https"):
@@ -97,44 +87,32 @@ def browser_analyst_tool(url: str) -> str:
             return f"Error: Domain {hostname} is not allowed."
 
         if not is_safe_url(url):
-            logger.warning(
-                f"SSRF blocked: URL resolves to private/internal address: {url}"
-            )
+            logger.warning(f"SSRF blocked: URL resolves to private/internal address: {url}")
             return "Error: URL blocked — resolves to internal address."
 
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
-        with httpx.stream(
-            "GET", url, timeout=timeout, follow_redirects=False
-        ) as response:
+        with httpx.stream("GET", url, timeout=timeout, follow_redirects=False) as response:
             response.raise_for_status()
             content_pieces = []
             size = 0
-            # ⚡ Bolt optimization: Use iter_bytes to avoid the high CPU overhead of repeatedly
-            # encoding text back to bytes (chunk.encode('utf-8')) inside the streaming loop.
-            for chunk in response.iter_bytes(chunk_size=8192):
+            for chunk in response.iter_text(chunk_size=8192):
                 content_pieces.append(chunk)
-                size += len(chunk)
+                size += len(chunk.encode("utf-8"))
                 if size > MAX_SIZE:
                     break
-            # Concatenate bytes first, then decode once
-            raw_bytes = b"".join(content_pieces)
-            text = raw_bytes.decode(response.encoding or "utf-8", errors="replace")
+            text = "".join(content_pieces)
 
-        title_match = re.search(
-            r"<title[^>]*>(.*?)</title>", text, re.IGNORECASE | re.DOTALL
-        )
+        title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
         title = title_match.group(1).strip() if title_match else "No Title"
 
         # Prevent ReDoS by avoiding .*? within tags
-        body_text = re.sub(
-            r"<(script|style)[^>]*>.*?</\1>", " ", text, flags=re.IGNORECASE | re.DOTALL
-        )
+        body_text = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', text, flags=re.IGNORECASE | re.DOTALL)
         # Strip other HTML tags
-        body_text = re.sub(r"<[^>]+>", " ", body_text)
+        body_text = re.sub(r'<[^>]+>', ' ', body_text)
         # Clean whitespace
-        body_text = re.sub(r"\s+", " ", body_text).strip()
+        body_text = re.sub(r'\s+', ' ', body_text).strip()
 
         summary = body_text[:500]
         return f"Title: {title}\nSummary: {summary}"
@@ -160,5 +138,5 @@ if AGENTS_AVAILABLE:
             },
             "required": ["url"],
         },
-        on_invoke_tool=browser_analyst_tool,  # type: ignore[arg-type]
+        on_invoke_tool=browser_analyst_tool,
     )

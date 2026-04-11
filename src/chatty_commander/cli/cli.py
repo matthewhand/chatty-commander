@@ -223,7 +223,6 @@ def run_gui_mode(
             from chatty_commander.avatars.avatar_gui import (
                 run_avatar_gui,  # type: ignore
             )
-
             logger.info("Starting Avatar GUI (TalkingHead)")
             rc = run_avatar_gui()
             return 0 if rc is None else int(rc)
@@ -236,7 +235,6 @@ def run_gui_mode(
                 from chatty_commander.gui.pyqt5_avatar import (
                     run_pyqt5_avatar,  # type: ignore
                 )
-
                 logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
                 rc = run_pyqt5_avatar()
                 return 0 if rc is None else int(rc)
@@ -257,8 +255,7 @@ def run_gui_mode(
             f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
         )
         try:
-            # Legacy GUI fallback; gui module may not define main()
-            from chatty_commander.gui import main as gui_main  # type: ignore[attr-defined]  # noqa: I001
+            from chatty_commander.gui import main as gui_main
 
             logger.info("Starting legacy tkinter GUI mode")
             rc = gui_main()
@@ -276,7 +273,7 @@ def create_parser():
         "with support for multiple modes including CLI, web UI, GUI, and configuration wizard.\n"
         "It integrates machine learning models for command detection and state management.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog='''
 Examples:
   %(prog)s                    # Start in CLI voice command mode
   %(prog)s --shell            # Start interactive text shell mode
@@ -298,7 +295,7 @@ Available modes:
 - Config: Setup and configuration tool
 
 For detailed documentation and source code, visit: https://github.com/your-repo/chatty-commander
-        """,
+        ''',
     )
 
     # Add subparsers for list and exec commands
@@ -661,13 +658,7 @@ def cli_main():
             # Output as JSON array
             result = []
             for name, action in actions.items():
-                action_type = (
-                    "shell"
-                    if "shell" in action
-                    else "url"
-                    if "url" in action
-                    else "unknown"
-                )
+                action_type = "shell" if "shell" in action else "url" if "url" in action else "unknown"
                 result.append({"name": name, "type": action_type})
             print(json_module.dumps(result, indent=2))
         else:

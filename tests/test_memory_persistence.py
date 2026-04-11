@@ -42,24 +42,18 @@ def test_memory_persistence_roundtrip():
         if os.path.exists(clean_path):
             os.remove(clean_path)
 
-
 def test_memory_persistence_bad_data():
     """Test resilience against corrupted data."""
     with tempfile.NamedTemporaryFile(suffix=".jsonl", mode="w", delete=False) as tmp:
         clean_path = tmp.name
         tmp.write('{"valid": "json", "but": "wrong schema"}\n')
-        tmp.write("corrupted { json\n")
-        tmp.write(
-            json.dumps(
-                {
-                    "key": "discord:gen:u1",
-                    "role": "user",
-                    "content": "survivor",
-                    "timestamp": "2024-01-01",
-                }
-            )
-            + "\n"
-        )
+        tmp.write('corrupted { json\n')
+        tmp.write(json.dumps({
+            "key": "discord:gen:u1",
+            "role": "user",
+            "content": "survivor",
+            "timestamp": "2024-01-01"
+        }) + "\n")
 
     try:
         store = MemoryStore(persist=True, persist_path=clean_path)

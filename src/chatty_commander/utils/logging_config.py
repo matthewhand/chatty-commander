@@ -103,7 +103,7 @@ def configure_logging(
     effective_level = level or os.environ.get("LOG_LEVEL", "INFO")
     effective_format = log_format or os.environ.get("LOG_FORMAT", "plain")
 
-    numeric_level = getattr(logging, effective_level.upper() if effective_level else "INFO", logging.INFO)
+    numeric_level = getattr(logging, effective_level.upper(), logging.INFO)
 
     root_logger = logging.getLogger()
     root_logger.setLevel(numeric_level)
@@ -115,7 +115,7 @@ def configure_logging(
     handler = logging.StreamHandler()
     handler.setLevel(numeric_level)
 
-    if effective_format and effective_format.lower() == "json":
+    if effective_format.lower() == "json":
         handler.setFormatter(StructuredJSONFormatter())
     else:
         handler.setFormatter(
@@ -155,7 +155,7 @@ try:
             request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
             token = _request_id_var.set(request_id)
             try:
-                response: Response = await call_next(request)  # type: ignore[assignment]
+                response = await call_next(request)
                 response.headers[REQUEST_ID_HEADER] = request_id
                 return response
             finally:

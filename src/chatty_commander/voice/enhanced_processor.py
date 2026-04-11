@@ -68,8 +68,8 @@ class EnhancedVoiceProcessor:
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.is_listening = False
-        self.audio_queue: queue.Queue[bytes] = queue.Queue()
-        self.processing_thread: threading.Thread | None = None
+        self.audio_queue = queue.Queue()
+        self.processing_thread = None
 
         # Voice activity detection state
         self.vad_enabled = config.voice_activity_detection
@@ -77,15 +77,13 @@ class EnhancedVoiceProcessor:
         self.speech_detected = False
 
         # Audio processing components
-        self.noise_reducer: Any = None
-        self.echo_canceller: Any = None
-        self.auto_gain: Any = None
-        self.vad: Any = None
+        self.noise_reducer = None
+        self.echo_canceller = None
+        self.auto_gain = None
 
         # Transcription components
-        self.transcriber: Any = None
-        self.wake_word_detector: Any = None
-        self.transcription_method: str = "none"
+        self.transcriber = None
+        self.wake_word_detector = None
 
         # Callbacks
         self.on_speech_start: Callable | None = None
@@ -121,7 +119,7 @@ class EnhancedVoiceProcessor:
         """Initialize noise reduction component."""
         try:
             # Try to use advanced noise reduction if available
-            import noisereduce as nr  # type: ignore[import-not-found]
+            import noisereduce as nr
 
             self.noise_reducer = nr
             self.logger.info("Advanced noise reduction enabled")
@@ -134,7 +132,7 @@ class EnhancedVoiceProcessor:
         """Initialize voice activity detection."""
         try:
             # Try to use webrtcvad if available
-            import webrtcvad  # type: ignore[import-not-found]
+            import webrtcvad
 
             self.vad = webrtcvad.Vad(2)  # Aggressiveness level 2
             self.logger.info("WebRTC VAD enabled")
@@ -147,7 +145,7 @@ class EnhancedVoiceProcessor:
         """Initialize speech-to-text transcription."""
         try:
             # Try OpenAI Whisper first (best quality)
-            import whisper  # type: ignore[import-not-found]
+            import whisper
 
             self.transcriber = whisper.load_model("base")
             self.transcription_method = "whisper"
@@ -155,7 +153,7 @@ class EnhancedVoiceProcessor:
         except ImportError:
             try:
                 # Fallback to speech_recognition
-                import speech_recognition as sr  # type: ignore[import-not-found]
+                import speech_recognition as sr
 
                 self.transcriber = sr.Recognizer()
                 self.transcription_method = "speech_recognition"
@@ -185,10 +183,10 @@ class EnhancedVoiceProcessor:
     def _basic_noise_reduction(self, audio_data: np.ndarray) -> np.ndarray:
         """Basic noise reduction using spectral subtraction."""
         # Simple high-pass filter to remove low-frequency noise
-        from scipy import signal  # type: ignore[import-untyped]
+        from scipy import signal
 
         b, a = signal.butter(4, 300, btype="high", fs=self.config.sample_rate)
-        return signal.filtfilt(b, a, audio_data)  # type: ignore[no-any-return]
+        return signal.filtfilt(b, a, audio_data)
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
         """Energy-based voice activity detection."""
@@ -198,7 +196,7 @@ class EnhancedVoiceProcessor:
 
         # Dynamic threshold based on recent energy levels
         threshold = 1000  # Adjust based on your environment
-        return bool(energy > threshold)
+        return energy > threshold
 
     def _detect_wake_words(self, text: str) -> list[str]:
         """Detect wake words in transcribed text."""
@@ -332,9 +330,8 @@ class EnhancedVoiceProcessor:
 
         self.is_listening = True
         self.processing_thread = threading.Thread(target=self._audio_processing_loop)
-        if self.processing_thread:
-            self.processing_thread.daemon = True  # type: ignore[attr-defined]
-            self.processing_thread.start()  # type: ignore[attr-defined]
+        self.processing_thread.daemon = True
+        self.processing_thread.start()
 
         self.logger.info("Enhanced voice processing started")
 
@@ -349,11 +346,11 @@ class EnhancedVoiceProcessor:
     def _audio_processing_loop(self):
         """Main audio processing loop."""
         try:
-            import pyaudio  # type: ignore[import-untyped]
+            import pyaudio
 
             # Initialize audio stream
             audio = pyaudio.PyAudio()
-            stream = audio.open(  # type: ignore[attr-defined]
+            stream = audio.open(
                 format=pyaudio.paInt16,
                 channels=1,
                 rate=self.config.sample_rate,
@@ -398,7 +395,7 @@ class EnhancedVoiceProcessor:
         """Process an audio file and return transcription."""
         try:
             # Load audio file
-            import librosa  # type: ignore[import-not-found]
+            import librosa
 
             audio_data, sr = librosa.load(file_path, sr=self.config.sample_rate)
 

@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     try:
         from PIL import Image
     except ImportError:
-        Image = None  # type: ignore[assignment]
+        Image = None
 
 try:
     import pystray

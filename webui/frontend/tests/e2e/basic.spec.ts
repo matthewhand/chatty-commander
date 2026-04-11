@@ -4,7 +4,7 @@ test("basic page load", async ({ page }) => {
   await page.goto("/");
   // Should redirect to dashboard (with no auth)
   await expect(page).toHaveURL(/dashboard/);
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(page.locator("h2:has-text('Dashboard')")).toBeVisible();
 });
 
 test("navigation works", async ({ page }) => {

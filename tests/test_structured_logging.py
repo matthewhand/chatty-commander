@@ -1,5 +1,4 @@
 """Tests for structured JSON logging configuration."""
-
 from __future__ import annotations
 
 import json
@@ -44,7 +43,6 @@ def test_configure_logging_json_format():
 
     # Replace the root handler with our stream handler using the JSON formatter
     from chatty_commander.utils.logging_config import StructuredJSONFormatter
-
     handler.setFormatter(StructuredJSONFormatter())
     root = logging.getLogger()
     root.addHandler(handler)
@@ -54,7 +52,7 @@ def test_configure_logging_json_format():
         logger.info("hello json")
 
         output = stream.getvalue()
-        lines = [line for line in output.splitlines() if line.strip()]
+        lines = [l for l in output.splitlines() if l.strip()]
         assert lines, "Expected at least one log line"
 
         parsed = json.loads(lines[-1])
@@ -84,7 +82,6 @@ def test_json_formatter_includes_exception():
         raise ValueError("test error")
     except ValueError:
         import sys
-
         record.exc_info = sys.exc_info()
 
     output = formatter.format(record)
@@ -157,7 +154,6 @@ def test_request_id_middleware_sets_header():
 
     if RequestIdMiddleware is None:
         import pytest
-
         pytest.skip("FastAPI not available")
 
     app = FastAPI()
@@ -173,7 +169,6 @@ def test_request_id_middleware_sets_header():
     assert "x-request-id" in response.headers
     # Should be a valid UUID
     import uuid
-
     uuid.UUID(response.headers["x-request-id"])  # raises if invalid
 
 
@@ -186,7 +181,6 @@ def test_request_id_middleware_preserves_incoming_id():
 
     if RequestIdMiddleware is None:
         import pytest
-
         pytest.skip("FastAPI not available")
 
     app = FastAPI()

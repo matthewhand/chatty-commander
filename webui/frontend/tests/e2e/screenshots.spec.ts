@@ -79,11 +79,4 @@ test.describe("Documentation Screenshots", () => {
         }
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "commands.png"), fullPage: true });
     });
-
-    test("ui-showcase", async ({ page }) => {
-        await page.goto("/showcase");
-        await expect(page).toHaveURL(/showcase/);
-        await page.waitForTimeout(1000); // Give animations time to settle
-        await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "ui-showcase.png"), fullPage: true });
-    });
 });
