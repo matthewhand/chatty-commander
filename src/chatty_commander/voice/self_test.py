@@ -36,6 +36,7 @@ import json
 import logging
 import tempfile
 import time
+from typing import Any
 
 try:
     import openai
@@ -43,16 +44,16 @@ try:
 
     OPENAI_AVAILABLE = True
 except ImportError:
-    openai = None
-    OpenAI = None
+    openai = None  # type: ignore[assignment,misc]
+    OpenAI = None  # type: ignore[assignment,misc]
     OPENAI_AVAILABLE = False
 
 try:
-    import pyttsx3
+    import pyttsx3  # type: ignore[import-not-found]
 
     TTS_AVAILABLE = True
 except ImportError:
-    pyttsx3 = None
+    pyttsx3 = None  # type: ignore[assignment,misc]
     TTS_AVAILABLE = False
 
 from .transcription import VoiceTranscriber
@@ -70,13 +71,13 @@ class VoiceSelfTester:
         test_phrases: list[str] | None = None,
     ):
         self.transcriber = transcriber or VoiceTranscriber(backend="whisper_local")
-        self.openai_client = None
+        self.openai_client: Any = None
 
         if OPENAI_AVAILABLE and openai_api_key:
             self.openai_client = OpenAI(api_key=openai_api_key)
 
         self.test_phrases = test_phrases or self._get_default_test_phrases()
-        self._tts_engine = None
+        self._tts_engine: Any = None
 
         if TTS_AVAILABLE:
             self._initialize_tts()
