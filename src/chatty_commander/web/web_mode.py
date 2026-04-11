@@ -596,6 +596,13 @@ class WebModeServer:
                 "192.168.0.0/16",
             ]
 
+        # Auth middleware (protects /api routes globally)
+        from chatty_commander.web.middleware.auth import AuthMiddleware
+
+        app.add_middleware(
+            AuthMiddleware, config_manager=self.config_manager, no_auth=self.no_auth
+        )
+
         app.add_middleware(
             RateLimitMiddleware,
             requests_per_minute=10000,
