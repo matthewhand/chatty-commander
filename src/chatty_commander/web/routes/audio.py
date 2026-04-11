@@ -91,6 +91,6 @@ def include_audio_routes(
             return {"success": True, "device": request.device_id}
         except Exception as e:
             logger.error(f"Failed to set audio device: {e}")
-            raise HTTPException(status_code=500, detail="Failed to update audio device configuration")
+            raise HTTPException(status_code=500, detail="Failed to update audio device configuration") from e
 
     return router

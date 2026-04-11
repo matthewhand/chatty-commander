@@ -1,8 +1,9 @@
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
+
 from chatty_commander.web.middleware.auth import AuthMiddleware
 from tests.test_auth import MockConfigManager
+
 
 @pytest.mark.asyncio
 async def test_url_double_encoding_bypass():

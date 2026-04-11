@@ -205,7 +205,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             raise HTTPException(
                 status_code=400,
                 detail="Invalid filename: path escapes target directory"
-            )
+            ) from None
 
         # Check if file already exists
         if file_path.exists():
