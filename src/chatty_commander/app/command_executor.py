@@ -39,12 +39,12 @@ from typing import Any
 try:  # pragma: no cover - exercised via tests with patching
     import pyautogui
 except Exception:  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
-    pyautogui = None
+    pyautogui = None  # type: ignore[assignment]
 
 try:  # pragma: no cover - optional
     import httpx
 except Exception:  # pragma: no cover - optional
-    httpx = None
+    httpx = None  # type: ignore[assignment]
 
 # Allow tests to patch legacy shim module attributes if present
 try:  # pragma: no cover
