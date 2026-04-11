@@ -118,7 +118,7 @@ function audioCardBody(page: Page, heading: string) {
 
 /** Locate the "Fetch list" button inside the LLM section (inside a <label>). */
 function fetchListBtn(page: Page) {
-  return page.locator("button", { hasText: "Fetch list" });
+  return page.locator("button[title='Fetch available models from endpoint']").first();
 }
 
 // ─── Theme Dropdown ──────────────────────────────────────────────────────────
@@ -516,7 +516,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const fetchBtn = page.locator("button", { hasText: "Fetch list" });
+    const fetchBtn = page.locator("button[title='Fetch available models from endpoint']").first();
     await expect(fetchBtn).toBeVisible();
 
     await fetchBtn.click();
@@ -536,7 +536,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     await page.goto("/configuration");
 
     // Fetch models first
-    await page.locator("button", { hasText: "Fetch list" }).click();
+    await page.locator("button[title='Fetch available models from endpoint']").first().click();
 
     const modelSelect = page.locator('select[name="llmModel"]');
     await expect(modelSelect).toBeVisible({ timeout: 5000 });
@@ -555,7 +555,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     const baseUrlInput = page.locator('input[name="llmBaseUrl"]');
     await baseUrlInput.clear();
 
-    const fetchBtn = page.locator("button", { hasText: "Fetch list" });
+    const fetchBtn = page.locator("button[title='Fetch available models from endpoint']").first();
     await expect(fetchBtn).toBeDisabled();
   });
 });

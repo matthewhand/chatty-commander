@@ -336,6 +336,7 @@ export default function CommandsPage() {
                         align="right"
                         hideArrow
                         contentClassName="w-52 border border-base-content/10"
+                        ariaLabel="Command Options"
                       >
                         <li>
                           <button aria-label={`Edit ${name}`}>
