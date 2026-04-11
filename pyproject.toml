@@ -207,6 +207,21 @@ module = [
     "openwakeword.*",
     "pywebview.*",
     "pystray.*",
+    "psutil.*",
+    "soundfile.*",
+    "numpy.*",
+    "watchdog.*",
+    "pyqt5.*",
+    "pydub.*",
+    "webrtcvad.*",
+    "pyaudio.*",
+    "cv2.*",
+    "PIL.*",
+    "noisereduce.*",
+    "whisper.*",
+    "speech_recognition.*",
+    "scipy.*",
+    "librosa.*",
 ]
 ignore_missing_imports = true
 

@@ -56,7 +56,7 @@ class ContextIdentity:
     username: str | None = None
     display_name: str | None = None
     avatar_url: str | None = None
-    created_at: float = None
+    created_at: float | None = None
 
     def __post_init__(self):
         if self.created_at is None:
@@ -89,7 +89,7 @@ class ContextState:
     system_prompt: str
     memory_key: str
     metadata: dict[str, Any]
-    last_activity: float = None
+    last_activity: float | None = None
 
     def __post_init__(self):
         if self.last_activity is None:
@@ -127,7 +127,7 @@ class ContextManager:
         personas_dict = config.get("personas", {}) or config.get("context", {}).get("personas", {})
         self.personas: dict[str, dict[str, Any]] = personas_dict
 
-        self.default_persona = config.get("default_persona") or config.get("context", {}).get("default_persona", "general")
+        self.default_persona: str = config.get("default_persona") or config.get("context", {}).get("default_persona", "general")
 
         # Persistence settings
         self.persistence_enabled = config.get("persistence_enabled", True)
@@ -339,8 +339,8 @@ class ContextManager:
 
     def get_stats(self) -> dict[str, Any]:
         """Get statistics about current contexts."""
-        platform_counts = {}
-        persona_counts = {}
+        platform_counts: dict[str, int] = {}
+        persona_counts: dict[str, int] = {}
 
         for context in self.contexts.values():
             platform = context.identity.platform.value

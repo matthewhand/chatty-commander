@@ -40,9 +40,9 @@ try:
 
     VOICE_DEPS_AVAILABLE = True
 except ImportError:
-    openwakeword = None
-    pyaudio = None
-    np = None
+    openwakeword = None  # type: ignore[assignment]
+    pyaudio = None  # type: ignore[assignment]
+    np = None  # type: ignore[assignment]
     VOICE_DEPS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,11 @@ class WakeWordDetector:
                 "Voice dependencies not available. Install with: "
                 "uv sync --group voice  # or pip install openwakeword pyaudio numpy"
             )
+
+        # Type narrowing - these are guaranteed non-None when VOICE_DEPS_AVAILABLE is True
+        assert openwakeword is not None
+        assert pyaudio is not None
+        assert np is not None
 
         self.wake_words = wake_words or ["hey_jarvis", "alexa"]
         self.threshold = threshold

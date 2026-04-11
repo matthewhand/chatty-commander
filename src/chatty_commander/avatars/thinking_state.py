@@ -62,7 +62,7 @@ class AgentStateInfo:
     state: ThinkingState
     message: str | None = None
     progress: float | None = None  # 0.0 to 1.0 for progress bars
-    timestamp: float = None
+    timestamp: float | None = None
 
     def __post_init__(self):
         if self.timestamp is None:
@@ -91,7 +91,7 @@ class ThinkingStateManager:
     def __init__(self):
         self.agent_states: dict[str, AgentStateInfo] = {}
         self.avatar_mappings: dict[str, str] = {}  # agent_id -> avatar_id
-        self.broadcast_callbacks: set[Callable[[dict[str, Any]], None]] = set()
+        self.broadcast_callbacks: set[Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]] = set()
 
     def register_agent(
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
