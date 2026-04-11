@@ -1,13 +1,14 @@
-import pytest
 import warnings
 from unittest.mock import patch
+
+import pytest
+
 
 def test_shims_import():
     import chatty_commander.config
     assert hasattr(chatty_commander.config, "Config")
 
     import chatty_commander.helpers
-
     import chatty_commander.model_manager
     assert hasattr(chatty_commander.model_manager, "ModelManager")
 
@@ -28,7 +29,6 @@ def test_handle_config_cli(mock_wizard):
     mock_wizard.assert_called_once()
 
 def test_compat():
-    import warnings
 
     import chatty_commander.compat as compat
 
@@ -50,7 +50,6 @@ def test_compat():
 
 
 def test_compat_no_alias():
-    import warnings
 
     import chatty_commander.compat as compat
 
