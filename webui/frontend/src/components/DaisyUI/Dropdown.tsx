@@ -26,6 +26,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 }) => {
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuId = useRef(`dropdown-menu-${Math.random().toString(36).slice(2, 9)}`); // Unique ID for aria-controls
   const isOpen = controlledIsOpen ?? uncontrolledIsOpen;
   
   const setIsOpen = useCallback((newState: boolean) => {
@@ -67,12 +68,16 @@ const Dropdown: React.FC<DropdownProps> = ({
     <div className={`dropdown ${positionCls} ${alignCls} ${className}`} ref={dropdownRef}>
       <div tabIndex={disabled ? -1 : 0} role="button"
         className={`btn ${sizeCls} ${colorCls} ${disabled ? 'btn-disabled opacity-50' : ''} ${triggerClassName}`}
-        onClick={handleToggle} aria-haspopup="true" aria-expanded={isOpen} aria-label={ariaLabel}>
+        onClick={handleToggle}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? menuId.current : undefined}
+        {...(ariaLabel ? { 'aria-label': ariaLabel } : {})}>{/* Render aria-label only when provided */}
         {trigger}
         {!hideArrow && <ChevronDown className="h-5 w-5" aria-hidden="true" />}
       </div>
       {isOpen && (
-        <ul tabIndex={0} className={`dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-50 ${contentClassName}`} role="menu">
+        <ul id={menuId.current} tabIndex={0} className={`dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-50 ${contentClassName}`} role="menu">
           {children}
         </ul>
       )}
