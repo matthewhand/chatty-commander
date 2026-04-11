@@ -104,11 +104,13 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
             response.raise_for_status()
             content_pieces = []
             size = 0
+            # ⚡ Bolt: Iterate over raw bytes to avoid repeated encode overhead
             for chunk in response.iter_bytes(chunk_size=8192):
                 content_pieces.append(chunk)
                 size += len(chunk)
                 if size > MAX_SIZE:
                     break
+            # ⚡ Bolt: Decode exactly once here
             text = b"".join(content_pieces).decode(
                 response.encoding or "utf-8", errors="replace"
             )
