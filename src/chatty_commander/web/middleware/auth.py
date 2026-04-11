@@ -66,7 +66,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Decode path to prevent URL-encoded or double-encoded path traversal bypasses
         raw_path = request.url.path
         decoded_path = urllib.parse.unquote(raw_path)
-        while "%" in decoded_path:
+        for _ in range(10):
+            if "%" not in decoded_path:
+                break
             new_decoded = urllib.parse.unquote(decoded_path)
             if new_decoded == decoded_path:
                 break
