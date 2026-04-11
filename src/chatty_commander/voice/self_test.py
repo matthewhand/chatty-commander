@@ -385,7 +385,7 @@ class VoiceSelfTester:
 
         return suggestions
 
-    def auto_tune_parameters(self, test_results: dict[str, any]) -> dict[str, any]:
+    def auto_tune_parameters(self, test_results: dict[str, Any]) -> dict[str, Any]:
         """Automatically suggest parameter adjustments based on test results."""
         tuning_recommendations = {
             "transcription_backend": "current",
@@ -435,7 +435,7 @@ def create_self_improvement_loop(
     transcriber: VoiceTranscriber | None = None,
     openai_api_key: str | None = None,
     iterations: int = 5,
-) -> dict[str, any]:
+) -> dict[str, Any]:
     """Create a self-improvement loop for the voice system."""
 
     tester = VoiceSelfTester(transcriber, openai_api_key)
