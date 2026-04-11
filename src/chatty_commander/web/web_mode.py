@@ -478,7 +478,7 @@ class WebModeServer:
         """
         while self._telemetry_running:
             try:
-                import psutil
+                import psutil  # type: ignore[import-untyped]
 
                 cpu = psutil.cpu_percent(interval=None)
                 memory = psutil.virtual_memory().percent
@@ -624,7 +624,7 @@ class WebModeServer:
         app.include_router(core)
 
         # Audio endpoints
-        if include_audio_routes:
+        if include_audio_routes is not None:
             audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
             app.include_router(audio)
 
