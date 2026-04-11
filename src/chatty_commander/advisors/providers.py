@@ -155,7 +155,9 @@ class CompletionProvider(LLMProvider):
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
-                from ..tools.browser_analyst import browser_analyst_tool_instance  # type: ignore[attr-defined]
+                from ..tools.browser_analyst import (  # type: ignore[attr-defined]
+                    browser_analyst_tool_instance,
+                )
 
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
@@ -228,7 +230,9 @@ class ResponsesProvider(LLMProvider):
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
-                from ..tools.browser_analyst import browser_analyst_tool_instance  # type: ignore[attr-defined]
+                from ..tools.browser_analyst import (  # type: ignore[attr-defined]
+                    browser_analyst_tool_instance,
+                )
 
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)

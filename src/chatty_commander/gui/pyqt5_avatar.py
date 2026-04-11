@@ -36,7 +36,9 @@ from typing import Any
 try:
     from PyQt5.QtCore import Qt, QUrl, pyqtSignal  # type: ignore[import-not-found]
     from PyQt5.QtGui import QIcon  # type: ignore[import-not-found]
-    from PyQt5.QtWebEngineWidgets import QWebEngineView  # type: ignore[import-not-found]
+    from PyQt5.QtWebEngineWidgets import (
+        QWebEngineView,  # type: ignore[import-not-found]
+    )
     from PyQt5.QtWidgets import (  # type: ignore[import-not-found]
         QAction,
         QApplication,
