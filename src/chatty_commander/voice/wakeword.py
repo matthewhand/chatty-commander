@@ -40,9 +40,9 @@ try:
 
     VOICE_DEPS_AVAILABLE = True
 except ImportError:
-    openwakeword = None
-    pyaudio = None
-    np = None
+    openwakeword = None  # type: ignore[assignment]
+    pyaudio = None  # type: ignore[assignment]
+    np = None  # type: ignore[assignment]
     VOICE_DEPS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -65,17 +65,22 @@ class WakeWordDetector:
                 "uv sync --group voice  # or pip install openwakeword pyaudio numpy"
             )
 
+        # Type narrowing - these are guaranteed non-None when VOICE_DEPS_AVAILABLE is True
+        assert openwakeword is not None
+        assert pyaudio is not None
+        assert np is not None
+
         self.wake_words = wake_words or ["hey_jarvis", "alexa"]
         self.threshold = threshold
         self.chunk_size = chunk_size
         self.sample_rate = sample_rate
         self.channels = channels
 
-        self._model = None
-        self._audio = None
-        self._stream = None
+        self._model: openwakeword.Model | None = None
+        self._audio: pyaudio.PyAudio | None = None
+        self._stream: pyaudio.Stream | None = None  # type: ignore[name-defined]
         self._running = False
-        self._thread = None
+        self._thread: threading.Thread | None = None
         self._callbacks: list[Callable[[str, float], None]] = []
 
         self._initialize_model()
