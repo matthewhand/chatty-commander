@@ -149,7 +149,7 @@ def include_system_routes(
             for name, (desc, default, required) in _ENV_VAR_CATALOG.items()
         ]
 
-        info = SystemInfo(
+        info = SystemInfo(  # type: ignore[call-arg]
             python_version=sys.version,
             platform=platform.platform(),
             architecture=platform.machine(),
@@ -159,7 +159,7 @@ def include_system_routes(
         )
 
         try:
-            import psutil
+            import psutil  # type: ignore[import-untyped]
 
             # CPU — use interval=0.1 to avoid the misleading 0.0 on first call
             info.cpu_percent = psutil.cpu_percent(interval=0.1)
