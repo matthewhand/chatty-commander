@@ -68,7 +68,7 @@ class OpenAIBackend(LLMBackend):
         self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
         self.max_retries = kwargs.get("max_retries", 3)
         self.timeout = kwargs.get("timeout", 30.0)
-        self._client = None
+        self._client: Any = None
         self._initialize_client()
 
     def _initialize_client(self):
@@ -122,7 +122,7 @@ class OpenAIBackend(LLMBackend):
         max_tokens = kwargs.get("max_tokens", 150)
         temperature = kwargs.get("temperature", 0.7)
 
-        last_error = None
+        last_error: Any = None
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -132,7 +132,7 @@ class OpenAIBackend(LLMBackend):
                     max_tokens=max_tokens,
                     temperature=temperature,
                 )
-                return response.choices[0].message.content.strip()
+                return str(response.choices[0].message.content.strip())
             except Exception as e:
                 last_error = e
                 logger.warning(f"OpenAI generation attempt {attempt + 1} failed: {e}")
@@ -162,7 +162,7 @@ class OllamaBackend(LLMBackend):
         self.host = host or os.getenv("OLLAMA_HOST", "ollama:11434")
         self.model = model
         self.base_url = f"http://{self.host}"
-        self._available = None
+        self._available: bool | None = None
         logger.info(f"Initialized Ollama backend: {self.base_url}, model: {self.model}")
 
     def is_available(self) -> bool:
@@ -279,7 +279,7 @@ class OllamaBackend(LLMBackend):
 
                 if response.status_code == 200:
                     result = response.json()
-                    return result.get("response", "").strip()
+                    return str(result.get("response", "").strip())
                 else:
                     raise RuntimeError(f"Ollama request failed: {response.status_code}")
 
@@ -304,16 +304,19 @@ class LocalTransformersBackend(LLMBackend):
     def __init__(self, model_name: str = "microsoft/DialoGPT-medium"):
         # Use a smaller model that actually exists for now
         self.model_name = model_name
-        self._model = None
-        self._tokenizer = None
-        self._device = None
+        self._model: Any = None
+        self._tokenizer: Any = None
+        self._device: Any = None
         self._initialize_model()
 
     def _initialize_model(self):
         """Initialize local transformers model."""
         try:
-            import torch
-            from transformers import AutoModelForCausalLM, AutoTokenizer
+            import torch  # type: ignore[import-not-found]
+            from transformers import (  # type: ignore[import-not-found]
+                AutoModelForCausalLM,
+                AutoTokenizer,
+            )
 
             logger.info(f"Loading local model: {self.model_name}")
 
@@ -322,19 +325,19 @@ class LocalTransformersBackend(LLMBackend):
             logger.info(f"Using device: {self._device}")
 
             # Load tokenizer and model
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            self._model = AutoModelForCausalLM.from_pretrained(
+            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)  # type: ignore[assignment]
+            self._model = AutoModelForCausalLM.from_pretrained(  # type: ignore[assignment]
                 self.model_name,
                 torch_dtype=torch.float16 if self._device == "cuda" else torch.float32,
                 device_map="auto" if self._device == "cuda" else None,
             )
 
             if self._device == "cpu":
-                self._model = self._model.to(self._device)
+                self._model = self._model.to(self._device)  # type: ignore[attr-defined]
 
             # Add pad token if missing
-            if self._tokenizer.pad_token is None:
-                self._tokenizer.pad_token = self._tokenizer.eos_token
+            if self._tokenizer.pad_token is None:  # type: ignore[attr-defined]
+                self._tokenizer.pad_token = self._tokenizer.eos_token  # type: ignore[attr-defined]
 
             logger.info(f"Successfully loaded local model: {self.model_name}")
 
@@ -379,7 +382,7 @@ class LocalTransformersBackend(LLMBackend):
             response_tokens = outputs[0][inputs.shape[1] :]
             response = self._tokenizer.decode(response_tokens, skip_special_tokens=True)
 
-            return response.strip()
+            return str(response.strip())
 
         except Exception as e:
             logger.error(f"Local transformers generation failed: {e}")
