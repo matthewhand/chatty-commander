@@ -28,7 +28,7 @@ test.describe("Documentation Screenshots", () => {
 
     test("configuration-general", async ({ page }) => {
         await page.goto("/");
-        await page.click("text=Configuration");
+        await page.getByRole("link", { name: "Configuration" }).click();
         await expect(page).toHaveURL(/configuration/);
         await page.waitForTimeout(500);
         await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "configuration-general.png"), fullPage: true });
@@ -36,7 +36,7 @@ test.describe("Documentation Screenshots", () => {
 
     test("configuration-models", async ({ page }) => {
         await page.goto("/");
-        await page.click("text=Configuration");
+        await page.getByRole("link", { name: "Configuration" }).click();
         await page.waitForTimeout(300);
         const modelsSection = page.locator("text=Voice Models (ONNX)").first();
         if (await modelsSection.isVisible()) {
@@ -48,7 +48,7 @@ test.describe("Documentation Screenshots", () => {
 
     test("configuration-llm", async ({ page }) => {
         await page.goto("/");
-        await page.click("text=Configuration");
+        await page.getByRole("link", { name: "Configuration" }).click();
         await page.waitForTimeout(300);
         const llmTab = page.locator("text=LLM").first();
         if (await llmTab.isVisible()) {
@@ -60,7 +60,7 @@ test.describe("Documentation Screenshots", () => {
 
     test("configuration-services", async ({ page }) => {
         await page.goto("/");
-        await page.click("text=Configuration");
+        await page.getByRole("link", { name: "Configuration" }).click();
         await page.waitForTimeout(300);
         const servicesTab = page.locator("text=Services").first();
         if (await servicesTab.isVisible()) {
