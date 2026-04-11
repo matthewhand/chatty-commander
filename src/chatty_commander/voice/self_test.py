@@ -87,11 +87,11 @@ class VoiceSelfTester:
         try:
             self._tts_engine = pyttsx3.init()
             # Configure for clear speech
-            self._tts_engine.setProperty("rate", 150)  # type: ignore[union-attr]
-            self._tts_engine.setProperty("volume", 0.9)  # type: ignore[union-attr]
+            self._tts_engine.setProperty("rate", 150)  # type: ignore[attr-defined]
+            self._tts_engine.setProperty("volume", 0.9)  # type: ignore[attr-defined]
 
             # Try to use a good quality voice
-            voices = self._tts_engine.getProperty("voices")  # type: ignore[union-attr]
+            voices = self._tts_engine.getProperty("voices")  # type: ignore[attr-defined]
             if voices:
                 # Prefer female voices (often clearer for TTS)
                 for voice in voices:
@@ -99,7 +99,7 @@ class VoiceSelfTester:
                         "female" in voice.name.lower()
                         or "samantha" in voice.name.lower()
                     ):
-                        self._tts_engine.setProperty("voice", voice.id)  # type: ignore[union-attr]
+                        self._tts_engine.setProperty("voice", voice.id)  # type: ignore[attr-defined]
                         break
 
         except Exception as e:
@@ -315,7 +315,7 @@ class VoiceSelfTester:
             )
 
         # Aggregate improvement suggestions
-        suggestion_counts = {}
+        suggestion_counts: dict[str, int] = {}
         for suggestion in all_suggestions:
             suggestion_counts[suggestion] = suggestion_counts.get(suggestion, 0) + 1
 
@@ -354,7 +354,7 @@ class VoiceSelfTester:
         else:
             return "complex"
 
-    def suggest_improvements(self, test_results: dict[str, any]) -> list[str]:
+    def suggest_improvements(self, test_results: dict[str, Any]) -> list[str]:
         """Analyze test results and suggest specific improvements."""
         suggestions = []
 
