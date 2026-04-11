@@ -97,7 +97,7 @@ async function mockAllRoutes(page: Page) {
   );
 
   // Mock the LLM /models endpoint (called via fetchLLMModels -> baseUrl + "/models")
-  await page.route("**/v1/models", (route) =>
+  await page.route("**/models", (route) =>
     route.fulfill({ status: 200, json: MOCK_LLM_MODELS }),
   );
 
@@ -538,11 +538,8 @@ test.describe("Configuration Page - LLM Endpoint", () => {
     // Fetch models first
     await page.locator("button", { hasText: "Fetch list" }).click();
 
-    // Wait for the mock API response delay
-    await page.waitForTimeout(500);
-
     const modelSelect = page.locator('select[name="llmModel"]');
-    await expect(modelSelect).toBeVisible({ timeout: 15000 });
+    await expect(modelSelect).toBeVisible({ timeout: 5000 });
 
     await modelSelect.selectOption("gpt-4o-mini");
     await expect(modelSelect).toHaveValue("gpt-4o-mini");
