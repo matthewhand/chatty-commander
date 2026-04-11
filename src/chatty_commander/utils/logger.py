@@ -175,10 +175,10 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
             logger.addHandler(handler)
     else:
         # Add console handler if no log file
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
         if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-            logger.addHandler(handler)
+            logger.addHandler(stream_handler)
 
     return logger
 

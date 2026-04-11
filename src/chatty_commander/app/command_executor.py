@@ -35,29 +35,38 @@ import shlex
 import subprocess
 from typing import Any
 
+pyautogui: Any = None
+httpx: Any = None
+
 # Optional deps that may not be present in CI/headless environments
 try:  # pragma: no cover - exercised via tests with patching
-    import pyautogui
+    import pyautogui as _pyautogui
+
+    pyautogui = _pyautogui
 except (
     Exception
 ):  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
     pyautogui = None
 
 try:  # pragma: no cover - optional
-    import httpx
+    import httpx as _httpx
+
+    httpx = _httpx
 except Exception:  # pragma: no cover - optional
     httpx = None
 
 # Allow tests to patch legacy shim module attributes if present
 try:  # pragma: no cover
-    from command_executor import pyautogui as _shim_pg
+    from command_executor import pyautogui as _shim_pg  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover - optional
     _shim_pg = None
 if _shim_pg is not None:  # pragma: no cover - optional
     pyautogui = _shim_pg
 
 try:  # pragma: no cover
-    from command_executor import requests as _shim_requests
+    from command_executor import (
+        requests as _shim_requests,  # type: ignore[import-not-found]
+    )
 except Exception:  # pragma: no cover - optional
     _shim_requests = None
 if _shim_requests is not None:  # pragma: no cover - optional
