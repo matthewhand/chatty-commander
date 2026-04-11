@@ -49,7 +49,7 @@ def include_audio_routes(
     @router.get("/api/v1/audio/devices", response_model=AudioDevices)
     async def get_audio_devices():
         try:
-            import pyaudio
+            import pyaudio  # type: ignore[import-untyped]
 
             p = pyaudio.PyAudio()
             input_devices = []
