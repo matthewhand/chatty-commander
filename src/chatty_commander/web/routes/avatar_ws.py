@@ -47,7 +47,7 @@ class AvatarWSConnectionManager:
         # optional persona -> theme resolver
         self.theme_resolver = theme_resolver
         # Track the manager instance we've registered with to survive resets in tests
-        self._registered_manager = None
+        self._registered_manager: Any = None
         # Register on current manager
         self._ensure_manager()
 
@@ -109,9 +109,9 @@ class AvatarWSConnectionManager:
         try:
             data = message.get("data") if isinstance(message, dict) else None
             persona_id = data.get("persona_id") if isinstance(data, dict) else None
-            if self.theme_resolver and persona_id:
+            if self.theme_resolver and persona_id and isinstance(data, dict):
                 try:
-                    data["theme"] = self.theme_resolver(persona_id)  # type: ignore[arg-type]
+                    data["theme"] = self.theme_resolver(persona_id)
                 except Exception:
                     pass
         except Exception:
