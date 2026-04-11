@@ -59,7 +59,19 @@ class AuthMiddleware(BaseHTTPMiddleware):
         """Process request and validate authentication if required."""
         # Skip auth in no_auth mode
         if self.no_auth:
-            return await call_next(request)  # type: ignore[no-any-return]
+            return await call_next(request)
+
+        # Decode path to prevent URL-encoded or double-encoded path traversal bypasses
+        raw_path = request.url.path
+        decoded_path = urllib.parse.unquote(raw_path)
+        for _ in range(10):
+            if "%" not in decoded_path:
+                break
+            new_decoded = urllib.parse.unquote(decoded_path)
+            if new_decoded == decoded_path:
+                break
+            decoded_path = new_decoded
+        raw_path = decoded_path
 
         # Normalize path to prevent path traversal bypasses
         # Use exact match or explicit trailing slash check to prevent partial path matching
