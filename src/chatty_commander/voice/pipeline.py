@@ -35,6 +35,7 @@ from __future__ import annotations
 import logging
 import threading
 from collections.abc import Callable
+from typing import Any
 
 from .transcription import VoiceTranscriber
 from .tts import TextToSpeech
@@ -307,7 +308,7 @@ class VoicePipeline:
                 self.tts.speak(text)
         return None
 
-    def get_status(self) -> dict[str, any]:
+    def get_status(self) -> dict[str, Any]:
         """Get pipeline status information."""
         return {
             "listening": self._listening,
