@@ -82,12 +82,12 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
             response.raise_for_status()
             content_pieces = []
             size = 0
-            for chunk in response.iter_text(chunk_size=8192):
+            for chunk in response.iter_bytes(chunk_size=8192):
                 content_pieces.append(chunk)
-                size += len(chunk.encode("utf-8"))
+                size += len(chunk)
                 if size > MAX_SIZE:
                     break
-            text = "".join(content_pieces)
+            text = b"".join(content_pieces).decode("utf-8", errors="replace")
 
         title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
         title = title_match.group(1).strip() if title_match else "No Title"
