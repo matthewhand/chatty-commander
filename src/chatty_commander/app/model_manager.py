@@ -117,15 +117,15 @@ class ModelManager:
         Returns the loaded models mapping.
         """
         if self.mock_models:
-            # Just Mock
-            dummy = self.models["general"] = {"mock_model": Model("mock_path")}
-            self.models["system"] = {"mock_system": Model("mock_path")}
-            self.models["chat"] = {"mock_chat": Model("mock_path")}
-            if state:
-                self.active_models = dummy
-                return dummy
-            self.active_models = dummy
-            return self.models
+             # Just Mock
+             dummy = self.models["general"] = {"mock_model": Model("mock_path")}
+             self.models["system"] = {"mock_system": Model("mock_path")}
+             self.models["chat"] = {"mock_chat": Model("mock_path")}
+             if state:
+                 self.active_models = dummy
+                 return dummy
+             self.active_models = dummy
+             return self.models
 
         if state is None:
             self.models["general"] = self.load_model_set(

@@ -68,9 +68,7 @@ class MemoryStore:
                                 MemoryItem(
                                     role=data["role"],
                                     content=data["content"],
-                                    timestamp=data.get(
-                                        "timestamp", datetime.utcnow().isoformat()
-                                    ),
+                                    timestamp=data.get("timestamp", datetime.utcnow().isoformat()),
                                 )
                             )
                     except (json.JSONDecodeError, KeyError):
@@ -88,7 +86,11 @@ class MemoryStore:
         key = self._ctx(platform, channel, user)
         q = self._store.setdefault(key, deque(maxlen=self._max))
         ts = datetime.utcnow().isoformat()
-        q.append(MemoryItem(role=role, content=content, timestamp=ts))
+        q.append(
+            MemoryItem(
+                role=role, content=content, timestamp=ts
+            )
+        )
         if self._persist:
             try:
                 with open(self._path, "a", encoding="utf-8") as f:

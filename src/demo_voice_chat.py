@@ -118,8 +118,8 @@ def main():
         command_executor = CommandExecutor(config, llm_manager, state_manager)
 
         # Attach components to config for voice chat action
-        config.llm_manager = llm_manager  # type: ignore[attr-defined]
-        config.voice_pipeline = voice_pipeline  # type: ignore[attr-defined]
+        config.llm_manager = llm_manager
+        config.voice_pipeline = voice_pipeline
         command_executor.state_manager = state_manager
         logger.info("✅ Command executor ready")
 

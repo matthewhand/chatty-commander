@@ -5,7 +5,6 @@ import React, {
   useState,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Alert } from "./DaisyUI";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
@@ -22,6 +21,13 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 let nextId = 0;
+
+const alertClass: Record<ToastType, string> = {
+  success: "alert-success",
+  error: "alert-error",
+  info: "alert-info",
+  warning: "alert-warning",
+};
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -46,14 +52,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.25 }}
+              className={`alert ${alertClass[toast.type]} shadow-lg`}
             >
-              <Alert
-                variant={toast.type}
-                className="shadow-lg"
-                onClose={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-              >
-                <span>{toast.message}</span>
-              </Alert>
+              <span>{toast.message}</span>
             </motion.div>
           ))}
         </AnimatePresence>

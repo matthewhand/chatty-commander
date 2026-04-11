@@ -13,22 +13,22 @@ test.describe("WebSocket Experience", () => {
         await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
         // 1. Verify WebSocket connects (Green "Connected" status)
-        const wsStatus = page.locator(".stat-value", { hasText: "Connected" });
+        const wsStatus = page.locator("div.stat-value", { hasText: "Connected" });
         await expect(wsStatus).toBeVisible({ timeout: 15000 });
         await expect(wsStatus).toHaveClass(/text-success/);
 
         // 2. Verify the Real-time Command Log container exists
-        // The dashboard now uses chat-style bubbles instead of mockup-code.
-        // The log area is inside a card with "Real-time Command Log" heading.
-        const logCard = page.locator(".card", { has: page.getByText("Real-time Command Log") });
-        await expect(logCard).toBeVisible();
+        const logContainer = page.locator(".mockup-code");
+        await expect(logContainer).toBeVisible();
 
         // The log initially shows "Waiting for commands..." when no messages have arrived.
-        const logArea = logCard.locator(".bg-base-300");
-        await expect(logArea).toContainText(/Waiting for commands/);
+        // Once real WS messages (e.g. telemetry) arrive, they are parsed but telemetry
+        // frames don't get added to the message list. So the placeholder may persist.
+        // We verify the log area is present and functional.
+        await expect(logContainer).toContainText(/Waiting for commands|>/);
 
         // 3. Verify the command input is enabled when connected
-        const commandInput = page.getByLabel("Type and execute a command");
+        const commandInput = page.getByRole("textbox", { name: "Type and execute a command" });
         await expect(commandInput).toBeEnabled();
     });
 });

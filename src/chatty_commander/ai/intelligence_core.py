@@ -54,12 +54,12 @@ class IntelligenceCore:
         self.logger = logging.getLogger(__name__)
 
         # Initialize components
-        self.advisors_service = AdvisorsService(config)  # type: ignore[arg-type]
-        self.voice_processor: Any = None
+        self.advisors_service = AdvisorsService(config)
+        self.voice_processor = None
         self.state_manager = StateManager()
 
         # AI state
-        self.current_conversation_context: dict[str, Any] = {}
+        self.current_conversation_context = {}
         self.active_persona = "chatty"
         self.listening_mode = "continuous"  # continuous, push-to-talk, wake-word
 
@@ -84,10 +84,10 @@ class IntelligenceCore:
             self.voice_processor = create_enhanced_voice_processor(voice_config)
 
             # Set up voice callbacks
-            self.voice_processor.on_transcription = self._handle_voice_input  # type: ignore[attr-defined]
-            self.voice_processor.on_wake_word = self._handle_wake_word  # type: ignore[attr-defined]
-            self.voice_processor.on_speech_start = self._handle_speech_start  # type: ignore[attr-defined]
-            self.voice_processor.on_speech_end = self._handle_speech_end  # type: ignore[attr-defined]
+            self.voice_processor.on_transcription = self._handle_voice_input
+            self.voice_processor.on_wake_word = self._handle_wake_word
+            self.voice_processor.on_speech_start = self._handle_speech_start
+            self.voice_processor.on_speech_end = self._handle_speech_end
 
             self.logger.info("Voice processing initialized")
 

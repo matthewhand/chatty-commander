@@ -34,12 +34,10 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from PyQt5.QtCore import Qt, QUrl, pyqtSignal  # type: ignore[import-not-found]
-    from PyQt5.QtGui import QIcon  # type: ignore[import-not-found]
-    from PyQt5.QtWebEngineWidgets import (  # type: ignore[import-not-found]
-        QWebEngineView,
-    )
-    from PyQt5.QtWidgets import (  # type: ignore[import-not-found]
+    from PyQt5.QtCore import Qt, QUrl, pyqtSignal
+    from PyQt5.QtGui import QIcon
+    from PyQt5.QtWebEngineWidgets import QWebEngineView
+    from PyQt5.QtWidgets import (
         QAction,
         QApplication,
         QMainWindow,
@@ -54,16 +52,16 @@ except ImportError:
     PYQT5_AVAILABLE = False
 
     # Create dummy classes for type hints
-    class QMainWindow:  # type: ignore[no-redef]
+    class QMainWindow:
         pass
 
-    class QWebEngineView:  # type: ignore[no-redef]
+    class QWebEngineView:
         pass
 
-    class QSystemTrayIcon:  # type: ignore[no-redef]
+    class QSystemTrayIcon:
         pass
 
-    class QApplication:  # type: ignore[no-redef]
+    class QApplication:
         pass
 
 
@@ -88,8 +86,8 @@ class TransparentBrowser(QMainWindow):
     def __init__(self, config: dict[str, Any]):
         super().__init__()
         self.config = config
-        self.tray_icon: Any = None
-        self.web_view: Any = None
+        self.tray_icon = None
+        self.web_view = None
 
         self._setup_window()
         self._setup_web_view()
@@ -357,8 +355,7 @@ def run_pyqt5_avatar() -> bool:
         logger.info("PyQt5 avatar browser started successfully")
 
         # Run the application
-        result: int = app.exec_()  # type: ignore[assignment]
-        return result == 0
+        return app.exec_() == 0
 
     except Exception as e:
         logger.error(f"Failed to start PyQt5 avatar browser: {e}")

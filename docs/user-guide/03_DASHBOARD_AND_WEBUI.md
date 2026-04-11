@@ -14,18 +14,6 @@ By default, the dashboard is served at `http://localhost:8100/` when the applica
 
 Screenshots of the UI are stored in [`docs/screenshots/`](../screenshots/).
 
-### Login Page
-![Login Screen](../screenshots/login.png)
-
-### Dashboard Overview
-![System Dashboard](../screenshots/dashboard.png)
-
-### Commands Management
-![Commands Management](../screenshots/commands.png)
-
-### UI Showcase
-![UI Component Showcase](../screenshots/ui-showcase.png)
-
 ---
 
 ## Documentation Maintenance

@@ -56,10 +56,11 @@ class LLMBackend(ABC):
 class OpenAIBackend(LLMBackend):
     """OpenAI API backend."""
 
-    def __init__(
-        self, api_key: str | None = None, base_url: str | None = None, **kwargs
-    ):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+    def __init__(self, api_key: str | None = None, base_url: str | None = None, **kwargs):
+        self.api_key = (
+            api_key
+            or os.getenv("OPENAI_API_KEY")
+        )
         self.base_url = (
             base_url
             or os.getenv("OPENAI_BASE_URL")
@@ -68,7 +69,7 @@ class OpenAIBackend(LLMBackend):
         self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
         self.max_retries = kwargs.get("max_retries", 3)
         self.timeout = kwargs.get("timeout", 30.0)
-        self._client: Any = None
+        self._client = None
         self._initialize_client()
 
     def _initialize_client(self):
@@ -84,7 +85,7 @@ class OpenAIBackend(LLMBackend):
                 api_key=self.api_key,
                 base_url=self.base_url,
                 timeout=self.timeout,
-                max_retries=0,  # We handle retries manually
+                max_retries=0  # We handle retries manually
             )
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
         except ImportError:
@@ -122,7 +123,7 @@ class OpenAIBackend(LLMBackend):
         max_tokens = kwargs.get("max_tokens", 150)
         temperature = kwargs.get("temperature", 0.7)
 
-        last_error: Any = None
+        last_error = None
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -132,17 +133,15 @@ class OpenAIBackend(LLMBackend):
                     max_tokens=max_tokens,
                     temperature=temperature,
                 )
-                return str(response.choices[0].message.content.strip())
+                return response.choices[0].message.content.strip()
             except Exception as e:
                 last_error = e
                 logger.warning(f"OpenAI generation attempt {attempt + 1} failed: {e}")
                 if attempt < self.max_retries:
-                    sleep_time = 1.0 * (2**attempt)  # Exponential backoff
+                    sleep_time = 1.0 * (2 ** attempt)  # Exponential backoff
                     time.sleep(sleep_time)
 
-        raise RuntimeError(
-            f"OpenAI generation failed after {self.max_retries} retries: {last_error}"
-        )
+        raise RuntimeError(f"OpenAI generation failed after {self.max_retries} retries: {last_error}")
 
     def get_backend_info(self) -> dict[str, Any]:
         """Get OpenAI backend information."""
@@ -162,7 +161,7 @@ class OllamaBackend(LLMBackend):
         self.host = host or os.getenv("OLLAMA_HOST", "ollama:11434")
         self.model = model
         self.base_url = f"http://{self.host}"
-        self._available: bool | None = None
+        self._available = None
         logger.info(f"Initialized Ollama backend: {self.base_url}, model: {self.model}")
 
     def is_available(self) -> bool:
@@ -176,17 +175,13 @@ class OllamaBackend(LLMBackend):
             from chatty_commander.utils.url_validator import is_safe_url
 
             if not is_safe_url(f"{self.base_url}/api/tags"):
-                logger.warning(
-                    f"Ollama base URL {self.base_url} rejected by security policy."
-                )
+                logger.warning(f"Ollama base URL {self.base_url} rejected by security policy.")
                 self._available = False
                 return self._available
 
             # Check if Ollama server is running
             with httpx.Client() as client:
-                response = client.get(
-                    f"{self.base_url}/api/tags", timeout=5, follow_redirects=False
-                )
+                response = client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
                 if response.status_code == 200:
                     # Check if our model is available
                     models = response.json().get("models", [])
@@ -203,19 +198,13 @@ class OllamaBackend(LLMBackend):
                         self._try_pull_model()
                         self._available = self.model in [
                             m.get("name", "")
-                            for m in client.get(
-                                f"{self.base_url}/api/tags",
-                                timeout=5,
-                                follow_redirects=False,
-                            )
+                            for m in client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
                             .json()
                             .get("models", [])
                         ]
                 else:
                     self._available = False
-                    logger.debug(
-                        f"Ollama server not responding: {response.status_code}"
-                    )
+                    logger.debug(f"Ollama server not responding: {response.status_code}")
 
         except ImportError:
             logger.warning("httpx library not available for Ollama backend")
@@ -279,7 +268,7 @@ class OllamaBackend(LLMBackend):
 
                 if response.status_code == 200:
                     result = response.json()
-                    return str(result.get("response", "").strip())
+                    return result.get("response", "").strip()
                 else:
                     raise RuntimeError(f"Ollama request failed: {response.status_code}")
 
@@ -304,19 +293,16 @@ class LocalTransformersBackend(LLMBackend):
     def __init__(self, model_name: str = "microsoft/DialoGPT-medium"):
         # Use a smaller model that actually exists for now
         self.model_name = model_name
-        self._model: Any = None
-        self._tokenizer: Any = None
-        self._device: Any = None
+        self._model = None
+        self._tokenizer = None
+        self._device = None
         self._initialize_model()
 
     def _initialize_model(self):
         """Initialize local transformers model."""
         try:
-            import torch  # type: ignore[import-not-found]
-            from transformers import (  # type: ignore[import-not-found]
-                AutoModelForCausalLM,
-                AutoTokenizer,
-            )
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
 
             logger.info(f"Loading local model: {self.model_name}")
 
@@ -325,19 +311,19 @@ class LocalTransformersBackend(LLMBackend):
             logger.info(f"Using device: {self._device}")
 
             # Load tokenizer and model
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)  # type: ignore[assignment]
-            self._model = AutoModelForCausalLM.from_pretrained(  # type: ignore[assignment]
+            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            self._model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
                 torch_dtype=torch.float16 if self._device == "cuda" else torch.float32,
                 device_map="auto" if self._device == "cuda" else None,
             )
 
             if self._device == "cpu":
-                self._model = self._model.to(self._device)  # type: ignore[attr-defined]
+                self._model = self._model.to(self._device)
 
             # Add pad token if missing
-            if self._tokenizer.pad_token is None:  # type: ignore[attr-defined]
-                self._tokenizer.pad_token = self._tokenizer.eos_token  # type: ignore[attr-defined]
+            if self._tokenizer.pad_token is None:
+                self._tokenizer.pad_token = self._tokenizer.eos_token
 
             logger.info(f"Successfully loaded local model: {self.model_name}")
 
@@ -382,7 +368,7 @@ class LocalTransformersBackend(LLMBackend):
             response_tokens = outputs[0][inputs.shape[1] :]
             response = self._tokenizer.decode(response_tokens, skip_special_tokens=True)
 
-            return str(response.strip())
+            return response.strip()
 
         except Exception as e:
             logger.error(f"Local transformers generation failed: {e}")

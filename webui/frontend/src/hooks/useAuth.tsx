@@ -22,13 +22,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       setLoading(false);
     } catch (error) {
-      // Auth check failed - may retry
+      console.warn("Auth check failed:", error);
       // If we failed, specifically in a dev/test environment where the server might be starting up,
       // we should retry a few times for the 'no-auth' check.
       if (retryCount.current < 5) {
         retryCount.current += 1;
         const delay = 1000 * retryCount.current;
-        // Retrying auth check
+        console.log(`Retrying auth check in ${delay}ms...`);
         setTimeout(checkAuth, delay);
       } else {
         localStorage.removeItem("auth_token");
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       return true;
     } catch (error) {
-      // Login failed
+      console.error("Login failed:", error);
       return false;
     } finally {
       setLoading(false);

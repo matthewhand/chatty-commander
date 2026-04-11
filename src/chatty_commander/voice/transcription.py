@@ -37,16 +37,15 @@ import tempfile
 import time
 import wave
 from abc import ABC, abstractmethod
-from typing import Any
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
-    import pyaudio  # type: ignore[import-untyped]
+    import numpy as np
+    import pyaudio
 
     AUDIO_DEPS_AVAILABLE = True
 except ImportError:
-    pyaudio = None  # type: ignore[assignment]
-    np = None  # type: ignore[assignment]
+    pyaudio = None
+    np = None
     AUDIO_DEPS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -74,10 +73,10 @@ class WhisperLocalBackend(TranscriptionBackend):
         self._model = None
         self._initialize_model()
 
-    def _initialize_model(self) -> None:
+    def _initialize_model(self):
         """Initialize Whisper model."""
         try:
-            import whisper  # type: ignore[import-not-found]
+            import whisper
 
             self._model = whisper.load_model(self.model_size)
             logger.info(f"Loaded Whisper model: {self.model_size}")
@@ -119,10 +118,10 @@ class WhisperAPIBackend(TranscriptionBackend):
 
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key
-        self._client: Any = None
+        self._client = None
         self._initialize_client()
 
-    def _initialize_client(self) -> None:
+    def _initialize_client(self):
         """Initialize OpenAI client."""
         try:
             import openai
@@ -159,7 +158,7 @@ class WhisperAPIBackend(TranscriptionBackend):
 
                 text = transcript.text.strip()
                 logger.debug(f"OpenAI Whisper transcription: '{text}'")
-                return str(text)
+                return text
 
         except Exception as e:
             logger.error(f"OpenAI Whisper API transcription failed: {e}")
@@ -216,8 +215,8 @@ class VoiceTranscriber:
         self.silence_timeout = silence_timeout
 
         self._backend = self._create_backend(backend, **backend_kwargs)
-        self._audio: Any = None
-        self._stream: Any = None
+        self._audio = None
+        self._stream = None
 
     def _create_backend(self, backend: str, **kwargs) -> TranscriptionBackend:
         """Create transcription backend."""
@@ -260,7 +259,7 @@ class VoiceTranscriber:
 
         try:
             self._audio = pyaudio.PyAudio()
-            self._stream = self._audio.open(  # type: ignore[attr-defined]
+            self._stream = self._audio.open(
                 format=pyaudio.paInt16,
                 channels=self.channels,
                 rate=self.sample_rate,
@@ -275,16 +274,14 @@ class VoiceTranscriber:
 
             while True:
                 try:
-                    data = self._stream.read(  # type: ignore[attr-defined]
+                    data = self._stream.read(
                         self.chunk_size, exception_on_overflow=False
                     )
                     frames.append(data)
 
                     # Check for silence (simple volume-based detection)
                     audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
-                    volume = np.sqrt(
-                        np.dot(audio_array, audio_array) / len(audio_array)
-                    )
+                    volume = np.sqrt(np.dot(audio_array, audio_array) / len(audio_array))
 
                     if volume < 500:  # Silence threshold
                         if silence_start is None:
@@ -331,7 +328,7 @@ class VoiceTranscriber:
             finally:
                 self._audio = None
 
-    def get_backend_info(self) -> dict[str, Any]:
+    def get_backend_info(self) -> dict[str, any]:
         """Get information about the current backend."""
         return {
             "backend_type": type(self._backend).__name__,

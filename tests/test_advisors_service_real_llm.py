@@ -74,9 +74,7 @@ class TestAdvisorsServiceRealLLM:
         """Test AdvisorsService initialization with real LLM provider."""
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = Mock()
             service = AdvisorsService(config)
 
@@ -94,9 +92,7 @@ class TestAdvisorsServiceRealLLM:
         """Test handling message with real LLM response."""
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_llm_manager
             service = AdvisorsService(config)
 
@@ -129,15 +125,11 @@ class TestAdvisorsServiceRealLLM:
         mock_build_provider.return_value = mock_provider
 
         mock_manager = Mock()
-        mock_manager.generate_response.side_effect = Exception(
-            "API rate limit exceeded"
-        )
+        mock_manager.generate_response.side_effect = Exception("API rate limit exceeded")
         mock_manager.active_backend = mock_provider
         mock_manager.get_active_backend_name.return_value = "gpt-3.5-turbo"
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_manager
             service = AdvisorsService(config)
 
@@ -163,9 +155,7 @@ class TestAdvisorsServiceRealLLM:
         """Test that context persists across multiple messages."""
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_llm_manager
             service = AdvisorsService(config)
 
@@ -205,9 +195,7 @@ class TestAdvisorsServiceRealLLM:
         """Test handling summarize command."""
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_llm_manager
             service = AdvisorsService(config)
 
@@ -229,15 +217,11 @@ class TestAdvisorsServiceRealLLM:
             mock_llm_manager.generate_response.assert_not_called()
 
     @patch("chatty_commander.advisors.service.build_provider_safe")
-    def test_switch_persona(
-        self, mock_build_provider, config, mock_provider, mock_llm_manager
-    ):
+    def test_switch_persona(self, mock_build_provider, config, mock_provider, mock_llm_manager):
         """Test switching persona for a context."""
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_llm_manager
             service = AdvisorsService(config)
 
@@ -270,15 +254,11 @@ class TestAdvisorsServiceRealLLM:
             assert mock_llm_manager.generate_response.call_count == 2
 
     @patch("chatty_commander.advisors.service.build_provider_safe")
-    def test_get_context_stats(
-        self, mock_build_provider, config, mock_provider, mock_llm_manager
-    ):
+    def test_get_context_stats(self, mock_build_provider, config, mock_provider, mock_llm_manager):
         """Test getting context statistics."""
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_llm_manager
             service = AdvisorsService(config)
 
@@ -310,15 +290,11 @@ class TestAdvisorsServiceRealLLM:
             assert stats["persona_distribution"]["slack_default"] == 1
 
     @patch("chatty_commander.advisors.service.build_provider_safe")
-    def test_clear_context(
-        self, mock_build_provider, config, mock_provider, mock_llm_manager
-    ):
+    def test_clear_context(self, mock_build_provider, config, mock_provider, mock_llm_manager):
         """Test clearing a specific context."""
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_llm_manager
             service = AdvisorsService(config)
 
@@ -355,15 +331,11 @@ class TestAdvisorsServiceRealLLM:
             service.handle_message(message)
 
     @patch("chatty_commander.advisors.service.build_provider_safe")
-    def test_memory_integration(
-        self, mock_build_provider, config, mock_provider, mock_llm_manager
-    ):
+    def test_memory_integration(self, mock_build_provider, config, mock_provider, mock_llm_manager):
         """Test that memory is properly integrated with LLM responses."""
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_llm_manager
             service = AdvisorsService(config)
 
@@ -387,16 +359,12 @@ class TestAdvisorsServiceRealLLM:
             assert mock_llm_manager.generate_response.call_count == 2
 
     @patch("chatty_commander.advisors.service.build_provider_safe")
-    def test_streaming_response_support(
-        self, mock_build_provider, config, mock_provider, mock_llm_manager
-    ):
+    def test_streaming_response_support(self, mock_build_provider, config, mock_provider, mock_llm_manager):
         """Test support for streaming responses."""
         mock_provider.generate_stream.return_value = "Streaming response..."
         mock_build_provider.return_value = mock_provider
 
-        with patch(
-            "chatty_commander.llm.manager.get_global_llm_manager"
-        ) as mock_get_llm:
+        with patch("chatty_commander.llm.manager.get_global_llm_manager") as mock_get_llm:
             mock_get_llm.return_value = mock_llm_manager
             service = AdvisorsService(config)
 

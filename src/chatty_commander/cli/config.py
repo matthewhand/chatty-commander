@@ -33,7 +33,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-from typing import Any
 
 from chatty_commander.app.config import Config
 
@@ -63,7 +62,7 @@ class ConfigCLI:
         except json.JSONDecodeError:
             print(f"Error: Invalid JSON in {self.config_path}", file=sys.stderr)
         # Fallback to empty config on error
-        empty_data: dict[str, dict[str, Any]] = {
+        empty_data = {
             "model_actions": {},
             "state_models": {},
             "listen_for": {},

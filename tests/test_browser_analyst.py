@@ -10,34 +10,32 @@ from chatty_commander.tools.browser_analyst import AnalystRequest, summarize_url
 @pytest.fixture(autouse=True)
 def mock_config(monkeypatch):
     """Mock config so we have a known state without domain restrictions."""
-    mock_data = {"advisors": {"browser_analyst": {"allowlist": None}}}
-
+    mock_data = {
+        "advisors": {
+            "browser_analyst": {
+                "allowlist": None
+            }
+        }
+    }
     def mock_init(self, *args, **kwargs):
         self.config_data = mock_data
-
     monkeypatch.setattr(Config, "__init__", mock_init)
 
 
 @respx.mock
 def test_summarize_url_success():
-    html_content = (
-        """
+    html_content = """
     <html>
       <head><title>Test Page</title></head>
       <body>
         <script>var x = 1;</script>
         <h1>Hello World</h1>
         <p>This is a test paragraph with <b>bold</b> text.</p>
-        <div>"""
-        + ("A" * 600)
-        + """</div>
+        <div>""" + ("A" * 600) + """</div>
       </body>
     </html>
     """
-    )
-    respx.get("https://example.com/test").mock(
-        return_value=httpx.Response(200, text=html_content)
-    )
+    respx.get("https://example.com/test").mock(return_value=httpx.Response(200, text=html_content))
 
     req = AnalystRequest(url="https://example.com/test")
     result = summarize_url(req)
@@ -52,9 +50,7 @@ def test_summarize_url_success():
 
 @respx.mock
 def test_summarize_url_fallback():
-    respx.get("https://example.com/error").mock(
-        side_effect=httpx.ConnectError("Network error")
-    )
+    respx.get("https://example.com/error").mock(side_effect=httpx.ConnectError("Network error"))
 
     req = AnalystRequest(url="https://example.com/error")
     result = summarize_url(req)
@@ -67,9 +63,7 @@ def test_summarize_url_fallback():
 @respx.mock
 def test_browser_analyst_tool_success():
     html_content = "<html><head><title>Tool Page</title></head><body><p>Tool content</p></body></html>"
-    respx.get("https://github.com/mhand").mock(
-        return_value=httpx.Response(200, text=html_content)
-    )
+    respx.get("https://github.com/mhand").mock(return_value=httpx.Response(200, text=html_content))
 
     result = browser_analyst_tool("https://github.com/mhand")
 
@@ -79,35 +73,33 @@ def test_browser_analyst_tool_success():
 
 @respx.mock
 def test_browser_analyst_tool_fallback():
-    respx.get("https://github.com/error").mock(
-        side_effect=httpx.ConnectError("Network error")
-    )
+    respx.get("https://github.com/error").mock(side_effect=httpx.ConnectError("Network error"))
 
     result = browser_analyst_tool("https://github.com/error")
 
     assert "Unable to analyze" in result
     assert "Network error" in result
 
-    respx.get("https://stackoverflow.com/error").mock(
-        side_effect=httpx.ConnectError("Network error")
-    )
+    respx.get("https://stackoverflow.com/error").mock(side_effect=httpx.ConnectError("Network error"))
     result_so = browser_analyst_tool("https://stackoverflow.com/error")
     assert "Unable to analyze" in result_so
 
-    respx.get("https://example.com/error").mock(
-        side_effect=httpx.ConnectError("Network error")
-    )
+    respx.get("https://example.com/error").mock(side_effect=httpx.ConnectError("Network error"))
     result_ex = browser_analyst_tool("https://example.com/error")
     assert "Unable to analyze" in result_ex
 
 
 def test_allowlist_blocking(monkeypatch):
     """Test that URLs not in the allowlist are blocked."""
-    mock_data = {"advisors": {"browser_analyst": {"allowlist": ["allowed.com"]}}}
-
+    mock_data = {
+        "advisors": {
+            "browser_analyst": {
+                "allowlist": ["allowed.com"]
+            }
+        }
+    }
     def mock_init(self, *args, **kwargs):
         self.config_data = mock_data
-
     monkeypatch.setattr(Config, "__init__", mock_init)
 
     # test summarize_url
@@ -123,11 +115,15 @@ def test_allowlist_blocking(monkeypatch):
 
 def test_allowlist_empty_blocking(monkeypatch):
     """Test that an empty allowlist blocks all URLs."""
-    mock_data = {"advisors": {"browser_analyst": {"allowlist": []}}}
-
+    mock_data = {
+        "advisors": {
+            "browser_analyst": {
+                "allowlist": []
+            }
+        }
+    }
     def mock_init(self, *args, **kwargs):
         self.config_data = mock_data
-
     monkeypatch.setattr(Config, "__init__", mock_init)
 
     req = AnalystRequest(url="https://example.com/page")

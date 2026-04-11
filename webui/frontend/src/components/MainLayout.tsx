@@ -6,14 +6,12 @@ import {
     Terminal as TerminalIcon,
     LogOut as LogoutIcon,
     Wand2,
-    Bot as BotIcon,
     Menu as MenuIcon,
-    X as CloseIcon,
-    Layers as ShowcaseIcon
+    X as CloseIcon
 } from "lucide-react";
 import { useAuth } from '../hooks/useAuth';
-import { Button, Dock, Breadcrumbs } from './DaisyUI';
 import ScrollToTop from './ScrollToTop';
+import Breadcrumbs from './Breadcrumbs';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { logout } = useAuth();
@@ -47,9 +45,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon size={20} /> },
         { label: 'Commands', path: '/commands', icon: <TerminalIcon size={20} /> },
         { label: 'Command Authoring', path: '/commands/authoring', icon: <Wand2 size={20} /> },
-        { label: 'Agents', path: '/agents', icon: <BotIcon size={20} /> },
         { label: 'Configuration', path: '/configuration', icon: <SettingsIcon size={20} /> },
-        { label: 'UI Showcase', path: '/showcase', icon: <ShowcaseIcon size={20} /> },
     ];
 
     return (
@@ -78,14 +74,13 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         </h1>
                         <p className="text-xs text-base-content/60">Voice Commander</p>
                     </div>
-                    <Button
-                        variant="ghost"
-                        className="lg:hidden"
+                    <button
+                        className="lg:hidden p-2 hover:bg-base-content/10 rounded-lg"
                         onClick={() => setIsSidebarOpen(false)}
                         aria-label="Close sidebar"
                     >
                         <CloseIcon size={20} />
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Menu */}
@@ -112,10 +107,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className="p-4 border-t border-base-content/10 bg-base-300">
                     <ul className="menu w-full p-0">
                         <li>
-                            <Button variant="ghost" onClick={logout} className="text-error hover:bg-error/10">
+                            <button onClick={logout} className="text-error hover:bg-error/10">
                                 <LogoutIcon size={20} />
                                 Logout
-                            </Button>
+                            </button>
                         </li>
                     </ul>
                 </div>
@@ -127,13 +122,13 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
                 {/* Mobile Header */}
                 <header className="lg:hidden h-16 bg-base-300 flex items-center px-4 border-b border-base-content/10 gap-4">
-                    <Button
-                        variant="ghost"
+                    <button
+                        className="p-2 hover:bg-base-content/10 rounded-lg"
                         onClick={() => setIsSidebarOpen(true)}
                         aria-label="Open sidebar"
                     >
                         <MenuIcon size={24} />
-                    </Button>
+                    </button>
                     <div className="font-bold">Chatty Commander</div>
                 </header>
 
@@ -145,31 +140,6 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </div>
                 </main>
             </div>
-
-            {/* Mobile Bottom Dock Navigation */}
-            <Dock
-                className="dock-bottom lg:hidden"
-                items={[
-                    {
-                        label: 'Dashboard',
-                        icon: <DashboardIcon size={20} />,
-                        onClick: () => navigate('/dashboard'),
-                        active: location.pathname === '/dashboard'
-                    },
-                    {
-                        label: 'Commands',
-                        icon: <TerminalIcon size={20} />,
-                        onClick: () => navigate('/commands'),
-                        active: location.pathname === '/commands'
-                    },
-                    {
-                        label: 'Settings',
-                        icon: <SettingsIcon size={20} />,
-                        onClick: () => navigate('/configuration'),
-                        active: location.pathname === '/configuration'
-                    }
-                ]}
-            />
         </div>
     );
 };
