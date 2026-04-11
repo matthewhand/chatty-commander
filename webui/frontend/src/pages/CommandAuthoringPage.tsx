@@ -147,10 +147,11 @@ const ActionField: React.FC<{
       </div>
 
       <div className="form-control">
-        <label className="label">
+        <label className="label" htmlFor={`action-type-${index}`}>
           <span className="label-text text-sm">Type</span>
         </label>
         <select
+          id={`action-type-${index}`}
           className="select select-sm select-bordered w-full"
           value={action.type}
           onChange={(e) => handleTypeChange(e.target.value as CommandAction['type'])}
@@ -164,10 +165,11 @@ const ActionField: React.FC<{
 
       {action.type === 'keypress' && (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={`action-keys-${index}`}>
             <span className="label-text text-sm">Keys</span>
           </label>
           <input
+            id={`action-keys-${index}`}
             type="text"
             className="input input-sm input-bordered"
             placeholder="e.g., ctrl+alt+t"
@@ -179,10 +181,11 @@ const ActionField: React.FC<{
 
       {action.type === 'url' && (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={`action-url-${index}`}>
             <span className="label-text text-sm">URL</span>
           </label>
           <input
+            id={`action-url-${index}`}
             type="text"
             className="input input-sm input-bordered"
             placeholder="https://example.com"
@@ -194,10 +197,11 @@ const ActionField: React.FC<{
 
       {action.type === 'shell' && (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={`action-cmd-${index}`}>
             <span className="label-text text-sm">Command</span>
           </label>
           <input
+            id={`action-cmd-${index}`}
             type="text"
             className="input input-sm input-bordered"
             placeholder="e.g., npm start"
@@ -209,10 +213,11 @@ const ActionField: React.FC<{
 
       {action.type === 'custom_message' && (
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor={`action-message-${index}`}>
             <span className="label-text text-sm">Message</span>
           </label>
           <input
+            id={`action-message-${index}`}
             type="text"
             className="input input-sm input-bordered"
             placeholder="Enter message to display"
@@ -505,6 +510,7 @@ export default function CommandAuthoringPage() {
 
             <div className="form-control">
               <textarea
+                aria-label="Command Description"
                 className="textarea textarea-bordered h-32 font-normal"
                 placeholder="When I say 'start my day', open my email client, my code editor, and the project management website..."
                 value={description}
