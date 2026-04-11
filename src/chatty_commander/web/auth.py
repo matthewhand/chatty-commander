@@ -79,7 +79,7 @@ def apply_cors(
 
     # Remove existing CORS middleware if already present to avoid duplicates.
     app.user_middleware = [
-        m for m in app.user_middleware if m.cls is not CORSMiddleware
+        m for m in app.user_middleware if m.cls is not CORSMiddleware  # type: ignore[comparison-overlap]
     ]
 
     # RFC 6454: credentials must not be combined with wildcard origins

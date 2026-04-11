@@ -45,7 +45,7 @@ from typing import Any
 try:
     import uvicorn
 except ImportError:
-    uvicorn = None
+    uvicorn = None  # type: ignore[assignment]
 
 from collections import defaultdict
 
@@ -433,7 +433,7 @@ class WebModeServer:
 
         # Optional advisors service (enabled via config)
         try:
-            self.advisors_service = AdvisorsService(config=config_manager)
+            self.advisors_service = AdvisorsService(config=config_manager)  # type: ignore[arg-type]
         except Exception as e:  # noqa: BLE001
             logger.debug(
                 "AdvisorsService init failed; continuing without advisors: %s", e
@@ -628,7 +628,7 @@ class WebModeServer:
         app.include_router(core)
 
         # Audio endpoints
-        if include_audio_routes:
+        if include_audio_routes is not None:
             audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
             app.include_router(audio)
 

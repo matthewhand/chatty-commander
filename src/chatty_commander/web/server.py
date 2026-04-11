@@ -122,14 +122,14 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         _include_optional(app, nm)
 
     # Handle settings router separately since it needs config manager
-    if include_avatar_settings_routes and config_manager:
+    if include_avatar_settings_routes is not None and config_manager:
         global settings_router
         settings_router = include_avatar_settings_routes(
             get_config_manager=lambda: config_manager
         )
         _include_optional(app, "settings_router")
 
-    if include_audio_routes and config_manager:
+    if include_audio_routes is not None and config_manager:
         global audio_router
         audio_router = include_audio_routes(
             get_config_manager=lambda: config_manager

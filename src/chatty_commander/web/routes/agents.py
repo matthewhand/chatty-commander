@@ -37,7 +37,7 @@ from pydantic import BaseModel, ConfigDict, Field
 try:
     from chatty_commander.llm.manager import LLMManager as _LLMManager
 except ImportError:
-    _LLMManager = None  # type: ignore[assignment]
+    _LLMManager = None  # type: ignore[misc, assignment]
 
 logger = logging.getLogger(__name__)
 

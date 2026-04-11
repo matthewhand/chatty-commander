@@ -159,7 +159,7 @@ class WhisperAPIBackend(TranscriptionBackend):
 
                 text = transcript.text.strip()
                 logger.debug(f"OpenAI Whisper transcription: '{text}'")
-                return text
+                return text  # type: ignore[no-any-return]
 
         except Exception as e:
             logger.error(f"OpenAI Whisper API transcription failed: {e}")
@@ -260,7 +260,7 @@ class VoiceTranscriber:
 
         try:
             self._audio = pyaudio.PyAudio()
-            self._stream = self._audio.open(
+            self._stream = self._audio.open(  # type: ignore[attr-defined]
                 format=pyaudio.paInt16,
                 channels=self.channels,
                 rate=self.sample_rate,
@@ -275,7 +275,7 @@ class VoiceTranscriber:
 
             while True:
                 try:
-                    data = self._stream.read(
+                    data = self._stream.read(  # type: ignore[attr-defined]
                         self.chunk_size, exception_on_overflow=False
                     )
                     frames.append(data)

@@ -233,7 +233,7 @@ class VoiceSelfTester:
             )
 
             result = json.loads(response.choices[0].message.content or "{}")  # type: ignore[no-any-return]
-            return result
+            return result  # type: ignore[no-any-return]
 
         except Exception as e:
             logger.error(f"LLM judge failed: {e}")
@@ -308,10 +308,10 @@ class VoiceSelfTester:
         }
         if category_averages:
             results["summary"]["best_category"] = max(
-                category_averages, key=category_averages.get
+                category_averages, key=lambda k: category_averages[k]
             )
             results["summary"]["worst_category"] = min(
-                category_averages, key=category_averages.get
+                category_averages, key=lambda k: category_averages[k]
             )
 
         # Aggregate improvement suggestions
