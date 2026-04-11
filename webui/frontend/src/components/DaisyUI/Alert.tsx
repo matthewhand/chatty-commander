@@ -40,7 +40,7 @@ export const Alert: React.FC<AlertProps> = ({
       {children}
       {onClose && (
         <button aria-label="Close alert" onClick={handleClose} className="btn btn-sm btn-circle btn-ghost">
-          <CloseIcon size={16} />
+          <CloseIcon size={16} aria-hidden="true" />
         </button>
       )}
     </div>

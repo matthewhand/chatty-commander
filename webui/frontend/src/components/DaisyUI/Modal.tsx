@@ -73,7 +73,7 @@ const Modal: React.FC<ModalProps> = ({
             {title && <h3 id="modal-dialog-title" className="font-bold text-lg">{title}</h3>}
             {showCloseButton && closable && (
               <button className="btn btn-sm btn-circle btn-ghost" onClick={onClose} aria-label="Close modal">
-                <CloseIcon size={20} />
+                <CloseIcon size={20} aria-hidden="true" />
               </button>
             )}
           </div>
