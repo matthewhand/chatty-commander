@@ -65,4 +65,3 @@ class TestErrorHandling:
         ce = CommandExecutor(config, MagicMock(), MagicMock())
         with pytest.raises(ValueError):
             ce.execute_command("invalid")
-

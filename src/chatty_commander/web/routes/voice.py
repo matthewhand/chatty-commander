@@ -57,7 +57,10 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
         if not state["running"]:
             state["running"] = True
             return {"status": "started", "message": "Voice pipeline started"}
-        return {"status": "already_running", "message": "Voice pipeline is already running"}
+        return {
+            "status": "already_running",
+            "message": "Voice pipeline is already running",
+        }
 
     @router.post("/api/voice/stop")
     async def stop_voice():

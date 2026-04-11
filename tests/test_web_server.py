@@ -489,9 +489,9 @@ class TestStaticSafety:
             pytest.skip("Server file not found")
 
         content = server_file.read_text()
-        assert (
-            "except NameError:" not in content
-        ), "Found 'except NameError:' pattern in server code"
+        assert "except NameError:" not in content, (
+            "Found 'except NameError:' pattern in server code"
+        )
 
         tree = ast.parse(content)
 
@@ -616,7 +616,7 @@ class TestWebModeServer:
         config, _, _, _ = mock_managers
         config.save_config = Mock()
 
-        new_config = {"new_key": "new_value"}
+        new_config = {"general": {"some_setting": "new_value"}}
         response = test_client.put("/api/v1/config", json=new_config)
         assert response.status_code == 200
 
@@ -628,7 +628,7 @@ class TestWebModeServer:
         """Test update config endpoint failure when config saving fails."""
         config, _, _, _ = mock_managers
         config.save_config = Mock(side_effect=Exception("Save failed"))
-        new_config = {"new_key": "new_value"}
+        new_config = {"general": {"some_setting": "new_value"}}
         response = test_client.put("/api/v1/config", json=new_config)
         assert response.status_code == 500
         data = response.json()

@@ -20,6 +20,8 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ConfigurationPage = lazy(() => import("./pages/ConfigurationPage"));
 const CommandsPage = lazy(() => import("./pages/CommandsPage"));
 const CommandAuthoringPage = lazy(() => import("./pages/CommandAuthoringPage"));
+const AgentsPage = lazy(() => import("./pages/AgentsPage"));
+const ShowcasePage = lazy(() => import("./pages/ShowcasePage"));
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -82,6 +84,8 @@ function AppContent() {
             <Route path="/configuration" element={<ConfigurationPage />} />
             <Route path="/commands" element={<CommandsPage />} />
             <Route path="/commands/authoring" element={<CommandAuthoringPage />} />
+            <Route path="/agents" element={<AgentsPage />} />
+            <Route path="/showcase" element={<ShowcasePage />} />
           </Route>
 
           {/* Default Redirect */}

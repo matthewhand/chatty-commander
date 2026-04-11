@@ -7,7 +7,13 @@
 **Vulnerability:** Mass assignment vulnerability in `/api/v1/config` `PUT` endpoint due to lack of allowlist. Any configuration item could be updated by a malicious user.
 **Learning:** The core issue is that user input in the `config_data` JSON payload was passed without filtering directly into the application's configuration `cfg.update(config_data)`.
 **Prevention:** Use an explicit allowlist (like `ALLOWED_CONFIG_KEYS`) to filter user-supplied configuration payloads before updating the underlying configuration store. This enforces strict boundaries on what can be changed via the API.
+
 ## 2024-05-30 - Authorization Bypass via Missing API Key Configuration
 **Vulnerability:** The application's `AuthMiddleware` contained a fail-open condition where, if the `api_key` configuration property was completely missing or empty, it allowed unauthenticated requests to pass through to protected endpoints. This bypassed intended security completely.
 **Learning:** Security mechanisms often attempt to handle empty configurations gracefully, but doing so without enforcing a secure default (`no_auth=True` or returning an error) leads to unintentional fail-open behavior. Authentication logic should never bypass the actual validation step unless explicitly operating in an insecure mode.
 **Prevention:** Always default to denying access (returning a 401 Unauthorized or similar) if a required security credential configuration is missing. Ensure that the core credential comparison function gracefully handles `None` or empty strings to return `False`, avoiding the need for complex, potentially unsafe manual bypasses.
+
+## 2024-04-01 - [Auth Bypass & Path Traversal]
+**Vulnerability:** The authentication middleware was vulnerable to fail-open authorization bypass if an API key was empty or unconfigured. Additionally, path traversal vulnerabilities could bypass route protection using URL-encoded or double-encoded characters (e.g. `..%2f`).
+**Learning:** `posixpath.normpath` does not decode URL encoded characters automatically, allowing bypassing of string-matching route protections. The middleware must explicitly implement fail-closed logic rather than relying on absence of a configuration as a signal to allow requests.
+**Prevention:** In ASGI applications, always manually URL-decode `request.url.path` using a bounded loop to prevent double-encoding bypasses before applying `posixpath.normpath`. Authentication middlewares must enforce fail-closed logic when expected security credentials are empty.

@@ -43,13 +43,17 @@ class ModelFileInfo(BaseModel):
     size_bytes: int = Field(..., description="File size in bytes")
     size_human: str = Field(..., description="Human-readable file size")
     modified: str = Field(..., description="Last modification timestamp")
-    state: str | None = Field(default=None, description="Associated state (idle/computer/chatty)")
+    state: str | None = Field(
+        default=None, description="Associated state (idle/computer/chatty)"
+    )
 
 
 class ModelListResponse(BaseModel):
     """Response for listing model files."""
 
-    models: list[ModelFileInfo] = Field(default_factory=list, description="List of model files")
+    models: list[ModelFileInfo] = Field(
+        default_factory=list, description="List of model files"
+    )
     total_count: int = Field(..., description="Total number of models")
     total_size_bytes: int = Field(..., description="Total size in bytes")
     total_size_human: str = Field(..., description="Human-readable total size")
@@ -81,7 +85,7 @@ def _format_size(size_bytes: int) -> str:
     for unit in ["B", "KB", "MB", "GB"]:
         if size_bytes < 1024:
             return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024
+        size_bytes = size_bytes / 1024  # type: ignore[assignment]
     return f"{size_bytes:.1f} TB"
 
 
@@ -117,14 +121,16 @@ def _scan_model_files() -> list[ModelFileInfo]:
         for file_path in model_dir.glob("*.onnx"):
             try:
                 stat = file_path.stat()
-                models.append(ModelFileInfo(
-                    name=file_path.name,
-                    path=str(file_path),
-                    size_bytes=stat.st_size,
-                    size_human=_format_size(stat.st_size),
-                    modified=datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                    state=state,
-                ))
+                models.append(
+                    ModelFileInfo(
+                        name=file_path.name,
+                        path=str(file_path),
+                        size_bytes=stat.st_size,
+                        size_human=_format_size(stat.st_size),
+                        modified=datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        state=state,
+                    )
+                )
             except OSError:
                 continue
 
@@ -172,8 +178,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         # Validate file extension
         if not file.filename or not file.filename.lower().endswith(".onnx"):
             raise HTTPException(
-                status_code=400,
-                detail="Only ONNX files (.onnx) are allowed"
+                status_code=400, detail="Only ONNX files (.onnx) are allowed"
             )
 
         # Determine target directory
@@ -191,7 +196,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         if not safe_filename or safe_filename != file.filename:
             raise HTTPException(
                 status_code=400,
-                detail="Invalid filename: directory traversal not allowed"
+                detail="Invalid filename: directory traversal not allowed",
             )
 
         # Save file
@@ -200,17 +205,16 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         # Verify the resolved path is still within the target directory
         try:
             file_path.resolve().relative_to(target_dir.resolve())
-        except ValueError:
+        except ValueError as err:
             raise HTTPException(
                 status_code=400,
-                detail="Invalid filename: path escapes target directory"
-            )
-
+                detail="Invalid filename: path escapes target directory",
+            ) from err
         # Check if file already exists
         if file_path.exists():
             raise HTTPException(
                 status_code=409,
-                detail=f"File '{safe_filename}' already exists. Delete it first to replace."
+                detail=f"File '{safe_filename}' already exists. Delete it first to replace.",
             )
 
         try:
@@ -229,7 +233,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             logger.error("Failed to save uploaded model file: %s", e)
             raise HTTPException(
                 status_code=500,
-                detail="Failed to save file. Check server logs for details."
+                detail="Failed to save file. Check server logs for details.",
             ) from e
 
     @router.get("/download/{filename}")
@@ -248,16 +252,14 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
 
         if not matching:
             raise HTTPException(
-                status_code=404,
-                detail=f"Model file '{filename}' not found"
+                status_code=404, detail=f"Model file '{filename}' not found"
             )
 
         file_path = Path(matching[0].path)
 
         if not file_path.exists():
             raise HTTPException(
-                status_code=404,
-                detail=f"Model file '{filename}' not found"
+                status_code=404, detail=f"Model file '{filename}' not found"
             )
 
         return FileResponse(
@@ -282,8 +284,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
 
         if not matching:
             raise HTTPException(
-                status_code=404,
-                detail=f"Model file '{filename}' not found"
+                status_code=404, detail=f"Model file '{filename}' not found"
             )
 
         file_path = Path(matching[0].path)
@@ -299,7 +300,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             logger.error("Failed to delete model file '%s': %s", filename, e)
             raise HTTPException(
                 status_code=500,
-                detail="Failed to delete file. Check server logs for details."
+                detail="Failed to delete file. Check server logs for details.",
             ) from e
 
     @router.get("/directories")
@@ -311,9 +312,12 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 {
                     "name": d.name,
                     "path": str(d),
-                    "state": "idle" if "idle" in d.name
-                    else "computer" if "computer" in d.name
-                    else "chatty" if "chatty" in d.name
+                    "state": "idle"
+                    if "idle" in d.name
+                    else "computer"
+                    if "computer" in d.name
+                    else "chatty"
+                    if "chatty" in d.name
                     else None,
                 }
                 for d in dirs

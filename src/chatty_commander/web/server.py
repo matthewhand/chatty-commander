@@ -45,58 +45,58 @@ except Exception:  # very minimal stub if FastAPI missing (tests won't hit real 
 try:
     from .routes.avatar_ws import router as avatar_ws_router
 except ImportError:
-    avatar_ws_router = None
+    avatar_ws_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_api import router as avatar_api_router
 except ImportError:
-    avatar_api_router = None
+    avatar_api_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_selector import router as avatar_selector_router
 except ImportError:
-    avatar_selector_router = None
+    avatar_selector_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_settings import include_avatar_settings_routes
 except ImportError:
-    include_avatar_settings_routes = None
+    include_avatar_settings_routes = None  # type: ignore[assignment]
 
 try:
     from .routes.audio import include_audio_routes
 except ImportError:
-    include_audio_routes = None
+    include_audio_routes = None  # type: ignore[assignment]
 
 try:
     from .routes.version import router as version_router
 except ImportError:
-    version_router = None
+    version_router = None  # type: ignore[assignment]
 
 try:
     from .routes.agents import router as agents_router
 except ImportError:
-    agents_router = None
+    agents_router = None  # type: ignore[assignment]
 
 try:
     from .routes.models import router as models_router
 except ImportError:
-    models_router = None
+    models_router = None  # type: ignore[assignment]
 
 try:
     from .routes.command_authoring import router as command_authoring_router
 except ImportError:
-    command_authoring_router = None
+    command_authoring_router = None  # type: ignore[assignment]
 
 try:
     from ..obs.metrics import create_metrics_router
 
     metrics_router = create_metrics_router()
 except ImportError:
-    metrics_router = None
+    metrics_router = None  # type: ignore[assignment]
 
 # Settings router needs to be created with config manager
-settings_router = None
-audio_router = None
+settings_router: Any = None
+audio_router: Any = None
 
 
 def _include_optional(app: FastAPI, name: str) -> None:
@@ -122,18 +122,16 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         _include_optional(app, nm)
 
     # Handle settings router separately since it needs config manager
-    if include_avatar_settings_routes and config_manager:
+    if include_avatar_settings_routes is not None and config_manager:
         global settings_router
         settings_router = include_avatar_settings_routes(
             get_config_manager=lambda: config_manager
         )
         _include_optional(app, "settings_router")
 
-    if include_audio_routes and config_manager:
+    if include_audio_routes is not None and config_manager:
         global audio_router
-        audio_router = include_audio_routes(
-            get_config_manager=lambda: config_manager
-        )
+        audio_router = include_audio_routes(get_config_manager=lambda: config_manager)
         _include_optional(app, "audio_router")
 
     # Add bridge endpoint for tests
@@ -160,11 +158,16 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             if no_auth:
                 # Dev mode: token required, reject if missing
                 if not x_bridge_token:
-                    _bridge_logger.warning("Bridge request rejected: missing X-Bridge-Token in dev mode")
+                    _bridge_logger.warning(
+                        "Bridge request rejected: missing X-Bridge-Token in dev mode"
+                    )
                     raise HTTPException(
                         status_code=401, detail="Unauthorized bridge request"
                     )
-                return {"ok": True, "reply": {"text": "Bridge response (dev)", "meta": {}}}
+                return {
+                    "ok": True,
+                    "reply": {"text": "Bridge response (dev)", "meta": {}},
+                }
             else:
                 # Production mode: validate token from config
                 expected_token: str | None = None
@@ -186,9 +189,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
                     _bridge_logger.warning(
                         "Bridge request rejected: invalid token provided"
                     )
-                    raise HTTPException(
-                        status_code=401, detail="Invalid bridge token"
-                    )
+                    raise HTTPException(status_code=401, detail="Invalid bridge token")
 
                 return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 

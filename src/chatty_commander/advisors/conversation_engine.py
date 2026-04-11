@@ -183,7 +183,7 @@ INSTRUCTIONS:
             # Fallback to default system prompt
             system_prompt = f"""You are {persona_name}, an advanced AI assistant with the following characteristics:
 
-PERSONALITY TRAITS: {', '.join(persona_traits)}
+PERSONALITY TRAITS: {", ".join(persona_traits)}
 COMMUNICATION STYLE: {persona_style}
 CURRENT MODE: {current_mode}
 

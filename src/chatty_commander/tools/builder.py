@@ -404,7 +404,7 @@ def generate_markdown_docs() -> str:
     docs = f"""
 # ChattyCommander API Documentation
 
-*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
+*Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}*
 
 ## Overview
 

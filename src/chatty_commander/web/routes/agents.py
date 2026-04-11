@@ -37,7 +37,7 @@ from pydantic import BaseModel, ConfigDict, Field
 try:
     from chatty_commander.llm.manager import LLMManager as _LLMManager
 except ImportError:
-    _LLMManager = None  # type: ignore[assignment]
+    _LLMManager = None  # type: ignore[assignment,misc]
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,11 @@ class AgentBlueprintResponse(AgentBlueprintModel):
     id: str
 
 
-_STORE_PATH = Path(os.path.expanduser(os.environ.get("CHATTY_AGENTS_STORE", "~/.chatty_commander/agents.json")))
+_STORE_PATH = Path(
+    os.path.expanduser(
+        os.environ.get("CHATTY_AGENTS_STORE", "~/.chatty_commander/agents.json")
+    )
+)
 
 _STORE: dict[str, AgentBlueprint] = {}
 _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
@@ -110,6 +114,7 @@ def _load_store() -> None:
     except Exception as e:
         logger.warning("Error loading agent store from %s: %s", _STORE_PATH, e)
 
+
 def _save_store() -> None:
     try:
         _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -119,6 +124,7 @@ def _save_store() -> None:
             json.dump(data, f, indent=2)
     except Exception as e:
         logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
+
 
 _load_store()
 
@@ -163,7 +169,9 @@ Return ONLY valid JSON.
                 handoff_triggers=[],
             )
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
-            logger.debug("LLM blueprint parsing failed, using heuristic fallback: %s", exc)
+            logger.debug(
+                "LLM blueprint parsing failed, using heuristic fallback: %s", exc
+            )
 
     # Very naive heuristic parser fallback
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]

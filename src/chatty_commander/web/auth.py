@@ -42,6 +42,7 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
     # FastAPI does not support toggling docs_url/redoc_url after init,
     # but if app.docs_url is None (hidden), we can attach routes manually if needed.
     if app.docs_url is None:
+
         @app.get("/docs", include_in_schema=False)
         async def custom_swagger_ui_html():
             return get_swagger_ui_html(
@@ -79,7 +80,7 @@ def apply_cors(
 
     # Remove existing CORS middleware if already present to avoid duplicates.
     app.user_middleware = [
-        m for m in app.user_middleware if m.cls is not CORSMiddleware
+        m for m in app.user_middleware if m.cls is not CORSMiddleware  # type: ignore[comparison-overlap]
     ]
 
     # RFC 6454: credentials must not be combined with wildcard origins

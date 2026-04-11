@@ -51,7 +51,7 @@ from pathlib import Path
 try:
     import webview
 except Exception:  # pragma: no cover
-    webview = None
+    webview = None  # type: ignore[assignment]
 
 
 def _avatar_index_path() -> Path:

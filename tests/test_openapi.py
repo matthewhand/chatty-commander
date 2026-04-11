@@ -69,9 +69,9 @@ def test_runtime_openapi_matches_docs_file_on_key_paths():
     runtime = app.openapi()
 
     docs_path = Path("docs/openapi.json")
-    assert (
-        docs_path.is_file()
-    ), "docs/openapi.json is missing; generate with make api-docs"
+    assert docs_path.is_file(), (
+        "docs/openapi.json is missing; generate with make api-docs"
+    )
     docs_schema = json.loads(docs_path.read_text(encoding="utf-8"))
 
     assert "paths" in runtime and isinstance(runtime["paths"], dict)
@@ -93,9 +93,9 @@ def test_runtime_openapi_matches_docs_file_on_key_paths():
     missing_in_runtime = key - runtime_paths
     missing_in_docs = key - docs_paths
 
-    assert (
-        not missing_in_runtime
-    ), f"Runtime schema missing key paths: {sorted(missing_in_runtime)}"
-    assert (
-        not missing_in_docs
-    ), f"docs/openapi.json missing key paths: {sorted(missing_in_docs)}"
+    assert not missing_in_runtime, (
+        f"Runtime schema missing key paths: {sorted(missing_in_runtime)}"
+    )
+    assert not missing_in_docs, (
+        f"docs/openapi.json missing key paths: {sorted(missing_in_docs)}"
+    )

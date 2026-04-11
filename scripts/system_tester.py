@@ -499,9 +499,9 @@ class SystemTester:
         errors = len([r for r in self.test_results if r["status"] == "ERROR"])
 
         report = f"""
-{'=' * 60}
+{"=" * 60}
 ChattyCommander System Test Report
-{'=' * 60}
+{"=" * 60}
 
 Test Summary:
   Total Tests: {total_tests}
@@ -511,11 +511,11 @@ Test Summary:
   Success Rate: {(passed / total_tests * 100):.1f}% if total_tests > 0 else 0
 
 Duration: {duration.total_seconds():.2f} seconds
-Completed: {end_time.strftime('%Y-%m-%d %H:%M:%S')}
+Completed: {end_time.strftime("%Y-%m-%d %H:%M:%S")}
 
-{'=' * 60}
+{"=" * 60}
 Detailed Results:
-{'=' * 60}
+{"=" * 60}
 """
 
         # Group results by test name
@@ -533,7 +533,9 @@ Detailed Results:
                     status_icon = (
                         "✓"
                         if result["status"] == "PASS"
-                        else "✗" if result["status"] == "FAIL" else "⚠"
+                        else "✗"
+                        if result["status"] == "FAIL"
+                        else "⚠"
                     )
                     report += (
                         f"  {status_icon} [{result['status']}] {result['message']}\n"

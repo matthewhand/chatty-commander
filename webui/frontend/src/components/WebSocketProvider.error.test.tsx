@@ -1,15 +1,16 @@
+import { vi, it, afterEach } from "vitest";
 import React from "react";
 import { render, act } from "@testing-library/react";
 import { WebSocketProvider } from "./WebSocketProvider";
 
-jest.useFakeTimers();
+vi.useFakeTimers();
 
 afterEach(() => {
-  jest.clearAllMocks();
-  jest.useRealTimers();
+  vi.clearAllMocks();
+  vi.useRealTimers();
 });
 
-jest.mock("../hooks/useAuth", () => ({
+vi.mock("../hooks/useAuth", () => ({
   useAuth: () => ({ isAuthenticated: true }),
 }));
 
@@ -33,14 +34,14 @@ class ErrorWS {
 global.WebSocket = ErrorWS;
 
 it("handles websocket error and close without crashing", () => {
-  const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => { });
+  const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { });
   const { unmount } = render(
     <WebSocketProvider>
       <div>Child</div>
     </WebSocketProvider>,
   );
   act(() => {
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
   });
   unmount();
   consoleSpy.mockRestore();

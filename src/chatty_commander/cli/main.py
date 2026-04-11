@@ -234,6 +234,7 @@ def run_gui_mode(
             from chatty_commander.avatars.avatar_gui import (
                 run_avatar_gui,  # type: ignore
             )
+
             logger.info("Starting Avatar GUI (TalkingHead)")
             rc = run_avatar_gui()
             return 0 if rc is None else int(rc)
@@ -246,6 +247,7 @@ def run_gui_mode(
                 from chatty_commander.gui.pyqt5_avatar import (
                     run_pyqt5_avatar,  # type: ignore
                 )
+
                 logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
                 rc = run_pyqt5_avatar()
                 return 0 if rc is None else int(rc)
@@ -266,7 +268,8 @@ def run_gui_mode(
             f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
         )
         try:
-            from chatty_commander.gui import main as gui_main
+            # Legacy GUI fallback; gui module may not define main()
+            from chatty_commander.gui import main as gui_main  # type: ignore[attr-defined]  # noqa: I001
 
             logger.info("Starting legacy tkinter GUI mode")
             rc = gui_main()

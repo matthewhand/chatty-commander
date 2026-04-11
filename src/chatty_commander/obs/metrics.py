@@ -317,7 +317,7 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
                 "service": self.service,
             },
         )
-        return response
+        return response  # type: ignore[no-any-return]
 
 
 def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:  # type: ignore[misc]
@@ -356,7 +356,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
             if g.description:
                 lines.append(f"# HELP {name} {g.description}")
             lines.append(f"# TYPE {name} gauge")
-            for labels, value in g.samples():
+            for labels, value in g.samples():  # type: ignore[assignment]
                 if labels:
                     lbl = ",".join(f"{k}={_quote(v)}" for k, v in labels.items())
                     lines.append(f"{name}{{{lbl}}} {value}")
@@ -375,13 +375,13 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
                 count_val = series.get("count", 0)
                 # Emit cumulative buckets
                 for idx, edge in enumerate(snap.get("buckets", [])):
-                    lbl = {**labels, "le": str(edge)}
+                    bucket_lbl: dict[str, str] = {**labels, "le": str(edge)}
                     lines.append(
-                        f"{name}_bucket{{{_lbl(lbl)}}} {counts[idx] if idx < len(counts) else 0}"
+                        f"{name}_bucket{{{_lbl(bucket_lbl)}}} {counts[idx] if idx < len(counts) else 0}"
                     )
-                lbl = {**labels, "le": "+Inf"}
+                inf_lbl: dict[str, str] = {**labels, "le": "+Inf"}
                 lines.append(
-                    f"{name}_bucket{{{_lbl(lbl)}}} {counts[-1] if counts else 0}"
+                    f"{name}_bucket{{{_lbl(inf_lbl)}}} {counts[-1] if counts else 0}"
                 )
                 lines.append(f"{name}_sum{{{_lbl(labels)}}} {sum_val}")
                 lines.append(f"{name}_count{{{_lbl(labels)}}} {count_val}")

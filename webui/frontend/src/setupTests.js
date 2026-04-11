@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 // Jest-dom adds custom jest matchers for asserting on DOM nodes.
 import "@testing-library/jest-dom";
 
@@ -5,7 +7,7 @@ import "@testing-library/jest-dom";
 global.WebSocket = class MockWebSocket {
   constructor(url) {
     this.url = url;
-    this.readyState = WebSocket.CONNECTING;
+    this.readyState = 0; // CONNECTING
     this.onopen = null;
     this.onclose = null;
     this.onmessage = null;
@@ -13,7 +15,7 @@ global.WebSocket = class MockWebSocket {
 
     // Simulate connection after a short delay
     setTimeout(() => {
-      this.readyState = WebSocket.OPEN;
+      this.readyState = 1; // OPEN
       if (this.onopen) this.onopen();
     }, 100);
   }
@@ -23,13 +25,13 @@ global.WebSocket = class MockWebSocket {
   }
 
   close() {
-    this.readyState = WebSocket.CLOSED;
+    this.readyState = 3; // CLOSED
     if (this.onclose) this.onclose();
   }
 };
 
 // Mock fetch for API calls
-global.fetch = jest.fn(() =>
+global.fetch = vi.fn(() =>
   Promise.resolve({
     ok: true,
     status: 200,
@@ -40,33 +42,33 @@ global.fetch = jest.fn(() =>
 
 // Mock localStorage
 const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
 };
 global.localStorage = localStorageMock;
 
 // Mock sessionStorage
 const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
 };
 global.sessionStorage = sessionStorageMock;
 
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: jest.fn().mockImplementation((query) => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   })),
 });

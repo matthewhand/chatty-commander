@@ -35,6 +35,7 @@ from __future__ import annotations
 import logging
 import threading
 from collections.abc import Callable
+from typing import Any
 
 from .transcription import VoiceTranscriber
 from .tts import TextToSpeech
@@ -65,7 +66,7 @@ class VoicePipeline:
         # Use mock components if voice deps not available or explicitly requested
         if not VOICE_DEPS_AVAILABLE or use_mock:
             logger.info("Using mock voice components")
-            self.wake_detector = MockWakeWordDetector(wake_words=wake_words, **kwargs)
+            self.wake_detector: MockWakeWordDetector | WakeWordDetector = MockWakeWordDetector(wake_words=wake_words, **kwargs)
             transcription_backend = "mock"
         else:
             self.wake_detector = WakeWordDetector(wake_words=wake_words, **kwargs)
@@ -77,9 +78,9 @@ class VoicePipeline:
         # State
         self._listening = False
         self._processing = False
-        self._callbacks: list[Callable[[str, str], None]] = (
-            []
-        )  # (command, transcription)
+        self._callbacks: list[
+            Callable[[str, str], None]
+        ] = []  # (command, transcription)
 
         # Setup wake word detection
         self.wake_detector.add_callback(self._on_wake_word_detected)
@@ -225,7 +226,7 @@ class VoicePipeline:
 
         try:
             # Get available commands from config
-            model_actions = getattr(self.config_manager, "model_actions", {})
+            model_actions: dict[str, Any] = getattr(self.config_manager, "model_actions", {})
             if not model_actions:
                 logger.debug("No model actions available")
                 return None
@@ -235,7 +236,7 @@ class VoicePipeline:
 
             # Direct name match first
             for command_name in model_actions.keys():
-                if command_name.lower() in transcription_lower:
+                if isinstance(command_name, str) and command_name.lower() in transcription_lower:
                     return command_name
 
             # Keyword-based matching
@@ -307,7 +308,7 @@ class VoicePipeline:
                 self.tts.speak(text)
         return None
 
-    def get_status(self) -> dict[str, any]:
+    def get_status(self) -> dict[str, Any]:
         """Get pipeline status information."""
         return {
             "listening": self._listening,

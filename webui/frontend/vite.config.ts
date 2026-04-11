@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
         react(),
+        tailwindcss(),
     ],
     server: {
         port: 3000,
@@ -21,5 +23,12 @@ export default defineConfig({
     },
     build: {
         outDir: 'build',
-    }
+    },
+    test: {
+        globals: true,
+        environment: 'jsdom',
+        setupFiles: './src/setupTests.js',
+        css: true,
+        exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**'],
+    },
 })

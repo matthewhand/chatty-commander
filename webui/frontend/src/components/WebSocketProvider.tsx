@@ -22,7 +22,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [lastMessageTime, setLastMessageTime] = useState<number | null>(null);
 
   // Refs to manage reconnection timer and state without triggering re-renders
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const shouldReconnectRef = useRef(true);
   const maxReconnectAttempts = 10;
@@ -42,18 +42,18 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       wsUrl += `?token=${token}`;
     }
 
-    console.log(`WebSocketProvider: Connecting to ${wsUrl} (Attempt ${reconnectAttemptRef.current})`);
+    // WebSocket connection attempt
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-      console.log("WebSocketProvider: Connected");
+      // Connected successfully
       setIsConnected(true);
       reconnectAttemptRef.current = 0;
       setReconnectAttempt(0); // Sync display state
     };
 
     socket.onclose = (ev) => {
-      console.log("WebSocketProvider: Disconnected", ev.code, ev.reason);
+      // Disconnected
       setIsConnected(false);
       setWs(null);
 
@@ -62,7 +62,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       if (reconnectAttemptRef.current < maxReconnectAttempts) {
         const attempt = reconnectAttemptRef.current;
         const delay = Math.min(30000, baseReconnectDelay * Math.pow(1.5, attempt));
-        console.log(`WebSocketProvider: Reconnecting in ${delay}ms...`);
+        // Scheduling reconnect
 
         reconnectTimeoutRef.current = setTimeout(() => {
           reconnectAttemptRef.current += 1;
@@ -70,7 +70,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
           connect();
         }, delay);
       } else {
-        console.error("WebSocketProvider: Max reconnect attempts reached");
+        // Max reconnect attempts reached
       }
     };
 
@@ -79,7 +79,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     socket.onerror = (error) => {
-      console.error("WebSocketProvider: Error", error);
+      // WebSocket error occurred
     };
 
     setWs(socket);
@@ -93,7 +93,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     connect();
 
     return () => {
-      console.log("WebSocketProvider: Cleanup/Closing socket");
+      // Cleanup: closing socket
       shouldReconnectRef.current = false;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);

@@ -1,4 +1,3 @@
-
 import asyncio
 import time
 from datetime import datetime
@@ -27,6 +26,7 @@ router = include_core_routes(
 )
 app.include_router(router)
 client = TestClient(app)
+
 
 @pytest.mark.asyncio
 async def test_execute_command_calls_run_in_executor():

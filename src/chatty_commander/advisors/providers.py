@@ -74,10 +74,7 @@ def _filter_kwargs_for_callable(fn: Any, kwargs: dict[str, Any]) -> dict[str, An
         signature = inspect.signature(fn)
     except (TypeError, ValueError):
         return kwargs
-    if any(
-        param.kind == param.VAR_KEYWORD
-        for param in signature.parameters.values()
-    ):
+    if any(param.kind == param.VAR_KEYWORD for param in signature.parameters.values()):
         return kwargs
     return {key: value for key, value in kwargs.items() if key in signature.parameters}
 
@@ -88,9 +85,9 @@ def _build_stub_provider(config: dict[str, Any]) -> "LLMProvider":
         stub = StubResponsesProvider(config)
         stub.api_mode = "responses"
         return stub
-    stub = StubCompletionProvider(config)
-    stub.api_mode = "completion"
-    return stub
+    stub2 = StubCompletionProvider(config)
+    stub2.api_mode = "completion"
+    return stub2
 
 
 class LLMProvider(ABC):
@@ -155,7 +152,7 @@ class CompletionProvider(LLMProvider):
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
-                from ..tools.browser_analyst import browser_analyst_tool_instance
+                from .tools.browser_analyst import browser_analyst_tool_instance
 
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
@@ -163,8 +160,8 @@ class CompletionProvider(LLMProvider):
                 pass
 
         # MCP and handoffs configuration (placeholder for future implementation)
-        mcp_servers = []
-        handoffs = []
+        mcp_servers: list[Any] = []
+        handoffs: list[Any] = []
 
         # Initialize Agent client with enhanced capabilities
         agent_kwargs = {
@@ -186,8 +183,9 @@ class CompletionProvider(LLMProvider):
         """Generate completion response via Agent.chat()."""
         for attempt in range(self.max_retries):
             try:
-                # Agent.chat returns a string (implementation dependent). Keep kwargs for future expansion.
-                response = self.agent.chat(prompt)
+                # Agent.chat returns a string (implementation dependent).
+                # openai-agents Agent type doesn't include chat() in stubs
+                response = self.agent.chat(prompt)  # type: ignore[attr-defined]
                 return str(response).strip() if response is not None else ""
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
@@ -204,7 +202,7 @@ class CompletionProvider(LLMProvider):
         """
         try:
             # Minimal behavior: return full text. Streaming can be added when Agent supports it in-tree.
-            response = self.agent.chat(prompt)
+            response = self.agent.chat(prompt)  # type: ignore[attr-defined]
             return str(response).strip() if response is not None else ""
         except Exception as e:
             logger.error(f"Streaming generation failed: {e}")
@@ -228,7 +226,7 @@ class ResponsesProvider(LLMProvider):
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
-                from ..tools.browser_analyst import browser_analyst_tool_instance
+                from .tools.browser_analyst import browser_analyst_tool_instance
 
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
@@ -236,8 +234,8 @@ class ResponsesProvider(LLMProvider):
                 pass
 
         # MCP and handoffs configuration (placeholder for future implementation)
-        mcp_servers = []
-        handoffs = []
+        mcp_servers: list[Any] = []
+        handoffs: list[Any] = []
 
         # Initialize Agent client with enhanced capabilities
         agent_kwargs = {
@@ -260,7 +258,7 @@ class ResponsesProvider(LLMProvider):
         """Generate response using Agent.chat()."""
         for attempt in range(self.max_retries):
             try:
-                response = self.agent.chat(prompt)
+                response = self.agent.chat(prompt)  # type: ignore[attr-defined]
                 return str(response).strip() if response is not None else ""
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
@@ -273,7 +271,7 @@ class ResponsesProvider(LLMProvider):
     def generate_stream(self, prompt: str, **kwargs) -> str:
         """Generate streaming response using Agent.chat() as a fallback."""
         try:
-            response = self.agent.chat(prompt)
+            response = self.agent.chat(prompt)  # type: ignore[attr-defined]
             return str(response).strip() if response is not None else ""
         except Exception as e:
             logger.error(f"Streaming generation failed: {e}")

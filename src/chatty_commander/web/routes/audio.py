@@ -30,12 +30,15 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
+
 class AudioDevices(BaseModel):
     input: list[str] = Field(default_factory=list)
     output: list[str] = Field(default_factory=list)
 
+
 class AudioDeviceRequest(BaseModel):
     device_id: str
+
 
 def include_audio_routes(
     *,
@@ -46,20 +49,21 @@ def include_audio_routes(
     @router.get("/api/v1/audio/devices", response_model=AudioDevices)
     async def get_audio_devices():
         try:
-            import pyaudio
+            import pyaudio  # type: ignore[import-untyped]
+
             p = pyaudio.PyAudio()
             input_devices = []
             output_devices = []
             try:
                 info = p.get_host_api_info_by_index(0)
-                numdevices = info.get('deviceCount') or 0
+                numdevices = info.get("deviceCount") or 0
 
                 for i in range(0, numdevices):
                     device_info = p.get_device_info_by_host_api_device_index(0, i)
-                    if (device_info.get('maxInputChannels') or 0) > 0:
-                        input_devices.append(device_info.get('name'))
-                    if (device_info.get('maxOutputChannels') or 0) > 0:
-                        output_devices.append(device_info.get('name'))
+                    if (device_info.get("maxInputChannels") or 0) > 0:
+                        input_devices.append(device_info.get("name"))
+                    if (device_info.get("maxOutputChannels") or 0) > 0:
+                        output_devices.append(device_info.get("name"))
             finally:
                 p.terminate()
             return AudioDevices(input=input_devices, output=output_devices)
@@ -67,7 +71,7 @@ def include_audio_routes(
             # Fallback for environments without PyAudio or audio hardware (e.g., CI/Container)
             return AudioDevices(
                 input=["Mock Microphone 1", "Mock Microphone 2"],
-                output=["Mock Speaker 1", "Mock Speaker 2"]
+                output=["Mock Speaker 1", "Mock Speaker 2"],
             )
         except Exception as e:
             logger.warning(f"Failed to list audio devices: {e}")
@@ -91,6 +95,8 @@ def include_audio_routes(
             return {"success": True, "device": request.device_id}
         except Exception as e:
             logger.error(f"Failed to set audio device: {e}")
-            raise HTTPException(status_code=500, detail="Failed to update audio device configuration")
+            raise HTTPException(
+                status_code=500, detail="Failed to update audio device configuration"
+            ) from e
 
     return router
