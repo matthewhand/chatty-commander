@@ -69,7 +69,7 @@ class OpenAIBackend(LLMBackend):
         self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
         self.max_retries = kwargs.get("max_retries", 3)
         self.timeout = kwargs.get("timeout", 30.0)
-        self._client = None
+        self._client: Any = None
         self._initialize_client()
 
     def _initialize_client(self):
@@ -161,7 +161,7 @@ class OllamaBackend(LLMBackend):
         self.host = host or os.getenv("OLLAMA_HOST", "ollama:11434")
         self.model = model
         self.base_url = f"http://{self.host}"
-        self._available = None
+        self._available: bool | None = None
         logger.info(f"Initialized Ollama backend: {self.base_url}, model: {self.model}")
 
     def is_available(self) -> bool:
