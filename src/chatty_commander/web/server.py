@@ -45,54 +45,54 @@ except Exception:  # very minimal stub if FastAPI missing (tests won't hit real 
 try:
     from .routes.avatar_ws import router as avatar_ws_router
 except ImportError:
-    avatar_ws_router = None
+    avatar_ws_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_api import router as avatar_api_router
 except ImportError:
-    avatar_api_router = None
+    avatar_api_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_selector import router as avatar_selector_router
 except ImportError:
-    avatar_selector_router = None
+    avatar_selector_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_settings import include_avatar_settings_routes
 except ImportError:
-    include_avatar_settings_routes = None
+    include_avatar_settings_routes = None  # type: ignore[assignment]
 
 try:
     from .routes.audio import include_audio_routes
 except ImportError:
-    include_audio_routes = None
+    include_audio_routes = None  # type: ignore[assignment]
 
 try:
     from .routes.version import router as version_router
 except ImportError:
-    version_router = None
+    version_router = None  # type: ignore[assignment]
 
 try:
     from .routes.agents import router as agents_router
 except ImportError:
-    agents_router = None
+    agents_router = None  # type: ignore[assignment]
 
 try:
     from .routes.models import router as models_router
 except ImportError:
-    models_router = None
+    models_router = None  # type: ignore[assignment]
 
 try:
     from .routes.command_authoring import router as command_authoring_router
 except ImportError:
-    command_authoring_router = None
+    command_authoring_router = None  # type: ignore[assignment]
 
 try:
     from ..obs.metrics import create_metrics_router
 
     metrics_router = create_metrics_router()
 except ImportError:
-    metrics_router = None
+    metrics_router = None  # type: ignore[assignment]
 
 # Settings router needs to be created with config manager
 settings_router = None
