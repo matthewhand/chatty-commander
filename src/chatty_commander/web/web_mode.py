@@ -45,7 +45,7 @@ from typing import Any
 try:
     import uvicorn
 except ImportError:
-    uvicorn = None
+    uvicorn = None  # type: ignore[assignment]
 
 from collections import defaultdict
 
@@ -90,7 +90,7 @@ except Exception:  # pragma: no cover - optional dependency path
 try:
     from chatty_commander.web.routes.audio import include_audio_routes
 except ImportError:
-    include_audio_routes = None
+    include_audio_routes = None  # type: ignore[assignment]
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.voice import include_voice_routes
 from chatty_commander.web.routes.ws import include_ws_routes
@@ -99,24 +99,24 @@ from chatty_commander.web.routes.ws import include_ws_routes
 try:
     from chatty_commander.web.routes.avatar_api import router as avatar_api_router
 except ImportError:
-    avatar_api_router = None
+    avatar_api_router = None  # type: ignore[assignment]
 
 try:
     from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
 except ImportError:
-    avatar_ws_router = None
+    avatar_ws_router = None  # type: ignore[assignment]
 
 try:
     from chatty_commander.web.routes.avatar_selector import (
         router as avatar_selector_router,
     )
 except ImportError:
-    avatar_selector_router = None
+    avatar_selector_router = None  # type: ignore[assignment]
 
 try:
     from .routes.agents import router as agents_router
 except ImportError:
-    agents_router = None
+    agents_router = None  # type: ignore[assignment]
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -435,7 +435,7 @@ class WebModeServer:
 
         # Optional advisors service (enabled via config)
         try:
-            self.advisors_service = AdvisorsService(config=config_manager)
+            self.advisors_service = AdvisorsService(config=config_manager)  # type: ignore[arg-type]
         except Exception as e:  # noqa: BLE001
             logger.debug(
                 "AdvisorsService init failed; continuing without advisors: %s", e
@@ -478,7 +478,7 @@ class WebModeServer:
         """
         while self._telemetry_running:
             try:
-                import psutil
+                import psutil  # type: ignore[import-untyped]
 
                 cpu = psutil.cpu_percent(interval=None)
                 memory = psutil.virtual_memory().percent
@@ -624,7 +624,7 @@ class WebModeServer:
         app.include_router(core)
 
         # Audio endpoints
-        if include_audio_routes:
+        if include_audio_routes is not None:
             audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
             app.include_router(audio)
 

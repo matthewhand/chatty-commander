@@ -215,9 +215,9 @@ class LLMManager:
             else:
                 return {"error": "No active backend"}
 
-    def get_all_backends_info(self) -> dict[str, dict[str, Any]]:
+    def get_all_backends_info(self) -> dict[str, Any]:
         """Get information about all backends."""
-        info = {}
+        info: dict[str, Any] = {}
         for name, backend in self.backends.items():
             try:
                 info[name] = backend.get_backend_info()

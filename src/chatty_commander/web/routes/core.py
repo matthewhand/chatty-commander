@@ -203,7 +203,7 @@ def include_core_routes(
         cpu_usage = "unknown"
 
         try:
-            import psutil
+            import psutil  # type: ignore[import-untyped]
 
             memory = psutil.virtual_memory()
             memory_usage = f"{memory.percent:.1f}%"
@@ -432,7 +432,7 @@ def include_core_routes(
             if response_time_middleware is not None
             else 0.0
         )
-        metrics_dict["response_time_avg"] = round(avg_duration, 2)
+        metrics_dict["response_time_avg"] = round(avg_duration, 2)  # type: ignore[assignment]
         return metrics_dict
 
     return router

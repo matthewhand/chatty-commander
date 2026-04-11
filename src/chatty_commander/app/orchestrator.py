@@ -112,7 +112,7 @@ class OpenWakeWordAdapter:
     ) -> None:
         self._on_wake_word = on_wake_word
         self._config = config
-        self._detector = None
+        self._detector: Any = None
         self._started = False
 
     def start(self) -> None:

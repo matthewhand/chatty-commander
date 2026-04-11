@@ -1,0 +1,3 @@
+## 2024-04-10 - Provide explicit ARIA support for reusable UI elements
+**Learning:** Reusable components like `Dropdown` acting as interactive widgets often hide their native semantics under custom HTML structures (e.g. `div role="button"`). Because they may be populated dynamically or used with icon-only triggers, developers easily forget or are unable to pass explicit ARIA labels down to the trigger element without explicit component support.
+**Action:** When creating or updating base interactive UI components (buttons, dropdowns, toggles), ensure you explicitly export and map properties like `ariaLabel` (or `aria-label` natively using standard HTML props) down to the internal interactive trigger so that developers can easily fulfill a11y requirements.
