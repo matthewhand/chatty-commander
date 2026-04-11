@@ -274,6 +274,8 @@ class ContextManager:
 
         to_clear = []
         for context_key, context in self.contexts.items():
+            # last_activity is set in __post_init__, guaranteed non-None after initialization
+            assert context.last_activity is not None
             if current_time - context.last_activity > max_age_seconds:
                 to_clear.append(context_key)
 

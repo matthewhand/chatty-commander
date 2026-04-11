@@ -180,6 +180,10 @@ class WakeWordDetector:
                     time.sleep(1.0)  # Mock detection interval
                     continue
 
+                # Type narrowing - these are guaranteed non-None when running
+                assert self._stream is not None
+                assert self._model is not None
+
                 # Read audio chunk
                 audio_data = self._stream.read(
                     self.chunk_size, exception_on_overflow=False
