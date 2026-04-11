@@ -87,11 +87,11 @@ class VoiceSelfTester:
         try:
             self._tts_engine = pyttsx3.init()
             # Configure for clear speech
-            self._tts_engine.setProperty("rate", 150)  # Slower for clarity
-            self._tts_engine.setProperty("volume", 0.9)
+            self._tts_engine.setProperty("rate", 150)  # type: ignore[union-attr]
+            self._tts_engine.setProperty("volume", 0.9)  # type: ignore[union-attr]
 
             # Try to use a good quality voice
-            voices = self._tts_engine.getProperty("voices")
+            voices = self._tts_engine.getProperty("voices")  # type: ignore[union-attr]
             if voices:
                 # Prefer female voices (often clearer for TTS)
                 for voice in voices:
@@ -99,7 +99,7 @@ class VoiceSelfTester:
                         "female" in voice.name.lower()
                         or "samantha" in voice.name.lower()
                     ):
-                        self._tts_engine.setProperty("voice", voice.id)
+                        self._tts_engine.setProperty("voice", voice.id)  # type: ignore[union-attr]
                         break
 
         except Exception as e:
@@ -232,7 +232,7 @@ class VoiceSelfTester:
                 temperature=0.1,
             )
 
-            result = json.loads(response.choices[0].message.content)
+            result = json.loads(response.choices[0].message.content or "{}")  # type: ignore[no-any-return]
             return result
 
         except Exception as e:
@@ -245,7 +245,7 @@ class VoiceSelfTester:
 
     def run_comprehensive_test(self) -> dict[str, Any]:
         """Run comprehensive self-test and return detailed results."""
-        results = {
+        results: dict[str, Any] = {
             "timestamp": time.time(),
             "total_tests": len(self.test_phrases),
             "individual_results": [],
