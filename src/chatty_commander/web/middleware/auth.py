@@ -26,6 +26,7 @@ import logging
 import posixpath
 import urllib.parse
 from collections.abc import Callable
+from typing import cast
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -61,7 +62,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         """Process request and validate authentication if required."""
         # Skip auth in no_auth mode
         if self.no_auth:
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
         # Decode path to prevent URL-encoded or double-encoded path traversal bypasses
         raw_path = request.url.path
@@ -83,11 +84,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
             or path in self.public_exact_endpoints
         ):
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
         # Skip auth for OPTIONS requests (CORS preflight)
         if request.method == "OPTIONS":
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
         # Validate API key for protected endpoints
         if path == "/api" or path.startswith("/api/"):
@@ -137,4 +138,4 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
             logger.debug("Authentication successful")
 
-        return await call_next(request)
+        return cast(Response, await call_next(request))
