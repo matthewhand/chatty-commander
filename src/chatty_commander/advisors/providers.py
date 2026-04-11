@@ -74,7 +74,10 @@ def _filter_kwargs_for_callable(fn: Any, kwargs: dict[str, Any]) -> dict[str, An
         signature = inspect.signature(fn)
     except (TypeError, ValueError):
         return kwargs
-    if any(param.kind == param.VAR_KEYWORD for param in signature.parameters.values()):
+    if any(
+        param.kind == param.VAR_KEYWORD
+        for param in signature.parameters.values()
+    ):
         return kwargs
     return {key: value for key, value in kwargs.items() if key in signature.parameters}
 

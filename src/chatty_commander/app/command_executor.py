@@ -38,9 +38,7 @@ from typing import Any
 # Optional deps that may not be present in CI/headless environments
 try:  # pragma: no cover - exercised via tests with patching
     import pyautogui
-except (
-    Exception
-):  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
+except Exception:  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
     pyautogui = None
 
 try:  # pragma: no cover - optional
@@ -272,7 +270,6 @@ class CommandExecutor:
             return
 
         from chatty_commander.utils.url_validator import is_safe_url
-
         if not is_safe_url(url):
             self.report_error(command_name, "unsafe URL rejected")
             return

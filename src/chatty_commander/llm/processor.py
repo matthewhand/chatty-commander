@@ -71,7 +71,6 @@ class CommandProcessor:
         self._available_commands: dict[str, dict] = {}
         self._available_commands_lower: dict[str, str] = {}
         self._available_keyword_map: dict[str, list[str]] = {}
-        self._available_suggestions_map: dict[str, list[tuple[str, str]]] = {}
         self._update_available_commands()
 
         logger.info("Command processor initialized")
@@ -94,13 +93,6 @@ class CommandProcessor:
             self._available_keyword_map = {
                 cmd: keywords
                 for cmd, keywords in self.KEYWORD_MAP.items()
-                if cmd in self._available_commands
-            }
-
-            # Pre-filter suggestion map and cache lowercase descriptions
-            self._available_suggestions_map = {
-                cmd: [(desc, desc.lower()) for desc in descs]
-                for cmd, descs in self.SUGGESTION_MAP.items()
                 if cmd in self._available_commands
             }
 
@@ -180,7 +172,7 @@ class CommandProcessor:
 
         prompt = f"""You are a voice assistant command interpreter.
 
-Available commands: {", ".join(available_commands)}
+Available commands: {', '.join(available_commands)}
 
 User said: "{user_input}"
 
@@ -203,7 +195,9 @@ Response:"""
 
         return prompt
 
-    def _parse_llm_response(self, response: str) -> tuple[str | None, float, str]:
+    def _parse_llm_response(
+        self, response: str
+    ) -> tuple[str | None, float, str]:
         """Parse LLM response to extract command information."""
         try:
             # Try to extract JSON from response
@@ -255,17 +249,18 @@ Response:"""
                 )
 
         # Keyword matches
-        for cmd_name, descs in self._available_suggestions_map.items():
-            for desc, desc_lower in descs:
-                if partial_lower in desc_lower:
-                    suggestions.append(
-                        {
-                            "command": cmd_name,
-                            "description": desc,
-                            "confidence": 0.7,
-                            "match_type": "keyword",
-                        }
-                    )
+        for cmd_name in self._available_commands:
+            if cmd_name in self.SUGGESTION_MAP:
+                for desc in self.SUGGESTION_MAP[cmd_name]:
+                    if partial_lower in desc.lower():
+                        suggestions.append(
+                            {
+                                "command": cmd_name,
+                                "description": desc,
+                                "confidence": 0.7,
+                                "match_type": "keyword",
+                            }
+                        )
 
         # Remove duplicates and sort by confidence
         seen = set()

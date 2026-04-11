@@ -11,12 +11,12 @@ test.describe("Audio Configuration", () => {
         expect(response?.status()).toBe(200);
 
         // Wait for Audio Devices section to be visible
-        const audioDevicesHeading = page.locator('h3', { hasText: 'Audio Devices' });
-        await expect(audioDevicesHeading).toBeVisible();
+        // This makes sure we are looking at the right part of the page
+        const audioDevicesSection = page.locator('.card', { has: page.locator('h3', { hasText: 'Audio Devices' }) });
+        await expect(audioDevicesSection).toBeVisible();
 
-        // Find the specific card for Input Device
-        // The Card wrapper renders as div.card, and the h4 is inside card-body
-        const inputDeviceCard = page.locator('.card', { has: page.locator('.card-title', { hasText: 'Input Device' }) });
+        // Find the specific card for Input Device within that section
+        const inputDeviceCard = audioDevicesSection.locator('.card', { has: page.locator('h4', { hasText: 'Input Device' }) });
         const inputSelectLocator = inputDeviceCard.locator('select');
 
         await expect(inputSelectLocator).toBeVisible();

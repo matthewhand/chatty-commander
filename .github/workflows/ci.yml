@@ -67,17 +67,18 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm install --no-audit --no-fund
+          npm install -g pnpm
+          pnpm i
 
       - name: Install Playwright browsers
         run: |
           cd webui/frontend
-          npx playwright install --with-deps
+          pnpm exec playwright install --with-deps
 
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          npm run test:e2e
+          pnpm run test:e2e
 
   performance-test:
     runs-on: ubuntu-latest
@@ -164,7 +165,7 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander python src/main.py --help
+          docker run --rm chatty-commander python main.py --help
 
   release:
     runs-on: ubuntu-latest

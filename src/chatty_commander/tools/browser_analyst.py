@@ -1,4 +1,3 @@
-# NOTE: This module is superseded by advisors/tools/browser_analyst.py. Kept for test compatibility.
 # MIT License
 #
 # Copyright (c) 2024 mhand
@@ -33,7 +32,6 @@ from chatty_commander.utils.url_validator import is_safe_url
 
 try:
     import httpx
-
     HTTPX_AVAILABLE = True
 except ImportError:
     HTTPX_AVAILABLE = False
@@ -61,46 +59,26 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         )
 
     config_data = Config().config_data
-    allowlist = (
-        config_data.get("advisors", {})
-        .get("browser_analyst", {})
-        .get("allowlist", None)
-    )
-    timeout = (
-        config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
-    )
+    allowlist = config_data.get("advisors", {}).get("browser_analyst", {}).get("allowlist", None)
+    timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
 
     parsed_url = urlparse(request.url)
     if parsed_url.scheme not in ("http", "https"):
-        return AnalystResult(
-            title="Error",
-            summary=f"Invalid URL scheme '{parsed_url.scheme}'.",
-            url=request.url,
-        )
+        return AnalystResult(title="Error", summary=f"Invalid URL scheme '{parsed_url.scheme}'.", url=request.url)
     hostname = parsed_url.hostname or ""
     if allowlist is not None and hostname not in allowlist:
         logger.warning(f"Domain {hostname} is not in the allowlist.")
-        return AnalystResult(
-            title="Error", summary="Domain not allowed.", url=request.url
-        )
+        return AnalystResult(title="Error", summary="Domain not allowed.", url=request.url)
 
     if not is_safe_url(request.url):
-        logger.warning(
-            f"SSRF blocked: URL resolves to private/internal address: {request.url}"
-        )
-        return AnalystResult(
-            title="Error",
-            summary="URL blocked: resolves to internal address.",
-            url=request.url,
-        )
+        logger.warning(f"SSRF blocked: URL resolves to private/internal address: {request.url}")
+        return AnalystResult(title="Error", summary="URL blocked: resolves to internal address.", url=request.url)
 
     try:
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
-        with httpx.stream(
-            "GET", request.url, timeout=timeout, follow_redirects=False
-        ) as response:
+        with httpx.stream("GET", request.url, timeout=timeout, follow_redirects=False) as response:
             response.raise_for_status()
             content_pieces = []
             size = 0
@@ -111,25 +89,19 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
                     break
             text = "".join(content_pieces)
 
-        title_match = re.search(
-            r"<title[^>]*>(.*?)</title>", text, re.IGNORECASE | re.DOTALL
-        )
+        title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
         title = title_match.group(1).strip() if title_match else "No Title"
 
         # Prevent ReDoS by avoiding .*? within tags
-        body_text = re.sub(
-            r"<(script|style)[^>]*>.*?</\1>", " ", text, flags=re.IGNORECASE | re.DOTALL
-        )
+        body_text = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', text, flags=re.IGNORECASE | re.DOTALL)
         # Strip other HTML tags
-        body_text = re.sub(r"<[^>]+>", " ", body_text)
+        body_text = re.sub(r'<[^>]+>', ' ', body_text)
         # Clean whitespace
-        body_text = re.sub(r"\s+", " ", body_text).strip()
+        body_text = re.sub(r'\s+', ' ', body_text).strip()
 
         summary = body_text[:500]
 
         return AnalystResult(title=title, summary=summary, url=request.url)
     except Exception as e:
         logger.error(f"Error fetching URL {request.url}: {e}")
-        return AnalystResult(
-            title="Error", summary=f"Failed to fetch: {e}", url=request.url
-        )
+        return AnalystResult(title="Error", summary=f"Failed to fetch: {e}", url=request.url)

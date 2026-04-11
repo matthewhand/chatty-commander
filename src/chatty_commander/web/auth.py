@@ -42,7 +42,6 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
     # FastAPI does not support toggling docs_url/redoc_url after init,
     # but if app.docs_url is None (hidden), we can attach routes manually if needed.
     if app.docs_url is None:
-
         @app.get("/docs", include_in_schema=False)
         async def custom_swagger_ui_html():
             return get_swagger_ui_html(
