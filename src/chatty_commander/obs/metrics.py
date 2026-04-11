@@ -375,13 +375,13 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
                 count_val = series.get("count", 0)
                 # Emit cumulative buckets
                 for idx, edge in enumerate(snap.get("buckets", [])):
-                    lbl = {**labels, "le": str(edge)}
+                    bucket_lbl = {**labels, "le": str(edge)}
                     lines.append(
-                        f"{name}_bucket{{{_lbl(lbl)}}} {counts[idx] if idx < len(counts) else 0}"
+                        f"{name}_bucket{{{_lbl(bucket_lbl)}}} {counts[idx] if idx < len(counts) else 0}"
                     )
-                lbl = {**labels, "le": "+Inf"}
+                bucket_lbl_inf = {**labels, "le": "+Inf"}
                 lines.append(
-                    f"{name}_bucket{{{_lbl(lbl)}}} {counts[-1] if counts else 0}"
+                    f"{name}_bucket{{{_lbl(bucket_lbl_inf)}}} {counts[-1] if counts else 0}"
                 )
                 lines.append(f"{name}_sum{{{_lbl(labels)}}} {sum_val}")
                 lines.append(f"{name}_count{{{_lbl(labels)}}} {count_val}")
