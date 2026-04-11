@@ -24,6 +24,7 @@
 
 import logging
 import posixpath
+import urllib.parse
 from collections.abc import Callable
 
 from fastapi import Request, Response
@@ -75,7 +76,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Normalize path to prevent path traversal bypasses
         # Use exact match or explicit trailing slash check to prevent partial path matching
-        path = posixpath.normpath(request.url.path)
+        path = posixpath.normpath(raw_path)
 
         # Skip auth for public endpoints
         if (
