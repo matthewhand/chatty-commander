@@ -105,10 +105,10 @@ class OllamaProvider(LLMProvider):
 
         try:
             response = self._make_request("generate", payload)
-            result = response.json()
+            result: Any = response.json()
 
             if "response" in result:
-                return result["response"].strip()
+                return str(result["response"]).strip()
             else:
                 logger.error(f"Unexpected Ollama response format: {result}")
                 return "Error: Invalid response from Ollama"
@@ -117,8 +117,18 @@ class OllamaProvider(LLMProvider):
             logger.error(f"Ollama generation failed: {e}")
             return f"Error: Failed to generate response - {e}"
 
-    def generate_stream(self, prompt: str, **kwargs) -> Generator[str, None, None]:
-        """Generate streaming response from Ollama model."""
+    def generate_stream(self, prompt: str, **kwargs) -> str:
+        """Generate streaming response from Ollama model.
+
+        Note: This method uses generators internally but returns concatenated text
+        to match the LLMProvider base class signature. Use generate_stream_text()
+        for the actual streaming behavior.
+        """
+        # Call the internal streaming method and concatenate results
+        return self.generate_stream_text(prompt, **kwargs)
+
+    def _generate_stream_impl(self, prompt: str, **kwargs) -> Generator[str, None, None]:
+        """Internal streaming generator implementation."""
         payload = {
             "model": self.model,
             "prompt": prompt,
@@ -157,7 +167,7 @@ class OllamaProvider(LLMProvider):
     def generate_stream_text(self, prompt: str, **kwargs) -> str:
         """Generate streaming response and return as concatenated string."""
         try:
-            chunks = list(self.generate_stream(prompt, **kwargs))
+            chunks = list(self._generate_stream_impl(prompt, **kwargs))
             return "".join(chunks)
         except Exception as e:
             logger.error(f"Ollama streaming generation failed: {e}")

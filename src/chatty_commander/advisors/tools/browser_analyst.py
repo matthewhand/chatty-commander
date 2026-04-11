@@ -156,5 +156,5 @@ if AGENTS_AVAILABLE:
             },
             "required": ["url"],
         },
-        on_invoke_tool=browser_analyst_tool,
+        on_invoke_tool=browser_analyst_tool,  # type: ignore[arg-type]
     )
