@@ -59,7 +59,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         """Process request and validate authentication if required."""
         # Skip auth in no_auth mode
         if self.no_auth:
-            return await call_next(request)
+            return await call_next(request)  # type: ignore[no-any-return]
 
         # Normalize path to prevent path traversal bypasses
         # Use exact match or explicit trailing slash check to prevent partial path matching
@@ -70,11 +70,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             any(path == endpoint or path.startswith(endpoint + "/") for endpoint in self.public_endpoints)
             or path in self.public_exact_endpoints
         ):
-            return await call_next(request)
+            return await call_next(request)  # type: ignore[no-any-return]
 
         # Skip auth for OPTIONS requests (CORS preflight)
         if request.method == "OPTIONS":
-            return await call_next(request)
+            return await call_next(request)  # type: ignore[no-any-return]
 
         # Validate API key for protected endpoints
         if path == "/api" or path.startswith("/api/"):
@@ -112,4 +112,4 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
             logger.debug("Authentication successful")
 
-        return await call_next(request)
+        return await call_next(request)  # type: ignore[no-any-return]
