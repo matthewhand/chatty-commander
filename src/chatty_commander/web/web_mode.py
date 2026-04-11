@@ -435,7 +435,7 @@ class WebModeServer:
 
         # Optional advisors service (enabled via config)
         try:
-            self.advisors_service = AdvisorsService(config=config_manager)
+            self.advisors_service = AdvisorsService(config=config_manager)  # type: ignore[arg-type]
         except Exception as e:  # noqa: BLE001
             logger.debug(
                 "AdvisorsService init failed; continuing without advisors: %s", e
