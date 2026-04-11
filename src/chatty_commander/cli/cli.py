@@ -255,7 +255,8 @@ def run_gui_mode(
             f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
         )
         try:
-            from chatty_commander.gui import main as gui_main
+            # Legacy GUI fallback; gui module may not define main()
+            from chatty_commander.gui import main as gui_main  # type: ignore[attr-defined]  # noqa: I001
 
             logger.info("Starting legacy tkinter GUI mode")
             rc = gui_main()

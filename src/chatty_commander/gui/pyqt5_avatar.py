@@ -34,10 +34,10 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from PyQt5.QtCore import Qt, QUrl, pyqtSignal
-    from PyQt5.QtGui import QIcon
-    from PyQt5.QtWebEngineWidgets import QWebEngineView
-    from PyQt5.QtWidgets import (
+    from PyQt5.QtCore import Qt, QUrl, pyqtSignal  # type: ignore[import-not-found]
+    from PyQt5.QtGui import QIcon  # type: ignore[import-not-found]
+    from PyQt5.QtWebEngineWidgets import QWebEngineView  # type: ignore[import-not-found]
+    from PyQt5.QtWidgets import (  # type: ignore[import-not-found]
         QAction,
         QApplication,
         QMainWindow,
@@ -52,16 +52,16 @@ except ImportError:
     PYQT5_AVAILABLE = False
 
     # Create dummy classes for type hints
-    class QMainWindow:
+    class QMainWindow:  # type: ignore[no-redef]
         pass
 
-    class QWebEngineView:
+    class QWebEngineView:  # type: ignore[no-redef]
         pass
 
-    class QSystemTrayIcon:
+    class QSystemTrayIcon:  # type: ignore[no-redef]
         pass
 
-    class QApplication:
+    class QApplication:  # type: ignore[no-redef]
         pass
 
 
