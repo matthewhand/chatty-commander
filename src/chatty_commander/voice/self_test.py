@@ -36,6 +36,7 @@ import json
 import logging
 import tempfile
 import time
+from typing import Any
 
 try:
     import openai
@@ -43,8 +44,8 @@ try:
 
     OPENAI_AVAILABLE = True
 except ImportError:
-    openai = None
-    OpenAI = None
+    openai = None  # type: ignore[assignment,misc]
+    OpenAI = None  # type: ignore[assignment,misc]
     OPENAI_AVAILABLE = False
 
 try:
@@ -52,7 +53,7 @@ try:
 
     TTS_AVAILABLE = True
 except ImportError:
-    pyttsx3 = None
+    pyttsx3 = None  # type: ignore[assignment]
     TTS_AVAILABLE = False
 
 from .transcription import VoiceTranscriber
@@ -193,7 +194,7 @@ class VoiceSelfTester:
 
     def llm_judge_transcription(
         self, original: str, transcribed: str
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """Use LLM to judge transcription quality and provide feedback."""
         if not self.openai_client:
             return {
@@ -242,7 +243,7 @@ class VoiceSelfTester:
                 "suggestions": [],
             }
 
-    def run_comprehensive_test(self) -> dict[str, any]:
+    def run_comprehensive_test(self) -> dict[str, Any]:
         """Run comprehensive self-test and return detailed results."""
         results = {
             "timestamp": time.time(),
@@ -260,7 +261,7 @@ class VoiceSelfTester:
             f"Starting comprehensive voice self-test with {len(self.test_phrases)} phrases"
         )
 
-        category_scores = {}
+        category_scores: dict[str, list[float]] = {}
         all_suggestions = []
 
         for i, phrase in enumerate(self.test_phrases):
