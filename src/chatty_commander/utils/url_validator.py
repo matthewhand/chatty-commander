@@ -45,7 +45,7 @@ def is_safe_url(url: str) -> bool:
 
         # ALL resolved addresses must be safe
         for _family, _type, _proto, _canonname, sockaddr in addr_infos:
-            ip_str = sockaddr[0]
+            ip_str = str(sockaddr[0])
             if _is_restricted(ip_str):
                 return False
 

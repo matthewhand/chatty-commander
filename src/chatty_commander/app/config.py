@@ -112,21 +112,7 @@ class Config:
             self.config_data.get("general", {}).get("inference_framework", "onnx")
         )
 
-        # Commands for model actions
-        default_commands = {}
-        if (
-            not self.config_file or "commands" not in self.config_data
-        ):  # Use defaults if file missing or commands missing
-            default_commands = {
-                "hello": {
-                    "action": "custom_message",
-                    "message": "Hello from ChattyCommander!",
-                },
-                "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
-                "paste": {"action": "keypress", "keys": "paste"},
-                "submit": {"action": "keypress", "keys": "submit"},
-            }
-        self.commands: dict = self.config_data.get("commands", default_commands)
+        # Commands already initialized above from config/defaults.
 
         # Start on boot setting
         self.start_on_boot: bool = bool(
