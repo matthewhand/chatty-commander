@@ -9,11 +9,6 @@
 ## 2024-03-18 - [LLM Command Processor Matcher Optimization]
 **Learning:** High-frequency validation/matching loops (e.g., matching keywords to available commands in `_simple_command_matching`) can slow down significantly due to redundant allocations (like `.lower()`) and repeated iteration over large dict views (`.items()`).
 **Action:** Pre-compute cached lowercase dict keys and pre-filter relationship maps into simple dictionaries during class instantiation/initialization. Iterating over keys directly is also slightly faster than allocating view objects with `.items()`.
-
-## 2024-03-29 - [LLM Command Processor Suggestions Optimization]
-**Learning:** High-frequency input handling, such as fetching command suggestions based on partial input via `get_command_suggestions`, suffers from performance bottlenecks when repeatedly allocating lowercase copies of string descriptions inside loops (`desc.lower()`).
-**Action:** Pre-compute and cache lowercase string values during initialization (`_available_suggestions_map` from `SUGGESTION_MAP`) so the application avoids allocating new string instances in real-time user input loops. Iterating over pre-computed lower-case items directly avoids the redundant allocations.
-
-## 2024-05-15 - [React Inline Mapped Props Re-render Bottleneck]
-**Learning:** Mapping over an array inline as a component prop (e.g., `<Chat messages={recentMessages.map(...)} />`) creates a new array reference on *every* parent re-render. If the parent component re-renders frequently due to separate high-frequency state updates (like system telemetry polling), the child component will be forced to fully re-reconcile repeatedly, even if the underlying `recentMessages` data hasn't changed.
-**Action:** Always extract inline array mapping (`.map()`) into a `useMemo` hook when passing the result as a prop to a child component inside a frequently re-rendering parent component, especially for components representing complex UI like a chat log. Ensure that any data transformations inside the memoized block handle edge cases (like strings vs Date objects) robustly to avoid runtime type errors.
+## 2024-04-11 - [Config Payload Iteration Optimization]
+**Learning:** Iterating over an unbounded user-provided payload (like a JSON dictionary via `config_data.items()`) during filtering is inefficient (O(M)) and opens a small window for processing delay attacks. Iterating over the application's strict, fixed allowlist set (O(K)) instead is mathematically faster and safer.
+**Action:** When applying a fixed allowlist to an input dictionary in Python, iterate over the allowlist keys (e.g., `{k: input[k] for k in ALLOWLIST if k in input}`) rather than the input dictionary items.
