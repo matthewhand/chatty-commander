@@ -54,12 +54,12 @@ class IntelligenceCore:
         self.logger = logging.getLogger(__name__)
 
         # Initialize components
-        self.advisors_service = AdvisorsService(config)
-        self.voice_processor = None
+        self.advisors_service = AdvisorsService(config)  # type: ignore[arg-type]
+        self.voice_processor: Any = None
         self.state_manager = StateManager()
 
         # AI state
-        self.current_conversation_context = {}
+        self.current_conversation_context: dict[str, Any] = {}
         self.active_persona = "chatty"
         self.listening_mode = "continuous"  # continuous, push-to-talk, wake-word
 

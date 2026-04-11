@@ -197,7 +197,7 @@ def _parse_llm_response(response: str) -> dict[str, Any]:
         cleaned = "\n".join(lines).strip()
 
     try:
-        return json.loads(cleaned)
+        return json.loads(cleaned)  # type: ignore[no-any-return]
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse LLM response as JSON: {e}")
         raise ValueError(f"Invalid JSON in LLM response: {e}") from e

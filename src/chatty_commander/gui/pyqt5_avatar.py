@@ -36,7 +36,9 @@ from typing import Any
 try:
     from PyQt5.QtCore import Qt, QUrl, pyqtSignal  # type: ignore[import-not-found]
     from PyQt5.QtGui import QIcon  # type: ignore[import-not-found]
-    from PyQt5.QtWebEngineWidgets import QWebEngineView  # type: ignore[import-not-found]
+    from PyQt5.QtWebEngineWidgets import (
+        QWebEngineView,  # type: ignore[import-not-found]
+    )
     from PyQt5.QtWidgets import (  # type: ignore[import-not-found]
         QAction,
         QApplication,
@@ -355,7 +357,7 @@ def run_pyqt5_avatar() -> bool:
         logger.info("PyQt5 avatar browser started successfully")
 
         # Run the application
-        return app.exec_() == 0
+        return app.exec_() == 0  # type: ignore[no-any-return]
 
     except Exception as e:
         logger.error(f"Failed to start PyQt5 avatar browser: {e}")

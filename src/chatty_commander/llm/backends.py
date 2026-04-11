@@ -368,7 +368,7 @@ class LocalTransformersBackend(LLMBackend):
             response_tokens = outputs[0][inputs.shape[1] :]
             response = self._tokenizer.decode(response_tokens, skip_special_tokens=True)
 
-            return response.strip()
+            return response.strip()  # type: ignore[no-any-return]
 
         except Exception as e:
             logger.error(f"Local transformers generation failed: {e}")

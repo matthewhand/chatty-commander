@@ -356,7 +356,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
             if g.description:
                 lines.append(f"# HELP {name} {g.description}")
             lines.append(f"# TYPE {name} gauge")
-            for labels, value in g.samples():
+            for labels, value in g.samples():  # type: ignore[assignment]
                 if labels:
                     lbl = ",".join(f"{k}={_quote(v)}" for k, v in labels.items())
                     lines.append(f"{name}{{{lbl}}} {value}")

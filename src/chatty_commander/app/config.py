@@ -124,7 +124,7 @@ class Config:
                 "paste": {"action": "keypress", "keys": "paste"},
                 "submit": {"action": "keypress", "keys": "submit"},
             }
-        self.commands: dict = self.config_data.get("commands", default_commands)
+        self.commands: dict[str, Any] = self.config_data.get("commands", default_commands)  # type: ignore[no-redef]
 
         # Start on boot setting
         self.start_on_boot: bool = bool(

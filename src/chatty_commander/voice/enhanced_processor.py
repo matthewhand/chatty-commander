@@ -187,7 +187,7 @@ class EnhancedVoiceProcessor:
         from scipy import signal
 
         b, a = signal.butter(4, 300, btype="high", fs=self.config.sample_rate)
-        return signal.filtfilt(b, a, audio_data)
+        return signal.filtfilt(b, a, audio_data)  # type: ignore[no-any-return]
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
         """Energy-based voice activity detection."""
@@ -197,7 +197,7 @@ class EnhancedVoiceProcessor:
 
         # Dynamic threshold based on recent energy levels
         threshold = 1000  # Adjust based on your environment
-        return energy > threshold
+        return bool(energy > threshold)  # type: ignore[no-any-return]
 
     def _detect_wake_words(self, text: str) -> list[str]:
         """Detect wake words in transcribed text."""

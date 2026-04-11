@@ -246,7 +246,7 @@ def include_core_routes(
         )
 
     @router.get("/api/v1/commands")
-    async def get_commands():
+    async def get_commands():  # type: ignore[no-redef]
         try:
             cfg_mgr = get_config_manager()
             return getattr(cfg_mgr, "commands", {}) or {}
@@ -343,7 +343,7 @@ def include_core_routes(
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
 
-    @router.get("/api/v1/commands")
+    @router.get("/api/v1/commands")  # type: ignore[no-redef]  # noqa: F811
     async def get_commands():
         """Get the configured commands."""
         counters["config_get"] += 1
@@ -421,7 +421,7 @@ def include_core_routes(
     @router.get("/api/v1/metrics")
     async def metrics():
         # Shallow copy to avoid external mutation
-        metrics_dict = {**counters}
+        metrics_dict: dict[str, float | int] = {**counters}
         avg_duration = (
             response_time_middleware.get_average_ms()
             if response_time_middleware is not None

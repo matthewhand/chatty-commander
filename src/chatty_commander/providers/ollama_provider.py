@@ -108,7 +108,7 @@ class OllamaProvider(LLMProvider):
             result = response.json()
 
             if "response" in result:
-                return result["response"].strip()
+                return result["response"].strip()  # type: ignore[no-any-return]
             else:
                 logger.error(f"Unexpected Ollama response format: {result}")
                 return "Error: Invalid response from Ollama"
@@ -117,7 +117,7 @@ class OllamaProvider(LLMProvider):
             logger.error(f"Ollama generation failed: {e}")
             return f"Error: Failed to generate response - {e}"
 
-    def generate_stream(self, prompt: str, **kwargs) -> Generator[str, None, None]:
+    def generate_stream(self, prompt: str, **kwargs) -> Generator[str, None, None]:  # type: ignore[override]
         """Generate streaming response from Ollama model."""
         payload = {
             "model": self.model,
