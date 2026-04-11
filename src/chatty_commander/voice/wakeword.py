@@ -32,17 +32,18 @@ import logging
 import threading
 import time
 from collections.abc import Callable
+from typing import Any
 
 try:
-    import numpy as np
-    import openwakeword
-    import pyaudio
+    import numpy as np  # type: ignore[import-untyped]
+    import openwakeword  # type: ignore[import-untyped]
+    import pyaudio  # type: ignore[import-untyped]
 
     VOICE_DEPS_AVAILABLE = True
 except ImportError:
-    openwakeword = None
-    pyaudio = None
-    np = None
+    openwakeword = None  # type: ignore[assignment]
+    pyaudio = None  # type: ignore[assignment]
+    np = None  # type: ignore[assignment]
     VOICE_DEPS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -71,11 +72,11 @@ class WakeWordDetector:
         self.sample_rate = sample_rate
         self.channels = channels
 
-        self._model = None
-        self._audio = None
-        self._stream = None
+        self._model: Any = None
+        self._audio: Any = None
+        self._stream: Any = None
         self._running = False
-        self._thread = None
+        self._thread: Any = None
         self._callbacks: list[Callable[[str, float], None]] = []
 
         self._initialize_model()
@@ -120,7 +121,7 @@ class WakeWordDetector:
 
         try:
             self._audio = pyaudio.PyAudio()
-            self._stream = self._audio.open(
+            self._stream = self._audio.open(  # type: ignore[attr-defined]
                 format=pyaudio.paInt16,
                 channels=self.channels,
                 rate=self.sample_rate,
@@ -130,7 +131,7 @@ class WakeWordDetector:
 
             self._running = True
             self._thread = threading.Thread(target=self._listen_loop, daemon=True)
-            self._thread.start()
+            self._thread.start()  # type: ignore[attr-defined]
             logger.info("Started wake word detection")
 
         except Exception as e:
@@ -176,13 +177,13 @@ class WakeWordDetector:
                     continue
 
                 # Read audio chunk
-                audio_data = self._stream.read(
+                audio_data = self._stream.read(  # type: ignore[attr-defined]
                     self.chunk_size, exception_on_overflow=False
                 )
                 audio_array = np.frombuffer(audio_data, dtype=np.int16)
 
                 # Get predictions from model
-                predictions = self._model.predict(audio_array)
+                predictions = self._model.predict(audio_array)  # type: ignore[attr-defined]
 
                 # Check for wake word detections
                 for wake_word in self.wake_words:
