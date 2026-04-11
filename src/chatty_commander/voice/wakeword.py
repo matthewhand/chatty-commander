@@ -76,11 +76,11 @@ class WakeWordDetector:
         self.sample_rate = sample_rate
         self.channels = channels
 
-        self._model = None
-        self._audio = None
-        self._stream = None
+        self._model: openwakeword.Model | None = None
+        self._audio: pyaudio.PyAudio | None = None
+        self._stream: pyaudio.Stream | None = None  # type: ignore[name-defined]
         self._running = False
-        self._thread = None
+        self._thread: threading.Thread | None = None
         self._callbacks: list[Callable[[str, float], None]] = []
 
         self._initialize_model()
