@@ -62,6 +62,13 @@ def include_system_routes(
         ]
 
         info = SystemInfo(
+            cpu_percent=None,
+            memory_total_mb=None,
+            memory_used_mb=None,
+            memory_percent=None,
+            disk_total_gb=None,
+            disk_used_gb=None,
+            disk_percent=None,
             python_version=sys.version,
             platform=platform.platform(),
             architecture=platform.machine(),
