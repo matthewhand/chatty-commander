@@ -279,40 +279,6 @@ export default function CommandsPage() {
               <div className="card-body p-0">
                 {/* Command Header */}
                 <div className="p-6 bg-base-200/50 border-b border-base-content/10 flex justify-between items-start">
-                  <div className="flex gap-3">
-                    <div className="p-3 rounded-xl bg-primary/20 text-primary">
-                      <TerminalSquare size={24} />
-                    </div>
-                    <div className="flex gap-1">
-                      <Dropdown
-                        trigger={
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                          </svg>
-                        }
-                        ariaLabel={`Options for ${name}`}
-                        color="ghost"
-                        size="sm"
-                        triggerClassName="btn-circle"
-                        align="right"
-                        hideArrow
-                        contentClassName="w-52 border border-base-content/10"
-                      >
-                        <li>
-                          <button aria-label={`Edit ${name}`}>
-                            <Edit3 size={16} className="text-primary" />
-                            Edit Command
-                          </button>
-                        </li>
-                        <li>
-                          <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} onClick={() => handleDeleteClick(name)}>
-                            <Trash2 size={16} />
-                            Delete Command
-                          </button>
-                        </li>
-                      </Dropdown>
-                    </div>
-                  </div>
                   <div className="flex gap-1">
                     <DynamicDropdown
                       buttonContent={

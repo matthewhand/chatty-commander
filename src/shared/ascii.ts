@@ -1,11 +1,20 @@
 const NON_ASCII = /[^\x00-\x7F]/g;
 
-export function encodeASCII(s: string): string {
-  return s.replace(NON_ASCII, "?");
+export function encodeASCII(s: string): Uint8Array {
+  const bytes = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+    bytes[i] = code > 127 ? 63 : code; // 63 is '?'
+  }
+  return bytes;
 }
 
-export function decodeASCII(s: string): string {
-  // Identity function - encoded ASCII is already valid string
+export function decodeASCII(bytes: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bytes.length; i++) {
+    const code = bytes[i];
+    s += String.fromCharCode(code > 127 ? 63 : code); // '?' for non-ASCII
+  }
   return s;
 }
 

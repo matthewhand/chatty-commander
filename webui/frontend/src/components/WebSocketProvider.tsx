@@ -22,7 +22,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [lastMessageTime, setLastMessageTime] = useState<number | null>(null);
 
   // Refs to manage reconnection timer and state without triggering re-renders
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const shouldReconnectRef = useRef(true);
   const maxReconnectAttempts = 10;
