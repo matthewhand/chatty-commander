@@ -37,7 +37,7 @@ dependencies = [
     "requests>=2.32.4",
     "psutil>=7.0.0",
     "fastapi>=0.116.1",
-    "uvicorn[standard]>=0.35.0",
+    "uvicorn[standard]>=0.44.0",
     # python-jose has known CVEs (CVE-2024-33664, CVE-2024-33663); replaced by pyjwt
     # "python-jose[cryptography]>=3.5.0",  # REMOVED: use pyjwt instead
     # passlib is unmaintained (last release 2020); use bcrypt directly
