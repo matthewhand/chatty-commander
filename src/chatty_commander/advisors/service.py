@@ -116,9 +116,6 @@ class AdvisorsService:
         if not self.enabled:
             raise RuntimeError("Advisors are not enabled")
 
-        # Handle special commands
-        if message.text.startswith("summarize "):
-            return self._handle_summarize_command(message)
 
         # Get or create context for this identity
         platform = PlatformType(message.platform.lower())
@@ -153,16 +150,17 @@ class AdvisorsService:
             # Update to processing state
             thinking_manager.start_processing(agent_id, "Generating response...")
 
-            # Example: instrument a tool call (browser_analyst) if present in text
+            # Handle summarize command with full thinking_manager instrumentation
             if message.text.startswith("summarize "):
                 thinking_manager.start_tool_call(agent_id, tool_name="browser_analyst")
                 try:
-                    # In real flows this would be the as_tool/MCP call
-                    pass
+                    reply = self._handle_summarize_command(message)
                 finally:
                     thinking_manager.end_tool_call(
                         agent_id, tool_name="browser_analyst"
                     )
+                thinking_manager.set_idle(agent_id)
+                return reply
 
             # Generate real LLM response
             try:
