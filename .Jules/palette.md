@@ -17,3 +17,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2026-04-18 - Fallback ARIA labels for dynamic dropdown triggers
 **Learning:** Components like `Dropdown.tsx` wrap trigger elements that may just be text, but sometimes lack a provided `ariaLabel`. If an icon is used instead of text, `ariaLabel` is critical. But if text is provided via the `trigger` prop and `ariaLabel` is omitted, the component fell back to a generic 'Toggle dropdown' which overrides the visual text if voice control is used, violating WCAG 2.5.3 (Label in Name).
 **Action:** Conditionally fallback `ariaLabel` to the string value of the `trigger` prop if one is provided and `ariaLabel` is omitted. This ensures voice control maps correctly to the visible text.
+
+## 2026-04-13 - Tooltip explaining disabled Execute button
+**Learning:** On `DashboardPage.tsx` the "Execute" button is disabled when `isSending`, `!isConnected`, or `!commandInput.trim()`. A bare disabled button leaves users guessing why. DaisyUI tooltips don't fire on disabled elements (`pointer-events: none`), so the tooltip must wrap the button in a `<div className="tooltip" data-tip="...">` and the button itself gets `pointer-events: none` while disabled.
+**Action:** Wrap disabled buttons in a `tooltip` container with a conditional `data-tip` explaining the disabled reason ("System disconnected" vs "Enter a command"), rather than putting a `title`/tooltip directly on the disabled control.

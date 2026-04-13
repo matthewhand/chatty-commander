@@ -446,15 +446,20 @@ const DashboardPage = React.memo(() => {
                 </div>
               )}
             </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!commandInput.trim() || isSending || !isConnected}
-              title={!isConnected ? "WebSocket connection required" : ""}
+            <div
+              className={(!isConnected || (!commandInput.trim() && !isSending)) ? "tooltip" : ""}
+              data-tip={!isConnected ? "System disconnected" : "Enter a command"}
             >
-              {isSending ? <span className="loading loading-spinner" aria-hidden="true"></span> : <Send size={18} aria-hidden="true" />}
-              Execute
-            </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!commandInput.trim() || isSending || !isConnected}
+                style={(!commandInput.trim() || isSending || !isConnected) ? { pointerEvents: "none" } : undefined}
+              >
+                {isSending ? <span className="loading loading-spinner" aria-hidden="true"></span> : <Send size={18} aria-hidden="true" />}
+                Execute
+              </button>
+            </div>
           </form>
         </div>
       </div>
