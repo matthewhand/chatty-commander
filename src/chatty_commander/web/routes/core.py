@@ -40,8 +40,12 @@ from chatty_commander.utils.security import mask_sensitive_data
 
 logger = logging.getLogger(__name__)
 
-_ENGINES: dict[str, Any] = {}
+_ENGINES: dict[str, tuple[Any, float]] = {}  # (engine, creation_time)
 _ENGINES_LOCK = threading.Lock()
+_MAX_ENGINES = 10  # Maximum cached engines to prevent unbounded memory growth
+_ENGINE_TTL_SECONDS = 3600  # 1 hour TTL for cached engines
+_ENGINE_CACHE_HITS = 0
+_ENGINE_CACHE_MISSES = 0
 
 ALLOWED_CONFIG_KEYS = frozenset(
     {
@@ -230,14 +234,33 @@ def include_core_routes(
         if db_url:
 
             def _check_db():
+                global _ENGINE_CACHE_HITS, _ENGINE_CACHE_MISSES
                 try:
                     from sqlalchemy import create_engine, text
                     from sqlalchemy.pool import NullPool
 
                     with _ENGINES_LOCK:
-                        if db_url not in _ENGINES:
-                            _ENGINES[db_url] = create_engine(db_url, poolclass=NullPool)
-                        engine = _ENGINES[db_url]
+                        now = time.time()
+                        cached = _ENGINES.get(db_url)
+                        # Check TTL expiration
+                        if cached and (now - cached[1]) > _ENGINE_TTL_SECONDS:
+                            # Expired - dispose and remove
+                            cached[0].dispose()
+                            del _ENGINES[db_url]
+                            cached = None
+
+                        if cached:
+                            _ENGINE_CACHE_HITS += 1
+                            engine = cached[0]
+                        else:
+                            _ENGINE_CACHE_MISSES += 1
+                            # Evict oldest if at capacity
+                            if len(_ENGINES) >= _MAX_ENGINES:
+                                oldest_url = min(_ENGINES.keys(), key=lambda k: _ENGINES[k][1])
+                                _ENGINES[oldest_url][0].dispose()
+                                del _ENGINES[oldest_url]
+                            engine = create_engine(db_url, poolclass=NullPool)
+                            _ENGINES[db_url] = (engine, now)
 
                     with engine.connect() as conn:
                         conn.execute(text("SELECT 1")).scalar()
