@@ -13,3 +13,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2026-03-28 - Actionable Empty States and Custom Component A11y
 **Learning:** Bare text for empty states or zero-results states is unhelpful. Users benefit from clear visual indicators (icons) and actionable next steps. Also, custom reusable components like dropdown triggers often forget `ariaLabel` props, making them inaccessible when they wrap icon-only buttons.
 **Action:** Always replace bare text empty states with an illustrative icon (e.g., from `lucide-react`), explanatory text, and a primary call-to-action button, utilizing existing DaisyUI utility classes (`bg-base-200/50`, `rounded-box`). Ensure custom UI components with icon-only triggers accept an optional `ariaLabel` prop with sensible default fallbacks.
+
+## 2024-04-14 - [Disabled Button Tooltips]
+**Learning:** In DaisyUI/Tailwind, disabled buttons swallow hover events, which prevents informative tooltips from appearing to explain *why* the button is disabled.
+**Action:** Wrap disabled buttons in a div containing the tooltip classes and dynamically apply `style={{ pointerEvents: 'none' }}` to the button itself when it is disabled, allowing the wrapper div to intercept the hover event and show the helpful tip.
