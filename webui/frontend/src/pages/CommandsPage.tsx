@@ -240,6 +240,7 @@ export default function CommandsPage() {
               className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
               onClick={() => setSearchParams({})}
               aria-label="Clear search"
+              title="Clear search"
             >
               <X size={16} />
             </button>
