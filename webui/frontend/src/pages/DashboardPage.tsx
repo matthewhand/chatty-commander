@@ -409,6 +409,8 @@ const DashboardPage = React.memo(() => {
             <div
               className={(!isConnected || (!commandInput.trim() && !isSending)) ? "tooltip" : ""}
               data-tip={!isConnected ? "System disconnected" : "Enter a command"}
+              role="tooltip"
+              aria-label={!isConnected ? "System disconnected" : "Enter a command"}
             >
               <button
                 type="submit"
