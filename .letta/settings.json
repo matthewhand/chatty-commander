@@ -39,7 +39,9 @@
       "Bash(cd /home/chatgpt/chatty-commander && git checkout -b fix/mypy-batch26-remaining && uv run mypy src 2>&1 | grep \"error:\" | head -35)",
       "Bash(cd /home/chatgpt/chatty-commander && git checkout -b fix/mypy-batch27-remaining && uv run mypy src 2>&1 | grep \"error:\")",
       "Bash(cd /home/chatgpt/chatty-commander && git checkout -b fix/mypy-batch28-remaining && uv run mypy src 2>&1 | grep \"error:\" | wc -l)",
-      "Bash(cd /home/chatgpt/chatty-commander && uv run mypy src 2>&1 | grep \"error:\" | head -20)"
+      "Bash(cd /home/chatgpt/chatty-commander && uv run mypy src 2>&1 | grep \"error:\" | head -20)",
+      "Bash(cd /home/chatgpt/chatty-commander && uv run python -c \"from chatty_commander.web.routes.core import _ENGINES, _ENGINE_CACHE_HITS; print('OK')\" 2>&1)",
+      "Bash(cd /home/chatgpt/chatty-commander && for f in tests/test_*.py; do count=$(grep -c \"def test_\" \"$f\" 2>/dev/null || echo 0); echo \"$count $f\"; done | sort -n | head -15)"
     ]
   }
 }
