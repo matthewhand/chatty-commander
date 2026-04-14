@@ -40,6 +40,9 @@ from chatty_commander.utils.security import mask_sensitive_data
 
 logger = logging.getLogger(__name__)
 
+_ENGINES: dict[str, Any] = {}
+_ENGINES_LOCK = threading.Lock()
+
 ALLOWED_CONFIG_KEYS = frozenset(
     {
         "general",
@@ -231,10 +234,13 @@ def include_core_routes(
                     from sqlalchemy import create_engine, text
                     from sqlalchemy.pool import NullPool
 
-                    engine = create_engine(db_url, poolclass=NullPool)
+                    with _ENGINES_LOCK:
+                        if db_url not in _ENGINES:
+                            _ENGINES[db_url] = create_engine(db_url, poolclass=NullPool)
+                        engine = _ENGINES[db_url]
+
                     with engine.connect() as conn:
                         conn.execute(text("SELECT 1")).scalar()
-                    engine.dispose()
                     return "healthy"
                 except Exception:
                     return "unreachable"
