@@ -121,22 +121,7 @@ class TestWakeWordDetectorBasic:
             with pytest.raises(ImportError, match="Voice dependencies not available"):
                 WakeWordDetector()
 
-    def test_default_wake_words(self):
-        """Test default wake words are set correctly."""
-        with patch("chatty_commander.voice.wakeword.VOICE_DEPS_AVAILABLE", False):
-            # This will fail but we can check the defaults were set
-            try:
-                WakeWordDetector()
-            except ImportError:
-                pass  # Expected
 
-    def test_default_threshold(self):
-        """Test default threshold is set correctly."""
-        with patch("chatty_commander.voice.wakeword.VOICE_DEPS_AVAILABLE", False):
-            try:
-                WakeWordDetector()
-            except ImportError:
-                pass  # Expected
 
 
 class TestLogger:
