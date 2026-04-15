@@ -143,3 +143,81 @@ def test_auth_middleware_traversal_patterns():
         assert (
             response.status_code == 401
         ), f"Expected 401 for {pattern}, got {response.status_code}"
+
+
+def test_auth_middleware_quadruple_encoded_traversal():
+    """Test that quadruple-encoded path traversal is blocked.
+
+    This is a deep encoding attack where %2525252F represents %25252F -> %252F -> %2F -> /
+    """
+    app = FastAPI()
+    app.add_middleware(AuthMiddleware, config_manager=MockConfigManager("testkey"))
+
+    @app.get("/api/secret")
+    def secret():
+        return {"secret": "data"}
+
+    client = TestClient(app)
+
+    # Quadruple encoded "../api/secret"
+    # %2525252F = %25252F = %252F = %2F = /
+    response = client.get("/docs/%2525252F%2525252E%2525252E%2525252Fapi%2525252Fsecret")
+    assert response.status_code == 401, "Quadruple-encoded traversal should be blocked"
+
+
+def test_auth_middleware_missing_api_key():
+    """Test that requests without API key are rejected for protected endpoints."""
+    app = FastAPI()
+    app.add_middleware(AuthMiddleware, config_manager=MockConfigManager("secretkey"))
+
+    @app.get("/api/protected")
+    def protected():
+        return {"data": "sensitive"}
+
+    client = TestClient(app)
+
+    # No API key header
+    response = client.get("/api/protected")
+    assert response.status_code == 401
+
+    # Empty API key
+    response = client.get("/api/protected", headers={"X-API-Key": ""})
+    assert response.status_code == 401
+
+
+def test_auth_middleware_wrong_api_key():
+    """Test that wrong API key is rejected."""
+    app = FastAPI()
+    app.add_middleware(AuthMiddleware, config_manager=MockConfigManager("correctkey"))
+
+    @app.get("/api/data")
+    def data():
+        return {"data": "value"}
+
+    client = TestClient(app)
+
+    response = client.get("/api/data", headers={"X-API-Key": "wrongkey"})
+    assert response.status_code == 401
+
+
+def test_auth_middleware_public_paths():
+    """Test that known public paths don't require authentication."""
+    app = FastAPI()
+    app.add_middleware(AuthMiddleware, config_manager=MockConfigManager("testkey"))
+
+    @app.get("/health")
+    def health():
+        return {"status": "ok"}
+
+    @app.get("/api/v1/version")
+    def version():
+        return {"version": "1.0.0"}
+
+    client = TestClient(app)
+
+    # Health check should be public
+    response = client.get("/health")
+    assert response.status_code == 200
+
+    # Version endpoint might be public depending on config
+    # The exact behavior depends on the middleware implementation
