@@ -366,6 +366,7 @@ const ConfigurationPage: React.FC = () => {
                   </div>
 
                   <select
+                    aria-label="Select Input Device"
                     className="select select-bordered select-sm w-full select-primary mb-4"
                     value={inputDevice}
                     onChange={(e) => setInputDevice(e.target.value)}
@@ -413,6 +414,7 @@ const ConfigurationPage: React.FC = () => {
                   </div>
 
                   <select
+                    aria-label="Select Output Device"
                     className="select select-bordered select-sm w-full select-secondary mb-4"
                     value={outputDevice}
                     onChange={(e) => setOutputDevice(e.target.value)}
@@ -509,6 +511,7 @@ const ConfigurationPage: React.FC = () => {
                      <span className="label-text-alt">Target State</span>
                    </label>
                    <select
+                    aria-label="Target State"
                     className="select select-bordered select-xs w-full"
                     value={uploadState}
                     onChange={(e) => setUploadState(e.target.value as "idle" | "computer" | "chatty")}
