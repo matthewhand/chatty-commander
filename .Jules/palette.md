@@ -13,3 +13,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2026-03-28 - Actionable Empty States and Custom Component A11y
 **Learning:** Bare text for empty states or zero-results states is unhelpful. Users benefit from clear visual indicators (icons) and actionable next steps. Also, custom reusable components like dropdown triggers often forget `ariaLabel` props, making them inaccessible when they wrap icon-only buttons.
 **Action:** Always replace bare text empty states with an illustrative icon (e.g., from `lucide-react`), explanatory text, and a primary call-to-action button, utilizing existing DaisyUI utility classes (`bg-base-200/50`, `rounded-box`). Ensure custom UI components with icon-only triggers accept an optional `ariaLabel` prop with sensible default fallbacks.
+
+## 2026-04-17 - Dynamic ARIA Labels in Custom Components
+**Learning:** Custom UI components with icon-only triggers or triggers that contain text often need accessible names. Hardcoding a default `aria-label` (like "Toggle dropdown") overrides the text content of the trigger, violating WCAG 2.5.3 (Label in Name) when the trigger contains text.
+**Action:** When creating custom components like dropdowns, fallback the `aria-label` to the trigger's string content if it exists, rather than a generic hardcoded string, ensuring text content remains accessible and usable with voice control.
