@@ -1,3 +1,6 @@
 ## 2024-06-25 - Explicit ID & Label Linking in Dynamic Components
 **Learning:** When building dynamic form lists in React (like mapping over an array of custom inputs), using implicit labels (`<label><input/></label>`) isn't always feasible, but simply placing `<label>` next to `<input>` with no mapping completely breaks screen reader association.
 **Action:** Always explicitly define uniquely generated IDs (e.g. ``id={`field-${index}`}``) and bind them directly using the `htmlFor` property on the label elements in dynamically generated components. Additionally, ensure bare `<textarea>` tags with placeholder text still have a proper `aria-label` or visually hidden label text to serve as the accessible name.
+## 2026-04-18 - Added ARIA Label to Dialog Backdrop Button
+**Learning:** When using DaisyUI's `<form method="dialog">` modal backdrop pattern, the visually hidden `<button>` needs a descriptive `aria-label` (e.g., `aria-label="Cancel command deletion"`) to provide proper context for screen reader users about what action is being performed, rather than relying on the generic 'close' text.
+**Action:** Always add descriptive `aria-label` attributes to backdrop buttons in modal dialogs to improve accessibility.
