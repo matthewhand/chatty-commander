@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -46,12 +45,11 @@ from typing import Any
 try:
     import uvicorn
 except ImportError:
-    uvicorn = None
+    uvicorn = None  # type: ignore[assignment]
 
 from collections import defaultdict
 
 from fastapi import FastAPI, Header, HTTPException, Request, WebSocket
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -63,32 +61,60 @@ from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
-from chatty_commander.web.routes.core import include_core_routes
+from chatty_commander.utils.security import constant_time_compare
+from chatty_commander.web.routes.core import ResponseTimeMiddleware, include_core_routes
+from chatty_commander.web.routes.system import include_system_routes
+
+try:
+    from chatty_commander.utils.logging_config import (
+        RequestIdMiddleware,
+        configure_logging,
+    )
+    _LOGGING_CONFIG_AVAILABLE = True
+except Exception:  # pragma: no cover
+    RequestIdMiddleware = None  # type: ignore[assignment,misc]
+    configure_logging = None  # type: ignore[assignment]
+    _LOGGING_CONFIG_AVAILABLE = False
+try:
+    from chatty_commander.obs.metrics import (
+        RequestMetricsMiddleware,
+        create_metrics_router,
+    )
+    _OBS_METRICS_AVAILABLE = True
+except Exception:  # pragma: no cover - optional dependency path
+    RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
+    create_metrics_router = None  # type: ignore[assignment]
+    _OBS_METRICS_AVAILABLE = False
+try:
+    from chatty_commander.web.routes.audio import include_audio_routes
+except ImportError:
+    include_audio_routes = None  # type: ignore[assignment]
 from chatty_commander.web.routes.version import router as version_router
+from chatty_commander.web.routes.voice import include_voice_routes
 from chatty_commander.web.routes.ws import include_ws_routes
 
 # Avatar routes (optional)
 try:
     from chatty_commander.web.routes.avatar_api import router as avatar_api_router
 except ImportError:
-    avatar_api_router = None
+    avatar_api_router = None  # type: ignore[assignment]
 
 try:
     from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
 except ImportError:
-    avatar_ws_router = None
+    avatar_ws_router = None  # type: ignore[assignment]
 
 try:
     from chatty_commander.web.routes.avatar_selector import (
         router as avatar_selector_router,
     )
 except ImportError:
-    avatar_selector_router = None
+    avatar_selector_router = None  # type: ignore[assignment]
 
 try:
     from .routes.agents import router as agents_router
 except ImportError:
-    agents_router = None
+    agents_router = None  # type: ignore[assignment]
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -129,11 +155,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers[
-            "Permissions-Policy"
-        ] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self' ws: wss:; "
+            "frame-ancestors 'none'"
+        )
 
         # Remove server header for security
         if "server" in response.headers:
@@ -142,37 +175,192 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Simple rate limiting middleware."""
+def get_client_ip(
+    request: Request,
+    trusted_proxies: list[str] | None = None,
+) -> str:
+    """
+    Securely extract the client IP from a request.
 
-    def __init__(self, app, requests_per_minute: int = 60):
+    This function prevents IP spoofing by only trusting X-Forwarded-For
+    headers when the immediate connection comes from a trusted proxy.
+
+    Args:
+        request: The FastAPI/Starlette request object
+        trusted_proxies: List of trusted proxy IP addresses or CIDR ranges.
+            If None or empty, only the direct connection IP is used.
+
+    Returns:
+        The client IP address (or "unknown" if unavailable)
+    """
+    # Get the direct connection IP
+    direct_ip = request.client.host if request.client else None
+    if not direct_ip:
+        return "unknown"
+
+    # If no trusted proxies are configured, always use the direct connection IP
+    # This prevents IP spoofing attacks via forged headers
+    if not trusted_proxies:
+        return direct_ip
+
+    # Check if the direct connection is from a trusted proxy
+    from ipaddress import ip_address, ip_network
+
+    try:
+        direct_addr = ip_address(direct_ip)
+    except ValueError:
+        return direct_ip  # Invalid IP format, fall back to direct
+
+    is_trusted_proxy = False
+    for proxy in trusted_proxies:
+        try:
+            if "/" in proxy:
+                # CIDR range (e.g., "10.0.0.0/8")
+                network = ip_network(proxy, strict=False)
+                if direct_addr in network:
+                    is_trusted_proxy = True
+                    break
+            else:
+                # Single IP address
+                if direct_addr == ip_address(proxy):
+                    is_trusted_proxy = True
+                    break
+        except ValueError:
+            continue  # Skip invalid proxy definitions
+
+    # If not from a trusted proxy, use direct IP (ignore headers to prevent spoofing)
+    if not is_trusted_proxy:
+        return direct_ip
+
+    # From a trusted proxy - safely extract real client IP from headers
+    # X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2, ...
+    # The rightmost non-trusted IP is the actual client
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        # Parse the header value (format: "client, proxy1, proxy2")
+        ips = [ip.strip() for ip in forwarded_for.split(",")]
+        # Walk backwards from the rightmost IP to find the first non-trusted one
+        for ip_str in reversed(ips):
+            try:
+                ip_addr = ip_address(ip_str)
+                # Check if this IP is NOT a trusted proxy
+                is_proxy = False
+                for proxy in trusted_proxies:
+                    try:
+                        if "/" in proxy:
+                            if ip_addr in ip_network(proxy, strict=False):
+                                is_proxy = True
+                                break
+                        else:
+                            if ip_addr == ip_address(proxy):
+                                is_proxy = True
+                                break
+                    except ValueError:
+                        continue
+                if not is_proxy:
+                    return ip_str
+            except ValueError:
+                continue  # Skip invalid IPs
+
+    # Fall back to X-Real-IP if X-Forwarded-For didn't yield a valid client IP
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        try:
+            ip_addr = ip_address(real_ip)
+            # Verify it's not a trusted proxy IP
+            is_proxy = False
+            for proxy in trusted_proxies:
+                try:
+                    if "/" in proxy:
+                        if ip_addr in ip_network(proxy, strict=False):
+                            is_proxy = True
+                            break
+                    else:
+                        if ip_addr == ip_address(proxy):
+                            is_proxy = True
+                            break
+                except ValueError:
+                    continue
+            if not is_proxy:
+                return real_ip
+        except ValueError:
+            pass
+
+    # If we couldn't extract a valid client IP from headers, use direct IP
+    return direct_ip
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Simple rate limiting middleware with secure client IP extraction."""
+
+    def __init__(
+        self,
+        app,
+        requests_per_minute: int = 60,
+        trusted_proxies: list[str] | None = None,
+    ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
-        self.requests = defaultdict(list)
+        self.requests: defaultdict[str, list[float]] = defaultdict(list)
+        self.trusted_proxies = trusted_proxies or []
+        self._last_cleanup = time.time()
 
     async def dispatch(self, request: Request, call_next):
-        client_ip = request.client.host if request.client else "unknown"
+        # Use secure IP extraction to prevent spoofing
+        client_ip = get_client_ip(request, self.trusted_proxies)
 
-        # Clean old requests
         current_time = time.time()
-        self.requests[client_ip] = [
-            req_time
-            for req_time in self.requests[client_ip]
-            if current_time - req_time < 60
-        ]
+
+        # Periodic global cleanup: evict stale IP entries to prevent
+        # memory exhaustion from many unique IPs
+        if current_time - self._last_cleanup > 60:
+            self._last_cleanup = current_time
+            for ip in list(self.requests):
+                self.requests[ip] = [
+                    t for t in self.requests[ip] if current_time - t < 60
+                ]
+                if not self.requests[ip]:
+                    del self.requests[ip]
+        else:
+            # Clean only current IP's old requests
+            self.requests[client_ip] = [
+                req_time
+                for req_time in self.requests[client_ip]
+                if current_time - req_time < 60
+            ]
+
+        # Compute rate limit headers
+        request_count = len(self.requests[client_ip])
+        remaining = max(0, self.requests_per_minute - request_count)
+        if self.requests[client_ip]:
+            oldest = min(self.requests[client_ip])
+            reset_time = int(oldest + 60)
+        else:
+            reset_time = int(current_time + 60)
+        rate_limit_headers = {
+            "X-RateLimit-Limit": str(self.requests_per_minute),
+            "X-RateLimit-Remaining": str(remaining),
+            "X-RateLimit-Reset": str(reset_time),
+        }
 
         # Check rate limit
-        if len(self.requests[client_ip]) >= self.requests_per_minute:
+        if request_count >= self.requests_per_minute:
             return HTMLResponse(
                 content="Rate limit exceeded. Please try again later.",
                 status_code=429,
-                headers={"Retry-After": "60"},
+                headers={"Retry-After": "60", **rate_limit_headers},
             )
 
         # Add current request
         self.requests[client_ip].append(current_time)
+        # Update remaining after recording this request
+        rate_limit_headers["X-RateLimit-Remaining"] = str(
+            max(0, self.requests_per_minute - len(self.requests[client_ip]))
+        )
 
         response = await call_next(request)
+        for header_name, header_value in rate_limit_headers.items():
+            response.headers[header_name] = header_value
         return response
 
 
@@ -234,6 +422,7 @@ class WebModeServer:
         self.no_auth = bool(no_auth)
         self.start_time = time.time()
         self.last_command: str | None = None
+        self.commands_executed: int = 0
         self.last_state_change = datetime.now()
 
         # Performance optimizations
@@ -244,7 +433,7 @@ class WebModeServer:
 
         # Optional advisors service (enabled via config)
         try:
-            self.advisors_service = AdvisorsService(config=config_manager)
+            self.advisors_service = AdvisorsService(config=config_manager)  # type: ignore[arg-type]
         except Exception as e:  # noqa: BLE001
             logger.debug(
                 "AdvisorsService init failed; continuing without advisors: %s", e
@@ -254,15 +443,69 @@ class WebModeServer:
         # WebSocket connection management
         self.active_connections: set[WebSocket] = set()
 
+        # Telemetry task lifecycle management
+        self._telemetry_task: asyncio.Task | None = None  # type: ignore[type-arg]
+        self._telemetry_running: bool = False
+
         # Initialize FastAPI app and register routes
         self.app = self._create_app()
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+        # Register startup/shutdown handlers for telemetry lifecycle
+        @self.app.on_event("startup")
+        async def start_telemetry_loop() -> None:
+            self._telemetry_running = True
+            self._telemetry_task = asyncio.create_task(self._telemetry_loop())
+
+        @self.app.on_event("shutdown")
+        async def stop_telemetry_loop() -> None:
+            self._telemetry_running = False
+            if self._telemetry_task and not self._telemetry_task.done():
+                self._telemetry_task.cancel()
+                try:
+                    await self._telemetry_task
+                except asyncio.CancelledError:
+                    pass
+            self._telemetry_task = None
+
+    async def _telemetry_loop(self) -> None:
+        """Background task to broadcast system telemetry.
+
+        Runs until _telemetry_running is False or the task is cancelled.
+        """
+        while self._telemetry_running:
+            try:
+                import psutil
+
+                cpu = psutil.cpu_percent(interval=None)
+                memory = psutil.virtual_memory().percent
+
+                await self._broadcast_message(
+                    WebSocketMessage(
+                        type="telemetry",
+                        data={
+                            "cpu": cpu,
+                            "memory": memory,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                    )
+                )
+            except asyncio.CancelledError:
+                raise  # Allow cancellation to propagate
+            except Exception as e:  # noqa: BLE001
+                logger.debug("Telemetry loop error: %s", e)
+
+            await asyncio.sleep(2.0)
+
     @property
     def config(self) -> Config:
         """Access config manager as 'config' for compatibility."""
         return self.config_manager
+
+    def _execute_command_wrapper(self, cmd: str) -> Any:
+        self.commands_executed += 1
+        return self.command_executor.execute_command(cmd)
 
     def _clear_expired_cache(self) -> None:
         """Clear expired cache entries to prevent memory leaks."""
@@ -311,6 +554,11 @@ class WebModeServer:
     # App and routing
     # --------------------------
     def _create_app(self) -> FastAPI:
+        # Configure logging based on environment variables (LOG_FORMAT, LOG_LEVEL)
+        # This is idempotent — safe to call multiple times.
+        if _LOGGING_CONFIG_AVAILABLE and configure_logging is not None:
+            configure_logging()
+
         app = FastAPI(
             title="ChattyCommander API",
             description="Voice command automation system with web interface",
@@ -319,18 +567,51 @@ class WebModeServer:
             redoc_url="/redoc" if self.no_auth else None,
         )
 
+        # Request ID middleware — must be outermost so all downstream middleware
+        # and handlers see the request_id in their log context.
+        if _LOGGING_CONFIG_AVAILABLE and RequestIdMiddleware is not None:
+            app.add_middleware(RequestIdMiddleware)
+
+        # Observability: request metrics middleware (must be added before other middleware
+        # so it wraps the full request lifecycle)
+        if _OBS_METRICS_AVAILABLE and RequestMetricsMiddleware is not None:
+            app.add_middleware(RequestMetricsMiddleware)
+
         # Security middleware
         app.add_middleware(SecurityHeadersMiddleware)
-        app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
 
-        # CORS policy
+        # Auth middleware (protects /api routes globally)
+        from chatty_commander.web.middleware.auth import AuthMiddleware
+
         app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"] if self.no_auth else ["http://localhost:3000"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
+            AuthMiddleware, config_manager=self.config_manager, no_auth=self.no_auth
         )
+
+        # Get trusted proxies from config (for secure IP extraction behind proxies)
+        trusted_proxies: list[str] = []
+        if hasattr(self.config_manager, "web_server"):
+            trusted_proxies = self.config_manager.web_server.get("trusted_proxies", [])
+        if not trusted_proxies:
+            # Default: trust common private proxy ranges for Docker/Kubernetes
+            trusted_proxies = [
+                "127.0.0.1",
+                "::1",
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16",
+            ]
+
+        app.add_middleware(
+            RateLimitMiddleware,
+            requests_per_minute=10000,
+            trusted_proxies=trusted_proxies,
+        )
+
+        app.add_middleware(ResponseTimeMiddleware)
+
+        # CORS policy — delegate to shared apply_cors() for consistency
+        from chatty_commander.web.auth import apply_cors
+        apply_cors(app, no_auth=self.no_auth)
 
         # Core REST via extracted router (status/config/state/command)
         core = include_core_routes(
@@ -339,14 +620,36 @@ class WebModeServer:
             get_config_manager=lambda: self.config_manager,
             get_last_command=lambda: self.last_command,
             get_last_state_change=lambda: self.last_state_change,
-            execute_command_fn=lambda cmd: self.command_executor.execute_command(cmd),
+            execute_command_fn=self._execute_command_wrapper,
             get_active_connections=lambda: len(self.active_connections),
             get_cache_size=lambda: len(self._command_cache) + len(self._state_cache),
+            get_total_commands=lambda: self.commands_executed,
         )
         app.include_router(core)
 
+        # Audio endpoints
+        if include_audio_routes is not None:
+            audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
+            app.include_router(audio)
+
+        # Voice routing
+        voice = include_voice_routes(
+            get_config_manager=lambda: self.config_manager,
+        )
+        app.include_router(voice)
+
         # Version endpoint
         app.include_router(version_router)
+
+        # System info endpoints
+        system_routes = include_system_routes(
+            get_start_time=lambda: self.start_time
+        )
+        app.include_router(system_routes)
+
+        # Observability: expose /metrics/json and /metrics/prom endpoints
+        if _OBS_METRICS_AVAILABLE and create_metrics_router is not None:
+            app.include_router(create_metrics_router())
 
         # Agents endpoints
         if agents_router:
@@ -386,10 +689,38 @@ class WebModeServer:
 
         # Serve static web UI (optional)
         frontend_path = Path("webui/frontend/dist")
+        if not frontend_path.exists():
+            frontend_path = Path("webui/frontend/build")
+        if not frontend_path.exists():
+            logger.info("Frontend build not found. Automagically building the frontend UI...")
+            try:
+                import subprocess
+                import sys
+
+                # Check if npm is available
+                subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+                logger.info("Installing frontend dependencies...")
+                subprocess.run(["npm", "install", "--no-audit", "--no-fund", "--legacy-peer-deps"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
+
+                logger.info("Building frontend assets...")
+                subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
+
+                if Path("webui/frontend/dist").exists():
+                    frontend_path = Path("webui/frontend/dist")
+                elif Path("webui/frontend/build").exists():
+                    frontend_path = Path("webui/frontend/build")
+            except FileNotFoundError:
+                logger.error("Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/.")
+            except Exception as e:
+                logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
+
         if frontend_path.exists():
-            app.mount(
-                "/static", StaticFiles(directory=str(frontend_path)), name="static"
-            )
+            static_assets = frontend_path / "assets"
+            if static_assets.exists():
+                app.mount(
+                    "/assets", StaticFiles(directory=str(static_assets)), name="assets"
+                )
 
             @app.get("/", response_class=HTMLResponse)
             async def _serve_frontend():  # pragma: no cover - exercised in integration
@@ -403,10 +734,26 @@ class WebModeServer:
         else:
             # Fallback route when frontend is not built
             @app.get("/", response_class=HTMLResponse)
-            async def _serve_frontend_fallback():  # pragma: no cover - exercised in integration
+            async def _serve_frontend_fallback():  # pragma: no cover
                 return HTMLResponse(
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
+
+        # SPA Catch-all: serve index.html for any non-API routes
+        # This allows React Router to handle deep linking (e.g. /dashboard)
+        if frontend_path.exists():
+            @app.exception_handler(404)
+            async def spa_fallback(request: Request, exc: HTTPException):
+                # If API or static file request fails, let it 404.
+                # Otherwise, serve index.html for SPA routing.
+                if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
+                     return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
+
+                index_file = frontend_path / "index.html"
+                if index_file.exists():
+                    return FileResponse(str(index_file))
+                return HTMLResponse("Not Found", status_code=404)
+
 
         # Optional avatar UI
         avatar_path = Path("src/chatty_commander/webui/avatar")
@@ -433,8 +780,35 @@ class WebModeServer:
     def _register_advisors_routes(self, app: FastAPI) -> None:
         """Register advisors REST endpoints backed by AdvisorsService."""
 
+        @app.get("/api/v1/advisors/personas")
+        async def advisor_personas():
+            # Return seed data for testing
+            if self.no_auth:
+                return {"personas": [
+                    {"id": "jarvis", "name": "Jarvis", "is_default": True, "system_prompt": "You are a helpful AI assistant named Jarvis."},
+                    {"id": "friday", "name": "Friday", "is_default": False, "system_prompt": "You are a witty AI named Friday."},
+                    {"id": "hal", "name": "HAL 9000", "is_default": False, "system_prompt": "You are a calm, ominous AI."},
+                ]}
+            # Production: use advisors_service if available
+            svc = self.advisors_service
+            if not svc:
+                return {"personas": []}
+            return {"personas": getattr(svc, "get_personas", lambda: [])()}
+
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
-        async def advisor_message(message: AdvisorInbound):
+        async def advisor_message(
+            message: AdvisorInbound,
+            x_api_key: str | None = Header(None, alias="X-API-Key"),
+        ):
+            # Check authentication
+            if not self.no_auth:
+                expected_key = None
+                if hasattr(self.config_manager, "auth"):
+                    expected_key = self.config_manager.auth.get("api_key")
+
+                if not expected_key or not constant_time_compare(x_api_key, expected_key):
+                    raise HTTPException(status_code=401, detail="Unauthorized")
+
             if not self.advisors_service:
                 raise HTTPException(status_code=500, detail="Advisors unavailable")
             try:
@@ -535,12 +909,12 @@ class WebModeServer:
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
             # Check for bridge token in header
-            expected_token = os.getenv("BRIDGE_TOKEN")
+            expected_token = self.config_manager.web_server.get("bridge_token")
             if not expected_token:
-                raise HTTPException(
-                    status_code=500, detail="Bridge token not configured"
-                )
-            if not x_bridge_token or x_bridge_token != expected_token:
+                logger.warning("Bridge token not configured; rejecting request")
+                raise HTTPException(status_code=401, detail="Bridge not configured")
+
+            if not constant_time_compare(x_bridge_token, expected_token):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
             # For now, just echo back the event
@@ -592,6 +966,7 @@ class WebModeServer:
 
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:
+        self.commands_executed += 1
         self.last_command = command
         try:
             loop = asyncio.get_event_loop()

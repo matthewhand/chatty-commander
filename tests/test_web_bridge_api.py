@@ -1,25 +1,3 @@
-# MIT License
-#
-# Copyright (c) 2024 mhand
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -27,6 +5,7 @@ from fastapi.testclient import TestClient
 from chatty_commander.app import CommandExecutor
 from chatty_commander.app.model_manager import ModelManager
 from chatty_commander.app.state_manager import StateManager
+from chatty_commander.web.server import create_app
 from chatty_commander.web.web_mode import WebModeServer
 
 
@@ -52,6 +31,7 @@ class DummyConfig:
             },
             "bridge": {"token": "secret", "url": "http://localhost:3001"},
         }
+        self.web_server = {"bridge_token": "secret"}
 
 
 def build_server():
@@ -92,4 +72,15 @@ def test_bridge_event_ok_with_secret():
     assert resp.status_code == 200
     data = resp.json()
     assert data["ok"] is True
-    assert data["reply"]["text"] is not None
+    assert isinstance(data["reply"]["text"], str)
+
+
+def test_bridge_unauthorized_without_token():
+    """Bridge endpoint rejects requests when no token is provided (via create_app)."""
+    bridge_app = create_app(no_auth=True)
+    bridge_client = TestClient(bridge_app)
+    r = bridge_client.post(
+        "/bridge/event",
+        json={"platform": "x", "channel": "y", "user": "u", "text": "hi"},
+    )
+    assert r.status_code == 401

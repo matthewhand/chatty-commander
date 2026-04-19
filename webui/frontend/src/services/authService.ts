@@ -1,18 +1,14 @@
-interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-interface TokenResponse {
+export interface TokenResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
 }
 
-interface User {
+export interface User {
   username: string;
   is_active: boolean;
   roles: string[];
+  noAuth?: boolean;
 }
 
 class AuthService {
@@ -36,21 +32,42 @@ class AuthService {
 
   async getCurrentUser(): Promise<User> {
     const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No token available");
+
+    if (token) {
+      try {
+        const response = await fetch(`${this.baseUrl}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (e) {
+        console.warn("Auth check failed with token", e);
+      }
     }
 
-    const response = await fetch(`${this.baseUrl}/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Check for no-auth mode by hitting the config endpoint
+    try {
+      // In development/test, window.location might not match API location if proxied incorrectly.
+      // But usually relative path works if served by Vite proxy or same origin.
 
-    if (!response.ok) {
-      throw new Error("Failed to get user info");
+      const configUrl = `${this.baseUrl}/config`;
+      console.log(`Checking no-auth mode at ${configUrl}`);
+
+      const confRes = await fetch(configUrl);
+      if (confRes.ok) {
+        console.log("No-auth mode detected via config endpoint");
+        return { username: 'local_admin', roles: ['admin'], is_active: true, noAuth: true };
+      } else {
+         console.log("Config endpoint returned non-200", confRes.status);
+         // Fallback: If we get a 200 from ANY public endpoint, we might assume no-auth if auth endpoints fail?
+         // No, that's risky. But for this specific bug, maybe the URL is just missing the /api prefix or similar.
+      }
+    } catch (e) {
+      console.error("Failed to check no-auth mode", e);
     }
 
-    return response.json();
+    throw new Error("Authentication required");
   }
 
   logout(): void {

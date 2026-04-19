@@ -97,6 +97,29 @@
       "okay_stop"
     ]
   },
+  "wakeword_state_map": {
+    "hey_chat_tee": "chatty",
+    "hey_khum_puter": "computer",
+    "okay_stop": "idle"
+  },
+  "state_transitions": {
+    "idle": {
+      "hey_chat_tee": "chatty",
+      "hey_khum_puter": "computer",
+      "toggle_mode": "computer"
+    },
+    "computer": {
+      "okay_stop": "idle",
+      "that_ill_do": "idle",
+      "toggle_mode": "chatty"
+    },
+    "chatty": {
+      "hey_khum_puter": "computer",
+      "okay_stop": "idle",
+      "thanks_chat_tee": "idle",
+      "toggle_mode": "idle"
+    }
+  },
   "model_paths": {
     "idle": "models-idle",
     "computer": "models-computer",
@@ -125,26 +148,5 @@
     "telemetry_url": "",
     "external_url": "",
     "diagnostics_file": "logs/diagnostics.jsonl"
-  },
-  "general": {
-    "debug_mode": true,
-    "test_key": "test_value",
-    "git_test": true,
-    "check_for_updates": true,
-    "custom_setting": "custom_value",
-    "another_key": "another_value",
-    "inference_framework": "custom",
-    "start_on_boot": true,
-    "test_bool": true,
-    "test_int": 42,
-    "test": "value",
-    "final_test": true
-  },
-  "web_server": {
-    "host": "0.0.0.0",
-    "port": 8100,
-    "auth_enabled": true
-  },
-  "voice_only": false,
-  "default_state": "idle"
+  }
 }

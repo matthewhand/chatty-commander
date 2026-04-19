@@ -253,3 +253,28 @@ data/advisors_memory.jsonl
 
 # Serena memories
 .seren/
+
+# Markdown files
+# *.md
+# !README.md
+# !LICENSE
+
+# Ignore markdown files in subdirectories
+# **/*.md
+
+# Wakewords directory
+wakewords/
+
+# Test results
+test-results/
+**/test-results/
+
+# Playwright reports
+playwright-report/
+**/playwright-report/
+
+# Kubernetes configurations
+k8s/
+**/k8s/
+build/
+.serena/

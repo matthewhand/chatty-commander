@@ -1,301 +1,397 @@
-# MIT License
-#
-# Copyright (c) 2024 mhand
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+"""Tests for chatty_commander.app.config.Config — defaults, properties, actions, updates."""
 
 import json
-import shutil
-import tempfile
+import os
+from itertools import product
 from pathlib import Path
-from typing import Any
-from unittest.mock import Mock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from test_assertions import TestAssertions
-from test_data_factories import TestDataFactory
 
 from chatty_commander.app.config import Config
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-class TestConfig:
-    """
-    Comprehensive tests for the Config module.
-    """
+
+def _write_tmp_config(tmp_path: Path, data: dict) -> Path:
+    cfg_path = tmp_path / "config.json"
+    cfg_path.write_text(json.dumps(data), encoding="utf-8")
+    return cfg_path
+
+
+def _clean_env_config(monkeypatch):
+    """Return a Config with all env overrides removed."""
+    for name in (
+        "CHATCOMM_DEBUG",
+        "CHATCOMM_DEFAULT_STATE",
+        "CHATCOMM_INFERENCE_FRAMEWORK",
+        "CHATCOMM_START_ON_BOOT",
+        "CHATCOMM_CHECK_FOR_UPDATES",
+        "CHATBOT_ENDPOINT",
+        "HOME_ASSISTANT_ENDPOINT",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    return Config(config_file="")
+
+
+# ---------------------------------------------------------------------------
+# Defaults & validation
+# ---------------------------------------------------------------------------
+
+
+class TestConfigDefaults:
+    @pytest.fixture
+    def cfg_file(self, tmp_path):
+        return str(tmp_path / "config.json")
 
     @pytest.fixture
-    def temp_dir(self) -> Path:
-        """Provide a temporary directory for tests that need file system access."""
-        temp_path = Path(tempfile.mkdtemp(prefix="chatty_test_"))
-        yield temp_path
-        # Cleanup
+    def empty_cfg(self, cfg_file):
+        with open(cfg_file, "w") as f:
+            json.dump({}, f)
+        return cfg_file
 
-        shutil.rmtree(temp_path)  # Remove directory and all contents
+    def test_defaults_load_correctly(self, empty_cfg):
+        config = Config(empty_cfg)
+        assert config.default_state == "idle"
+        assert config.general_models_path == "models-idle"
+        assert len(config.commands) > 0
+        assert "hello" in config.commands
+        assert config.voice_only is False
 
-    @pytest.fixture
-    def temp_file(self, temp_dir: Path) -> Path:
-        """Provide a temporary file for tests."""
-        temp_file = temp_dir / "test_config.json"
-        yield temp_file
-        # File is cleaned up by temp_dir fixture
+    def test_missing_config_file_uses_defaults(self, tmp_path):
+        missing = str(tmp_path / "nonexistent.json")
+        config = Config(missing)
+        assert isinstance(config.commands, dict)
+        assert len(config.commands) > 0
+        assert isinstance(config.config_data, dict)
 
-    @pytest.fixture
-    def mock_config(self) -> Mock:
-        """Provide a properly configured mock Config object."""
-        return TestDataFactory.create_mock_config()
+    def test_validate_config_bad_types(self, cfg_file):
+        data = {
+            "state_models": "not_a_dict",
+            "api_endpoints": ["not", "a", "dict"],
+            "commands": 123,
+        }
+        with open(cfg_file, "w") as f:
+            json.dump(data, f)
+        config = Config(cfg_file)
+        assert isinstance(config.state_models, dict)
+        assert isinstance(config.api_endpoints, dict)
+        assert isinstance(config.commands, dict)
+        assert config.state_models == {}
 
-    @pytest.mark.config
-    @pytest.mark.parametrize("config_file", ["", "test.json", "config/test.json"])
-    def test_config_initialization_variations(
-        self, config_file: str, temp_dir: Path
-    ) -> None:
-        """
-        Test Config initialization with various file paths.
+    def test_state_transitions(self, cfg_file):
+        data = {
+            "state_transitions": {
+                "idle": {"wakeword_1": "active"},
+                "active": {"wakeword_2": "idle"},
+            }
+        }
+        with open(cfg_file, "w") as f:
+            json.dump(data, f)
+        config = Config(cfg_file)
+        assert config.state_transitions["idle"]["wakeword_1"] == "active"
+        assert config.state_transitions["active"]["wakeword_2"] == "idle"
 
-        Ensures Config can handle different file path scenarios including
-        empty paths, relative paths, and nested directory paths.
-        """
-        if config_file and not config_file.startswith("/"):
-            config_file = str(temp_dir / config_file)
+    def test_env_overrides_default_state(self, cfg_file):
+        with open(cfg_file, "w") as f:
+            json.dump({"default_state": "idle"}, f)
+        with patch.dict(os.environ, {"CHATCOMM_DEFAULT_STATE": "super_active"}):
+            config = Config(cfg_file)
+            assert config.default_state == "super_active"
 
-        config = Config(config_file)
-        assert hasattr(
-            config, "config_data"
-        ), "Config should have config_data attribute"
-        assert hasattr(config, "config"), "Config should have config attribute"
-        assert isinstance(
-            config.config_data, dict
-        ), "config_data should be a dictionary"
+    def test_env_endpoint_overrides(self, cfg_file):
+        with open(cfg_file, "w") as f:
+            json.dump({}, f)
+        with patch.dict(
+            os.environ,
+            {
+                "CHATBOT_ENDPOINT": "http://override.local/",
+                "HOME_ASSISTANT_ENDPOINT": "http://ha.local/api",
+            },
+        ):
+            c = Config(config_file=cfg_file)
+            assert c.api_endpoints["chatbot_endpoint"] == "http://override.local/"
+            assert c.api_endpoints["home_assistant"] == "http://ha.local/api"
 
-    @pytest.mark.config
-    @pytest.mark.error_handling
-    @pytest.mark.parametrize(
-        "invalid_json,expected_error",
-        [
-            ("{invalid json", "JSONDecodeError"),
-            ('{"incomplete": json}', "JSONDecodeError"),
-            ("null", "JSONDecodeError"),
-            ("undefined", "JSONDecodeError"),
-            ('{"key": value}', "JSONDecodeError"),
-        ],
-    )
-    def test_config_invalid_json_handling(
-        self, invalid_json: str, expected_error: str, temp_file: Path
-    ) -> None:
-        """
-        Test Config handles invalid JSON gracefully.
+    def test_env_general_setting_overrides(self, cfg_file):
+        data = {
+            "general_settings": {
+                "debug_mode": False,
+                "default_state": "idle",
+                "inference_framework": "onnx",
+                "start_on_boot": False,
+                "check_for_updates": True,
+            }
+        }
+        with open(cfg_file, "w") as f:
+            json.dump(data, f)
+        with patch.dict(
+            os.environ,
+            {
+                "CHATCOMM_DEBUG": "TrUe",
+                "CHATCOMM_DEFAULT_STATE": "computer",
+                "CHATCOMM_INFERENCE_FRAMEWORK": "pytorch",
+                "CHATCOMM_START_ON_BOOT": "YeS",
+                "CHATCOMM_CHECK_FOR_UPDATES": "0",
+            },
+        ):
+            c = Config(config_file=cfg_file)
+            assert c.debug_mode is True
+            assert c.default_state == "computer"
+            assert c.inference_framework == "pytorch"
+            assert c.start_on_boot is True
+            assert c.check_for_updates is False
 
-        Verifies that Config can recover from corrupted JSON files
-        and provides sensible defaults.
-        """
-        # Write invalid JSON to temp file
-        temp_file.write_text(invalid_json)
+    def test_reload_config(self, cfg_file):
+        with open(cfg_file, "w") as f:
+            json.dump({"default_state": "idle"}, f)
+        config = Config(cfg_file)
+        assert config.default_state == "idle"
+        with open(cfg_file, "w") as f:
+            json.dump({"default_state": "reloaded"}, f)
+        assert config.reload_config() is True
+        assert config.default_state == "reloaded"
 
-        # Config should handle invalid JSON gracefully by using empty dict as fallback
-        config = Config(str(temp_file))
-
-        # Use custom assertion helper
-        TestAssertions.assert_config_valid(config)
-        assert config.config_data == {}, f"Should handle {expected_error} gracefully"
-
-    @pytest.mark.parametrize(
-        "missing_keys,expected_default",
-        [
-            ("default_state", "idle"),
-            ("general_models_path", "models-idle"),
-            ("system_models_path", "models-computer"),
-            ("chat_models_path", "models-chatty"),
-            ("state_models", {}),
-            (
-                "api_endpoints",
-                lambda: {
-                    "home_assistant": "http://homeassistant.domain.home:8123/api",
-                    "chatbot_endpoint": "http://localhost:3100/",
-                },
-            ),
-            ("wakeword_state_map", {}),
-            ("state_transitions", {}),
-            ("commands", {}),
-            (
-                "advisors",
-                lambda: {
-                    "enabled": False,
-                    "llm_api_mode": "completion",
-                    "model": "gpt-oss20b",
-                },
-            ),
-            ("voice_only", False),
-        ],
-    )
-    def test_config_missing_keys_defaults(
-        self, missing_keys: str, expected_default: Any, temp_file: Path
-    ) -> None:
-        """
-        Test Config provides sensible defaults for missing configuration keys.
-
-        Ensures that Config gracefully handles missing configuration keys
-        by providing appropriate default values.
-        """
-        # Create a complete config data
-        config_data = TestDataFactory.create_valid_config_data()
-
-        # Remove only the specific key we're testing
-        if missing_keys in config_data:
-            del config_data[missing_keys]
-
-        temp_file.write_text(json.dumps(config_data))
-
-        config = Config(str(temp_file))
-
-        # Check that defaults are applied by accessing the instance attributes
-        if callable(expected_default):
-            expected_value = expected_default()
-            assert (
-                getattr(config, missing_keys) == expected_value
-            ), f"Should provide default {expected_value} for missing key {missing_keys}"
-        else:
-            assert (
-                getattr(config, missing_keys) == expected_default
-            ), f"Should provide default {expected_default} for missing key {missing_keys}"
-
-    @pytest.mark.parametrize("state", ["idle", "computer", "chatty", "invalid"])
-    def test_config_state_validation(self, state):
-        """Test Config state validation."""
+    def test_state_model_permutations(self):
         config = Config()
-        config.default_state = state
-        # Should not raise exception for valid states
-        if state in ["idle", "computer", "chatty"]:
-            assert config.default_state == state
-        else:
-            # Invalid state should be handled gracefully
-            assert config.default_state == state  # Config doesn't validate
+        states = ["idle", "computer", "chatty"]
+        models = [["model1"], ["model1", "model2"], []]
+        for state, model_list in product(states, models):
+            config.state_models[state] = model_list
+            config.validate()
+            assert config.state_models[state] == model_list
 
-    @pytest.mark.parametrize(
-        "model_path",
-        [
-            "/valid/path",
-            "relative/path",
-            "",
-            None,
-            "~/user/path",
-            "/path/with spaces",
-            "/path/with/special-chars!@#",
-        ],
-    )
-    def test_config_model_path_handling(self, model_path):
-        """Test Config handles various model path formats."""
+
+# ---------------------------------------------------------------------------
+# Property getters / setters (GeneralSettings proxy)
+# ---------------------------------------------------------------------------
+
+
+class TestConfigProperties:
+    def test_all_general_settings_properties(self):
         config = Config()
-        config.general_models_path = model_path
-        assert config.general_models_path == model_path
+        gs = config.general_settings
 
-    @pytest.mark.parametrize(
-        "endpoint_config",
-        [
-            {"home_assistant": "http://localhost:8123"},
-            {"chatbot_endpoint": "http://localhost:3100"},
-            {"custom_endpoint": "https://api.example.com"},
-            {},
-            {"multiple": "endpoints", "here": "too"},
-        ],
-    )
-    def test_config_api_endpoints_variations(self, endpoint_config):
-        """Test Config handles various API endpoint configurations."""
+        framework = gs.inference_framework
+        assert isinstance(framework, str) and len(framework) > 0
+        gs.inference_framework = "pytorch"
+        assert gs.inference_framework == "pytorch"
+        gs.inference_framework = "onnx"
+
+        start_boot = gs.start_on_boot
+        assert type(start_boot) is bool
+        gs.start_on_boot = True
+        assert gs.start_on_boot is True
+        gs.start_on_boot = False
+        assert gs.start_on_boot is False
+
+        check_updates = gs.check_for_updates
+        assert type(check_updates) is bool
+        gs.check_for_updates = True
+        assert gs.check_for_updates is True
+        gs.check_for_updates = False
+        assert gs.check_for_updates is False
+
+        debug = gs.debug_mode
+        assert type(debug) is bool
+        gs.debug_mode = True
+        assert gs.debug_mode is True
+        gs.debug_mode = False
+        assert gs.debug_mode is False
+
+    def test_property_setters_with_type_conversion(self):
         config = Config()
-        config.api_endpoints = endpoint_config
-        assert config.api_endpoints == endpoint_config
+        gs = config.general_settings
 
-    @pytest.mark.parametrize(
-        "command_config",
-        [
-            {"hello": {"action": "custom_message", "message": "Hi!"}},
-            {"screenshot": {"action": "keypress", "keys": "f12"}},
-            {"invalid": {"action": "unknown", "param": "value"}},
-            {},
-            {"multiple": {"action": "shell", "cmd": "echo test"}},
-        ],
-    )
-    def test_config_command_configurations(self, command_config):
-        """Test Config handles various command configurations."""
+        gs.debug_mode = 1
+        assert gs.debug_mode is True
+        gs.debug_mode = 0
+        assert gs.debug_mode is False
+
+        gs.start_on_boot = 1
+        assert gs.start_on_boot is True
+        gs.start_on_boot = 0
+        assert gs.start_on_boot is False
+
+        gs.check_for_updates = 1
+        assert gs.check_for_updates is True
+        gs.check_for_updates = 0
+        assert gs.check_for_updates is False
+
+        gs.inference_framework = "tensorflow"
+        assert gs.inference_framework == "tensorflow"
+
+    def test_config_data_updates(self):
         config = Config()
-        config.commands = command_config
-        assert config.commands == command_config
+        gs = config.general_settings
 
-    @pytest.mark.parametrize(
-        "advisor_config",
-        [
-            {"enabled": True, "llm_api_mode": "completion"},
-            {"enabled": False, "llm_api_mode": "responses"},
-            {"enabled": True, "model": "gpt-4"},
-            {},
-            {"custom": "config", "values": "here"},
-        ],
-    )
-    def test_config_advisor_configurations(self, advisor_config):
-        """Test Config handles various advisor configurations."""
+        gs.debug_mode = True
+        assert config.config_data.get("general", {}).get("debug_mode") is True
+
+        gs.start_on_boot = True
+        assert config.config_data.get("general", {}).get("start_on_boot") is True
+
+        gs.check_for_updates = False
+        assert config.config_data.get("general", {}).get("check_for_updates") is False
+
+        gs.inference_framework = "custom"
+        assert (
+            config.config_data.get("general", {}).get("inference_framework") == "custom"
+        )
+
+    def test_inference_framework_repeated_access(self):
         config = Config()
-        config.advisors = advisor_config
-        assert config.advisors == advisor_config
+        gs = config.general_settings
+        framework = gs.inference_framework
+        assert isinstance(framework, str) and len(framework) > 0
+        assert gs.inference_framework == framework
 
-    @pytest.mark.parametrize(
-        "voice_setting", [True, False, None, "true", "false", 1, 0]
-    )
-    def test_config_voice_only_settings(self, voice_setting):
-        """Test Config handles various voice_only settings."""
+    def test_debug_mode_string_conversion(self):
         config = Config()
-        config.voice_only = voice_setting
-        assert config.voice_only == bool(voice_setting)
+        gs = config.general_settings
+        gs.debug_mode = "true"
+        assert gs.debug_mode is True
+        gs.debug_mode = ""
+        assert gs.debug_mode is False
 
-    def test_config_save_with_empty_file(self):
-        """Test Config.save_config with empty config file."""
-        config = Config("")
-        config.config_data = {"test": "data"}
-        config.save_config()  # Should not raise exception
-
-    def test_config_reload_functionality(self):
-        """Test Config.reload_config functionality."""
+    def test_config_general_data_defaults(self):
         config = Config()
-        _original_data = config.config_data.copy()
-        result = config.reload_config()
-        assert isinstance(result, bool)
+        general = config.config_data.get("general", {})
+        assert isinstance(general, dict)
+        framework = general.get("inference_framework", "onnx")
+        assert isinstance(framework, str) and len(framework) > 0
+        debug = general.get("debug_mode", True)
+        assert type(debug) is bool
 
-    def test_config_to_dict_conversion(self):
-        """Test Config.to_dict conversion."""
-        config = Config()
-        result = config.to_dict()
-        assert isinstance(result, dict)
-        assert "model_actions" in result
 
-    @pytest.mark.parametrize(
-        "env_var,value",
-        [
-            ("CHATCOMM_CHECK_FOR_UPDATES", "true"),
-            # Add more env var tests as needed from original
-        ],
-    )
-    def test_config_env_overrides(self, env_var, value, monkeypatch):
-        """Test Config environment variable overrides."""
-        monkeypatch.setenv(env_var, value)
-        config = Config()
-        # Check that the environment variable was properly applied
-        if env_var == "CHATCOMM_CHECK_FOR_UPDATES":
-            assert hasattr(config, "check_for_updates")
-            assert config.check_for_updates is True
-        else:
-            # For other env vars, check if they were applied to config_data
-            assert config.config_data.get(env_var.lower()) == value
+# ---------------------------------------------------------------------------
+# Action building (commands -> model_actions)
+# ---------------------------------------------------------------------------
+
+
+class TestConfigActions:
+    def test_builds_model_actions_from_commands_and_keybindings(self, tmp_path):
+        data = {
+            "keybindings": {"do_paste": "ctrl+v"},
+            "commands": {
+                "paste": {"action": "keypress", "keys": "do_paste"},
+                "call_bot": {"action": "url", "url": "{chatbot_endpoint}/run"},
+                "say": {"action": "custom_message", "message": "hello"},
+            },
+            "api_endpoints": {"chatbot_endpoint": "http://example.test"},
+            "general_settings": {"debug_mode": True},
+        }
+        cfg_file = _write_tmp_config(tmp_path, data)
+        cfg = Config.load(str(cfg_file))
+        assert cfg.debug_mode is True
+        assert cfg.model_actions["paste"] == {"keypress": "ctrl+v"}
+        assert cfg.model_actions["call_bot"]["url"] == "http://example.test/run"
+        assert cfg.model_actions["say"] == {"shell": "echo hello"}
+
+    def test_builds_keypress_without_keybinding_name(self, tmp_path):
+        data = {
+            "commands": {"press": {"action": "keypress", "keys": "alt+tab"}},
+        }
+        cfg_file = _write_tmp_config(tmp_path, data)
+        cfg = Config.load(str(cfg_file))
+        assert cfg.model_actions["press"] == {"keypress": "alt+tab"}
+
+    def test_handles_empty_commands(self, tmp_path):
+        data = {"commands": {}}
+        cfg_file = _write_tmp_config(tmp_path, data)
+        cfg = Config.load(str(cfg_file))
+        assert cfg.model_actions == {}
+
+
+# ---------------------------------------------------------------------------
+# Update settings & update-check
+# ---------------------------------------------------------------------------
+
+
+class TestConfigUpdates:
+    def test_update_general_setting_initializes_general(self, monkeypatch):
+        config = _clean_env_config(monkeypatch)
+        config.config_data.pop("general", None)
+        config._update_general_setting("debug_mode", False)
+        assert config.config_data["general"]["debug_mode"] is False
+
+    def test_set_check_for_updates(self, monkeypatch):
+        config = _clean_env_config(monkeypatch)
+        config.set_check_for_updates(0)
+        assert config.check_for_updates is False
+        assert config.config_data["general"]["check_for_updates"] is False
+        config.set_check_for_updates(1)
+        assert config.check_for_updates is True
+        assert config.config_data["general"]["check_for_updates"] is True
+
+    def test_set_start_on_boot_calls_hooks(self, monkeypatch):
+        config = _clean_env_config(monkeypatch)
+        with (
+            patch.object(config, "_enable_start_on_boot") as enable,
+            patch.object(config, "_disable_start_on_boot") as disable,
+        ):
+            config.set_start_on_boot(True)
+            enable.assert_called_once()
+            disable.assert_not_called()
+            assert config.start_on_boot is True
+            assert config.config_data["general"]["start_on_boot"] is True
+
+            config.set_start_on_boot(False)
+            disable.assert_called_once()
+            assert config.start_on_boot is False
+            assert config.config_data["general"]["start_on_boot"] is False
+
+    def test_perform_update_check_disabled(self, monkeypatch):
+        config = _clean_env_config(monkeypatch)
+        config.set_check_for_updates(False)
+        with patch("chatty_commander.app.config.subprocess.run") as run_mock:
+            assert config.perform_update_check() is None
+            run_mock.assert_not_called()
+
+    def test_perform_update_check_not_in_git_repo(self, monkeypatch):
+        config = _clean_env_config(monkeypatch)
+        config.set_check_for_updates(True)
+        mock_result = MagicMock(returncode=1, stdout="")
+        with patch(
+            "chatty_commander.app.config.subprocess.run", return_value=mock_result
+        ) as run_mock:
+            assert config.perform_update_check() is None
+            assert run_mock.call_count == 1
+            assert run_mock.call_args.args[0] == ["git", "rev-parse", "--git-dir"]
+
+    def test_perform_update_check_updates_available(self, monkeypatch):
+        config = _clean_env_config(monkeypatch)
+        config.set_check_for_updates(True)
+        run_results = [
+            MagicMock(returncode=0, stdout=""),
+            MagicMock(returncode=0, stdout=""),
+            MagicMock(returncode=0, stdout="2\n"),
+            MagicMock(returncode=0, stdout="Fix bug\n"),
+        ]
+        with patch(
+            "chatty_commander.app.config.subprocess.run", side_effect=run_results
+        ) as run_mock:
+            result = config.perform_update_check()
+        assert run_mock.call_count == 4
+        assert result == {
+            "updates_available": True,
+            "update_count": 2,
+            "latest_commit": "Fix bug",
+        }
+
+    def test_perform_update_check_no_updates(self, monkeypatch):
+        config = _clean_env_config(monkeypatch)
+        config.set_check_for_updates(True)
+        run_results = [
+            MagicMock(returncode=0, stdout=""),
+            MagicMock(returncode=0, stdout=""),
+            MagicMock(returncode=0, stdout="0\n"),
+        ]
+        with patch(
+            "chatty_commander.app.config.subprocess.run", side_effect=run_results
+        ) as run_mock:
+            result = config.perform_update_check()
+        assert run_mock.call_count == 3
+        assert result == {"updates_available": False, "update_count": 0}

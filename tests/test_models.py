@@ -1,32 +1,6 @@
-# MIT License
-#
-# Copyright (c) 2024 mhand
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-import os
-import sys
 import tempfile
-from pathlib import Path
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from chatty_commander.app.config import Config
@@ -44,7 +18,9 @@ class TestModelLoading(unittest.TestCase):
         self.config = Config()
         self.model_manager = ModelManager(self.config)
 
-    def test_model_load(self):
+    @patch("os.path.exists", return_value=True)
+    @patch("os.listdir", return_value=["dummy.onnx"])
+    def test_model_load(self, mock_listdir, mock_exists):
         """Test if models are loaded correctly from all directories."""
         self.model_manager.reload_models("idle")
         self.assertGreater(
@@ -63,7 +39,9 @@ class TestModelLoading(unittest.TestCase):
             len(self.model_manager.models["chat"]), 0, "Chat models should be loaded."
         )
 
-    def test_model_types(self):
+    @patch("os.path.exists", return_value=True)
+    @patch("os.listdir", return_value=["dummy.onnx"])
+    def test_model_types(self, mock_listdir, mock_exists):
         """Ensure that models loaded are instances of the expected class."""
         self.model_manager.reload_models("idle")
         self.assertGreater(
@@ -118,6 +96,44 @@ class TestModelLoading(unittest.TestCase):
         ):
             result = self.model_manager.listen_for_commands()
             self.assertIsNone(result)
+
+    def test_async_listen_for_commands_timing(self):
+        """Test async_listen_for_commands uses correct delay (0.1s not 1.0s)."""
+        self.model_manager.active_models = {"cmd1": "model1"}
+        with (
+            patch("chatty_commander.app.model_manager.random.random", return_value=0.1),
+            patch(
+                "chatty_commander.app.model_manager.asyncio.sleep",
+                new_callable=AsyncMock,
+            ) as mock_sleep,
+        ):
+            import asyncio
+
+            result = asyncio.run(self.model_manager.async_listen_for_commands())
+            # Verify sleep was called with 0.1 seconds (the optimized delay)
+            mock_sleep.assert_called_once_with(0.1)
+            self.assertIsNone(result)
+
+    def test_async_listen_for_commands_returns_command(self):
+        """Test async_listen_for_commands returns a command when detected."""
+        self.model_manager.active_models = {"wake_cmd": "model1", "stop_cmd": "model2"}
+        with (
+            patch(
+                "chatty_commander.app.model_manager.random.random", return_value=0.01
+            ),
+            patch(
+                "chatty_commander.app.model_manager.random.choice",
+                return_value="wake_cmd",
+            ),
+            patch(
+                "chatty_commander.app.model_manager.asyncio.sleep",
+                new_callable=AsyncMock,
+            ),
+        ):
+            import asyncio
+
+            result = asyncio.run(self.model_manager.async_listen_for_commands())
+            self.assertEqual(result, "wake_cmd")
 
     def test_get_models(self):
         """Test get_models method."""

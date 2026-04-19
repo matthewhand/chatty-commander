@@ -7,14 +7,40 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run mypy
+        run: uv run mypy src
+
+      - name: Run ruff
+        run: uv run ruff check .
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -22,12 +48,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pytest pytest-asyncio anyio
+          pip install pytest pytest-asyncio anyio pytest-cov respx
 
       - name: Run quick system smoke
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: |
           echo "$PWD" >> $GITHUB_PATH
-          PATH=$PWD:$PATH python tests/test_system.py --verbose
+          PATH=$PWD:$PATH pytest tests/test_system_routes.py --verbose
 
       - name: Run pytest (skip heavy perf)
         run: |
@@ -40,11 +70,14 @@ jobs:
       matrix:
         python-version: ["3.11"]
 
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
       - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -56,12 +89,6 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --dev
 
-      - name: Start backend server
-        run: |
-          uv run python -m src.chatty_commander.main --web --no-auth --port 8100 &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-          sleep 10
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -71,21 +98,18 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd webui/frontend
-          npm ci
+          npm install -g pnpm
+          pnpm i
 
       - name: Install Playwright browsers
         run: |
           cd webui/frontend
-          npx playwright install --with-deps
+          pnpm exec playwright install --with-deps
 
       - name: Run E2E tests
         run: |
           cd webui/frontend
-          npx playwright test
-
-      - name: Stop backend server
-        if: always()
-        run: kill $SERVER_PID
+          pnpm run test:e2e
 
   performance-test:
     runs-on: ubuntu-latest
@@ -165,13 +189,14 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: chatty-commander:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Test Docker image
         run: |
-          docker run --rm chatty-commander --help
+          docker run --rm chatty-commander python main.py --help
 
   release:
     runs-on: ubuntu-latest
@@ -184,6 +209,8 @@ jobs:
       - name: Create GitHub release
         uses: actions/create-release@v1
         env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.run_number }}

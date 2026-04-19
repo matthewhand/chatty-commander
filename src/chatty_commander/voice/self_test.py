@@ -36,6 +36,7 @@ import json
 import logging
 import tempfile
 import time
+from typing import Any
 
 try:
     import openai
@@ -43,8 +44,8 @@ try:
 
     OPENAI_AVAILABLE = True
 except ImportError:
-    openai = None
-    OpenAI = None
+    openai = None  # type: ignore[assignment,misc]
+    OpenAI = None  # type: ignore[assignment,misc]
     OPENAI_AVAILABLE = False
 
 try:
@@ -52,7 +53,7 @@ try:
 
     TTS_AVAILABLE = True
 except ImportError:
-    pyttsx3 = None
+    pyttsx3 = None  # type: ignore[assignment]
     TTS_AVAILABLE = False
 
 from .transcription import VoiceTranscriber
@@ -86,11 +87,11 @@ class VoiceSelfTester:
         try:
             self._tts_engine = pyttsx3.init()
             # Configure for clear speech
-            self._tts_engine.setProperty("rate", 150)  # Slower for clarity
-            self._tts_engine.setProperty("volume", 0.9)
+            self._tts_engine.setProperty("rate", 150)  # type: ignore[attr-defined]
+            self._tts_engine.setProperty("volume", 0.9)  # type: ignore[attr-defined]
 
             # Try to use a good quality voice
-            voices = self._tts_engine.getProperty("voices")
+            voices = self._tts_engine.getProperty("voices")  # type: ignore[attr-defined]
             if voices:
                 # Prefer female voices (often clearer for TTS)
                 for voice in voices:
@@ -98,7 +99,7 @@ class VoiceSelfTester:
                         "female" in voice.name.lower()
                         or "samantha" in voice.name.lower()
                     ):
-                        self._tts_engine.setProperty("voice", voice.id)
+                        self._tts_engine.setProperty("voice", voice.id)  # type: ignore[attr-defined]
                         break
 
         except Exception as e:
@@ -193,7 +194,7 @@ class VoiceSelfTester:
 
     def llm_judge_transcription(
         self, original: str, transcribed: str
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """Use LLM to judge transcription quality and provide feedback."""
         if not self.openai_client:
             return {
@@ -231,8 +232,8 @@ class VoiceSelfTester:
                 temperature=0.1,
             )
 
-            result = json.loads(response.choices[0].message.content)
-            return result
+            result = json.loads(response.choices[0].message.content or "{}")  # type: ignore[no-any-return]
+            return result  # type: ignore[no-any-return]
 
         except Exception as e:
             logger.error(f"LLM judge failed: {e}")
@@ -242,9 +243,9 @@ class VoiceSelfTester:
                 "suggestions": [],
             }
 
-    def run_comprehensive_test(self) -> dict[str, any]:
+    def run_comprehensive_test(self) -> dict[str, Any]:
         """Run comprehensive self-test and return detailed results."""
-        results = {
+        results: dict[str, Any] = {
             "timestamp": time.time(),
             "total_tests": len(self.test_phrases),
             "individual_results": [],
@@ -260,7 +261,7 @@ class VoiceSelfTester:
             f"Starting comprehensive voice self-test with {len(self.test_phrases)} phrases"
         )
 
-        category_scores = {}
+        category_scores: dict[str, list[float]] = {}
         all_suggestions = []
 
         for i, phrase in enumerate(self.test_phrases):
@@ -307,14 +308,14 @@ class VoiceSelfTester:
         }
         if category_averages:
             results["summary"]["best_category"] = max(
-                category_averages, key=category_averages.get
+                category_averages, key=lambda k: category_averages[k]
             )
             results["summary"]["worst_category"] = min(
-                category_averages, key=category_averages.get
+                category_averages, key=lambda k: category_averages[k]
             )
 
         # Aggregate improvement suggestions
-        suggestion_counts = {}
+        suggestion_counts: dict[str, int] = {}
         for suggestion in all_suggestions:
             suggestion_counts[suggestion] = suggestion_counts.get(suggestion, 0) + 1
 
@@ -353,7 +354,7 @@ class VoiceSelfTester:
         else:
             return "complex"
 
-    def suggest_improvements(self, test_results: dict[str, any]) -> list[str]:
+    def suggest_improvements(self, test_results: dict[str, Any]) -> list[str]:
         """Analyze test results and suggest specific improvements."""
         suggestions = []
 
@@ -384,7 +385,7 @@ class VoiceSelfTester:
 
         return suggestions
 
-    def auto_tune_parameters(self, test_results: dict[str, any]) -> dict[str, any]:
+    def auto_tune_parameters(self, test_results: dict[str, Any]) -> dict[str, Any]:
         """Automatically suggest parameter adjustments based on test results."""
         tuning_recommendations = {
             "transcription_backend": "current",
@@ -434,7 +435,7 @@ def create_self_improvement_loop(
     transcriber: VoiceTranscriber | None = None,
     openai_api_key: str | None = None,
     iterations: int = 5,
-) -> dict[str, any]:
+) -> dict[str, Any]:
     """Create a self-improvement loop for the voice system."""
 
     tester = VoiceSelfTester(transcriber, openai_api_key)

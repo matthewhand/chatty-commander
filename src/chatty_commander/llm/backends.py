@@ -56,12 +56,20 @@ class LLMBackend(ABC):
 class OpenAIBackend(LLMBackend):
     """OpenAI API backend."""
 
-    def __init__(self, api_key: str | None = None, base_url: str | None = None):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.base_url = base_url or os.getenv(
-            "OPENAI_API_BASE", "https://api.openai.com/v1"
+    def __init__(self, api_key: str | None = None, base_url: str | None = None, **kwargs):
+        self.api_key = (
+            api_key
+            or os.getenv("OPENAI_API_KEY")
         )
-        self._client = None
+        self.base_url = (
+            base_url
+            or os.getenv("OPENAI_BASE_URL")
+            or os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        )
+        self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+        self.max_retries = kwargs.get("max_retries", 3)
+        self.timeout = kwargs.get("timeout", 30.0)
+        self._client: Any = None
         self._initialize_client()
 
     def _initialize_client(self):
@@ -73,7 +81,12 @@ class OpenAIBackend(LLMBackend):
         try:
             import openai
 
-            self._client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
+            self._client = openai.OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                timeout=self.timeout,
+                max_retries=0  # We handle retries manually
+            )
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
         except ImportError:
             logger.warning(
@@ -90,7 +103,7 @@ class OpenAIBackend(LLMBackend):
         try:
             # Test with a minimal request
             self._client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=getattr(self, "model", "gpt-3.5-turbo"),
                 messages=[{"role": "user", "content": "test"}],
                 max_tokens=1,
             )
@@ -100,27 +113,35 @@ class OpenAIBackend(LLMBackend):
             return False
 
     def generate_response(self, prompt: str, **kwargs) -> str:
-        """Generate response using OpenAI API."""
+        """Generate response using OpenAI API with retries."""
         if not self._client:
             raise RuntimeError("OpenAI client not available")
 
-        try:
-            model = kwargs.get("model", "gpt-3.5-turbo")
-            max_tokens = kwargs.get("max_tokens", 150)
-            temperature = kwargs.get("temperature", 0.7)
+        import time
 
-            response = self._client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
+        model = kwargs.get("model", getattr(self, "model", "gpt-3.5-turbo"))
+        max_tokens = kwargs.get("max_tokens", 150)
+        temperature = kwargs.get("temperature", 0.7)
 
-            return response.choices[0].message.content.strip()
+        last_error = None
 
-        except Exception as e:
-            logger.error(f"OpenAI generation failed: {e}")
-            raise
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = self._client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                )
+                return response.choices[0].message.content.strip()  # type: ignore[no-any-return]
+            except Exception as e:
+                last_error = e
+                logger.warning(f"OpenAI generation attempt {attempt + 1} failed: {e}")
+                if attempt < self.max_retries:
+                    sleep_time = 1.0 * (2 ** attempt)  # Exponential backoff
+                    time.sleep(sleep_time)
+
+        raise RuntimeError(f"OpenAI generation failed after {self.max_retries} retries: {last_error}")
 
     def get_backend_info(self) -> dict[str, Any]:
         """Get OpenAI backend information."""
@@ -129,6 +150,7 @@ class OpenAIBackend(LLMBackend):
             "available": self.is_available(),
             "base_url": self.base_url,
             "has_api_key": bool(self.api_key),
+            "max_retries": self.max_retries,
         }
 
 
@@ -139,7 +161,7 @@ class OllamaBackend(LLMBackend):
         self.host = host or os.getenv("OLLAMA_HOST", "ollama:11434")
         self.model = model
         self.base_url = f"http://{self.host}"
-        self._available = None
+        self._available: bool | None = None
         logger.info(f"Initialized Ollama backend: {self.base_url}, model: {self.model}")
 
     def is_available(self) -> bool:
@@ -148,36 +170,44 @@ class OllamaBackend(LLMBackend):
             return self._available
 
         try:
-            import requests
+            import httpx
+
+            from chatty_commander.utils.url_validator import is_safe_url
+
+            if not is_safe_url(f"{self.base_url}/api/tags"):
+                logger.warning(f"Ollama base URL {self.base_url} rejected by security policy.")
+                self._available = False
+                return self._available
 
             # Check if Ollama server is running
-            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
-            if response.status_code == 200:
-                # Check if our model is available
-                models = response.json().get("models", [])
-                model_names = [m.get("name", "") for m in models]
+            with httpx.Client() as client:
+                response = client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
+                if response.status_code == 200:
+                    # Check if our model is available
+                    models = response.json().get("models", [])
+                    model_names = [m.get("name", "") for m in models]
 
-                if self.model in model_names:
-                    self._available = True
-                    logger.info(f"Ollama model {self.model} is available")
+                    if self.model in model_names:
+                        self._available = True
+                        logger.info(f"Ollama model {self.model} is available")
+                    else:
+                        logger.info(
+                            f"Ollama server running but model {self.model} not found. Available: {model_names}"
+                        )
+                        # Try to pull the model
+                        self._try_pull_model()
+                        self._available = self.model in [
+                            m.get("name", "")
+                            for m in client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
+                            .json()
+                            .get("models", [])
+                        ]
                 else:
-                    logger.info(
-                        f"Ollama server running but model {self.model} not found. Available: {model_names}"
-                    )
-                    # Try to pull the model
-                    self._try_pull_model()
-                    self._available = self.model in [
-                        m.get("name", "")
-                        for m in requests.get(f"{self.base_url}/api/tags")
-                        .json()
-                        .get("models", [])
-                    ]
-            else:
-                self._available = False
-                logger.debug(f"Ollama server not responding: {response.status_code}")
+                    self._available = False
+                    logger.debug(f"Ollama server not responding: {response.status_code}")
 
         except ImportError:
-            logger.warning("Requests library not available for Ollama backend")
+            logger.warning("httpx library not available for Ollama backend")
             self._available = False
         except Exception as e:
             logger.debug(f"Ollama availability check failed: {e}")
@@ -188,21 +218,23 @@ class OllamaBackend(LLMBackend):
     def _try_pull_model(self):
         """Try to pull the model if not available."""
         try:
-            import requests
+            import httpx
 
             logger.info(f"Attempting to pull model {self.model}...")
-            response = requests.post(
-                f"{self.base_url}/api/pull",
-                json={"name": self.model},
-                timeout=300,  # 5 minutes timeout for model download
-            )
-
-            if response.status_code == 200:
-                logger.info(f"Successfully pulled model {self.model}")
-            else:
-                logger.warning(
-                    f"Failed to pull model {self.model}: {response.status_code}"
+            with httpx.Client() as client:
+                response = client.post(
+                    f"{self.base_url}/api/pull",
+                    json={"name": self.model},
+                    timeout=300,  # 5 minutes timeout for model download
+                    follow_redirects=False,
                 )
+
+                if response.status_code == 200:
+                    logger.info(f"Successfully pulled model {self.model}")
+                else:
+                    logger.warning(
+                        f"Failed to pull model {self.model}: {response.status_code}"
+                    )
 
         except Exception as e:
             logger.warning(f"Error pulling model {self.model}: {e}")
@@ -213,30 +245,32 @@ class OllamaBackend(LLMBackend):
             raise RuntimeError("Ollama backend not available")
 
         try:
-            import requests
+            import httpx
 
             max_tokens = kwargs.get("max_tokens", 150)
             temperature = kwargs.get("temperature", 0.7)
 
-            response = requests.post(
-                f"{self.base_url}/api/generate",
-                json={
-                    "model": self.model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "num_predict": max_tokens,
-                        "temperature": temperature,
+            with httpx.Client() as client:
+                response = client.post(
+                    f"{self.base_url}/api/generate",
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {
+                            "num_predict": max_tokens,
+                            "temperature": temperature,
+                        },
                     },
-                },
-                timeout=30,
-            )
+                    timeout=30,
+                    follow_redirects=False,
+                )
 
-            if response.status_code == 200:
-                result = response.json()
-                return result.get("response", "").strip()
-            else:
-                raise RuntimeError(f"Ollama request failed: {response.status_code}")
+                if response.status_code == 200:
+                    result = response.json()
+                    return result.get("response", "").strip()  # type: ignore[no-any-return]
+                else:
+                    raise RuntimeError(f"Ollama request failed: {response.status_code}")
 
         except Exception as e:
             logger.error(f"Ollama generation failed: {e}")
@@ -259,9 +293,9 @@ class LocalTransformersBackend(LLMBackend):
     def __init__(self, model_name: str = "microsoft/DialoGPT-medium"):
         # Use a smaller model that actually exists for now
         self.model_name = model_name
-        self._model = None
-        self._tokenizer = None
-        self._device = None
+        self._model: Any = None
+        self._tokenizer: Any = None
+        self._device: str | None = None
         self._initialize_model()
 
     def _initialize_model(self):
@@ -334,7 +368,7 @@ class LocalTransformersBackend(LLMBackend):
             response_tokens = outputs[0][inputs.shape[1] :]
             response = self._tokenizer.decode(response_tokens, skip_special_tokens=True)
 
-            return response.strip()
+            return response.strip()  # type: ignore[no-any-return]
 
         except Exception as e:
             logger.error(f"Local transformers generation failed: {e}")

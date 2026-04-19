@@ -33,6 +33,7 @@ import os as _os
 import signal
 import sys
 import sys as _sys
+import threading
 
 # Fix sys.path to include the project src root (one level up from this package directory)
 _pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
@@ -123,7 +124,7 @@ def run_web_mode(
     import os
 
     try:
-        from chatty_commander.web.web_mode import run_server
+        from chatty_commander.web.web_mode import WebModeServer
     except ImportError:
         logger.error(
             "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
@@ -134,28 +135,57 @@ def run_web_mode(
         f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
     )
 
-    # Override host/port from environment if provided
+    # Create web server instance
+    web_server = WebModeServer(
+        config,
+        state_manager,
+        model_manager,
+        command_executor,
+        no_auth=no_auth,
+    )
+
+    # Setup callbacks for voice command integration
+    def on_command_detected(command):
+        web_server.on_command_detected(command, confidence=1.0)
+
+    def on_state_change(old_state, new_state):
+        web_server._on_state_change(old_state, new_state)
+
+    # Register callbacks
+    if hasattr(model_manager, "add_command_callback"):
+        model_manager.add_command_callback(on_command_detected)
+    if hasattr(state_manager, "add_state_change_callback"):
+        state_manager.add_state_change_callback(on_state_change)
+
+    stop_event = threading.Event()
+
+    def handle_signal(signum, frame):
+        logger.info(f"Received signal {signum}, stopping web server...")
+        stop_event.set()
+        try:
+            stopper = getattr(web_server, "stop", None)
+            if callable(stopper):
+                stopper()
+        except Exception as e:
+            logger.error(f"Error stopping web server: {e}")
+
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+
     env_host = os.getenv("CHATCOMM_HOST")
+    env_port = os.getenv("CHATCOMM_PORT")
     if env_host:
         host = env_host
-    env_port = os.getenv("CHATCOMM_PORT")
     if env_port:
         try:
             port = int(env_port)
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
+    _log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")  # noqa: F841
 
     # Start the server
     try:
-        run_server(
-            config_manager=config,
-            state_manager=state_manager,
-            model_manager=model_manager,
-            command_executor=command_executor,
-            host=host,
-            port=port,
-            no_auth=no_auth,
-        )
+        web_server.run(host=host, port=port)
     finally:
         try:
             if hasattr(model_manager, "shutdown"):
@@ -201,14 +231,9 @@ def run_gui_mode(
     try:
         # Prefer avatar GUI if available (pywebview + local index.html)
         try:
-            try:
-                from chatty_commander.avatars.avatar_gui import (
-                    run_avatar_gui,  # type: ignore
-                )
-            except Exception:
-                from src.chatty_commander.avatars.avatar_gui import (
-                    run_avatar_gui,  # type: ignore
-                )
+            from chatty_commander.avatars.avatar_gui import (
+                run_avatar_gui,  # type: ignore
+            )
             logger.info("Starting Avatar GUI (TalkingHead)")
             rc = run_avatar_gui()
             return 0 if rc is None else int(rc)
@@ -218,31 +243,20 @@ def run_gui_mode(
             )
             try:
                 # Try PyQt5-based transparent browser avatar
-                try:
-                    from chatty_commander.gui.pyqt5_avatar import (
-                        run_pyqt5_avatar,  # type: ignore
-                    )
-                except Exception:
-                    from src.chatty_commander.gui.pyqt5_avatar import (
-                        run_pyqt5_avatar,  # type: ignore
-                    )
+                from chatty_commander.gui.pyqt5_avatar import (
+                    run_pyqt5_avatar,  # type: ignore
+                )
                 logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
-                rc = run_pyqt5_avatar(config, logger)
+                rc = run_pyqt5_avatar()
                 return 0 if rc is None else int(rc)
             except Exception as e2:
                 logger.warning(
                     f"PyQt5 Avatar GUI unavailable ({e2}); falling back to tray popup GUI"
                 )
-                try:
-                    # Installed package path
-                    from chatty_commander.gui.tray_popup import (
-                        run_tray_popup,  # type: ignore
-                    )
-                except Exception:
-                    # Repo-root execution fallback
-                    from src.chatty_commander.gui.tray_popup import (
-                        run_tray_popup,  # type: ignore
-                    )
+                # Installed package path
+                from chatty_commander.gui.tray_popup import (
+                    run_tray_popup,  # type: ignore
+                )
 
                 logger.info("Starting GUI tray popup mode")
                 rc = run_tray_popup(config, logger)
@@ -252,7 +266,8 @@ def run_gui_mode(
             f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
         )
         try:
-            from chatty_commander.gui import main as gui_main
+            # Legacy GUI fallback; gui module may not define main()
+            from chatty_commander.gui import main as gui_main  # type: ignore[attr-defined]  # noqa: I001
 
             logger.info("Starting legacy tkinter GUI mode")
             rc = gui_main()
@@ -383,9 +398,9 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
 
     # Advisors convenience flag
     parser.add_argument(
-        "--advisors",
+        "--test-mode",
         action="store_true",
-        help="Enable advisors feature at runtime (overrides config.advisors.enabled).",
+        help="Run in lightweight test mode (mock models, no AI core).",
     )
 
     return parser
@@ -611,33 +626,37 @@ def main():
 
         CommandExecutor = _CommandExecutor
 
-    model_manager = ModelManager(config)
+    model_manager = ModelManager(config, mock_models=getattr(args, "test_mode", False))
     state_manager = StateManager()
     command_executor = CommandExecutor(config, model_manager, state_manager)
 
     # Initialize AI intelligence core for enhanced conversations
-    try:
-        from ..ai import create_intelligence_core
+    # Skip if in test mode to save resources
+    if not getattr(args, "test_mode", False):
+        try:
+            from ..ai import create_intelligence_core
 
-        ai_core = create_intelligence_core(config)
+            ai_core = create_intelligence_core(config)
 
-        # Set up AI response handling
-        def handle_ai_response(response):
-            print(f"AI: {response.text}")
-            if response.actions:
-                print(f"Actions: {response.actions}")
+            # Set up AI response handling
+            def handle_ai_response(response):
+                print(f"AI: {response.text}")
+                if response.actions:
+                    print(f"Actions: {response.actions}")
 
-        ai_core.on_response = handle_ai_response
-        ai_core.on_mode_change = lambda mode: print(f"Mode changed to: {mode}")
-        ai_core.on_error = lambda error: print(f"AI Error: {error}")
+            ai_core.on_response = handle_ai_response
+            ai_core.on_mode_change = lambda mode: print(f"Mode changed to: {mode}")
+            ai_core.on_error = lambda error: print(f"AI Error: {error}")
 
-        print("🤖 AI Intelligence Core initialized successfully!")
-        print("🎤 Enhanced voice processing available")
-        print("💬 Intelligent conversation engine ready")
+            print("🤖 AI Intelligence Core initialized successfully!")
+            print("🎤 Enhanced voice processing available")
+            print("💬 Intelligent conversation engine ready")
 
-    except Exception as e:
-        print(f"[WARN] AI Intelligence Core initialization failed: {e}")
-        ai_core = None
+        except Exception as e:
+            print(f"[WARN] AI Intelligence Core initialization failed: {e}")
+            ai_core = None
+    else:
+        logger.info("Test mode enabled: AI Intelligence Core disabled.")
 
     # Route to appropriate mode
     if getattr(args, "config", False):
@@ -663,13 +682,7 @@ def main():
             logger,
             host=host,
             no_auth=args.no_auth,
-            port=(
-                args.port
-                if args.port is not None
-                else getattr(getattr(config, "web_server", {}), "get", lambda *_: None)(
-                    "port", 8100
-                )
-            ),
+            port=int(port),
         )
         return 0
     elif args.gui:

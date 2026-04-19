@@ -38,13 +38,13 @@ from typing import Any
 # Optional deps that may not be present in CI/headless environments
 try:  # pragma: no cover - exercised via tests with patching
     import pyautogui
-except (ImportError, OSError, KeyError):  # pragma: no cover - optional
-    pyautogui = None
+except Exception:  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
+    pyautogui = None  # type: ignore[assignment]
 
 try:  # pragma: no cover - optional
-    import requests
+    import httpx
 except Exception:  # pragma: no cover - optional
-    requests = None
+    httpx = None  # type: ignore[assignment]
 
 # Allow tests to patch legacy shim module attributes if present
 try:  # pragma: no cover
@@ -59,7 +59,8 @@ try:  # pragma: no cover
 except Exception:  # pragma: no cover - optional
     _shim_requests = None
 if _shim_requests is not None:  # pragma: no cover - optional
-    requests = _shim_requests
+    # Map legacy tests to our httpx var for test compatibility if needed
+    httpx = _shim_requests
 
 
 class CommandExecutor:
@@ -80,9 +81,6 @@ class CommandExecutor:
         if not isinstance(command_name, str) or not command_name.strip():
             raise ValueError(f"Invalid command name: {command_name!r}")
 
-        # Call pre-execute hook before any validation
-        self.pre_execute_hook(command_name)
-
         try:
             # Ensure model_actions is accessible
             model_actions = self.config.model_actions
@@ -96,6 +94,8 @@ class CommandExecutor:
         command_action = model_actions.get(command_name)
         if command_action is None:
             return False
+
+        self.pre_execute_hook(command_name)
 
         # Set default DISPLAY if not set (X11 environments)
         if "DISPLAY" not in os.environ:
@@ -112,10 +112,12 @@ class CommandExecutor:
                     )
                 if action_type == "keypress":
                     keys = command_action.get("keys", "")
-                    success = self._execute_keybinding(command_name, keys)
+                    self._execute_keybinding(command_name, keys)
+                    success = True
                 elif action_type == "url":
                     url = command_action.get("url", "")
-                    success = self._execute_url(command_name, url)
+                    self._execute_url(command_name, url)
+                    success = True
                 elif action_type == "shell":
                     cmd = command_action.get("cmd", "")
                     success = self._execute_shell(command_name, cmd)
@@ -123,10 +125,12 @@ class CommandExecutor:
                     message = command_action.get("message", "")
                     self._execute_custom_message(command_name, message)
                     success = True
+                elif action_type == "voice_chat":
+                    success = self._execute_voice_chat(command_name)
                 else:
                     raise ValueError(
                         f"Command '{command_name}' has an invalid action type '{action_type}'. "
-                        f"Valid actions are: 'keypress', 'url', 'shell', 'custom_message'"
+                        f"Valid actions are: 'keypress', 'url', 'shell', 'custom_message', 'voice_chat'"
                     )
             else:
                 # Handle old format (direct keys)
@@ -182,31 +186,27 @@ class CommandExecutor:
                 if "action" in command_action:
                     # New format validation
                     action_type = command_action.get("action")
-                    if not isinstance(action_type, str) or not action_type.strip():
-                        # Empty or None action - fall back to old format validation
-                        pass
-                    elif action_type not in [
+                    if not isinstance(action_type, str):
+                        return False
+                    if action_type not in [
                         "keypress",
                         "url",
                         "shell",
                         "custom_message",
+                        "voice_chat",
                     ]:
                         return False
-                    else:
-                        # Valid action type, check required fields
-                        if action_type == "keypress" and "keys" not in command_action:
-                            return False
-                        if action_type == "url" and "url" not in command_action:
-                            return False
-                        if action_type == "shell" and "cmd" not in command_action:
-                            return False
-                        # Valid new format
-                        return True
+                    # Check required fields for each action type
+                    if action_type == "keypress" and "keys" not in command_action:
+                        return False
+                    if action_type == "url" and "url" not in command_action:
+                        return False
+                    if action_type == "shell" and "cmd" not in command_action:
+                        return False
                 else:
-                    # Old format validation - also accept cmd as valid for backwards compatibility
+                    # Old format validation
                     if not any(
-                        key in command_action
-                        for key in ["keypress", "url", "shell", "cmd"]
+                        key in command_action for key in ["keypress", "url", "shell"]
                     ):
                         return False
             else:
@@ -218,6 +218,7 @@ class CommandExecutor:
                         "url",
                         "shell",
                         "custom_message",
+                        "voice_chat",
                     ]:
                         # Assume valid if action type matches, skip field checks for mocks
                         return True
@@ -236,20 +237,13 @@ class CommandExecutor:
         """Hook after executing a command."""
         # Keep this post hook for compatibility with tests that patch it
 
-    def _execute_keybinding(self, command_name: str, keys: str | list[str]) -> bool:
+    def _execute_keybinding(self, command_name: str, keys: str | list[str]) -> None:
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
-        Returns True on success, False on failure.
         """
         if pyautogui is None:
             self.report_error(command_name, "pyautogui is not installed")
-            return False
-
-        # Validate keys parameter
-        if keys is None:
-            self.report_error(command_name, "Keys parameter cannot be None")
-            return False
-
+            return
         try:
             # Support either a list of keys (hotkey/chord) or a single key sequence
             if isinstance(keys, list | tuple):
@@ -263,53 +257,36 @@ class CommandExecutor:
                 pyautogui.press(keys)
             logging.info(f"Executed keybinding for {command_name}")
             logging.info(f"Completed execution of command: {command_name}")
-            return True
         except Exception as e:  # pragma: no cover - patched in tests
             logging.error(f"Failed to execute keybinding for {command_name}: {e}")
             self.report_error(command_name, str(e))
-            return False
 
-    def _execute_url(self, command_name: str, url: str) -> bool:
+    def _execute_url(self, command_name: str, url: str) -> None:
         """
         Sends an HTTP GET request based on the URL mapped to the command with basic error checks.
-        Returns True on success, False on failure.
         """
-        if url is None:
+        if not url:
             self.report_error(command_name, "missing URL")
-            return False
-        if requests is None:  # pragma: no cover - optional
-            self.report_error(command_name, "requests not available")
-            return False
+            return
+
+        from chatty_commander.utils.url_validator import is_safe_url
+        if not is_safe_url(url):
+            self.report_error(command_name, "unsafe URL rejected")
+            return
+
+        if httpx is None:  # pragma: no cover - optional
+            self.report_error(command_name, "httpx not available")
+            return
         try:
-            # Match tests: do not pass extra kwargs like timeout
-            resp = requests.get(url)
+            # Add timeout and disable redirects for security
+            with httpx.Client() as client:
+                resp = client.get(url, timeout=10, follow_redirects=False)
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
-                return False
             else:
                 logging.info(f"Completed execution of command: {command_name}")
-                return True
         except Exception as e:  # pragma: no cover - patched in tests
             self.report_error(command_name, str(e))
-            return False
-        try:
-            import webbrowser
-
-            webbrowser.open(url)
-            logging.info(f"Completed execution of command: {command_name}")
-            return True
-        except Exception as e:  # pragma: no cover - patched in tests
-            self.report_error(command_name, str(e))
-            return False
-        try:
-            import webbrowser
-
-            webbrowser.open(url)
-            logging.info(f"Completed execution of command: {command_name}")
-            return True
-        except Exception as e:  # pragma: no cover - patched in tests
-            self.report_error(command_name, str(e))
-            return False
 
     def _execute_shell(self, command_name: str, cmd: str) -> bool:
         """
@@ -330,10 +307,7 @@ class CommandExecutor:
                 return False
             else:
                 out = (result.stdout or "").strip()
-                logging.warning(f"shell ok: {out[:500]}")
-                # Elevate one completion message to WARNING so caplog captures it
-                logging.warning(f"Completed execution of command: {command_name}")
-                # Keep remaining at INFO for compatibility
+                logging.info(f"shell ok: {out[:500]}")
                 logging.info(f"Completed execution of command: {command_name}")
                 return True
         except subprocess.TimeoutExpired:
@@ -351,6 +325,51 @@ class CommandExecutor:
         logging.info(f"Custom message from {command_name}: {message}")
         # In a real implementation, this might display a notification or send to a UI
         # For now, just log it
+
+    def _execute_voice_chat(self, command_name: str) -> bool:
+        """Executes a voice chat session."""
+        logging.info(f"Starting voice chat for {command_name}")
+
+        # Access components from config as expected by integration tests
+        # In production, these might need to be injected differently
+        llm_manager = getattr(self.config, "llm_manager", None)
+        voice_pipeline = getattr(self.config, "voice_pipeline", None)
+
+        if not llm_manager or not voice_pipeline:
+            self.report_error(command_name, "voice chat components not available")
+            return False
+
+        try:
+            # 1. Verify component availability
+            if (
+                not hasattr(voice_pipeline, "transcriber")
+                or not hasattr(voice_pipeline, "tts")
+                or not hasattr(llm_manager, "generate_response")
+            ):
+                self.report_error(command_name, "voice chat components incomplete")
+                return False
+
+            # 2. Transcribe
+            user_input = voice_pipeline.transcriber.record_and_transcribe()
+            if not user_input:
+                logging.warning("No input received for voice chat")
+                return False
+
+            # 3. Generate response
+            response = llm_manager.generate_response(user_input)
+
+            # 4. Speak response
+            if voice_pipeline.tts.is_available():
+                voice_pipeline.tts.speak(response)
+
+            logging.info("Completed voice chat session")
+            return True
+
+        except Exception as e:
+            msg = f"voice chat failed: {e}"
+            logging.error(msg)
+            self.report_error(command_name, msg)
+            return False
 
     def report_error(self, command_name: str, error_message: str) -> None:
         """Reports an error to the logging system or an external monitoring service."""

@@ -22,103 +22,41 @@
 
 from __future__ import annotations
 
+import json
+import logging
+import os
 import re
-import uuid
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+try:
+    from chatty_commander.llm.manager import LLMManager as _LLMManager
+except ImportError:
+    _LLMManager = None  # type: ignore[misc, assignment]
+
+logger = logging.getLogger(__name__)
+
+# Module-level singleton to avoid creating a new LLMManager on every request
+_llm_manager: Any = None
+
+
+def _get_llm_manager() -> Any:
+    """Return a cached LLMManager instance, or None if unavailable."""
+    global _llm_manager
+    if _llm_manager is None and _LLMManager is not None:
+        try:
+            _llm_manager = _LLMManager()
+        except Exception as exc:
+            logger.debug("LLMManager init failed: %s", exc)
+    return _llm_manager
+
 
 router = APIRouter()
-
-
-# Validation functions
-def validate_uuid_field(identifier: str, field_name: str = "ID") -> str:
-    """Validate that a string is a valid UUID."""
-    if not identifier:
-        raise HTTPException(status_code=400, detail=f"{field_name} cannot be empty")
-
-    try:
-        uuid.UUID(identifier)
-        return identifier
-    except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid {field_name.lower()} format: must be a valid UUID",
-        ) from None
-
-
-def validate_string_field(
-    value: str, min_length: int = 1, max_length: int = 1000, field_name: str = "field"
-) -> str:
-    """Validate string length constraints."""
-    if not isinstance(value, str):
-        raise HTTPException(status_code=400, detail=f"{field_name} must be a string")
-
-    if len(value) < min_length:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name} must be at least {min_length} characters long",
-        )
-
-    if len(value) > max_length:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name} must not exceed {max_length} characters",
-        )
-
-    return value.strip()
-
-
-def validate_agent_name_field(name: str) -> str:
-    """Validate agent name with specific constraints."""
-    name = validate_string_field(
-        name, min_length=1, max_length=48, field_name="Agent name"
-    )
-
-    # Allow alphanumeric characters, spaces, hyphens, and underscores
-    if not re.match(r"^[a-zA-Z0-9\s\-_]+$", name):
-        raise HTTPException(
-            status_code=400,
-            detail="Agent name can only contain letters, numbers, spaces, hyphens, and underscores",
-        )
-
-    return name
-
-
-def validate_capabilities_field(capabilities: list[str]) -> list[str]:
-    """Validate capabilities list."""
-    if not isinstance(capabilities, list):
-        raise HTTPException(status_code=400, detail="Capabilities must be a list")
-
-    if len(capabilities) > 50:
-        raise HTTPException(
-            status_code=400, detail="Cannot have more than 50 capabilities"
-        )
-
-    validated_capabilities = []
-    for cap in capabilities:
-        if not isinstance(cap, str):
-            raise HTTPException(
-                status_code=400, detail="Each capability must be a string"
-            )
-
-        cap_clean = validate_string_field(
-            cap, min_length=1, max_length=100, field_name="Capability"
-        )
-
-        # Allow alphanumeric, spaces, and common punctuation
-        if not re.match(r"^[a-zA-Z0-9\s\-_,\.]+$", cap_clean):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid capability format: '{cap}'. Only letters, numbers, spaces, hyphens, underscores, commas, and periods are allowed",
-            )
-
-        validated_capabilities.append(cap_clean)
-
-    return validated_capabilities
 
 
 @dataclass
@@ -133,30 +71,101 @@ class AgentBlueprint:
 
 
 class AgentBlueprintModel(BaseModel):
-    name: str = Field(..., description="Agent name")
-    description: str = Field(..., description="Agent description")
-    persona_prompt: str = Field(..., description="Persona prompt")
-    capabilities: list[str] = Field(
-        default_factory=list, description="List of capabilities"
-    )
-    team_role: str | None = Field(default=None, description="Team role")
-    handoff_triggers: list[str] = Field(
-        default_factory=list, description="List of handoff triggers"
-    )
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., max_length=200)
+    description: str = Field(..., max_length=2000)
+    persona_prompt: str = Field(..., max_length=10000)
+    capabilities: list[str] = Field(default_factory=list, max_length=50)
+    team_role: str | None = Field(default=None, max_length=200)
+    handoff_triggers: list[str] = Field(default_factory=list, max_length=50)
 
 
 class AgentBlueprintResponse(AgentBlueprintModel):
     id: str
 
 
-# In-memory store (replace with persistence later)
+_STORE_PATH = Path(os.path.expanduser(os.environ.get("CHATTY_AGENTS_STORE", "~/.chatty_commander/agents.json")))
+
 _STORE: dict[str, AgentBlueprint] = {}
 _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
 
 
-# Placeholder natural language parser (stub for LLM)
+def _load_store() -> None:
+    global _STORE, _TEAM
+    if not _STORE_PATH.exists():
+        return
+    try:
+        with _STORE_PATH.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+            _STORE.clear()
+            _TEAM.clear()
+
+            for agent_dict in data.get("agents", []):
+                agent = AgentBlueprint(**agent_dict)
+                _STORE[agent.id] = agent
+                if agent.team_role:
+                    _TEAM.setdefault(agent.team_role, []).append(agent.id)
+    except Exception as e:
+        logger.warning("Error loading agent store from %s: %s", _STORE_PATH, e)
+
+def _save_store() -> None:
+    try:
+        _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        agents = [asdict(agent) for agent in _STORE.values()]
+        data = {"agents": agents}
+        with _STORE_PATH.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
+
+_load_store()
+
+
+def _extract_json_from_response(response: str) -> str:
+    """Extract JSON content from a response that may contain markdown code blocks."""
+    # Use regex to safely extract content between ```json ... ``` or ``` ... ```
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)```", response)
+    if match:
+        return match.group(1).strip()
+    return response.strip()
+
+
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
-    # Very naive heuristic parser for now
+    llm = _get_llm_manager()
+    if llm is not None and llm.is_available():
+        try:
+            prompt = f"""
+Extract an agent blueprint from the following text.
+Return a JSON object with EXACTLY these keys:
+- "name" (string, short)
+- "description" (string, short summary)
+- "persona_prompt" (string, detailed prompt)
+- "capabilities" (list of strings, inferred abilities)
+- "team_role" (string or null, inferred role if any)
+
+Text:
+{text}
+
+Return ONLY valid JSON.
+"""
+            response = llm.generate_response(prompt)
+            # Safely extract JSON from possible markdown code block
+            json_str = _extract_json_from_response(response)
+            data = json.loads(json_str)
+            return AgentBlueprintModel(
+                name=data.get("name", "Agent")[:48],
+                description=data.get("description", text.strip()[:256]),
+                persona_prompt=data.get("persona_prompt", text.strip()),
+                capabilities=data.get("capabilities", []),
+                team_role=data.get("team_role"),
+                handoff_triggers=[],
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            logger.debug("LLM blueprint parsing failed, using heuristic fallback: %s", exc)
+
+    # Very naive heuristic parser fallback
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
     name = lines[0][:48] if lines else "Agent"
     description = text.strip()[:256]
@@ -180,74 +189,25 @@ async def create_blueprint(
     payload: Annotated[dict[str, Any], Body(...)],
 ) -> AgentBlueprintResponse:
     try:
-        # Validate payload structure
-        if not isinstance(payload, dict):
-            raise HTTPException(status_code=400, detail="Payload must be a dictionary")
-
         # If a simple NL description payload
-        if "description" in payload and len(payload.keys()) == 1:
-            description = str(payload.get("description", ""))
-            if not description.strip():
-                raise HTTPException(
-                    status_code=400, detail="Description cannot be empty"
-                )
-
-            model = parse_blueprint_from_text(description)
-            # Validate the parsed model
-            model.name = validate_agent_name_field(model.name)
-            model.description = validate_string_field(
-                model.description,
-                min_length=1,
-                max_length=256,
-                field_name="Description",
-            )
-            model.persona_prompt = validate_string_field(
-                model.persona_prompt,
-                min_length=10,
-                max_length=5000,
-                field_name="Persona prompt",
-            )
-            model.capabilities = validate_capabilities_field(model.capabilities)
+        if (
+            isinstance(payload, dict)
+            and "description" in payload
+            and len(payload.keys()) == 1
+        ):
+            model = parse_blueprint_from_text(str(payload.get("description", "")))
         else:
-            # Try to parse as structured blueprint with validation
+            # Try to parse as structured blueprint
             model = AgentBlueprintModel(**payload)
-            # Validate individual fields
-            model.name = validate_agent_name_field(model.name)
-            model.description = validate_string_field(
-                model.description,
-                min_length=1,
-                max_length=256,
-                field_name="Description",
-            )
-            model.persona_prompt = validate_string_field(
-                model.persona_prompt,
-                min_length=10,
-                max_length=5000,
-                field_name="Persona prompt",
-            )
-            model.capabilities = validate_capabilities_field(model.capabilities)
-
-            if model.team_role is not None:
-                model.team_role = validate_string_field(
-                    model.team_role, min_length=1, max_length=50, field_name="Team role"
-                )
-                if not re.match(r"^[a-zA-Z0-9\s\-_]+$", model.team_role):
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Team role can only contain letters, numbers, spaces, hyphens, and underscores",
-                    )
-                model.team_role = model.team_role.lower()
-
         uid = str(uuid4())
         ent = AgentBlueprint(id=uid, **model.model_dump())
         _STORE[uid] = ent
         if ent.team_role:
             _TEAM.setdefault(ent.team_role, []).append(uid)
+        _save_store()
         return AgentBlueprintResponse(id=uid, **model.model_dump())
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid request: {str(e)}") from e
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/api/v1/agents/blueprints", response_model=list[AgentBlueprintResponse])
@@ -260,43 +220,16 @@ async def list_blueprints():
     "/api/v1/agents/blueprints/{agent_id}", response_model=AgentBlueprintResponse
 )
 async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
-    # Validate agent_id
-    validate_uuid_field(agent_id, "Agent ID")
-
     if agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
-
-    # Validate blueprint data
-    bp.name = validate_agent_name_field(bp.name)
-    bp.description = validate_string_field(
-        bp.description, min_length=1, max_length=256, field_name="Description"
-    )
-    bp.persona_prompt = validate_string_field(
-        bp.persona_prompt, min_length=10, max_length=5000, field_name="Persona prompt"
-    )
-    bp.capabilities = validate_capabilities_field(bp.capabilities)
-
-    if bp.team_role is not None:
-        bp.team_role = validate_string_field(
-            bp.team_role, min_length=1, max_length=50, field_name="Team role"
-        )
-        if not re.match(r"^[a-zA-Z0-9\s\-_]+$", bp.team_role):
-            raise HTTPException(
-                status_code=400,
-                detail="Team role can only contain letters, numbers, spaces, hyphens, and underscores",
-            )
-        bp.team_role = bp.team_role.lower()
-
     ent = AgentBlueprint(id=agent_id, **bp.model_dump())
     _STORE[agent_id] = ent
+    _save_store()
     return AgentBlueprintResponse(id=agent_id, **bp.model_dump())
 
 
 @router.delete("/api/v1/agents/blueprints/{agent_id}")
 async def delete_blueprint(agent_id: str):
-    # Validate agent_id
-    validate_uuid_field(agent_id, "Agent ID")
-
     if agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     # Safety: ensure not in active team relations (simplified)
@@ -306,6 +239,7 @@ async def delete_blueprint(agent_id: str):
             if not ids:
                 _TEAM.pop(role, None)
     _STORE.pop(agent_id, None)
+    _save_store()
     return {"deleted": True, "id": agent_id}
 
 
@@ -328,19 +262,8 @@ class HandoffRequest(BaseModel):
 
 @router.post("/api/v1/agents/team/handoff")
 async def handoff(h: HandoffRequest):
-    # Validate agent IDs
-    validate_uuid_field(h.from_agent_id, "From agent ID")
-    validate_uuid_field(h.to_agent_id, "To agent ID")
-
     if h.from_agent_id not in _STORE or h.to_agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
-
-    # Validate reason if provided
-    if h.reason is not None:
-        h.reason = validate_string_field(
-            h.reason, min_length=1, max_length=500, field_name="Handoff reason"
-        )
-
     # For now, just acknowledge; future: integrate with thinking_state + avatar_ws
     return {
         "ok": True,

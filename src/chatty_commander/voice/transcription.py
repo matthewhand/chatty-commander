@@ -37,6 +37,7 @@ import tempfile
 import time
 import wave
 from abc import ABC, abstractmethod
+from typing import Any
 
 try:
     import numpy as np
@@ -44,8 +45,8 @@ try:
 
     AUDIO_DEPS_AVAILABLE = True
 except ImportError:
-    pyaudio = None
-    np = None
+    pyaudio = None  # type: ignore[assignment]
+    np = None  # type: ignore[assignment]
     AUDIO_DEPS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -118,7 +119,7 @@ class WhisperAPIBackend(TranscriptionBackend):
 
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key
-        self._client = None
+        self._client: Any = None
         self._initialize_client()
 
     def _initialize_client(self):
@@ -158,7 +159,7 @@ class WhisperAPIBackend(TranscriptionBackend):
 
                 text = transcript.text.strip()
                 logger.debug(f"OpenAI Whisper transcription: '{text}'")
-                return text
+                return text  # type: ignore[no-any-return]
 
         except Exception as e:
             logger.error(f"OpenAI Whisper API transcription failed: {e}")
@@ -259,7 +260,7 @@ class VoiceTranscriber:
 
         try:
             self._audio = pyaudio.PyAudio()
-            self._stream = self._audio.open(
+            self._stream = self._audio.open(  # type: ignore[attr-defined]
                 format=pyaudio.paInt16,
                 channels=self.channels,
                 rate=self.sample_rate,
@@ -274,14 +275,14 @@ class VoiceTranscriber:
 
             while True:
                 try:
-                    data = self._stream.read(
+                    data = self._stream.read(  # type: ignore[attr-defined]
                         self.chunk_size, exception_on_overflow=False
                     )
                     frames.append(data)
 
                     # Check for silence (simple volume-based detection)
-                    audio_array = np.frombuffer(data, dtype=np.int16)
-                    volume = np.sqrt(np.mean(audio_array**2))
+                    audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
+                    volume = np.sqrt(np.dot(audio_array, audio_array) / len(audio_array))
 
                     if volume < 500:  # Silence threshold
                         if silence_start is None:
@@ -328,7 +329,7 @@ class VoiceTranscriber:
             finally:
                 self._audio = None
 
-    def get_backend_info(self) -> dict[str, any]:
+    def get_backend_info(self) -> dict[str, Any]:
         """Get information about the current backend."""
         return {
             "backend_type": type(self._backend).__name__,

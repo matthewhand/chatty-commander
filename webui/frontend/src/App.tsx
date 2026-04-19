@@ -1,170 +1,101 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  Outlet,
 } from "react-router-dom";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { CssBaseline, Box, Alert } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// Import pages
-import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import ConfigurationPage from "./pages/ConfigurationPage";
-import AudioSettingsPage from "./pages/AudioSettingsPage";
-import PersonasPage from "./pages/PersonasPage";
-import AgentStatusPage from "./pages/AgentStatusPage";
-
-// Import components
-import Navigation from "./components/Navigation";
+import MainLayout from "./components/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { WebSocketProvider } from "./components/WebSocketProvider";
+import { useAuth, AuthProvider } from "./hooks/useAuth";
+import { ThemeProvider } from "./components/ThemeProvider";
+import { ToastProvider } from "./components/ToastProvider";
 
-// Import hooks
-import { useAuth } from "./hooks/useAuth";
+// Lazy-loaded pages for route-level code splitting
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const ConfigurationPage = lazy(() => import("./pages/ConfigurationPage"));
+const CommandsPage = lazy(() => import("./pages/CommandsPage"));
+const CommandAuthoringPage = lazy(() => import("./pages/CommandAuthoringPage"));
 
 // Create React Query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2, // Increased retry count for better error handling
+      retry: 2,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes stale time
+      staleTime: 5 * 60 * 1000,
     },
   },
 });
 
-// Create Material-UI theme
-const darkTheme = createTheme({
-  palette: {
-    mode: "dark",
-    primary: {
-      main: "#90caf9",
-    },
-    secondary: {
-      main: "#f48fb1",
-    },
-    background: {
-      default: "#121212",
-      paper: "#1e1e1e",
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 600,
-    },
-    h5: {
-      fontWeight: 500,
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          backgroundImage: "none",
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: "none",
-        },
-      },
-    },
-    MuiAlert: {
-      styleOverrides: {
-        root: {
-          marginBottom: "16px",
-        },
-      },
-    },
-  },
-});
+const PageSpinner = () => (
+  <div className="flex items-center justify-center py-24">
+    <span className="loading loading-spinner text-primary loading-lg"></span>
+  </div>
+);
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
-  const noAuth = process.env.REACT_APP_NO_AUTH === "true";
-  const showNav = isAuthenticated || noAuth;
+  const { isAuthenticated, user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner text-primary loading-lg"></span>
+      </div>
+    );
+  }
+
+  // Use a special user object or flag provided by the updated authService to skip login
+  const isNoAuthMode = user?.noAuth === true;
+  const showNav = isAuthenticated || isNoAuthMode;
+
+  // Wrapper for protected content that needs the MainLayout
+  const ProtectedLayout = () => (
+    <ProtectedRoute>
+      <MainLayout>
+        <Suspense fallback={<PageSpinner />}>
+          <Outlet />
+        </Suspense>
+      </MainLayout>
+    </ProtectedRoute>
+  );
 
   return (
     <Router>
-      <Box sx={{ display: "flex", minHeight: "100vh" }}>
-        {showNav && <Navigation />}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: showNav ? 3 : 0,
-            ml: showNav ? "240px" : 0,
-          }}
-        >
-          <Routes>
-            <Route
-              path="/login"
-              element={
-                isAuthenticated || noAuth ? (
-                  <Navigate to="/dashboard" replace />
-                ) : (
-                  <LoginPage />
-                )
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configuration"
-              element={
-                <ProtectedRoute>
-                  <ConfigurationPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/audio-settings"
-              element={
-                <ProtectedRoute>
-                  <AudioSettingsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/personas"
-              element={
-                <ProtectedRoute>
-                  <PersonasPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/agent-status"
-              element={
-                <ProtectedRoute>
-                  <AgentStatusPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/"
-              element={
-                <Navigate
-                  to={isAuthenticated || noAuth ? "/dashboard" : "/login"}
-                  replace
-                />
-              }
-            />
-          </Routes>
-        </Box>
-      </Box>
+      <Suspense fallback={<PageSpinner />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={
+              showNav ? <Navigate to="/dashboard" replace /> : <LoginPage />
+            }
+          />
+
+          {/* Protected Routes (Wrapped in MainLayout) */}
+          <Route element={<ProtectedLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/configuration" element={<ConfigurationPage />} />
+            <Route path="/commands" element={<CommandsPage />} />
+            <Route path="/commands/authoring" element={<CommandAuthoringPage />} />
+          </Route>
+
+          {/* Default Redirect */}
+          <Route
+            path="/"
+            element={
+              <Navigate to={showNav ? "/dashboard" : "/login"} replace />
+            }
+          />
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }
@@ -172,12 +103,17 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={darkTheme}>
-        <CssBaseline />
-        <WebSocketProvider>
-          <AppContent />
-        </WebSocketProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <WebSocketProvider>
+            <ToastProvider>
+              <div className="min-h-screen bg-base-100 text-base-content">
+                <AppContent />
+              </div>
+            </ToastProvider>
+          </WebSocketProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

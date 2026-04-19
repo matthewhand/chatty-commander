@@ -68,8 +68,8 @@ class EnhancedVoiceProcessor:
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.is_listening = False
-        self.audio_queue = queue.Queue()
-        self.processing_thread = None
+        self.audio_queue: queue.Queue[np.ndarray[Any, np.dtype[Any]]] = queue.Queue()
+        self.processing_thread: threading.Thread | None = None
 
         # Voice activity detection state
         self.vad_enabled = config.voice_activity_detection
@@ -77,13 +77,14 @@ class EnhancedVoiceProcessor:
         self.speech_detected = False
 
         # Audio processing components
-        self.noise_reducer = None
-        self.echo_canceller = None
-        self.auto_gain = None
+        self.noise_reducer: Any = None
+        self.echo_canceller: Any = None
+        self.auto_gain: Any = None
 
         # Transcription components
-        self.transcriber = None
-        self.wake_word_detector = None
+        self.transcriber: Any = None
+        self.wake_word_detector: str | None = None
+        self.transcription_method: str | None = None
 
         # Callbacks
         self.on_speech_start: Callable | None = None
@@ -186,16 +187,17 @@ class EnhancedVoiceProcessor:
         from scipy import signal
 
         b, a = signal.butter(4, 300, btype="high", fs=self.config.sample_rate)
-        return signal.filtfilt(b, a, audio_data)
+        return signal.filtfilt(b, a, audio_data)  # type: ignore[no-any-return]
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
         """Energy-based voice activity detection."""
         audio_data = np.frombuffer(audio_chunk, dtype=np.int16)
-        energy = np.sum(audio_data.astype(np.float32) ** 2) / len(audio_data)
+        audio_float = audio_data.astype(np.float32)
+        energy = np.dot(audio_float, audio_float) / len(audio_data)
 
         # Dynamic threshold based on recent energy levels
         threshold = 1000  # Adjust based on your environment
-        return energy > threshold
+        return bool(energy > threshold)  # type: ignore[no-any-return]
 
     def _detect_wake_words(self, text: str) -> list[str]:
         """Detect wake words in transcribed text."""

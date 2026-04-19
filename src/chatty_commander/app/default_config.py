@@ -180,6 +180,29 @@ class DefaultConfigGenerator:
                 "computer": ["oh_kay_screenshot", "okay_stop"],
                 "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"],
             },
+            "wakeword_state_map": {
+                "hey_chat_tee": "chatty",
+                "hey_khum_puter": "computer",
+                "okay_stop": "idle",
+            },
+            "state_transitions": {
+                "idle": {
+                    "hey_chat_tee": "chatty",
+                    "hey_khum_puter": "computer",
+                    "toggle_mode": "computer",
+                },
+                "computer": {
+                    "okay_stop": "idle",
+                    "that_ill_do": "idle",
+                    "toggle_mode": "chatty",
+                },
+                "chatty": {
+                    "hey_khum_puter": "computer",
+                    "okay_stop": "idle",
+                    "thanks_chat_tee": "idle",
+                    "toggle_mode": "idle",
+                },
+            },
             "model_paths": {
                 "idle": "models-idle",
                 "computer": "models-computer",

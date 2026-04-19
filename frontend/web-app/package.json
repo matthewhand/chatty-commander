@@ -1,9 +1,0 @@
-{
-  "name": "chatty-commander-monorepo",
-  "private": true,
-  "scripts": {
-    "dev:all": "pnpm --filter app dev & pnpm --filter server dev",
-    "build:all": "pnpm --filter app build && pnpm --filter server build",
-    "test": "pnpm --filter ./tests test"
-  }
-}

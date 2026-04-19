@@ -22,17 +22,47 @@
 
 from __future__ import annotations
 
-import re
+import asyncio
+import logging
+import os
+import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, ConfigDict, Field
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from chatty_commander.utils.security import mask_sensitive_data
+
+logger = logging.getLogger(__name__)
+
+_ENGINES: dict[str, tuple[Any, float]] = {}  # (engine, creation_time)
+_ENGINES_LOCK = threading.Lock()
+_MAX_ENGINES = 10  # Maximum cached engines to prevent unbounded memory growth
+_ENGINE_TTL_SECONDS = 3600  # 1 hour TTL for cached engines
+_ENGINE_CACHE_HITS = 0
+_ENGINE_CACHE_MISSES = 0
+
+ALLOWED_CONFIG_KEYS = frozenset(
+    {
+        "general",
+        "audio_settings",
+        "ui",
+        "logging",
+        "voice_only",
+        "default_state",
+        "voice",
+    }
+)
 
 
 class SystemStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of loaded models")
@@ -41,12 +71,16 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     state: str = Field(
         ..., description="Target state", pattern="^(idle|computer|chatty)$"
     )
 
 
 class CommandRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     command: str = Field(..., description="Command name to execute")
     parameters: dict[str, Any] | None = Field(
         default=None, description="Optional parameters"
@@ -73,7 +107,43 @@ class HealthStatus(BaseModel):
     database: str = Field(default="unknown", description="Database status")
     memory_usage: str = Field(default="unknown", description="Memory usage")
     cpu_usage: str = Field(default="unknown", description="CPU usage")
+    commands_executed: int = Field(default=0, description="Total commands executed")
     last_health_check: str = Field(..., description="Last health check timestamp")
+
+
+class ResponseTimeMiddleware(BaseHTTPMiddleware):
+    """Middleware to track the rolling average of request response times.
+
+    Uses instance-level state so multiple app instances in tests don't
+    share the same deque (avoids cross-contamination between test cases).
+    """
+
+    def __init__(self, app: Any, maxlen: int = 100) -> None:
+        super().__init__(app)
+        self._response_times: deque[float] = deque(maxlen=maxlen)
+        self._lock = threading.Lock()
+
+    def get_average_ms(self) -> float:
+        """Return the current rolling average response time in milliseconds."""
+        with self._lock:
+            return (
+                sum(self._response_times) / len(self._response_times)
+                if self._response_times
+                else 0.0
+            )
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Any]
+    ) -> Any:
+        start_time = time.time()
+        response = await call_next(request)
+        duration_ms = (time.time() - start_time) * 1000.0
+
+        with self._lock:
+            self._response_times.append(duration_ms)
+
+        response.headers["X-API-Version"] = "0.2.0"
+        return response
 
 
 class MetricsData(BaseModel):
@@ -89,94 +159,6 @@ class MetricsData(BaseModel):
     )
 
 
-# Validation functions
-def validate_command_security(command: str) -> str:
-    """Validate command name for security."""
-    if not isinstance(command, str):
-        raise HTTPException(status_code=400, detail="Command must be a string")
-
-    command = command.strip()
-
-    if len(command) < 1:
-        raise HTTPException(status_code=400, detail="Command cannot be empty")
-
-    if len(command) > 100:
-        raise HTTPException(
-            status_code=400, detail="Command must not exceed 100 characters"
-        )
-
-    # Prevent command injection attacks
-    dangerous_patterns = [
-        r"[;&|`$()]",  # Shell metacharacters
-        r"\.\./",  # Directory traversal
-        r"^\s*rm\s+",  # Dangerous commands
-        r"^\s*sudo\s+",  # Privilege escalation
-    ]
-
-    for pattern in dangerous_patterns:
-        if re.search(pattern, command, re.IGNORECASE):
-            raise HTTPException(
-                status_code=400,
-                detail="Command contains potentially dangerous characters or patterns",
-            )
-
-    # Only allow alphanumeric, spaces, hyphens, underscores, and dots
-    if not re.match(r"^[a-zA-Z0-9\s\-_\.]+$", command):
-        raise HTTPException(
-            status_code=400,
-            detail="Command can only contain letters, numbers, spaces, hyphens, underscores, and dots",
-        )
-
-    return command
-
-
-def validate_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
-    """Sanitize configuration data to prevent injection attacks."""
-    if not isinstance(config_data, dict):
-        raise HTTPException(
-            status_code=400, detail="Configuration data must be a dictionary"
-        )
-
-    # Check for potentially dangerous keys
-    dangerous_keys = [
-        "__proto__",
-        "constructor",
-        "prototype",
-        "eval",
-        "function",
-        "script",
-        "javascript:",
-    ]
-
-    for key in config_data.keys():
-        if isinstance(key, str):
-            key_lower = key.lower()
-            if any(dangerous in key_lower for dangerous in dangerous_keys):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Configuration contains potentially dangerous key: {key}",
-                )
-
-    # Recursively sanitize string values
-    def sanitize_value(value: Any) -> Any:
-        if isinstance(value, str):
-            # Remove potential script injections
-            if "<script" in value.lower() or "javascript:" in value.lower():
-                raise HTTPException(
-                    status_code=400,
-                    detail="Configuration contains potentially dangerous script content",
-                )
-            return value.strip()
-        elif isinstance(value, dict):
-            return {k: sanitize_value(v) for k, v in value.items()}
-        elif isinstance(value, list):
-            return [sanitize_value(item) for item in value]
-        else:
-            return value
-
-    return {k: sanitize_value(v) for k, v in config_data.items()}
-
-
 def include_core_routes(
     *,
     get_start_time: Callable[[], float],
@@ -187,6 +169,8 @@ def include_core_routes(
     execute_command_fn: Callable[[str], Any],
     get_active_connections: Callable[[], int] | None = None,
     get_cache_size: Callable[[], int] | None = None,
+    get_total_commands: Callable[[], int] | None = None,
+    response_time_middleware: ResponseTimeMiddleware | None = None,
 ) -> APIRouter:
     """
     Provide core REST routes as an APIRouter. This module is pure routing; it pulls
@@ -237,8 +221,59 @@ def include_core_routes(
         except ImportError:
             pass  # psutil not available
 
-        # Database check (placeholder for future database integration)
+        # Database connectivity check
         database_status = "not_configured"
+
+        cfg_mgr = get_config_manager()
+        cfg = getattr(cfg_mgr, "config", {})
+        # Look for database_url in general_settings or root
+        db_url = cfg.get("database_url") or cfg.get("general_settings", {}).get(
+            "database_url"
+        )
+
+        if db_url:
+
+            def _check_db():
+                global _ENGINE_CACHE_HITS, _ENGINE_CACHE_MISSES
+                try:
+                    from sqlalchemy import create_engine, text
+                    from sqlalchemy.pool import NullPool
+
+                    with _ENGINES_LOCK:
+                        now = time.time()
+                        cached = _ENGINES.get(db_url)
+                        # Check TTL expiration
+                        if cached and (now - cached[1]) > _ENGINE_TTL_SECONDS:
+                            # Expired - dispose and remove
+                            cached[0].dispose()
+                            del _ENGINES[db_url]
+                            cached = None
+
+                        if cached:
+                            _ENGINE_CACHE_HITS += 1
+                            engine = cached[0]
+                        else:
+                            _ENGINE_CACHE_MISSES += 1
+                            # Evict oldest if at capacity
+                            if len(_ENGINES) >= _MAX_ENGINES:
+                                oldest_url = min(_ENGINES.keys(), key=lambda k: _ENGINES[k][1])
+                                _ENGINES[oldest_url][0].dispose()
+                                del _ENGINES[oldest_url]
+                            engine = create_engine(db_url, poolclass=NullPool)
+                            _ENGINES[db_url] = (engine, now)
+
+                    with engine.connect() as conn:
+                        conn.execute(text("SELECT 1")).scalar()
+                    return "healthy"
+                except Exception:
+                    return "unreachable"
+
+            try:
+                database_status = await asyncio.wait_for(
+                    asyncio.to_thread(_check_db), timeout=2.0
+                )
+            except Exception:
+                database_status = "unreachable"
 
         return HealthStatus(
             status="healthy",
@@ -249,6 +284,15 @@ def include_core_routes(
             cpu_usage=cpu_usage,
             last_health_check=datetime.now().isoformat(),
         )
+
+    @router.get("/api/v1/commands")
+    async def get_commands():  # type: ignore[no-redef]
+        try:
+            cfg_mgr = get_config_manager()
+            return getattr(cfg_mgr, "commands", {}) or {}
+        except Exception as exc:
+            logger.warning("Failed to retrieve commands config: %s", exc)
+            return {}
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
@@ -274,32 +318,64 @@ def include_core_routes(
         error_count = counters.get("errors", 0)
         error_rate = (error_count / max(total_requests, 1)) * 100
 
+        # Get average response time from middleware instance (avoids global state)
+        avg_duration = (
+            response_time_middleware.get_average_ms()
+            if response_time_middleware is not None
+            else 0.0
+        )
+
         return MetricsData(
             total_requests=total_requests,
             uptime_seconds=uptime_seconds,
             active_connections=active_connections,
             cache_size=cache_size,
             error_rate=round(error_rate, 2),
-            response_time_avg=0.0,  # Placeholder for future implementation
+            response_time_avg=round(avg_duration, 2),
         )
 
     @router.get("/api/v1/config")
     async def get_config():
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
-        return getattr(cfg_mgr, "config", {})
+        config_data = dict(getattr(cfg_mgr, "config", {}))
+
+        # Mask sensitive data before returning
+        config_data = mask_sensitive_data(config_data)
+
+        # Expose which fields are overridden by the environment
+        env_overrides = {
+            "api_key": bool(os.environ.get("OPENAI_API_KEY")),
+            "base_url": bool(
+                os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")
+            ),
+            "model": bool(os.environ.get("OPENAI_MODEL")),
+        }
+        config_data["_env_overrides"] = env_overrides
+        return config_data
 
     @router.put("/api/v1/config")
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
-        try:
-            # Validate and sanitize config data
-            sanitized_config = validate_config_data(config_data)
 
+        rejected_keys = sorted(set(config_data) - ALLOWED_CONFIG_KEYS)
+        if rejected_keys:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Disallowed config keys: {', '.join(rejected_keys)}",
+            )
+
+        # Performance optimization: iterate over the small, fixed ALLOWED_CONFIG_KEYS
+        # set (O(K)) instead of the potentially large input dict items (O(M)).
+        filtered_data = {
+            k: config_data[k] for k in ALLOWED_CONFIG_KEYS if k in config_data
+        }
+
+        try:
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
             if isinstance(cfg, dict):
-                cfg.update(sanitized_config)
+                cfg.update(filtered_data)
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:
@@ -308,10 +384,16 @@ def include_core_routes(
                     # Some implementations require the cfg param
                     save(cfg)  # type: ignore[arg-type]
             return {"message": "Configuration updated successfully"}
-        except HTTPException:
-            raise
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
+
+    @router.get("/api/v1/commands")  # type: ignore[no-redef]  # noqa: F811
+    async def get_commands_config():
+        """Get the configured commands."""
+        counters["config_get"] += 1
+        cfg_mgr = get_config_manager()
+        # Return the 'commands' dictionary directly from the config
+        return getattr(cfg_mgr, "commands", {})
 
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
@@ -342,11 +424,13 @@ def include_core_routes(
         counters["command_post"] += 1
         start_time = time.time()
         try:
-            # Validate command for security
-            validated_command = validate_command_security(request.command)
-
             # Delegate to provided executor bridge to ensure consistent integration surface
-            success = bool(execute_command_fn(validated_command))
+            # Use run_in_executor to prevent blocking the event loop
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
+                None, execute_command_fn, request.command
+            )
+            success = bool(result)
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
                 success=success,
@@ -357,8 +441,6 @@ def include_core_routes(
                 ),
                 execution_time=execution_time,
             )
-        except HTTPException:
-            raise
         except Exception as e:
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(
@@ -377,18 +459,23 @@ def include_core_routes(
         "command_post": 0,
     }
 
-    @router.get("/api/v1/health", operation_id="health_check_core")
+    @router.get(
+        "/api/v1/health", operation_id="health_check_core", response_model=HealthStatus
+    )
     async def health_check_core():
         counters["status"] += 1
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "uptime": _format_uptime(time.time() - get_start_time()),
-        }
+        return await health_check()
 
     @router.get("/api/v1/metrics")
     async def metrics():
         # Shallow copy to avoid external mutation
-        return {**counters}
+        metrics_dict: dict[str, float | int] = {**counters}
+        avg_duration = (
+            response_time_middleware.get_average_ms()
+            if response_time_middleware is not None
+            else 0.0
+        )
+        metrics_dict["response_time_avg"] = round(avg_duration, 2)
+        return metrics_dict
 
     return router

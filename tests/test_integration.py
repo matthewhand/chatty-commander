@@ -1,32 +1,13 @@
-# MIT License
-#
-# Copyright (c) 2024 mhand
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 
+import json
+import tempfile
+from pathlib import Path
 
 import pytest
-from test_data_factories import TestDataFactory
-from test_utils import TestUtils
 
 from chatty_commander.app.config import Config
 from chatty_commander.app.state_manager import StateManager
+from conftest import TestDataFactory
 
 
 @pytest.mark.integration
@@ -72,9 +53,10 @@ class TestIntegration:
 
     def test_full_system_integration_config_persistence(self):
         """Test full system integration with configuration persistence."""
-        temp_file = TestUtils.create_test_config_file(
-            TestDataFactory.create_valid_config_data()
-        )
+        data = TestDataFactory.create_valid_config_data()
+        temp_file = Path(tempfile.mktemp(suffix=".json"))
+        with open(temp_file, "w") as f:
+            json.dump(data, f, indent=2)
         config = Config(str(temp_file))
         sm = StateManager(config)
         sm.change_state("computer")

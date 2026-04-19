@@ -62,7 +62,7 @@ class AgentStateInfo:
     state: ThinkingState
     message: str | None = None
     progress: float | None = None  # 0.0 to 1.0 for progress bars
-    timestamp: float = None
+    timestamp: float | None = None
 
     def __post_init__(self):
         if self.timestamp is None:
@@ -91,7 +91,7 @@ class ThinkingStateManager:
     def __init__(self):
         self.agent_states: dict[str, AgentStateInfo] = {}
         self.avatar_mappings: dict[str, str] = {}  # agent_id -> avatar_id
-        self.broadcast_callbacks: set[Callable[[dict[str, Any]], None]] = set()
+        self.broadcast_callbacks: set[Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]] = set()
 
     def register_agent(
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
@@ -306,9 +306,9 @@ class ThinkingStateContext:
         self.manager.start_thinking(self.agent_id, self.thinking_message)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
-            self.manager.set_error(self.agent_id, f"Error: {exc_val}")
+    def __exit__(self, _exc_type, _exc_val, _exc_tb):
+        if _exc_type is not None:
+            self.manager.set_error(self.agent_id, f"Error: {_exc_val}")
         else:
             self.manager.set_idle(self.agent_id)
 

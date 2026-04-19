@@ -1,25 +1,3 @@
-# MIT License
-#
-# Copyright (c) 2024 mhand
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 """
 Tests for real LLM provider implementations.
 """
@@ -300,7 +278,7 @@ class TestProviderBuilder:
                 mock_completion.return_value = Mock()
                 provider = build_provider(config)
 
-                assert provider is not None
+                assert provider is mock_completion.return_value
                 mock_completion.assert_called_once()
 
     def test_build_provider_responses(self):
@@ -314,7 +292,7 @@ class TestProviderBuilder:
                 mock_responses.return_value = Mock()
                 provider = build_provider(config)
 
-                assert provider is not None
+                assert provider is mock_responses.return_value
                 mock_responses.assert_called_once()
 
     def test_build_provider_fallback(self):
@@ -335,7 +313,7 @@ class TestProviderBuilder:
                 mock_fallback.return_value = Mock()
                 provider = build_provider(config)
 
-                assert provider is not None
+                assert provider is mock_fallback.return_value
                 mock_fallback.assert_called_once()
 
     def test_build_provider_invalid_mode(self):
@@ -353,7 +331,6 @@ class TestProviderBuilder:
         with patch("chatty_commander.advisors.providers.AGENTS_AVAILABLE", False):
             provider = build_provider_safe(config)
 
-            assert provider is not None
             assert hasattr(provider, "generate")
             assert hasattr(provider, "generate_stream")
 
@@ -372,7 +349,7 @@ class TestProviderBuilder:
                 mock_build.return_value = Mock()
                 provider = build_provider_safe(config)
 
-                assert provider is not None
+                assert provider is mock_build.return_value
                 mock_build.assert_called_once_with(config)
 
 

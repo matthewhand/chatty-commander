@@ -35,6 +35,7 @@ from __future__ import annotations
 import logging
 import threading
 from collections.abc import Callable
+from typing import Any
 
 from .transcription import VoiceTranscriber
 from .tts import TextToSpeech
@@ -65,7 +66,7 @@ class VoicePipeline:
         # Use mock components if voice deps not available or explicitly requested
         if not VOICE_DEPS_AVAILABLE or use_mock:
             logger.info("Using mock voice components")
-            self.wake_detector = MockWakeWordDetector(wake_words=wake_words, **kwargs)
+            self.wake_detector: WakeWordDetector | MockWakeWordDetector = MockWakeWordDetector(wake_words=wake_words, **kwargs)
             transcription_backend = "mock"
         else:
             self.wake_detector = WakeWordDetector(wake_words=wake_words, **kwargs)
@@ -236,7 +237,7 @@ class VoicePipeline:
             # Direct name match first
             for command_name in model_actions.keys():
                 if command_name.lower() in transcription_lower:
-                    return command_name
+                    return str(command_name)  # type: ignore[no-any-return]
 
             # Keyword-based matching
             command_keywords = {
@@ -307,7 +308,7 @@ class VoicePipeline:
                 self.tts.speak(text)
         return None
 
-    def get_status(self) -> dict[str, any]:
+    def get_status(self) -> dict[str, Any]:
         """Get pipeline status information."""
         return {
             "listening": self._listening,

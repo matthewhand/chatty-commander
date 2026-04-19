@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shlex
 import subprocess
 from typing import Any
 
@@ -52,22 +53,7 @@ class Config:
             "chat_models_path", "models-chatty"
         )
 
-        default_state_models = {}
-        if not self.config_file:  # Only use defaults for empty config_file (tests)
-            default_state_models = {
-                "idle": [
-                    "hey_chat_tee",
-                    "hey_khum_puter",
-                    "okay_stop",
-                    "lights_on",
-                    "lights_off",
-                ],
-                "computer": ["oh_kay_screenshot", "okay_stop"],
-                "chatty": ["wax_poetic", "thanks_chat_tee", "that_ill_do", "okay_stop"],
-            }
-        self.state_models: dict[str, list[str]] = self.config_data.get(
-            "state_models", default_state_models
-        )
+        self.state_models: dict[str, list[str]] = self.config_data.get("state_models", {})
         self.api_endpoints: dict[str, str] = self.config_data.get(
             "api_endpoints",
             {
@@ -105,8 +91,7 @@ class Config:
         # Voice/GUI behaviour
         self._voice_only: bool = bool(self.config_data.get("voice_only", False))
 
-        # Validate configuration after all attributes are set
-        self._validate_config()
+
 
         # Audio configuration
         self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
@@ -131,7 +116,7 @@ class Config:
 
         # Commands for model actions
         default_commands = {}
-        if not self.config_file:  # Only use defaults for empty config_file (tests)
+        if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
             default_commands = {
                 "hello": {
                     "action": "custom_message",
@@ -141,7 +126,7 @@ class Config:
                 "paste": {"action": "keypress", "keys": "paste"},
                 "submit": {"action": "keypress", "keys": "submit"},
             }
-        self.commands: dict = self.config_data.get("commands", default_commands)
+        self.commands: dict[str, Any] = self.config_data.get("commands", default_commands)  # type: ignore[no-redef]
 
         # Start on boot setting
         self.start_on_boot: bool = bool(
@@ -154,6 +139,10 @@ class Config:
         # Additional attributes for config CLI compatibility
         self.listen_for: dict[str, Any] = self.config_data.get("listen_for", {})
         self.modes: dict[str, Any] = self.config_data.get("modes", {})
+
+        # Validate configuration after all attributes are set (moved from line 92)
+        # Verify state_models is a dict before trying to validate its children if needed
+        self._validate_config()
 
         # Back-compat general settings wrapper with property-based access
         class _GeneralSettings:
@@ -260,6 +249,8 @@ class Config:
                 self.config = new_config
                 self._validate_config()
                 self._load_general_settings()  # Load general settings to update default_state
+                # Force re-load of other properties that depend on config_data
+                self.model_actions = self._build_model_actions()
                 logger.info("Configuration reloaded successfully")
                 return True
             return False
@@ -271,6 +262,14 @@ class Config:
     # Helpers
     def _apply_env_overrides(self) -> None:
         # API endpoint overrides
+        if os.environ.get("CHATTY_BRIDGE_TOKEN"):
+            # Update web_server config data so _apply_web_server_config picks it up
+            if "web_server" not in self.config_data:
+                self.config_data["web_server"] = {}
+            self.config_data["web_server"]["bridge_token"] = os.environ[
+                "CHATTY_BRIDGE_TOKEN"
+            ]
+
         if os.environ.get("CHATBOT_ENDPOINT"):
             self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
         if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
@@ -304,7 +303,13 @@ class Config:
         host = web_cfg.get("host", "0.0.0.0")
         port = int(web_cfg.get("port", 8100))
         auth = bool(web_cfg.get("auth_enabled", True))
-        self.web_server = {"host": host, "port": port, "auth_enabled": auth}
+        bridge_token = web_cfg.get("bridge_token")
+        self.web_server = {
+            "host": host,
+            "port": port,
+            "auth_enabled": auth,
+            "bridge_token": bridge_token,
+        }
         self.web_host = host
         self.web_port = port
         self.web_auth_enabled = auth
@@ -323,6 +328,8 @@ class Config:
         return fallback
 
     def _load_config(self) -> dict[str, Any]:
+        if not isinstance(self.config_file, str):
+             raise TypeError("config_file must be a string")
         try:
             with open(self.config_file, encoding="utf-8") as f:
                 config_data = json.load(f)
@@ -364,7 +371,8 @@ class Config:
                 "CHATCOMM_DEBUG", general_settings.get("debug_mode", True)
             )
         self.default_state = os.getenv(
-            "CHATCOMM_DEFAULT_STATE", general_settings.get("default_state", "idle")
+            "CHATCOMM_DEFAULT_STATE",
+            general_settings.get("default_state", self.config_data.get("default_state", "idle"))
         )
         self.inference_framework = os.getenv(
             "CHATCOMM_INFERENCE_FRAMEWORK",
@@ -381,15 +389,19 @@ class Config:
     # Build model_actions from the high-level 'commands' section
     def _build_model_actions(self) -> dict[str, dict[str, str]]:
         actions: dict[str, dict[str, str]] = {}
-        commands_cfg = self.commands or {}
+        # Ensure commands is a dict
+        commands_cfg = self.commands if isinstance(self.commands, dict) else {}
         keybindings = self.config_data.get("keybindings", {}) or {}
         for name, cfg in commands_cfg.items():
+            if not isinstance(cfg, dict):
+                continue
             action_type = cfg.get("action")
             if action_type == "keypress":
                 keys = cfg.get("keys")
-                mapped = keybindings.get(keys, keys)
-                if mapped:
-                    actions[name] = {"keypress": mapped}
+                if isinstance(keys, str):
+                   mapped = keybindings.get(keys, keys)
+                   if mapped:
+                       actions[name] = {"keypress": mapped}
             elif action_type == "url":
                 url = cfg.get("url", "")
                 url = url.replace(
@@ -401,7 +413,7 @@ class Config:
                 actions[name] = {"url": url}
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
-                actions[name] = {"shell": f"echo {msg}"}
+                actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
             elif action_type == "voice_chat":
                 # Voice chat action - pass through the entire config
                 actions[name] = {"action": "voice_chat"}

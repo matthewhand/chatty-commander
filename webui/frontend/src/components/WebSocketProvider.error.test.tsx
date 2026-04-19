@@ -1,8 +1,13 @@
 import React from "react";
-import { render } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 import { WebSocketProvider } from "./WebSocketProvider";
 
 jest.useFakeTimers();
+
+afterEach(() => {
+  jest.clearAllMocks();
+  jest.useRealTimers();
+});
 
 jest.mock("../hooks/useAuth", () => ({
   useAuth: () => ({ isAuthenticated: true }),
@@ -22,17 +27,21 @@ class ErrorWS {
     setTimeout(() => this.onerror && this.onerror(new Error("boom")), 0);
     setTimeout(() => this.onclose && this.onclose({ type: "close" }), 1);
   }
-  close() {}
+  close() { }
 }
 // @ts-ignore
 global.WebSocket = ErrorWS;
 
 it("handles websocket error and close without crashing", () => {
+  const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => { });
   const { unmount } = render(
     <WebSocketProvider>
       <div>Child</div>
     </WebSocketProvider>,
   );
-  jest.runOnlyPendingTimers();
+  act(() => {
+    jest.runOnlyPendingTimers();
+  });
   unmount();
+  consoleSpy.mockRestore();
 });

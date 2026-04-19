@@ -34,10 +34,12 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from PyQt5.QtCore import Qt, QUrl, pyqtSignal
-    from PyQt5.QtGui import QIcon
-    from PyQt5.QtWebEngineWidgets import QWebEngineView
-    from PyQt5.QtWidgets import (
+    from PyQt5.QtCore import Qt, QUrl, pyqtSignal  # type: ignore[import-not-found]
+    from PyQt5.QtGui import QIcon  # type: ignore[import-not-found]
+    from PyQt5.QtWebEngineWidgets import (
+        QWebEngineView,  # type: ignore[import-not-found]
+    )
+    from PyQt5.QtWidgets import (  # type: ignore[import-not-found]
         QAction,
         QApplication,
         QMainWindow,
@@ -52,16 +54,16 @@ except ImportError:
     PYQT5_AVAILABLE = False
 
     # Create dummy classes for type hints
-    class QMainWindow:
+    class QMainWindow:  # type: ignore[no-redef]
         pass
 
-    class QWebEngineView:
+    class QWebEngineView:  # type: ignore[no-redef]
         pass
 
-    class QSystemTrayIcon:
+    class QSystemTrayIcon:  # type: ignore[no-redef]
         pass
 
-    class QApplication:
+    class QApplication:  # type: ignore[no-redef]
         pass
 
 
@@ -123,7 +125,7 @@ class TransparentBrowser(QMainWindow):
         self.web_view = QWebEngineView()
 
         # Set transparent background
-        self.web_view.setStyleSheet("background: transparent;")
+        self.web_view.setStyleSheet("background: transparent;")  # type: ignore[attr-defined]
 
         # Create central widget and layout
         central_widget = QWidget()
@@ -148,10 +150,10 @@ class TransparentBrowser(QMainWindow):
             url = f"file:///{file_path}"
 
         logger.info(f"Loading avatar URL: {url}")
-        self.web_view.load(QUrl(url))
+        self.web_view.load(QUrl(url))  # type: ignore[attr-defined]
 
         # Inject CSS for transparency after page loads
-        self.web_view.loadFinished.connect(self._inject_transparency_css)
+        self.web_view.loadFinished.connect(self._inject_transparency_css)  # type: ignore[attr-defined]
 
     def _inject_transparency_css(self):
         """Inject CSS to make web page background transparent."""
@@ -173,7 +175,7 @@ class TransparentBrowser(QMainWindow):
         document.head.appendChild(style);
         """
 
-        self.web_view.page().runJavaScript(css_code)
+        self.web_view.page().runJavaScript(css_code)  # type: ignore[attr-defined]
 
     def _setup_system_tray(self):
         """Setup system tray icon and menu."""
@@ -187,10 +189,10 @@ class TransparentBrowser(QMainWindow):
         # Load icon
         icon_path = self._get_icon_path()
         if icon_path and icon_path.exists():
-            self.tray_icon.setIcon(QIcon(str(icon_path)))
+            self.tray_icon.setIcon(QIcon(str(icon_path)))  # type: ignore[attr-defined]
         else:
             # Fallback to default icon
-            self.tray_icon.setIcon(
+            self.tray_icon.setIcon(  # type: ignore[attr-defined]
                 self.style().standardIcon(self.style().SP_ComputerIcon)
             )
 
@@ -216,14 +218,14 @@ class TransparentBrowser(QMainWindow):
         quit_action.triggered.connect(self.quit_application)
         tray_menu.addAction(quit_action)
 
-        self.tray_icon.setContextMenu(tray_menu)
-        self.tray_icon.setToolTip("Chatty Commander Avatar")
+        self.tray_icon.setContextMenu(tray_menu)  # type: ignore[attr-defined]
+        self.tray_icon.setToolTip("Chatty Commander Avatar")  # type: ignore[attr-defined]
 
         # Double-click to toggle visibility
-        self.tray_icon.activated.connect(self._tray_icon_activated)
+        self.tray_icon.activated.connect(self._tray_icon_activated)  # type: ignore[attr-defined]
 
         # Show tray icon
-        self.tray_icon.show()
+        self.tray_icon.show()  # type: ignore[attr-defined]
 
     def _get_icon_path(self) -> Path | None:
         """Get the path to the application icon."""
@@ -355,7 +357,7 @@ def run_pyqt5_avatar() -> bool:
         logger.info("PyQt5 avatar browser started successfully")
 
         # Run the application
-        return app.exec_() == 0
+        return app.exec_() == 0  # type: ignore[no-any-return]
 
     except Exception as e:
         logger.error(f"Failed to start PyQt5 avatar browser: {e}")
