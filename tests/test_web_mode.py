@@ -138,10 +138,12 @@ class TestAPIEndpoints:
         assert "healthy" in data
 
     def test_status_endpoint(self, test_client):
-        """Test status endpoint."""
+        """Test status endpoint returns valid data."""
         response = test_client.get("/api/health")
-        # Health check should work
+        # Health check should work and return valid JSON
         assert response.status_code == 200
+        data = response.json()
+        assert "healthy" in data
 
     def test_state_endpoint_exists(self, test_client):
         """Test that state endpoint exists."""
