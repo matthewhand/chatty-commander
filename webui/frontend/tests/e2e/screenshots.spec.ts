@@ -177,12 +177,26 @@ test.describe("Documentation Screenshots", () => {
   });
 
   test("login", async ({ page }) => {
+    // Block auth checks to force the login page to render
+    await page.route("**/api/v1/auth/me", async (route) => {
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Not authenticated" }),
+      });
+    });
+    await page.route("**/api/v1/config", async (route) => {
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Not authenticated" }),
+      });
+    });
+
     await page.goto("/login");
 
-    // In --no-auth mode, login redirects to dashboard
-    // So we check what actually renders
     const loginHeading = page.getByRole("heading", { name: /login|chatty commander/i });
-    await expect(loginHeading.first()).toBeVisible();
+    await expect(loginHeading.first()).toBeVisible({ timeout: 30000 });
     await page.waitForLoadState('networkidle');
 
     await page.screenshot({

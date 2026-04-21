@@ -18,8 +18,8 @@ test.describe("WebSocket Experience", () => {
         await expect(wsStatus).toHaveClass(/text-success/);
 
         // 2. Verify the Real-time Command Log container exists
-        const logContainer = page.locator(".mockup-code");
-        await expect(logContainer).toBeVisible();
+        const logContainer = page.locator(".custom-scrollbar");
+        await expect(logContainer.first()).toBeVisible();
 
         // The log initially shows "Waiting for commands..." when no messages have arrived.
         // Once real WS messages (e.g. telemetry) arrive, they are parsed but telemetry
