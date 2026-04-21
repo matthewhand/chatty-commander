@@ -148,5 +148,18 @@
     "telemetry_url": "",
     "external_url": "",
     "diagnostics_file": "logs/diagnostics.jsonl"
-  }
+  },
+  "general": {
+    "debug_mode": true
+  },
+  "web_server": {
+    "host": "0.0.0.0",
+    "port": 8100,
+    "auth_enabled": false,
+    "bridge_token": null
+  },
+  "audio": {
+    "device": "Mock Microphone 1"
+  },
+  "voice_only": false
 }
