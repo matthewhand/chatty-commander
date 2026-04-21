@@ -1,6 +1,13 @@
 import httpx
 import pytest
-import respx
+
+try:
+    import respx
+    RESPX_AVAILABLE = True
+except ImportError:
+    RESPX_AVAILABLE = False
+
+pytest.importorskip("respx", reason="respx not installed")
 
 from chatty_commander.advisors.tools.browser_analyst import browser_analyst_tool
 from chatty_commander.app.config import Config

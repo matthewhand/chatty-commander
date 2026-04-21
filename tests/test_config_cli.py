@@ -3,9 +3,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from chatty_commander.config_cli import (
-    ConfigCLI,  # Assuming the class or main function in config_cli.py
-)
+from chatty_commander.cli.config import ConfigCLI
 
 
 @pytest.fixture
