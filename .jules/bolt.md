@@ -19,3 +19,6 @@
 ## 2024-06-25 - [Generator Expression Allocation Overhead in Recursion]
 **Learning:** In highly-recursive utility functions (e.g., `mask_sensitive_data` processing deeply nested JSON), placing generator expressions inside inner loops (like `any(p in k.lower() for p in patterns)`) forces redundant string conversions and generator allocation overhead on every iteration, leading to significant slowdowns.
 **Action:** Extract static sets to module-level tuples (to leverage CPython peephole optimization), cache expensive string conversions before the loop, and explicitly unroll `any()` generator expressions into standard `for` loops with early `break` statements.
+## 2024-04-22 - Memoize Mapped JSX Elements
+**Learning:** During frequent parent component re-renders (like 1-second ticks or telemetry updates), inline `Array.map()` operations for rendering lists of complex JSX components (such as agent cards or log messages) cause unnecessary component reallocation and reconciliation overhead, degrading performance.
+**Action:** When a parent component renders frequently but its underlying list data changes less often, wrap the derived JSX element arrays in a `useMemo` hook that depends only on the list data. This prevents expensive reallocation of the UI elements during every render cycle.
