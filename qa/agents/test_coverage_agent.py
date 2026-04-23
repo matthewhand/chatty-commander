@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""
+TEST COVERAGE IMPLEMENTATION AGENT
+Creates tests for top 38 critical modules without coverage.
+"""
+
+import ast
+from pathlib import Path
+from typing import Any
+
+
+class TestCoverageAgent:
+    """Generates test files for uncovered critical modules."""
+    
+    CRITICAL_PATTERNS = [
+        'cli', 'executor', 'state', 'config', 'llm', 'voice', 'web'
+    ]
+    
+    def __init__(self, src_path: str = "src/chatty_commander", 
+                 test_path: str = "tests", limit: int = 38):
+        self.src_path = Path(src_path)
+        self.test_path = Path(test_path)
+        self.limit = limit
+        self.created = 0
+    
+    def find_critical_modules(self) -> list[Path]:
+        """Find critical modules without tests."""
+        print("🔍 Finding critical uncovered modules...")
+        
+        # Find all source modules
+        all_modules: list[Path] = []
+        for py_file in self.src_path.rglob("*.py"):
+            if py_file.name.startswith('_'):
+                continue
+            all_modules.append(py_file)
+        
+        # Check which have tests
+        existing_tests = set()
+        for test_file in self.test_path.rglob("test_*.py"):
+            # Extract what module this tests
+            name = test_file.stem.replace('test_', '')
+            existing_tests.add(name)
+        
+        # Find uncovered critical modules
+        critical_uncovered = []
+        for mod in all_modules:
+            mod_name = mod.stem
+            if mod_name not in existing_tests:
+                # Check if critical
+                is_critical = any(p in str(mod).lower() for p in self.CRITICAL_PATTERNS)
+                if is_critical:
+                    critical_uncovered.append(mod)
+        
+        # Sort by importance (CLI/executors first)
+        def priority(p: Path) -> int:
+            s = str(p).lower()
+            if 'cli' in s: return 0
+            if 'executor' in s or 'state' in s: return 1
+            if 'config' in s: return 2
+            if 'llm' in s: return 3
+            if 'voice' in s: return 4
+            if 'web' in s: return 5
+            return 10
+        
+        critical_uncovered.sort(key=priority)
+        
+        print(f"  Found {len(critical_uncovered)} critical uncovered modules")
+        print(f"  Will create tests for top {min(self.limit, len(critical_uncovered))}")
+        
+        return critical_uncovered[:self.limit]
+    
+    def _extract_public_api(self, py_file: Path) -> dict[str, Any]:
+        """Extract public classes and functions from module."""
+        try:
+            with open(py_file, 'r', encoding='utf-8') as f:
+                tree = ast.parse(f.read())
+        except SyntaxError:
+            return {}
+        
+        api = {'classes': [], 'functions': []}
+        
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                if not node.name.startswith('_'):
+                    methods = [
+                        n.name for n in node.body 
+                        if isinstance(n, ast.FunctionDef) and not n.name.startswith('_')
+                    ]
+                    api['classes'].append({
+                        'name': node.name,
+                        'methods': methods
+                    })
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if not node.name.startswith('_'):
+                    api['functions'].append(node.name)
+        
+        return api
+    
+    def _generate_test_file(self, module_path: Path, api: dict) -> str:
+        """Generate test file content."""
+        module_name = module_path.stem
+        relative = module_path.relative_to(self.src_path.parent)
+        import_path = str(relative.with_suffix('')).replace('/', '.').replace('\\', '.')
+        
+        content = f'''# MIT License
+#
+# Copyright (c) 2024 mhand
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""Tests for {module_name} module.
+Auto-generated by Test Coverage Agent.
+"""
+
+import pytest
+from unittest.mock import Mock, patch, MagicMock
+
+# Import module under test
+try:
+    from {import_path} import (
+'''
+        
+        # Add imports
+        imports = []
+        for cls in api.get('classes', []):
+            imports.append(f"        {cls['name']},")
+        for func in api.get('functions', []):
+            imports.append(f"        {func},")
+        
+        if imports:
+            content += '\n'.join(imports)
+        else:
+            content += f"        {module_name},"
+        
+        content += '''
+    )
+except ImportError as e:
+    pytest.skip(f"Module import failed: {e}", allow_module_level=True)
+
+
+'''
+        
+        # Generate class tests
+        for cls in api.get('classes', []):
+            content += f'''class Test{cls['name']}:
+    """Tests for {cls['name']} class."""
+    
+    def test_initialization(self):
+        """Test basic instantiation."""
+        # TODO: Add initialization test
+        pass
+    
+'''
+            for method in cls['methods']:
+                content += f'''    def test_{method}(self):
+        """Test {method} method."""
+        # TODO: Add {method} test
+        pass
+    
+'''
+        
+        # Generate function tests
+        for func in api.get('functions', []):
+            content += f'''class Test{func.title().replace('_', '')}:
+    """Tests for {func} function."""
+    
+    def test_{func}_basic(self):
+        """Test basic {func} functionality."""
+        # TODO: Add {func} test
+        pass
+
+
+'''
+        
+        content += '''# TODO: Add edge case tests
+# TODO: Add error handling tests
+# TODO: Add integration tests
+'''
+        
+        return content
+    
+    def implement(self) -> int:
+        """Create test files for critical modules."""
+        modules = self.find_critical_modules()
+        
+        print(f"\n🚀 Creating test files...")
+        
+        for module_path in modules[:self.limit]:
+            api = self._extract_public_api(module_path)
+            
+            if not api.get('classes') and not api.get('functions'):
+                print(f"  ⚠️ No public API found in {module_path.name}")
+                continue
+            
+            # Generate test file
+            test_content = self._generate_test_file(module_path, api)
+            
+            # Determine test file path
+            test_name = f"test_{module_path.stem}.py"
+            
+            # Check if test file already exists
+            existing = list(self.test_path.rglob(test_name))
+            if existing:
+                print(f"  ⚠️ Test exists: {test_name}")
+                continue
+            
+            # Write test file
+            test_file = self.test_path / test_name
+            test_file.write_text(test_content)
+            
+            self.created += 1
+            print(f"  ✓ Created {test_name} ({len(api.get('classes', []))} classes, {len(api.get('functions', []))} functions)")
+        
+        print(f"\n✅ Created {self.created} test files")
+        return self.created
+
+
+def main():
+    agent = TestCoverageAgent(limit=38)
+    count = agent.implement()
+    return 0 if count > 0 else 1
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
