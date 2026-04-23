@@ -17,3 +17,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2026-04-18 - Fallback ARIA labels for dynamic dropdown triggers
 **Learning:** Components like `Dropdown.tsx` wrap trigger elements that may just be text, but sometimes lack a provided `ariaLabel`. If an icon is used instead of text, `ariaLabel` is critical. But if text is provided via the `trigger` prop and `ariaLabel` is omitted, the component fell back to a generic 'Toggle dropdown' which overrides the visual text if voice control is used, violating WCAG 2.5.3 (Label in Name).
 **Action:** Conditionally fallback `ariaLabel` to the string value of the `trigger` prop if one is provided and `ariaLabel` is omitted. This ensures voice control maps correctly to the visible text.
+
+## 2024-05-18 - Clear Search Button Icon
+**Learning:** Found an instance where a raw character `×` was used for a clear search button inside `webui/frontend/src/pages/CommandsPage.tsx`. Relying on raw text characters for action buttons can lead to poor visual consistency, misalignment, and parsing issues inside JSX, particularly next to proper SVGs.
+**Action:** Always prefer using a vector icon from the established UI library (e.g. `<X />` from `lucide-react`) rather than raw characters like '×', 'x', or 'X' to ensure clear, scalable, and accessible close/clear button interactions.
