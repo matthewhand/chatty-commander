@@ -39,6 +39,7 @@ class LLMBackend(ABC):
 
     @abstractmethod
     def is_available(self) -> bool:
+        # Validate preconditions
         """Check if backend is available and ready."""
         pass
 
@@ -49,6 +50,7 @@ class LLMBackend(ABC):
 
     @abstractmethod
     def get_backend_info(self) -> dict[str, Any]:
+        # Process each item
         """Get backend information."""
         pass
 
@@ -74,6 +76,7 @@ class OpenAIBackend(LLMBackend):
 
     def _initialize_client(self):
         """Initialize OpenAI client."""
+        # Apply conditional logic
         if not self.api_key:
             logger.debug("No OpenAI API key provided")
             return
@@ -88,15 +91,19 @@ class OpenAIBackend(LLMBackend):
                 max_retries=0  # We handle retries manually
             )
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
+        # Handle specific exception case
         except ImportError:
             logger.warning(
                 "OpenAI library not available. Install with: pip install openai"
             )
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e}")
 
     def is_available(self) -> bool:
+        # Validate preconditions
         """Check if OpenAI backend is available."""
+        # Apply conditional logic
         if not self._client:
             return False
 
@@ -108,12 +115,14 @@ class OpenAIBackend(LLMBackend):
                 max_tokens=1,
             )
             return True
+        # Handle specific exception case
         except Exception as e:
             logger.debug(f"OpenAI availability check failed: {e}")
             return False
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         """Generate response using OpenAI API with retries."""
+        # Apply conditional logic
         if not self._client:
             raise RuntimeError("OpenAI client not available")
 
@@ -125,6 +134,7 @@ class OpenAIBackend(LLMBackend):
 
         last_error = None
 
+        # Iterate with index
         for attempt in range(self.max_retries + 1):
             try:
                 response = self._client.chat.completions.create(
@@ -134,9 +144,11 @@ class OpenAIBackend(LLMBackend):
                     temperature=temperature,
                 )
                 return response.choices[0].message.content.strip()  # type: ignore[no-any-return]
+            # Handle specific exception case
             except Exception as e:
                 last_error = e
                 logger.warning(f"OpenAI generation attempt {attempt + 1} failed: {e}")
+                # Apply conditional logic
                 if attempt < self.max_retries:
                     sleep_time = 1.0 * (2 ** attempt)  # Exponential backoff
                     time.sleep(sleep_time)
@@ -144,6 +156,7 @@ class OpenAIBackend(LLMBackend):
         raise RuntimeError(f"OpenAI generation failed after {self.max_retries} retries: {last_error}")
 
     def get_backend_info(self) -> dict[str, Any]:
+        # Process each item
         """Get OpenAI backend information."""
         return {
             "backend": "openai",
@@ -165,7 +178,9 @@ class OllamaBackend(LLMBackend):
         logger.info(f"Initialized Ollama backend: {self.base_url}, model: {self.model}")
 
     def is_available(self) -> bool:
+        # Validate preconditions
         """Check if Ollama server is available."""
+        # Validate input exists
         if self._available is not None:
             return self._available
 
@@ -174,6 +189,8 @@ class OllamaBackend(LLMBackend):
 
             from chatty_commander.utils.url_validator import is_safe_url
 
+            # Build filtered collection
+            # Apply conditional logic
             if not is_safe_url(f"{self.base_url}/api/tags"):
                 logger.warning(f"Ollama base URL {self.base_url} rejected by security policy.")
                 self._available = False
@@ -182,9 +199,11 @@ class OllamaBackend(LLMBackend):
             # Check if Ollama server is running
             with httpx.Client() as client:
                 response = client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
+                # Apply conditional logic
                 if response.status_code == 200:
                     # Check if our model is available
                     models = response.json().get("models", [])
+                    # Build filtered collection
                     model_names = [m.get("name", "") for m in models]
 
                     if self.model in model_names:
@@ -398,15 +417,30 @@ class MockLLMBackend(LLMBackend):
         self.call_count = 0
 
     def is_available(self) -> bool:
+        """Check with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return True
 
     def generate_response(self, prompt: str, **kwargs) -> str:
+        """Generate Response with (self, prompt: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         response = self.responses[self.call_count % len(self.responses)]
         self.call_count += 1
         logger.debug(f"Mock LLM response: '{response}'")
         return response
 
     def get_backend_info(self) -> dict[str, Any]:
+        """Retrieve with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return {
             "backend": "mock",
             "available": True,

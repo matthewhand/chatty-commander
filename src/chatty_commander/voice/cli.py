@@ -110,6 +110,11 @@ def add_voice_subcommands(subparsers) -> None:
 
 
 def handle_voice_command(
+    """Process with (args, config_manager, command_executor, state_manager).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     args, config_manager=None, command_executor=None, state_manager=None
 ) -> None:
     if not hasattr(args, "voice_command") or not args.voice_command:
@@ -151,6 +156,11 @@ def _handle_voice_test(
 
         # Add callback to show detected commands
         def command_callback(command_name: str, transcription: str):
+            """Command Callback with (command_name: str, transcription: str).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             if command_name:
                 print(
                     f"✅ Command executed: '{command_name}' (from: '{transcription}')"
@@ -298,6 +308,11 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
 
         # Add demo callback
         def demo_callback(command_name: str, transcription: str):
+            """Demo Callback with (command_name: str, transcription: str).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             if command_name:
                 print(f"🎯 Executed: {command_name} ('{transcription}')")
             else:

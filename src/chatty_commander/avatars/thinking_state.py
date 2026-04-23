@@ -65,10 +65,12 @@ class AgentStateInfo:
     timestamp: float | None = None
 
     def __post_init__(self):
+        # Validate input exists
         if self.timestamp is None:
             self.timestamp = time.time()
 
     def to_dict(self) -> dict[str, Any]:
+        # Process each item
         """Convert to dictionary for JSON serialization."""
         data = asdict(self)
         data["state"] = self.state.value
@@ -104,6 +106,7 @@ class ThinkingStateManager:
             state=ThinkingState.IDLE,
         )
 
+        # Apply conditional logic
         if avatar_id:
             self.avatar_mappings[agent_id] = avatar_id
 
@@ -117,6 +120,7 @@ class ThinkingStateManager:
         progress: float | None = None,
     ) -> None:
         """Update an agent's thinking state."""
+        # Apply conditional logic
         if agent_id not in self.agent_states:
             logger.warning(f"Agent {agent_id} not registered, creating default entry")
             self.register_agent(agent_id, "default")
@@ -138,9 +142,11 @@ class ThinkingStateManager:
         return self.agent_states.copy()
 
     def map_agent_to_avatar(self, agent_id: str, avatar_id: str) -> None:
+        # Apply conditional logic
         """Map an agent to a specific avatar for visual correlation."""
         self.avatar_mappings[agent_id] = avatar_id
 
+        # Apply conditional logic
         if agent_id in self.agent_states:
             self.agent_states[agent_id].avatar_id = avatar_id
             self._broadcast_state_change(agent_id)
@@ -167,23 +173,28 @@ class ThinkingStateManager:
 
     def _broadcast(self, message: dict[str, Any]) -> None:
         callbacks = list(self.broadcast_callbacks.copy())
+        # Process each item
         for callback in callbacks:
             try:
+                # Apply conditional logic
                 if inspect.iscoroutinefunction(callback):
                     # If we're in an event loop, schedule the coroutine, else run it
                     try:
                         loop = asyncio.get_running_loop()
                         loop.create_task(callback(message))
+                    # Handle specific exception case
                     except RuntimeError:
                         asyncio.run(callback(message))
                 else:
                     callback(message)
+            # Handle specific exception case
             except Exception as e:
                 logger.error(f"Error in broadcast callback: {e}")
 
     def _broadcast_state_change(self, agent_id: str) -> None:
         """Broadcast state change to all registered callbacks."""
         agent_info = self.agent_states.get(agent_id)
+        # Apply conditional logic
         if not agent_info:
             return
         message = {
@@ -195,6 +206,11 @@ class ThinkingStateManager:
 
     # Tool calling lifecycle events
     def start_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
+        """Start Tool Call with (self, agent_id: str, tool_name).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self.set_agent_state(
             agent_id,
             ThinkingState.TOOL_CALLING,
@@ -209,6 +225,11 @@ class ThinkingStateManager:
         )
 
     def end_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
+        """End Tool Call with (self, agent_id: str, tool_name).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         # Return to processing by default
         self.set_agent_state(agent_id, ThinkingState.PROCESSING)
         self._broadcast(
@@ -221,6 +242,11 @@ class ThinkingStateManager:
 
     # Agent handoff lifecycle
     def handoff_start(
+        """Handoff Start with (self, agent_id: str, to_agent_persona: str, reason).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self, agent_id: str, to_agent_persona: str, reason: str | None = None
     ) -> None:
         self.set_agent_state(agent_id, ThinkingState.HANDOFF, reason)
@@ -237,6 +263,11 @@ class ThinkingStateManager:
         )
 
     def handoff_complete(self, agent_id: str, new_persona_id: str) -> None:
+        """Handoff Complete with (self, agent_id: str, new_persona_id: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         # Update persona mapping and return to idle
         if agent_id in self.agent_states:
             self.agent_states[agent_id].persona_id = new_persona_id
@@ -307,6 +338,7 @@ class ThinkingStateContext:
         return self
 
     def __exit__(self, _exc_type, _exc_val, _exc_tb):
+        # Validate input exists
         if _exc_type is not None:
             self.manager.set_error(self.agent_id, f"Error: {_exc_val}")
         else:
@@ -326,7 +358,17 @@ def with_thinking_state(
     """Decorator to automatically manage thinking states during function execution."""
 
     def decorator(func):
+        """Decorator with (func).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         def wrapper(*args, **kwargs):
+            """Wrapper operation.
+
+            TODO: Add detailed description and parameters.
+            """
+            
             with ThinkingStateContext(agent_id, thinking_msg, responding_msg) as ctx:
                 result = func(*args, **kwargs)
                 ctx.start_responding()

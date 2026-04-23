@@ -371,6 +371,11 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
 
     # Recursively sanitize string values
     def sanitize_value(value: Any) -> Any:
+        """Sanitize Value with (value: Any).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         if isinstance(value, str):
             # Remove potential script injections
             if "<script" in value.lower() or "javascript:" in value.lower():
@@ -410,26 +415,56 @@ class ValidatedAgentBlueprint(BaseModel):
 
     @validator("name")
     def validate_name(cls, v):
+        """Validate Name with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return validate_agent_name(v)
 
     @validator("description")
     def validate_description(cls, v):
+        """Validate Description with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return validate_agent_description(v)
 
     @validator("persona_prompt")
     def validate_prompt(cls, v):
+        """Validate Prompt with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return validate_persona_prompt(v)
 
     @validator("capabilities")
     def validate_capabilities_list(cls, v):
+        """Validate Capabilities List with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return validate_capabilities(v)
 
     @validator("team_role")
     def validate_role(cls, v):
+        """Validate Role with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return validate_team_role(v)
 
     @validator("handoff_triggers")
     def validate_triggers(cls, v):
+        """Validate Triggers with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return validate_handoff_triggers(v)
 
 
@@ -445,6 +480,11 @@ class ValidatedCommandRequest(BaseModel):
 
     @validator("command")
     def validate_command_security(cls, v):
+        """Validate Command Security with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return validate_command_name(v)
 
 
@@ -457,6 +497,11 @@ class ValidatedStateChangeRequest(BaseModel):
 
     @validator("state")
     def validate_state_value(cls, v):
+        """Validate State Value with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return validate_state_change(v)
 
 
@@ -467,4 +512,9 @@ class ValidatedConfigUpdate(BaseModel):
 
     @validator("config_data")
     def sanitize_config(cls, v):
+        """Sanitize Config with (cls, v).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return sanitize_config_data(v)

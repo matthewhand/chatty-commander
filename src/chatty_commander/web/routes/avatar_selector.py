@@ -35,6 +35,11 @@ AllowedLabel = Literal[
 
 
 class AnimationChooseRequest(BaseModel):
+    """AnimationChooseRequest class.
+
+    TODO: Add class description.
+    """
+    
     text: str = Field(..., description="Text to classify")
     candidate_labels: list[str] | None = Field(
         default=None, description="Optional subset of allowed labels"
@@ -42,6 +47,11 @@ class AnimationChooseRequest(BaseModel):
 
 
 class AnimationChooseResponse(BaseModel):
+    """AnimationChooseResponse class.
+
+    TODO: Add class description.
+    """
+    
     label: str
     confidence: float = 0.5
     rationale: str | None = None
@@ -60,6 +70,11 @@ _HINTS = {
 
 @router.post("/avatar/animation/choose", response_model=AnimationChooseResponse)
 async def choose_animation(req: AnimationChooseRequest) -> Any:
+    """Choose Animation with (req: AnimationChooseRequest).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     try:
         text = (req.text or "").lower()
         labels = set(req.candidate_labels or [])
@@ -67,6 +82,11 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
             labels &= set(_HINTS.keys()) | {"neutral"}
 
         def allowed(label: str) -> bool:
+            """Allowed with (label: str).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             return (not labels) or (label in labels)
 
         # Hint-based deterministic classifier (placeholder for LLM)

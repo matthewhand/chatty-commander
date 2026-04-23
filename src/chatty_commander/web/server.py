@@ -32,12 +32,27 @@ try:
 except Exception:  # very minimal stub if FastAPI missing (tests won't hit real HTTP)
 
     class FastAPI:  # type: ignore
+        """FastAPI class.
+
+        TODO: Add class description.
+        """
+        
         def __init__(self, *a: Any, **k: Any) -> None: ...
 
         def include_router(self, *a: Any, **k: Any) -> None: ...
+            """Include Router with (self).
+
+            TODO: Add detailed description and parameters.
+            """
+            
 
         @property
         def routes(self):
+            """Routes with (self).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             return []
 
 
@@ -106,6 +121,11 @@ def _include_optional(app: FastAPI, name: str) -> None:
 
 
 def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
+    """Create with (no_auth: bool, config_manager: Any).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     app = FastAPI()
 
     # Include routers that are available

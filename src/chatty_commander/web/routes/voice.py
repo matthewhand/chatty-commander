@@ -29,12 +29,22 @@ from pydantic import BaseModel
 
 
 class VoiceStatus(BaseModel):
+    """VoiceStatus class.
+
+    TODO: Add class description.
+    """
+    
     running: bool
     wake_words: list[str]
     backend: str
 
 
 def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
+    """Include Voice Routes operation.
+
+    TODO: Add detailed description and parameters.
+    """
+    
     router = APIRouter()
 
     # Simple state for tracking voice pipeline status
@@ -42,6 +52,11 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
     @router.get("/api/voice/status", response_model=VoiceStatus)
     async def get_voice_status():
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         config_manager = get_config_manager()
         config = getattr(config_manager, "config", {})
         wake_words = config.get("wake_words", ["hey_jarvis", "alexa"])
@@ -54,6 +69,11 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
     @router.post("/api/voice/start")
     async def start_voice():
+        """Start Voice operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         if not state["running"]:
             state["running"] = True
             return {"status": "started", "message": "Voice pipeline started"}
@@ -61,6 +81,11 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
     @router.post("/api/voice/stop")
     async def stop_voice():
+        """Stop Voice operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         if state["running"]:
             state["running"] = False
             return {"status": "stopped", "message": "Voice pipeline stopped"}

@@ -183,6 +183,11 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
 
 
 def report_error(e, context=None):
+    """Report Error with (e, context).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     if context:
         logging.error(f"Error reported: {e}, context: {context}")
     else:

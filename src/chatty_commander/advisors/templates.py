@@ -32,6 +32,11 @@ _TEMPLATES: dict[str, str] = {
 
 
 def get_prompt_template(model: str, persona_name: str, api_mode: str) -> str:
+    """Retrieve with (model: str, persona_name: str, api_mode: str).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     persona_name = persona_name or "default"
     api_mode = (api_mode or "completion").lower()
     model = model or "*"
@@ -49,4 +54,9 @@ def get_prompt_template(model: str, persona_name: str, api_mode: str) -> str:
 
 
 def render_with_template(template: str, *, system: str, text: str) -> str:
+    """Render With Template with (template: str).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     return template.format(system=system, text=text)

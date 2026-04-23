@@ -44,6 +44,11 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
     if app.docs_url is None:
         @app.get("/docs", include_in_schema=False)
         async def custom_swagger_ui_html():
+            """Custom Swagger Ui Html operation.
+
+            TODO: Add detailed description and parameters.
+            """
+            
             return get_swagger_ui_html(
                 openapi_url=app.openapi_url or "/openapi.json",
                 title=app.title + " - Swagger UI",
@@ -54,6 +59,11 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
 
         @app.get("/redoc", include_in_schema=False)
         async def redoc_html():
+            """Redoc Html operation.
+
+            TODO: Add detailed description and parameters.
+            """
+            
             return get_redoc_html(
                 openapi_url=app.openapi_url or "/openapi.json",
                 title=app.title + " - ReDoc",

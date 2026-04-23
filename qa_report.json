@@ -1,0 +1,812 @@
+{
+  "executive_summary": {
+    "global_score": 40,
+    "global_rating": "F (Critical)",
+    "agents_deployed": 6,
+    "agents_successful": 4,
+    "total_issues": 129,
+    "category_breakdown": {
+      "COMPLEXITY": 10,
+      "TYPES": 1,
+      "STYLE": 5,
+      "OTHER": 76,
+      "ALGORITHM": 10,
+      "MEMORY": 2,
+      "I/O": 1,
+      "DOCSTRINGS": 15,
+      "README": 1,
+      "COMMENTS": 5,
+      "ARCHITECTURE": 3
+    },
+    "agent_summaries": [
+      {
+        "name": "CodeQuality",
+        "score": 24,
+        "rating": "F (Critical)",
+        "issues": 16,
+        "status": "\u2705"
+      },
+      {
+        "name": "Coverage",
+        "score": 51,
+        "rating": "F (Critical)",
+        "issues": 76,
+        "status": "\u2705"
+      },
+      {
+        "name": "Security Audit Agent",
+        "score": 0,
+        "rating": "ERROR",
+        "issues": 0,
+        "status": "\u274c"
+      },
+      {
+        "name": "Performance",
+        "score": 56,
+        "rating": "F (Critical)",
+        "issues": 13,
+        "status": "\u2705"
+      },
+      {
+        "name": "Documentation",
+        "score": 47,
+        "rating": "F (Undocumented)",
+        "issues": 24,
+        "status": "\u2705"
+      },
+      {
+        "name": "Dependency Audit Agent",
+        "score": 0,
+        "rating": "ERROR",
+        "issues": 0,
+        "status": "\u274c"
+      }
+    ]
+  },
+  "agent_results": [
+    {
+      "name": "CodeQuality",
+      "score": 24,
+      "rating": "F (Critical)",
+      "metrics": {
+        "complexity": {
+          "total_functions": 681,
+          "avg_complexity": 3.66,
+          "high_complexity_count": 34,
+          "score": 0
+        },
+        "type_coverage": {
+          "param_coverage": 51.6,
+          "return_coverage": 71.4,
+          "overall": 61.5,
+          "score": 61
+        },
+        "style": {
+          "issues_found": 100,
+          "score": 0
+        },
+        "overall": 24,
+        "grade": "F (Critical)"
+      },
+      "issue_count": 16
+    },
+    {
+      "name": "Coverage",
+      "score": 51,
+      "rating": "F (Critical)",
+      "metrics": {
+        "module_coverage": {
+          "total": 76,
+          "tested": 0,
+          "percentage": 0.0,
+          "score": 0
+        },
+        "test_quality": {
+          "total_tests": 3893,
+          "test_classes": 446,
+          "test_functions": 1974,
+          "fixtures": 106,
+          "mocks": 1212,
+          "assertions": 3455,
+          "avg_tests_per_class": 8.7,
+          "assertion_density": 0.89,
+          "score": 78
+        },
+        "coverage_depth": {
+          "by_type": {
+            "unit": 2046,
+            "integration": 4,
+            "e2e": 21,
+            "property": 0,
+            "parametrized": 18
+          },
+          "balance_score": 86.0,
+          "depth_score": 100,
+          "score": 93
+        },
+        "overall": 51,
+        "grade": "F (Critical)"
+      },
+      "issue_count": 76
+    },
+    {
+      "name": "Security Audit Agent",
+      "score": 0,
+      "rating": "ERROR",
+      "metrics": {},
+      "issue_count": 0
+    },
+    {
+      "name": "Performance",
+      "score": 56,
+      "rating": "F (Critical)",
+      "metrics": {
+        "algorithmic": {
+          "issues": 24,
+          "score": 0
+        },
+        "memory": {
+          "issues": 2,
+          "score": 90
+        },
+        "io": {
+          "blocking_issues": 1,
+          "sync_operations": 6,
+          "score": 90
+        },
+        "startup": {
+          "heavy_imports": 6,
+          "global_init": 13,
+          "score": 44
+        },
+        "overall": 56,
+        "rating": "F (Critical)"
+      },
+      "issue_count": 13
+    },
+    {
+      "name": "Documentation",
+      "score": 47,
+      "rating": "F (Undocumented)",
+      "metrics": {
+        "docstrings": {
+          "total_public": 576,
+          "documented": 327,
+          "coverage": 56.8,
+          "score": 56
+        },
+        "readme": {
+          "exists": true,
+          "word_count": 87,
+          "missing_sections": [
+            "example"
+          ],
+          "score": 47
+        },
+        "comments": {
+          "total_lines": 19084,
+          "comment_lines": 2825,
+          "ratio": 14.8,
+          "score": 44
+        },
+        "architecture": {
+          "found": 1,
+          "missing": 3,
+          "score": 25
+        },
+        "overall": 47,
+        "grade": "F (Undocumented)"
+      },
+      "issue_count": 24
+    },
+    {
+      "name": "Dependency Audit Agent",
+      "score": 0,
+      "rating": "ERROR",
+      "metrics": {},
+      "issue_count": 0
+    }
+  ],
+  "prioritized_issues": [
+    {
+      "rank": 1,
+      "agent": "CodeQuality",
+      "priority": "CRITICAL",
+      "category": "COMPLEXITY",
+      "issue": "_process_voice_command() has complexity 17",
+      "file": "src/chatty_commander/voice/pipeline.py",
+      "line": 157,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 2,
+      "agent": "CodeQuality",
+      "priority": "CRITICAL",
+      "category": "COMPLEXITY",
+      "issue": "handle_message() has complexity 18",
+      "file": "src/chatty_commander/advisors/service.py",
+      "line": 107,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 3,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "_process_audio_chunk() has complexity 13",
+      "file": "src/chatty_commander/voice/enhanced_processor.py",
+      "line": 273,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 4,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "handle_self_test_command() has complexity 12",
+      "file": "src/chatty_commander/voice/self_test.py",
+      "line": 526,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 5,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "_handle_llm_status() has complexity 11",
+      "file": "src/chatty_commander/llm/cli.py",
+      "line": 108,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 6,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "summarize_url() has complexity 11",
+      "file": "src/chatty_commander/tools/browser_analyst.py",
+      "line": 54,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 7,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "analyze_intent() has complexity 13",
+      "file": "src/chatty_commander/advisors/conversation_engine.py",
+      "line": 51,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 8,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "get_smart_fallback_response() has complexity 11",
+      "file": "src/chatty_commander/advisors/conversation_engine.py",
+      "line": 255,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 9,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "browser_analyst_tool() has complexity 11",
+      "file": "src/chatty_commander/advisors/tools/browser_analyst.py",
+      "line": 63,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 10,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "run_web_mode() has complexity 12",
+      "file": "src/chatty_commander/cli/cli.py",
+      "line": 103,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 11,
+      "agent": "Coverage",
+      "priority": "CRITICAL",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/voice/cli.py",
+      "line": null,
+      "recommendation": "Create tests/test_cli.py",
+      "impact": "CRITICAL priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 12,
+      "agent": "Coverage",
+      "priority": "CRITICAL",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/llm/cli.py",
+      "line": null,
+      "recommendation": "Create tests/test_cli.py",
+      "impact": "CRITICAL priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 13,
+      "agent": "Coverage",
+      "priority": "CRITICAL",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/tools/cli.py",
+      "line": null,
+      "recommendation": "Create tests/test_cli.py",
+      "impact": "CRITICAL priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 14,
+      "agent": "Coverage",
+      "priority": "CRITICAL",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/cli/cli.py",
+      "line": null,
+      "recommendation": "Create tests/test_cli.py",
+      "impact": "CRITICAL priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 15,
+      "agent": "Coverage",
+      "priority": "CRITICAL",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/app/state_manager.py",
+      "line": null,
+      "recommendation": "Create tests/test_state_manager.py",
+      "impact": "CRITICAL priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 16,
+      "agent": "Coverage",
+      "priority": "CRITICAL",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/app/command_executor.py",
+      "line": null,
+      "recommendation": "Create tests/test_command_executor.py",
+      "impact": "CRITICAL priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 17,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'create_parser'",
+      "file": "src/chatty_commander/main.py",
+      "line": 54,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 18,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'run_orchestrator_mode'",
+      "file": "src/chatty_commander/main.py",
+      "line": 58,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 19,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'handle_voice_command'",
+      "file": "src/chatty_commander/voice/cli.py",
+      "line": 112,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 20,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'command_callback'",
+      "file": "src/chatty_commander/voice/cli.py",
+      "line": 153,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 21,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'demo_callback'",
+      "file": "src/chatty_commander/voice/cli.py",
+      "line": 300,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 22,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'speak'",
+      "file": "src/chatty_commander/voice/tts.py",
+      "line": 71,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 23,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'is_available'",
+      "file": "src/chatty_commander/voice/tts.py",
+      "line": 77,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 24,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'speak'",
+      "file": "src/chatty_commander/voice/tts.py",
+      "line": 87,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 25,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'is_available'",
+      "file": "src/chatty_commander/voice/tts.py",
+      "line": 90,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 26,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'speak'",
+      "file": "src/chatty_commander/voice/tts.py",
+      "line": 108,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 27,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'is_available'",
+      "file": "src/chatty_commander/voice/tts.py",
+      "line": 114,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 28,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'get_backend_info'",
+      "file": "src/chatty_commander/voice/tts.py",
+      "line": 117,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 29,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'add_callback'",
+      "file": "src/chatty_commander/voice/wakeword.py",
+      "line": 248,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 30,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'remove_callback'",
+      "file": "src/chatty_commander/voice/wakeword.py",
+      "line": 251,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 31,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'start_listening'",
+      "file": "src/chatty_commander/voice/wakeword.py",
+      "line": 255,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 32,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/voice/pipeline.py",
+      "line": 238,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 33,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/voice/pipeline.py",
+      "line": 252,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 34,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/llm/processor.py",
+      "line": 138,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 35,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/llm/processor.py",
+      "line": 144,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 36,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/llm/processor.py",
+      "line": 239,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 37,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/llm/processor.py",
+      "line": 252,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 38,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/tools/validate_config.py",
+      "line": 39,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 39,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/tools/run_tests_with_coverage.py",
+      "line": 273,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 40,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "I/O",
+      "issue": "Blocking I/O in async function",
+      "file": "src/chatty_commander/web/middleware/auth.py",
+      "line": 59,
+      "recommendation": "Use aiohttp or httpx.AsyncClient",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 41,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "README",
+      "issue": "Missing example section",
+      "file": null,
+      "line": null,
+      "recommendation": "Add example documentation to README",
+      "impact": "HIGH priority improvement",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 42,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/voice/pipeline.py",
+      "line": null,
+      "recommendation": "Create tests/test_pipeline.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 43,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/voice/enhanced_processor.py",
+      "line": null,
+      "recommendation": "Create tests/test_enhanced_processor.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 44,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/voice/tts.py",
+      "line": null,
+      "recommendation": "Create tests/test_tts.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 45,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/voice/self_test.py",
+      "line": null,
+      "recommendation": "Create tests/test_self_test.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 46,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/voice/wakeword.py",
+      "line": null,
+      "recommendation": "Create tests/test_wakeword.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 47,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/voice/transcription.py",
+      "line": null,
+      "recommendation": "Create tests/test_transcription.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 48,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/llm/processor.py",
+      "line": null,
+      "recommendation": "Create tests/test_processor.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 49,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/llm/manager.py",
+      "line": null,
+      "recommendation": "Create tests/test_manager.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    },
+    {
+      "rank": 50,
+      "agent": "Coverage",
+      "priority": "HIGH",
+      "category": "GENERAL",
+      "issue": "No tests found",
+      "file": "src/chatty_commander/llm/backends.py",
+      "line": null,
+      "recommendation": "Create tests/test_backends.py",
+      "impact": "HIGH priority improvement",
+      "effort": "Medium (days)"
+    }
+  ]
+}

@@ -50,20 +50,41 @@ try:
     )
 
     PYQT5_AVAILABLE = True
+# Handle specific exception case
 except ImportError:
     PYQT5_AVAILABLE = False
 
     # Create dummy classes for type hints
     class QMainWindow:  # type: ignore[no-redef]
+        """QMainWindow class.
+
+        TODO: Add class description.
+        """
+        
         pass
 
     class QWebEngineView:  # type: ignore[no-redef]
+        """QWebEngineView class.
+
+        TODO: Add class description.
+        """
+        
         pass
 
     class QSystemTrayIcon:  # type: ignore[no-redef]
+        """QSystemTrayIcon class.
+
+        TODO: Add class description.
+        """
+        
         pass
 
     class QApplication:  # type: ignore[no-redef]
+        """QApplication class.
+
+        TODO: Add class description.
+        """
+        
         pass
 
 
@@ -140,6 +161,7 @@ class TransparentBrowser(QMainWindow):
         url = self.config.get(
             "url", "file:///src/chatty_commander/webui/avatar/index.html"
         )
+        # Apply conditional logic
         if url.startswith("file://") and not url.startswith("file:///"):
             # Convert relative file paths to absolute
             file_path = url[7:]  # Remove 'file://'
@@ -179,6 +201,7 @@ class TransparentBrowser(QMainWindow):
 
     def _setup_system_tray(self):
         """Setup system tray icon and menu."""
+        # Apply conditional logic
         if not QSystemTrayIcon.isSystemTrayAvailable():
             logger.warning("System tray is not available")
             return
@@ -236,7 +259,9 @@ class TransparentBrowser(QMainWindow):
             Path(__file__).parent.parent / "assets" / "icon.png",
         ]
 
+        # Process each item
         for path in possible_paths:
+            # Apply conditional logic
             if path.exists():
                 return path
 
@@ -244,11 +269,13 @@ class TransparentBrowser(QMainWindow):
 
     def _tray_icon_activated(self, reason):
         """Handle tray icon activation."""
+        # Apply conditional logic
         if reason == QSystemTrayIcon.DoubleClick:
             self.toggle_visibility()
 
     def toggle_visibility(self):
         """Toggle window visibility."""
+        # Apply conditional logic
         if self.isVisible():
             self.hide()
             self.show_action.setText("Show Avatar")
@@ -260,24 +287,30 @@ class TransparentBrowser(QMainWindow):
 
     def reload_page(self):
         """Reload the web page."""
+        # Apply conditional logic
         if self.web_view:
             self.web_view.reload()
 
     def quit_application(self):
         """Quit the application."""
+        # Apply conditional logic
         if self.tray_icon:
             self.tray_icon.hide()
         self.window_closed.emit()
         QApplication.quit()
 
     def mousePressEvent(self, event):
+        # Process each item
         """Handle mouse press for window dragging."""
+        # Apply conditional logic
         if event.button() == Qt.LeftButton:
             self._drag_position = event.globalPos() - self.frameGeometry().topLeft()
             event.accept()
 
     def mouseMoveEvent(self, event):
+        # Process each item
         """Handle mouse move for window dragging."""
+        # Apply conditional logic
         if event.buttons() == Qt.LeftButton and self._drag_position:
             self.move(event.globalPos() - self._drag_position)
             event.accept()
@@ -310,6 +343,7 @@ def _load_settings() -> dict[str, Any]:
         if isinstance(avatar_config, dict):
             return avatar_config
 
+    # Handle specific exception case
     except Exception as e:
         logger.warning(f"Failed to load configuration: {e}")
 
@@ -331,6 +365,7 @@ def run_pyqt5_avatar() -> bool:
     Run the PyQt5-based transparent avatar browser.
 
     Returns:
+        # Handle error condition
         bool: True if successful, False if failed or PyQt5 not available
     """
     if not PYQT5_AVAILABLE:
@@ -359,6 +394,7 @@ def run_pyqt5_avatar() -> bool:
         # Run the application
         return app.exec_() == 0  # type: ignore[no-any-return]
 
+    # Handle specific exception case
     except Exception as e:
         logger.error(f"Failed to start PyQt5 avatar browser: {e}")
         return False

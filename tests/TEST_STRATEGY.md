@@ -70,9 +70,43 @@ def test_api_creates_agent(client, temp_db):
 **Location:** `tests/smoke/`
 **Characteristics:**
 - Minimal but critical coverage
-- Fast to run ( CI/CD gate)
+- Fast to run (< 2 min) – CI/CD gate
 - Test happy paths only
 - May run against staging
+
+**Patterns (TypeScript adaptation):**
+```typescript
+// tests/smoke/critical-path.test.ts
+describe('Smoke Tests', () => {
+  it('app health check passes', async () => {
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+  });
+
+  it('bot can be created and responds', async () => {
+    const bot = await createTestBot();
+    const res = await request(app).post('/bots').send(bot);
+    expect(res.status).toBe(201);
+  });
+
+  it('auth flow works (login → token → protected route)', async () => {
+    const login = await request(app).post('/auth/login').send(credentials);
+    expect(login.status).toBe(200);
+    const token = login.body.token;
+    const protected = await request(app).get('/api/user').set('Authorization', `Bearer ${token}`);
+    expect(protected.status).toBe(200);
+  });
+});
+```
+
+**Smoke Test Checklist:**
+- [ ] App starts without errors
+- [ ] Health endpoint returns 200
+- [ ] Database connects and migrations run
+- [ ] Auth flow works (login → token → protected route)
+- [ ] Core API endpoints respond (config, bots, health)
+- [ ] Frontend loads without JS errors
 
 ### 4. E2E Tests (5% of test suite)
 **Purpose:** Test complete user workflows

@@ -246,17 +246,37 @@ class MockWakeWordDetector:
         logger.info("Using mock wake word detector (no audio hardware required)")
 
     def add_callback(self, callback: Callable[[str, float], None]) -> None:
+        """Add Callback with (self, callback).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self._callbacks.append(callback)
 
     def remove_callback(self, callback: Callable[[str, float], None]) -> None:
+        """Remove with (self, callback).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         if callback in self._callbacks:
             self._callbacks.remove(callback)
 
     def start_listening(self) -> None:
+        """Start Listening with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self._running = True
         logger.info("Mock wake word detector started")
 
     def stop_listening(self) -> None:
+        """Stop Listening with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self._running = False
         logger.info("Mock wake word detector stopped")
 
@@ -272,7 +292,17 @@ class MockWakeWordDetector:
                     logger.error(f"Error in mock wake word callback: {e}")
 
     def get_available_models(self) -> list[str]:
+        """Retrieve with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return ["hey_jarvis", "alexa", "hey_google"]
 
     def is_listening(self) -> bool:
+        """Check with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return self._running

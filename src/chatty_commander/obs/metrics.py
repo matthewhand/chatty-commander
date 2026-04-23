@@ -89,6 +89,11 @@ class Counter(Metric):
         self._values: dict[tuple[tuple[str, str], ...], int] = {}
 
     def inc(self, amount: int = 1, labels: dict[str, str] | None = None) -> None:
+        """Inc with (self, amount: int, labels).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         if amount < 0:
             amount = 0
         key = self._key(labels)
@@ -96,9 +101,19 @@ class Counter(Metric):
             self._values[key] = self._values.get(key, 0) + amount
 
     def get(self, labels: dict[str, str] | None = None) -> int:
+        """Get with (self, labels).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return self._values.get(self._key(labels), 0)
 
     def samples(self) -> list[tuple[dict[str, str], int]]:
+        """Samples with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         out: list[tuple[dict[str, str], int]] = []
         for key, value in self._values.items():
             labels = dict(key)
@@ -114,14 +129,29 @@ class Gauge(Metric):
         self._values: dict[tuple[tuple[str, str], ...], float] = {}
 
     def set(self, value: float, labels: dict[str, str] | None = None) -> None:
+        """Set with (self, value: float, labels).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         key = self._key(labels)
         with self._lock:
             self._values[key] = float(value)
 
     def get(self, labels: dict[str, str] | None = None) -> float:
+        """Get with (self, labels).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return self._values.get(self._key(labels), 0.0)
 
     def samples(self) -> list[tuple[dict[str, str], float]]:
+        """Samples with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         out: list[tuple[dict[str, str], float]] = []
         for key, value in self._values.items():
             labels = dict(key)
@@ -131,6 +161,11 @@ class Gauge(Metric):
 
 @dataclass
 class HistogramBuckets:
+    """HistogramBuckets class.
+
+    TODO: Add class description.
+    """
+    
     edges: list[float] = field(
         default_factory=lambda: [
             0.001,
@@ -149,6 +184,11 @@ class HistogramBuckets:
     )  # seconds
 
     def clamp(self, value: float) -> float:
+        """Clamp with (self, value: float).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return max(0.0, float(value))
 
 
@@ -166,6 +206,11 @@ class Histogram(Metric):
         self._count: dict[tuple[tuple[str, str], ...], int] = {}
 
     def observe(self, value: float, labels: dict[str, str] | None = None) -> None:
+        """Observe with (self, value: float, labels).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         v = self._buckets.clamp(value)
         key = self._key(labels)
         with self._lock:
@@ -187,6 +232,11 @@ class Histogram(Metric):
                 counts[-1] += 1
 
     def snapshot(self) -> dict[str, Any]:
+        """Snapshot with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         out: dict[str, Any] = {"buckets": self._buckets.edges, "series": []}
         for key, counts in self._counts.items():
             labels = dict(key)
@@ -219,6 +269,11 @@ class Timer:
 
     def __call__(self, fn: Callable[..., Any]) -> Callable[..., Any]:
         def wrapper(*args, **kwargs):
+            """Wrapper operation.
+
+            TODO: Add detailed description and parameters.
+            """
+            
             with self:
                 return fn(*args, **kwargs)
 
@@ -235,6 +290,11 @@ class MetricsRegistry:
         self.hists: dict[str, Histogram] = {}
 
     def counter(self, name: str, description: str = "") -> Counter:
+        """Counter with (self, name: str, description: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         with self._lock:
             m = self.counters.get(name)
             if m is None:
@@ -243,6 +303,11 @@ class MetricsRegistry:
             return m
 
     def gauge(self, name: str, description: str = "") -> Gauge:
+        """Gauge with (self, name: str, description: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         with self._lock:
             m = self.gauges.get(name)
             if m is None:
@@ -251,6 +316,11 @@ class MetricsRegistry:
             return m
 
     def histogram(
+        """Histogram with (self, name: str, description: str, buckets).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self, name: str, description: str = "", buckets: HistogramBuckets | None = None
     ) -> Histogram:
         with self._lock:
@@ -261,6 +331,11 @@ class MetricsRegistry:
             return m
 
     def to_json(self) -> dict[str, Any]:
+        """To Json with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         out: dict[str, Any] = {"counters": {}, "gauges": {}, "histograms": {}}
         for k, c in self.counters.items():
             out["counters"][k] = [
@@ -295,6 +370,11 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
         )
 
     async def dispatch(
+        """Dispatch with (self, request: Request, call_next).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self, request: Request, call_next: Callable[[Request], Any]
     ) -> Response:  # type: ignore[name-defined]
         # path variable intentionally unused to minimize attribute access overhead
@@ -335,10 +415,20 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
 
     @router.get("/metrics/json")
     async def metrics_json() -> dict[str, Any]:  # type: ignore[override]
+        """Metrics Json operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return reg.to_json()
 
     @router.get("/metrics/prom")
     async def metrics_prom() -> Response:  # type: ignore[override]
+        """Metrics Prom operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         lines: list[str] = []
         # Counters
         for name, c in reg.counters.items():

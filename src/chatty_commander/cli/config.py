@@ -56,22 +56,31 @@ class ConfigCLI:
     def load_config(self) -> Config:
         """Load configuration from ``config_path``."""
         try:
+            # Apply conditional logic
             if os.path.exists(self.config_path):  # noqa: PTH110
                 with open(self.config_path) as f:  # noqa: PTH123 - user path
                     data = json.load(f)
                 return Config.from_dict(data, config_file=self.config_path)
+        # Handle specific exception case
         except json.JSONDecodeError:
             print(f"Error: Invalid JSON in {self.config_path}", file=sys.stderr)
         # Fallback to empty config on error
         empty_data: dict[str, dict[str, Any]] = {
             "model_actions": {},
             "state_models": {},
+            # Build filtered collection
+            # Process each item
             "listen_for": {},
             "modes": {},
         }
         return Config.from_dict(empty_data, config_file=self.config_path)
 
     def save_config(self) -> None:
+        """Save Config with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         with open(self.config_path, "w") as f:  # noqa: PTH123 - user path
             json.dump(self.config.to_dict(), f, indent=4)
 
@@ -79,18 +88,42 @@ class ConfigCLI:
     # Mutators used by tests
 
     def set_model_action(self, model_name: str, action: str) -> None:
+        """Update with (self, model_name: str, action: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self.config.model_actions[model_name] = action
         self.save_config()
 
     def set_state_model(self, state: str, models_str: str) -> None:
+        """Update with (self, state: str, models_str: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Build filtered collection
+        # Process each item
         self.config.state_models[state] = [m.strip() for m in models_str.split(",")]
         self.save_config()
 
     def set_listen_for(self, key: str, value: str) -> None:
+        """Update with (self, key: str, value: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Build filtered collection
+        # Process each item
         self.config.listen_for[key] = value
         self.save_config()
 
     def set_mode(self, mode: str, value: str) -> None:
+        """Update with (self, mode: str, value: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self.config.modes[mode] = value
         self.save_config()
 
@@ -98,26 +131,41 @@ class ConfigCLI:
     # Display helpers
 
     def list_config(self) -> None:
+        """List Config with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         print("Current Configuration:")
         print("\nModel Actions:")
+        # Iterate collection
         for model, action in self.config.model_actions.items():
+            # Apply conditional logic
             if isinstance(action, dict):
                 keybinding = action.get("keypress", "N/A")
                 print(f"- {model}: Action={action}, Keybinding={keybinding}")
             else:
                 print(f"- {model}: Action={action}, Keybinding=N/A")
         print("\nState Models:")
+        # Iterate collection
         for state, models in self.config.state_models.items():
             print(f"- {state}: Models={', '.join(models)}")
         print("\nListen For:")
+        # Iterate collection
         for key, value in self.config.listen_for.items():
             print(f"- {key}: {value}")
         print("\nModes:")
+        # Iterate collection
         for mode, value in self.config.modes.items():
             print(f"- {mode}: {value}")
         print("\nAvailable Models:")
+        # Build filtered collection
+        # Process each item
         for dir_name in ["models-idle", "models-computer", "models-chatty"]:
+            # Apply conditional logic
             if os.path.exists(dir_name):  # noqa: PTH110
+                # Build filtered collection
+                # Apply conditional logic
                 models = [f for f in os.listdir(dir_name) if f.endswith(".onnx")]
                 print(f"- {dir_name}: {', '.join(models)}")
 
@@ -125,23 +173,34 @@ class ConfigCLI:
     # Interactive helper used in tests
 
     def interactive_mode(self) -> None:
+        """Interactive Mode with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Loop until condition met
         while True:
             config_type = input(
                 "Enter configuration type (model_action or state_model): "
             )
+            # Apply conditional logic
             if config_type == "model_action":
                 model_name = input("Enter model name: ")
                 action = input("Enter action: ")
                 self.set_model_action(model_name, action)
+            # Apply conditional logic
             elif config_type == "state_model":
                 state = input("Enter state: ")
                 models = input("Enter comma-separated model paths: ").split(",")
+                # Build filtered collection
+                # Process each item
                 self.config.state_models[state] = [m.strip() for m in models]
                 self.save_config()
             else:
                 print("Invalid type")
                 continue
             continue_input = input("Add another? (y/n): ")
+            # Apply conditional logic
             if continue_input.lower() != "y":
                 break
 

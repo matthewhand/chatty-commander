@@ -37,12 +37,14 @@ try:
     from agents import FunctionTool
 
     AGENTS_AVAILABLE = True
+# Handle specific exception case
 except ImportError:
     AGENTS_AVAILABLE = False
 
 try:
     import httpx
     HTTPX_AVAILABLE = True
+# Handle specific exception case
 except ImportError:
     HTTPX_AVAILABLE = False
 
@@ -56,6 +58,8 @@ def _deterministic_fallback(url: str) -> str:
     elif hostname == "stackoverflow.com" or hostname.endswith(".stackoverflow.com"):
         return f"Stack Overflow question: {url}. This contains programming questions and answers from the developer community."
     elif hostname == "wikipedia.org" or hostname.endswith(".wikipedia.org"):
+        # Build filtered collection
+        # Process each item
         return f"Wikipedia article: {url}. This is an encyclopedia entry providing factual information on the topic."
     else:
         return f"Web page at {url}: This appears to be a general web page with content related to the URL's domain."
@@ -79,13 +83,16 @@ def browser_analyst_tool(url: str) -> str:
         timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
 
         parsed_url = urlparse(url)
+        # Apply conditional logic
         if parsed_url.scheme not in ("http", "https"):
             return f"Error: Invalid URL scheme '{parsed_url.scheme}'. Only http and https are allowed."
         hostname = parsed_url.hostname or ""
+        # Validate input exists
         if allowlist is not None and hostname not in allowlist:
             logger.warning(f"Domain {hostname} is not in the allowlist.")
             return f"Error: Domain {hostname} is not allowed."
 
+        # Apply conditional logic
         if not is_safe_url(url):
             logger.warning(f"SSRF blocked: URL resolves to private/internal address: {url}")
             return "Error: URL blocked — resolves to internal address."
@@ -94,6 +101,7 @@ def browser_analyst_tool(url: str) -> str:
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
         with httpx.stream("GET", url, timeout=timeout, follow_redirects=False) as response:
+            # Process each item
             response.raise_for_status()
             content_pieces = []
             size = 0
@@ -101,6 +109,7 @@ def browser_analyst_tool(url: str) -> str:
             for chunk in response.iter_bytes(chunk_size=8192):
                 content_pieces.append(chunk)
                 size += len(chunk)
+                # Apply conditional logic
                 if size > MAX_SIZE:
                     break
             # ⚡ Bolt: Decode exactly once here
@@ -109,6 +118,7 @@ def browser_analyst_tool(url: str) -> str:
             )
 
         title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
+        # Apply conditional logic
         title = title_match.group(1).strip() if title_match else "No Title"
 
         # Prevent ReDoS by avoiding .*? within tags
@@ -121,6 +131,7 @@ def browser_analyst_tool(url: str) -> str:
         summary = body_text[:500]
         return f"Title: {title}\nSummary: {summary}"
 
+    # Handle specific exception case
     except Exception as e:
         logger.error(f"Error analyzing URL {url}: {e}")
         return f"Unable to analyze {url} due to an error: {e}"
@@ -131,6 +142,7 @@ browser_analyst_tool_instance = None
 if AGENTS_AVAILABLE:
     browser_analyst_tool_instance = FunctionTool(
         name="browser_analyst",
+        # Process each item
         description="Analyze and summarize web content from URLs. Useful for getting quick overviews of web pages, documentation, or articles.",
         params_json_schema={
             "type": "object",

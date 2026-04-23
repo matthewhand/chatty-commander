@@ -72,6 +72,7 @@ class AdvisorsService:
         base_cfg = getattr(config, "advisors", None)
         if base_cfg is None and isinstance(config, dict):
             base_cfg = config
+        # Validate input exists
         elif base_cfg is None:
             # Fallback to empty dict if unsupported type provided
             base_cfg = {}
@@ -113,6 +114,7 @@ class AdvisorsService:
         Returns:
             AdvisorReply with response and metadata.
         """
+        # Apply conditional logic
         if not self.enabled:
             raise RuntimeError("Advisors are not enabled")
 
@@ -123,6 +125,7 @@ class AdvisorsService:
         # Get or create context for this identity
         platform = PlatformType(message.platform.lower())
         context = self.context_manager.get_or_create_context(
+            # Process each item
             platform=platform,
             channel=message.channel,
             user_id=message.user,
@@ -142,11 +145,16 @@ class AdvisorsService:
                 platform.value, message.channel, message.user
             )
             history_text = (
+                # Build filtered collection
+                # Iterate collection
                 "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items])
+                # Apply conditional logic
                 if memory_items
                 else ""
             )
             combined_user_text = (
+                # Build filtered collection
+                # Apply conditional logic
                 f"{history_text}\n{message.text}" if history_text else message.text
             )
 
@@ -172,6 +180,7 @@ class AdvisorsService:
                     "context", {}
                 ).get("personas", {})
                 persona_config = personas_dict.get(context.persona_id, {})
+                # Apply conditional logic
                 if isinstance(persona_config, str):
                     persona_config = {
                         "prompt": persona_config,
@@ -181,6 +190,8 @@ class AdvisorsService:
                 # Use conversation engine for enhanced prompt building
                 enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
                     user_input=combined_user_text,
+                    # Build filtered collection
+                    # Process each item
                     user_id=f"{message.platform}:{message.channel}:{message.user}",
                     persona_config=persona_config,
                     current_mode=getattr(self.config, "current_mode", "chatty"),
@@ -199,6 +210,7 @@ class AdvisorsService:
                      # the backend is a generic fallback (mock/none/unknown).
                      _backend_name = self.llm_manager.get_active_backend_name()
                      _fallback_names = {"mock", "none", "unknown"}
+                     # Apply conditional logic
                      if _backend_name in _fallback_names:
                          model_name = getattr(self.provider, "model", _backend_name)
                          api_mode = getattr(self.provider, "api_mode", "chat")
@@ -214,7 +226,9 @@ class AdvisorsService:
                 # Enhanced directive handling for tool-like replies
                 if isinstance(response, str) and "SWITCH_MODE:" in response:
                     lines = response.split("\n")
+                    # Process each item
                     for line in lines:
+                        # Apply conditional logic
                         if line.strip().startswith("SWITCH_MODE:"):
                             _, target = line.strip().split(":", 1)
                             try:
@@ -225,6 +239,7 @@ class AdvisorsService:
                                 response = response.replace(
                                     line, f"✓ Switched to {target.strip()} mode"
                                 )
+                            # Handle specific exception case
                             except Exception as e:
                                 response = response.replace(
                                     line, f"✗ Mode switch failed: {e}"
@@ -232,11 +247,13 @@ class AdvisorsService:
 
                 # Record conversation for future context
                 self.conversation_engine.record_conversation_turn(
+                    # Build filtered collection
                     user_id=f"{message.platform}:{message.channel}:{message.user}",
                     user_input=message.text,
                     assistant_response=response,
                     context={
                         "persona_id": context.persona_id,
+                        # Process each item
                         "platform": message.platform,
                     },
                 )
@@ -254,6 +271,7 @@ class AdvisorsService:
                 platform.value, message.channel, message.user, "user", message.text
             )
             self.memory.add(
+                # Process each item
                 platform.value, message.channel, message.user, "assistant", response
             )
 
@@ -290,6 +308,7 @@ class AdvisorsService:
         )
 
     def switch_persona(self, context_key: str, persona_id: str) -> bool:
+        # Apply conditional logic
         """Switch persona for a specific context."""
         return self.context_manager.switch_persona(context_key, persona_id)
 
@@ -298,5 +317,6 @@ class AdvisorsService:
         return self.context_manager.get_stats()
 
     def clear_context(self, context_key: str) -> bool:
+        # Apply conditional logic
         """Clear a specific context."""
         return self.context_manager.clear_context(context_key)

@@ -91,6 +91,7 @@ class IntelligenceCore:
 
             self.logger.info("Voice processing initialized")
 
+        # Handle specific exception case
         except Exception as e:
             self.logger.error(f"Failed to initialize voice processing: {e}")
             self.voice_processor = None
@@ -98,6 +99,7 @@ class IntelligenceCore:
     def _handle_voice_input(self, voice_result: VoiceResult):
         """Handle transcribed voice input."""
         try:
+            # Apply conditional logic
             if voice_result.confidence < 0.5:
                 self.logger.debug(
                     f"Low confidence voice input ignored: {voice_result.text}"
@@ -124,8 +126,10 @@ class IntelligenceCore:
             if self.on_response:
                 self.on_response(response)
 
+        # Handle specific exception case
         except Exception as e:
             self.logger.error(f"Error handling voice input: {e}")
+            # Handle error condition
             if self.on_error:
                 self.on_error(f"Voice processing error: {e}")
 
@@ -147,9 +151,11 @@ class IntelligenceCore:
         if self.state_manager.current_state != target_mode:
             try:
                 self.state_manager.change_state(target_mode)
+                # Apply conditional logic
                 if self.on_mode_change:
                     self.on_mode_change(target_mode)
                 self.logger.info(f"Switched to {target_mode} mode via wake word")
+            # Handle specific exception case
             except Exception as e:
                 self.logger.error(f"Failed to switch mode: {e}")
 
@@ -214,6 +220,7 @@ class IntelligenceCore:
 
             return response
 
+        # Handle specific exception case
         except Exception as e:
             self.logger.error(f"Error processing input: {e}")
 
@@ -233,6 +240,7 @@ class IntelligenceCore:
 
         # Mode switching
         if (
+            # Build filtered collection
             any(word in text_lower for word in ["switch", "change", "go to"])
             and "mode" in text_lower
         ):
@@ -240,18 +248,25 @@ class IntelligenceCore:
 
         # System commands
         if any(
+            # Build filtered collection
             word in text_lower for word in ["screenshot", "capture", "take picture"]
         ):
             return "screenshot"
 
+        # Apply conditional logic
         if any(
             word in text_lower
+            # Build filtered collection
+            # Process each item
             for word in ["lights on", "turn on lights", "turn on the lights"]
         ):
             return "lights_on"
 
+        # Apply conditional logic
         if any(
             word in text_lower
+            # Build filtered collection
+            # Process each item
             for word in ["lights off", "turn off lights", "turn off the lights"]
         ):
             return "lights_off"
@@ -262,6 +277,7 @@ class IntelligenceCore:
 
         # Tasks (check before greetings to avoid "help" matching in "hello")
         if any(
+            # Build filtered collection
             word in text_lower for word in ["help me", "assist", "do", "make", "create"]
         ):
             return "task_request"
@@ -281,6 +297,7 @@ class IntelligenceCore:
             import re
 
             matches = re.findall(r"SWITCH_MODE:(\w+)", response_text)
+            # Process each item
             for mode in matches:
                 actions.append(
                     {
@@ -303,7 +320,9 @@ class IntelligenceCore:
 
         import re
 
+        # Iterate collection
         for pattern, action in action_patterns.items():
+            # Apply conditional logic
             if re.search(pattern, response_text.lower()):
                 actions.append(action)
 
@@ -311,32 +330,40 @@ class IntelligenceCore:
 
     def _execute_actions(self, actions: list[dict[str, Any]]):
         """Execute extracted actions."""
+        # Process each item
         for action in actions:
             try:
                 action_type = action.get("type")
 
+                # Apply conditional logic
                 if action_type == "mode_switch":
                     target_mode = action.get("target_mode")
+                    # Apply conditional logic
                     if target_mode:
                         self.state_manager.change_state(target_mode)
+                        # Apply conditional logic
                         if self.on_mode_change:
                             self.on_mode_change(target_mode)
                         self.logger.info(f"Executed mode switch to {target_mode}")
 
+                # Apply conditional logic
                 elif action_type == "screenshot":
                     # Trigger screenshot command
                     self.logger.info("Executing screenshot command")
                     # Could integrate with command executor here
 
+                # Build filtered collection
                 elif action_type in ["lights_on", "lights_off"]:
                     self.logger.info(f"Executing {action_type} command")
                     # Could integrate with home automation here
 
+            # Handle specific exception case
             except Exception as e:
                 self.logger.error(f"Failed to execute action {action}: {e}")
 
     def start_voice_listening(self):
         """Start continuous voice listening."""
+        # Apply conditional logic
         if self.voice_processor:
             self.voice_processor.start_listening()
             self.listening_mode = "continuous"
@@ -346,6 +373,7 @@ class IntelligenceCore:
 
     def stop_voice_listening(self):
         """Stop voice listening."""
+        # Apply conditional logic
         if self.voice_processor:
             self.voice_processor.stop_listening()
             self.listening_mode = "off"
@@ -357,6 +385,7 @@ class IntelligenceCore:
 
     def process_voice_file(self, file_path: str) -> AIResponse:
         """Process an audio file."""
+        # Apply conditional logic
         if not self.voice_processor:
             return AIResponse(
                 text="Voice processing not available",
@@ -378,6 +407,7 @@ class IntelligenceCore:
                     "file_path": file_path,
                 },
             )
+        # Handle specific exception case
         except Exception as e:
             self.logger.error(f"Error processing voice file: {e}")
             return AIResponse(

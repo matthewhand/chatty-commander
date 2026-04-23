@@ -42,6 +42,11 @@ router = APIRouter()
 
 
 class AvatarWSConnectionManager:
+    """AvatarWSConnectionManager class.
+
+    TODO: Add class description.
+    """
+    
     def __init__(self, theme_resolver: Callable[[str], str] | None = None):
         self.active_connections: list[WebSocket] = []
         # optional persona -> theme resolver
@@ -70,6 +75,11 @@ class AvatarWSConnectionManager:
         return mgr
 
     async def connect(self, websocket: WebSocket):
+        """Connect with (self, websocket: WebSocket).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         await websocket.accept()
         self.active_connections.append(websocket)
         # ensure we are bound to the current manager (handles reset in tests)
@@ -91,12 +101,22 @@ class AvatarWSConnectionManager:
             logger.error(f"Failed to send snapshot to avatar client: {e}")
 
     def disconnect(self, websocket: WebSocket):
+        """Disconnect with (self, websocket: WebSocket).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         try:
             self.active_connections.remove(websocket)
         except ValueError:
             pass
 
     async def send_personal_message(
+        """Send Personal Message with (self, message, websocket: WebSocket).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self, message: dict[str, Any], websocket: WebSocket
     ):
         try:
@@ -105,6 +125,11 @@ class AvatarWSConnectionManager:
             logger.error(f"Failed to send to avatar client: {e}")
 
     def broadcast_state_change(self, message: dict[str, Any]) -> None:
+        """Broadcast State Change with (self, message).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         # Optionally enrich with theme based on persona_id
         try:
             data = message.get("data") if isinstance(message, dict) else None
@@ -270,6 +295,11 @@ async def interrupt_avatar_queue(
 
 @router.websocket("/avatar/ws")
 async def avatar_ws_endpoint(websocket: WebSocket):
+    """Avatar Ws Endpoint with (websocket: WebSocket).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     await manager.connect(websocket)
     try:
         while True:

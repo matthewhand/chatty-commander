@@ -31,13 +31,28 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 class AudioDevices(BaseModel):
+    """AudioDevices class.
+
+    TODO: Add class description.
+    """
+    
     input: list[str] = Field(default_factory=list)
     output: list[str] = Field(default_factory=list)
 
 class AudioDeviceRequest(BaseModel):
+    """AudioDeviceRequest class.
+
+    TODO: Add class description.
+    """
+    
     device_id: str
 
 def include_audio_routes(
+    """Include Audio Routes operation.
+
+    TODO: Add detailed description and parameters.
+    """
+    
     *,
     get_config_manager: Any,
 ) -> APIRouter:
@@ -45,6 +60,11 @@ def include_audio_routes(
 
     @router.get("/api/v1/audio/devices", response_model=AudioDevices)
     async def get_audio_devices():
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         try:
             import pyaudio
             p = pyaudio.PyAudio()
@@ -75,6 +95,11 @@ def include_audio_routes(
 
     @router.post("/api/v1/audio/device")
     async def set_audio_device(request: AudioDeviceRequest):
+        """Update with (request: AudioDeviceRequest).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         try:
             cfg_mgr = get_config_manager()
             logger.info(f"Setting audio device to: {request.device_id}")

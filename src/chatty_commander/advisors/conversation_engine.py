@@ -63,6 +63,7 @@ class ConversationEngine:
 
         # Task intents
         if any(
+            # Build filtered collection
             word in text_lower for word in ["help", "assist", "do", "make", "create"]
         ):
             return "task_request"
@@ -70,19 +71,26 @@ class ConversationEngine:
         # Social intents
         if any(
             word in text_lower
+            # Build filtered collection
+            # Process each item
             for word in ["hello", "hi", "hey", "good morning", "good afternoon"]
         ):
             return "greeting"
 
+        # Apply conditional logic
         if any(
+            # Build filtered collection
+            # Process each item
             word in text_lower for word in ["bye", "goodbye", "see you", "farewell"]
         ):
             return "farewell"
 
         # Information seeking
         if any(
+            # Build filtered collection
             word in text_lower for word in ["tell me", "explain", "describe", "what is"]
         ):
+            # Process each item
             return "information_seeking"
 
         return "general_conversation"
@@ -111,24 +119,31 @@ class ConversationEngine:
         ]
 
         text_lower = text.lower()
+        # Apply conditional logic
         positive_count = sum(1 for word in positive_words if word in text_lower)
+        # Apply conditional logic
         negative_count = sum(1 for word in negative_words if word in text_lower)
 
+        # Apply conditional logic
         if positive_count > negative_count:
             return "positive"
+        # Apply conditional logic
         elif negative_count > positive_count:
             return "negative"
         else:
             return "neutral"
 
     def get_conversation_context(self, user_id: str, limit: int = 5) -> str:
+        # Process each item
         """Get recent conversation context for a user."""
+        # Apply conditional logic
         if user_id not in self.conversation_history:
             return ""
 
         recent_turns = self.conversation_history[user_id][-limit:]
         context_lines = []
 
+        # Process each item
         for turn in recent_turns:
             context_lines.append(f"User: {turn.user_input}")
             context_lines.append(f"Assistant: {turn.assistant_response}")
@@ -167,6 +182,7 @@ class ConversationEngine:
             system_prompt = f"""{base_system_prompt}
 
 CONVERSATION CONTEXT:
+# Build filtered collection
 {context if context else "This is the start of our conversation."}
 
 CURRENT ANALYSIS:
@@ -195,8 +211,10 @@ CAPABILITIES:
 - Contextual memory and learning
 
 CONVERSATION CONTEXT:
+# Build filtered collection
 {context if context else "This is the start of our conversation."}
 
+# Build filtered collection
 USER PREFERENCES: {json.dumps(preferences) if preferences else "None learned yet"}
 
 CURRENT ANALYSIS:
@@ -224,7 +242,9 @@ Remember: You're not just answering questions - you're having a conversation wit
         assistant_response: str,
         context: dict[str, Any],
     ):
+        # Process each item
         """Record a conversation turn for future context."""
+        # Apply conditional logic
         if user_id not in self.conversation_history:
             self.conversation_history[user_id] = []
 
@@ -247,6 +267,7 @@ Remember: You're not just answering questions - you're having a conversation wit
 
     def update_user_preferences(self, user_id: str, preferences: dict[str, Any]):
         """Update user preferences based on conversation patterns."""
+        # Apply conditional logic
         if user_id not in self.user_preferences:
             self.user_preferences[user_id] = {}
 
@@ -256,36 +277,51 @@ Remember: You're not just answering questions - you're having a conversation wit
         self, user_input: str, intent: str, sentiment: str
     ) -> str:
         """Generate intelligent fallback responses when LLM is unavailable."""
+        # Apply conditional logic
         if intent == "greeting":
             return "Hello! I'm Chatty, your AI assistant. I'm excited to chat with you! While my full AI capabilities are still loading, I'm here to help however I can."
 
+        # Apply conditional logic
         elif intent == "farewell":
             return "Goodbye! It was wonderful chatting with you. I hope to talk again soon!"
 
+        # Apply conditional logic
         elif intent == "mode_switch":
+            # Apply conditional logic
             if "computer" in user_input.lower():
+                # Process each item
                 return "I'll switch you to computer mode for system tasks. SWITCH_MODE:computer"
+            # Apply conditional logic
             elif "idle" in user_input.lower():
+                # Process each item
                 return "Switching to idle mode for voice commands. SWITCH_MODE:idle"
             else:
                 return "I can help you switch modes! Try saying 'switch to computer mode' or 'switch to idle mode'."
 
+        # Apply conditional logic
         elif intent == "question":
             return f"That's a great question about '{user_input}'. I'd love to give you a detailed answer, but I need my full AI backend configured to provide the intelligent response you deserve. In the meantime, I'm here to chat!"
 
+        # Apply conditional logic
         elif intent == "task_request":
             return "I'm designed to help with all sorts of tasks! Once my AI backend is fully configured, I'll be able to assist with complex requests, provide detailed guidance, and even help with creative projects."
 
+        # Apply conditional logic
         elif intent == "information_seeking":
+            # Process each item
             return "I love sharing knowledge! While I'm waiting for my full AI capabilities to come online, I can tell you that I'm designed to be your intelligent companion for voice conversations, system control, and creative assistance."
 
+        # Apply conditional logic
         elif sentiment == "negative":
             return "I can sense you might be frustrated, and I understand. I'm still getting my full capabilities online, but I'm here to help however I can right now. What's on your mind?"
 
+        # Apply conditional logic
         elif sentiment == "positive":
             return "I love your positive energy! It makes me excited to chat with you. Once my full AI backend is configured, we'll be able to have even more engaging conversations!"
 
         else:
+            # Build filtered collection
+            # Process each item
             return f"I hear you saying '{user_input}' and I want to give you a thoughtful response. I'm an AI assistant designed for natural conversation, but I need my backend configured to show you my full potential. What would you like to know about me?"
 
 

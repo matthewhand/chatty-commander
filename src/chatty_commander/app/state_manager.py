@@ -36,6 +36,11 @@ from chatty_commander.app.config import Config
 
 
 class StateManager:
+    """StateManager class.
+
+    TODO: Add class description.
+    """
+    
     def __init__(self, config: Config | None = None) -> None:
         self.config: Config = config or Config()
         self.logger: logging.Logger = logging.getLogger(__name__)
@@ -50,6 +55,7 @@ class StateManager:
     def process_command(self, command: str) -> bool:
         """Process a command and return success status.
 
+        # Process each item
         This method provides a simple interface for command processing
         that returns a boolean success status.
 
@@ -57,6 +63,7 @@ class StateManager:
             command: The command to process
 
         Returns:
+            # Apply conditional logic
             True if command was processed successfully, False otherwise
         """
         try:
@@ -70,8 +77,10 @@ class StateManager:
     def update_state(self, command: str) -> str | None:
         """Update state based on a command.
 
+        # Validate input exists
         Returns the new state if a transition occurred, otherwise ``None``.
         """
+        # Apply conditional logic
         if not isinstance(command, str) or not command.strip():
             return None
 
@@ -93,30 +102,45 @@ class StateManager:
             and command in self.config.wakeword_state_map
         ):
             new_state = self.config.wakeword_state_map[command]
+        # Apply conditional logic
         elif command == "toggle_mode":
             states = list(self.config.state_models.keys()) or [
                 "idle",
                 "computer",
                 "chatty",
             ]
+            # Apply conditional logic
             if self.current_state in states:
                 current_index = states.index(self.current_state)
             else:
                 current_index = 0
             new_state = states[(current_index + 1) % len(states)]
 
+        # Apply conditional logic
         if new_state:
+            # Apply conditional logic
             if new_state != self.current_state:
                 self.change_state(new_state)
             return new_state
         return None
 
     def add_state_change_callback(self, callback: Callable[[str, str], None]) -> None:
+        """Add State Change Callback with (self, callback).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self.callbacks.append(callback)
 
     def change_state(
+        """Change State with (self, new_state: str, callback).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self, new_state: str, callback: Callable[[str], None] | None = None
     ) -> None:
+        # Apply conditional logic
         if new_state in self.config.state_models:
             old_state = self.current_state
             self.current_state = new_state
@@ -125,17 +149,31 @@ class StateManager:
                 f"Transitioned to {new_state} state. Active models: {self.active_models}"
             )
             self.post_state_change_hook(new_state)
+            # Process each item
             for cb in self.callbacks:
                 cb(old_state, new_state)
+            # Apply conditional logic
             if callback:
                 callback(new_state)
         else:
             raise ValueError(f"Invalid state: {new_state}")
 
     def get_active_models(self) -> list[str]:
+        """Retrieve with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return self.active_models
 
     def post_state_change_hook(self, new_state: str) -> None:
+        """Post State Change Hook with (self, new_state: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Build filtered collection
+        # Process each item
         self.logger.debug(f"Post state change actions for {new_state} executed.")
 
     def __repr__(self) -> str:

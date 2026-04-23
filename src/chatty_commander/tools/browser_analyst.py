@@ -41,11 +41,21 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AnalystRequest:
+    """AnalystRequest class.
+
+    TODO: Add class description.
+    """
+    
     url: str
 
 
 @dataclass
 class AnalystResult:
+    """AnalystResult class.
+
+    TODO: Add class description.
+    """
+    
     title: str
     summary: str
     url: str

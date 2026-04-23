@@ -46,6 +46,7 @@ def parse_model_keybindings(keybindings_str: str) -> dict[str, str]:
     keybindings: dict[str, str] = {}
     if keybindings_str:
         pairs = keybindings_str.split(",")
+        # Process each item
         for pair in pairs:
             model, keys = pair.split("=", 1)
             keybindings[model.strip()] = keys.strip()

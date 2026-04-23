@@ -30,6 +30,7 @@ try:
     from chatty_commander.voice.wakeword import MockWakeWordDetector, WakeWordDetector
 
     VOICE_AVAILABLE = True
+# Handle specific exception case
 except ImportError:
     MockWakeWordDetector = None  # type: ignore
     WakeWordDetector = None  # type: ignore
@@ -37,27 +38,67 @@ except ImportError:
 
 
 class CommandSink(Protocol):
+    """CommandSink class.
+
+    TODO: Add class description.
+    """
+    
     def execute_command(self, command_name: str) -> Any:  # pragma: no cover - protocol
+        """Execute Command with (self, command_name: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         ...
 
 
 class AdvisorSink(Protocol):
+    """AdvisorSink class.
+
+    TODO: Add class description.
+    """
+    
     def handle_message(self, message: Any) -> Any:  # pragma: no cover - protocol
+        """Process with (self, message: Any).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         ...
 
 
 class InputAdapter(Protocol):
+    """InputAdapter class.
+
+    TODO: Add class description.
+    """
+    
     name: str
 
     def start(self) -> None:  # pragma: no cover - protocol
+        """Start with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         ...
 
     def stop(self) -> None:  # pragma: no cover - protocol
+        """Stop with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         ...
 
 
 @dataclass
 class OrchestratorFlags:
+    """OrchestratorFlags class.
+
+    TODO: Add class description.
+    """
+    
     enable_text: bool = False
     enable_gui: bool = False
     enable_web: bool = False
@@ -67,6 +108,11 @@ class OrchestratorFlags:
 
 
 class TextInputAdapter:
+    """TextInputAdapter class.
+
+    TODO: Add class description.
+    """
+    
     name = "text"
 
     def __init__(self, on_command: Callable[[str], None]) -> None:
@@ -74,13 +120,29 @@ class TextInputAdapter:
         self._started = False
 
     def start(self) -> None:
+        """Start with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self._started = True
 
     def stop(self) -> None:
+        """Stop with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self._started = False
 
     # Helper for tests/manual feeding
     def feed(self, text: str) -> None:
+        """Feed with (self, text: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Apply conditional logic
         if self._started:
             self._on_command(text)
 
@@ -96,9 +158,19 @@ class DummyAdapter:
         self._started = False
 
     def start(self) -> None:
+        """Start with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self._started = True
 
     def stop(self) -> None:
+        """Stop with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self._started = False
 
 
@@ -116,9 +188,16 @@ class OpenWakeWordAdapter:
         self._started = False
 
     def start(self) -> None:
+        """Start with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Apply conditional logic
         if not VOICE_AVAILABLE:
             raise ImportError("Voice dependencies not available. Install with: uv sync")
 
+        # Apply conditional logic
         if self._started:
             return
 
@@ -148,6 +227,12 @@ class OpenWakeWordAdapter:
         self._started = True
 
     def stop(self) -> None:
+        """Stop with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Apply conditional logic
         if self._detector and self._started:
             self._detector.stop_listening()
         self._started = False
@@ -183,49 +268,80 @@ class ModeOrchestrator:
         self.adapters: list[InputAdapter] = []
 
     def select_adapters(self) -> list[str]:
+        """Select Adapters with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         selected: list[Any] = []
 
+        # Apply conditional logic
         if self.flags.enable_text:
             selected.append(TextInputAdapter(on_command=self._dispatch_command))
 
+        # Apply conditional logic
         if self.flags.enable_gui:
             selected.append(DummyAdapter("gui"))
 
+        # Apply conditional logic
         if self.flags.enable_web:
             selected.append(DummyAdapter("web"))
 
+        # Apply conditional logic
         if self.flags.enable_openwakeword:
+            # Apply conditional logic
             if VOICE_AVAILABLE:
                 try:
                     adapter = OpenWakeWordAdapter(self._handle_wake_word, self.config)  # type: ignore
                     selected.append(adapter)
+                # Handle specific exception case
                 except Exception:
                     selected.append(DummyAdapter("openwakeword"))
             else:
                 selected.append(DummyAdapter("openwakeword"))
 
+        # Apply conditional logic
         if self.flags.enable_computer_vision:
             selected.append(DummyAdapter("computer_vision"))
 
+        # Apply conditional logic
         if self.flags.enable_discord_bridge and getattr(
             self.config, "advisors", {}
         ).get("enabled", False):
             selected.append(DummyAdapter("discord_bridge"))
 
         self.adapters = selected
+        # Build filtered collection
+        # Process each item
         return [a.name for a in selected]
 
     def start(self) -> list[str]:
+        """Start with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Apply conditional logic
         if not self.adapters:
             self.select_adapters()
+        # Process each item
         for adapter in self.adapters:
             adapter.start()
+        # Build filtered collection
+        # Process each item
         return [a.name for a in self.adapters]
 
     def stop(self) -> None:
+        """Stop with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Process each item
         for adapter in self.adapters:
             try:
                 adapter.stop()
+            # Handle specific exception case
             except Exception:
                 pass
 

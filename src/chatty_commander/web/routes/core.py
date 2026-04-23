@@ -61,6 +61,11 @@ ALLOWED_CONFIG_KEYS = frozenset(
 
 
 class SystemStatus(BaseModel):
+    """SystemStatus class.
+
+    TODO: Add class description.
+    """
+    
     model_config = ConfigDict(extra="forbid")
 
     status: str = Field(..., description="Overall system status")
@@ -71,6 +76,11 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
+    """StateChangeRequest class.
+
+    TODO: Add class description.
+    """
+    
     model_config = ConfigDict(extra="forbid")
 
     state: str = Field(
@@ -79,6 +89,11 @@ class StateChangeRequest(BaseModel):
 
 
 class CommandRequest(BaseModel):
+    """CommandRequest class.
+
+    TODO: Add class description.
+    """
+    
     model_config = ConfigDict(extra="forbid")
 
     command: str = Field(..., description="Command name to execute")
@@ -88,12 +103,22 @@ class CommandRequest(BaseModel):
 
 
 class CommandResponse(BaseModel):
+    """CommandResponse class.
+
+    TODO: Add class description.
+    """
+    
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
     execution_time: float = Field(..., description="Execution time in milliseconds")
 
 
 class StateInfo(BaseModel):
+    """StateInfo class.
+
+    TODO: Add class description.
+    """
+    
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
     last_command: str | None = Field(default=None, description="Last detected command")
@@ -101,6 +126,11 @@ class StateInfo(BaseModel):
 
 
 class HealthStatus(BaseModel):
+    """HealthStatus class.
+
+    TODO: Add class description.
+    """
+    
     status: str = Field(..., description="Health status")
     uptime: str = Field(..., description="System uptime")
     version: str = Field(..., description="Application version")
@@ -133,6 +163,11 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
             )
 
     async def dispatch(
+        """Dispatch with (self, request: Request, call_next).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self, request: Request, call_next: Callable[[Request], Any]
     ) -> Any:
         start_time = time.time()
@@ -147,6 +182,11 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
 
 
 class MetricsData(BaseModel):
+    """MetricsData class.
+
+    TODO: Add class description.
+    """
+    
     total_requests: int = Field(..., description="Total API requests")
     uptime_seconds: float = Field(..., description="Uptime in seconds")
     active_connections: int = Field(
@@ -190,6 +230,11 @@ def include_core_routes(
 
     @router.get("/api/v1/status", response_model=SystemStatus)
     async def get_status():
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
         sm = get_state_manager()
@@ -287,6 +332,11 @@ def include_core_routes(
 
     @router.get("/api/v1/commands")
     async def get_commands():  # type: ignore[no-redef]
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         try:
             cfg_mgr = get_config_manager()
             return getattr(cfg_mgr, "commands", {}) or {}
@@ -336,6 +386,11 @@ def include_core_routes(
 
     @router.get("/api/v1/config")
     async def get_config():
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
         config_data = dict(getattr(cfg_mgr, "config", {}))
@@ -356,6 +411,11 @@ def include_core_routes(
 
     @router.put("/api/v1/config")
     async def update_config(config_data: dict[str, Any]):
+        """Update with (config_data).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         counters["config_put"] += 1
 
         rejected_keys = sorted(set(config_data) - ALLOWED_CONFIG_KEYS)
@@ -397,6 +457,11 @@ def include_core_routes(
 
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         counters["state_get"] += 1
         sm = get_state_manager()
         return StateInfo(
@@ -410,6 +475,11 @@ def include_core_routes(
 
     @router.post("/api/v1/state")
     async def change_state(request: StateChangeRequest):
+        """Change State with (request: StateChangeRequest).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         counters["state_post"] += 1
         try:
             sm = get_state_manager()
@@ -421,6 +491,11 @@ def include_core_routes(
 
     @router.post("/api/v1/command", response_model=CommandResponse)
     async def execute_command(request: CommandRequest):
+        """Execute Command with (request: CommandRequest).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         counters["command_post"] += 1
         start_time = time.time()
         try:
@@ -463,11 +538,21 @@ def include_core_routes(
         "/api/v1/health", operation_id="health_check_core", response_model=HealthStatus
     )
     async def health_check_core():
+        """Health Check Core operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         counters["status"] += 1
         return await health_check()
 
     @router.get("/api/v1/metrics")
     async def metrics():
+        """Metrics operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         # Shallow copy to avoid external mutation
         metrics_dict: dict[str, float | int] = {**counters}
         avg_duration = (

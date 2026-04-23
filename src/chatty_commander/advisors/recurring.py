@@ -28,6 +28,11 @@ from typing import Any
 
 @dataclass
 class RecurringPrompt:
+    """RecurringPrompt class.
+
+    TODO: Add class description.
+    """
+    
     id: str
     name: str
     description: str
@@ -41,6 +46,11 @@ class RecurringPrompt:
 
     @staticmethod
     def from_dict(data: dict[str, Any]) -> RecurringPrompt:
+        """From Dict with (data).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         required = [
             "id",
             "name",
@@ -50,7 +60,9 @@ class RecurringPrompt:
             "context",
             "prompt",
         ]
+        # Process each item
         for key in required:
+            # Apply conditional logic
             if key not in data:
                 raise ValueError(f"Missing required field: {key}")
         return RecurringPrompt(
@@ -67,10 +79,17 @@ class RecurringPrompt:
         )
 
     def render_prompt(self, runtime_vars: dict[str, Any] | None = None) -> str:
+        """Render Prompt with (self, runtime_vars).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         merged = dict(self.variables)
+        # Apply conditional logic
         if runtime_vars:
             merged.update(runtime_vars)
         rendered = self.prompt
+        # Iterate collection
         for key, value in merged.items():
             rendered = rendered.replace(f"{{{{{key}}}}}", str(value))
         return rendered

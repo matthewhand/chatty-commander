@@ -61,6 +61,11 @@ router = APIRouter()
 
 @dataclass
 class AgentBlueprint:
+    """AgentBlueprint class.
+
+    TODO: Add class description.
+    """
+    
     id: str
     name: str
     description: str
@@ -71,6 +76,11 @@ class AgentBlueprint:
 
 
 class AgentBlueprintModel(BaseModel):
+    """AgentBlueprintModel class.
+
+    TODO: Add class description.
+    """
+    
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., max_length=200)
@@ -82,6 +92,11 @@ class AgentBlueprintModel(BaseModel):
 
 
 class AgentBlueprintResponse(AgentBlueprintModel):
+    """AgentBlueprintResponse class.
+
+    TODO: Add class description.
+    """
+    
     id: str
 
 
@@ -133,6 +148,11 @@ def _extract_json_from_response(response: str) -> str:
 
 
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
+    """Parse Blueprint From Text with (text: str).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     llm = _get_llm_manager()
     if llm is not None and llm.is_available():
         try:
@@ -181,11 +201,21 @@ Return ONLY valid JSON.
 
 
 class NLBlueprintRequest(BaseModel):
+    """NLBlueprintRequest class.
+
+    TODO: Add class description.
+    """
+    
     description: str
 
 
 @router.post("/api/v1/agents/blueprints", response_model=AgentBlueprintResponse)
 async def create_blueprint(
+    """Create with (payload).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     payload: Annotated[dict[str, Any], Body(...)],
 ) -> AgentBlueprintResponse:
     try:
@@ -212,6 +242,11 @@ async def create_blueprint(
 
 @router.get("/api/v1/agents/blueprints", response_model=list[AgentBlueprintResponse])
 async def list_blueprints():
+    """List Blueprints operation.
+
+    TODO: Add detailed description and parameters.
+    """
+    
     # Each AgentBlueprint already contains its id; avoid passing 'id' twice
     return [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
 
@@ -220,6 +255,11 @@ async def list_blueprints():
     "/api/v1/agents/blueprints/{agent_id}", response_model=AgentBlueprintResponse
 )
 async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
+    """Update with (agent_id: str, bp: AgentBlueprintModel).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     if agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     ent = AgentBlueprint(id=agent_id, **bp.model_dump())
@@ -230,6 +270,11 @@ async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
 
 @router.delete("/api/v1/agents/blueprints/{agent_id}")
 async def delete_blueprint(agent_id: str):
+    """Remove with (agent_id: str).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     if agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     # Safety: ensure not in active team relations (simplified)
@@ -244,17 +289,32 @@ async def delete_blueprint(agent_id: str):
 
 
 class TeamInfo(BaseModel):
+    """TeamInfo class.
+
+    TODO: Add class description.
+    """
+    
     roles: dict[str, list[str]] = Field(default_factory=dict)
     agents: list[AgentBlueprintResponse] = Field(default_factory=list)
 
 
 @router.get("/api/v1/agents/team", response_model=TeamInfo)
 async def get_team():
+    """Retrieve operation.
+
+    TODO: Add detailed description and parameters.
+    """
+    
     agents = [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
     return TeamInfo(roles={k: list(v) for k, v in _TEAM.items()}, agents=agents)
 
 
 class HandoffRequest(BaseModel):
+    """HandoffRequest class.
+
+    TODO: Add class description.
+    """
+    
     from_agent_id: str
     to_agent_id: str
     reason: str | None = None
@@ -262,6 +322,11 @@ class HandoffRequest(BaseModel):
 
 @router.post("/api/v1/agents/team/handoff")
 async def handoff(h: HandoffRequest):
+    """Handoff with (h: HandoffRequest).
+
+    TODO: Add detailed description and parameters.
+    """
+    
     if h.from_agent_id not in _STORE or h.to_agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     # For now, just acknowledge; future: integrate with thinking_state + avatar_ws

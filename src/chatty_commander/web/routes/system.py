@@ -12,6 +12,11 @@ from pydantic import BaseModel, Field
 
 
 class EnvVarInfo(BaseModel):
+    """EnvVarInfo class.
+
+    TODO: Add class description.
+    """
+    
     name: str = Field(..., description="Environment variable name")
     set: bool = Field(..., description="Whether the variable is currently set")
     description: str = Field(..., description="Human-readable description of the variable")
@@ -66,6 +71,11 @@ _ENV_VAR_DESCRIPTIONS: dict[str, str] = {
 
 
 class SystemInfo(BaseModel):
+    """SystemInfo class.
+
+    TODO: Add class description.
+    """
+    
     cpu_percent: float | None = Field(None, description="Current CPU utilization as a percentage")
     memory_total_mb: int | None = Field(None, description="Total physical memory in MB")
     memory_used_mb: int | None = Field(None, description="Used physical memory in MB")
@@ -84,6 +94,11 @@ class SystemInfo(BaseModel):
     )
 
 def include_system_routes(
+    """Include System Routes operation.
+
+    TODO: Add detailed description and parameters.
+    """
+    
     *,
     get_start_time: Callable[[], float],
 ) -> APIRouter:
@@ -91,6 +106,11 @@ def include_system_routes(
 
     @router.get("/api/system/info", response_model=SystemInfo)
     async def get_system_info():
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         uptime_seconds = time.time() - get_start_time()
 
         env_vars = [

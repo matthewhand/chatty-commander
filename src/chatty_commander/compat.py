@@ -76,6 +76,7 @@ def expose(namespace: dict[str, Any], name: str) -> ModuleType:
     module = load(name)
     public: Iterable[str]
     public = getattr(module, "__all__", None) or [
+        # Apply conditional logic
         attr for attr in dir(module) if not attr.startswith("_")
     ]
     for attr in public:

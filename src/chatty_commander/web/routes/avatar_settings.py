@@ -30,6 +30,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class AvatarConfigModel(BaseModel):
+    """AvatarConfigModel class.
+
+    TODO: Add class description.
+    """
+    
     model_config = ConfigDict(extra="forbid")
     animations_dir: str | None = Field(
         default=None, description="Directory to scan for animations"
@@ -84,12 +89,22 @@ def _get_avatar_cfg(cfg_mgr: Any) -> dict[str, Any]:
 
 
 def include_avatar_settings_routes(
+    """Include Avatar Settings Routes operation.
+
+    TODO: Add detailed description and parameters.
+    """
+    
     *, get_config_manager: Callable[[], Any]
 ) -> APIRouter:
     router = APIRouter()
 
     @router.get("/avatar/config", response_model=AvatarConfigModel)
     async def get_avatar_config():
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+        
         try:
             cfg_mgr = get_config_manager()
             avatar = _get_avatar_cfg(cfg_mgr)
@@ -99,6 +114,11 @@ def include_avatar_settings_routes(
 
     @router.put("/avatar/config", response_model=AvatarConfigModel)
     async def update_avatar_config(new_cfg: AvatarConfigModel):
+        """Update with (new_cfg: AvatarConfigModel).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         try:
             cfg_mgr = get_config_manager()
             avatar = _get_avatar_cfg(cfg_mgr)

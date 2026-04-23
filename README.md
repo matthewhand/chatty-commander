@@ -14,6 +14,32 @@ Please refer to the organized **User Guide** below:
 3. [Dashboard & Web UI](docs/user-guide/03_DASHBOARD_AND_WEBUI.md)
 4. [Voice Modes & Commands](docs/user-guide/04_VOICE_MODES_AND_COMMANDS.md)
 
+
+
+## Usage
+
+### CLI Mode
+
+```bash
+# Run with default settings
+chatty-commander
+
+# Run in web mode
+chatty-commander web --port 8080
+
+# Run with specific config
+chatty-commander --config my_config.json
+```
+
+### Python API
+
+```python
+from chatty_commander.app.orchestrator import main_loop
+
+# Start the voice assistant
+main_loop()
+```
+
 ## Developer Documentation
 Looking to modify the core functionality or add new LLM adapters?
 Check out our extensive [Developer Docs](docs/developer/) section.

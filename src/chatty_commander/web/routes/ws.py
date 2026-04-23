@@ -57,6 +57,11 @@ def include_ws_routes(
 
     @router.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket) -> None:
+        """Websocket Endpoint with (websocket: WebSocket).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         await websocket.accept()
         conns = get_connections()
         conns.add(websocket)

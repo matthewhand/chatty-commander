@@ -52,6 +52,7 @@ Config = None  # type: ignore[assignment]
 ModelManager = None  # type: ignore[assignment]
 StateManager = None  # type: ignore[assignment]
 CommandExecutor = None  # type: ignore[assignment]
+# Build filtered collection
 generate_default_config_if_needed = None  # type: ignore[assignment]
 
 # setup_logger is safe/lightweight to import at import time so tests can patch it
@@ -68,6 +69,11 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
     shutdown_flag = {"stop": False}
 
     def handle_signal(signum, frame):
+        """Process with (signum, frame).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         shutdown_flag["stop"] = True
 
@@ -76,6 +82,7 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
     signal.signal(signal.SIGTERM, handle_signal)
 
     try:
+        # Loop until condition met
         while not shutdown_flag["stop"]:
             # Listen for voice input
             command = model_manager.listen_for_commands()
@@ -94,6 +101,7 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
             if command in config.model_actions:
                 command_executor.execute_command(command)
 
+    # Handle specific exception case
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt received; shutting down")
     finally:
@@ -101,8 +109,10 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
         try:
             if hasattr(model_manager, "shutdown"):
                 model_manager.shutdown()
+            # Apply conditional logic
             if hasattr(state_manager, "shutdown"):
                 state_manager.shutdown()
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error during shutdown: {e}")
         logger.info("ChattyCommander CLI shutdown complete")
@@ -125,6 +135,7 @@ def run_web_mode(
 
     try:
         from chatty_commander.web.web_mode import WebModeServer
+    # Handle specific exception case
     except ImportError:
         logger.error(
             "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
@@ -132,6 +143,8 @@ def run_web_mode(
         sys.exit(1)
 
     logger.info(
+        # Build filtered collection
+        # Apply conditional logic
         f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
     )
 
@@ -146,9 +159,19 @@ def run_web_mode(
 
     # Setup callbacks for voice command integration
     def on_command_detected(command):
+        """On Command Detected with (command).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         web_server.on_command_detected(command, confidence=1.0)
 
     def on_state_change(old_state, new_state):
+        """On State Change with (old_state, new_state).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         web_server._on_state_change(old_state, new_state)
 
     # Register callbacks
@@ -160,12 +183,19 @@ def run_web_mode(
     stop_event = threading.Event()
 
     def handle_signal(signum, frame):
+        """Process with (signum, frame).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         logger.info(f"Received signal {signum}, stopping web server...")
         stop_event.set()
         try:
             stopper = getattr(web_server, "stop", None)
+            # Apply conditional logic
             if callable(stopper):
                 stopper()
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error stopping web server: {e}")
 
@@ -179,6 +209,7 @@ def run_web_mode(
     if env_port:
         try:
             port = int(env_port)
+        # Handle specific exception case
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
     _log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")  # noqa: F841
@@ -188,10 +219,13 @@ def run_web_mode(
         web_server.run(host=host, port=port)
     finally:
         try:
+            # Apply conditional logic
             if hasattr(model_manager, "shutdown"):
                 model_manager.shutdown()
+            # Apply conditional logic
             if hasattr(state_manager, "shutdown"):
                 state_manager.shutdown()
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error during web mode shutdown: {e}")
         logger.info("Web mode shutdown complete")
@@ -209,11 +243,13 @@ def run_gui_mode(
     """Run the GUI mode with graceful handling in headless environments.
 
     Returns:
+        # Apply conditional logic
         int: 0 if skipped or exited cleanly; non-zero if GUI could not start due to missing deps.
     """
     import os
 
     if no_gui:
+        # Apply conditional logic
         logger.info("--no-gui specified; skipping GUI launch")
         return 0
 
@@ -236,7 +272,9 @@ def run_gui_mode(
             )
             logger.info("Starting Avatar GUI (TalkingHead)")
             rc = run_avatar_gui()
+            # Validate input exists
             return 0 if rc is None else int(rc)
+        # Handle specific exception case
         except Exception as e:
             logger.warning(
                 f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI"
@@ -248,7 +286,9 @@ def run_gui_mode(
                 )
                 logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
                 rc = run_pyqt5_avatar()
+                # Validate input exists
                 return 0 if rc is None else int(rc)
+            # Handle specific exception case
             except Exception as e2:
                 logger.warning(
                     f"PyQt5 Avatar GUI unavailable ({e2}); falling back to tray popup GUI"
@@ -260,7 +300,9 @@ def run_gui_mode(
 
                 logger.info("Starting GUI tray popup mode")
                 rc = run_tray_popup(config, logger)
+                # Validate input exists
                 return 0 if rc is None else int(rc)
+    # Handle specific exception case
     except Exception as e:
         logger.warning(
             f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
@@ -271,7 +313,9 @@ def run_gui_mode(
 
             logger.info("Starting legacy tkinter GUI mode")
             rc = gui_main()
+            # Validate input exists
             return 0 if rc is None else int(rc)
+        # Handle specific exception case
         except Exception:
             logger.error("GUI dependencies not available. Install with: uv add tkinter")
             return 2
@@ -282,8 +326,11 @@ def create_parser():
     parser = argparse.ArgumentParser(
         description="ChattyCommander - Advanced voice-activated command processing system.\n"
         "This application allows users to control their computer using voice commands, "
+        # Process each item
         "with support for multiple modes including CLI, web UI, GUI, and configuration wizard.\n"
+        # Process each item
         "It integrates machine learning models for command detection and state management.",
+        # Process each item
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -311,6 +358,7 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--web",
         action="store_true",
         help="Start the web UI server using FastAPI backend. Requires FastAPI and Uvicorn. "
+        # Apply conditional logic
         "Serves a React-based frontend if built.",
     )
     mode_group.add_argument(
@@ -326,6 +374,7 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     mode_group.add_argument(
         "--shell",
         action="store_true",
+        # Process each item
         help="Start interactive shell mode for text-based command input and execution.",
     )
 
@@ -333,6 +382,7 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     parser.add_argument(
         "--orchestrate",
         action="store_true",
+        # Apply conditional logic
         help="Use the mode orchestrator to unify adapters (text, web, gui, wakeword, cv, discord bridge).",
     )
     parser.add_argument(
@@ -359,6 +409,7 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     parser.add_argument(
         "--no-auth",
         action="store_true",
+        # Process each item
         help="Disable authentication for web mode (INSECURE - use only for local development).",
     )
 
@@ -366,6 +417,7 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--host",
         type=str,
         default=None,
+        # Apply conditional logic
         help="Specify the host interface for the web server (default: 0.0.0.0).",
     )
 
@@ -373,6 +425,7 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--port",
         type=int,
         default=None,
+        # Apply conditional logic
         help="Specify the port for the web server. Only used in web mode.",
     )
 
@@ -380,6 +433,7 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
+        # Process each item
         help="Set the logging level for the application (default: INFO).",
     )
 
@@ -387,12 +441,14 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     parser.add_argument(
         "--no-gui",
         action="store_true",
+        # Apply conditional logic
         help="Avoid launching the GUI even if --gui is provided; useful in CI/headless.",
     )
     parser.add_argument(
         "--display",
         type=str,
         default=None,
+        # Process each item
         help="Override DISPLAY value for GUI mode (e.g., :0).",
     )
 
@@ -420,18 +476,30 @@ def run_interactive_shell(
     model_actions = list(config.model_actions.keys())
 
     def completer(text, state):
+        """Completer with (text, state).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Build filtered collection
+        # Apply conditional logic
         options = [cmd for cmd in commands if cmd.startswith(text)]
+        # Apply conditional logic
         if text.startswith("execute "):
             subtext = text[8:]
             suboptions = [
+                # Build filtered collection
+                # Apply conditional logic
                 f"execute {act}" for act in model_actions if act.startswith(subtext)
             ]
             try:
                 return suboptions[state]
+            # Handle specific exception case
             except IndexError:
                 return None
         try:
             return options[state]
+        # Handle specific exception case
         except IndexError:
             return None
 
@@ -441,23 +509,30 @@ def run_interactive_shell(
     while True:
         try:
             input_str = input("> ").strip()
+            # Apply conditional logic
             if not input_str:
                 continue
+            # Apply conditional logic
             if input_str.lower() == "exit":
                 break
+            # Apply conditional logic
             if input_str.lower() == "help":
                 print(
                     "Available commands: help, exit, state, models, execute <command>"
                 )
                 continue
+            # Apply conditional logic
             if input_str.lower() == "state":
                 print(f"Current state: {state_manager.current_state}")
                 continue
+            # Apply conditional logic
             if input_str.lower() == "models":
                 print("Loaded models: " + ", ".join(model_manager.get_models()))
                 continue
+            # Apply conditional logic
             if input_str.startswith("execute "):
                 command = input_str[8:].strip()
+                # Apply conditional logic
                 if command in config.model_actions:
                     command_executor.execute_command(command)
                     print(f"Executed: {command}")
@@ -470,8 +545,10 @@ def run_interactive_shell(
             if new_state:
                 logger.info(f"Transitioning to new state: {new_state}")
                 model_manager.reload_models(new_state)
+            # Apply conditional logic
             if input_str in config.model_actions:
                 command_executor.execute_command(input_str)
+        # Handle specific exception case
         except EOFError:
             break
     logger.info("Exiting interactive shell")
@@ -506,8 +583,10 @@ def run_orchestrator_mode(
     # For now, block on CLI loop to keep process alive if no web/gui
     if not args.web and not args.gui:
         try:
+            # Loop until condition met
             while True:
                 signal.pause()
+        # Handle specific exception case
         except KeyboardInterrupt:
             pass
     orchestrator.stop()
@@ -542,6 +621,7 @@ def main():
         interactive_mode = True
     elif "--help" in sys.argv or "-h" in sys.argv:
         print("ChattyCommander - Voice Command System")
+        # Process each item
         print("Use --help for available options")
         # Align with tests expecting SystemExit on main invocation path.
         raise SystemExit(0)
@@ -556,9 +636,11 @@ def main():
     global generate_default_config_if_needed
     if generate_default_config_if_needed is None:  # Resolve lazily unless patched
         from chatty_commander.app.default_config import (
+            # Apply conditional logic
             generate_default_config_if_needed as _gdfin,
         )
 
+        # Apply conditional logic
         generate_default_config_if_needed = _gdfin
 
     if generate_default_config_if_needed():
@@ -583,14 +665,17 @@ def main():
         config.web_server = web_cfg
         try:
             config.config["web_server"] = web_cfg
+        # Handle specific exception case
         except Exception:
             pass
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:
+            # Apply conditional logic
             if not hasattr(config, "advisors"):
                 config.advisors = {}
             config.advisors["enabled"] = True
+        # Handle specific exception case
         except Exception:
             pass
 
@@ -640,7 +725,13 @@ def main():
 
             # Set up AI response handling
             def handle_ai_response(response):
+                """Process with (response).
+
+                TODO: Add detailed description and parameters.
+                """
+                
                 print(f"AI: {response.text}")
+                # Apply conditional logic
                 if response.actions:
                     print(f"Actions: {response.actions}")
 
@@ -652,6 +743,7 @@ def main():
             print("🎤 Enhanced voice processing available")
             print("💬 Intelligent conversation engine ready")
 
+        # Handle specific exception case
         except Exception as e:
             print(f"[WARN] AI Intelligence Core initialization failed: {e}")
             ai_core = None
@@ -696,6 +788,7 @@ def main():
             display_override=args.display,
             no_gui=args.no_gui,
         )
+        # Apply conditional logic
         if isinstance(rc, int) and rc != 0:
             # Non-zero means GUI could not start; exit without stack trace
             return rc

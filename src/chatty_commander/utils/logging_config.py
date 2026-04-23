@@ -69,6 +69,11 @@ class StructuredJSONFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format with (self, record).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         entry: dict[str, Any] = {
             "time": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S"),
             "level": record.levelname,
@@ -154,6 +159,11 @@ try:
         """
 
         async def dispatch(
+            """Dispatch with (self, request: Request, call_next).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             self, request: Request, call_next: Callable[[Request], Any]
         ) -> Response:
             request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())

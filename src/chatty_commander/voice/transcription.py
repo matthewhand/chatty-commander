@@ -111,6 +111,11 @@ class WhisperLocalBackend(TranscriptionBackend):
             return ""
 
     def is_available(self) -> bool:
+        """Check with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return self._model is not None
 
 
@@ -166,6 +171,11 @@ class WhisperAPIBackend(TranscriptionBackend):
             return ""
 
     def is_available(self) -> bool:
+        """Check with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return self._client is not None
 
 
@@ -190,6 +200,11 @@ class MockTranscriptionBackend(TranscriptionBackend):
         return response
 
     def is_available(self) -> bool:
+        """Check with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return True
 
 

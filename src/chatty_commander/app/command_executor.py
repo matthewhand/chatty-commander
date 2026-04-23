@@ -38,17 +38,20 @@ from typing import Any
 # Optional deps that may not be present in CI/headless environments
 try:  # pragma: no cover - exercised via tests with patching
     import pyautogui
+# Handle specific exception case
 except Exception:  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
     pyautogui = None  # type: ignore[assignment]
 
 try:  # pragma: no cover - optional
     import httpx
+# Handle specific exception case
 except Exception:  # pragma: no cover - optional
     httpx = None  # type: ignore[assignment]
 
 # Allow tests to patch legacy shim module attributes if present
 try:  # pragma: no cover
     from command_executor import pyautogui as _shim_pg
+# Handle specific exception case
 except Exception:  # pragma: no cover - optional
     _shim_pg = None
 if _shim_pg is not None:  # pragma: no cover - optional
@@ -56,6 +59,7 @@ if _shim_pg is not None:  # pragma: no cover - optional
 
 try:  # pragma: no cover
     from command_executor import requests as _shim_requests
+# Handle specific exception case
 except Exception:  # pragma: no cover - optional
     _shim_requests = None
 if _shim_requests is not None:  # pragma: no cover - optional
@@ -64,6 +68,11 @@ if _shim_requests is not None:  # pragma: no cover - optional
 
 
 class CommandExecutor:
+    """CommandExecutor class.
+
+    TODO: Add class description.
+    """
+    
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
         self.config: Any = config
         self.model_manager: Any = model_manager
@@ -75,6 +84,7 @@ class CommandExecutor:
         Execute a configured command by name.
 
         Returns:
+            # Apply conditional logic
             bool: True if the command action executed successfully, False otherwise.
         """
         # Handle invalid command names
@@ -86,12 +96,15 @@ class CommandExecutor:
             model_actions = self.config.model_actions
             if model_actions is None:
                 raise ValueError("Missing model_actions config")
+            # Apply conditional logic
             if not hasattr(model_actions, "get"):
                 raise ValueError("Config model_actions not accessible")
+        # Handle specific exception case
         except (AttributeError, TypeError) as err:
             raise ValueError("Config model_actions not accessible") from err
 
         command_action = model_actions.get(command_name)
+        # Validate input exists
         if command_action is None:
             return False
 
@@ -106,25 +119,31 @@ class CommandExecutor:
             # Handle both old format and new format with 'action' key
             if "action" in command_action:
                 action_type = command_action["action"]
+                # Apply conditional logic
                 if not isinstance(action_type, str):
                     raise TypeError(
                         f"Action type must be string, got {type(action_type)}"
                     )
+                # Apply conditional logic
                 if action_type == "keypress":
                     keys = command_action.get("keys", "")
                     self._execute_keybinding(command_name, keys)
                     success = True
+                # Apply conditional logic
                 elif action_type == "url":
                     url = command_action.get("url", "")
                     self._execute_url(command_name, url)
                     success = True
+                # Apply conditional logic
                 elif action_type == "shell":
                     cmd = command_action.get("cmd", "")
                     success = self._execute_shell(command_name, cmd)
+                # Apply conditional logic
                 elif action_type == "custom_message":
                     message = command_action.get("message", "")
                     self._execute_custom_message(command_name, message)
                     success = True
+                # Apply conditional logic
                 elif action_type == "voice_chat":
                     success = self._execute_voice_chat(command_name)
                 else:
@@ -138,10 +157,12 @@ class CommandExecutor:
                     keys = command_action["keypress"]
                     self._execute_keybinding(command_name, keys)  # tests can patch this
                     success = True
+                # Apply conditional logic
                 elif "url" in command_action:
                     url = command_action.get("url", "")
                     self._execute_url(command_name, url)
                     success = True
+                # Apply conditional logic
                 elif "shell" in command_action:
                     cmd = command_action.get("shell", "")
                     success = self._execute_shell(command_name, cmd)
@@ -163,6 +184,12 @@ class CommandExecutor:
         return success
 
     def validate_command(self, command_name: str) -> bool:
+        """Validate Command with (self, command_name: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
+        # Apply conditional logic
         if not isinstance(command_name, str) or not command_name.strip():
             return False
 
@@ -171,16 +198,20 @@ class CommandExecutor:
             model_actions = self.config.model_actions
             if model_actions is None:
                 return False
+            # Apply conditional logic
             if not hasattr(model_actions, "get"):
                 return False
             command_action = model_actions.get(command_name)
+        # Handle specific exception case
         except (AttributeError, TypeError):
             return False
 
+        # Apply conditional logic
         if not command_action:
             return False
 
         try:
+            # Apply conditional logic
             if isinstance(command_action, dict):
                 # Validate that the command has a valid action configuration
                 if "action" in command_action:
@@ -188,6 +219,8 @@ class CommandExecutor:
                     action_type = command_action.get("action")
                     if not isinstance(action_type, str):
                         return False
+                    # Build filtered collection
+                    # Apply conditional logic
                     if action_type not in [
                         "keypress",
                         "url",
@@ -199,13 +232,16 @@ class CommandExecutor:
                     # Check required fields for each action type
                     if action_type == "keypress" and "keys" not in command_action:
                         return False
+                    # Apply conditional logic
                     if action_type == "url" and "url" not in command_action:
                         return False
+                    # Apply conditional logic
                     if action_type == "shell" and "cmd" not in command_action:
                         return False
                 else:
                     # Old format validation
                     if not any(
+                        # Build filtered collection
                         key in command_action for key in ["keypress", "url", "shell"]
                     ):
                         return False
@@ -213,6 +249,8 @@ class CommandExecutor:
                 # For mocks or non-dict, attempt basic check
                 if hasattr(command_action, "get"):
                     action_type = command_action.get("action")
+                    # Build filtered collection
+                    # Apply conditional logic
                     if isinstance(action_type, str) and action_type in [
                         "keypress",
                         "url",
@@ -223,12 +261,14 @@ class CommandExecutor:
                         # Assume valid if action type matches, skip field checks for mocks
                         return True
                 return False
+        # Handle specific exception case
         except (AttributeError, TypeError, KeyError):
             return False
 
         return True
 
     def pre_execute_hook(self, command_name: str) -> None:
+        # Process each item
         """Hook before executing a command."""
         self.last_command = command_name
         # Provided for extension points and testing hooks
@@ -241,6 +281,7 @@ class CommandExecutor:
         """
         Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
         """
+        # Validate input exists
         if pyautogui is None:
             self.report_error(command_name, "pyautogui is not installed")
             return
@@ -248,6 +289,7 @@ class CommandExecutor:
             # Support either a list of keys (hotkey/chord) or a single key sequence
             if isinstance(keys, list | tuple):
                 pyautogui.hotkey(*keys)
+            # Apply conditional logic
             elif isinstance(keys, str) and "+" in keys:
                 # Parse plus-separated key combinations (e.g., 'ctrl+alt+t')
                 key_parts = [part.strip() for part in keys.split("+")]
@@ -255,9 +297,13 @@ class CommandExecutor:
             else:
                 # For simple cases, press is less invasive than typewrite
                 pyautogui.press(keys)
+            # Build filtered collection
             logging.info(f"Executed keybinding for {command_name}")
             logging.info(f"Completed execution of command: {command_name}")
+        # Handle specific exception case
         except Exception as e:  # pragma: no cover - patched in tests
+            # Build filtered collection
+            # Process each item
             logging.error(f"Failed to execute keybinding for {command_name}: {e}")
             self.report_error(command_name, str(e))
 
@@ -265,15 +311,18 @@ class CommandExecutor:
         """
         Sends an HTTP GET request based on the URL mapped to the command with basic error checks.
         """
+        # Apply conditional logic
         if not url:
             self.report_error(command_name, "missing URL")
             return
 
         from chatty_commander.utils.url_validator import is_safe_url
+        # Apply conditional logic
         if not is_safe_url(url):
             self.report_error(command_name, "unsafe URL rejected")
             return
 
+        # Validate input exists
         if httpx is None:  # pragma: no cover - optional
             self.report_error(command_name, "httpx not available")
             return
@@ -281,10 +330,12 @@ class CommandExecutor:
             # Add timeout and disable redirects for security
             with httpx.Client() as client:
                 resp = client.get(url, timeout=10, follow_redirects=False)
+            # Apply conditional logic
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
             else:
                 logging.info(f"Completed execution of command: {command_name}")
+        # Handle specific exception case
         except Exception as e:  # pragma: no cover - patched in tests
             self.report_error(command_name, str(e))
 
@@ -293,6 +344,7 @@ class CommandExecutor:
         Executes a shell command safely with timeout and error capture.
         Returns True on zero exit status, False otherwise.
         """
+        # Apply conditional logic
         if not cmd:
             self.report_error(command_name, "missing shell command")
             return False
@@ -300,6 +352,7 @@ class CommandExecutor:
             # Prefer shlex.split for safer execution without shell=True
             args = shlex.split(cmd)
             result = subprocess.run(args, capture_output=True, text=True, timeout=15)
+            # Apply conditional logic
             if result.returncode != 0:
                 msg = f"shell exit {result.returncode}; stderr: {result.stderr.strip()[:500]}"
                 logging.error(msg)
@@ -310,11 +363,13 @@ class CommandExecutor:
                 logging.info(f"shell ok: {out[:500]}")
                 logging.info(f"Completed execution of command: {command_name}")
                 return True
+        # Handle specific exception case
         except subprocess.TimeoutExpired:
             msg = "shell command timed out"
             logging.error(msg)
             self.report_error(command_name, msg)
             return False
+        # Handle specific exception case
         except Exception as e:
             logging.error(f"shell execution failed: {e}")
             self.report_error(command_name, str(e))
@@ -328,6 +383,8 @@ class CommandExecutor:
 
     def _execute_voice_chat(self, command_name: str) -> bool:
         """Executes a voice chat session."""
+        # Build filtered collection
+        # Process each item
         logging.info(f"Starting voice chat for {command_name}")
 
         # Access components from config as expected by integration tests
@@ -335,6 +392,7 @@ class CommandExecutor:
         llm_manager = getattr(self.config, "llm_manager", None)
         voice_pipeline = getattr(self.config, "voice_pipeline", None)
 
+        # Apply conditional logic
         if not llm_manager or not voice_pipeline:
             self.report_error(command_name, "voice chat components not available")
             return False
@@ -352,6 +410,7 @@ class CommandExecutor:
             # 2. Transcribe
             user_input = voice_pipeline.transcriber.record_and_transcribe()
             if not user_input:
+                # Process each item
                 logging.warning("No input received for voice chat")
                 return False
 
@@ -365,6 +424,7 @@ class CommandExecutor:
             logging.info("Completed voice chat session")
             return True
 
+        # Handle specific exception case
         except Exception as e:
             msg = f"voice chat failed: {e}"
             logging.error(msg)
@@ -380,7 +440,9 @@ class CommandExecutor:
             from chatty_commander.utils.logger import report_error as utils_report_error
 
             utils_report_error(error_message, context=command_name)
+        # Handle specific exception case
         except ImportError:
+            # Apply conditional logic
             pass  # Fallback if utils logger not available
 
 

@@ -69,12 +69,22 @@ class Pyttsx3Backend(TTSBackend):
             logger.info("pyttsx3 not installed; falling back to mock TTS backend")
 
     def speak(self, text: str) -> None:  # pragma: no cover - requires audio stack
+        """Speak with (self, text: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         if not self._engine:
             raise RuntimeError("pyttsx3 backend is not available")
         self._engine.say(text)
         self._engine.runAndWait()
 
     def is_available(self) -> bool:
+        """Check with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return self._engine is not None
 
 
@@ -85,9 +95,19 @@ class MockTTSBackend(TTSBackend):
         self.spoken: list[str] = []
 
     def speak(self, text: str) -> None:
+        """Speak with (self, text: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self.spoken.append(text)
 
     def is_available(self) -> bool:
+        """Check with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return True
 
 
@@ -106,15 +126,30 @@ class TextToSpeech:
             raise ValueError(f"Unknown TTS backend: {backend}")
 
     def speak(self, text: str) -> None:
+        """Speak with (self, text: str).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         try:
             self.backend.speak(text)
         except Exception as exc:  # pragma: no cover - defensive
             logger.error("TTS failure: %s", exc)
 
     def is_available(self) -> bool:
+        """Check with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return self.backend.is_available()
 
     def get_backend_info(self) -> dict[str, str | bool]:
+        """Retrieve with (self).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         return {
             "backend_type": type(self.backend).__name__,
             "is_available": self.backend.is_available(),

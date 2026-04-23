@@ -122,6 +122,11 @@ logger = logging.getLogger(__name__)
 
 # Advisor API models
 class AdvisorInbound(BaseModel):
+    """AdvisorInbound class.
+
+    TODO: Add class description.
+    """
+    
     platform: str
     channel: str
     user: str
@@ -131,6 +136,11 @@ class AdvisorInbound(BaseModel):
 
 
 class AdvisorOutbound(BaseModel):
+    """AdvisorOutbound class.
+
+    TODO: Add class description.
+    """
+    
     reply: str
     context_key: str
     persona_id: str
@@ -139,6 +149,11 @@ class AdvisorOutbound(BaseModel):
 
 
 class ContextStats(BaseModel):
+    """ContextStats class.
+
+    TODO: Add class description.
+    """
+    
     total_contexts: int
     platform_distribution: dict[str, int]
     persona_distribution: dict[str, int]
@@ -150,6 +165,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
     async def dispatch(self, request: Request, call_next):
+        """Dispatch with (self, request: Request, call_next).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         response = await call_next(request)
 
         # Security headers
@@ -306,6 +326,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._last_cleanup = time.time()
 
     async def dispatch(self, request: Request, call_next):
+        """Dispatch with (self, request: Request, call_next).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         # Use secure IP extraction to prevent spoofing
         client_ip = get_client_ip(request, self.trusted_proxies)
 
@@ -365,6 +390,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 
 class SystemStatus(BaseModel):
+    """SystemStatus class.
+
+    TODO: Add class description.
+    """
+    
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of loaded models")
@@ -373,12 +403,22 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
+    """StateChangeRequest class.
+
+    TODO: Add class description.
+    """
+    
     state: str = Field(
         ..., description="Target state", pattern="^(idle|computer|chatty)$"
     )
 
 
 class CommandRequest(BaseModel):
+    """CommandRequest class.
+
+    TODO: Add class description.
+    """
+    
     command: str = Field(..., description="Command name to execute")
     parameters: dict[str, Any] | None = Field(
         default=None, description="Optional parameters"
@@ -386,12 +426,22 @@ class CommandRequest(BaseModel):
 
 
 class CommandResponse(BaseModel):
+    """CommandResponse class.
+
+    TODO: Add class description.
+    """
+    
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
     execution_time: float = Field(..., description="Execution time in milliseconds")
 
 
 class StateInfo(BaseModel):
+    """StateInfo class.
+
+    TODO: Add class description.
+    """
+    
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
     last_command: str | None = Field(default=None, description="Last detected command")
@@ -399,6 +449,11 @@ class StateInfo(BaseModel):
 
 
 class WebSocketMessage(BaseModel):
+    """WebSocketMessage class.
+
+    TODO: Add class description.
+    """
+    
     type: str = Field(..., description="Message type")
     data: dict[str, Any] = Field(..., description="Message data")
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
@@ -455,11 +510,21 @@ class WebModeServer:
         # Register startup/shutdown handlers for telemetry lifecycle
         @self.app.on_event("startup")
         async def start_telemetry_loop() -> None:
+            """Start Telemetry Loop operation.
+
+            TODO: Add detailed description and parameters.
+            """
+            
             self._telemetry_running = True
             self._telemetry_task = asyncio.create_task(self._telemetry_loop())
 
         @self.app.on_event("shutdown")
         async def stop_telemetry_loop() -> None:
+            """Stop Telemetry Loop operation.
+
+            TODO: Add detailed description and parameters.
+            """
+            
             self._telemetry_running = False
             if self._telemetry_task and not self._telemetry_task.done():
                 self._telemetry_task.cancel()
@@ -744,6 +809,11 @@ class WebModeServer:
         if frontend_path.exists():
             @app.exception_handler(404)
             async def spa_fallback(request: Request, exc: HTTPException):
+                """Spa Fallback with (request: Request, exc: HTTPException).
+
+                TODO: Add detailed description and parameters.
+                """
+                
                 # If API or static file request fails, let it 404.
                 # Otherwise, serve index.html for SPA routing.
                 if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
@@ -782,6 +852,11 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/personas")
         async def advisor_personas():
+            """Advisor Personas operation.
+
+            TODO: Add detailed description and parameters.
+            """
+            
             # Return seed data for testing
             if self.no_auth:
                 return {"personas": [
@@ -797,6 +872,11 @@ class WebModeServer:
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(
+            """Advisor Message with (message: AdvisorInbound, x_api_key).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             message: AdvisorInbound,
             x_api_key: str | None = Header(None, alias="X-API-Key"),
         ):
@@ -836,6 +916,11 @@ class WebModeServer:
 
         @app.post("/api/v1/advisors/context/switch")
         async def switch_persona(context_key: str, persona_id: str):
+            """Switch Persona with (context_key: str, persona_id: str).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             svc = self.advisors_service
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
@@ -856,6 +941,11 @@ class WebModeServer:
 
         @app.delete("/api/v1/advisors/context/{context_key}")
         async def clear_context(context_key: str):
+            """Clear Context with (context_key: str).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             svc = self.advisors_service
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
@@ -872,6 +962,11 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
+            """Advisors Memory with (platform: str, channel: str, user: str, limit: int).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             platform: str, channel: str, user: str, limit: int = 20
         ):
             svc = self.advisors_service
@@ -886,6 +981,11 @@ class WebModeServer:
 
         @app.delete("/api/v1/advisors/memory")
         async def advisors_memory_clear(platform: str, channel: str, user: str):
+            """Advisors Memory Clear with (platform: str, channel: str, user: str).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             svc = self.advisors_service
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
@@ -894,6 +994,11 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
         async def advisors_context_stats():
+            """Advisors Context Stats operation.
+
+            TODO: Add detailed description and parameters.
+            """
+            
             svc = self.advisors_service
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
@@ -905,6 +1010,11 @@ class WebModeServer:
 
         @app.post("/bridge/event")
         async def bridge_event(
+            """Bridge Event with (event, x_bridge_token).
+
+            TODO: Add detailed description and parameters.
+            """
+            
             event: dict[str, Any],
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
@@ -966,6 +1076,11 @@ class WebModeServer:
 
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:
+        """On Command Detected with (self, command: str, confidence: float).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         self.commands_executed += 1
         self.last_command = command
         try:
@@ -983,6 +1098,11 @@ class WebModeServer:
         )
 
     def on_system_event(self, event_type: str, details: str | dict[str, Any]) -> None:
+        """On System Event with (self, event_type: str, details).
+
+        TODO: Add detailed description and parameters.
+        """
+        
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
