@@ -68,15 +68,15 @@
       "rating": "F (Critical)",
       "metrics": {
         "complexity": {
-          "total_functions": 287,
+          "total_functions": 289,
           "avg_complexity": 3.64,
           "high_complexity_count": 14,
           "score": 27
         },
         "type_coverage": {
           "param_coverage": 47.6,
-          "return_coverage": 75.6,
-          "overall": 61.6,
+          "return_coverage": 75.8,
+          "overall": 61.7,
           "score": 61
         },
         "style": {
@@ -140,7 +140,7 @@
       "rating": "F (Critical)",
       "metrics": {
         "algorithmic": {
-          "issues": 22,
+          "issues": 21,
           "score": 0
         },
         "memory": {
@@ -180,10 +180,10 @@
           "score": 74
         },
         "comments": {
-          "total_lines": 22133,
-          "comment_lines": 4583,
-          "ratio": 20.71,
-          "score": 62
+          "total_lines": 22509,
+          "comment_lines": 4913,
+          "ratio": 21.83,
+          "score": 65
         },
         "architecture": {
           "found": 1,
@@ -211,7 +211,7 @@
       "category": "COMPLEXITY",
       "issue": "_process_voice_command() has complexity 17",
       "file": "src/chatty_commander/voice/pipeline.py",
-      "line": 181,
+      "line": 188,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -233,9 +233,9 @@
       "agent": "CodeQuality",
       "priority": "CRITICAL",
       "category": "COMPLEXITY",
-      "issue": "execute_command() has complexity 20",
+      "issue": "_get_command_action() has complexity 18",
       "file": "src/chatty_commander/app/command_executor.py",
-      "line": 82,
+      "line": 135,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -247,7 +247,7 @@
       "category": "COMPLEXITY",
       "issue": "validate_command() has complexity 23",
       "file": "src/chatty_commander/app/command_executor.py",
-      "line": 197,
+      "line": 243,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -259,7 +259,7 @@
       "category": "COMPLEXITY",
       "issue": "_process_audio_chunk() has complexity 13",
       "file": "src/chatty_commander/voice/enhanced_processor.py",
-      "line": 303,
+      "line": 309,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -283,7 +283,7 @@
       "category": "COMPLEXITY",
       "issue": "_handle_llm_status() has complexity 11",
       "file": "src/chatty_commander/llm/cli.py",
-      "line": 114,
+      "line": 116,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -295,7 +295,7 @@
       "category": "COMPLEXITY",
       "issue": "summarize_url() has complexity 11",
       "file": "src/chatty_commander/tools/browser_analyst.py",
-      "line": 64,
+      "line": 66,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -403,7 +403,7 @@
       "category": "ALGORITHM",
       "issue": "Unknown",
       "file": "src/chatty_commander/voice/pipeline.py",
-      "line": 303,
+      "line": 318,
       "recommendation": "Consider more efficient data structures or algorithms",
       "impact": "HIGH priority improvement",
       "effort": "High (weeks)"
@@ -415,7 +415,7 @@
       "category": "ALGORITHM",
       "issue": "Unknown",
       "file": "src/chatty_commander/llm/processor.py",
-      "line": 154,
+      "line": 160,
       "recommendation": "Consider more efficient data structures or algorithms",
       "impact": "HIGH priority improvement",
       "effort": "High (weeks)"
@@ -427,7 +427,7 @@
       "category": "ALGORITHM",
       "issue": "Unknown",
       "file": "src/chatty_commander/llm/processor.py",
-      "line": 162,
+      "line": 168,
       "recommendation": "Consider more efficient data structures or algorithms",
       "impact": "HIGH priority improvement",
       "effort": "High (weeks)"
@@ -439,7 +439,7 @@
       "category": "ALGORITHM",
       "issue": "Unknown",
       "file": "src/chatty_commander/llm/processor.py",
-      "line": 291,
+      "line": 301,
       "recommendation": "Consider more efficient data structures or algorithms",
       "impact": "HIGH priority improvement",
       "effort": "High (weeks)"
@@ -451,7 +451,7 @@
       "category": "ALGORITHM",
       "issue": "Unknown",
       "file": "src/chatty_commander/tools/validate_config.py",
-      "line": 44,
+      "line": 45,
       "recommendation": "Consider more efficient data structures or algorithms",
       "impact": "HIGH priority improvement",
       "effort": "High (weeks)"

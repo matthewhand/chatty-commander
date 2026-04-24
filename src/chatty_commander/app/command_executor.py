@@ -74,29 +74,69 @@ class CommandExecutor:
     """
     
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
+        """Initialize CommandExecutor with config and managers."""
         self.config: Any = config
         self.model_manager: Any = model_manager
         self.state_manager: Any = state_manager
         self.last_command: str | None = None
 
     def execute_command(self, command_name: str) -> bool:
-        # TODO: REFACTOR - High complexity (execute_command)
-        # Break into: validation, execution, cleanup sub-functions
-
-        # TODO: REFACTOR - Complexity 16, extract sub-functions
-
-        # TODO: REFACTOR - Complexity 16, extract sub-functions
-
         """
         Execute a configured command by name.
 
+        Validates command exists, determines action type, and delegates to
+        appropriate execution handler (keypress, shell, HTTP, or message).
+
+        Args:
+            command_name: Name of command from config to execute
+
         Returns:
-            # Apply conditional logic
-            bool: True if the command action executed successfully, False otherwise.
+            bool: True if command executed successfully, False otherwise
+
+        Raises:
+            ValueError: If command_name is invalid
         """
-        # Handle invalid command names
+        # Validate input
         if not isinstance(command_name, str) or not command_name.strip():
             raise ValueError(f"Invalid command name: {command_name!r}")
+
+        # Track last command for repeat functionality
+        self.last_command = command_name
+
+        # Retrieve command action
+        action = self._get_command_action(command_name)
+        if not action:
+            logging.warning(f"Command not found: {command_name}")
+            return False
+
+        # Execute based on action type (delegated to helpers)
+        return self._execute_action(action)
+
+    def _execute_action(self, action: dict) -> bool:
+        """Execute action based on its type."""
+        action_type = action.get("type")
+
+        if action_type == "keypress":
+            return self._execute_keypress(action.get("keys", ""))
+        elif action_type == "shell":
+            return self._execute_shell(action.get("command", ""))
+        elif action_type == "http":
+            return self._execute_http(
+                action.get("url", ""),
+                action.get("method", "GET")
+            )
+        elif action_type == "message":
+            logging.info(f"Message action: {action.get('text', '')}")
+            return True
+        else:
+            logging.warning(f"Unknown action type: {action_type}")
+            return False
+
+    def _get_command_action(self, command_name: str) -> dict | None:
+        """Retrieve command action from config."""
+        commands = self.config.get("commands", {})
+        command = commands.get(command_name, {})
+        return command.get("action") if command else None
 
         try:
         # Attempt operation with error handling
