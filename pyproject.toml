@@ -68,6 +68,14 @@ dependencies = [
 
 [project.optional-dependencies]
 audio = ["pyaudio>=0.2.13"]
+cv = [
+    "opencv-python-headless>=4.5.0",
+    "pillow>=12.1.1",
+    "scikit-image>=0.20.0",
+    "numpy>=1.24.0",
+    "pytesseract>=0.3.10",
+    "scikit-learn>=1.3.0",
+]
 
 [project.scripts]
 chatty-commander = "chatty_commander.cli.cli:cli_main"
