@@ -45,10 +45,9 @@ class TestEnsureDirectoryExists:
         assert test_dir.is_dir()
 
     def test_handles_empty_path(self) -> None:
-        """Test that empty string is handled (current directory always exists)."""
-        # Empty path should not raise - os.makedirs("") raises FileExistsError
-        # but os.path.exists("") returns False, so we skip creation
-        ensure_directory_exists("")
+        """Test that empty string raises FileNotFoundError (os.makedirs("") fails)."""
+        with pytest.raises(FileNotFoundError):
+            ensure_directory_exists("")
 
     def test_handles_relative_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that relative paths work correctly."""
