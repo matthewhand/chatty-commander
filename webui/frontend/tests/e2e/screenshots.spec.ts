@@ -689,6 +689,76 @@ test.describe("Documentation Screenshots", () => {
     });
   });
 
+
+  // =========================================================================
+  // JOURNEY 7: Configuration Management Flow (8 steps)
+  // Tests comprehensive configuration settings and management
+  // =========================================================================
+  test.describe("Journey 7: Configuration Management Flow", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("Step 1 - Navigate to Configuration", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/");
+      await page.getByRole("link", { name: /configuration|settings/i }).first().click();
+      await expect(page).toHaveURL(/configuration/);
+      await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+      await takeJourneyScreenshot(page, "config", 1);
+    });
+
+    test("Step 2 - View general configuration settings", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      await expect(page.getByRole("heading")).toBeVisible();
+      await takeJourneyScreenshot(page, "config", 2);
+    });
+
+    test("Step 3 - Configure provider API settings", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      await page.getByLabel(/api key|base url|model/i).first().click();
+      await takeJourneyScreenshot(page, "config", 3);
+    });
+
+    test("Step 4 - Configure voice system settings", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      await page.getByRole("tab", { name: /voice|audio/i }).first().click();
+      await expect(page.getByRole("tabpanel")).toBeVisible();
+      await takeJourneyScreenshot(page, "config", 4);
+    });
+
+    test("Step 5 - Configure audio input/output devices", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      await page.getByRole("tab", { name: /voice|audio/i }).first().click();
+      await page.getByRole("combobox", { name: /input|microphone/i }).first().selectOption();
+      await takeJourneyScreenshot(page, "config", 5);
+    });
+
+    test("Step 6 - Configure voice wake word models", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      await page.getByRole("tab", { name: /voice|wake word/i }).first().click();
+      await expect(page.getByRole("tabpanel")).toBeVisible();
+      await takeJourneyScreenshot(page, "config", 6);
+    });
+
+    test("Step 7 - Save configuration changes", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      await page.getByRole("button", { name: /save|apply|update/i }).first().click();
+      await takeJourneyScreenshot(page, "config", 7);
+    });
+
+    test("Step 8 - Verify configuration persistence", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      await page.getByRole("link", { name: /dashboard/i }).first().click();
+      await page.getByRole("link", { name: /configuration/i }).first().click();
+      await takeJourneyScreenshot(page, "config", 8);
+    });
+  });
   // =========================================================================
   // MOBILE RESPONSIVE SCREENSHOTS (5 steps)
   // =========================================================================
