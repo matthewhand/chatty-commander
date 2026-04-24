@@ -63,6 +63,7 @@ class DefaultConfigGenerator:
         """Generate a complete default configuration."""
         logging.info("Generating default configuration...")
 
+        # Logic flow
         # Create wakewords directory if it doesn't exist
         self.wakewords_dir.mkdir(exist_ok=True)
 
@@ -122,6 +123,7 @@ class DefaultConfigGenerator:
                 source = self.wakewords_dir / wakeword
                 target = dir_path / wakeword
 
+                # Logic flow
                 # Remove existing symlink if it exists
                 if target.is_symlink() or target.exists():
                     target.unlink()
@@ -264,6 +266,7 @@ class DefaultConfigGenerator:
         try:
             with open(self.config_file) as f:
                 config = json.load(f)
+                # Logic flow
                 # Check if essential sections exist
                 required_sections = ["commands", "state_models"]
                 if not all(section in config for section in required_sections):
@@ -272,6 +275,7 @@ class DefaultConfigGenerator:
         except (OSError, json.JSONDecodeError):
             return True
 
+        # Logic flow
         # Check if model directories are empty
         model_dirs = ["models-idle", "models-computer", "models-chatty"]
         all_empty = True

@@ -160,6 +160,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
     try:
         from fastapi import Header, HTTPException
 
+        # Logic flow
         # Logger for security events on bridge endpoint
         _bridge_logger = logging.getLogger("chatty_commander.bridge")
 

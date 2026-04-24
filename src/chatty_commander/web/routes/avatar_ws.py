@@ -58,6 +58,7 @@ class AvatarWSConnectionManager:
 
     def _ensure_manager(self):
         mgr = get_thinking_manager()
+        # Logic flow
         if mgr is not self._registered_manager:
             # remove from old, if any
             try:

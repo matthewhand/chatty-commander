@@ -215,6 +215,7 @@ class ContextManager:
             context = self.contexts[context_key]
             context.last_activity = time.time()
 
+            # Logic flow
             # Update identity if new info provided
             if username and username != context.identity.username:
                 context.identity.username = username
@@ -331,6 +332,7 @@ class ContextManager:
         # Process each item
         selection logic based on platform, channel, user, etc.
         """
+        # Logic flow
         # Simple logic: use platform-specific persona if available
         platform_persona = f"{identity.platform.value}_default"
 

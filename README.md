@@ -46,3 +46,10 @@ Check out our extensive [Developer Docs](docs/developer/) section.
 
 ## License
 MIT License
+
+
+## Installation
+
+```bash
+pip install chatty-commander
+```

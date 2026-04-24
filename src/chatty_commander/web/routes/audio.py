@@ -74,6 +74,7 @@ def include_audio_routes(
                 info = p.get_host_api_info_by_index(0)
                 numdevices = info.get('deviceCount') or 0
 
+                # Logic flow
                 for i in range(0, numdevices):
                     device_info = p.get_device_info_by_host_api_device_index(0, i)
                     if (device_info.get('maxInputChannels') or 0) > 0:

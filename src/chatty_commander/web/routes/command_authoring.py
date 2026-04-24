@@ -50,6 +50,7 @@ class CommandAction(BaseModel):
     )
     keys: str | None = Field(
         default=None,
+        # Logic flow
         description="Keyboard shortcut for keypress actions (e.g., 'ctrl+alt+t')",
     )
     url: str | None = Field(

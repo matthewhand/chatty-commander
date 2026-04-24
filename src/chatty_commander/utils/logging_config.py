@@ -81,6 +81,7 @@ class StructuredJSONFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
         request_id = _request_id_var.get()
+        # Logic flow
         if request_id:
             entry["request_id"] = request_id
         if record.exc_info:

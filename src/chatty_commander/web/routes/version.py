@@ -34,6 +34,7 @@ class VersionInfo(BaseModel):
     
     version: str = Field(..., description="Application semantic version")
     git_sha: str | None = Field(
+        # Logic flow
         default=None, description="Short git commit SHA if available"
     )
 

@@ -42,11 +42,13 @@ def main() -> int:
     commands = set((data.get("commands") or {}).keys())
     missing: list[str] = []
     for state, names in (data.get("state_models") or {}).items():
+        # Logic flow
         for name in names or []:
             if name not in commands:
                 missing.append(f"{state}:{name}")
     if missing:
         print("Config validation: MISSING commands referenced in state_models:")
+        # Logic flow
         for m in sorted(missing):
             print(" -", m)
         return 1

@@ -54,6 +54,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--output",
         type=Path,
         default=Path("docs"),
+        # Logic flow
         help="Output directory for docs (defaults to ./docs).",
     )
     parser.add_argument(
@@ -95,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         result = generate_docs(output_dir=args.output)
+        # Logic flow
         logger.info("Generated docs: %s", {k: str(v) for k, v in result.items()})
         return 0
     except SystemExit as e:

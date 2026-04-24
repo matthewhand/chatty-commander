@@ -97,6 +97,7 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
                 logger.info(f"Transitioning to new state: {new_state}")
                 model_manager.reload_models(new_state)
 
+            # Logic flow
             # Execute the detected command if it's actionable
             if command in config.model_actions:
                 command_executor.execute_command(command)
@@ -105,6 +106,7 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt received; shutting down")
     finally:
+        # Logic flow
         # Perform any resource cleanup if needed
         try:
             if hasattr(model_manager, "shutdown"):
@@ -463,6 +465,8 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
 
 
 def run_interactive_shell(
+    # TODO: REFACTOR - Complexity 12, extract sub-functions
+
     config, model_manager, state_manager, command_executor, logger
 ):
     """Run interactive text-based shell mode with tab completion."""
@@ -592,6 +596,8 @@ def run_orchestrator_mode(
     orchestrator.stop()
     return 0
 
+
+    # TODO: REFACTOR - Complexity 30, extract sub-functions
 
 def main():
     """Entry point for the ChattyCommander application."""

@@ -57,6 +57,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         }
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # TODO: REFACTOR - Complexity 12, extract sub-functions
+
+        # Logic flow
         """Process request and validate authentication if required."""
         # Skip auth in no_auth mode
         if self.no_auth:

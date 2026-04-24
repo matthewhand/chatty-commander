@@ -38,6 +38,7 @@ def generate_package_json() -> str:
         {
             "name": "chatty-commander-bridge",
             "version": "1.0.0",
+            # Logic flow
             "description": "Node.js bridge for Discord/Slack integration with ChattyCommander advisors",
             "main": "src/index.js",
             "scripts": {

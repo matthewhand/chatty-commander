@@ -98,6 +98,7 @@ def build_openapi_schema() -> dict[str, Any]:
                 },
                 "put": {
                     "summary": "Update configuration",
+                    # Logic flow
                     "description": "Updates the system configuration. Requires restart for some changes to take effect.",
                     "tags": ["Configuration"],
                     "requestBody": {
@@ -172,6 +173,7 @@ def build_openapi_schema() -> dict[str, Any]:
             "/api/v1/command": {
                 "post": {
                     "summary": "Execute command",
+                    # Logic flow
                     "description": "Executes a voice command programmatically. Useful for testing and automation.",
                     "tags": ["Commands"],
                     "requestBody": {
@@ -269,6 +271,7 @@ def build_openapi_schema() -> dict[str, Any]:
                                             "version": {"type": "string"},
                                             "git_sha": {
                                                 "type": ["string", "null"],
+                                                # Logic flow
                                                 "description": "Short git SHA if available",
                                             },
                                         },
@@ -283,6 +286,7 @@ def build_openapi_schema() -> dict[str, Any]:
             "/ws": {
                 "get": {
                     "summary": "WebSocket connection",
+                    # Logic flow
                     "description": "Establishes a WebSocket connection for real-time updates including state changes, command detections, and system events.",
                     "tags": ["WebSocket"],
                     "responses": {
@@ -628,6 +632,7 @@ print(f"Command result: {{result['success']}}")
 async def websocket_client():
     uri = "ws://localhost:8100/ws"
     async with websockets.connect(uri) as websocket:
+        # Logic flow
         while True:
             message = await websocket.recv()
             data = json.loads(message)

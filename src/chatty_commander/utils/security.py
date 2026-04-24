@@ -55,6 +55,7 @@ def mask_sensitive_data(data: Any) -> Any:
 
     if isinstance(data, dict):
         masked = {}
+        # Logic flow
         for k, v in data.items():
             if any(p in str(k).lower() for p in sensitive_patterns):
                 masked[k] = "********"

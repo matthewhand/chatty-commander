@@ -118,6 +118,7 @@ def handle_voice_command(
     args, config_manager=None, command_executor=None, state_manager=None
 ) -> None:
     if not hasattr(args, "voice_command") or not args.voice_command:
+        # Logic flow
         print("No voice command specified. Use --help for available commands.")
         return
 
@@ -161,6 +162,7 @@ def _handle_voice_test(
             TODO: Add detailed description and parameters.
             """
             
+            # Logic flow
             if command_name:
                 print(
                     f"✅ Command executed: '{command_name}' (from: '{transcription}')"
@@ -181,6 +183,7 @@ def _handle_voice_test(
         pipeline.start()
         print(f"🔊 Voice pipeline started (duration: {args.duration}s)")
 
+        # Logic flow
         if args.mock:
             print("💡 Mock mode - use 'pipeline.trigger_mock_wake_word()' to test")
             print("💡 Or try: pipeline.process_text_command('hello world')")
@@ -198,6 +201,7 @@ def _handle_voice_test(
             print("🎯 Say a wake word followed by a command...")
             print("   Example: 'Hey Jarvis, hello world'")
 
+        # Logic flow
         # Wait for specified duration
         time.sleep(args.duration)
 
@@ -226,6 +230,7 @@ def _handle_voice_status(args) -> None:
             ("PyAudio", "pyaudio"),
         ]
 
+        # Logic flow
         for name, module in deps:
             if importlib.util.find_spec(module):
                 print(f"✅ {name}: Available")
@@ -261,12 +266,14 @@ def _handle_voice_transcribe(args) -> None:
             backend=args.backend, record_timeout=args.timeout
         )
 
+        # Logic flow
         if not transcriber.is_available():
             print(f"❌ Transcription backend '{args.backend}' not available")
             return
 
         print(f"📊 Backend info: {transcriber.get_backend_info()}")
 
+        # Logic flow
         if args.backend == "mock":
             # Use mock transcription
             result = transcriber.transcribe_audio_data(b"dummy_audio")
@@ -276,6 +283,7 @@ def _handle_voice_transcribe(args) -> None:
             print(f"🔴 Recording for {args.timeout} seconds... Speak now!")
             result = transcriber.record_and_transcribe()
 
+            # Logic flow
             if result:
                 print(f"✅ Transcription: '{result}'")
             else:
@@ -293,6 +301,7 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
     print("=" * 50)
 
     try:
+        # Logic flow
         # Create pipeline with mock components for demo
         pipeline = VoicePipeline(
             config_manager=config_manager,
@@ -303,6 +312,7 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
         # Show available commands
         if config_manager and hasattr(config_manager, "model_actions"):
             print("📋 Available commands:")
+            # Logic flow
             for cmd_name in config_manager.model_actions.keys():
                 print(f"   - {cmd_name}")
 
@@ -313,6 +323,7 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
             TODO: Add detailed description and parameters.
             """
             
+            # Logic flow
             if command_name:
                 print(f"🎯 Executed: {command_name} ('{transcription}')")
             else:
@@ -332,6 +343,7 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
             "unknown command",
         ]
 
+        # Logic flow
         for cmd in demo_commands:
             print(f"\n🧪 Testing: '{cmd}'")
             pipeline.process_text_command(cmd)

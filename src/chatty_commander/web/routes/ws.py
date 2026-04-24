@@ -76,6 +76,7 @@ def include_ws_routes(
             }
             await websocket.send_text(json.dumps(snapshot))
 
+            # Logic flow
             while True:
                 try:
                     # Wait for incoming client messages with timeout to allow periodic heartbeats

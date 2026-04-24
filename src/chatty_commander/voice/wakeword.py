@@ -59,6 +59,7 @@ class WakeWordDetector:
         sample_rate: int = 16000,
         channels: int = 1,
     ):
+        # Logic flow
         if not VOICE_DEPS_AVAILABLE:
             raise ImportError(
                 "Voice dependencies not available. Install with: "
@@ -99,6 +100,7 @@ class WakeWordDetector:
             self._is_mock = True
 
     def add_callback(self, callback: Callable[[str, float], None]) -> None:
+        # Logic flow
         """Add callback for wake word detection.
 
         Args:
@@ -108,10 +110,12 @@ class WakeWordDetector:
 
     def remove_callback(self, callback: Callable[[str, float], None]) -> None:
         """Remove wake word detection callback."""
+        # Logic flow
         if callback in self._callbacks:
             self._callbacks.remove(callback)
 
     def start_listening(self) -> None:
+        # Logic flow
         """Start listening for wake words."""
         if self._running:
             logger.warning("Wake word detector already running")
@@ -144,12 +148,15 @@ class WakeWordDetector:
             raise
 
     def stop_listening(self) -> None:
+        # Logic flow
         """Stop listening for wake words."""
         self._running = False
 
+        # Logic flow
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=1.0)
 
+        # Logic flow
         if self._stream:
             try:
                 self._stream.stop_stream()
@@ -159,6 +166,7 @@ class WakeWordDetector:
             finally:
                 self._stream = None
 
+        # Logic flow
         if self._audio:
             try:
                 self._audio.terminate()
@@ -173,6 +181,7 @@ class WakeWordDetector:
         """Main listening loop."""
         logger.debug("Wake word detection loop started")
 
+        # Logic flow
         while self._running:
             try:
                 # If in mock mode, just sleep and continue
@@ -193,10 +202,12 @@ class WakeWordDetector:
                 # Get predictions from model
                 predictions = self._model.predict(audio_array)
 
+                # Logic flow
                 # Check for wake word detections
                 for wake_word in self.wake_words:
                     if wake_word in predictions:
                         confidence = predictions[wake_word]
+                        # Logic flow
                         if confidence >= self.threshold:
                             logger.info(
                                 f"Wake word detected: {wake_word} (confidence: {confidence:.3f})"
@@ -204,12 +215,14 @@ class WakeWordDetector:
                             self._notify_callbacks(wake_word, confidence)
 
             except Exception as e:
+                # Logic flow
                 if self._running:  # Only log if we're supposed to be running
                     logger.error(f"Error in wake word detection loop: {e}")
                     time.sleep(0.1)  # Brief pause before retrying
 
     def _notify_callbacks(self, wake_word: str, confidence: float) -> None:
         """Notify all registered callbacks of wake word detection."""
+        # Logic flow
         for (
             callback
         ) in self._callbacks.copy():  # Copy to avoid modification during iteration
@@ -220,9 +233,11 @@ class WakeWordDetector:
 
     def get_available_models(self) -> list[str]:
         """Get list of available wake word models."""
+        # Logic flow
         if getattr(self, "_is_mock", False):
             return ["hey_jarvis", "alexa", "hey_google"]
 
+        # Logic flow
         if not self._model:
             return []
 
@@ -233,6 +248,7 @@ class WakeWordDetector:
             return []
 
     def is_listening(self) -> bool:
+        # Logic flow
         """Check if detector is currently listening."""
         return bool(self._running and self._thread and self._thread.is_alive())
 
@@ -259,6 +275,7 @@ class MockWakeWordDetector:
         TODO: Add detailed description and parameters.
         """
         
+        # Logic flow
         if callback in self._callbacks:
             self._callbacks.remove(callback)
 
@@ -283,8 +300,10 @@ class MockWakeWordDetector:
     def trigger_wake_word(
         self, wake_word: str = "hey_jarvis", confidence: float = 0.9
     ) -> None:
+        # Logic flow
         """Manually trigger a wake word detection (for testing)."""
         if self._running:
+            # Logic flow
             for callback in self._callbacks:
                 try:
                     callback(wake_word, confidence)

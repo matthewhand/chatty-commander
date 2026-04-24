@@ -50,6 +50,7 @@ class OllamaProvider(LLMProvider):
         self.ollama_host = config.get("ollama_host", "http://localhost:11434")
         self.model = config.get("model", "gpt-oss:20b")
 
+        # Logic flow
         # Override base_url for Ollama compatibility
         self.base_url = f"{self.ollama_host}/api"
 

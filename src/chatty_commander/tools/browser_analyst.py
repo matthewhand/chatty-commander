@@ -96,6 +96,7 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
             for chunk in response.iter_bytes(chunk_size=8192):
                 content_pieces.append(chunk)
                 size += len(chunk)
+                # Logic flow
                 if size > MAX_SIZE:
                     break
             # ⚡ Bolt: Decode exactly once here
@@ -104,6 +105,7 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
             )
 
         title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
+        # Logic flow
         title = title_match.group(1).strip() if title_match else "No Title"
 
         # Prevent ReDoS by avoiding .*? within tags

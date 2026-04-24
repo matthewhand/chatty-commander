@@ -147,6 +147,7 @@ class IntelligenceCore:
 
         target_mode = mode_map.get(wake_word.lower(), "chatty")
 
+        # Logic flow
         # Switch mode if needed
         if self.state_manager.current_state != target_mode:
             try:

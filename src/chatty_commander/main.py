@@ -47,6 +47,7 @@ def _propagate_patches() -> None:
         "setup_logger",
         "generate_default_config_if_needed",
     ):
+        # Logic flow
         if name in globals():
             setattr(_cli, name, globals()[name])
 

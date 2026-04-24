@@ -90,6 +90,7 @@ def handle_llm_command(args, config_manager=None) -> None:
     """Handle LLM-related CLI commands."""
 
     if not hasattr(args, "llm_command") or not args.llm_command:
+        # Logic flow
         print("No LLM command specified. Use --help for available commands.")
         return
 
@@ -122,6 +123,7 @@ def _handle_llm_status(args) -> None:
         ]
 
         print("📦 Dependencies:")
+        # Logic flow
         for name, module in deps:
             if importlib.util.find_spec(module):
                 print(f"   ✅ {name}: Available")
@@ -138,16 +140,20 @@ def _handle_llm_status(args) -> None:
         # Show all backends
         all_info = manager.get_all_backends_info()
         print("\n📊 Backend Status:")
+        # Logic flow
         for backend_name, info in all_info.items():
             if backend_name == "active":
                 continue
 
             available = info.get("available", False)
+            # Logic flow
             status_icon = "✅" if available else "❌"
             print(
+                # Logic flow
                 f"   {status_icon} {backend_name}: {'Available' if available else 'Not available'}"
             )
 
+            # Logic flow
             if "error" in info:
                 print(f"      Error: {info['error']}")
 
@@ -155,10 +161,12 @@ def _handle_llm_status(args) -> None:
         print("\n🔧 Environment:")
         env_vars = ["OPENAI_API_KEY", "OPENAI_API_BASE", "OLLAMA_HOST", "LLM_BACKEND"]
 
+        # Logic flow
         for var in env_vars:
             import os
 
             value = os.getenv(var)
+            # Logic flow
             if value:
                 # Mask API keys
                 if "KEY" in var and len(value) > 8:
@@ -180,11 +188,13 @@ def _handle_llm_test(args) -> None:
     try:
         manager = LLMManager(use_mock=args.mock)
 
+        # Logic flow
         if args.backend:
             # Test specific backend
             print(f"Testing backend: {args.backend}")
             result = manager.test_backend(args.backend, args.prompt)
 
+            # Logic flow
             if result.get("success"):
                 print("✅ Success!")
                 print(f"   Response: {result['response']}")
@@ -206,6 +216,7 @@ def _handle_llm_test(args) -> None:
         # Show backend info
         info = manager.get_backend_info()
         print("\n📊 Backend Info:")
+        # Logic flow
         for key, value in info.items():
             print(f"   {key}: {value}")
 
@@ -232,6 +243,7 @@ def _handle_llm_process(args, config_manager=None) -> None:
         command, confidence, explanation = processor.process_command(args.text)
 
         print("\n🎯 Processing Result:")
+        # Logic flow
         if command:
             print(f"   ✅ Matched command: {command}")
             print(f"   🎲 Confidence: {confidence:.2f}")
@@ -248,6 +260,7 @@ def _handle_llm_process(args, config_manager=None) -> None:
         suggestions = processor.get_command_suggestions(args.text[:3])
         if suggestions:
             print("\n💡 Suggestions:")
+            # Logic flow
             for suggestion in suggestions[:3]:
                 print(
                     f"   - {suggestion['command']} (confidence: {suggestion['confidence']:.2f})"
@@ -263,6 +276,7 @@ def _handle_llm_backends(args) -> None:
     print("=" * 40)
 
     try:
+        # Logic flow
         manager = LLMManager(use_mock=True)  # Include mock for complete info
         all_info = manager.get_all_backends_info()
 
@@ -270,8 +284,10 @@ def _handle_llm_backends(args) -> None:
         print(f"🎯 Active Backend: {active_backend}")
         print()
 
+        # Logic flow
         for backend_name, info in all_info.items():
             available = info.get("available", False)
+            # Logic flow
             status_icon = "✅" if available else "❌"
 
             print(f"{status_icon} {backend_name.upper()}")
@@ -281,16 +297,20 @@ def _handle_llm_backends(args) -> None:
             if backend_name == "openai":
                 print(f"   Base URL: {info.get('base_url', 'N/A')}")
                 print(f"   Has API Key: {info.get('has_api_key', False)}")
+            # Logic flow
             elif backend_name == "ollama":
                 print(f"   Host: {info.get('host', 'N/A')}")
                 print(f"   Model: {info.get('model', 'N/A')}")
+            # Logic flow
             elif backend_name == "local":
                 print(f"   Model: {info.get('model_name', 'N/A')}")
                 print(f"   Device: {info.get('device', 'N/A')}")
+            # Logic flow
             elif backend_name == "mock":
                 print(f"   Responses: {info.get('responses_count', 0)}")
                 print(f"   Calls: {info.get('call_count', 0)}")
 
+            # Logic flow
             if "error" in info:
                 print(f"   ❌ Error: {info['error']}")
 
@@ -327,11 +347,13 @@ def demo_llm_integration(config_manager=None) -> None:
         ]
 
         print("\n🔄 Processing Demo Commands:")
+        # Logic flow
         for user_input in demo_inputs:
             print(f"\n💬 Input: '{user_input}'")
 
             command, confidence, explanation = processor.process_command(user_input)
 
+            # Logic flow
             if command:
                 print(f"   ✅ → {command} (confidence: {confidence:.2f})")
                 print(f"   💭 {explanation}")

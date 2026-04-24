@@ -175,6 +175,7 @@ class ConversationEngine:
         )
         persona_style = persona_config.get("style", "casual and engaging")
 
+        # Logic flow
         # Build system prompt - use persona system_prompt if available, otherwise build default
         if "system_prompt" in persona_config:
             base_system_prompt = persona_config["system_prompt"]
@@ -274,6 +275,8 @@ Remember: You're not just answering questions - you're having a conversation wit
         self.user_preferences[user_id].update(preferences)
 
     def get_smart_fallback_response(
+        # TODO: REFACTOR - Complexity 11, extract sub-functions
+
         self, user_input: str, intent: str, sentiment: str
     ) -> str:
         """Generate intelligent fallback responses when LLM is unavailable."""

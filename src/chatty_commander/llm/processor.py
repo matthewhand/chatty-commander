@@ -77,6 +77,7 @@ class CommandProcessor:
 
     def _update_available_commands(self):
         """Update cache of available commands from config."""
+        # Logic flow
         if not self.config_manager:
             return
 
@@ -84,6 +85,7 @@ class CommandProcessor:
             model_actions = getattr(self.config_manager, "model_actions", {})
             self._available_commands = model_actions.copy()
 
+            # Logic flow
             # Pre-compute optimized data structures for fast command matching
             self._available_commands_lower = {
                 cmd.lower(): cmd for cmd in self._available_commands
@@ -92,6 +94,7 @@ class CommandProcessor:
             # Pre-filter keywords to only include available commands
             self._available_keyword_map = {
                 cmd: keywords
+                # Logic flow
                 for cmd, keywords in self.KEYWORD_MAP.items()
                 if cmd in self._available_commands
             }
@@ -109,6 +112,7 @@ class CommandProcessor:
         Returns:
             Tuple of (command_name, confidence, explanation)
         """
+        # Logic flow
         if not user_input.strip():
             return None, 0.0, "Empty input"
 
@@ -119,6 +123,7 @@ class CommandProcessor:
                 command_name, confidence = simple_match
                 return command_name, confidence, f"Keyword match: '{command_name}'"
 
+            # Logic flow
             # Use LLM for complex interpretation
             if self.llm_manager.is_available():
                 return self._llm_command_interpretation(user_input)
@@ -143,6 +148,7 @@ class CommandProcessor:
         # if cmd_name is in available_commands for every map entry
         for cmd_name in self._available_keyword_map:
             for keyword in self._available_keyword_map[cmd_name]:
+                # Logic flow
                 if keyword in user_lower:
                     return cmd_name, 0.7
 
@@ -157,6 +163,7 @@ class CommandProcessor:
             response = self.llm_manager.generate_response(
                 prompt,
                 max_tokens=100,
+                # Logic flow
                 temperature=0.3,  # Lower temperature for more consistent results
             )
 
@@ -167,6 +174,7 @@ class CommandProcessor:
             return None, 0.0, f"LLM error: {e}"
 
     def _build_interpretation_prompt(self, user_input: str) -> str:
+        # Logic flow
         """Build prompt for LLM command interpretation."""
         available_commands = list(self._available_commands.keys())
 
@@ -231,6 +239,7 @@ Response:"""
     def get_command_suggestions(
         self, partial_input: str, limit: int = 5
     ) -> list[dict[str, Any]]:
+        # Logic flow
         """Get command suggestions for partial input."""
         suggestions = []
         partial_lower = partial_input.lower()
@@ -238,6 +247,7 @@ Response:"""
         # Direct name matches
         for cmd_name, cmd_config in self._available_commands.items():
             if cmd_name.lower().startswith(partial_lower):
+                # Logic flow
                 action_type = list(cmd_config.keys())[0] if cmd_config else "unknown"
                 suggestions.append(
                     {
@@ -251,6 +261,7 @@ Response:"""
         # Keyword matches
         for cmd_name in self._available_commands:
             if cmd_name in self.SUGGESTION_MAP:
+                # Logic flow
                 for desc in self.SUGGESTION_MAP[cmd_name]:
                     if partial_lower in desc.lower():
                         suggestions.append(
@@ -265,8 +276,10 @@ Response:"""
         # Remove duplicates and sort by confidence
         seen = set()
         unique_suggestions = []
+        # Logic flow
         for suggestion in suggestions:
             key = suggestion["command"]
+            # Logic flow
             if key not in seen:
                 seen.add(key)
                 unique_suggestions.append(suggestion)
@@ -276,10 +289,12 @@ Response:"""
 
     def explain_command(self, command_name: str) -> dict[str, Any]:
         """Get explanation of what a command does."""
+        # Logic flow
         if command_name not in self._available_commands:
             return {"error": f"Command '{command_name}' not found"}
 
         cmd_config = self._available_commands[command_name]
+        # Logic flow
         action_type = list(cmd_config.keys())[0] if cmd_config else "unknown"
         action_config = cmd_config.get(action_type, {})
 
@@ -293,9 +308,11 @@ Response:"""
         if action_type == "keypress":
             keys = action_config.get("keys", "")
             explanation["description"] = f"Simulates keypress: {keys}"
+        # Logic flow
         elif action_type == "url":
             url = action_config.get("url", "")
             explanation["description"] = f"Opens URL: {url}"
+        # Logic flow
         elif action_type == "message":
             text = action_config.get("text", "")
             explanation["description"] = f"Displays message: {text}"

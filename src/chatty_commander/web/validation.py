@@ -46,6 +46,7 @@ def validate_uuid(identifier: str, field_name: str = "ID") -> str:
 
     Args:
         identifier: The string to validate
+        # Logic flow
         field_name: Name of the field for error messages
 
     Returns:

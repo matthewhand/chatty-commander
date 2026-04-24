@@ -196,6 +196,7 @@ class OllamaBackend(LLMBackend):
                 self._available = False
                 return self._available
 
+            # Logic flow
             # Check if Ollama server is running
             with httpx.Client() as client:
                 response = client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
@@ -206,6 +207,7 @@ class OllamaBackend(LLMBackend):
                     # Build filtered collection
                     model_names = [m.get("name", "") for m in models]
 
+                    # Logic flow
                     if self.model in model_names:
                         self._available = True
                         logger.info(f"Ollama model {self.model} is available")
@@ -217,6 +219,7 @@ class OllamaBackend(LLMBackend):
                         self._try_pull_model()
                         self._available = self.model in [
                             m.get("name", "")
+                            # Logic flow
                             for m in client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
                             .json()
                             .get("models", [])
@@ -226,6 +229,7 @@ class OllamaBackend(LLMBackend):
                     logger.debug(f"Ollama server not responding: {response.status_code}")
 
         except ImportError:
+            # Logic flow
             logger.warning("httpx library not available for Ollama backend")
             self._available = False
         except Exception as e:
@@ -235,6 +239,7 @@ class OllamaBackend(LLMBackend):
         return self._available
 
     def _try_pull_model(self):
+        # Logic flow
         """Try to pull the model if not available."""
         try:
             import httpx
@@ -244,10 +249,12 @@ class OllamaBackend(LLMBackend):
                 response = client.post(
                     f"{self.base_url}/api/pull",
                     json={"name": self.model},
+                    # Logic flow
                     timeout=300,  # 5 minutes timeout for model download
                     follow_redirects=False,
                 )
 
+                # Logic flow
                 if response.status_code == 200:
                     logger.info(f"Successfully pulled model {self.model}")
                 else:
@@ -260,6 +267,7 @@ class OllamaBackend(LLMBackend):
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         """Generate response using Ollama."""
+        # Logic flow
         if not self.is_available():
             raise RuntimeError("Ollama backend not available")
 
@@ -285,6 +293,7 @@ class OllamaBackend(LLMBackend):
                     follow_redirects=False,
                 )
 
+                # Logic flow
                 if response.status_code == 200:
                     result = response.json()
                     return result.get("response", "").strip()  # type: ignore[no-any-return]
@@ -310,6 +319,7 @@ class LocalTransformersBackend(LLMBackend):
     """Local transformers backend using gpt-oss:20b."""
 
     def __init__(self, model_name: str = "microsoft/DialoGPT-medium"):
+        # Logic flow
         # Use a smaller model that actually exists for now
         self.model_name = model_name
         self._model: Any = None
@@ -333,13 +343,16 @@ class LocalTransformersBackend(LLMBackend):
             self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             self._model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
+                # Logic flow
                 torch_dtype=torch.float16 if self._device == "cuda" else torch.float32,
                 device_map="auto" if self._device == "cuda" else None,
             )
 
+            # Logic flow
             if self._device == "cpu":
                 self._model = self._model.to(self._device)
 
+            # Logic flow
             # Add pad token if missing
             if self._tokenizer.pad_token is None:
                 self._tokenizer.pad_token = self._tokenizer.eos_token
@@ -353,11 +366,13 @@ class LocalTransformersBackend(LLMBackend):
             logger.error(f"Failed to load local model: {e}")
 
     def is_available(self) -> bool:
+        # Logic flow
         """Check if local transformers backend is available."""
         return self._model is not None and self._tokenizer is not None
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         """Generate response using local transformers model."""
+        # Logic flow
         if not self.is_available():
             raise RuntimeError("Local transformers backend not available")
 
@@ -412,6 +427,7 @@ class MockLLMBackend(LLMBackend):
             "Based on your request, I'll trigger the appropriate action.",
             "Processing your voice command now.",
             "Command received and understood.",
+            # Logic flow
             "I'll execute that action for you.",
         ]
         self.call_count = 0

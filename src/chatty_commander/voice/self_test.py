@@ -73,12 +73,14 @@ class VoiceSelfTester:
         self.transcriber = transcriber or VoiceTranscriber(backend="whisper_local")
         self.openai_client = None
 
+        # Logic flow
         if OPENAI_AVAILABLE and openai_api_key:
             self.openai_client = OpenAI(api_key=openai_api_key)
 
         self.test_phrases = test_phrases or self._get_default_test_phrases()
         self._tts_engine = None
 
+        # Logic flow
         if TTS_AVAILABLE:
             self._initialize_tts()
 
@@ -86,6 +88,7 @@ class VoiceSelfTester:
         """Initialize text-to-speech engine."""
         try:
             self._tts_engine = pyttsx3.init()
+            # Logic flow
             # Configure for clear speech
             self._tts_engine.setProperty("rate", 150)  # type: ignore[attr-defined]
             self._tts_engine.setProperty("volume", 0.9)  # type: ignore[attr-defined]
@@ -107,6 +110,7 @@ class VoiceSelfTester:
             self._tts_engine = None
 
     def _get_default_test_phrases(self) -> list[str]:
+        # Logic flow
         """Get default test phrases for voice recognition testing."""
         return [
             # Basic commands
@@ -123,6 +127,7 @@ class VoiceSelfTester:
             "create a Python function that validates email addresses",
             "write a recursive fibonacci function with memoization",
             "implement a binary search algorithm",
+            # Logic flow
             "generate unit tests for the user authentication module",
             # Voice assistant commands
             "hey computer turn on the lights",
@@ -138,6 +143,7 @@ class VoiceSelfTester:
 
     def generate_audio_from_text(self, text: str) -> bytes | None:
         """Convert text to audio using TTS."""
+        # Logic flow
         if not self._tts_engine:
             logger.warning("TTS engine not available")
             return None
@@ -154,10 +160,12 @@ class VoiceSelfTester:
                 return audio_data
 
         except Exception as e:
+            # Logic flow
             logger.error(f"TTS generation failed for '{text}': {e}")
             return None
 
     def test_transcription_accuracy(self, text: str) -> tuple[str, float]:
+        # Logic flow
         """Test transcription accuracy for a given text."""
         # Generate audio from text
         audio_data = self.generate_audio_from_text(text)
@@ -177,6 +185,7 @@ class VoiceSelfTester:
         original_words = original.lower().split()
         transcribed_words = transcribed.lower().split()
 
+        # Logic flow
         if not original_words:
             return 1.0 if not transcribed_words else 0.0
 
@@ -187,6 +196,7 @@ class VoiceSelfTester:
         intersection = original_set & transcribed_set
         union = original_set | transcribed_set
 
+        # Logic flow
         if not union:
             return 1.0
 
@@ -196,6 +206,7 @@ class VoiceSelfTester:
         self, original: str, transcribed: str
     ) -> dict[str, Any]:
         """Use LLM to judge transcription quality and provide feedback."""
+        # Logic flow
         if not self.openai_client:
             return {
                 "score": self._calculate_accuracy(original, transcribed),
@@ -211,6 +222,7 @@ class VoiceSelfTester:
 
         Please provide:
         1. A score from 0.0 to 1.0 (1.0 = perfect)
+        # Logic flow
         2. Specific feedback on what went wrong (if anything)
         3. Suggestions for improvement
         4. Whether this represents a systematic error pattern
@@ -264,6 +276,7 @@ class VoiceSelfTester:
         category_scores: dict[str, list[float]] = {}
         all_suggestions = []
 
+        # Logic flow
         for i, phrase in enumerate(self.test_phrases):
             logger.info(f"Testing {i+1}/{len(self.test_phrases)}: '{phrase}'")
 
@@ -273,6 +286,7 @@ class VoiceSelfTester:
             # LLM judge evaluation
             llm_result = self.llm_judge_transcription(phrase, transcription)
 
+            # Logic flow
             # Categorize phrase for analysis
             category = self._categorize_phrase(phrase)
             if category not in category_scores:
@@ -299,6 +313,7 @@ class VoiceSelfTester:
         # Calculate summary statistics
         all_scores = [r["llm_score"] for r in results["individual_results"]]
         results["summary"]["average_accuracy"] = (
+            # Logic flow
             sum(all_scores) / len(all_scores) if all_scores else 0.0
         )
 
@@ -306,6 +321,7 @@ class VoiceSelfTester:
         category_averages = {
             cat: sum(scores) / len(scores) for cat, scores in category_scores.items()
         }
+        # Logic flow
         if category_averages:
             results["summary"]["best_category"] = max(
                 category_averages, key=lambda k: category_averages[k]
@@ -321,6 +337,7 @@ class VoiceSelfTester:
 
         results["summary"]["improvement_suggestions"] = [
             {"suggestion": s, "frequency": c}
+            # Logic flow
             for s, c in sorted(
                 suggestion_counts.items(), key=lambda x: x[1], reverse=True
             )
@@ -332,23 +349,30 @@ class VoiceSelfTester:
         return results
 
     def _categorize_phrase(self, phrase: str) -> str:
+        # Logic flow
         """Categorize phrase for analysis."""
         phrase_lower = phrase.lower()
 
+        # Logic flow
         if any(
             word in phrase_lower
+            # Logic flow
             for word in ["function", "class", "import", "def", "async"]
         ):
             return "programming"
+        # Logic flow
         elif any(
             word in phrase_lower for word in ["hey", "turn", "set", "play", "what's"]
         ):
             return "voice_commands"
+        # Logic flow
         elif any(
             word in phrase_lower
+            # Logic flow
             for word in ["create", "write", "implement", "generate"]
         ):
             return "creation_commands"
+        # Logic flow
         elif len(phrase.split()) <= 3:
             return "simple"
         else:
@@ -361,14 +385,17 @@ class VoiceSelfTester:
         summary = test_results.get("summary", {})
         avg_accuracy = summary.get("average_accuracy", 0.0)
 
+        # Logic flow
         if avg_accuracy < 0.7:
             suggestions.append(
                 "Consider switching to a higher-quality transcription backend"
             )
             suggestions.append("Improve audio preprocessing and noise reduction")
 
+        # Logic flow
         if avg_accuracy < 0.9:
             suggestions.append("Add domain-specific vocabulary training")
+            # Logic flow
             suggestions.append("Implement post-processing for common error patterns")
 
         # Analyze category performance
@@ -406,9 +433,11 @@ class VoiceSelfTester:
         # Analyze timing issues
         individual_results = test_results.get("individual_results", [])
         timeout_issues = [
+            # Logic flow
             r for r in individual_results if "timeout" in r.get("feedback", "").lower()
         ]
 
+        # Logic flow
         if (
             len(timeout_issues) > len(individual_results) * 0.2
         ):  # More than 20% timeout issues
@@ -419,10 +448,13 @@ class VoiceSelfTester:
         preprocessing_suggestions = []
         for result in individual_results:
             feedback = result.get("feedback", "").lower()
+            # Logic flow
             if "noise" in feedback:
                 preprocessing_suggestions.append("noise_reduction")
+            # Logic flow
             if "volume" in feedback or "quiet" in feedback:
                 preprocessing_suggestions.append("volume_normalization")
+            # Logic flow
             if "speed" in feedback or "fast" in feedback:
                 preprocessing_suggestions.append("speed_normalization")
 
@@ -479,8 +511,10 @@ def create_self_improvement_loop(
         "total_iterations": iterations,
         "improvement_history": improvement_history,
         "final_accuracy": (
+            # Logic flow
             improvement_history[-1]["average_accuracy"] if improvement_history else 0.0
         ),
+        # Logic flow
         "accuracy_trend": [h["average_accuracy"] for h in improvement_history],
     }
 
@@ -527,6 +561,7 @@ def handle_self_test_command(args):
     """Handle self-test CLI commands."""
 
     if not hasattr(args, "test_command") or not args.test_command:
+        # Logic flow
         print("No self-test command specified. Use --help for available commands.")
         return
 
@@ -551,8 +586,10 @@ def handle_self_test_command(args):
         print(f"   Worst category: {results['summary']['worst_category']}")
 
         suggestions = tester.suggest_improvements(results)
+        # Logic flow
         if suggestions:
             print("\n💡 Improvement suggestions:")
+            # Logic flow
             for suggestion in suggestions[:5]:  # Top 5
                 print(f"   • {suggestion}")
 
@@ -569,6 +606,7 @@ def handle_self_test_command(args):
 
         print("📈 Improvement Results:")
         print(f"   Final accuracy: {results['final_accuracy']:.2%}")
+        # Logic flow
         print(f"   Accuracy trend: {[f'{a:.1%}' for a in results['accuracy_trend']]}")
 
     elif args.test_command == "benchmark":
@@ -577,6 +615,7 @@ def handle_self_test_command(args):
         tester = VoiceSelfTester(openai_api_key=getattr(args, "openai_key", None))
         results = tester.run_comprehensive_test()
 
+        # Logic flow
         if hasattr(args, "save_results") and args.save_results:
             with open(args.save_results, "w") as f:
                 json.dump(results, f, indent=2)

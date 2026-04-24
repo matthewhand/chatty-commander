@@ -28,6 +28,7 @@ def is_safe_url(url: str) -> bool:
     """
     try:
         parsed = urlparse(url)
+        # Logic flow
         if parsed.scheme not in _ALLOWED_SCHEMES:
             return False
         hostname = parsed.hostname

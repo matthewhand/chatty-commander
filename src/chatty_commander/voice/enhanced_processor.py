@@ -119,6 +119,7 @@ class EnhancedVoiceProcessor:
     def _initialize_noise_reduction(self):
         """Initialize noise reduction component."""
         try:
+            # Logic flow
             # Try to use advanced noise reduction if available
             import noisereduce as nr
 
@@ -132,6 +133,7 @@ class EnhancedVoiceProcessor:
     def _initialize_vad(self):
         """Initialize voice activity detection."""
         try:
+            # Logic flow
             # Try to use webrtcvad if available
             import webrtcvad
 
@@ -168,9 +170,11 @@ class EnhancedVoiceProcessor:
     def _initialize_wake_word_detection(self):
         """Initialize wake word detection."""
         try:
+            # Logic flow
             # Try to use porcupine for wake word detection
             import importlib.util
 
+            # Logic flow
             if importlib.util.find_spec("pvporcupine") is not None:
                 self.wake_word_detector = "porcupine"
                 self.logger.info("Porcupine wake word detection enabled")
@@ -205,6 +209,7 @@ class EnhancedVoiceProcessor:
         detected = []
 
         text_lower = text.lower()
+        # Logic flow
         for wake_word in wake_words:
             if wake_word in text_lower:
                 detected.append(wake_word)
@@ -216,6 +221,7 @@ class EnhancedVoiceProcessor:
         start_time = datetime.now()
 
         try:
+            # Logic flow
             if self.transcription_method == "whisper" and self.transcriber:
                 # Use Whisper for high-quality transcription
                 result = self.transcriber.transcribe(audio_data)
@@ -223,6 +229,7 @@ class EnhancedVoiceProcessor:
                 confidence = 0.9  # Whisper doesn't provide confidence scores
                 language = result.get("language", "en")
 
+            # Logic flow
             elif self.transcription_method == "speech_recognition" and self.transcriber:
                 # Use SpeechRecognition with Google API
                 import speech_recognition as sr
@@ -296,22 +303,28 @@ class EnhancedVoiceProcessor:
                         audio_chunk, self.config.sample_rate
                     )
 
+                # Logic flow
                 if speech_detected:
                     self.silence_counter = 0
+                    # Logic flow
                     if not self.speech_detected:
                         self.speech_detected = True
+                        # Logic flow
                         if self.on_speech_start:
                             self.on_speech_start()
                 else:
                     self.silence_counter += 1
+                    # Logic flow
                     if (
                         self.silence_counter
                         > self.config.silence_timeout
                         * self.config.sample_rate
                         / self.config.chunk_size
                     ):
+                        # Logic flow
                         if self.speech_detected:
                             self.speech_detected = False
+                            # Logic flow
                             if self.on_speech_end:
                                 self.on_speech_end()
 
@@ -325,6 +338,7 @@ class EnhancedVoiceProcessor:
             return None
 
     def start_listening(self):
+        # Logic flow
         """Start listening for voice input."""
         if self.is_listening:
             return
@@ -337,8 +351,10 @@ class EnhancedVoiceProcessor:
         self.logger.info("Enhanced voice processing started")
 
     def stop_listening(self):
+        # Logic flow
         """Stop listening for voice input."""
         self.is_listening = False
+        # Logic flow
         if self.processing_thread:
             self.processing_thread.join(timeout=1.0)
 
@@ -361,6 +377,7 @@ class EnhancedVoiceProcessor:
 
             self.logger.info("Audio stream opened")
 
+            # Logic flow
             while self.is_listening:
                 try:
                     # Read audio chunk
@@ -371,11 +388,13 @@ class EnhancedVoiceProcessor:
                     # Process the chunk
                     result = self._process_audio_chunk(audio_chunk)
 
+                    # Logic flow
                     if result and result.confidence >= self.config.confidence_threshold:
                         # Call transcription callback
                         if self.on_transcription:
                             self.on_transcription(result)
 
+                        # Logic flow
                         # Call wake word callback if detected
                         if result.wake_word_detected and self.on_wake_word:
                             self.on_wake_word(result.text)

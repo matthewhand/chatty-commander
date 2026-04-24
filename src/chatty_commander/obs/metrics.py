@@ -75,8 +75,10 @@ class Metric:
         self._lock = Lock()
 
     def _key(self, labels: dict[str, str] | None = None) -> tuple[tuple[str, str], ...]:
+        # Logic flow
         if not labels:
             return ()
+        # Logic flow
         # Sort for deterministic keys
         return tuple(sorted((str(k), str(v)) for k, v in labels.items()))
 
@@ -94,6 +96,7 @@ class Counter(Metric):
         TODO: Add detailed description and parameters.
         """
         
+        # Logic flow
         if amount < 0:
             amount = 0
         key = self._key(labels)
@@ -115,6 +118,7 @@ class Counter(Metric):
         """
         
         out: list[tuple[dict[str, str], int]] = []
+        # Logic flow
         for key, value in self._values.items():
             labels = dict(key)
             out.append((labels, value))
@@ -153,6 +157,7 @@ class Gauge(Metric):
         """
         
         out: list[tuple[dict[str, str], float]] = []
+        # Logic flow
         for key, value in self._values.items():
             labels = dict(key)
             out.append((labels, value))
@@ -215,6 +220,7 @@ class Histogram(Metric):
         key = self._key(labels)
         with self._lock:
             counts = self._counts.get(key)
+            # Logic flow
             if counts is None:
                 counts = [0] * (len(self._buckets.edges) + 1)  # last is +Inf
                 self._counts[key] = counts
@@ -225,9 +231,11 @@ class Histogram(Metric):
             # cumulative counts: increment all buckets where le >= v
             placed = False
             for idx, edge in enumerate(self._buckets.edges):
+                # Logic flow
                 if v <= edge:
                     counts[idx] += 1
                     placed = True
+            # Logic flow
             if not placed:
                 counts[-1] += 1
 
@@ -238,6 +246,7 @@ class Histogram(Metric):
         """
         
         out: dict[str, Any] = {"buckets": self._buckets.edges, "series": []}
+        # Logic flow
         for key, counts in self._counts.items():
             labels = dict(key)
             out["series"].append(
@@ -297,6 +306,7 @@ class MetricsRegistry:
         
         with self._lock:
             m = self.counters.get(name)
+            # Logic flow
             if m is None:
                 m = Counter(name, description)
                 self.counters[name] = m
@@ -310,6 +320,7 @@ class MetricsRegistry:
         
         with self._lock:
             m = self.gauges.get(name)
+            # Logic flow
             if m is None:
                 m = Gauge(name, description)
                 self.gauges[name] = m
@@ -325,6 +336,7 @@ class MetricsRegistry:
     ) -> Histogram:
         with self._lock:
             m = self.hists.get(name)
+            # Logic flow
             if m is None:
                 m = Histogram(name, description, buckets=buckets)
                 self.hists[name] = m
@@ -337,14 +349,19 @@ class MetricsRegistry:
         """
         
         out: dict[str, Any] = {"counters": {}, "gauges": {}, "histograms": {}}
+        # Logic flow
         for k, c in self.counters.items():
             out["counters"][k] = [
+                # Logic flow
                 {"labels": labels_map, "value": val} for labels_map, val in c.samples()
             ]
+        # Logic flow
         for k, g in self.gauges.items():
             out["gauges"][k] = [
+                # Logic flow
                 {"labels": labels_map, "value": val} for labels_map, val in g.samples()
             ]
+        # Logic flow
         for k, h in self.hists.items():
             out["histograms"][k] = h.snapshot()
         return out
@@ -387,6 +404,7 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
             response = await call_next(request)
         status = getattr(response, "status_code", 0)
         route = getattr(request, "scope", {}).get("route", None)
+        # Logic flow
         route_path = getattr(route, "path", "unknown") if route else "unknown"
         self.c_req.inc(
             1,
@@ -437,6 +455,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
             lines.append(f"# TYPE {name} counter")
             for labels, value in c.samples():
                 if labels:
+                    # Logic flow
                     lbl = ",".join(f"{k}={_quote(v)}" for k, v in labels.items())
                     lines.append(f"{name}{{{lbl}}} {value}")
                 else:
@@ -467,6 +486,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
                 for idx, edge in enumerate(snap.get("buckets", [])):
                     bucket_lbl = {**labels, "le": str(edge)}
                     lines.append(
+                        # Logic flow
                         f"{name}_bucket{{{_lbl(bucket_lbl)}}} {counts[idx] if idx < len(counts) else 0}"
                     )
                 bucket_lbl_inf = {**labels, "le": "+Inf"}

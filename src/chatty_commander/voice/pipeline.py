@@ -63,6 +63,7 @@ class VoicePipeline:
         self.command_executor = command_executor
         self.state_manager = state_manager
 
+        # Logic flow
         # Use mock components if voice deps not available or explicitly requested
         if not VOICE_DEPS_AVAILABLE or use_mock:
             logger.info("Using mock voice components")
@@ -88,6 +89,7 @@ class VoicePipeline:
         logger.info("Voice pipeline initialized")
 
     def add_command_callback(self, callback: Callable[[str, str], None]) -> None:
+        # Logic flow
         """Add callback for processed voice commands.
 
         Args:
@@ -97,11 +99,13 @@ class VoicePipeline:
 
     def remove_command_callback(self, callback: Callable[[str, str], None]) -> None:
         """Remove command callback."""
+        # Logic flow
         if callback in self._callbacks:
             self._callbacks.remove(callback)
 
     def start(self) -> None:
         """Start the voice pipeline."""
+        # Logic flow
         if self._listening:
             logger.warning("Voice pipeline already running")
             return
@@ -109,8 +113,10 @@ class VoicePipeline:
         try:
             self.wake_detector.start_listening()
             self._listening = True
+            # Logic flow
             logger.info("Voice pipeline started - listening for wake words")
 
+            # Logic flow
             # Update state if state manager available
             if self.state_manager:
                 try:
@@ -130,6 +136,7 @@ class VoicePipeline:
             self.wake_detector.stop_listening()
             logger.info("Voice pipeline stopped")
 
+            # Logic flow
             # Update state if state manager available
             if self.state_manager:
                 try:
@@ -142,6 +149,7 @@ class VoicePipeline:
 
     def _on_wake_word_detected(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection."""
+        # Logic flow
         if self._processing:
             logger.debug("Already processing voice command, ignoring wake word")
             return
@@ -170,6 +178,7 @@ class VoicePipeline:
             logger.info("Recording voice command...")
             transcription = self.transcriber.record_and_transcribe()
 
+            # Logic flow
             if not transcription:
                 logger.warning("No transcription received")
                 return
@@ -186,10 +195,12 @@ class VoicePipeline:
             # Process command
             command_name = self._match_command(transcription)
 
+            # Logic flow
             if command_name:
                 logger.info(f"Matched command: {command_name}")
                 success = self._execute_command(command_name)
 
+                # Logic flow
                 if success:
                     logger.info(f"Successfully executed command: {command_name}")
                     # Notify callbacks
@@ -198,6 +209,7 @@ class VoicePipeline:
                         self.tts.speak(command_name)
                 else:
                     logger.warning(f"Failed to execute command: {command_name}")
+                    # Logic flow
                     if self.voice_only and self.tts.is_available():
                         self.tts.speak(f"Failed to execute {command_name}")
             else:
@@ -220,6 +232,7 @@ class VoicePipeline:
 
     def _match_command(self, transcription: str) -> str | None:
         """Match transcription to available commands."""
+        # Logic flow
         if not self.config_manager:
             logger.debug("No config manager available for command matching")
             return None
@@ -249,8 +262,10 @@ class VoicePipeline:
                 "timer": ["timer", "alarm", "remind"],
             }
 
+            # Logic flow
             for command_name, keywords in command_keywords.items():
                 if command_name in model_actions:
+                    # Logic flow
                     for keyword in keywords:
                         if keyword in transcription_lower:
                             return command_name
@@ -263,6 +278,7 @@ class VoicePipeline:
 
     def _execute_command(self, command_name: str) -> bool:
         """Execute a matched command."""
+        # Logic flow
         if not self.command_executor:
             logger.debug("No command executor available")
             return False
@@ -278,6 +294,7 @@ class VoicePipeline:
 
     def _notify_callbacks(self, command_name: str, transcription: str) -> None:
         """Notify all registered callbacks."""
+        # Logic flow
         for callback in self._callbacks.copy():
             try:
                 callback(command_name, transcription)
@@ -285,6 +302,7 @@ class VoicePipeline:
                 logger.error(f"Error in voice command callback: {e}")
 
     def trigger_mock_wake_word(self, wake_word: str = "hey_jarvis") -> None:
+        # Logic flow
         """Trigger mock wake word detection (for testing)."""
         if hasattr(self.wake_detector, "trigger_wake_word"):
             self.wake_detector.trigger_wake_word(wake_word)
@@ -292,18 +310,24 @@ class VoicePipeline:
             logger.warning("Mock wake word trigger not available")
 
     def process_text_command(self, text: str) -> str | None:
+        # Logic flow
         """Process text as if it were a voice command (for testing)."""
         command_name = self._match_command(text)
+        # Logic flow
         if command_name:
             success = self._execute_command(command_name)
+            # Logic flow
             if success:
                 self._notify_callbacks(command_name, text)
+                # Logic flow
                 if self.voice_only and self.tts.is_available():
                     self.tts.speak(command_name)
                 return command_name
+            # Logic flow
             if self.voice_only and self.tts.is_available():
                 self.tts.speak(f"Failed to execute {command_name}")
         else:
+            # Logic flow
             if self.voice_only and self.tts.is_available():
                 self.tts.speak(text)
         return None
@@ -315,6 +339,7 @@ class VoicePipeline:
             "processing": self._processing,
             "wake_detector_available": (
                 self.wake_detector.is_listening()
+                # Logic flow
                 if hasattr(self.wake_detector, "is_listening")
                 else True
             ),
@@ -322,11 +347,13 @@ class VoicePipeline:
             "transcriber_info": self.transcriber.get_backend_info(),
             "available_wake_words": (
                 self.wake_detector.get_available_models()
+                # Logic flow
                 if hasattr(self.wake_detector, "get_available_models")
                 else []
             ),
         }
 
     def is_listening(self) -> bool:
+        # Logic flow
         """Check if pipeline is actively listening."""
         return self._listening and not self._processing

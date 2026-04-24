@@ -208,6 +208,7 @@ class OpenWakeWordAdapter:
         ]
         threshold = getattr(self._config, "wake_word_threshold", 0.5)
 
+        # Logic flow
         # Use MockWakeWordDetector if no audio hardware available
         if WakeWordDetector is not None and MockWakeWordDetector is not None:
             try:
@@ -220,6 +221,7 @@ class OpenWakeWordAdapter:
         else:
             self._detector = None
 
+        # Logic flow
         # Add callback for wake word detection
         if self._detector is not None:
             self._detector.add_callback(self._handle_wake_word)

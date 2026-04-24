@@ -78,6 +78,7 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
     try:
         text = (req.text or "").lower()
         labels = set(req.candidate_labels or [])
+        # Logic flow
         if labels:
             labels &= set(_HINTS.keys()) | {"neutral"}
 

@@ -62,6 +62,7 @@ class TranscriptionBackend(ABC):
 
     @abstractmethod
     def is_available(self) -> bool:
+        # Logic flow
         """Check if backend is available."""
         pass
 
@@ -90,6 +91,7 @@ class WhisperLocalBackend(TranscriptionBackend):
 
     def transcribe(self, audio_data: bytes, sample_rate: int = 16000) -> str:
         """Transcribe audio using local Whisper model."""
+        # Logic flow
         if not self._model:
             raise RuntimeError("Whisper model not available")
 
@@ -143,6 +145,7 @@ class WhisperAPIBackend(TranscriptionBackend):
 
     def transcribe(self, audio_data: bytes, sample_rate: int = 16000) -> str:
         """Transcribe audio using OpenAI Whisper API."""
+        # Logic flow
         if not self._client:
             raise RuntimeError("OpenAI client not available")
 
@@ -188,6 +191,7 @@ class MockTranscriptionBackend(TranscriptionBackend):
             "turn on the lights",
             "what's the weather like",
             "play some music",
+            # Logic flow
             "set a timer for 5 minutes",
         ]
         self.call_count = 0
@@ -221,6 +225,7 @@ class VoiceTranscriber:
         silence_timeout: float = 1.0,
         **backend_kwargs,
     ):
+        # Logic flow
         if not AUDIO_DEPS_AVAILABLE:
             backend = "mock"
 
@@ -236,16 +241,20 @@ class VoiceTranscriber:
 
     def _create_backend(self, backend: str, **kwargs) -> TranscriptionBackend:
         """Create transcription backend."""
+        # Logic flow
         if backend == "whisper_local":
             return WhisperLocalBackend(**kwargs)
+        # Logic flow
         elif backend == "whisper_api":
             return WhisperAPIBackend(**kwargs)
+        # Logic flow
         elif backend == "mock":
             return MockTranscriptionBackend(**kwargs)
         else:
             raise ValueError(f"Unknown transcription backend: {backend}")
 
     def is_available(self) -> bool:
+        # Logic flow
         """Check if transcriber is available."""
         return self._backend.is_available()
 
@@ -255,12 +264,14 @@ class VoiceTranscriber:
 
     def record_and_transcribe(self) -> str:
         """Record audio from microphone and transcribe."""
+        # Logic flow
         if not AUDIO_DEPS_AVAILABLE:
             logger.warning("Audio recording not available, using mock transcription")
             return self._backend.transcribe(b"", self.sample_rate)
 
         try:
             audio_data = self._record_audio()
+            # Logic flow
             if audio_data:
                 return self.transcribe_audio_data(audio_data)
             return ""
@@ -270,6 +281,7 @@ class VoiceTranscriber:
 
     def _record_audio(self) -> bytes:
         """Record audio from microphone."""
+        # Logic flow
         if not AUDIO_DEPS_AVAILABLE:
             return b""
 
@@ -288,6 +300,7 @@ class VoiceTranscriber:
             start_time = time.time()
             silence_start = None
 
+            # Logic flow
             while True:
                 try:
                     data = self._stream.read(  # type: ignore[attr-defined]
@@ -295,13 +308,16 @@ class VoiceTranscriber:
                     )
                     frames.append(data)
 
+                    # Logic flow
                     # Check for silence (simple volume-based detection)
                     audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
                     volume = np.sqrt(np.dot(audio_array, audio_array) / len(audio_array))
 
+                    # Logic flow
                     if volume < 500:  # Silence threshold
                         if silence_start is None:
                             silence_start = time.time()
+                        # Logic flow
                         elif time.time() - silence_start > self.silence_timeout:
                             logger.info("Silence detected, stopping recording")
                             break
@@ -327,6 +343,7 @@ class VoiceTranscriber:
 
     def _cleanup_audio(self):
         """Clean up audio resources."""
+        # Logic flow
         if self._stream:
             try:
                 self._stream.stop_stream()
@@ -336,6 +353,7 @@ class VoiceTranscriber:
             finally:
                 self._stream = None
 
+        # Logic flow
         if self._audio:
             try:
                 self._audio.terminate()

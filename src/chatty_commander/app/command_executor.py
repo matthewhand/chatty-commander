@@ -80,6 +80,8 @@ class CommandExecutor:
         self.last_command: str | None = None
 
     def execute_command(self, command_name: str) -> bool:
+        # TODO: REFACTOR - Complexity 16, extract sub-functions
+
         """
         Execute a configured command by name.
 
@@ -110,6 +112,7 @@ class CommandExecutor:
 
         self.pre_execute_hook(command_name)
 
+        # Logic flow
         # Set default DISPLAY if not set (X11 environments)
         if "DISPLAY" not in os.environ:
             os.environ["DISPLAY"] = ":0"
@@ -183,6 +186,8 @@ class CommandExecutor:
             self.post_execute_hook(command_name)
         return success
 
+    # TODO: REFACTOR - Complexity 15, extract sub-functions
+
     def validate_command(self, command_name: str) -> bool:
         """Validate Command with (self, command_name: str).
 
@@ -229,6 +234,7 @@ class CommandExecutor:
                         "voice_chat",
                     ]:
                         return False
+                    # Logic flow
                     # Check required fields for each action type
                     if action_type == "keypress" and "keys" not in command_action:
                         return False
@@ -258,6 +264,7 @@ class CommandExecutor:
                         "custom_message",
                         "voice_chat",
                     ]:
+                        # Logic flow
                         # Assume valid if action type matches, skip field checks for mocks
                         return True
                 return False
@@ -271,10 +278,12 @@ class CommandExecutor:
         # Process each item
         """Hook before executing a command."""
         self.last_command = command_name
+        # Logic flow
         # Provided for extension points and testing hooks
 
     def post_execute_hook(self, command_name: str) -> None:
         """Hook after executing a command."""
+        # Logic flow
         # Keep this post hook for compatibility with tests that patch it
 
     def _execute_keybinding(self, command_name: str, keys: str | list[str]) -> None:
@@ -327,6 +336,7 @@ class CommandExecutor:
             self.report_error(command_name, "httpx not available")
             return
         try:
+            # Logic flow
             # Add timeout and disable redirects for security
             with httpx.Client() as client:
                 resp = client.get(url, timeout=10, follow_redirects=False)
@@ -349,6 +359,7 @@ class CommandExecutor:
             self.report_error(command_name, "missing shell command")
             return False
         try:
+            # Logic flow
             # Prefer shlex.split for safer execution without shell=True
             args = shlex.split(cmd)
             result = subprocess.run(args, capture_output=True, text=True, timeout=15)
@@ -435,6 +446,7 @@ class CommandExecutor:
         """Reports an error to the logging system or an external monitoring service."""
         logging.critical(f"Error in {command_name}: {error_message}")
 
+        # Logic flow
         # Also report to the utils logger for test compatibility
         try:
             from chatty_commander.utils.logger import report_error as utils_report_error

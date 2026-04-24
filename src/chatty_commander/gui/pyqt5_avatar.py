@@ -118,6 +118,7 @@ class TransparentBrowser(QMainWindow):
 
     def _setup_window(self):
         """Configure the main window properties."""
+        # Logic flow
         # Window flags for frameless, transparent, always on top
         self.setWindowFlags(
             Qt.FramelessWindowHint
@@ -375,6 +376,7 @@ def run_pyqt5_avatar() -> bool:
         return False
 
     try:
+        # Logic flow
         # Create QApplication if it doesn't exist
         app = QApplication.instance()
         if app is None:

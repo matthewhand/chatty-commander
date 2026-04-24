@@ -89,15 +89,19 @@ class AdvisorsService:
         self.provider = provider_builder(base_cfg.get("providers", {}))
         self.context_manager = ContextManager(base_cfg.get("context", {}))
 
+        # Logic flow
         # Check if advisors are enabled
         self.enabled = base_cfg.get("enabled", False)
 
+        # Logic flow
         # Initialize conversation engine for enhanced AI interactions
         self.conversation_engine = create_conversation_engine(base_cfg)
 
+        # Logic flow
         # Initialize LLM Manager for unified provider handling
         from ..llm.manager import get_global_llm_manager
 
+        # Logic flow
         # Use global manager if available or create new one
         self.llm_manager = get_global_llm_manager(
              openai_api_key=base_cfg.get("openai_api_key") or base_cfg.get("api_key"),
@@ -122,6 +126,7 @@ class AdvisorsService:
         if message.text.startswith("summarize "):
             return self._handle_summarize_command(message)
 
+        # Logic flow
         # Get or create context for this identity
         platform = PlatformType(message.platform.lower())
         context = self.context_manager.get_or_create_context(
@@ -133,6 +138,7 @@ class AdvisorsService:
             **(message.metadata or {}),
         )
 
+        # Logic flow
         # Set thinking state for avatar
         agent_id = f"{message.platform}-{message.channel}-{message.user}"
         thinking_manager = get_thinking_manager()
@@ -161,6 +167,7 @@ class AdvisorsService:
             # Update to processing state
             thinking_manager.start_processing(agent_id, "Generating response...")
 
+            # Logic flow
             # Example: instrument a tool call (browser_analyst) if present in text
             if message.text.startswith("summarize "):
                 thinking_manager.start_tool_call(agent_id, tool_name="browser_analyst")
@@ -187,6 +194,7 @@ class AdvisorsService:
                         "name": context.persona_id,
                     }
 
+                # Logic flow
                 # Use conversation engine for enhanced prompt building
                 enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
                     user_input=combined_user_text,
@@ -223,6 +231,7 @@ class AdvisorsService:
                     model_name = getattr(self.provider, "model", "unknown")
                     api_mode = getattr(self.provider, "api_mode", "unknown")
 
+                # Logic flow
                 # Enhanced directive handling for tool-like replies
                 if isinstance(response, str) and "SWITCH_MODE:" in response:
                     lines = response.split("\n")
@@ -245,6 +254,7 @@ class AdvisorsService:
                                     line, f"✗ Mode switch failed: {e}"
                                 )
 
+                # Logic flow
                 # Record conversation for future context
                 self.conversation_engine.record_conversation_turn(
                     # Build filtered collection
@@ -258,6 +268,7 @@ class AdvisorsService:
                     },
                 )
             except Exception as e:
+                # Logic flow
                 # Fallback to echo if LLM fails
                 model_name = "error"
                 api_mode = "error"
@@ -288,6 +299,7 @@ class AdvisorsService:
             return reply
 
         except Exception as e:
+            # Logic flow
             # Set error state if processing fails
             thinking_manager.set_error(agent_id, f"Error processing message: {str(e)}")
             raise

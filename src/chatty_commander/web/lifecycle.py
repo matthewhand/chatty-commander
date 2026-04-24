@@ -74,6 +74,7 @@ def register_lifecycle(
         signal.signal(signal.SIGINT, _handle_shutdown_signal)
         atexit.register(_atexit_handler)
 
+        # Logic flow
         # Intentionally minimal; invoke optional callback if present.
         if on_startup is not None:
             try:

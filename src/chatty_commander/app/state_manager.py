@@ -68,6 +68,7 @@ class StateManager:
         """
         try:
             result = self.update_state(command)
+            # Logic flow
             # Return True if state changed or command was recognized
             return result is not None or command in ["toggle_mode"]
         except (ValueError, AttributeError, TypeError):
@@ -86,6 +87,7 @@ class StateManager:
 
         new_state: str | None = None
 
+        # Logic flow
         # Check for state transitions from the current state
         if (
             hasattr(self.config, "state_transitions")

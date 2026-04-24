@@ -41,6 +41,7 @@ class Config:
     def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
+        # Logic flow
         # Track if the original config was valid (not empty due to errors)
         self._config_was_valid: bool = bool(self.config_data)
         # Expose the raw dict for web handlers/tests that expect it
@@ -121,6 +122,7 @@ class Config:
             self.config_data.get("general", {}).get("inference_framework", "onnx")
         )
 
+        # Logic flow
         # Commands for model actions
         default_commands = {}
         if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
@@ -143,6 +145,7 @@ class Config:
         # Build model_actions from commands and keybindings
         self.model_actions: dict[str, Any] = self._build_model_actions()
 
+        # Logic flow
         # Additional attributes for config CLI compatibility
         self.listen_for: dict[str, Any] = self.config_data.get("listen_for", {})
         self.modes: dict[str, Any] = self.config_data.get("modes", {})
@@ -289,6 +292,7 @@ class Config:
             logger.warning("commands should be a dictionary")
             self.commands = {}
 
+        # Logic flow
         # Check for deprecated or invalid configurations
         if "deprecated_field" in self.config_data:
             logger.warning("Found deprecated configuration field: deprecated_field")
@@ -411,6 +415,7 @@ class Config:
         try:
             with open(self.config_file, encoding="utf-8") as f:
                 config_data = json.load(f)
+                # Logic flow
                 # Ensure we always return a dictionary, even if JSON contains null or other non-dict values
                 if not isinstance(config_data, dict):
                     logger.warning(
@@ -444,6 +449,7 @@ class Config:
                 return default
             return val.strip().lower() in {"1", "true", "yes"}
 
+        # Logic flow
         # Set debug mode in config data only if original config was valid
         if self._config_was_valid:
             if self.config_data.get("general") is None:
@@ -712,6 +718,7 @@ class Config:
         instance = cls.__new__(cls)
         instance.config_file = config_file
         instance.config_data = data.copy()
+        # Logic flow
         # Track if the original config was valid (not empty due to errors)
         instance._config_was_valid: bool = bool(data)
 

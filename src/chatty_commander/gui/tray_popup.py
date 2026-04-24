@@ -119,6 +119,7 @@ def _open_window(settings: dict[str, Any], logger) -> None:
     enable_transparency = transparent
 
     try:
+        # Logic flow
         # Some backends support transparency better with the "qt" GUI; if not available, webview.start will fallback.
         webview.create_window(
             title="ChattyCommander",

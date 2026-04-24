@@ -37,6 +37,7 @@ class AvatarConfigModel(BaseModel):
     
     model_config = ConfigDict(extra="forbid")
     animations_dir: str | None = Field(
+        # Logic flow
         default=None, description="Directory to scan for animations"
     )
     enabled: bool = Field(

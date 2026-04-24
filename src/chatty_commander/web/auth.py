@@ -84,6 +84,7 @@ def apply_cors(
         allow_origins = ["*"]
     else:
         allow_origins = (
+            # Logic flow
             list(origins) if origins is not None else ["http://localhost:3000"]
         )
 

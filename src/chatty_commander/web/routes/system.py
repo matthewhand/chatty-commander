@@ -121,6 +121,7 @@ def include_system_routes(
                 default=default,
                 required=required,
             )
+            # Logic flow
             for name, (desc, default, required) in _ENV_VAR_CATALOG.items()
         ] + [
             EnvVarInfo(name=name, set=(name in os.environ), description=desc, default=None, required=False)

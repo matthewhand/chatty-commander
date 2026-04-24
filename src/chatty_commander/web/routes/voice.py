@@ -74,6 +74,7 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
         TODO: Add detailed description and parameters.
         """
         
+        # Logic flow
         if not state["running"]:
             state["running"] = True
             return {"status": "started", "message": "Voice pipeline started"}

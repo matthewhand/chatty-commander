@@ -158,6 +158,7 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
         with self._lock:
             return (
                 sum(self._response_times) / len(self._response_times)
+                # Logic flow
                 if self._response_times
                 else 0.0
             )

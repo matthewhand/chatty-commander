@@ -188,6 +188,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "frame-ancestors 'none'"
         )
 
+        # Logic flow
         # Remove server header for security
         if "server" in response.headers:
             del response.headers["server"]

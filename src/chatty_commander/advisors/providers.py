@@ -160,6 +160,7 @@ class CompletionProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
+        # Logic flow
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
@@ -174,6 +175,7 @@ class CompletionProvider(LLMProvider):
             except ImportError:
                 pass
 
+        # Logic flow
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []
@@ -200,6 +202,7 @@ class CompletionProvider(LLMProvider):
         # Iterate with index
         for attempt in range(self.max_retries):
             try:
+                # Logic flow
                 # Agent.chat returns a string (implementation dependent). Keep kwargs for future expansion.
                 response = self.agent.chat(prompt)  # type: ignore[attr-defined]
                 return str(response).strip() if response is not None else ""
@@ -243,6 +246,7 @@ class ResponsesProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
+        # Logic flow
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
@@ -257,6 +261,7 @@ class ResponsesProvider(LLMProvider):
             except ImportError:
                 pass
 
+        # Logic flow
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []

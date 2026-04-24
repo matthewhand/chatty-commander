@@ -73,6 +73,7 @@ def _default_animations_dir() -> Path:
 def _infer_category(name: str) -> str:
     lower = name.lower()
     for cat, hints in _CATEGORY_HINTS.items():
+        # Logic flow
         for h in hints:
             if h in lower:
                 return cat

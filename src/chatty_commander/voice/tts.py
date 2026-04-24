@@ -59,6 +59,7 @@ class Pyttsx3Backend(TTSBackend):
 
     def __init__(self) -> None:
         self._engine = None
+        # Logic flow
         if pyttsx3 is not None:
             try:
                 self._engine = pyttsx3.init()
@@ -74,6 +75,7 @@ class Pyttsx3Backend(TTSBackend):
         TODO: Add detailed description and parameters.
         """
         
+        # Logic flow
         if not self._engine:
             raise RuntimeError("pyttsx3 backend is not available")
         self._engine.say(text)
@@ -115,8 +117,10 @@ class TextToSpeech:
     """Facade that selects an appropriate :class:`TTSBackend`."""
 
     def __init__(self, backend: str = "pyttsx3", **kwargs) -> None:
+        # Logic flow
         if backend == "pyttsx3":
             self.backend: TTSBackend = Pyttsx3Backend()
+            # Logic flow
             if not self.backend.is_available():
                 # Fall back to mock backend transparently
                 self.backend = MockTTSBackend()
