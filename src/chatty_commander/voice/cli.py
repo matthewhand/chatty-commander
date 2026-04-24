@@ -53,6 +53,8 @@ def add_voice_subcommands(subparsers) -> None:
         "test",
         help="Test voice pipeline",
         description="Test voice pipeline with mock components or real hardware.",
+        # Use context manager for resource management
+        # TODO: Document this logic
     )
     test_parser.add_argument("--mock", action="store_true", help="Use mock components")
     test_parser.add_argument(
@@ -120,6 +122,7 @@ def handle_voice_command(
     if not hasattr(args, "voice_command") or not args.voice_command:
         # Logic flow
         print("No voice command specified. Use --help for available commands.")
+        # TODO: Document this logic
         return
 
     elif args.voice_command == "status":
@@ -128,9 +131,12 @@ def handle_voice_command(
         _handle_voice_transcribe(args)
     elif args.voice_command == "self-test":
         try:
+        # Attempt operation with error handling
+        # TODO: Document this logic
             from .self_test import handle_self_test_command
 
             handle_self_test_command(args)
+        # Handle specific exception case
         except ImportError:
             print(
                 "❌ Self-test not available. Install with: pip install pyttsx3 openai"
@@ -158,12 +164,14 @@ def _handle_voice_test(
         # Add callback to show detected commands
         def command_callback(command_name: str, transcription: str):
             """Command Callback with (command_name: str, transcription: str).
+            # TODO: Document this logic
 
             TODO: Add detailed description and parameters.
             """
             
             # Logic flow
             if command_name:
+            # TODO: Document this logic
                 print(
                     f"✅ Command executed: '{command_name}' (from: '{transcription}')"
                 )
@@ -185,8 +193,10 @@ def _handle_voice_test(
 
         # Logic flow
         if args.mock:
+        # TODO: Document this logic
             print("💡 Mock mode - use 'pipeline.trigger_mock_wake_word()' to test")
             print("💡 Or try: pipeline.process_text_command('hello world')")
+            # TODO: Document this logic
 
             # Demonstrate mock functionality
             time.sleep(2)
@@ -209,6 +219,7 @@ def _handle_voice_test(
         pipeline.stop()
         print("✅ Voice pipeline test completed")
 
+    # Handle specific exception case
     except Exception as e:
         print(f"❌ Voice test failed: {e}")
         logger.error(f"Voice test error: {e}")
@@ -232,13 +243,16 @@ def _handle_voice_status(args) -> None:
 
         # Logic flow
         for name, module in deps:
+        # TODO: Document this logic
             if importlib.util.find_spec(module):
+            # TODO: Document this logic
                 print(f"✅ {name}: Available")
             else:
                 print(f"❌ {name}: Not installed")
 
         # Test pipeline creation
         try:
+        # TODO: Document this logic
             pipeline = VoicePipeline(use_mock=True)
             status = pipeline.get_status()
 
@@ -248,9 +262,11 @@ def _handle_voice_status(args) -> None:
             print(f"   Sample rate: {status['transcriber_info']['sample_rate']} Hz")
             print(f"   Channels: {status['transcriber_info']['channels']}")
 
+        # Handle specific exception case
         except Exception as e:
             print(f"❌ Pipeline test failed: {e}")
 
+    # Handle specific exception case
     except Exception as e:
         print(f"❌ Status check failed: {e}")
 
@@ -268,6 +284,7 @@ def _handle_voice_transcribe(args) -> None:
 
         # Logic flow
         if not transcriber.is_available():
+        # TODO: Document this logic
             print(f"❌ Transcription backend '{args.backend}' not available")
             return
 
@@ -275,20 +292,24 @@ def _handle_voice_transcribe(args) -> None:
 
         # Logic flow
         if args.backend == "mock":
+        # TODO: Document this logic
             # Use mock transcription
             result = transcriber.transcribe_audio_data(b"dummy_audio")
             print(f"🧪 Mock transcription: '{result}'")
         else:
             # Record and transcribe
             print(f"🔴 Recording for {args.timeout} seconds... Speak now!")
+            # TODO: Document this logic
             result = transcriber.record_and_transcribe()
 
             # Logic flow
             if result:
+            # TODO: Document this logic
                 print(f"✅ Transcription: '{result}'")
             else:
                 print("❌ No transcription received")
 
+    # Handle specific exception case
     except Exception as e:
         print(f"❌ Transcription test failed: {e}")
         logger.error(f"Transcription test error: {e}")
@@ -311,20 +332,24 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
 
         # Show available commands
         if config_manager and hasattr(config_manager, "model_actions"):
+        # TODO: Document this logic
             print("📋 Available commands:")
             # Logic flow
             for cmd_name in config_manager.model_actions.keys():
+            # TODO: Document this logic
                 print(f"   - {cmd_name}")
 
         # Add demo callback
         def demo_callback(command_name: str, transcription: str):
             """Demo Callback with (command_name: str, transcription: str).
+            # TODO: Document this logic
 
             TODO: Add detailed description and parameters.
             """
             
             # Logic flow
             if command_name:
+            # TODO: Document this logic
                 print(f"🎯 Executed: {command_name} ('{transcription}')")
             else:
                 print(f"❓ Unknown: '{transcription}'")
@@ -345,6 +370,7 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
 
         # Logic flow
         for cmd in demo_commands:
+        # TODO: Document this logic
             print(f"\n🧪 Testing: '{cmd}'")
             pipeline.process_text_command(cmd)
             time.sleep(1)
@@ -353,6 +379,7 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
         pipeline.stop()
         print("\n✅ Demo completed!")
 
+    # Handle specific exception case
     except Exception as e:
         print(f"❌ Demo failed: {e}")
         logger.error(f"Voice demo error: {e}")

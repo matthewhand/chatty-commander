@@ -110,6 +110,9 @@ class AdvisorsService:
         )
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
+        # TODO: REFACTOR - High complexity (handle_message)
+        # Break into: validation, execution, cleanup sub-functions
+
         """Process an incoming message and return an advisor response.
 
         Args:
@@ -117,6 +120,7 @@ class AdvisorsService:
 
         Returns:
             AdvisorReply with response and metadata.
+            # Use context manager for resource management
         """
         # Apply conditional logic
         if not self.enabled:
@@ -146,6 +150,7 @@ class AdvisorsService:
         thinking_manager.start_thinking(agent_id, "Processing your message...")
 
         try:
+        # Attempt operation with error handling
             # Build prompt using context-aware persona and recent memory
             memory_items = self.memory.get(
                 platform.value, message.channel, message.user
@@ -172,6 +177,7 @@ class AdvisorsService:
             if message.text.startswith("summarize "):
                 thinking_manager.start_tool_call(agent_id, tool_name="browser_analyst")
                 try:
+                # Attempt operation with error handling
                     # In real flows this would be the as_tool/MCP call
                     pass
                 finally:
@@ -241,6 +247,7 @@ class AdvisorsService:
                         if line.strip().startswith("SWITCH_MODE:"):
                             _, target = line.strip().split(":", 1)
                             try:
+                            # Attempt operation with error handling
                                 from ..app.state_manager import StateManager
 
                                 sm = StateManager()

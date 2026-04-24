@@ -58,3 +58,93 @@ pip install chatty-commander
 ## Configuration
 
 Edit `config.json` to customize commands and settings.
+
+
+## Quick Start
+
+```bash
+# Start with default configuration
+chatty-commander
+
+# Start with custom config
+chatty-commander --config /path/to/config.json
+
+# Start in web mode
+chatty-commander --mode web
+
+# Enable voice control
+chatty-commander --voice --wakeword hey_computer
+```
+
+
+## API Reference
+
+### REST Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/version` | GET | Get application version |
+| `/health` | GET | Health check |
+| `/agents` | GET | List available agents |
+| `/agents` | POST | Create new agent |
+| `/config` | GET | Get configuration |
+| `/config` | POST | Update configuration |
+| `/commands` | GET | List commands |
+| `/commands` | POST | Execute command |
+| `/ws` | WS | WebSocket for real-time updates |
+
+### WebSocket Events
+
+- `agent_state_change` - Agent status updates
+- `command_executed` - Command execution results
+- `voice_detected` - Wake word detection events
+
+
+## Development
+
+### Setup
+```bash
+git clone https://github.com/matthewhand/chatty-commander.git
+cd chatty-commander
+pip install -e ".[dev]"
+```
+
+### Running Tests
+```bash
+# Unit tests
+pytest tests/unit/ -v
+
+# Integration tests
+pytest tests/integration/ -v
+
+# Smoke tests
+pytest tests/smoke/ -v
+
+# E2E tests
+pytest tests/e2e/ -v
+
+# With coverage
+pytest --cov=src/chatty_commander --cov-report=html
+```
+
+### Code Quality
+```bash
+# Run linting
+flake8 src/
+mypy src/
+
+# Run QA agents
+python -m qa.fleet_commander
+```
+
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Quick Checklist
+- [ ] Tests pass (`pytest`)
+- [ ] Code formatted (`black src/`)
+- [ ] Type hints added
+- [ ] Docstrings updated
+- [ ] README updated if needed

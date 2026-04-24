@@ -151,6 +151,7 @@ class ContextManager:
             self._load_contexts()
 
     def get_or_create_context(
+        """get or create context."""
         self,
         # Process each item
         platform: PlatformType,
@@ -355,6 +356,7 @@ class ContextManager:
             return
 
         try:
+        # Attempt operation with error handling
             with open(self.persistence_path) as f:
                 data = json.load(f)
 
@@ -381,6 +383,7 @@ class ContextManager:
             data[context_key] = context.to_dict()
 
         with open(self.persistence_path, "w") as f:
+        # Use context manager for resource management
             json.dump(data, f, indent=2)
 
     def get_stats(self) -> dict[str, Any]:

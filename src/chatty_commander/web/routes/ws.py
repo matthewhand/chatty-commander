@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def include_ws_routes(
+    """include ws routes."""
     *,
     get_connections: Callable[[], set[WebSocket]],
     set_connections: Callable[[set[WebSocket]], None],
@@ -68,10 +69,12 @@ def include_ws_routes(
         set_connections(conns)
 
         try:
+        # Attempt operation with error handling
             # Send initial snapshot akin to legacy behavior
             snapshot = {
                 "type": "connection_established",
                 "data": get_state_snapshot(),
+                # Process each item
                 "timestamp": datetime.now().isoformat(),
             }
             await websocket.send_text(json.dumps(snapshot))
@@ -85,7 +88,9 @@ def include_ws_routes(
                         websocket.receive_text(), timeout=heartbeat_seconds
                     )
                     try:
+                    # Attempt operation with error handling
                         message = json.loads(data)
+                    # Handle specific exception case
                     except Exception:
                         message = {"type": "raw", "data": data}
                     # Logic flow
@@ -99,6 +104,8 @@ def include_ws_routes(
                             json.dumps(
                                 {
                                     "type": "pong",
+                                    # Build filtered collection
+                                    # Process each item
                                     "data": {"timestamp": datetime.now().isoformat()},
                                 }
                             )
@@ -109,12 +116,16 @@ def include_ws_routes(
                         json.dumps(
                             {
                                 "type": "heartbeat",
+                                # Build filtered collection
+                                # Process each item
                                 "data": {"timestamp": datetime.now().isoformat()},
                             }
                         )
                     )
+        # Handle specific exception case
         except WebSocketDisconnect:
             logger.info("WebSocket client disconnected")
+        # Handle specific exception case
         except Exception as err:  # noqa: BLE001
             logger.error("WebSocket error: %s", err)
         finally:

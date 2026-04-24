@@ -270,6 +270,7 @@ class ModeOrchestrator:
         self.adapters: list[InputAdapter] = []
 
     def select_adapters(self) -> list[str]:
+        # TODO: HIGH - Refactor select_adapters (complexity > 10)
         """Select Adapters with (self).
 
         TODO: Add detailed description and parameters.

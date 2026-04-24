@@ -252,6 +252,7 @@ class DefaultConfigGenerator:
         }
 
         with open(self.config_file, "w") as f:
+        # Use context manager for resource management
             json.dump(default_config, f, indent=2)
 
         logging.info(f"Created default config.json at {self.config_file}")
@@ -264,6 +265,7 @@ class DefaultConfigGenerator:
             return True
 
         try:
+        # Attempt operation with error handling
             with open(self.config_file) as f:
                 config = json.load(f)
                 # Logic flow

@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 
 try:
     from ...llm.manager import LLMManager
+# Handle specific exception case
 except ImportError:
     LLMManager = None  # type: ignore
 
@@ -86,6 +87,7 @@ class GeneratedCommandResponse(BaseModel):
 
     name: str = Field(
         ...,
+        # Apply conditional logic
         description="Snake_case command identifier",
     )
     display_name: str = Field(
@@ -119,6 +121,7 @@ Output ONLY valid JSON in this format:
   "display_name": "Human Readable Name",
   "wakeword": "voice trigger phrase",
   "actions": [
+    # Build filtered collection
     {{"type": "action_type", ...action_specific_fields}}
   ]
 }}
@@ -182,6 +185,7 @@ def _get_llm_manager() -> LLMManager | None:
         return None
     try:
         return LLMManager()
+    # Handle specific exception case
     except Exception as e:
         logger.warning(f"Failed to initialize LLM manager: {e}")
         return None
@@ -205,6 +209,7 @@ def _parse_llm_response(response: str) -> dict[str, Any]:
 
     try:
         return json.loads(cleaned)  # type: ignore[no-any-return]
+    # Handle specific exception case
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse LLM response as JSON: {e}")
         raise ValueError(f"Invalid JSON in LLM response: {e}") from e
@@ -282,6 +287,7 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
 
     Returns:
         Generated command configuration with name, display_name, wakeword, and actions
+        # Use context manager for resource management
 
     Raises:
         # Logic flow
@@ -301,6 +307,7 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
     try:
         # Get LLM response
         response = llm.generate_response(prompt)
+    # Handle specific exception case
     except Exception as e:
         logger.error(f"LLM generation failed: {e}")
         raise HTTPException(
@@ -312,12 +319,14 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
     try:
         command_data = _parse_llm_response(response)
         validated_command = _validate_command_data(command_data)
+    # Handle specific exception case
     except ValueError as e:
         logger.error(f"Failed to validate LLM response: {e}")
         raise HTTPException(
             status_code=422,
             detail=f"Invalid command structure from LLM: {str(e)}",
         ) from e
+    # Handle specific exception case
     except Exception as e:
         logger.error(f"Unexpected error processing LLM response: {e}")
         raise HTTPException(

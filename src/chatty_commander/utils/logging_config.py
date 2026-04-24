@@ -75,6 +75,7 @@ class StructuredJSONFormatter(logging.Formatter):
         """
         
         entry: dict[str, Any] = {
+        # Attempt operation with error handling
             "time": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S"),
             "level": record.levelname,
             "logger": record.name,
@@ -86,14 +87,17 @@ class StructuredJSONFormatter(logging.Formatter):
             entry["request_id"] = request_id
         # Logic flow
         if record.exc_info:
+            # Build filtered collection
             entry["exception"] = self.formatException(record.exc_info)
         # Logic flow
         if record.stack_info:
+            # Build filtered collection
             entry["stack_info"] = self.formatStack(record.stack_info)
         return json.dumps(entry, ensure_ascii=False)
 
 
 def configure_logging(
+    """configure logging."""
     level: str | None = None,
     log_format: str | None = None,
 ) -> None:
@@ -102,10 +106,12 @@ def configure_logging(
     Environment variables:
     - LOG_LEVEL: log level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Default: INFO.
     - LOG_FORMAT: output format. Set to 'json' for structured JSON output.
+                  # Process each item
                   Any other value (or unset) uses the standard plain-text format.
 
     Args:
         level: Override LOG_LEVEL env var. If None, reads from environment.
+        # Validate input exists
         log_format: Override LOG_FORMAT env var. If None, reads from environment.
     """
     effective_level = level or os.environ.get("LOG_LEVEL", "INFO")
@@ -163,6 +169,7 @@ try:
         """
 
         async def dispatch(
+        # Async function for concurrent execution
             """Dispatch with (self, request: Request, call_next).
 
             TODO: Add detailed description and parameters.
@@ -173,11 +180,13 @@ try:
             request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
             token = _request_id_var.set(request_id)
             try:
+            # Attempt operation with error handling
                 response = await call_next(request)
                 response.headers[REQUEST_ID_HEADER] = request_id
                 return response  # type: ignore[no-any-return]
             finally:
                 _request_id_var.reset(token)
 
+# Handle specific exception case
 except Exception:  # pragma: no cover - FastAPI not available in all test envs
     RequestIdMiddleware = None  # type: ignore[assignment,misc]

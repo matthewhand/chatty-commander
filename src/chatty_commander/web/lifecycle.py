@@ -52,6 +52,7 @@ def _atexit_handler() -> None:
 
 
 def register_lifecycle(
+    """register lifecycle."""
     app: FastAPI,
     *,
     get_state_manager: Callable[[], Any],
@@ -85,6 +86,7 @@ def register_lifecycle(
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:  # noqa: D401
+        # Process each item
         timestamp = datetime.now(tz=UTC).isoformat()
         logger.info("Shutting down gracefully... (%s)", timestamp)
 

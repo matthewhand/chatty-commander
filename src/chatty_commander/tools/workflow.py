@@ -64,6 +64,7 @@ def generate_docs(output_dir: Path | None = None) -> dict[str, Path]:
 ## Available Documentation
 
 - [API Documentation](API.md) - Comprehensive API reference
+# Build filtered collection
 - [OpenAPI Specification](openapi.json) - Machine-readable API spec
 
 ## Quick Start

@@ -41,6 +41,7 @@ def main() -> int:
     data = json.loads(CFG.read_text())
     commands = set((data.get("commands") or {}).keys())
     missing: list[str] = []
+    # Build filtered collection
     for state, names in (data.get("state_models") or {}).items():
         # Logic flow
         for name in names or []:

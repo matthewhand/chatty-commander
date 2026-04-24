@@ -222,6 +222,7 @@ class CompletionProvider(LLMProvider):
         If streaming isn't supported by the agent, fall back to a single chat call.
         """
         try:
+        # Attempt operation with error handling
             # Minimal behavior: return full text. Streaming can be added when Agent supports it in-tree.
             response = self.agent.chat(prompt)  # type: ignore[attr-defined]
             return str(response).strip() if response is not None else ""
@@ -278,6 +279,7 @@ class ResponsesProvider(LLMProvider):
             "instructions": config.get(
                 "instructions",
                 "You are a helpful AI assistant with access to various tools.",
+                # Use context manager for resource management
             ),
         }
         # Process each item
@@ -305,6 +307,7 @@ class ResponsesProvider(LLMProvider):
     def generate_stream(self, prompt: str, **kwargs) -> str:
         """Generate streaming response using Agent.chat() as a fallback."""
         try:
+        # Attempt operation with error handling
             response = self.agent.chat(prompt)  # type: ignore[attr-defined]
             # Validate input exists
             return str(response).strip() if response is not None else ""

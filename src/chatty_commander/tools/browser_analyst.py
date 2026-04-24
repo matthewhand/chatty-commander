@@ -33,6 +33,7 @@ from chatty_commander.utils.url_validator import is_safe_url
 try:
     import httpx
     HTTPX_AVAILABLE = True
+# Handle specific exception case
 except ImportError:
     HTTPX_AVAILABLE = False
 
@@ -61,6 +62,7 @@ class AnalystResult:
     url: str
 
 
+     # TODO: HIGH - Refactor summarize_url (complexity > 10)
 def summarize_url(request: AnalystRequest) -> AnalystResult:
     """Fetch, extract, and summarize content with allowlists and timeouts."""
     if not HTTPX_AVAILABLE:
@@ -89,6 +91,7 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
         with httpx.stream("GET", request.url, timeout=timeout, follow_redirects=False) as response:
+        # Use context manager for resource management
             response.raise_for_status()
             content_pieces = []
             size = 0
@@ -118,6 +121,7 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         summary = body_text[:500]
 
         return AnalystResult(title=title, summary=summary, url=request.url)
+    # Handle specific exception case
     except Exception as e:
         logger.error(f"Error fetching URL {request.url}: {e}")
         return AnalystResult(title="Error", summary=f"Failed to fetch: {e}", url=request.url)

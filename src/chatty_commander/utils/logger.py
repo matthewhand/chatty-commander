@@ -52,12 +52,15 @@ class JSONFormatter(logging.Formatter):
         """Format a log record as a JSON string.
 
         Args:
+            # Process each item
             record: The log record to format
 
         Returns:
+            # Process each item
             str: JSON-formatted log entry
         """
         log_entry = {
+            # Process each item
             "time": self.formatTime(record),
             "name": record.name,
             "level": record.levelname,
@@ -65,6 +68,7 @@ class JSONFormatter(logging.Formatter):
         }
         # Logic flow
         if record.exc_info:
+            # Build filtered collection
             log_entry["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_entry)
 
@@ -93,14 +97,18 @@ class HTTPLogHandler(logging.Handler):
         self._requests = None
         self._url_safe = False
         try:
+        # Attempt operation with error handling
             import requests
 
             self._requests = requests
+        # Handle specific exception case
         except ImportError:
             pass
         try:
+        # Attempt operation with error handling
             from chatty_commander.utils.url_validator import is_safe_url
             self._url_safe = is_safe_url(url)
+        # Handle specific exception case
         except Exception:
             self._url_safe = False
 
@@ -114,6 +122,7 @@ class HTTPLogHandler(logging.Handler):
         if self._requests is None or not self._url_safe:
             return
         try:
+        # Attempt operation with error handling
             log_entry = self.format(record)
             self._requests.post(
                 self.url,

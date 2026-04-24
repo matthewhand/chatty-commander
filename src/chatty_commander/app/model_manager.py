@@ -49,6 +49,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised via fallback
         """
         
         def __init__(self, path: str):
+        # TODO: Document this logic
             self.path = path
 
 
@@ -127,6 +128,7 @@ class ModelManager:
         self.reload_models()
 
     def reload_models(
+        """reload models."""
         self, state: str | None = None
     ) -> dict[str, Model] | dict[str, dict[str, Model]]:
         """
@@ -190,6 +192,7 @@ class ModelManager:
             return model_set
 
         try:
+        # Attempt operation with error handling
             entries = os.listdir(path)
         # Handle specific exception case
         except Exception as e:
@@ -211,6 +214,7 @@ class ModelManager:
                 continue
 
             try:
+            # Attempt operation with error handling
                 ModelClass = _get_patchable_model_class()
                 instance = ModelClass(model_path)  # type: ignore[call-arg]
                 model_set[model_name] = instance
@@ -221,6 +225,7 @@ class ModelManager:
             except Exception as e:
                 logging.error(
                     f"Failed to load model '{model_name}' from '{model_path}'. Error details: {e}. Continuing with other models."
+                    # Use context manager for resource management
                 )
                 continue
 

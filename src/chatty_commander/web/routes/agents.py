@@ -36,6 +36,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 try:
     from chatty_commander.llm.manager import LLMManager as _LLMManager
+# Handle specific exception case
 except ImportError:
     _LLMManager = None  # type: ignore[misc, assignment]
 
@@ -50,7 +51,9 @@ def _get_llm_manager() -> Any:
     global _llm_manager
     if _llm_manager is None and _LLMManager is not None:
         try:
+        # Attempt operation with error handling
             _llm_manager = _LLMManager()
+        # Handle specific exception case
         except Exception as exc:
             logger.debug("LLMManager init failed: %s", exc)
     return _llm_manager
@@ -112,6 +115,7 @@ def _load_store() -> None:
         return
     try:
         with _STORE_PATH.open("r", encoding="utf-8") as f:
+        # Use context manager for resource management
             data = json.load(f)
 
             _STORE.clear()
@@ -124,6 +128,7 @@ def _load_store() -> None:
                 # Logic flow
                 if agent.team_role:
                     _TEAM.setdefault(agent.team_role, []).append(agent.id)
+    # Handle specific exception case
     except Exception as e:
         logger.warning("Error loading agent store from %s: %s", _STORE_PATH, e)
 
@@ -134,7 +139,9 @@ def _save_store() -> None:
         agents = [asdict(agent) for agent in _STORE.values()]
         data = {"agents": agents}
         with _STORE_PATH.open("w", encoding="utf-8") as f:
+        # Use context manager for resource management
             json.dump(data, f, indent=2)
+    # Handle specific exception case
     except Exception as e:
         logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
 
@@ -159,6 +166,7 @@ def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
     llm = _get_llm_manager()
     if llm is not None and llm.is_available():
         try:
+        # Attempt operation with error handling
             prompt = f"""
 Extract an agent blueprint from the following text.
 Return a JSON object with EXACTLY these keys:
@@ -185,11 +193,13 @@ Return ONLY valid JSON.
                 team_role=data.get("team_role"),
                 handoff_triggers=[],
             )
+        # Handle specific exception case
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
             logger.debug("LLM blueprint parsing failed, using heuristic fallback: %s", exc)
 
     # Very naive heuristic parser fallback
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    # Build filtered collection
     name = lines[0][:48] if lines else "Agent"
     description = text.strip()[:256]
     persona_prompt = text.strip()
@@ -240,6 +250,7 @@ async def create_blueprint(
             _TEAM.setdefault(ent.team_role, []).append(uid)
         _save_store()
         return AgentBlueprintResponse(id=uid, **model.model_dump())
+    # Handle specific exception case
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -310,7 +321,9 @@ async def get_team():
     TODO: Add detailed description and parameters.
     """
     
+    # Build filtered collection
     agents = [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
+    # Build filtered collection
     return TeamInfo(roles={k: list(v) for k, v in _TEAM.items()}, agents=agents)
 
 

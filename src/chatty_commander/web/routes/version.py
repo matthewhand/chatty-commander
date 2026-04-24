@@ -64,6 +64,7 @@ async def get_version() -> VersionInfo:
             .decode()
             .strip()
         )
+    # Handle specific exception case
     except Exception:
         git_sha = None
 

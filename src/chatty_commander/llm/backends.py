@@ -82,6 +82,7 @@ class OpenAIBackend(LLMBackend):
             return
 
         try:
+        # Attempt operation with error handling
             import openai
 
             self._client = openai.OpenAI(
@@ -108,6 +109,7 @@ class OpenAIBackend(LLMBackend):
             return False
 
         try:
+        # Attempt operation with error handling
             # Test with a minimal request
             self._client.chat.completions.create(
                 model=getattr(self, "model", "gpt-3.5-turbo"),
@@ -185,6 +187,7 @@ class OllamaBackend(LLMBackend):
             return self._available
 
         try:
+        # Attempt operation with error handling
             import httpx
 
             from chatty_commander.utils.url_validator import is_safe_url
@@ -232,6 +235,7 @@ class OllamaBackend(LLMBackend):
             # Logic flow
             logger.warning("httpx library not available for Ollama backend")
             self._available = False
+        # Handle specific exception case
         except Exception as e:
             logger.debug(f"Ollama availability check failed: {e}")
             self._available = False
@@ -246,6 +250,7 @@ class OllamaBackend(LLMBackend):
 
             logger.info(f"Attempting to pull model {self.model}...")
             with httpx.Client() as client:
+            # Use context manager for resource management
                 response = client.post(
                     f"{self.base_url}/api/pull",
                     json={"name": self.model},
@@ -262,6 +267,7 @@ class OllamaBackend(LLMBackend):
                         f"Failed to pull model {self.model}: {response.status_code}"
                     )
 
+        # Handle specific exception case
         except Exception as e:
             logger.warning(f"Error pulling model {self.model}: {e}")
 
@@ -272,12 +278,14 @@ class OllamaBackend(LLMBackend):
             raise RuntimeError("Ollama backend not available")
 
         try:
+        # Attempt operation with error handling
             import httpx
 
             max_tokens = kwargs.get("max_tokens", 150)
             temperature = kwargs.get("temperature", 0.7)
 
             with httpx.Client() as client:
+            # Use context manager for resource management
                 response = client.post(
                     f"{self.base_url}/api/generate",
                     json={
@@ -300,11 +308,13 @@ class OllamaBackend(LLMBackend):
                 else:
                     raise RuntimeError(f"Ollama request failed: {response.status_code}")
 
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Ollama generation failed: {e}")
             raise
 
     def get_backend_info(self) -> dict[str, Any]:
+        # Process each item
         """Get Ollama backend information."""
         return {
             "backend": "ollama",
@@ -328,8 +338,10 @@ class LocalTransformersBackend(LLMBackend):
         self._initialize_model()
 
     def _initialize_model(self):
+        # Process each item
         """Initialize local transformers model."""
         try:
+        # Attempt operation with error handling
             import torch
             from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -359,9 +371,14 @@ class LocalTransformersBackend(LLMBackend):
 
             logger.info(f"Successfully loaded local model: {self.model_name}")
 
+        # Handle specific exception case
         except ImportError as e:
+            # Build filtered collection
+            # Process each item
             logger.warning(f"Transformers dependencies not available: {e}")
+            # Process each item
             logger.info("Install with: pip install torch transformers")
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to load local model: {e}")
 
@@ -371,12 +388,14 @@ class LocalTransformersBackend(LLMBackend):
         return self._model is not None and self._tokenizer is not None
 
     def generate_response(self, prompt: str, **kwargs) -> str:
+        # Process each item
         """Generate response using local transformers model."""
         # Logic flow
         if not self.is_available():
             raise RuntimeError("Local transformers backend not available")
 
         try:
+        # Attempt operation with error handling
             import torch
 
             max_tokens = kwargs.get("max_tokens", 150)
@@ -404,13 +423,18 @@ class LocalTransformersBackend(LLMBackend):
 
             return response.strip()  # type: ignore[no-any-return]
 
+        # Handle specific exception case
         except Exception as e:
+            # Build filtered collection
+            # Process each item
             logger.error(f"Local transformers generation failed: {e}")
             raise
 
     def get_backend_info(self) -> dict[str, Any]:
+        # Process each item
         """Get local transformers backend information."""
         return {
+            # Process each item
             "backend": "local_transformers",
             "available": self.is_available(),
             "model_name": self.model_name,
@@ -424,6 +448,7 @@ class MockLLMBackend(LLMBackend):
     def __init__(self, responses: list[str] | None = None):
         self.responses = responses or [
             "I understand you want to execute a command. Let me help with that.",
+            # Use context manager for resource management
             "Based on your request, I'll trigger the appropriate action.",
             "Processing your voice command now.",
             "Command received and understood.",

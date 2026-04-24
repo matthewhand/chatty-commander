@@ -51,6 +51,7 @@ class StateManager:
         )
         self.callbacks: list[Callable[[str, str], None]] = []
         self.logger.info(f"StateManager initialized with state: {self.current_state}")
+        # Use context manager for resource management
 
     def process_command(self, command: str) -> bool:
         """Process a command and return success status.
@@ -67,6 +68,7 @@ class StateManager:
             True if command was processed successfully, False otherwise
         """
         try:
+        # Attempt operation with error handling
             result = self.update_state(command)
             # Logic flow
             # Return True if state changed or command was recognized

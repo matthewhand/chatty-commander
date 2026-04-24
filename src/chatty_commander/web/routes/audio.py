@@ -66,11 +66,13 @@ def include_audio_routes(
         """
         
         try:
+        # Attempt operation with error handling
             import pyaudio
             p = pyaudio.PyAudio()
             input_devices = []
             output_devices = []
             try:
+            # Attempt operation with error handling
                 info = p.get_host_api_info_by_index(0)
                 numdevices = info.get('deviceCount') or 0
 
@@ -93,6 +95,7 @@ def include_audio_routes(
                 input=["Mock Microphone 1", "Mock Microphone 2"],
                 output=["Mock Speaker 1", "Mock Speaker 2"]
             )
+        # Handle specific exception case
         except Exception as e:
             logger.warning(f"Failed to list audio devices: {e}")
             return AudioDevices()
@@ -105,6 +108,7 @@ def include_audio_routes(
         """
         
         try:
+        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             logger.info(f"Setting audio device to: {request.device_id}")
 
@@ -120,6 +124,7 @@ def include_audio_routes(
                     cfg_mgr.save_config()
 
             return {"success": True, "device": request.device_id}
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to set audio device: {e}")
             raise HTTPException(status_code=500, detail="Failed to update audio device configuration") from e

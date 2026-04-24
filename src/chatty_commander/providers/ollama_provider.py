@@ -79,8 +79,10 @@ class OllamaProvider(LLMProvider):
                 response = self.session.post(
                     url, json=payload, timeout=self.timeout, stream=self.stream
                 )
+                # Process each item
                 response.raise_for_status()
                 return response
+            # Handle specific exception case
             except requests.RequestException as e:
                 logger.warning(f"Ollama request attempt {attempt + 1} failed: {e}")
                 # Logic flow
@@ -109,6 +111,7 @@ class OllamaProvider(LLMProvider):
         }
 
         try:
+        # Attempt operation with error handling
             response = self._make_request("generate", payload)
             result = response.json()
 
@@ -116,9 +119,12 @@ class OllamaProvider(LLMProvider):
             if "response" in result:
                 return result["response"].strip()  # type: ignore[no-any-return]
             else:
+                # Build filtered collection
+                # Process each item
                 logger.error(f"Unexpected Ollama response format: {result}")
                 return "Error: Invalid response from Ollama"
 
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Ollama generation failed: {e}")
             return f"Error: Failed to generate response - {e}"
@@ -139,16 +145,19 @@ class OllamaProvider(LLMProvider):
         }
 
         try:
+        # Attempt operation with error handling
             url = f"{self.base_url}/generate"
             response = self.session.post(
                 url, json=payload, timeout=self.timeout, stream=True
             )
+            # Process each item
             response.raise_for_status()
 
             # Logic flow
             for line in response.iter_lines():
                 if line:
                     try:
+                    # Attempt operation with error handling
                         data = json.loads(line.decode("utf-8"))
                         # Logic flow
                         if "response" in data:
@@ -156,9 +165,11 @@ class OllamaProvider(LLMProvider):
                         # Logic flow
                         if data.get("done", False):
                             break
+                    # Handle specific exception case
                     except json.JSONDecodeError:
                         continue
 
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Ollama streaming failed: {e}")
             yield f"Error: Failed to stream response - {e}"
@@ -166,8 +177,10 @@ class OllamaProvider(LLMProvider):
     def generate_stream_text(self, prompt: str, **kwargs) -> str:
         """Generate streaming response and return as concatenated string."""
         try:
+        # Attempt operation with error handling
             chunks = list(self.generate_stream(prompt, **kwargs))
             return "".join(chunks)
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Ollama streaming generation failed: {e}")
             return f"Error: Failed to generate streaming response - {e}"
@@ -201,6 +214,7 @@ class OllamaProvider(LLMProvider):
                 and not test_response.startswith("Error:")
             )
 
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Ollama health check failed: {e}")
             return False
@@ -208,11 +222,13 @@ class OllamaProvider(LLMProvider):
     def list_models(self) -> list[str]:
         """List available models in Ollama."""
         try:
+        # Attempt operation with error handling
             response = self.session.get(f"{self.ollama_host}/api/tags", timeout=5)
             response.raise_for_status()
             models = response.json().get("models", [])
             # Logic flow
             return [model.get("name", "") for model in models]
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to list Ollama models: {e}")
             return []
@@ -222,6 +238,7 @@ class OllamaProvider(LLMProvider):
         target_model = model_name or self.model
 
         try:
+        # Attempt operation with error handling
             payload = {"name": target_model}
             response = self._make_request("pull", payload)
 
@@ -229,6 +246,7 @@ class OllamaProvider(LLMProvider):
             for line in response.iter_lines():
                 if line:
                     try:
+                    # Attempt operation with error handling
                         data = json.loads(line.decode("utf-8"))
                         # Logic flow
                         if data.get("status"):
@@ -237,12 +255,14 @@ class OllamaProvider(LLMProvider):
                         if data.get("error"):
                             logger.error(f"Pull error: {data['error']}")
                             return False
+                    # Handle specific exception case
                     except json.JSONDecodeError:
                         continue
 
             logger.info(f"Successfully pulled model: {target_model}")
             return True
 
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to pull model {target_model}: {e}")
             return False

@@ -56,6 +56,7 @@ class ConfigCLI:
     def load_config(self) -> Config:
         """Load configuration from ``config_path``."""
         try:
+        # Attempt operation with error handling
             # Apply conditional logic
             if os.path.exists(self.config_path):  # noqa: PTH110
                 with open(self.config_path) as f:  # noqa: PTH123 - user path
@@ -82,6 +83,7 @@ class ConfigCLI:
         """
         
         with open(self.config_path, "w") as f:  # noqa: PTH123 - user path
+        # Use context manager for resource management
             json.dump(self.config.to_dict(), f, indent=4)
 
     # ------------------------------------------------------------------

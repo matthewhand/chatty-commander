@@ -69,6 +69,7 @@ class MemoryStore:
             return
 
         try:
+        # Attempt operation with error handling
             with open(self._path, encoding="utf-8") as f:
                 # Process each item
                 for line in f:
@@ -122,6 +123,7 @@ class MemoryStore:
         if self._persist:
             try:
                 with open(self._path, "a", encoding="utf-8") as f:
+                # Use context manager for resource management
                     f.write(
                         json.dumps(
                             {

@@ -62,6 +62,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--verbose",
         action="count",
         default=0,
+        # Apply conditional logic
         help="Increase verbosity (can be specified multiple times).",
     )
     # Accept and ignore any extra args (e.g., pytest passes -k, -q, test paths)
@@ -103,6 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         # When invoked via runpy/run_module, pytest may inject flags causing argparse/SystemExit.
         # Our parser swallows unknowns; if a SystemExit still bubbles, map non-int to 1.
         return int(e.code) if isinstance(e.code, int) else 1
+    # Handle specific exception case
     except Exception as e:  # noqa: BLE001
         logger.error("Failed to generate docs: %s", e)
         return 1

@@ -59,6 +59,7 @@ class TestRunner:
     ) -> tuple[bool, str]:
         """Run a command and return success status and output. Default timeout reduced to 60s to prevent stalls in CI."""
         try:
+        # Attempt operation with error handling
             logger.info(f"🔄 Running: {description}")
             logger.debug(f"Command: {' '.join(command)}")
 
@@ -141,6 +142,7 @@ class TestRunner:
 
         success, output = self.run_command(
             command, "Unit tests with coverage", timeout=120
+            # Use context manager for resource management
         )
         self.test_results.append(("Unit Tests", success, output))
         return success
@@ -206,6 +208,7 @@ class TestRunner:
             return False
 
         try:
+        # Attempt operation with error handling
             # Run web mode tests
             # Run web mode tests using pytest on the correct file path in repo tests/
             command = ["uv", "run", "pytest", "tests/test_web_mode.py", "-q"]
@@ -221,6 +224,7 @@ class TestRunner:
                 logger.info("🛑 Stopping web server...")
                 server_process.terminate()
                 try:
+                # Attempt operation with error handling
                     server_process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     server_process.kill()
@@ -351,6 +355,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if fast_env:
         try:
+        # Attempt operation with error handling
             import importlib
 
             pytest = importlib.import_module("pytest")

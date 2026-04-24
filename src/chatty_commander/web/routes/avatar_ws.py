@@ -66,10 +66,13 @@ class AvatarWSConnectionManager:
                     self._registered_manager.remove_broadcast_callback(
                         self.broadcast_state_change
                     )
+            # Handle specific exception case
             except Exception:
                 pass
             try:
+            # Attempt operation with error handling
                 mgr.add_broadcast_callback(self.broadcast_state_change)
+            # Handle specific exception case
             except Exception:
                 pass
             self._registered_manager = mgr
@@ -93,12 +96,15 @@ class AvatarWSConnectionManager:
             if self.theme_resolver and d.get("persona_id"):
                 try:
                     d["theme"] = self.theme_resolver(d["persona_id"])  # type: ignore[arg-type]
+                # Handle specific exception case
                 except Exception:
                     pass
             data[agent_id] = d
         snapshot = {"type": "agent_states_snapshot", "data": data}
         try:
+        # Attempt operation with error handling
             await websocket.send_text(json.dumps(snapshot))
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to send snapshot to avatar client: {e}")
 
@@ -109,7 +115,9 @@ class AvatarWSConnectionManager:
         """
         
         try:
+        # Attempt operation with error handling
             self.active_connections.remove(websocket)
+        # Handle specific exception case
         except ValueError:
             pass
 
@@ -122,7 +130,9 @@ class AvatarWSConnectionManager:
         self, message: dict[str, Any], websocket: WebSocket
     ):
         try:
+        # Attempt operation with error handling
             await websocket.send_text(json.dumps(message))
+        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to send to avatar client: {e}")
 
@@ -139,18 +149,23 @@ class AvatarWSConnectionManager:
             persona_id = data.get("persona_id") if isinstance(data, dict) else None
             if self.theme_resolver and persona_id:
                 try:
+                # Attempt operation with error handling
                     data["theme"] = self.theme_resolver(persona_id)  # type: ignore[index]
+                # Handle specific exception case
                 except Exception:
                     pass
+        # Handle specific exception case
         except Exception:
             pass
 
         async def _broadcast():
+        # Async function for concurrent execution
             dead: list[WebSocket] = []
             # Logic flow
             for connection in list(self.active_connections):
                 try:
                     await connection.send_text(json.dumps(message))
+                # Handle specific exception case
                 except Exception:
                     dead.append(connection)
             # Logic flow
@@ -165,6 +180,7 @@ class AvatarWSConnectionManager:
             # Not in an event loop; run synchronously to avoid un-awaited coroutine warnings
             try:
                 asyncio.run(_broadcast())
+            # Handle specific exception case
             except Exception as e:  # pragma: no cover
                 logger.error(f"Broadcast failed: {e}")
 
@@ -223,8 +239,10 @@ class AvatarAudioQueue:
             }
             self.manager.broadcast_state_change(start)
             try:
+            # Attempt operation with error handling
                 self._current_play_task = asyncio.create_task(self._play_audio(audio))
                 await self._current_play_task
+            # Handle specific exception case
             except asyncio.CancelledError:
                 end = {
                     "type": "avatar_audio_end",
@@ -249,6 +267,7 @@ class AvatarAudioQueue:
             try:
                 loop = asyncio.get_running_loop()
                 self._processor_task = loop.create_task(self._process())
+            # Handle specific exception case
             except RuntimeError:
                 asyncio.run(self._process())
 
@@ -269,6 +288,7 @@ class AvatarAudioQueue:
             try:
                 self.queue.get_nowait()
                 self.queue.task_done()
+            # Handle specific exception case
             except asyncio.QueueEmpty:
                 break
 
@@ -276,9 +296,12 @@ class AvatarAudioQueue:
         if self._current_play_task and not self._current_play_task.done():
             self._current_play_task.cancel()
             try:
+            # Attempt operation with error handling
                 await self._current_play_task
+            # Handle specific exception case
             except asyncio.CancelledError:
                 pass
+            # Handle specific exception case
             except Exception:
                 pass
 
@@ -320,6 +343,7 @@ async def avatar_ws_endpoint(websocket: WebSocket):
             # Basic protocol: expect JSON messages with type and data
             try:
                 msg = json.loads(data)
+            # Handle specific exception case
             except json.JSONDecodeError:
                 continue
             # Logic flow
@@ -332,6 +356,7 @@ async def avatar_ws_endpoint(websocket: WebSocket):
             # Future: map avatar_id to agent_id etc
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    # Handle specific exception case
     except Exception as e:
         logger.error(f"Avatar WS error: {e}")
         manager.disconnect(websocket)

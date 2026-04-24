@@ -156,6 +156,7 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
     def get_average_ms(self) -> float:
         """Return the current rolling average response time in milliseconds."""
         with self._lock:
+        # Use context manager for resource management
             return (
                 sum(self._response_times) / len(self._response_times)
                 # Logic flow
@@ -176,6 +177,7 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
         duration_ms = (time.time() - start_time) * 1000.0
 
         with self._lock:
+        # Use context manager for resource management
             self._response_times.append(duration_ms)
 
         response.headers["X-API-Version"] = "0.2.0"
@@ -201,6 +203,7 @@ class MetricsData(BaseModel):
 
 
 def include_core_routes(
+    """include core routes."""
     *,
     get_start_time: Callable[[], float],
     get_state_manager: Callable[[], Any],
@@ -238,6 +241,7 @@ def include_core_routes(
         """
         
         uptime_seconds = time.time() - get_start_time()
+        # Process each item
         uptime_str = _format_uptime(uptime_seconds)
         sm = get_state_manager()
         return SystemStatus(
@@ -254,6 +258,7 @@ def include_core_routes(
     async def health_check():
         """Comprehensive health check endpoint."""
         uptime_seconds = time.time() - get_start_time()
+        # Process each item
         uptime_str = _format_uptime(uptime_seconds)
 
         # Basic system checks
@@ -261,11 +266,13 @@ def include_core_routes(
         cpu_usage = "unknown"
 
         try:
+        # Attempt operation with error handling
             import psutil
 
             memory = psutil.virtual_memory()
             memory_usage = f"{memory.percent:.1f}%"
             cpu_usage = f"{psutil.cpu_percent():.1f}%"
+        # Handle specific exception case
         except ImportError:
             pass  # psutil not available
 
@@ -284,12 +291,15 @@ def include_core_routes(
         if db_url:
 
             def _check_db():
+            # TODO: Document this logic
                 global _ENGINE_CACHE_HITS, _ENGINE_CACHE_MISSES
                 try:
+                # Attempt operation with error handling
                     from sqlalchemy import create_engine, text
                     from sqlalchemy.pool import NullPool
 
                     with _ENGINES_LOCK:
+                    # Use context manager for resource management
                         now = time.time()
                         cached = _ENGINES.get(db_url)
                         # Check TTL expiration
@@ -315,15 +325,19 @@ def include_core_routes(
                             _ENGINES[db_url] = (engine, now)
 
                     with engine.connect() as conn:
+                    # Use context manager for resource management
                         conn.execute(text("SELECT 1")).scalar()
                     return "healthy"
+                # Handle specific exception case
                 except Exception:
                     return "unreachable"
 
             try:
+            # Attempt operation with error handling
                 database_status = await asyncio.wait_for(
                     asyncio.to_thread(_check_db), timeout=2.0
                 )
+            # Handle specific exception case
             except Exception:
                 database_status = "unreachable"
 
@@ -334,6 +348,7 @@ def include_core_routes(
             database=database_status,
             memory_usage=memory_usage,
             cpu_usage=cpu_usage,
+            # Process each item
             last_health_check=datetime.now().isoformat(),
         )
 
@@ -345,14 +360,17 @@ def include_core_routes(
         """
         
         try:
+        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             return getattr(cfg_mgr, "commands", {}) or {}
+        # Handle specific exception case
         except Exception as exc:
             logger.warning("Failed to retrieve commands config: %s", exc)
             return {}
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
+        # Process each item
         """Get application metrics and performance data."""
         uptime_seconds = time.time() - get_start_time()
         total_requests = sum(counters.values())
@@ -362,6 +380,7 @@ def include_core_routes(
         if get_active_connections:
             try:
                 active_connections = get_active_connections()
+            # Handle specific exception case
             except Exception:
                 pass
 
@@ -370,6 +389,7 @@ def include_core_routes(
         if get_cache_size:
             try:
                 cache_size = get_cache_size()
+            # Handle specific exception case
             except Exception:
                 pass
 
@@ -439,10 +459,12 @@ def include_core_routes(
         # Performance optimization: iterate over the small, fixed ALLOWED_CONFIG_KEYS
         # set (O(K)) instead of the potentially large input dict items (O(M)).
         filtered_data = {
+            # Build filtered collection
             k: config_data[k] for k in ALLOWED_CONFIG_KEYS if k in config_data
         }
 
         try:
+        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
             # Logic flow
@@ -457,6 +479,7 @@ def include_core_routes(
                     # Some implementations require the cfg param
                     save(cfg)  # type: ignore[arg-type]
             return {"message": "Configuration updated successfully"}
+        # Handle specific exception case
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
 
@@ -484,6 +507,7 @@ def include_core_routes(
                 sm.get_active_models() if hasattr(sm, "get_active_models") else []
             ),
             last_command=get_last_command(),
+            # Process each item
             timestamp=get_last_state_change().isoformat(),
         )
 
@@ -496,10 +520,12 @@ def include_core_routes(
         
         counters["state_post"] += 1
         try:
+        # Attempt operation with error handling
             sm = get_state_manager()
             sm.change_state(request.state)
             # Legacy broadcast occurs elsewhere; preserve behavior here as data-only change.
             return {"message": f"State changed to {request.state}"}
+        # Handle specific exception case
         except Exception as err:
             raise HTTPException(status_code=400, detail=str(err)) from err
 
@@ -513,6 +539,7 @@ def include_core_routes(
         counters["command_post"] += 1
         start_time = time.time()
         try:
+        # Attempt operation with error handling
             # Delegate to provided executor bridge to ensure consistent integration surface
             # Use run_in_executor to prevent blocking the event loop
             loop = asyncio.get_running_loop()
@@ -531,6 +558,7 @@ def include_core_routes(
                 ),
                 execution_time=execution_time,
             )
+        # Handle specific exception case
         except Exception as e:
             execution_time = (time.time() - start_time) * 1000
             return CommandResponse(

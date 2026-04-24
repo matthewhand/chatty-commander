@@ -96,6 +96,7 @@ class ThinkingStateManager:
         self.broadcast_callbacks: set[Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]] = set()
 
     def register_agent(
+        """register agent."""
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
     ) -> None:
         """Register a new agent with optional avatar mapping."""
@@ -113,6 +114,7 @@ class ThinkingStateManager:
         self._broadcast_state_change(agent_id)
 
     def set_agent_state(
+        """set agent state."""
         self,
         agent_id: str,
         state: ThinkingState,
@@ -152,6 +154,7 @@ class ThinkingStateManager:
             self._broadcast_state_change(agent_id)
 
     def add_broadcast_callback(
+        """add broadcast callback."""
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -162,6 +165,7 @@ class ThinkingStateManager:
         self.broadcast_callbacks.add(callback)
 
     def remove_broadcast_callback(
+        """remove broadcast callback."""
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -351,6 +355,7 @@ class ThinkingStateContext:
 
 # Decorator for automatic thinking state management
 def with_thinking_state(
+    """with thinking state."""
     agent_id: str,
     thinking_msg: str = "Processing...",
     responding_msg: str = "Generating response...",
@@ -364,12 +369,14 @@ def with_thinking_state(
         """
         
         def wrapper(*args, **kwargs):
+        # TODO: Document this logic
             """Wrapper operation.
 
             TODO: Add detailed description and parameters.
             """
             
             with ThinkingStateContext(agent_id, thinking_msg, responding_msg) as ctx:
+            # Use context manager for resource management
                 result = func(*args, **kwargs)
                 ctx.start_responding()
                 return result

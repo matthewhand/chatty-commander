@@ -95,6 +95,7 @@ def _icon_image() -> Image.Image | None:
     icon_path_png = Path("icon.png")
     if icon_path_png.exists():
         try:
+        # Attempt operation with error handling
             return Image.open(icon_path_png)
         # Handle specific exception case
         except Exception:

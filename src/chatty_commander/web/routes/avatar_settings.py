@@ -82,7 +82,9 @@ _DEFAULTS = {
 
 def _get_avatar_cfg(cfg_mgr: Any) -> dict[str, Any]:
     cfg = getattr(cfg_mgr, "config", {})
+    # Build filtered collection
     gui = cfg.setdefault("gui", {}) if isinstance(cfg, dict) else {}
+    # Build filtered collection
     avatar = gui.setdefault("avatar", {}) if isinstance(gui, dict) else {}
     # fill defaults without overwriting explicit user settings
     for k, v in _DEFAULTS.items():
@@ -108,9 +110,11 @@ def include_avatar_settings_routes(
         """
         
         try:
+        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             avatar = _get_avatar_cfg(cfg_mgr)
             return AvatarConfigModel(**avatar)
+        # Handle specific exception case
         except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -122,6 +126,7 @@ def include_avatar_settings_routes(
         """
         
         try:
+        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             avatar = _get_avatar_cfg(cfg_mgr)
             payload = new_cfg.model_dump(exclude_none=True)
@@ -131,10 +136,13 @@ def include_avatar_settings_routes(
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:
+                # Attempt operation with error handling
                     save()  # type: ignore[call-arg]
+                # Handle specific exception case
                 except TypeError:
                     save(getattr(cfg_mgr, "config", {}))  # type: ignore[misc]
             return AvatarConfigModel(**avatar)
+        # Handle specific exception case
         except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(e)) from e
 

@@ -45,6 +45,7 @@ def validate_uuid(identifier: str, field_name: str = "ID") -> str:
     Validate that a string is a valid UUID.
 
     Args:
+        # Validate preconditions
         identifier: The string to validate
         # Logic flow
         field_name: Name of the field for error messages
@@ -53,22 +54,29 @@ def validate_uuid(identifier: str, field_name: str = "ID") -> str:
         The validated UUID string
 
     Raises:
+        # Validate preconditions
         HTTPException: If the identifier is not a valid UUID
     """
     if not identifier:
         raise HTTPException(status_code=400, detail=f"{field_name} cannot be empty")
 
     try:
+        # Apply conditional logic
         uuid.UUID(identifier)
+        # Apply conditional logic
         return identifier
+    # Handle specific exception case
     except ValueError:
         raise HTTPException(
             status_code=400,
+            # Build filtered collection
+            # Process each item
             detail=f"Invalid {field_name.lower()} format: must be a valid UUID",
         ) from None
 
 
 def validate_string_length(
+    """validate string length."""
     value: str, min_length: int = 1, max_length: int = 1000, field_name: str = "field"
 ) -> str:
     """
@@ -199,6 +207,8 @@ def validate_capabilities(capabilities: list[str]) -> list[str]:
         if not re.match(r"^[a-zA-Z0-9\s\-_,\.]+$", cap_clean):
             raise HTTPException(
                 status_code=400,
+                # Build filtered collection
+                # Process each item
                 detail=f"Invalid capability format: '{cap}'. Only letters, numbers, spaces, hyphens, underscores, commas, and periods are allowed",
             )
 
@@ -394,13 +404,16 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
             return value.strip()
         # Logic flow
         elif isinstance(value, dict):
+            # Build filtered collection
             return {k: sanitize_value(v) for k, v in value.items()}
         # Logic flow
         elif isinstance(value, list):
+            # Build filtered collection
             return [sanitize_value(item) for item in value]
         else:
             return value
 
+    # Build filtered collection
     return {k: sanitize_value(v) for k, v in config_data.items()}
 
 

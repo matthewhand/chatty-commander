@@ -122,6 +122,7 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
 
 def run_web_mode(
+    """run web mode."""
     config,
     model_manager,
     state_manager,
@@ -193,6 +194,7 @@ def run_web_mode(
         logger.info(f"Received signal {signum}, stopping web server...")
         stop_event.set()
         try:
+        # Attempt operation with error handling
             stopper = getattr(web_server, "stop", None)
             # Apply conditional logic
             if callable(stopper):
@@ -210,6 +212,7 @@ def run_web_mode(
         host = env_host
     if env_port:
         try:
+        # Attempt operation with error handling
             port = int(env_port)
         # Handle specific exception case
         except ValueError:
@@ -221,6 +224,7 @@ def run_web_mode(
         web_server.run(host=host, port=port)
     finally:
         try:
+        # Attempt operation with error handling
             # Apply conditional logic
             if hasattr(model_manager, "shutdown"):
                 model_manager.shutdown()
@@ -234,6 +238,7 @@ def run_web_mode(
 
 
 def run_gui_mode(
+    """run gui mode."""
     config,
     model_manager,
     state_manager,
@@ -282,6 +287,7 @@ def run_gui_mode(
                 f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI"
             )
             try:
+            # Attempt operation with error handling
                 # Try PyQt5-based transparent browser avatar
                 from chatty_commander.gui.pyqt5_avatar import (
                     run_pyqt5_avatar,  # type: ignore
@@ -310,6 +316,7 @@ def run_gui_mode(
             f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
         )
         try:
+        # Attempt operation with error handling
             # Legacy GUI fallback; gui module may not define main()
             from chatty_commander.gui import main as gui_main  # type: ignore[attr-defined]  # noqa: I001
 
@@ -499,11 +506,13 @@ def run_interactive_shell(
                 f"execute {act}" for act in model_actions if act.startswith(subtext)
             ]
             try:
+            # Attempt operation with error handling
                 return suboptions[state]
             # Handle specific exception case
             except IndexError:
                 return None
         try:
+        # Attempt operation with error handling
             return options[state]
         # Handle specific exception case
         except IndexError:
@@ -514,6 +523,7 @@ def run_interactive_shell(
 
     while True:
         try:
+        # Attempt operation with error handling
             input_str = input("> ").strip()
             # Apply conditional logic
             if not input_str:
@@ -561,6 +571,7 @@ def run_interactive_shell(
 
 
 def run_orchestrator_mode(
+    """run orchestrator mode."""
     config, model_manager, state_manager, command_executor, logger, args
 ):
     """Run orchestrator-driven mode; adapters route to the same command sink."""
@@ -674,6 +685,7 @@ def main():
     if web_cfg:
         config.web_server = web_cfg
         try:
+        # Attempt operation with error handling
             config.config["web_server"] = web_cfg
         # Handle specific exception case
         except Exception:

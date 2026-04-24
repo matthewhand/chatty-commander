@@ -97,6 +97,7 @@ def run_avatar_gui(debug: bool = True) -> int | None:
             f"WARNING: Transparent/frameless not supported or failed ({e}); retrying without it..."
         )
         try:
+        # Attempt operation with error handling
             webview.create_window(
                 title="Chatty Commander Avatar",
                 url=url,

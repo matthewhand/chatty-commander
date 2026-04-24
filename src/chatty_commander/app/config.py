@@ -161,6 +161,7 @@ class Config:
 
             @property
             def default_state(self) -> str:
+            # TODO: Document this logic
                 """Default State with (self).
 
                 TODO: Add detailed description and parameters.
@@ -170,6 +171,7 @@ class Config:
 
             @default_state.setter
             def default_state(self, v: str) -> None:
+            # TODO: Document this logic
                 """Default State with (self, v: str).
 
                 TODO: Add detailed description and parameters.
@@ -180,6 +182,7 @@ class Config:
 
             @property
             def debug_mode(self) -> bool:
+            # TODO: Document this logic
                 """Debug Mode with (self).
 
                 TODO: Add detailed description and parameters.
@@ -191,6 +194,7 @@ class Config:
 
             @debug_mode.setter
             def debug_mode(self, v: bool) -> None:
+            # TODO: Document this logic
                 """Debug Mode with (self, v: bool).
 
                 TODO: Add detailed description and parameters.
@@ -200,6 +204,7 @@ class Config:
 
             @property
             def inference_framework(self) -> str:
+            # TODO: Document this logic
                 """Inference Framework with (self).
 
                 TODO: Add detailed description and parameters.
@@ -213,6 +218,7 @@ class Config:
 
             @inference_framework.setter
             def inference_framework(self, v: str) -> None:
+            # TODO: Document this logic
                 """Inference Framework with (self, v: str).
 
                 TODO: Add detailed description and parameters.
@@ -222,6 +228,7 @@ class Config:
 
             @property
             def start_on_boot(self) -> bool:
+            # TODO: Document this logic
                 """Start On Boot with (self).
 
                 TODO: Add detailed description and parameters.
@@ -233,6 +240,7 @@ class Config:
 
             @start_on_boot.setter
             def start_on_boot(self, v: bool) -> None:
+            # TODO: Document this logic
                 """Start On Boot with (self, v: bool).
 
                 TODO: Add detailed description and parameters.
@@ -413,6 +421,7 @@ class Config:
         if not isinstance(self.config_file, str):
              raise TypeError("config_file must be a string")
         try:
+        # Attempt operation with error handling
             with open(self.config_file, encoding="utf-8") as f:
                 config_data = json.load(f)
                 # Logic flow
@@ -443,6 +452,7 @@ class Config:
         general_settings = self.config_data.get("general_settings", {})
 
         def _env_bool(name: str, default: bool) -> bool:
+        # TODO: Document this logic
             val = os.getenv(name)
             # Validate input exists
             if val is None:
@@ -575,6 +585,7 @@ class Config:
             return
         try:
             with open(self.config_file, "w", encoding="utf-8") as f:
+            # Use context manager for resource management
                 json.dump(self.config_data, f, indent=2)
         # Handle specific exception case
         except (TypeError, ValueError, OSError) as e:
@@ -656,6 +667,7 @@ class Config:
         if not self.check_for_updates:
             return None
         try:
+        # Attempt operation with error handling
             result = subprocess.run(
                 ["git", "rev-parse", "--git-dir"],
                 capture_output=True,
@@ -711,6 +723,7 @@ class Config:
 
     @classmethod
     def from_dict(
+        """from dict."""
         cls, data: dict[str, Any], config_file: str = "config.json"
     ) -> Config:
         """Create a Config instance from a dictionary."""

@@ -124,7 +124,9 @@ async def list_animations(
             rel = p.relative_to(root)
             name = p.stem
             try:
+            # Attempt operation with error handling
                 size = p.stat().st_size
+            # Handle specific exception case
             except Exception:
                 size = None
             results.append(
@@ -137,8 +139,10 @@ async def list_animations(
                 }
             )
         return {"root": str(root), "count": len(results), "animations": results}
+    # Handle specific exception case
     except HTTPException:
         raise
+    # Handle specific exception case
     except Exception as e:  # pragma: no cover - unexpected
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -155,6 +159,7 @@ async def launch_avatar() -> dict[str, Any]:
         cmd = [python_exe, "-m", "src.chatty_commander.main", "--gui"]
 
         logger.info(f"Launching avatar with command: {' '.join(cmd)}")
+        # Use context manager for resource management
         logger.info(f"Working directory: {project_root}")
 
         # Launch the process in the background
@@ -170,6 +175,7 @@ async def launch_avatar() -> dict[str, Any]:
         # Don't wait for the process to complete, just check if it started
         await asyncio.sleep(0.1)  # Give it a moment to start
 
+        # Validate input exists
         if process.returncode is None:  # Process is still running
             logger.info(f"Avatar process started successfully with PID: {process.pid}")
             return {
@@ -186,6 +192,7 @@ async def launch_avatar() -> dict[str, Any]:
                 status_code=500, detail=f"Avatar failed to start: {error_msg}"
             )
 
+    # Handle specific exception case
     except Exception as e:
         logger.error(f"Failed to launch avatar: {e}")
         raise HTTPException(

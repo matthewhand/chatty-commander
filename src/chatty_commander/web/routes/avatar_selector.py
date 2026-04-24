@@ -83,6 +83,7 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
             labels &= set(_HINTS.keys()) | {"neutral"}
 
         def allowed(label: str) -> bool:
+        # TODO: Document this logic
             """Allowed with (label: str).
 
             TODO: Add detailed description and parameters.
@@ -99,5 +100,6 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
             if any(k in text for k in keywords):
                 return AnimationChooseResponse(label=label, confidence=0.8)
         return AnimationChooseResponse(label="neutral", confidence=0.5)
+    # Handle specific exception case
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

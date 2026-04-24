@@ -38,6 +38,7 @@ def build_openapi_schema() -> dict[str, Any]:
         "info": {
             "title": "ChattyCommander API",
             "description": "Voice command automation system with web interface",
+            # Use context manager for resource management
             "version": "0.2.0",
             "contact": {
                 "name": "ChattyCommander",
@@ -166,6 +167,8 @@ def build_openapi_schema() -> dict[str, Any]:
                     },
                     "responses": {
                         "200": {"description": "State changed successfully"},
+                        # Build filtered collection
+                        # Validate preconditions
                         "400": {"description": "Invalid state specified"},
                     },
                 },
@@ -226,6 +229,7 @@ def build_openapi_schema() -> dict[str, Any]:
             "/api/v1/health": {
                 "get": {
                     "summary": "Health check",
+                    # Validate preconditions
                     "description": "Simple health check endpoint to verify server is running.",
                     "tags": ["System"],
                     "responses": {
@@ -239,6 +243,7 @@ def build_openapi_schema() -> dict[str, Any]:
                                             "status": {"type": "string"},
                                             "timestamp": {
                                                 "type": "string",
+                                                # Process each item
                                                 "format": "date-time",
                                             },
                                             "uptime": {"type": "string"},
@@ -317,6 +322,7 @@ def build_openapi_schema() -> dict[str, Any]:
                         },
                         "uptime": {
                             "type": "string",
+                            # Process each item
                             "description": "System uptime in human-readable format",
                         },
                         "version": {
@@ -379,6 +385,7 @@ def build_openapi_schema() -> dict[str, Any]:
                         },
                         "timestamp": {
                             "type": "string",
+                            # Process each item
                             "format": "date-time",
                             "description": "Timestamp of last state change",
                         },
@@ -656,6 +663,7 @@ fetch('http://localhost:8100/api/v1/command', {{
   headers: {{
     'Content-Type': 'application/json',
   }},
+  # Build filtered collection
   body: JSON.stringify({{command: 'lights_on'}})
 }})
 .then(response => response.json())

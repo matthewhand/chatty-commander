@@ -14,6 +14,7 @@ def _is_restricted(ip_str: str) -> bool:
         or ip_obj.is_link_local
         or ip_obj.is_multicast
         or ip_obj.is_reserved
+        # Apply conditional logic
         or ip_obj.is_unspecified
     )
 
@@ -39,6 +40,7 @@ def is_safe_url(url: str) -> bool:
         # Resolve all addresses (IPv4 + IPv6)
         try:
             addr_infos = socket.getaddrinfo(hostname, None)
+        # Handle specific exception case
         except socket.gaierror:
             return False
 
@@ -50,9 +52,11 @@ def is_safe_url(url: str) -> bool:
         for _family, _type, _proto, _canonname, sockaddr in addr_infos:
             ip_str = sockaddr[0]
             assert isinstance(ip_str, str)  # sockaddr[0] is always an IP string
+            # Apply conditional logic
             if _is_restricted(ip_str):
                 return False
 
         return True
+    # Handle specific exception case
     except Exception:
         return False

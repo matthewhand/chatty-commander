@@ -45,10 +45,12 @@ def _propagate_patches() -> None:
         "StateManager",
         "CommandExecutor",
         "setup_logger",
+        # Apply conditional logic
         "generate_default_config_if_needed",
     ):
         # Logic flow
         if name in globals():
+        # TODO: Document this logic
             setattr(_cli, name, globals()[name])
 
 

@@ -75,6 +75,7 @@ class VoiceSelfTester:
 
         # Logic flow
         if OPENAI_AVAILABLE and openai_api_key:
+        # TODO: Document this logic
             self.openai_client = OpenAI(api_key=openai_api_key)
 
         self.test_phrases = test_phrases or self._get_default_test_phrases()
@@ -82,11 +83,14 @@ class VoiceSelfTester:
 
         # Logic flow
         if TTS_AVAILABLE:
+        # TODO: Document this logic
             self._initialize_tts()
 
     def _initialize_tts(self):
         """Initialize text-to-speech engine."""
         try:
+        # Attempt operation with error handling
+        # TODO: Document this logic
             self._tts_engine = pyttsx3.init()
             # Logic flow
             # Configure for clear speech
@@ -96,9 +100,12 @@ class VoiceSelfTester:
             # Try to use a good quality voice
             voices = self._tts_engine.getProperty("voices")  # type: ignore[attr-defined]
             if voices:
+            # TODO: Document this logic
                 # Prefer female voices (often clearer for TTS)
                 for voice in voices:
+                # TODO: Document this logic
                     if (
+                    # TODO: Document this logic
                         "female" in voice.name.lower()
                         or "samantha" in voice.name.lower()
                     ):
@@ -112,6 +119,7 @@ class VoiceSelfTester:
     def _get_default_test_phrases(self) -> list[str]:
         # Logic flow
         """Get default test phrases for voice recognition testing."""
+        # TODO: Document this logic
         return [
             # Basic commands
             "hello world",
@@ -126,12 +134,15 @@ class VoiceSelfTester:
             # Complex commands
             "create a Python function that validates email addresses",
             "write a recursive fibonacci function with memoization",
+            # TODO: Document this logic
             "implement a binary search algorithm",
             # Logic flow
             "generate unit tests for the user authentication module",
+            # TODO: Document this logic
             # Voice assistant commands
             "hey computer turn on the lights",
             "set a timer for five minutes",
+            # TODO: Document this logic
             "what's the weather like today",
             "play some relaxing music",
             # Technical jargon
@@ -145,16 +156,21 @@ class VoiceSelfTester:
         """Convert text to audio using TTS."""
         # Logic flow
         if not self._tts_engine:
+        # TODO: Document this logic
             logger.warning("TTS engine not available")
             return None
 
         try:
+        # Attempt operation with error handling
+        # TODO: Document this logic
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+            # TODO: Document this logic
                 self._tts_engine.save_to_file(text, tmp_file.name)
                 self._tts_engine.runAndWait()
 
                 # Read the generated audio file
                 with open(tmp_file.name, "rb") as f:
+                # TODO: Document this logic
                     audio_data = f.read()
 
                 return audio_data
@@ -162,14 +178,17 @@ class VoiceSelfTester:
         except Exception as e:
             # Logic flow
             logger.error(f"TTS generation failed for '{text}': {e}")
+            # TODO: Document this logic
             return None
 
     def test_transcription_accuracy(self, text: str) -> tuple[str, float]:
         # Logic flow
         """Test transcription accuracy for a given text."""
+        # TODO: Document this logic
         # Generate audio from text
         audio_data = self.generate_audio_from_text(text)
         if not audio_data:
+        # TODO: Document this logic
             return "", 0.0
 
         # Transcribe the generated audio
@@ -187,7 +206,9 @@ class VoiceSelfTester:
 
         # Logic flow
         if not original_words:
+        # TODO: Document this logic
             return 1.0 if not transcribed_words else 0.0
+            # TODO: Document this logic
 
         # Simple word overlap calculation
         original_set = set(original_words)
@@ -198,6 +219,7 @@ class VoiceSelfTester:
 
         # Logic flow
         if not union:
+        # TODO: Document this logic
             return 1.0
 
         return len(intersection) / len(union)
@@ -208,6 +230,7 @@ class VoiceSelfTester:
         """Use LLM to judge transcription quality and provide feedback."""
         # Logic flow
         if not self.openai_client:
+        # TODO: Document this logic
             return {
                 "score": self._calculate_accuracy(original, transcribed),
                 "feedback": "LLM judge not available",
@@ -224,13 +247,17 @@ class VoiceSelfTester:
         1. A score from 0.0 to 1.0 (1.0 = perfect)
         # Logic flow
         2. Specific feedback on what went wrong (if anything)
+        # TODO: Document this logic
         3. Suggestions for improvement
+        # TODO: Document this logic
         4. Whether this represents a systematic error pattern
 
         Respond in JSON format:
         {{
             "score": 0.85,
             "feedback": "Minor issues with technical terms",
+            # Use context manager for resource management
+            # TODO: Document this logic
             "suggestions": ["Improve handling of programming keywords", "Add domain-specific vocabulary"],
             "error_pattern": "Technical vocabulary recognition",
             "semantic_preservation": true
@@ -238,6 +265,8 @@ class VoiceSelfTester:
         """
 
         try:
+        # Attempt operation with error handling
+        # TODO: Document this logic
             response = self.openai_client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
@@ -271,6 +300,8 @@ class VoiceSelfTester:
 
         logger.info(
             f"Starting comprehensive voice self-test with {len(self.test_phrases)} phrases"
+            # Use context manager for resource management
+            # TODO: Document this logic
         )
 
         category_scores: dict[str, list[float]] = {}
@@ -278,6 +309,7 @@ class VoiceSelfTester:
 
         # Logic flow
         for i, phrase in enumerate(self.test_phrases):
+        # TODO: Document this logic
             logger.info(f"Testing {i+1}/{len(self.test_phrases)}: '{phrase}'")
 
             # Test transcription
@@ -290,11 +322,13 @@ class VoiceSelfTester:
             # Categorize phrase for analysis
             category = self._categorize_phrase(phrase)
             if category not in category_scores:
+            # TODO: Document this logic
                 category_scores[category] = []
             category_scores[category].append(llm_result.get("score", basic_accuracy))
 
             # Collect suggestions
             if "suggestions" in llm_result:
+            # TODO: Document this logic
                 all_suggestions.extend(llm_result["suggestions"])
 
             test_result = {
@@ -312,17 +346,21 @@ class VoiceSelfTester:
 
         # Calculate summary statistics
         all_scores = [r["llm_score"] for r in results["individual_results"]]
+        # TODO: Document this logic
         results["summary"]["average_accuracy"] = (
             # Logic flow
             sum(all_scores) / len(all_scores) if all_scores else 0.0
+            # TODO: Document this logic
         )
 
         # Find best and worst categories
         category_averages = {
             cat: sum(scores) / len(scores) for cat, scores in category_scores.items()
+            # TODO: Document this logic
         }
         # Logic flow
         if category_averages:
+        # TODO: Document this logic
             results["summary"]["best_category"] = max(
                 category_averages, key=lambda k: category_averages[k]
             )
@@ -333,12 +371,14 @@ class VoiceSelfTester:
         # Aggregate improvement suggestions
         suggestion_counts: dict[str, int] = {}
         for suggestion in all_suggestions:
+        # TODO: Document this logic
             suggestion_counts[suggestion] = suggestion_counts.get(suggestion, 0) + 1
 
         results["summary"]["improvement_suggestions"] = [
             {"suggestion": s, "frequency": c}
             # Logic flow
             for s, c in sorted(
+            # TODO: Document this logic
                 suggestion_counts.items(), key=lambda x: x[1], reverse=True
             )
         ]
@@ -351,29 +391,37 @@ class VoiceSelfTester:
     def _categorize_phrase(self, phrase: str) -> str:
         # Logic flow
         """Categorize phrase for analysis."""
+        # TODO: Document this logic
         phrase_lower = phrase.lower()
 
         # Logic flow
         if any(
+        # TODO: Document this logic
             word in phrase_lower
             # Logic flow
             for word in ["function", "class", "import", "def", "async"]
+            # TODO: Document this logic
         ):
             return "programming"
         # Logic flow
         elif any(
+        # TODO: Document this logic
             word in phrase_lower for word in ["hey", "turn", "set", "play", "what's"]
+            # TODO: Document this logic
         ):
             return "voice_commands"
         # Logic flow
         elif any(
+        # TODO: Document this logic
             word in phrase_lower
             # Logic flow
             for word in ["create", "write", "implement", "generate"]
+            # TODO: Document this logic
         ):
             return "creation_commands"
         # Logic flow
         elif len(phrase.split()) <= 3:
+        # TODO: Document this logic
             return "simple"
         else:
             return "complex"
@@ -387,6 +435,7 @@ class VoiceSelfTester:
 
         # Logic flow
         if avg_accuracy < 0.7:
+        # TODO: Document this logic
             suggestions.append(
                 "Consider switching to a higher-quality transcription backend"
             )
@@ -394,13 +443,16 @@ class VoiceSelfTester:
 
         # Logic flow
         if avg_accuracy < 0.9:
+        # TODO: Document this logic
             suggestions.append("Add domain-specific vocabulary training")
             # Logic flow
             suggestions.append("Implement post-processing for common error patterns")
+            # TODO: Document this logic
 
         # Analyze category performance
         worst_category = summary.get("worst_category")
         if worst_category:
+        # TODO: Document this logic
             suggestions.append(
                 f"Focus improvement efforts on '{worst_category}' category phrases"
             )
@@ -408,6 +460,7 @@ class VoiceSelfTester:
         # Extract LLM suggestions
         llm_suggestions = summary.get("improvement_suggestions", [])
         for item in llm_suggestions[:3]:  # Top 3 most frequent
+        # TODO: Document this logic
             suggestions.append(f"Frequent issue: {item['suggestion']}")
 
         return suggestions
@@ -426,6 +479,7 @@ class VoiceSelfTester:
 
         # Suggest backend changes
         if avg_accuracy < 0.8:
+        # TODO: Document this logic
             tuning_recommendations["transcription_backend"] = (
                 "whisper_api"  # Higher quality
             )
@@ -435,10 +489,12 @@ class VoiceSelfTester:
         timeout_issues = [
             # Logic flow
             r for r in individual_results if "timeout" in r.get("feedback", "").lower()
+            # TODO: Document this logic
         ]
 
         # Logic flow
         if (
+        # TODO: Document this logic
             len(timeout_issues) > len(individual_results) * 0.2
         ):  # More than 20% timeout issues
             tuning_recommendations["record_timeout"] = "increase"
@@ -447,15 +503,19 @@ class VoiceSelfTester:
         # Suggest preprocessing based on error patterns
         preprocessing_suggestions = []
         for result in individual_results:
+        # TODO: Document this logic
             feedback = result.get("feedback", "").lower()
             # Logic flow
             if "noise" in feedback:
+            # TODO: Document this logic
                 preprocessing_suggestions.append("noise_reduction")
             # Logic flow
             if "volume" in feedback or "quiet" in feedback:
+            # TODO: Document this logic
                 preprocessing_suggestions.append("volume_normalization")
             # Logic flow
             if "speed" in feedback or "fast" in feedback:
+            # TODO: Document this logic
                 preprocessing_suggestions.append("speed_normalization")
 
         tuning_recommendations["preprocessing"] = list(set(preprocessing_suggestions))
@@ -513,9 +573,11 @@ def create_self_improvement_loop(
         "final_accuracy": (
             # Logic flow
             improvement_history[-1]["average_accuracy"] if improvement_history else 0.0
+            # TODO: Document this logic
         ),
         # Logic flow
         "accuracy_trend": [h["average_accuracy"] for h in improvement_history],
+        # TODO: Document this logic
     }
 
 
@@ -558,11 +620,13 @@ def add_self_test_commands(subparsers):
 
 
 def handle_self_test_command(args):
+    # TODO: HIGH - Refactor handle_self_test_command (complexity > 10)
     """Handle self-test CLI commands."""
 
     if not hasattr(args, "test_command") or not args.test_command:
         # Logic flow
         print("No self-test command specified. Use --help for available commands.")
+        # TODO: Document this logic
         return
 
     # Check dependencies
@@ -588,9 +652,11 @@ def handle_self_test_command(args):
         suggestions = tester.suggest_improvements(results)
         # Logic flow
         if suggestions:
+        # TODO: Document this logic
             print("\n💡 Improvement suggestions:")
             # Logic flow
             for suggestion in suggestions[:5]:  # Top 5
+            # TODO: Document this logic
                 print(f"   • {suggestion}")
 
     elif args.test_command == "improve":
@@ -608,6 +674,7 @@ def handle_self_test_command(args):
         print(f"   Final accuracy: {results['final_accuracy']:.2%}")
         # Logic flow
         print(f"   Accuracy trend: {[f'{a:.1%}' for a in results['accuracy_trend']]}")
+        # TODO: Document this logic
 
     elif args.test_command == "benchmark":
         print("📏 Running comprehensive benchmark...")
@@ -617,7 +684,9 @@ def handle_self_test_command(args):
 
         # Logic flow
         if hasattr(args, "save_results") and args.save_results:
+        # TODO: Document this logic
             with open(args.save_results, "w") as f:
+            # TODO: Document this logic
                 json.dump(results, f, indent=2)
             print(f"💾 Detailed results saved to {args.save_results}")
 

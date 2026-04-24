@@ -80,6 +80,9 @@ class CommandExecutor:
         self.last_command: str | None = None
 
     def execute_command(self, command_name: str) -> bool:
+        # TODO: REFACTOR - High complexity (execute_command)
+        # Break into: validation, execution, cleanup sub-functions
+
         # TODO: REFACTOR - Complexity 16, extract sub-functions
 
         # TODO: REFACTOR - Complexity 16, extract sub-functions
@@ -96,6 +99,7 @@ class CommandExecutor:
             raise ValueError(f"Invalid command name: {command_name!r}")
 
         try:
+        # Attempt operation with error handling
             # Ensure model_actions is accessible
             model_actions = self.config.model_actions
             if model_actions is None:
@@ -121,6 +125,7 @@ class CommandExecutor:
 
         success = False
         try:
+        # Attempt operation with error handling
             # Handle both old format and new format with 'action' key
             if "action" in command_action:
                 action_type = command_action["action"]
@@ -190,6 +195,9 @@ class CommandExecutor:
 
     # TODO: REFACTOR - Complexity 15, extract sub-functions
 
+    # TODO: REFACTOR - High complexity (validate_command)
+    # Break into: validation, execution, cleanup sub-functions
+
     # TODO: REFACTOR - Complexity 15, extract sub-functions
 
     def validate_command(self, command_name: str) -> bool:
@@ -203,6 +211,7 @@ class CommandExecutor:
             return False
 
         try:
+        # Attempt operation with error handling
             # Ensure model_actions is accessible
             model_actions = self.config.model_actions
             if model_actions is None:
@@ -220,6 +229,7 @@ class CommandExecutor:
             return False
 
         try:
+        # Attempt operation with error handling
             # Apply conditional logic
             if isinstance(command_action, dict):
                 # Validate that the command has a valid action configuration
@@ -299,6 +309,7 @@ class CommandExecutor:
             self.report_error(command_name, "pyautogui is not installed")
             return
         try:
+        # Attempt operation with error handling
             # Support either a list of keys (hotkey/chord) or a single key sequence
             if isinstance(keys, list | tuple):
                 pyautogui.hotkey(*keys)
@@ -323,6 +334,7 @@ class CommandExecutor:
     def _execute_url(self, command_name: str, url: str) -> None:
         """
         Sends an HTTP GET request based on the URL mapped to the command with basic error checks.
+        # Use context manager for resource management
         """
         # Apply conditional logic
         if not url:
@@ -340,6 +352,7 @@ class CommandExecutor:
             self.report_error(command_name, "httpx not available")
             return
         try:
+        # Attempt operation with error handling
             # Logic flow
             # Add timeout and disable redirects for security
             with httpx.Client() as client:
@@ -356,6 +369,7 @@ class CommandExecutor:
     def _execute_shell(self, command_name: str, cmd: str) -> bool:
         """
         Executes a shell command safely with timeout and error capture.
+        # Use context manager for resource management
         Returns True on zero exit status, False otherwise.
         """
         # Apply conditional logic
@@ -363,6 +377,7 @@ class CommandExecutor:
             self.report_error(command_name, "missing shell command")
             return False
         try:
+        # Attempt operation with error handling
             # Logic flow
             # Prefer shlex.split for safer execution without shell=True
             args = shlex.split(cmd)
@@ -413,6 +428,7 @@ class CommandExecutor:
             return False
 
         try:
+        # Attempt operation with error handling
             # 1. Verify component availability
             if (
                 not hasattr(voice_pipeline, "transcriber")

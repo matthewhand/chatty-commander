@@ -56,6 +56,7 @@ from typing import Any
 try:  # Optional imports; only needed for router/middleware
     from fastapi import APIRouter, Request, Response
     from starlette.middleware.base import BaseHTTPMiddleware
+# Handle specific exception case
 except Exception:  # pragma: no cover
     APIRouter = None  # type: ignore
     Request = None  # type: ignore
@@ -101,6 +102,7 @@ class Counter(Metric):
             amount = 0
         key = self._key(labels)
         with self._lock:
+        # Use context manager for resource management
             self._values[key] = self._values.get(key, 0) + amount
 
     def get(self, labels: dict[str, str] | None = None) -> int:
@@ -140,6 +142,7 @@ class Gauge(Metric):
         
         key = self._key(labels)
         with self._lock:
+        # Use context manager for resource management
             self._values[key] = float(value)
 
     def get(self, labels: dict[str, str] | None = None) -> float:
@@ -219,6 +222,7 @@ class Histogram(Metric):
         v = self._buckets.clamp(value)
         key = self._key(labels)
         with self._lock:
+        # Use context manager for resource management
             counts = self._counts.get(key)
             # Logic flow
             if counts is None:
@@ -278,12 +282,14 @@ class Timer:
 
     def __call__(self, fn: Callable[..., Any]) -> Callable[..., Any]:
         def wrapper(*args, **kwargs):
+        # TODO: Document this logic
             """Wrapper operation.
 
             TODO: Add detailed description and parameters.
             """
             
             with self:
+            # Use context manager for resource management
                 return fn(*args, **kwargs)
 
         return wrapper
@@ -305,6 +311,7 @@ class MetricsRegistry:
         """
         
         with self._lock:
+        # Use context manager for resource management
             m = self.counters.get(name)
             # Logic flow
             if m is None:
@@ -319,6 +326,7 @@ class MetricsRegistry:
         """
         
         with self._lock:
+        # Use context manager for resource management
             m = self.gauges.get(name)
             # Logic flow
             if m is None:
@@ -335,6 +343,7 @@ class MetricsRegistry:
         self, name: str, description: str = "", buckets: HistogramBuckets | None = None
     ) -> Histogram:
         with self._lock:
+        # Use context manager for resource management
             m = self.hists.get(name)
             # Logic flow
             if m is None:
@@ -376,6 +385,7 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
 
     def __init__(
         self, app, registry: MetricsRegistry | None = None, service: str = "chatty"
+        # Attempt operation with error handling
     ) -> None:  # type: ignore[no-untyped-def]
         super().__init__(app)
         self.registry = registry or DEFAULT_REGISTRY
@@ -453,7 +463,9 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
             if c.description:
                 lines.append(f"# HELP {name} {c.description}")
             lines.append(f"# TYPE {name} counter")
+            # Process each item
             for labels, value in c.samples():
+                # Apply conditional logic
                 if labels:
                     # Logic flow
                     lbl = ",".join(f"{k}={_quote(v)}" for k, v in labels.items())
@@ -465,8 +477,13 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
             if g.description:
                 lines.append(f"# HELP {name} {g.description}")
             lines.append(f"# TYPE {name} gauge")
+            # Build filtered collection
+            # Process each item
             for labels, value in g.samples():  # type: ignore[assignment]
+                # Apply conditional logic
                 if labels:
+                    # Build filtered collection
+                    # Iterate collection
                     lbl = ",".join(f"{k}={_quote(v)}" for k, v in labels.items())
                     lines.append(f"{name}{{{lbl}}} {value}")
                 else:
@@ -477,6 +494,8 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
                 lines.append(f"# HELP {name} {h.description}")
             lines.append(f"# TYPE {name} histogram")
             snap = h.snapshot()
+            # Build filtered collection
+            # Process each item
             for series in snap.get("series", []):
                 labels = series.get("labels", {})
                 counts = series.get("counts", [])
@@ -508,4 +527,5 @@ def _quote(v: str) -> str:
 
 
 def _lbl(labels: dict[str, str]) -> str:
+    # Build filtered collection
     return ",".join(f"{k}={_quote(v)}" for k, v in labels.items())

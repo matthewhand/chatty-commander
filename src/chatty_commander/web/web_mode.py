@@ -44,6 +44,7 @@ from typing import Any
 
 try:
     import uvicorn
+# Handle specific exception case
 except ImportError:
     uvicorn = None  # type: ignore[assignment]
 
@@ -71,6 +72,7 @@ try:
         configure_logging,
     )
     _LOGGING_CONFIG_AVAILABLE = True
+# Handle specific exception case
 except Exception:  # pragma: no cover
     RequestIdMiddleware = None  # type: ignore[assignment,misc]
     configure_logging = None  # type: ignore[assignment]
@@ -81,12 +83,14 @@ try:
         create_metrics_router,
     )
     _OBS_METRICS_AVAILABLE = True
+# Handle specific exception case
 except Exception:  # pragma: no cover - optional dependency path
     RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
     create_metrics_router = None  # type: ignore[assignment]
     _OBS_METRICS_AVAILABLE = False
 try:
     from chatty_commander.web.routes.audio import include_audio_routes
+# Handle specific exception case
 except ImportError:
     include_audio_routes = None  # type: ignore[assignment]
 from chatty_commander.web.routes.version import router as version_router
@@ -96,11 +100,13 @@ from chatty_commander.web.routes.ws import include_ws_routes
 # Avatar routes (optional)
 try:
     from chatty_commander.web.routes.avatar_api import router as avatar_api_router
+# Handle specific exception case
 except ImportError:
     avatar_api_router = None  # type: ignore[assignment]
 
 try:
     from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
+# Handle specific exception case
 except ImportError:
     avatar_ws_router = None  # type: ignore[assignment]
 
@@ -108,11 +114,13 @@ try:
     from chatty_commander.web.routes.avatar_selector import (
         router as avatar_selector_router,
     )
+# Handle specific exception case
 except ImportError:
     avatar_selector_router = None  # type: ignore[assignment]
 
 try:
     from .routes.agents import router as agents_router
+# Handle specific exception case
 except ImportError:
     agents_router = None  # type: ignore[assignment]
 
@@ -155,6 +163,7 @@ class ContextStats(BaseModel):
     """
     
     total_contexts: int
+    # Build filtered collection
     platform_distribution: dict[str, int]
     persona_distribution: dict[str, int]
     persistence_enabled: bool
@@ -197,6 +206,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def get_client_ip(
+    """get client ip."""
     request: Request,
     trusted_proxies: list[str] | None = None,
 ) -> str:
@@ -230,12 +240,15 @@ def get_client_ip(
 
     try:
         direct_addr = ip_address(direct_ip)
+    # Handle specific exception case
     except ValueError:
+        # Process each item
         return direct_ip  # Invalid IP format, fall back to direct
 
     is_trusted_proxy = False
     for proxy in trusted_proxies:
         try:
+        # Attempt operation with error handling
             # Logic flow
             if "/" in proxy:
                 # CIDR range (e.g., "10.0.0.0/8")
@@ -248,6 +261,7 @@ def get_client_ip(
                 if direct_addr == ip_address(proxy):
                     is_trusted_proxy = True
                     break
+        # Handle specific exception case
         except ValueError:
             continue  # Skip invalid proxy definitions
 
@@ -271,6 +285,7 @@ def get_client_ip(
                 is_proxy = False
                 for proxy in trusted_proxies:
                     try:
+                    # Attempt operation with error handling
                         # Logic flow
                         if "/" in proxy:
                             if ip_addr in ip_network(proxy, strict=False):
@@ -281,11 +296,13 @@ def get_client_ip(
                             if ip_addr == ip_address(proxy):
                                 is_proxy = True
                                 break
+                    # Handle specific exception case
                     except ValueError:
                         continue
                 # Logic flow
                 if not is_proxy:
                     return ip_str
+            # Handle specific exception case
             except ValueError:
                 continue  # Skip invalid IPs
 
@@ -293,11 +310,13 @@ def get_client_ip(
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
         try:
+        # Attempt operation with error handling
             ip_addr = ip_address(real_ip)
             # Verify it's not a trusted proxy IP
             is_proxy = False
             for proxy in trusted_proxies:
                 try:
+                # Attempt operation with error handling
                     # Logic flow
                     if "/" in proxy:
                         if ip_addr in ip_network(proxy, strict=False):
@@ -308,11 +327,13 @@ def get_client_ip(
                         if ip_addr == ip_address(proxy):
                             is_proxy = True
                             break
+                # Handle specific exception case
                 except ValueError:
                     continue
             # Logic flow
             if not is_proxy:
                 return real_ip
+        # Handle specific exception case
         except ValueError:
             pass
 
@@ -505,6 +526,7 @@ class WebModeServer:
         # Optional advisors service (enabled via config)
         try:
             self.advisors_service = AdvisorsService(config=config_manager)  # type: ignore[arg-type]
+        # Handle specific exception case
         except Exception as e:  # noqa: BLE001
             logger.debug(
                 "AdvisorsService init failed; continuing without advisors: %s", e
@@ -537,6 +559,7 @@ class WebModeServer:
 
         @self.app.on_event("shutdown")
         async def stop_telemetry_loop() -> None:
+        # Async function for concurrent execution
             """Stop Telemetry Loop operation.
 
             TODO: Add detailed description and parameters.
@@ -547,7 +570,9 @@ class WebModeServer:
             if self._telemetry_task and not self._telemetry_task.done():
                 self._telemetry_task.cancel()
                 try:
+                # Attempt operation with error handling
                     await self._telemetry_task
+                # Handle specific exception case
                 except asyncio.CancelledError:
                     pass
             self._telemetry_task = None
@@ -571,12 +596,15 @@ class WebModeServer:
                         data={
                             "cpu": cpu,
                             "memory": memory,
+                            # Process each item
                             "timestamp": datetime.now().isoformat(),
                         },
                     )
                 )
+            # Handle specific exception case
             except asyncio.CancelledError:
                 raise  # Allow cancellation to propagate
+            # Handle specific exception case
             except Exception as e:  # noqa: BLE001
                 logger.debug("Telemetry loop error: %s", e)
 
@@ -657,6 +685,7 @@ class WebModeServer:
         app = FastAPI(
             title="ChattyCommander API",
             description="Voice command automation system with web interface",
+            # Use context manager for resource management
             version="0.2.0",
             # Logic flow
             docs_url="/docs" if self.no_auth else None,
@@ -776,6 +805,7 @@ class WebModeServer:
                     if hasattr(self.state_manager, "get_active_models")
                     else []
                 ),
+                # Process each item
                 "timestamp": self.last_state_change.isoformat(),
             },
             on_message=None,
@@ -799,6 +829,7 @@ class WebModeServer:
         if not frontend_path.exists():
             logger.info("Frontend build not found. Automagically building the frontend UI...")
             try:
+            # Attempt operation with error handling
                 import subprocess
                 import sys
 
@@ -818,8 +849,10 @@ class WebModeServer:
                 # Logic flow
                 elif Path("webui/frontend/build").exists():
                     frontend_path = Path("webui/frontend/build")
+            # Handle specific exception case
             except FileNotFoundError:
                 logger.error("Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/.")
+            # Handle specific exception case
             except Exception as e:
                 logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
 
@@ -834,6 +867,7 @@ class WebModeServer:
 
             @app.get("/", response_class=HTMLResponse)
             async def _serve_frontend():  # pragma: no cover - exercised in integration
+            # Async function for concurrent execution
                 index_file = frontend_path / "index.html"
                 if index_file.exists():
                     return FileResponse(str(index_file))
@@ -855,6 +889,7 @@ class WebModeServer:
         if frontend_path.exists():
             @app.exception_handler(404)
             async def spa_fallback(request: Request, exc: HTTPException):
+            # Async function for concurrent execution
                 """Spa Fallback with (request: Request, exc: HTTPException).
 
                 TODO: Add detailed description and parameters.
@@ -876,12 +911,14 @@ class WebModeServer:
         avatar_path = Path("src/chatty_commander/webui/avatar")
         if avatar_path.exists():
             try:
+            # Attempt operation with error handling
                 app.mount(
                     "/avatar-ui", StaticFiles(directory=str(avatar_path)), name="avatar"
                 )
 
                 @app.get("/avatar", response_class=HTMLResponse)
                 async def _serve_avatar_ui():  # pragma: no cover - exercised in integration
+                # Async function for concurrent execution
                     index_file = avatar_path / "index.html"
                     if index_file.exists():
                         return FileResponse(str(index_file))
@@ -889,6 +926,7 @@ class WebModeServer:
                         "<h1>Avatar UI</h1><p>Avatar UI not found. Ensure index.html exists under src/chatty_commander/webui/avatar/</p>"
                     )
 
+            # Handle specific exception case
             except Exception as e:  # noqa: BLE001
                 logger.warning("Failed to mount avatar UI static files: %s", e)
 
@@ -899,6 +937,7 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/personas")
         async def advisor_personas():
+        # Async function for concurrent execution
             """Advisor Personas operation.
 
             TODO: Add detailed description and parameters.
@@ -921,6 +960,7 @@ class WebModeServer:
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(
+        # Async function for concurrent execution
             """Advisor Message with (message: AdvisorInbound, x_api_key).
 
             TODO: Add detailed description and parameters.
@@ -944,8 +984,10 @@ class WebModeServer:
             if not self.advisors_service:
                 raise HTTPException(status_code=500, detail="Advisors unavailable")
             try:
+            # Attempt operation with error handling
                 reply = self.advisors_service.handle_message(
                     AdvisorMessage(
+                        # Process each item
                         platform=message.platform,
                         channel=message.channel,
                         user=message.user,
@@ -961,13 +1003,16 @@ class WebModeServer:
                     model=reply.model,
                     api_mode=reply.api_mode,
                 )
+            # Handle specific exception case
             except HTTPException:
                 raise
+            # Handle specific exception case
             except Exception as e:  # noqa: BLE001
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
         @app.post("/api/v1/advisors/context/switch")
         async def switch_persona(context_key: str, persona_id: str):
+        # Async function for concurrent execution
             """Switch Persona with (context_key: str, persona_id: str).
 
             TODO: Add detailed description and parameters.
@@ -978,6 +1023,7 @@ class WebModeServer:
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             try:
+            # Attempt operation with error handling
                 success = svc.switch_persona(context_key, persona_id)
                 # Logic flow
                 if success:
@@ -988,6 +1034,7 @@ class WebModeServer:
                     }
                 else:
                     raise HTTPException(status_code=400, detail="Invalid persona")
+            # Handle specific exception case
             except Exception as e:
                 raise HTTPException(
                     status_code=400, detail=f"Invalid persona: {str(e)}"
@@ -995,6 +1042,7 @@ class WebModeServer:
 
         @app.delete("/api/v1/advisors/context/{context_key}")
         async def clear_context(context_key: str):
+        # Async function for concurrent execution
             """Clear Context with (context_key: str).
 
             TODO: Add detailed description and parameters.
@@ -1005,12 +1053,14 @@ class WebModeServer:
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             try:
+            # Attempt operation with error handling
                 success = svc.clear_context(context_key)
                 # Logic flow
                 if success:
                     return {"success": True, "context_key": context_key}
                 else:
                     raise HTTPException(status_code=404, detail="Context not found")
+            # Handle specific exception case
             except Exception as e:
                 raise HTTPException(
                     status_code=404, detail=f"Context not found: {str(e)}"
@@ -1018,17 +1068,20 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
+        # Async function for concurrent execution
             """Advisors Memory with (platform: str, channel: str, user: str, limit: int).
 
             TODO: Add detailed description and parameters.
             """
             
+            # Process each item
             platform: str, channel: str, user: str, limit: int = 20
         ):
             svc = self.advisors_service
             # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
+            # Iterate collection
             items = svc.memory.get(platform, channel, user, limit=limit)
             # Convert dataclasses to serializable dicts
             return [
@@ -1038,7 +1091,9 @@ class WebModeServer:
             ]
 
         @app.delete("/api/v1/advisors/memory")
+        # Process each item
         async def advisors_memory_clear(platform: str, channel: str, user: str):
+        # Async function for concurrent execution
             """Advisors Memory Clear with (platform: str, channel: str, user: str).
 
             TODO: Add detailed description and parameters.
@@ -1048,11 +1103,13 @@ class WebModeServer:
             # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
+            # Process each item
             count = svc.memory.clear(platform, channel, user)
             return {"cleared": int(count)}
 
         @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
         async def advisors_context_stats():
+        # Async function for concurrent execution
             """Advisors Context Stats operation.
 
             TODO: Add detailed description and parameters.
@@ -1071,6 +1128,7 @@ class WebModeServer:
 
         @app.post("/bridge/event")
         async def bridge_event(
+        # Async function for concurrent execution
             """Bridge Event with (event, x_bridge_token).
 
             TODO: Add detailed description and parameters.
@@ -1112,17 +1170,21 @@ class WebModeServer:
         for ws in list(self.active_connections):
             try:
                 await ws.send_text(payload)
+            # Handle specific exception case
             except Exception as e:  # noqa: BLE001
                 logger.debug("broadcast failed to a client: %s", e)
                 try:
                     self.active_connections.discard(ws)
+                # Handle specific exception case
                 except Exception:
                     pass
 
     def _on_state_change(self, old_state: str, new_state: str) -> None:
         self.last_state_change = datetime.now()
         try:
+        # Attempt operation with error handling
             loop = asyncio.get_event_loop()
+        # Handle specific exception case
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1133,6 +1195,7 @@ class WebModeServer:
                     data={
                         "old_state": old_state,
                         "new_state": new_state,
+                        # Process each item
                         "timestamp": self.last_state_change.isoformat(),
                     },
                 )
@@ -1149,7 +1212,9 @@ class WebModeServer:
         self.commands_executed += 1
         self.last_command = command
         try:
+        # Attempt operation with error handling
             loop = asyncio.get_event_loop()
+        # Handle specific exception case
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1169,7 +1234,9 @@ class WebModeServer:
         """
         
         try:
+        # Attempt operation with error handling
             loop = asyncio.get_event_loop()
+        # Handle specific exception case
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1181,6 +1248,7 @@ class WebModeServer:
 
 
 def create_app(
+    """create app."""
     *,
     config: Config | None = None,
     config_manager: Config | None = None,
@@ -1199,6 +1267,7 @@ def create_app(
 
 
 def run_server(
+    """run server."""
     config_manager: Config,
     state_manager: StateManager,
     model_manager: ModelManager,

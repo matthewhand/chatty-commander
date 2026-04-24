@@ -78,6 +78,7 @@ def expose(namespace: dict[str, Any], name: str) -> ModuleType:
     public = getattr(module, "__all__", None) or [
         # Apply conditional logic
         attr for attr in dir(module) if not attr.startswith("_")
+        # TODO: Document this logic
     ]
     for attr in public:
         namespace[attr] = getattr(module, attr)

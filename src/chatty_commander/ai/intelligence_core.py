@@ -73,6 +73,7 @@ class IntelligenceCore:
     def _initialize_voice_processing(self):
         """Initialize enhanced voice processing."""
         try:
+        # Attempt operation with error handling
             voice_config = {
                 "sample_rate": 16000,
                 "noise_reduction": True,
@@ -99,6 +100,7 @@ class IntelligenceCore:
     def _handle_voice_input(self, voice_result: VoiceResult):
         """Handle transcribed voice input."""
         try:
+        # Attempt operation with error handling
             # Apply conditional logic
             if voice_result.confidence < 0.5:
                 self.logger.debug(
@@ -171,6 +173,7 @@ class IntelligenceCore:
         # Could trigger processing indicator here
 
     def process_input(
+        """process input."""
         self,
         text: str,
         input_type: str = "text",
@@ -181,6 +184,7 @@ class IntelligenceCore:
         metadata = metadata or {}
 
         try:
+        # Attempt operation with error handling
             # Create advisor message
             advisor_message = AdvisorMessage(
                 platform="voice" if input_type == "voice" else "text",
@@ -402,6 +406,7 @@ class IntelligenceCore:
             )
 
         try:
+        # Attempt operation with error handling
             voice_result = self.voice_processor.process_audio_file(file_path)
             return self.process_input(
                 text=voice_result.text,

@@ -44,6 +44,7 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
     if app.docs_url is None:
         @app.get("/docs", include_in_schema=False)
         async def custom_swagger_ui_html():
+        # Async function for concurrent execution
             """Custom Swagger Ui Html operation.
 
             TODO: Add detailed description and parameters.
@@ -59,6 +60,7 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
 
         @app.get("/redoc", include_in_schema=False)
         async def redoc_html():
+        # Async function for concurrent execution
             """Redoc Html operation.
 
             TODO: Add detailed description and parameters.
@@ -72,6 +74,7 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
 
 
 def apply_cors(
+    """apply cors."""
     app: FastAPI, *, no_auth: bool, origins: Iterable[str] | None = None
 ) -> None:
     """
@@ -90,6 +93,7 @@ def apply_cors(
 
     # Remove existing CORS middleware if already present to avoid duplicates.
     app.user_middleware = [
+        # Build filtered collection
         m for m in app.user_middleware if m.cls is not CORSMiddleware  # type: ignore[comparison-overlap]
     ]
 

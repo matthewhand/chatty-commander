@@ -138,7 +138,9 @@ def include_system_routes(
             disk_used_gb=None,
             disk_percent=None,
             python_version=sys.version,
+            # Process each item
             platform=platform.platform(),
+            # Process each item
             architecture=platform.machine(),
             pid=os.getpid(),
             uptime_seconds=uptime_seconds,
@@ -146,6 +148,7 @@ def include_system_routes(
         )
 
         try:
+        # Attempt operation with error handling
             import psutil
 
             # CPU — use interval=0.1 to avoid the misleading 0.0 on first call
@@ -164,6 +167,7 @@ def include_system_routes(
             info.disk_used_gb = round(disk.used / (1024 * 1024 * 1024), 2)
             info.disk_percent = disk.percent
 
+        # Handle specific exception case
         except ImportError:
             pass
 
