@@ -616,6 +616,80 @@ test.describe("Documentation Screenshots", () => {
   });
 
   // =========================================================================
+  // JOURNEY 6: Agent Management Flow (8 steps)
+  // Tests the new Agent Fleet Manager UI for creating and managing AI agents
+  // =========================================================================
+  test.describe("Journey 6: Agent Management Flow", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("Step 1 - Navigate to Agents Page", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await page.getByRole("link", { name: /agents|ai agents/i }).first().click();
+      await expect(page).toHaveURL(/agents/);
+      await expect(page.getByRole("heading", { name: /agents|manage agents/ })).toBeVisible();
+      await takeJourneyScreenshot(page, "agents", 1);
+    });
+
+    test("Step 2 - View existing agent blueprints", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/agents");
+      await expect(page.getByRole("heading")).toBeVisible();
+      await takeJourneyScreenshot(page, "agents", 2);
+    });
+
+    test("Step 3 - Create new agent - form opened", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/agents");
+      await page.getByRole("button", { name: /create|add|new/i }).first().click();
+      await expect(page.getByRole("dialog") || page.locator("form")).toBeVisible();
+      await takeJourneyScreenshot(page, "agents", 3);
+    });
+
+    test("Step 4 - Agent creation with persona details", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/agents");
+      await page.getByRole("button", { name: /create|add|new/i }).first().click();
+      await page.getByLabel(/name/i).fill("Research Assistant");
+      await page.getByLabel(/description/i).fill("Helper for researching topics");
+      await takeJourneyScreenshot(page, "agents", 4);
+    });
+
+    test("Step 5 - Configure agent capabilities", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/agents");
+      await page.getByRole("button", { name: /create|add|new/i }).first().click();
+      await page.getByLabel(/name/i).fill("Code Reviewer");
+      await page.getByLabel(/capabilities|skills/i).first().click();
+      await takeJourneyScreenshot(page, "agents", 5);
+    });
+
+    test("Step 6 - Assign team role to agent", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/agents");
+      await page.getByRole("button", { name: /create|add|new/i }).first().click();
+      await page.getByLabel(/name/i).fill("Team Lead");
+      await page.getByLabel(/role|team/i).first().selectOption(/researcher|analyst|coder/);
+      await takeJourneyScreenshot(page, "agents", 6);
+    });
+
+    test("Step 7 - Agent list with multiple agents", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/agents");
+      await expect(page.getByRole("listitem").nth(2)).toBeVisible();
+      await takeJourneyScreenshot(page, "agents", 7);
+    });
+
+    test("Step 8 - Agent detail view", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/agents");
+      await page.getByRole("link").nth(2).click();
+      await expect(page.getByRole("heading", { name: /research|code|team/ })).toBeVisible();
+      await takeJourneyScreenshot(page, "agents", 8);
+    });
+  });
+
+  // =========================================================================
   // MOBILE RESPONSIVE SCREENSHOTS (5 steps)
   // =========================================================================
   test.describe("Mobile Responsive Screenshots", () => {
