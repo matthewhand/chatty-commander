@@ -29,9 +29,17 @@ At its core today, Chatty Commander is a system for configuring and executing co
 └──────────────────────────────────────────────┘
 ```
 
-### Future Potential: Multi-Modal Assistant
-The architecture has been designed with future expansion in mind. These components are conceptual potentials:
-- **LLM Advisors**: Conversational AI personas, memory, and an LLM manager (OpenAI/Ollama).
+### Current Implementation: Multi-Modal Assistant
+The architecture includes advanced AI capabilities:
+- **LLM Advisors**: ✅ **IMPLEMENTED** - Conversational AI personas, memory, and an LLM manager (OpenAI/Ollama)
+- **AI Advisors**: Context management and conversation flow
+- **Computer Vision**: Visual validation and screenshot testing (optional via `--enable-computer-vision`)
+
+### Future Potential
+The architecture is designed for further expansion:
+- Additional AI model providers
+- Enhanced voice processing
+- Multi-modal inputs (text + voice + vision)
 
 ## Directory Organization
 
@@ -139,9 +147,10 @@ erDiagram
 |--------|---------|--------|
 | `web/` | FastAPI server, routers, authentication | **Current** |
 | `app/` | Configuration, state machine, command orchestration | **Current** |
-| `cli/` | Command-line interface and REPL | *WIP* |
-| `advisors/` | LLM conversation management, personas, memory | *Future* |
-| `llm/` | Unified LLM backend (OpenAI, Ollama, local, mock) | *Future* |
+| `cli/` | Command-line interface and REPL | **Current** |
+| `advisors/` | LLM conversation management, personas, memory | **Current** |
+| `llm/` | Unified LLM backend (OpenAI, Ollama, local, mock) | **Current** |
+| `cv/` | Computer Vision - screenshot validation and visual regression | **Current** (optional) |
 
 ## Technology Stack
 

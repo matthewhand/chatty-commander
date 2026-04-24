@@ -7,6 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, "../../../../docs/screenshots");
+const JOURNEYS_DIR = path.resolve(SCREENSHOTS_DIR, "journeys");
 
 // ---------------------------------------------------------------------------
 // Mock Data (shared across screenshot tests for consistent documentation)
@@ -16,7 +17,7 @@ const HEALTH_RESPONSE = {
   status: "healthy",
   uptime: "3d 12h 45m",
   commands_executed: 1247,
-  version: "1.0.0",
+  version: "0.2.0",
   cpu_usage: "23.5",
   memory_usage: "61.2",
 };
@@ -26,13 +27,13 @@ const AGENT_STATS_RESPONSE = {
     "discord-advisor": {
       persona_id: "helperbot",
       platform: "discord",
-      last_updated: "2026-03-26T10:00:00Z",
+      last_updated: "2025-04-15T10:00:00Z",
       context_key: "discord-ctx-1",
     },
     "twitch-advisor": {
       persona_id: "streambot",
       platform: "twitch",
-      last_updated: "2026-03-26T09:30:00Z",
+      last_updated: "2025-04-15T09:30:00Z",
       context_key: "twitch-ctx-1",
     },
   },
@@ -72,7 +73,7 @@ const MOCK_VOICE_MODELS = {
       path: "/models/hey_jarvis_v0.1.onnx",
       size_bytes: 1482752,
       size_human: "1.4 MB",
-      modified: "2026-01-15T10:30:00Z",
+      modified: "2025-01-15T10:30:00Z",
       state: "idle",
     },
     {
@@ -80,8 +81,8 @@ const MOCK_VOICE_MODELS = {
       path: "/models/ok_computer_v2.onnx",
       size_bytes: 2097152,
       size_human: "2.0 MB",
-      modified: "2026-02-20T14:00:00Z",
-      state: "computer",
+      modified: "2025-02-20T14:00:00Z",
+      state: "loaded",
     },
   ],
   total_count: 2,
@@ -97,11 +98,32 @@ const MOCK_LLM_MODELS = {
   ],
 };
 
+const MOCK_VOICE_COMMAND_RESPONSE = {
+  success: true,
+  command: "open_notepad",
+  transcript: "Open Notepad",
+  executed_at: "2025-04-15T10:15:00Z",
+  execution_time_ms: 245,
+};
+
+const MOCK_REALTIME_STATUS = {
+  is_listening: true,
+  current_input: "Hey Jarvis",
+  confidence: 0.97,
+  timestamp: "2025-04-15T10:16:00Z",
+};
+
+const MOCK_ERROR_RESPONSE = {
+  error: "Voice service unavailable",
+  code: "VOICE_503",
+  details: "Connection to audio backend timed out",
+  timestamp: "2025-04-15T10:20:00Z",
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Set up all API route mocks for dashboard screenshots. */
 async function mockDashboardAPIs(page: Page) {
   await page.route("**/health", (route) =>
     route.fulfill({ status: 200, json: HEALTH_RESPONSE })
@@ -114,7 +136,6 @@ async function mockDashboardAPIs(page: Page) {
   );
 }
 
-/** Set up all API route mocks for configuration screenshots. */
 async function mockConfigurationAPIs(page: Page) {
   await page.route("**/api/v1/config", (route) => {
     if (route.request().method() === "GET") {
@@ -136,7 +157,6 @@ async function mockConfigurationAPIs(page: Page) {
   );
 }
 
-/** Set up mocks for commands page. */
 async function mockCommandsAPIs(page: Page) {
   await page.route("**/api/v1/commands", (route) =>
     route.fulfill({ status: 200, json: COMMANDS_RESPONSE })
@@ -146,6 +166,32 @@ async function mockCommandsAPIs(page: Page) {
   );
 }
 
+async function mockVoiceCommandAPIs(page: Page) {
+  await page.route("**/api/v1/voice/command", (route) =>
+    route.fulfill({ status: 200, json: MOCK_VOICE_COMMAND_RESPONSE })
+  );
+  await page.route("**/api/v1/voice/status", (route) =>
+    route.fulfill({ status: 200, json: MOCK_REALTIME_STATUS })
+  );
+}
+
+async function mockErrorAPIs(page: Page) {
+  await page.route("**/api/v1/voice/command", (route) =>
+    route.fulfill({ status: 503, json: MOCK_ERROR_RESPONSE })
+  );
+  await page.route("**/api/v1/voice/status", (route) =>
+    route.fulfill({ status: 503, json: MOCK_ERROR_RESPONSE })
+  );
+}
+
+async function takeJourneyScreenshot(page: Page, journey: string, step: number) {
+  await page.waitForLoadState('networkidle');
+  await page.screenshot({
+    path: path.join(JOURNEYS_DIR, `journey-${journey}-step-${step}.png`),
+    fullPage: true
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Test Setup
 // ---------------------------------------------------------------------------
@@ -153,141 +199,480 @@ async function mockCommandsAPIs(page: Page) {
 test.describe("Documentation Screenshots", () => {
   test.beforeAll(() => {
     fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+    fs.mkdirSync(JOURNEYS_DIR, { recursive: true });
   });
 
-  // Use consistent viewport for all screenshots
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test("dashboard", async ({ page }) => {
+  // =========================================================================
+  // EXISTING BASIC SCREENSHOTS (Maintain backward compatibility)
+  // =========================================================================
+
+  test("dashboard-overview", async ({ page }) => {
     await mockDashboardAPIs(page);
-
     await page.goto("/");
-    // Redirects to dashboard with --no-auth
-    await expect(page).toHaveURL(/dashboard/);
-
-    // Wait for dashboard to fully load
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
     await expect(page.locator(".stat-value", { hasText: "Healthy" })).toBeVisible();
     await page.waitForLoadState('networkidle');
-
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "dashboard.png"),
       fullPage: true
     });
   });
 
-  test("login", async ({ page }) => {
+  test("login-page", async ({ page }) => {
     await page.goto("/login");
-
-    // In --no-auth mode, login redirects to dashboard
-    // So we check what actually renders
     const loginHeading = page.getByRole("heading", { name: /login|chatty commander/i });
     await expect(loginHeading.first()).toBeVisible();
     await page.waitForLoadState('networkidle');
-
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "login.png"),
       fullPage: true
     });
   });
 
-  test("configuration", async ({ page }) => {
+  test("configuration-overview", async ({ page }) => {
     await mockConfigurationAPIs(page);
-
     await page.goto("/");
     await page.getByRole("link", { name: "Configuration" }).click();
-
     await expect(page).toHaveURL(/configuration/);
     await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
     await page.waitForLoadState('networkidle');
-
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "configuration.png"),
       fullPage: true
     });
   });
 
-  test("configuration-voice-models", async ({ page }) => {
-    await mockConfigurationAPIs(page);
-
-    await page.goto("/configuration");
-    await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
-
-    // Scroll to voice models section if present
-    const modelsHeading = page.locator("text=Voice Models (ONNX)").first();
-    if (await modelsHeading.isVisible()) {
-      await modelsHeading.scrollIntoViewIfNeeded();
-    }
-
-    await page.waitForLoadState('networkidle');
-
-    await page.screenshot({
-      path: path.join(SCREENSHOTS_DIR, "configuration-voice-models.png"),
-      fullPage: true
-    });
-  });
-
-  test("configuration-audio", async ({ page }) => {
-    await mockConfigurationAPIs(page);
-
-    await page.goto("/configuration");
-    await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
-
-    // Scroll to audio device section
-    const audioHeading = page.locator("text=Audio Devices").first();
-    if (await audioHeading.isVisible()) {
-      await audioHeading.scrollIntoViewIfNeeded();
-    }
-
-    await page.waitForLoadState('networkidle');
-
-    await page.screenshot({
-      path: path.join(SCREENSHOTS_DIR, "configuration-audio.png"),
-      fullPage: true
-    });
-  });
-
-  test("commands", async ({ page }) => {
+  test("commands-list", async ({ page }) => {
     await mockCommandsAPIs(page);
-
     await page.goto("/");
     await page.getByRole("link", { name: "Commands" }).click();
-
     await expect(page).toHaveURL(/commands/);
     await expect(page.getByRole("heading", { name: /commands/i })).toBeVisible();
     await page.waitForLoadState('networkidle');
-
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "commands.png"),
       fullPage: true
     });
   });
 
-  test("command-authoring", async ({ page }) => {
-    await mockCommandsAPIs(page);
+  // =========================================================================
+  // JOURNEY 1: FIRST-TIME SETUP (7 steps)
+  // =========================================================================
+  test.describe("Journey 1: First-Time Setup Flow", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
 
-    // Mock command generation endpoint
-    await page.route("**/api/v1/commands/generate", (route) =>
-      route.fulfill({
-        status: 200,
-        json: {
-          name: "toggle_mute",
-          display_name: "Toggle Mute",
-          description: "Toggle microphone mute state",
-          actions: [{ type: "keypress", keys: "ctrl+shift+m" }],
-        },
-      })
-    );
+    test("Step 1 - Initial landing and dashboard", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: /chatty commander|dashboard/i })).toBeVisible();
+      await takeJourneyScreenshot(page, "setup", 1);
+    });
 
-    await page.goto("/commands/authoring");
+    test("Step 2 - Navigate to configuration section", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/");
+      await page.getByRole("link", { name: "Configuration" }).click();
+      await expect(page).toHaveURL(/configuration/);
+      await takeJourneyScreenshot(page, "setup", 2);
+    });
 
-    await expect(page).toHaveURL(/authoring/);
-    await expect(page.getByRole("heading", { name: /command authoring|author command/i })).toBeVisible();
-    await page.waitForLoadState('networkidle');
+    test("Step 3 - View advisor and provider settings", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      const advisorSection = page.locator("text=Advisors|text=Providers").first();
+      if (await advisorSection.isVisible()) {
+        await advisorSection.scrollIntoViewIfNeeded();
+      }
+      await takeJourneyScreenshot(page, "setup", 3);
+    });
 
-    await page.screenshot({
-      path: path.join(SCREENSHOTS_DIR, "command-authoring.png"),
-      fullPage: true
+    test("Step 4 - Configure voice settings panel", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      const voiceSection = page.locator("text=Voice Settings|text=Voice|text=Enable Voice").first();
+      if (await voiceSection.isVisible()) {
+        await voiceSection.scrollIntoViewIfNeeded();
+      }
+      await takeJourneyScreenshot(page, "setup", 4);
+    });
+
+    test("Step 5 - Audio devices configuration", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      const audioHeading = page.locator("text=Audio Devices").first();
+      if (await audioHeading.isVisible()) {
+        await audioHeading.scrollIntoViewIfNeeded();
+      }
+      await takeJourneyScreenshot(page, "setup", 5);
+    });
+
+    test("Step 6 - Voice models ONNX selection", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      const modelsHeading = page.locator("text=Voice Models (ONNX)|text=Voice Models").first();
+      if (await modelsHeading.isVisible()) {
+        await modelsHeading.scrollIntoViewIfNeeded();
+      }
+      await takeJourneyScreenshot(page, "setup", 6);
+    });
+
+    test("Step 7 - Configuration saved successfully", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      const saveButton = page.getByRole("button", { name: /save|apply|ok/i }).first();
+      if (await saveButton.isVisible()) {
+        await saveButton.scrollIntoViewIfNeeded();
+      }
+      await takeJourneyScreenshot(page, "setup", 7);
+    });
+  });
+
+  // =========================================================================
+  // JOURNEY 2: CORE VOICE COMMAND FLOW (8 steps)
+  // =========================================================================
+  test.describe("Journey 2: Voice Command Execution Flow", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("Step 1 - Dashboard with voice enabled", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await mockVoiceCommandAPIs(page);
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+      await takeJourneyScreenshot(page, "voice-flow", 1);
+    });
+
+    test("Step 2 - Navigate to commands list", async ({ page }) => {
+      await mockCommandsAPIs(page);
+      await page.goto("/");
+      await page.getByRole("link", { name: "Commands" }).click();
+      await expect(page.getByRole("heading", { name: /commands/i })).toBeVisible();
+      await takeJourneyScreenshot(page, "voice-flow", 2);
+    });
+
+    test("Step 3 - Command authoring interface", async ({ page }) => {
+      await mockCommandsAPIs(page);
+      await page.route("**/api/v1/commands/generate", (route) =>
+        route.fulfill({
+          status: 200,
+          json: {
+            name: "open_notepad",
+            display_name: "Open Notepad",
+            description: "Opens Notepad application",
+            actions: [
+              { type: "keypress", keys: "win+r" },
+              { type: "text", value: "notepad" },
+            ],
+          },
+        })
+      );
+      await page.goto("/commands/authoring");
+      await expect(page.getByRole("heading", { name: /command authoring|author/i })).toBeVisible();
+      await takeJourneyScreenshot(page, "voice-flow", 3);
+    });
+
+    test("Step 4 - Command form with description filled", async ({ page }) => {
+      await mockCommandsAPIs(page);
+      await page.goto("/commands/authoring");
+      const descriptionInput = page.locator("input, textarea").filter({ hasText: /description/i }).first();
+      if (await descriptionInput.isVisible()) {
+        await descriptionInput.fill("Opens Notepad application");
+      }
+      await takeJourneyScreenshot(page, "voice-flow", 4);
+    });
+
+    test("Step 5 - Command generated and displayed", async ({ page }) => {
+      await mockCommandsAPIs(page);
+      await page.route("**/api/v1/commands/generate", (route) =>
+        route.fulfill({
+          status: 200,
+          json: {
+            name: "open_notepad",
+            display_name: "Open Notepad",
+            description: "Opens Notepad application",
+            actions: [{ type: "keypress", keys: "win+r" }],
+          },
+        })
+      );
+      await page.goto("/commands/authoring");
+      await page.waitForTimeout(500);
+      await takeJourneyScreenshot(page, "voice-flow", 5);
+    });
+
+    test("Step 6 - Return to commands list", async ({ page }) => {
+      await mockCommandsAPIs(page);
+      await page.goto("/commands");
+      await expect(page.getByRole("heading", { name: /commands/i })).toBeVisible();
+      await takeJourneyScreenshot(page, "voice-flow", 6);
+    });
+
+    test("Step 7 - Voice command execution confirmation", async ({ page }) => {
+      await mockVoiceCommandAPIs(page);
+      await page.goto("/");
+      await page.waitForTimeout(300);
+      await takeJourneyScreenshot(page, "voice-flow", 7);
+    });
+
+    test("Step 8 - Dashboard with updated statistics", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await mockVoiceCommandAPIs(page);
+      await page.goto("/");
+      await expect(page.locator(".stat-value", { hasText: /1247|healthy/i }).first()).toBeVisible();
+      await takeJourneyScreenshot(page, "voice-flow", 8);
+    });
+  });
+
+  // =========================================================================
+  // JOURNEY 3: WEB DASHBOARD INTERACTION (6 steps)
+  // =========================================================================
+  test.describe("Journey 3: Dashboard Interaction Flow", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("Step 1 - Fresh dashboard load", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+      await takeJourneyScreenshot(page, "dashboard", 1);
+    });
+
+    test("Step 2 - Dashboard with health statistics", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      const healthValue = page.locator(".stat-value", { hasText: "Healthy" });
+      await expect(healthValue).toBeVisible();
+      await takeJourneyScreenshot(page, "dashboard", 2);
+    });
+
+    test("Step 3 - Dashboard showing agent contexts", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "dashboard", 3);
+    });
+
+    test("Step 4 - Click to commands from dashboard", async ({ page }) => {
+      await mockCommandsAPIs(page);
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await page.getByRole("link", { name: "Commands" }).click();
+      await expect(page).toHaveURL(/commands/);
+      await takeJourneyScreenshot(page, "dashboard", 4);
+    });
+
+    test("Step 5 - Return to dashboard from commands", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await mockCommandsAPIs(page);
+      await page.goto("/commands");
+      await page.getByRole("link", { name: "Dashboard" }).click();
+      await expect(page).toHaveURL(/dashboard/);
+      await takeJourneyScreenshot(page, "dashboard", 5);
+    });
+
+    test("Step 6 - Final dashboard state", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "dashboard", 6);
+    });
+  });
+
+  // =========================================================================
+  // JOURNEY 4: REAL-TIME FEATURES (5 steps)
+  // =========================================================================
+  test.describe("Journey 4: Real-Time Features Flow", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("Step 1 - Realtime status idle", async ({ page }) => {
+      await page.route("**/api/v1/voice/status", (route) =>
+        route.fulfill({
+          status: 200,
+          json: { is_listening: false, current_input: "", confidence: 0, timestamp: new Date().toISOString() }
+        })
+      );
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "realtime", 1);
+    });
+
+    test("Step 2 - Realtime status listening", async ({ page }) => {
+      await page.route("**/api/v1/voice/status", (route) =>
+        route.fulfill({ status: 200, json: MOCK_REALTIME_STATUS })
+      );
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "realtime", 2);
+    });
+
+    test("Step 3 - Voice command recognized by system", async ({ page }) => {
+      await mockVoiceCommandAPIs(page);
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "realtime", 3);
+    });
+
+    test("Step 4 - Command execution in progress", async ({ page }) => {
+      await page.route("**/api/v1/voice/command", (route) =>
+        route.fulfill({
+          status: 200,
+          json: {
+            ...MOCK_VOICE_COMMAND_RESPONSE,
+            executed_at: new Date().toISOString(),
+            execution_time_ms: 120
+          }
+        })
+      );
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "realtime", 4);
+    });
+
+    test("Step 5 - Command execution completed", async ({ page }) => {
+      await mockVoiceCommandAPIs(page);
+      await page.goto("/");
+      await page.waitForTimeout(300);
+      await takeJourneyScreenshot(page, "realtime", 5);
+    });
+  });
+
+  // =========================================================================
+  // JOURNEY 5: EDGE CASES & ERROR STATES (7 steps)
+  // =========================================================================
+  test.describe("Journey 5: Edge Cases & Error States", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("Step 1 - Unhealthy service status", async ({ page }) => {
+      await page.route("**/health", (route) =>
+        route.fulfill({
+          status: 200,
+          json: {
+            ...HEALTH_RESPONSE,
+            status: "unhealthy",
+            cpu_usage: "98.5",
+            memory_usage: "99.1"
+          }
+        })
+      );
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "errors", 1);
+    });
+
+    test("Step 2 - Voice service connection error state", async ({ page }) => {
+      await mockErrorAPIs(page);
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "errors", 2);
+    });
+
+    test("Step 3 - Empty commands list state", async ({ page }) => {
+      await page.route("**/api/v1/commands", (route) =>
+        route.fulfill({ status: 200, json: [] })
+      );
+      await page.goto("/commands");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "errors", 3);
+    });
+
+    test("Step 4 - Configuration load failure", async ({ page }) => {
+      await page.route("**/api/v1/config", (route) =>
+        route.fulfill({ status: 500, json: { error: "Config load failed" } })
+      );
+      await page.goto("/configuration");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "errors", 4);
+    });
+
+    test("Step 5 - Network idle with no data available", async ({ page }) => {
+      await page.route("**/health", (route) => route.abort());
+      await page.route("**/api/v1/**", (route) => route.abort());
+      await page.goto("/");
+      await page.waitForTimeout(500);
+      await takeJourneyScreenshot(page, "errors", 5);
+    });
+
+    test("Step 6 - Page not found 404 error", async ({ page }) => {
+      await page.goto("/nonexistent-page");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "errors", 6);
+    });
+
+    test("Step 7 - Service degraded performance state", async ({ page }) => {
+      await page.route("**/health", (route) =>
+        route.fulfill({
+          status: 200,
+          json: {
+            ...HEALTH_RESPONSE,
+            status: "degraded",
+            cpu_usage: "85.2",
+            memory_usage: "88.7"
+          }
+        })
+      );
+      await page.goto("/");
+      await page.waitForTimeout(200);
+      await takeJourneyScreenshot(page, "errors", 7);
+    });
+  });
+
+  // =========================================================================
+  // MOBILE RESPONSIVE SCREENSHOTS (5 steps)
+  // =========================================================================
+  test.describe("Mobile Responsive Screenshots", () => {
+    test.use({ viewport: { width: 375, height: 667 } });
+
+    test("Mobile - Dashboard view", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: /dashboard|chatty commander/i })).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      await page.screenshot({
+        path: path.join(JOURNEYS_DIR, "mobile-dashboard.png"),
+        fullPage: true
+      });
+    });
+
+    test("Mobile - Commands list view", async ({ page }) => {
+      await mockCommandsAPIs(page);
+      await page.goto("/commands");
+      await expect(page.getByRole("heading", { name: /commands/i })).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      await page.screenshot({
+        path: path.join(JOURNEYS_DIR, "mobile-commands.png"),
+        fullPage: true
+      });
+    });
+
+    test("Mobile - Configuration view", async ({ page }) => {
+      await mockConfigurationAPIs(page);
+      await page.goto("/configuration");
+      await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      await page.screenshot({
+        path: path.join(JOURNEYS_DIR, "mobile-configuration.png"),
+        fullPage: true
+      });
+    });
+
+    test("Mobile - Setup journey step 1", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await page.waitForLoadState('networkidle');
+      await page.screenshot({
+        path: path.join(JOURNEYS_DIR, "mobile-setup-1.png"),
+        fullPage: true
+      });
+    });
+
+    test("Mobile - Voice flow step 1", async ({ page }) => {
+      await mockVoiceCommandAPIs(page);
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await page.waitForLoadState('networkidle');
+      await page.screenshot({
+        path: path.join(JOURNEYS_DIR, "mobile-voice-flow-1.png"),
+        fullPage: true
+      });
     });
   });
 });

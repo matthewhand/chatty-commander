@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol
 
 try:
@@ -35,6 +36,14 @@ except ImportError:
     MockWakeWordDetector = None  # type: ignore
     WakeWordDetector = None  # type: ignore
     VOICE_AVAILABLE = False
+
+# Computer Vision availability
+try:
+    from chatty_commander.cv.validator import ComputerVisionValidator
+
+    CV_AVAILABLE = True
+except ImportError:
+    CV_AVAILABLE = False
 
 
 class CommandSink(Protocol):
@@ -174,6 +183,120 @@ class DummyAdapter:
         self._started = False
 
 
+class ComputerVisionAdapter:
+    """Adapter for Computer Vision module.
+
+    Provides screenshot validation and visual regression testing capabilities.
+    Can be enabled via --enable-computer-vision flag.
+    """
+
+    name = "computer_vision"
+
+    def __init__(
+        self,
+        screenshots_dir: str | Path = "docs/screenshots",
+        reference_dir: str | Path | None = None,
+        threshold: float = 0.95,
+        on_validation: Callable[[dict], None] | None = None,
+    ) -> None:
+        self._screenshots_dir = Path(screenshots_dir)
+        self._reference_dir = Path(reference_dir) if reference_dir else None
+        self._threshold = threshold
+        self._on_validation = on_validation
+        self._validator: ComputerVisionValidator | None = None
+        self._started = False
+
+    def start(self) -> None:
+        """Start the Computer Vision adapter."""
+        if self._started:
+            return
+
+        if not CV_AVAILABLE:
+            self._validator = None
+        else:
+            self._validator = ComputerVisionValidator(
+                screenshots_dir=self._screenshots_dir,
+                reference_dir=self._reference_dir,
+                threshold=self._threshold,
+            )
+
+        self._started = True
+
+    def stop(self) -> None:
+        """Stop the Computer Vision adapter."""
+        self._started = False
+
+    def validate_screenshot(
+        self,
+        image_path: str | Path,
+        expected_texts: list[str] | None = None,
+    ) -> dict | None:
+        """Validate a screenshot using Computer Vision.
+
+        Args:
+            image_path: Path to the screenshot to validate
+            expected_texts: Optional list of expected texts
+
+        Returns:
+            Validation result as dictionary, or None if CV not available
+        """
+        if not CV_AVAILABLE or self._validator is None:
+            return None
+
+        result = self._validator.validate_screenshot(
+            image_path=image_path,
+            expected_texts=expected_texts,
+            threshold=self._threshold,
+        )
+
+        if self._on_validation:
+            self._on_validation(result.to_dict())
+
+        return result.to_dict()
+
+    def compare_screenshots(
+        self,
+        current_path: str | Path,
+        reference_path: str | Path,
+    ) -> dict | None:
+        """Compare two screenshots.
+
+        Args:
+            current_path: Path to current screenshot
+            reference_path: Path to reference screenshot
+
+        Returns:
+            Comparison result as dictionary, or None if CV not available
+        """
+        if not CV_AVAILABLE or self._validator is None:
+            return None
+
+        result = self._validator.compare_screenshots(
+            current_path=current_path,
+            reference_path=reference_path,
+            threshold=self._threshold,
+        )
+
+        return result.to_dict()
+
+    def validate_directory(self) -> dict | None:
+        """Validate all screenshots in the configured directory.
+
+        Returns:
+            Dictionary of validation results, or None if CV not available
+        """
+        if not CV_AVAILABLE or self._validator is None:
+            return None
+
+        results = self._validator.validate_directory(
+            directory=self._screenshots_dir,
+            reference_dir=self._reference_dir,
+            threshold=self._threshold,
+        )
+
+        return {k: v.to_dict() for k, v in results.items()}
+
+
 class OpenWakeWordAdapter:
     """Adapter for OpenWakeWord wake word detection."""
 
@@ -305,7 +428,17 @@ class ModeOrchestrator:
 
         # Apply conditional logic
         if self.flags.enable_computer_vision:
-            selected.append(DummyAdapter("computer_vision"))
+            if CV_AVAILABLE:
+                try:
+                    adapter = ComputerVisionAdapter(
+                        screenshots_dir="docs/screenshots",
+                        threshold=0.95,
+                    )
+                    selected.append(adapter)
+                except Exception:
+                    selected.append(DummyAdapter("computer_vision"))
+            else:
+                selected.append(DummyAdapter("computer_vision"))
 
         # Apply conditional logic
         if self.flags.enable_discord_bridge and getattr(

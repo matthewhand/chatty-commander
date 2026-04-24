@@ -1,0 +1,181 @@
+name: Visual Regression Testing
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'webui/frontend/src/**'
+      - 'src/chatty_commander/web/**'
+      - 'docs/screenshots/**'
+
+concurrency:
+  group: visual-regression-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  visual-regression:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: Install Python dependencies
+        run: |
+          pip install uv
+          uv sync --frozen
+          pip install opencv-python-headless pillow pytesseract scikit-image numpy
+
+      - name: Start backend (test mode)
+        run: |
+          uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth &
+          sleep 8
+          curl -s -o /dev/null -w "Backend status: %{http_code}" http://localhost:8100/api/v1/status || true
+        env:
+          PYTHONPATH: src
+          UV_SYSTEM_PYTHON: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "webui/frontend/package-lock.json"
+
+      - name: Install frontend dependencies
+        working-directory: webui/frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: webui/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Create directories for screenshots
+        run: |
+          mkdir -p screenshots/current
+          mkdir -p screenshots/reference
+          mkdir -p screenshots/diff
+
+      - name: Generate current screenshots
+        working-directory: webui/frontend
+        run: |
+          npx playwright test tests/e2e/screenshots.spec.ts --reporter=list
+        env:
+          BASE_URL: http://localhost:8100
+
+      - name: Copy current screenshots for comparison
+        run: |
+          # Copy generated screenshots to current directory
+          cp -r docs/screenshots/*.png screenshots/current/ 2>/dev/null || true
+          cp -r docs/screenshots/journeys/*.png screenshots/current/ 2>/dev/null || true
+
+      - name: Checkout reference screenshots from main branch
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          git checkout origin/main -- docs/screenshots/ 2>/dev/null || true
+          # Copy reference screenshots
+          mkdir -p screenshots/reference
+          cp -r docs/screenshots/*.png screenshots/reference/ 2>/dev/null || true
+          cp -r docs/screenshots/journeys/*.png screenshots/reference/ 2>/dev/null || true
+
+      - name: Run visual regression validation
+        id: validation
+        run: |
+          mkdir -p report
+          python scripts/validate_screenshots.py \
+            --current screenshots/current \
+            --reference screenshots/reference \
+            --threshold ${{ vars.VISUAL_REGRESSION_THRESHOLD || 0.95 }} \
+            --output report \
+            --generate-diff-images
+          VALIDATION_EXIT_CODE=$?
+          echo "VALIDATION_EXIT_CODE=$VALIDATION_EXIT_CODE" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Upload validation report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-regression-report
+          path: report/
+          retention-days: 7
+
+      - name: Upload diff images
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-regression-diffs
+          path: screenshots/diff/
+          retention-days: 7
+
+      - name: Create PR comment with results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read summary
+            let summary = { status: 'ERROR', threshold: 'N/A', total: 0, passed: 0, failed: 0, failures: [] };
+            try {
+              const summaryPath = path.join('report', 'summary.json');
+              if (fs.existsSync(summaryPath)) {
+                summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+              }
+            } catch (e) {
+              console.log('Error reading summary:', e.message);
+            }
+            
+            // Generate report
+            let report = '## :robot: Visual Regression Report\n\n';
+            report += `:bar_chart: **Status:** \`${summary.status}\`\n`;
+            report += `:gear: **Threshold:** \`${summary.threshold}\`\n`;
+            report += `:checkered_flag: **Total:** \`${summary.total}\` | **Passed:** \`${summary.passed}\` | **Failed:** \`${summary.failed}\`\n\n`;
+            
+            if (summary.failed > 0) {
+              report += '### :x: Failed Comparisons\n';
+              summary.failures.forEach(f => {
+                const ssim = typeof f.ssim === 'number' ? f.ssim.toFixed(4) : 'N/A';
+                report += `- \`${f.filename}\`: SSIM=\`${ssim}\`\n`;
+              });
+              report += '\n';
+            }
+            
+            if (summary.passed > 0 && summary.failed === 0) {
+              report += ':tada: **All visual regression tests passed!**\n\n';
+            }
+            
+            // Add links to artifacts
+            report += `:package: [View Full Report](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})\n`;
+            report += `:art: [Download Diff Images](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/suites/${process.env.GITHUB_RUN_ID}/artifacts/${{ steps.validation.outcome == 'success' && '1' || '2' }})\n`;
+            
+            // Post comment
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+        
+      - name: Fail if visual regression detected
+        if: steps.validation.outputs.VALIDATION_EXIT_CODE != '0'
+        run: |
+          echo "::error::Visual regression detected above threshold"
+          echo "Check the PR comment and artifacts for details"
+          exit 1
