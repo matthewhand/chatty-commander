@@ -19,7 +19,7 @@
     "agent_summaries": [
       {
         "name": "CodeQuality",
-        "score": 35,
+        "score": 37,
         "rating": "F (Critical)",
         "issues": 16,
         "status": "\u2705"
@@ -64,18 +64,18 @@
   "agent_results": [
     {
       "name": "CodeQuality",
-      "score": 35,
+      "score": 37,
       "rating": "F (Critical)",
       "metrics": {
         "complexity": {
-          "total_functions": 289,
-          "avg_complexity": 3.64,
-          "high_complexity_count": 14,
-          "score": 27
+          "total_functions": 282,
+          "avg_complexity": 3.62,
+          "high_complexity_count": 13,
+          "score": 32
         },
         "type_coverage": {
           "param_coverage": 47.6,
-          "return_coverage": 75.8,
+          "return_coverage": 75.9,
           "overall": 61.7,
           "score": 61
         },
@@ -83,7 +83,7 @@
           "issues_found": 100,
           "score": 0
         },
-        "overall": 35,
+        "overall": 37,
         "grade": "F (Critical)"
       },
       "issue_count": 16
@@ -168,8 +168,8 @@
       "rating": "C (Acceptable)",
       "metrics": {
         "docstrings": {
-          "total_public": 226,
-          "documented": 226,
+          "total_public": 219,
+          "documented": 219,
           "coverage": 100.0,
           "score": 100
         },
@@ -180,9 +180,9 @@
           "score": 74
         },
         "comments": {
-          "total_lines": 22509,
-          "comment_lines": 4913,
-          "ratio": 21.83,
+          "total_lines": 22559,
+          "comment_lines": 4914,
+          "ratio": 21.78,
           "score": 65
         },
         "architecture": {
@@ -221,9 +221,9 @@
       "agent": "CodeQuality",
       "priority": "CRITICAL",
       "category": "COMPLEXITY",
-      "issue": "handle_message() has complexity 18",
-      "file": "src/chatty_commander/advisors/service.py",
-      "line": 112,
+      "issue": "_get_command_action() has complexity 18",
+      "file": "src/chatty_commander/app/command_executor.py",
+      "line": 135,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -233,9 +233,9 @@
       "agent": "CodeQuality",
       "priority": "CRITICAL",
       "category": "COMPLEXITY",
-      "issue": "_get_command_action() has complexity 18",
+      "issue": "validate_command() has complexity 23",
       "file": "src/chatty_commander/app/command_executor.py",
-      "line": 135,
+      "line": 243,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -245,9 +245,9 @@
       "agent": "CodeQuality",
       "priority": "CRITICAL",
       "category": "COMPLEXITY",
-      "issue": "validate_command() has complexity 23",
-      "file": "src/chatty_commander/app/command_executor.py",
-      "line": 243,
+      "issue": "create_models_router() has complexity 18",
+      "file": "src/chatty_commander/web/routes/models.py",
+      "line": 144,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
@@ -319,7 +319,7 @@
       "category": "COMPLEXITY",
       "issue": "select_adapters() has complexity 11",
       "file": "src/chatty_commander/app/orchestrator.py",
-      "line": 272,
+      "line": 273,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"

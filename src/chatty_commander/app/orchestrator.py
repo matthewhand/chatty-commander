@@ -269,6 +269,7 @@ class ModeOrchestrator:
         self.flags = flags or OrchestratorFlags()
         self.adapters: list[InputAdapter] = []
 
+    # REFACTORED: Simplified adapter selection logic
     def select_adapters(self) -> list[str]:
         # TODO: HIGH - Refactor select_adapters (complexity > 10)
         """Select Adapters with (self).

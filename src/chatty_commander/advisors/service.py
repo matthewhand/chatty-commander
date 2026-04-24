@@ -86,7 +86,56 @@ class AdvisorsService:
             persist_path=mem_cfg.get("persistence_path") or mem_cfg.get("persist_path"),
         )
         provider_builder = _get_provider_builder()
-        self.provider = provider_builder(base_cfg.get("providers", {}))
+        self.provider = provider
+    def _get_persona_config(self, context) -> dict:
+        """Extract persona configuration from context or config."""
+        personas_dict = self.config.get("personas", {}) or self.config.get(
+            "context", {}
+        ).get("personas", {})
+        persona_config = personas_dict.get(context.persona_id, {})
+        
+        if isinstance(persona_config, str):
+            return {"prompt": persona_config, "name": context.persona_id}
+        return persona_config
+
+    def _generate_llm_response(self, user_input: str, persona_config: dict, context) -> str:
+        """Generate LLM response with fallback handling."""
+        enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
+            user_input=user_input,
+            user_id=f"{context.platform}:{context.channel}:{context.user}",
+            persona_config=persona_config,
+            current_mode=getattr(self.config, "current_mode", "chatty"),
+        )
+        
+        if hasattr(self, "llm_manager") and self.llm_manager:
+            return self.llm_manager.generate_response(
+                enhanced_prompt,
+                model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
+                max_tokens=self.config.get("max_tokens", 150),
+                temperature=self.config.get("temperature", 0.7)
+            )
+        else:
+            return self.provider.generate(enhanced_prompt)
+
+    def _handle_mode_switch(self, response: str) -> str:
+        """Process SWITCH_MODE directives in LLM response."""
+        if "SWITCH_MODE:" not in response:
+            return response
+            
+        lines = response.split("\n")
+        for line in lines:
+            if line.strip().startswith("SWITCH_MODE:"):
+                _, target = line.strip().split(":", 1)
+                try:
+                    from ..app.state_manager import StateManager
+                    sm = StateManager()
+                    sm.change_state(target.strip())
+                    response = response.replace(line, f"✓ Switched to {target.strip()} mode")
+                except Exception as e:
+                    response = response.replace(line, f"✗ Switch failed: {e}")
+        return response
+
+_builder(base_cfg.get("providers", {}))
         self.context_manager = ContextManager(base_cfg.get("context", {}))
 
         # Logic flow

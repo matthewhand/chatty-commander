@@ -306,47 +306,51 @@ class EnhancedVoiceProcessor:
                 text="", confidence=0.0, duration=0.0, timestamp=start_time
             )
 
+    def _apply_noise_reduction(self, audio_data: np.ndarray) -> np.ndarray:
+        """Apply noise reduction to audio data if enabled and available."""
+        if not (self.noise_reducer and self.config.noise_reduction_enabled):
+            return audio_data
+
+        if callable(self.noise_reducer):
+            return self.noise_reducer(audio_data)
+        else:
+            # Using noisereduce library
+            return self.noise_reducer.reduce_noise(
+                y=audio_data, sr=self.config.sample_rate
+            )
+
+    def _detect_speech_activity(self, audio_chunk: bytes) -> bool:
+        """Detect speech activity in audio chunk using VAD."""
+        if not self.vad_enabled:
+            return True
+
+        if callable(self.vad):
+            return self.vad(audio_chunk)
+        else:
+            # Using webrtcvad
+            return self.vad.is_speech(audio_chunk, self.config.sample_rate)
+
+    def _update_speech_state(self, speech_detected: bool) -> None:
+        """Update internal speech detection state counters."""
+        if speech_detected:
+            self.silence_counter = 0
+            if not self.speech_detected:
+                self.speech_detected = True
+        else:
+            self.silence_counter += 1
+
     def _process_audio_chunk(self, audio_chunk: bytes) -> VoiceResult | None:
-        """Process a single audio chunk."""
+        """Process a single audio chunk through noise reduction and VAD."""
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             # Convert to numpy array
             audio_data = np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32)
 
             # Apply noise reduction
-            if self.noise_reducer and self.config.noise_reduction_enabled:
-            # TODO: Document this logic
-                if callable(self.noise_reducer):
-                # TODO: Document this logic
-                    audio_data = self.noise_reducer(audio_data)
-                else:
-                    # Using noisereduce library
-                    audio_data = self.noise_reducer.reduce_noise(
-                        y=audio_data, sr=self.config.sample_rate
-                    )
+            audio_data = self._apply_noise_reduction(audio_data)
 
             # Voice activity detection
-            if self.vad_enabled:
-            # TODO: Document this logic
-                if callable(self.vad):
-                # TODO: Document this logic
-                    speech_detected = self.vad(audio_chunk)
-                else:
-                    # Using webrtcvad
-                    speech_detected = self.vad.is_speech(
-                        audio_chunk, self.config.sample_rate
-                    )
-
-                # Logic flow
-                if speech_detected:
-                # TODO: Document this logic
-                    self.silence_counter = 0
-                    # Logic flow
-                    if not self.speech_detected:
-                    # TODO: Document this logic
-                        self.speech_detected = True
-                        # Logic flow
+            speech_detected = self._detect_speech_activity(audio_chunk)
+            self._update_speech_state(speech_detected)
                         if self.on_speech_start:
                         # TODO: Document this logic
                             self.on_speech_start()
