@@ -759,6 +759,68 @@ test.describe("Documentation Screenshots", () => {
       await takeJourneyScreenshot(page, "config", 8);
     });
   });
+
+  // =========================================================================
+  // JOURNEY 8: Authentication & Theme Flow (8 steps)
+  // Tests login, theme switching, and user session management
+  // =========================================================================
+  test.describe("Journey 8: Authentication & Theme Flow", () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("Step 1 - Navigate to Login Page", async ({ page }) => {
+      await page.goto("/login");
+      await expect(page.getByRole("heading", { name: /login|sign in/i })).toBeVisible();
+      await takeJourneyScreenshot(page, "auth", 1);
+    });
+
+    test("Step 2 - Login form with credentials", async ({ page }) => {
+      await page.goto("/login");
+      await page.getByLabel(/username|email/i).first().fill("testuser");
+      await page.getByLabel(/password/i).first().fill("TestPass123");
+      await takeJourneyScreenshot(page, "auth", 2);
+    });
+
+    test("Step 3 - Login form with dark theme", async ({ page }) => {
+      await page.goto("/login");
+      await expect(page.locator("body.dark") || page.locator(".dark-theme")).toBeVisible();
+      await takeJourneyScreenshot(page, "auth", 3);
+    });
+
+    test("Step 4 - Login form with light theme", async ({ page }) => {
+      await page.goto("/login");
+      await expect(page.locator("body.light") || page.locator(".light-theme") || page.locator("body:not(.dark)")).toBeVisible();
+      await takeJourneyScreenshot(page, "auth", 4);
+    });
+
+    test("Step 5 - Theme toggle control", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await page.getByRole("button", { name: /theme|toggle|dark|light/i }).first().click();
+      await takeJourneyScreenshot(page, "auth", 5);
+    });
+
+    test("Step 6 - User logged in state", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await expect(page.getByRole("button", { name: /logout|sign out/i })).toBeVisible();
+      await takeJourneyScreenshot(page, "auth", 6);
+    });
+
+    test("Step 7 - User profile/settings accessible", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/");
+      await expect(page.getByRole("link", { name: /profile|settings|user/i })).toBeVisible();
+      await takeJourneyScreenshot(page, "auth", 7);
+    });
+
+    test("Step 8 - Theme preference persisted", async ({ page }) => {
+      await mockDashboardAPIs(page);
+      await page.goto("/configuration");
+      await page.getByRole("link", { name: /dashboard/i }).first().click();
+      await expect(page.locator("body.dark") || page.locator("body.light")).toBeVisible();
+      await takeJourneyScreenshot(page, "auth", 8);
+    });
+  });
   // =========================================================================
   // MOBILE RESPONSIVE SCREENSHOTS (5 steps)
   // =========================================================================
