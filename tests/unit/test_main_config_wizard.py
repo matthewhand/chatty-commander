@@ -267,7 +267,7 @@ class TestTestMode:
 
             from chatty_commander.cli.cli import cli_main
 
-            result = cli_main()
+            cli_main()
             # ModelManager should be called with mock_models=True
             assert mock_mm.call_args[1]["mock_models"] is True
 
@@ -278,7 +278,7 @@ class TestCRUDIntegration:
     def test_exec_valid_command(self, monkeypatch):
         """exec with valid command should execute."""
         monkeypatch.setattr(sys, "argv", ["main.py", "exec", "test_cmd"])
-        
+
         mock_executor = MagicMock()
         mock_config = MagicMock()
         mock_config.model_actions = {"test_cmd": {"shell": "echo test"}}
