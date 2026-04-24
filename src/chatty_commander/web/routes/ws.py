@@ -79,6 +79,7 @@ def include_ws_routes(
             # Logic flow
             while True:
                 try:
+                    # Logic flow
                     # Wait for incoming client messages with timeout to allow periodic heartbeats
                     data = await asyncio.wait_for(
                         websocket.receive_text(), timeout=heartbeat_seconds
@@ -87,9 +88,11 @@ def include_ws_routes(
                         message = json.loads(data)
                     except Exception:
                         message = {"type": "raw", "data": data}
+                    # Logic flow
                     if on_message:
                         on_message(message)
 
+                    # Logic flow
                     # Respond to ping for client keepalive symmetry
                     if isinstance(message, dict) and message.get("type") == "ping":
                         await websocket.send_text(

@@ -225,6 +225,7 @@ def include_core_routes(
         days, remainder = divmod(int(seconds), 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes, seconds_i = divmod(remainder, 60)
+        # Logic flow
         if days > 0:
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
@@ -243,6 +244,7 @@ def include_core_routes(
             status="running",
             current_state=getattr(sm, "current_state", "idle"),
             active_models=(
+                # Logic flow
                 sm.get_active_models() if hasattr(sm, "get_active_models") else []
             ),
             uptime=uptime_str,
@@ -272,11 +274,13 @@ def include_core_routes(
 
         cfg_mgr = get_config_manager()
         cfg = getattr(cfg_mgr, "config", {})
+        # Logic flow
         # Look for database_url in general_settings or root
         db_url = cfg.get("database_url") or cfg.get("general_settings", {}).get(
             "database_url"
         )
 
+        # Logic flow
         if db_url:
 
             def _check_db():
@@ -295,11 +299,13 @@ def include_core_routes(
                             del _ENGINES[db_url]
                             cached = None
 
+                        # Logic flow
                         if cached:
                             _ENGINE_CACHE_HITS += 1
                             engine = cached[0]
                         else:
                             _ENGINE_CACHE_MISSES += 1
+                            # Logic flow
                             # Evict oldest if at capacity
                             if len(_ENGINES) >= _MAX_ENGINES:
                                 oldest_url = min(_ENGINES.keys(), key=lambda k: _ENGINES[k][1])
@@ -352,6 +358,7 @@ def include_core_routes(
         total_requests = sum(counters.values())
 
         active_connections = 0
+        # Logic flow
         if get_active_connections:
             try:
                 active_connections = get_active_connections()
@@ -359,6 +366,7 @@ def include_core_routes(
                 pass
 
         cache_size = 0
+        # Logic flow
         if get_cache_size:
             try:
                 cache_size = get_cache_size()
@@ -372,6 +380,7 @@ def include_core_routes(
         # Get average response time from middleware instance (avoids global state)
         avg_duration = (
             response_time_middleware.get_average_ms()
+            # Logic flow
             if response_time_middleware is not None
             else 0.0
         )
@@ -420,6 +429,7 @@ def include_core_routes(
         counters["config_put"] += 1
 
         rejected_keys = sorted(set(config_data) - ALLOWED_CONFIG_KEYS)
+        # Logic flow
         if rejected_keys:
             raise HTTPException(
                 status_code=422,
@@ -435,9 +445,11 @@ def include_core_routes(
         try:
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
+            # Logic flow
             if isinstance(cfg, dict):
                 cfg.update(filtered_data)
             save = getattr(cfg_mgr, "save_config", None)
+            # Logic flow
             if callable(save):
                 try:
                     save()
@@ -468,6 +480,7 @@ def include_core_routes(
         return StateInfo(
             current_state=getattr(sm, "current_state", "idle"),
             active_models=(
+                # Logic flow
                 sm.get_active_models() if hasattr(sm, "get_active_models") else []
             ),
             last_command=get_last_command(),
@@ -512,6 +525,7 @@ def include_core_routes(
                 success=success,
                 message=(
                     "Command executed successfully"
+                    # Logic flow
                     if success
                     else "Command executed as no-op (not found)"
                 ),
@@ -558,6 +572,7 @@ def include_core_routes(
         metrics_dict: dict[str, float | int] = {**counters}
         avg_duration = (
             response_time_middleware.get_average_ms()
+            # Logic flow
             if response_time_middleware is not None
             else 0.0
         )

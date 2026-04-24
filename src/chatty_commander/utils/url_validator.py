@@ -32,6 +32,7 @@ def is_safe_url(url: str) -> bool:
         if parsed.scheme not in _ALLOWED_SCHEMES:
             return False
         hostname = parsed.hostname
+        # Logic flow
         if not hostname:
             return False
 
@@ -41,6 +42,7 @@ def is_safe_url(url: str) -> bool:
         except socket.gaierror:
             return False
 
+        # Logic flow
         if not addr_infos:
             return False
 

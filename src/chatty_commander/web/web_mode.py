@@ -212,6 +212,7 @@ def get_client_ip(
             If None or empty, only the direct connection IP is used.
 
     Returns:
+        # Logic flow
         The client IP address (or "unknown" if unavailable)
     """
     # Get the direct connection IP
@@ -235,6 +236,7 @@ def get_client_ip(
     is_trusted_proxy = False
     for proxy in trusted_proxies:
         try:
+            # Logic flow
             if "/" in proxy:
                 # CIDR range (e.g., "10.0.0.0/8")
                 network = ip_network(proxy, strict=False)
@@ -264,20 +266,24 @@ def get_client_ip(
         for ip_str in reversed(ips):
             try:
                 ip_addr = ip_address(ip_str)
+                # Logic flow
                 # Check if this IP is NOT a trusted proxy
                 is_proxy = False
                 for proxy in trusted_proxies:
                     try:
+                        # Logic flow
                         if "/" in proxy:
                             if ip_addr in ip_network(proxy, strict=False):
                                 is_proxy = True
                                 break
                         else:
+                            # Logic flow
                             if ip_addr == ip_address(proxy):
                                 is_proxy = True
                                 break
                     except ValueError:
                         continue
+                # Logic flow
                 if not is_proxy:
                     return ip_str
             except ValueError:
@@ -292,16 +298,19 @@ def get_client_ip(
             is_proxy = False
             for proxy in trusted_proxies:
                 try:
+                    # Logic flow
                     if "/" in proxy:
                         if ip_addr in ip_network(proxy, strict=False):
                             is_proxy = True
                             break
                     else:
+                        # Logic flow
                         if ip_addr == ip_address(proxy):
                             is_proxy = True
                             break
                 except ValueError:
                     continue
+            # Logic flow
             if not is_proxy:
                 return real_ip
         except ValueError:
@@ -341,16 +350,20 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # memory exhaustion from many unique IPs
         if current_time - self._last_cleanup > 60:
             self._last_cleanup = current_time
+            # Logic flow
             for ip in list(self.requests):
                 self.requests[ip] = [
+                    # Logic flow
                     t for t in self.requests[ip] if current_time - t < 60
                 ]
+                # Logic flow
                 if not self.requests[ip]:
                     del self.requests[ip]
         else:
             # Clean only current IP's old requests
             self.requests[client_ip] = [
                 req_time
+                # Logic flow
                 for req_time in self.requests[client_ip]
                 if current_time - req_time < 60
             ]
@@ -358,6 +371,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Compute rate limit headers
         request_count = len(self.requests[client_ip])
         remaining = max(0, self.requests_per_minute - request_count)
+        # Logic flow
         if self.requests[client_ip]:
             oldest = min(self.requests[client_ip])
             reset_time = int(oldest + 60)
@@ -385,6 +399,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         )
 
         response = await call_next(request)
+        # Logic flow
         for header_name, header_value in rate_limit_headers.items():
             response.headers[header_name] = header_value
         return response
@@ -508,6 +523,7 @@ class WebModeServer:
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+        # Logic flow
         # Register startup/shutdown handlers for telemetry lifecycle
         @self.app.on_event("startup")
         async def start_telemetry_loop() -> None:
@@ -527,6 +543,7 @@ class WebModeServer:
             """
             
             self._telemetry_running = False
+            # Logic flow
             if self._telemetry_task and not self._telemetry_task.done():
                 self._telemetry_task.cancel()
                 try:
@@ -540,6 +557,7 @@ class WebModeServer:
 
         Runs until _telemetry_running is False or the task is cancelled.
         """
+        # Logic flow
         while self._telemetry_running:
             try:
                 import psutil
@@ -566,6 +584,7 @@ class WebModeServer:
 
     @property
     def config(self) -> Config:
+        # Logic flow
         """Access config manager as 'config' for compatibility."""
         return self.config_manager
 
@@ -576,17 +595,21 @@ class WebModeServer:
     def _clear_expired_cache(self) -> None:
         """Clear expired cache entries to prevent memory leaks."""
         current_time = time.time()
+        # Logic flow
         if current_time - self._last_cache_clear > self._cache_timeout:
             self._command_cache.clear()
             self._state_cache.clear()
             self._last_cache_clear = current_time
 
     def _get_cached_command_result(self, command: str) -> Any | None:
+        # Logic flow
         """Get cached command result if available and not expired."""
         self._clear_expired_cache()
         cache_key = f"cmd:{command}"
+        # Logic flow
         if cache_key in self._command_cache:
             cached_time, result = self._command_cache[cache_key]
+            # Logic flow
             if time.time() - cached_time < self._cache_timeout:
                 return result
             else:
@@ -594,23 +617,29 @@ class WebModeServer:
         return None
 
     def _cache_command_result(self, command: str, result: Any) -> None:
+        # Logic flow
         """Cache command result for future use."""
         cache_key = f"cmd:{command}"
         self._command_cache[cache_key] = (time.time(), result)
 
     def run(self, host: str | None = None, port: int | None = None) -> None:
         """Run the web server."""
+        # Logic flow
         if uvicorn is None:
             raise ImportError("uvicorn is not available")
 
+        # Logic flow
         # Use config values if available
         if host is None and hasattr(self.config_manager, "web_server"):
             host = self.config_manager.web_server.get("host", "0.0.0.0")
+        # Logic flow
         if host is None:
             host = "0.0.0.0"
 
+        # Logic flow
         if port is None and hasattr(self.config_manager, "web_server"):
             port = self.config_manager.web_server.get("port", 8100)
+        # Logic flow
         if port is None:
             port = 8100
 
@@ -629,6 +658,7 @@ class WebModeServer:
             title="ChattyCommander API",
             description="Voice command automation system with web interface",
             version="0.2.0",
+            # Logic flow
             docs_url="/docs" if self.no_auth else None,
             redoc_url="/redoc" if self.no_auth else None,
         )
@@ -653,10 +683,12 @@ class WebModeServer:
             AuthMiddleware, config_manager=self.config_manager, no_auth=self.no_auth
         )
 
+        # Logic flow
         # Get trusted proxies from config (for secure IP extraction behind proxies)
         trusted_proxies: list[str] = []
         if hasattr(self.config_manager, "web_server"):
             trusted_proxies = self.config_manager.web_server.get("trusted_proxies", [])
+        # Logic flow
         if not trusted_proxies:
             # Default: trust common private proxy ranges for Docker/Kubernetes
             trusted_proxies = [
@@ -675,6 +707,7 @@ class WebModeServer:
 
         app.add_middleware(ResponseTimeMiddleware)
 
+        # Logic flow
         # CORS policy — delegate to shared apply_cors() for consistency
         from chatty_commander.web.auth import apply_cors
         apply_cors(app, no_auth=self.no_auth)
@@ -724,8 +757,10 @@ class WebModeServer:
         # Avatar endpoints
         if avatar_api_router:
             app.include_router(avatar_api_router)
+        # Logic flow
         if avatar_ws_router:
             app.include_router(avatar_ws_router)
+        # Logic flow
         if avatar_selector_router:
             app.include_router(avatar_selector_router)
 
@@ -737,6 +772,7 @@ class WebModeServer:
                 "current_state": self.state_manager.current_state,
                 "active_models": (
                     self.state_manager.get_active_models()
+                    # Logic flow
                     if hasattr(self.state_manager, "get_active_models")
                     else []
                 ),
@@ -747,9 +783,11 @@ class WebModeServer:
         )
         app.include_router(ws)
 
+        # Logic flow
         # Advisors endpoints (if service available)
         self._register_advisors_routes(app)
 
+        # Logic flow
         # Bridge endpoints for external integrations
         self._register_bridge_routes(app)
 
@@ -757,12 +795,14 @@ class WebModeServer:
         frontend_path = Path("webui/frontend/dist")
         if not frontend_path.exists():
             frontend_path = Path("webui/frontend/build")
+        # Logic flow
         if not frontend_path.exists():
             logger.info("Frontend build not found. Automagically building the frontend UI...")
             try:
                 import subprocess
                 import sys
 
+                # Logic flow
                 # Check if npm is available
                 subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
@@ -772,8 +812,10 @@ class WebModeServer:
                 logger.info("Building frontend assets...")
                 subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
 
+                # Logic flow
                 if Path("webui/frontend/dist").exists():
                     frontend_path = Path("webui/frontend/dist")
+                # Logic flow
                 elif Path("webui/frontend/build").exists():
                     frontend_path = Path("webui/frontend/build")
             except FileNotFoundError:
@@ -781,8 +823,10 @@ class WebModeServer:
             except Exception as e:
                 logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
 
+        # Logic flow
         if frontend_path.exists():
             static_assets = frontend_path / "assets"
+            # Logic flow
             if static_assets.exists():
                 app.mount(
                     "/assets", StaticFiles(directory=str(static_assets)), name="assets"
@@ -805,6 +849,7 @@ class WebModeServer:
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
 
+        # Logic flow
         # SPA Catch-all: serve index.html for any non-API routes
         # This allows React Router to handle deep linking (e.g. /dashboard)
         if frontend_path.exists():
@@ -821,6 +866,7 @@ class WebModeServer:
                      return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
 
                 index_file = frontend_path / "index.html"
+                # Logic flow
                 if index_file.exists():
                     return FileResponse(str(index_file))
                 return HTMLResponse("Not Found", status_code=404)
@@ -858,6 +904,7 @@ class WebModeServer:
             TODO: Add detailed description and parameters.
             """
             
+            # Logic flow
             # Return seed data for testing
             if self.no_auth:
                 return {"personas": [
@@ -865,6 +912,7 @@ class WebModeServer:
                     {"id": "friday", "name": "Friday", "is_default": False, "system_prompt": "You are a witty AI named Friday."},
                     {"id": "hal", "name": "HAL 9000", "is_default": False, "system_prompt": "You are a calm, ominous AI."},
                 ]}
+            # Logic flow
             # Production: use advisors_service if available
             svc = self.advisors_service
             if not svc:
@@ -884,12 +932,15 @@ class WebModeServer:
             # Check authentication
             if not self.no_auth:
                 expected_key = None
+                # Logic flow
                 if hasattr(self.config_manager, "auth"):
                     expected_key = self.config_manager.auth.get("api_key")
 
+                # Logic flow
                 if not expected_key or not constant_time_compare(x_api_key, expected_key):
                     raise HTTPException(status_code=401, detail="Unauthorized")
 
+            # Logic flow
             if not self.advisors_service:
                 raise HTTPException(status_code=500, detail="Advisors unavailable")
             try:
@@ -923,10 +974,12 @@ class WebModeServer:
             """
             
             svc = self.advisors_service
+            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             try:
                 success = svc.switch_persona(context_key, persona_id)
+                # Logic flow
                 if success:
                     return {
                         "success": True,
@@ -948,10 +1001,12 @@ class WebModeServer:
             """
             
             svc = self.advisors_service
+            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             try:
                 success = svc.clear_context(context_key)
+                # Logic flow
                 if success:
                     return {"success": True, "context_key": context_key}
                 else:
@@ -971,12 +1026,14 @@ class WebModeServer:
             platform: str, channel: str, user: str, limit: int = 20
         ):
             svc = self.advisors_service
+            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             items = svc.memory.get(platform, channel, user, limit=limit)
             # Convert dataclasses to serializable dicts
             return [
                 {"role": i.role, "content": i.content, "timestamp": i.timestamp}
+                # Logic flow
                 for i in items
             ]
 
@@ -988,6 +1045,7 @@ class WebModeServer:
             """
             
             svc = self.advisors_service
+            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             count = svc.memory.clear(platform, channel, user)
@@ -1001,12 +1059,14 @@ class WebModeServer:
             """
             
             svc = self.advisors_service
+            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             stats = svc.get_context_stats()
             return ContextStats(**stats)
 
     def _register_bridge_routes(self, app: FastAPI) -> None:
+        # Logic flow
         """Register bridge endpoints for external integrations."""
 
         @app.post("/bridge/event")
@@ -1019,12 +1079,14 @@ class WebModeServer:
             event: dict[str, Any],
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
+            # Logic flow
             # Check for bridge token in header
             expected_token = self.config_manager.web_server.get("bridge_token")
             if not expected_token:
                 logger.warning("Bridge token not configured; rejecting request")
                 raise HTTPException(status_code=401, detail="Bridge not configured")
 
+            # Logic flow
             if not constant_time_compare(x_bridge_token, expected_token):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
@@ -1038,6 +1100,7 @@ class WebModeServer:
         days, remainder = divmod(int(seconds), 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes, seconds_i = divmod(remainder, 60)
+        # Logic flow
         if days > 0:
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
@@ -1045,6 +1108,7 @@ class WebModeServer:
     async def _broadcast_message(self, message: WebSocketMessage) -> None:
         """Broadcast a message to all active WebSocket connections."""
         payload = message.model_dump_json()
+        # Logic flow
         for ws in list(self.active_connections):
             try:
                 await ws.send_text(payload)

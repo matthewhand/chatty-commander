@@ -82,6 +82,8 @@ class CommandExecutor:
     def execute_command(self, command_name: str) -> bool:
         # TODO: REFACTOR - Complexity 16, extract sub-functions
 
+        # TODO: REFACTOR - Complexity 16, extract sub-functions
+
         """
         Execute a configured command by name.
 
@@ -185,6 +187,8 @@ class CommandExecutor:
         finally:
             self.post_execute_hook(command_name)
         return success
+
+    # TODO: REFACTOR - Complexity 15, extract sub-functions
 
     # TODO: REFACTOR - Complexity 15, extract sub-functions
 

@@ -88,12 +88,14 @@ async def list_animations(
     """
     
     dir: str | None = Query(
+        # Logic flow
         default=None, description="Directory to scan for animations (optional)"
     ),
 ) -> dict[str, Any]:
     try:
         base_dir = _default_animations_dir().resolve()
 
+        # Logic flow
         if dir:
             # Resolve the requested path and ensure it's within base_dir
             root = (base_dir / dir).resolve()
@@ -104,16 +106,19 @@ async def list_animations(
         else:
             root = base_dir
 
+        # Logic flow
         if not root.exists() or not root.is_dir():
             raise HTTPException(
                 status_code=404, detail=f"Animations directory not found: {root}"
             )
 
         results: list[dict[str, Any]] = []
+        # Logic flow
         for p in sorted(root.rglob("*")):
             if not p.is_file():
                 continue
             ext = p.suffix.lower()
+            # Logic flow
             if ext not in _ALLOWED_EXTS:
                 continue
             rel = p.relative_to(root)
@@ -161,6 +166,7 @@ async def launch_avatar() -> dict[str, Any]:
             start_new_session=True,  # Detach from parent process
         )
 
+        # Logic flow
         # Don't wait for the process to complete, just check if it started
         await asyncio.sleep(0.1)  # Give it a moment to start
 

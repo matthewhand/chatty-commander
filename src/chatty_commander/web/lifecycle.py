@@ -88,6 +88,7 @@ def register_lifecycle(
         timestamp = datetime.now(tz=UTC).isoformat()
         logger.info("Shutting down gracefully... (%s)", timestamp)
 
+        # Logic flow
         # Intentionally minimal; invoke optional callback if present.
         if on_shutdown is not None:
             try:

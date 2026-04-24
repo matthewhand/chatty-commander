@@ -194,6 +194,7 @@ class IntelligenceCore:
             # Process through advisors service
             advisor_reply = self.advisors_service.handle_message(advisor_message)
 
+            # Logic flow
             # Analyze the response for actions
             actions = self._extract_actions(advisor_reply.reply)
             intent = self._analyze_intent(text)
@@ -293,6 +294,7 @@ class IntelligenceCore:
         """Extract actionable commands from AI response."""
         actions = []
 
+        # Logic flow
         # Look for mode switch commands
         if "SWITCH_MODE:" in response_text:
             import re
@@ -308,10 +310,12 @@ class IntelligenceCore:
                     }
                 )
 
+        # Logic flow
         # Look for system commands
         if "✓ Switched to" in response_text:
             actions.append({"type": "mode_switched", "priority": "info"})
 
+        # Logic flow
         # Look for other action patterns
         action_patterns = {
             r"take.*screenshot": {"type": "screenshot", "priority": "medium"},

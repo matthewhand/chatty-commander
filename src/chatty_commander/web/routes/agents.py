@@ -121,6 +121,7 @@ def _load_store() -> None:
             for agent_dict in data.get("agents", []):
                 agent = AgentBlueprint(**agent_dict)
                 _STORE[agent.id] = agent
+                # Logic flow
                 if agent.team_role:
                     _TEAM.setdefault(agent.team_role, []).append(agent.id)
     except Exception as e:
@@ -129,6 +130,7 @@ def _load_store() -> None:
 def _save_store() -> None:
     try:
         _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        # Logic flow
         agents = [asdict(agent) for agent in _STORE.values()]
         data = {"agents": agents}
         with _STORE_PATH.open("w", encoding="utf-8") as f:
@@ -233,6 +235,7 @@ async def create_blueprint(
         uid = str(uuid4())
         ent = AgentBlueprint(id=uid, **model.model_dump())
         _STORE[uid] = ent
+        # Logic flow
         if ent.team_role:
             _TEAM.setdefault(ent.team_role, []).append(uid)
         _save_store()
@@ -282,6 +285,7 @@ async def delete_blueprint(agent_id: str):
     for role, ids in list(_TEAM.items()):
         if agent_id in ids:
             ids.remove(agent_id)
+            # Logic flow
             if not ids:
                 _TEAM.pop(role, None)
     _STORE.pop(agent_id, None)

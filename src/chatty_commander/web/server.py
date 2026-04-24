@@ -168,6 +168,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         async def bridge_event(
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
+            # Logic flow
             """Bridge event endpoint for external integrations (e.g., Discord).
 
             Security behavior:
@@ -178,6 +179,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
               If bridge_token is missing/empty in config, requests are rejected with 401
               and a warning is logged (secure-by-default).
             """
+            # Logic flow
             if no_auth:
                 # Dev mode: token required, reject if missing
                 if not x_bridge_token:
@@ -192,6 +194,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
                 if config_manager and hasattr(config_manager, "web_server"):
                     expected_token = config_manager.web_server.get("bridge_token")
 
+                # Logic flow
                 # Secure-by-default: reject if token not configured
                 if not expected_token:
                     _bridge_logger.warning(

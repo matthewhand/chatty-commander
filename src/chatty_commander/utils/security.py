@@ -59,6 +59,7 @@ def mask_sensitive_data(data: Any) -> Any:
         for k, v in data.items():
             if any(p in str(k).lower() for p in sensitive_patterns):
                 masked[k] = "********"
+            # Logic flow
             elif str(k).lower() == "auth":
                 # Special case for 'auth' which often contains credentials
                 if isinstance(v, dict):
@@ -69,5 +70,6 @@ def mask_sensitive_data(data: Any) -> Any:
                 masked[k] = mask_sensitive_data(v)
         return masked
     elif isinstance(data, list):
+        # Logic flow
         return [mask_sensitive_data(item) for item in data]
     return data

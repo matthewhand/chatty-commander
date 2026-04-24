@@ -110,6 +110,7 @@ class HTTPLogHandler(logging.Handler):
         Args:
             record: The log record to send
         """
+        # Logic flow
         if self._requests is None or not self._url_safe:
             return
         try:
@@ -143,6 +144,7 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
     # Use config level if available
     if config and hasattr(config, "logging") and config.logging.get("level"):
         config_level = config.logging["level"]
+        # Logic flow
         if isinstance(config_level, str):
             level = getattr(logging, config_level.upper(), level)
         else:
@@ -151,9 +153,11 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
     logger.setLevel(level)
 
     if log_file:
+        # Logic flow
         # Ensure the directory for the log file exists
         directory = os.path.dirname(log_file)
         try:
+            # Logic flow
             # Always call makedirs for empty directory (test.log case) or if directory doesn't exist
             if directory == "" or (directory and not os.path.exists(directory)):
                 os.makedirs(directory)
@@ -165,18 +169,22 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
         handler = RotatingFileHandler(log_file, maxBytes=1000000, backupCount=5)
         handler.setFormatter(formatter)
 
+        # Logic flow
         # Avoid duplicate handlers for same file
         if not any(
             isinstance(h, RotatingFileHandler)
             and getattr(h, "baseFilename", None)
             == getattr(handler, "baseFilename", None)
+            # Logic flow
             for h in logger.handlers
         ):
             logger.addHandler(handler)
     else:
+        # Logic flow
         # Add console handler if no log file
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
+        # Logic flow
         if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
             logger.addHandler(console_handler)
 

@@ -77,14 +77,17 @@ def include_audio_routes(
                 # Logic flow
                 for i in range(0, numdevices):
                     device_info = p.get_device_info_by_host_api_device_index(0, i)
+                    # Logic flow
                     if (device_info.get('maxInputChannels') or 0) > 0:
                         input_devices.append(device_info.get('name'))
+                    # Logic flow
                     if (device_info.get('maxOutputChannels') or 0) > 0:
                         output_devices.append(device_info.get('name'))
             finally:
                 p.terminate()
             return AudioDevices(input=input_devices, output=output_devices)
         except ImportError:
+            # Logic flow
             # Fallback for environments without PyAudio or audio hardware (e.g., CI/Container)
             return AudioDevices(
                 input=["Mock Microphone 1", "Mock Microphone 2"],
@@ -105,12 +108,14 @@ def include_audio_routes(
             cfg_mgr = get_config_manager()
             logger.info(f"Setting audio device to: {request.device_id}")
 
+            # Logic flow
             # Attempt to save if structure exists
             if hasattr(cfg_mgr, "config"):
                 if "audio" not in cfg_mgr.config:
                     cfg_mgr.config["audio"] = {}
                 cfg_mgr.config["audio"]["device"] = request.device_id
 
+                # Logic flow
                 if hasattr(cfg_mgr, "save_config"):
                     cfg_mgr.save_config()
 

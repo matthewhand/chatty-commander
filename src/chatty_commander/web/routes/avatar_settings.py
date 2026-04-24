@@ -44,6 +44,7 @@ class AvatarConfigModel(BaseModel):
         default=True, description="Whether avatar animations are enabled"
     )
     defaults: dict[str, Any] | None = Field(
+        # Logic flow
         default=None, description="Default settings for avatar"
     )
     state_map: dict[str, str] | None = Field(
@@ -125,6 +126,7 @@ def include_avatar_settings_routes(
             avatar = _get_avatar_cfg(cfg_mgr)
             payload = new_cfg.model_dump(exclude_none=True)
             avatar.update(payload)
+            # Logic flow
             # Persist via cfg_mgr.save_config if available
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):

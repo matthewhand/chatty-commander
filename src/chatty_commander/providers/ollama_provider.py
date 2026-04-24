@@ -60,6 +60,7 @@ class OllamaProvider(LLMProvider):
         self.num_ctx = config.get("num_ctx", 2048)
         self.num_predict = config.get("num_predict", self.max_tokens)
 
+        # Logic flow
         # Session for connection pooling
         self.session = requests.Session()
         self.session.headers.update(
@@ -72,6 +73,7 @@ class OllamaProvider(LLMProvider):
         """Make HTTP request to Ollama API with retries."""
         url = f"{self.base_url}/{endpoint}"
 
+        # Logic flow
         for attempt in range(self.max_retries):
             try:
                 response = self.session.post(
@@ -81,6 +83,7 @@ class OllamaProvider(LLMProvider):
                 return response
             except requests.RequestException as e:
                 logger.warning(f"Ollama request attempt {attempt + 1} failed: {e}")
+                # Logic flow
                 if attempt == self.max_retries - 1:
                     raise
                 time.sleep(2**attempt)  # Exponential backoff
@@ -94,6 +97,7 @@ class OllamaProvider(LLMProvider):
         payload = {
             "model": self.model,
             "prompt": prompt,
+            # Logic flow
             "stream": False,  # Non-streaming for this method
             "options": {
                 "temperature": kwargs.get("temperature", self.temperature),
@@ -108,6 +112,7 @@ class OllamaProvider(LLMProvider):
             response = self._make_request("generate", payload)
             result = response.json()
 
+            # Logic flow
             if "response" in result:
                 return result["response"].strip()  # type: ignore[no-any-return]
             else:
@@ -140,12 +145,15 @@ class OllamaProvider(LLMProvider):
             )
             response.raise_for_status()
 
+            # Logic flow
             for line in response.iter_lines():
                 if line:
                     try:
                         data = json.loads(line.decode("utf-8"))
+                        # Logic flow
                         if "response" in data:
                             yield data["response"]
+                        # Logic flow
                         if data.get("done", False):
                             break
                     except json.JSONDecodeError:
@@ -165,15 +173,19 @@ class OllamaProvider(LLMProvider):
             return f"Error: Failed to generate streaming response - {e}"
 
     def health_check(self) -> bool:
+        # Logic flow
         """Check if Ollama is healthy and the model is available."""
         try:
+            # Logic flow
             # Check if Ollama is running
             response = self.session.get(f"{self.ollama_host}/api/tags", timeout=5)
             response.raise_for_status()
 
             models = response.json().get("models", [])
+            # Logic flow
             model_names = [model.get("name", "") for model in models]
 
+            # Logic flow
             # Check if our model is available
             if self.model not in model_names:
                 logger.warning(
@@ -199,6 +211,7 @@ class OllamaProvider(LLMProvider):
             response = self.session.get(f"{self.ollama_host}/api/tags", timeout=5)
             response.raise_for_status()
             models = response.json().get("models", [])
+            # Logic flow
             return [model.get("name", "") for model in models]
         except Exception as e:
             logger.error(f"Failed to list Ollama models: {e}")
@@ -217,8 +230,10 @@ class OllamaProvider(LLMProvider):
                 if line:
                     try:
                         data = json.loads(line.decode("utf-8"))
+                        # Logic flow
                         if data.get("status"):
                             logger.info(f"Pulling {target_model}: {data['status']}")
+                        # Logic flow
                         if data.get("error"):
                             logger.error(f"Pull error: {data['error']}")
                             return False

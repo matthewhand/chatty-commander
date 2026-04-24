@@ -483,6 +483,8 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
 def run_interactive_shell(
     # TODO: REFACTOR - Complexity 12, extract sub-functions
 
+    # TODO: REFACTOR - Complexity 12, extract sub-functions
+
     config, model_manager, state_manager, command_executor, logger
 ):
     """Run interactive text-based shell mode with tab completion."""
@@ -619,6 +621,8 @@ def run_orchestrator_mode(
     orchestrator.stop()
     return 0
 
+
+    # TODO: REFACTOR - Complexity 38, extract sub-functions
 
     # TODO: REFACTOR - Complexity 38, extract sub-functions
 

@@ -90,10 +90,12 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
             
             return (not labels) or (label in labels)
 
+        # Logic flow
         # Hint-based deterministic classifier (placeholder for LLM)
         for label, keywords in _HINTS.items():
             if not allowed(label):
                 continue
+            # Logic flow
             if any(k in text for k in keywords):
                 return AnimationChooseResponse(label=label, confidence=0.8)
         return AnimationChooseResponse(label="neutral", confidence=0.5)

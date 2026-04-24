@@ -277,6 +277,8 @@ Remember: You're not just answering questions - you're having a conversation wit
     def get_smart_fallback_response(
         # TODO: REFACTOR - Complexity 11, extract sub-functions
 
+        # TODO: REFACTOR - Complexity 11, extract sub-functions
+
         self, user_input: str, intent: str, sentiment: str
     ) -> str:
         """Generate intelligent fallback responses when LLM is unavailable."""

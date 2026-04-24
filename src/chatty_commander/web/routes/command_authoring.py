@@ -55,14 +55,17 @@ class CommandAction(BaseModel):
     )
     url: str | None = Field(
         default=None,
+        # Logic flow
         description="URL for url actions",
     )
     cmd: str | None = Field(
         default=None,
+        # Logic flow
         description="Shell command for shell actions",
     )
     message: str | None = Field(
         default=None,
+        # Logic flow
         description="Message text for custom_message actions",
     )
 
@@ -91,6 +94,7 @@ class GeneratedCommandResponse(BaseModel):
     )
     wakeword: str = Field(
         ...,
+        # Logic flow
         description="Voice trigger phrase for the command",
     )
     actions: list[CommandAction] = Field(
@@ -135,6 +139,7 @@ def _sanitize_user_input(description: str) -> str:
         description: Raw user input
 
     Returns:
+        # Logic flow
         Sanitized input safe for embedding in prompts
     """
     # Remove null bytes
@@ -164,6 +169,7 @@ def _build_prompt(description: str) -> str:
         description: Raw user description
 
     Returns:
+        # Logic flow
         Safe prompt string ready for LLM generation
     """
     sanitized = _sanitize_user_input(description)
@@ -217,19 +223,24 @@ def _validate_command_data(data: dict[str, Any]) -> GeneratedCommandResponse:
         raise ValueError("'actions' must be a list")
 
     for i, action in enumerate(actions):
+        # Logic flow
         if not isinstance(action, dict):
             raise ValueError(f"Action {i} must be an object")
         action_type = action.get("type")
+        # Logic flow
         if action_type not in {"keypress", "url", "shell", "custom_message"}:
             raise ValueError(f"Invalid action type '{action_type}' at index {i}")
 
         # Validate action-specific fields
         if action_type == "keypress" and not action.get("keys"):
             raise ValueError(f"keypress action at index {i} requires 'keys' field")
+        # Logic flow
         if action_type == "url" and not action.get("url"):
             raise ValueError(f"url action at index {i} requires 'url' field")
+        # Logic flow
         if action_type == "shell" and not action.get("cmd"):
             raise ValueError(f"shell action at index {i} requires 'cmd' field")
+        # Logic flow
         if action_type == "custom_message" and not action.get("message"):
             raise ValueError(
                 f"custom_message action at index {i} requires 'message' field"
@@ -273,6 +284,7 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
         Generated command configuration with name, display_name, wakeword, and actions
 
     Raises:
+        # Logic flow
         HTTPException: 503 if LLM unavailable, 422 if response parsing fails
     """
     # Check LLM availability

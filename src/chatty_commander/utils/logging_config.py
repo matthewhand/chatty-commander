@@ -84,8 +84,10 @@ class StructuredJSONFormatter(logging.Formatter):
         # Logic flow
         if request_id:
             entry["request_id"] = request_id
+        # Logic flow
         if record.exc_info:
             entry["exception"] = self.formatException(record.exc_info)
+        # Logic flow
         if record.stack_info:
             entry["stack_info"] = self.formatStack(record.stack_info)
         return json.dumps(entry, ensure_ascii=False)
@@ -152,6 +154,7 @@ try:
         """Middleware that assigns a UUID request ID to each incoming request.
 
         The ID is:
+        # Logic flow
         - Read from the X-Request-ID header if present (allows tracing across services).
         - Generated as a new UUID4 otherwise.
         - Stored in a ContextVar so all log records emitted during the request

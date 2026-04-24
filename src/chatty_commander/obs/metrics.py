@@ -491,6 +491,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
                     )
                 bucket_lbl_inf = {**labels, "le": "+Inf"}
                 lines.append(
+                    # Logic flow
                     f"{name}_bucket{{{_lbl(bucket_lbl_inf)}}} {counts[-1] if counts else 0}"
                 )
                 lines.append(f"{name}_sum{{{_lbl(labels)}}} {sum_val}")

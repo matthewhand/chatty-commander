@@ -59,6 +59,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # TODO: REFACTOR - Complexity 12, extract sub-functions
 
+        # TODO: REFACTOR - Complexity 12, extract sub-functions
+
         # Logic flow
         """Process request and validate authentication if required."""
         # Skip auth in no_auth mode
@@ -68,10 +70,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Decode path to prevent URL-encoded or double-encoded path traversal bypasses
         raw_path = request.url.path
         decoded_path = urllib.parse.unquote(raw_path)
+        # Logic flow
         for _ in range(10):
             if "%" not in decoded_path:
                 break
             new_decoded = urllib.parse.unquote(decoded_path)
+            # Logic flow
             if new_decoded == decoded_path:
                 break
             decoded_path = new_decoded
@@ -83,6 +87,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if path.startswith("//"):
             path = "/" + path.lstrip("/")
 
+        # Logic flow
         # Skip auth for public endpoints
         if (
             any(path == endpoint or path.startswith(endpoint + "/") for endpoint in self.public_endpoints)
@@ -104,10 +109,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
             # Get expected API key from config
             expected_key = None
 
+            # Logic flow
             # Check for DummyConfig pattern (test configs)
             if hasattr(self.config_manager, "auth"):
                 expected_key = self.config_manager.auth.get("api_key")
                 logger.debug("Found auth config in DummyConfig: key present=%s", bool(expected_key))
+            # Logic flow
             # Check for regular Config pattern
             elif hasattr(self.config_manager, "config") and self.config_manager.config:
                 auth_config = self.config_manager.config.get("auth", {})
@@ -118,6 +125,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     "No auth config found, config_manager type: %s", type(self.config_manager).__name__
                 )
 
+            # Logic flow
             # Check if API key is valid
             if not constant_time_compare(api_key, expected_key):
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)

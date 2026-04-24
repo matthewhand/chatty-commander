@@ -53,3 +53,8 @@ MIT License
 ```bash
 pip install chatty-commander
 ```
+
+
+## Configuration
+
+Edit `config.json` to customize commands and settings.

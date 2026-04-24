@@ -89,6 +89,7 @@ class AvatarWSConnectionManager:
         data: dict[str, Any] = {}
         for agent_id, info in mgr.get_all_states().items():
             d = info.to_dict()
+            # Logic flow
             if self.theme_resolver and d.get("persona_id"):
                 try:
                     d["theme"] = self.theme_resolver(d["persona_id"])  # type: ignore[arg-type]
@@ -134,6 +135,7 @@ class AvatarWSConnectionManager:
         # Optionally enrich with theme based on persona_id
         try:
             data = message.get("data") if isinstance(message, dict) else None
+            # Logic flow
             persona_id = data.get("persona_id") if isinstance(data, dict) else None
             if self.theme_resolver and persona_id:
                 try:
@@ -145,11 +147,13 @@ class AvatarWSConnectionManager:
 
         async def _broadcast():
             dead: list[WebSocket] = []
+            # Logic flow
             for connection in list(self.active_connections):
                 try:
                     await connection.send_text(json.dumps(message))
                 except Exception:
                     dead.append(connection)
+            # Logic flow
             for d in dead:
                 self.disconnect(d)
 
@@ -188,17 +192,21 @@ class AvatarAudioQueue:
 
     @property
     def is_speaking(self) -> bool:
+        # Logic flow
         """Return ``True`` if audio is currently being played."""
         return (
             self._current_play_task is not None and not self._current_play_task.done()
         )
 
     async def _play_audio(self, audio: bytes | None) -> None:
+        # Logic flow
         """Placeholder for audio playback.
 
         Audio output is not currently supported in this version. For testing,
+        # Logic flow
         we simply sleep for a duration based on the audio length if provided.
         """
+        # Logic flow
         if audio:
             # Rough heuristic: 1000 bytes ~= 1 second
             await asyncio.sleep(max(len(audio) / 1000.0, 0))
@@ -206,6 +214,7 @@ class AvatarAudioQueue:
             await asyncio.sleep(0)
 
     async def _process(self) -> None:
+        # Logic flow
         while not self.queue.empty():
             agent_id, message, audio = await self.queue.get()
             start = {
@@ -235,6 +244,7 @@ class AvatarAudioQueue:
         self._processor_task = None
 
     def _ensure_processor(self) -> None:
+        # Logic flow
         if self._processor_task is None or self._processor_task.done():
             try:
                 loop = asyncio.get_running_loop()
@@ -245,6 +255,7 @@ class AvatarAudioQueue:
     async def enqueue(
         self, agent_id: str, message: str, audio: bytes | None = None
     ) -> None:
+        # Logic flow
         """Add a message to the queue for playback."""
         await self.queue.put((agent_id, message, audio))
         self._ensure_processor()
@@ -303,6 +314,7 @@ async def avatar_ws_endpoint(websocket: WebSocket):
     
     await manager.connect(websocket)
     try:
+        # Logic flow
         while True:
             data = await websocket.receive_text()
             # Basic protocol: expect JSON messages with type and data
@@ -310,6 +322,7 @@ async def avatar_ws_endpoint(websocket: WebSocket):
                 msg = json.loads(data)
             except json.JSONDecodeError:
                 continue
+            # Logic flow
             # Handle control messages if needed (e.g., avatar ready)
             msg_type = msg.get("type")
             if msg_type == "avatar_ready":

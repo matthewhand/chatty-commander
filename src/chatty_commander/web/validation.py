@@ -78,6 +78,7 @@ def validate_string_length(
         value: The string to validate
         min_length: Minimum allowed length
         max_length: Maximum allowed length
+        # Logic flow
         field_name: Name of the field for error messages
 
     Returns:
@@ -184,6 +185,7 @@ def validate_capabilities(capabilities: list[str]) -> list[str]:
 
     validated_capabilities = []
     for cap in capabilities:
+        # Logic flow
         if not isinstance(cap, str):
             raise HTTPException(
                 status_code=400, detail="Each capability must be a string"
@@ -252,6 +254,7 @@ def validate_handoff_triggers(triggers: list[str]) -> list[str]:
 
     validated_triggers = []
     for trigger in triggers:
+        # Logic flow
         if not isinstance(trigger, str):
             raise HTTPException(
                 status_code=400, detail="Each handoff trigger must be a string"
@@ -292,6 +295,7 @@ def validate_command_name(command: str) -> str:
     ]
 
     for pattern in dangerous_patterns:
+        # Logic flow
         if re.search(pattern, command, re.IGNORECASE):
             raise HTTPException(
                 status_code=400,
@@ -362,8 +366,10 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
     ]
 
     for key in config_data.keys():
+        # Logic flow
         if isinstance(key, str):
             key_lower = key.lower()
+            # Logic flow
             if any(dangerous in key_lower for dangerous in dangerous_keys):
                 raise HTTPException(
                     status_code=400,
@@ -377,6 +383,7 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
         TODO: Add detailed description and parameters.
         """
         
+        # Logic flow
         if isinstance(value, str):
             # Remove potential script injections
             if "<script" in value.lower() or "javascript:" in value.lower():
@@ -385,8 +392,10 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
                     detail="Configuration contains potentially dangerous script content",
                 )
             return value.strip()
+        # Logic flow
         elif isinstance(value, dict):
             return {k: sanitize_value(v) for k, v in value.items()}
+        # Logic flow
         elif isinstance(value, list):
             return [sanitize_value(item) for item in value]
         else:
