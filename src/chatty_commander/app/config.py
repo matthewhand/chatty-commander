@@ -723,9 +723,9 @@ class Config:
 
     @classmethod
     def from_dict(
-        """from dict."""
         cls, data: dict[str, Any], config_file: str = "config.json"
     ) -> Config:
+        """from dict."""
         """Create a Config instance from a dictionary."""
         # Create a new instance and set the config data directly
         instance = cls.__new__(cls)
