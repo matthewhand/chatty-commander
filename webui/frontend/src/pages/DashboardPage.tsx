@@ -68,6 +68,18 @@ const DashboardPage = React.memo(() => {
     return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
   }, [messages]);
 
+  const recentMessagesElements = useMemo(() => (
+    recentMessages.length > 0 ? (
+      recentMessages.map((msg, i) => (
+        <div key={i} className="text-base-content/80 leading-relaxed">{msg}</div>
+      ))
+    ) : (
+      <div className="p-4 text-base-content/50 italic text-center pt-24">
+        Waiting for commands...
+      </div>
+    )
+  ), [recentMessages]);
+
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [history, setHistory] = useState<PerfMetric[]>([]);
@@ -155,7 +167,9 @@ const DashboardPage = React.memo(() => {
     retry: 2,
   });
 
-  const getAgentStatusColor = (status: Agent["status"]) => {
+  // ⚡ Bolt: Move getAgentStatusColor outside component or wrap in useCallback
+  // to maintain stable reference, avoiding invalidating useMemo dependencies.
+  const getAgentStatusColor = useCallback((status: Agent["status"]) => {
     switch (status) {
       case "online": return "badge-success";
       case "offline": return "badge-ghost";
@@ -163,7 +177,45 @@ const DashboardPage = React.memo(() => {
       case "processing": return "badge-warning";
       default: return "badge-ghost";
     }
-  };
+  }, []);
+
+  // ⚡ Bolt: Memoize mapped agent elements to prevent expensive reconciliation
+  // during frequent parent re-renders (like typing in the commandInput).
+  const agentDataElements = useMemo(() => agentData?.map((agent) => (
+    <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
+      <div className="card-body p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="card-title text-xl font-bold">{agent.name}</h3>
+          <div className={`badge ${getAgentStatusColor(agent.status)} badge-lg font-bold uppercase`}>
+            {agent.status}
+          </div>
+        </div>
+
+        {agent.error && (
+          <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg">
+            <span>{agent.error}</span>
+          </div>
+        )}
+
+        <div className="mockup-code bg-base-300 text-xs mt-2 before:hidden p-0">
+          <div className="px-4 py-3 space-y-3">
+            <div className="flex flex-col">
+              <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Sent</span>
+              <span className="font-mono text-primary">{agent.lastMessageSent || "-"}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Received</span>
+              <span className="font-mono text-secondary">{agent.lastMessageReceived || "-"}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Content</span>
+              <span className="font-mono text-base-content/70 break-words mt-1">{agent.lastMessageContent || "-"}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )), [agentData, getAgentStatusColor]);
 
   const handleWsMessage = useCallback((event: MessageEvent) => {
     try {
@@ -385,15 +437,7 @@ const DashboardPage = React.memo(() => {
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
           <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1">
-            {recentMessages.length > 0 ? (
-              recentMessages.map((msg, i) => (
-                <div key={i} className="text-base-content/80 leading-relaxed">{msg}</div>
-              ))
-            ) : (
-              <div className="p-4 text-base-content/50 italic text-center pt-24">
-                Waiting for commands...
-              </div>
-            )}
+            {recentMessagesElements}
           </div>
 
           <form onSubmit={handleSendCommand} className="mt-4 flex gap-2">
@@ -435,41 +479,7 @@ const DashboardPage = React.memo(() => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agentData?.map((agent) => (
-            <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
-              <div className="card-body p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="card-title text-xl font-bold">{agent.name}</h3>
-                  <div className={`badge ${getAgentStatusColor(agent.status)} badge-lg font-bold uppercase`}>
-                    {agent.status}
-                  </div>
-                </div>
-
-                {agent.error && (
-                  <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg">
-                    <span>{agent.error}</span>
-                  </div>
-                )}
-
-                <div className="mockup-code bg-base-300 text-xs mt-2 before:hidden p-0">
-                  <div className="px-4 py-3 space-y-3">
-                    <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Sent</span>
-                      <span className="font-mono text-primary">{agent.lastMessageSent || "-"}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Received</span>
-                      <span className="font-mono text-secondary">{agent.lastMessageReceived || "-"}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Content</span>
-                      <span className="font-mono text-base-content/70 break-words mt-1">{agent.lastMessageContent || "-"}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+          {agentDataElements}
         </div>
       )}
     </div>

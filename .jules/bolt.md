@@ -15,3 +15,6 @@
 ## 2026-04-12 - [Module-Level Variable Imports]
 **Learning:** When a code review flags missing imports or predicts `NameError`s on startup, always verify their presence in the target file using bash commands (e.g., `grep`) before attempting a fix, as the reviewer's context may be hallucinated or outdated.
 **Action:** Use grep to check for imports like `import threading` and `from typing import Any` before assuming they are missing.
+## 2026-04-25 - Memoization of Mapped JSX Elements
+**Learning:** In React components like DashboardPage that receive high-frequency updates (e.g. WebSocket telemetry ticks or keystrokes in a controlled input), inline mapped arrays (like `data.map()` returned directly in the JSX) cause expensive DOM reconciliation on every render, even if the underlying list data hasn't changed.
+**Action:** Always extract `.map()` calls for complex lists out of the JSX render body and wrap them in `useMemo` hooks (e.g., `const listElements = useMemo(() => data.map(...), [data])`). This ensures stable references and allows React to bail out of rendering those expensive subtrees during unrelated state updates.
