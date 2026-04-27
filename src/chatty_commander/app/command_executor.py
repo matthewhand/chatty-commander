@@ -66,6 +66,20 @@ if _shim_requests is not None:  # pragma: no cover - optional
     # Map legacy tests to our httpx var for test compatibility if needed
     httpx = _shim_requests
 
+# Security hardening imports
+try:
+    from ..utils.security import validate_input, audit_log
+except ImportError:
+    # Fallback if security module not available
+    def validate_input(**kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    def audit_log(operation, level='info'):
+        def decorator(func):
+            return func
+        return decorator
+
 
 class CommandExecutor:
     """CommandExecutor class.
@@ -80,6 +94,8 @@ class CommandExecutor:
         self.state_manager: Any = state_manager
         self.last_command: str | None = None
 
+    @audit_log(operation="command_execution", level="info")
+    @validate_input(allowed_types=(str,), max_length=100, min_length=1)
     def execute_command(self, command_name: str) -> bool:
         """
         Execute a configured command by name.
@@ -269,6 +285,8 @@ class CommandExecutor:
         """Validate old format action configuration."""
         return any(key in action_config for key in ["keypress", "url", "shell"])
 
+    @audit_log(operation="command_validation", level="info")
+    @validate_input(allowed_types=(str,), max_length=100, min_length=1)
     def validate_command(self, command_name: str) -> bool:
         """
         Validate that a command exists and has a valid action configuration.

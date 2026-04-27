@@ -1,34 +1,35 @@
 {
   "executive_summary": {
-    "global_score": 53,
+    "global_score": 55,
     "global_rating": "F (Critical)",
     "agents_deployed": 6,
     "agents_successful": 4,
-    "total_issues": 113,
+    "total_issues": 129,
     "category_breakdown": {
-      "COMPLEXITY": 10,
+      "COMPLEXITY": 9,
       "TYPES": 1,
       "STYLE": 5,
-      "OTHER": 76,
+      "OTHER": 80,
       "ALGORITHM": 10,
-      "MEMORY": 2,
+      "MEMORY": 3,
       "I/O": 1,
+      "DOCSTRINGS": 12,
       "COMMENTS": 5,
       "ARCHITECTURE": 3
     },
     "agent_summaries": [
       {
         "name": "CodeQuality",
-        "score": 37,
+        "score": 45,
         "rating": "F (Critical)",
-        "issues": 16,
+        "issues": 15,
         "status": "\u2705"
       },
       {
         "name": "Coverage",
         "score": 51,
         "rating": "F (Critical)",
-        "issues": 76,
+        "issues": 80,
         "status": "\u2705"
       },
       {
@@ -40,16 +41,16 @@
       },
       {
         "name": "Performance",
-        "score": 56,
+        "score": 52,
         "rating": "F (Critical)",
-        "issues": 13,
+        "issues": 14,
         "status": "\u2705"
       },
       {
         "name": "Documentation",
-        "score": 77,
+        "score": 74,
         "rating": "C (Acceptable)",
-        "issues": 8,
+        "issues": 20,
         "status": "\u2705"
       },
       {
@@ -64,29 +65,29 @@
   "agent_results": [
     {
       "name": "CodeQuality",
-      "score": 37,
+      "score": 45,
       "rating": "F (Critical)",
       "metrics": {
         "complexity": {
-          "total_functions": 282,
-          "avg_complexity": 3.62,
-          "high_complexity_count": 13,
-          "score": 32
+          "total_functions": 356,
+          "avg_complexity": 3.28,
+          "high_complexity_count": 9,
+          "score": 52
         },
         "type_coverage": {
-          "param_coverage": 47.6,
-          "return_coverage": 75.9,
-          "overall": 61.7,
-          "score": 61
+          "param_coverage": 48.3,
+          "return_coverage": 77.5,
+          "overall": 62.9,
+          "score": 62
         },
         "style": {
-          "issues_found": 100,
+          "issues_found": 102,
           "score": 0
         },
-        "overall": 37,
+        "overall": 45,
         "grade": "F (Critical)"
       },
-      "issue_count": 16
+      "issue_count": 15
     },
     {
       "name": "Coverage",
@@ -94,38 +95,38 @@
       "rating": "F (Critical)",
       "metrics": {
         "module_coverage": {
-          "total": 76,
+          "total": 80,
           "tested": 0,
           "percentage": 0.0,
           "score": 0
         },
         "test_quality": {
-          "total_tests": 5083,
-          "test_classes": 712,
-          "test_functions": 2569,
-          "fixtures": 119,
-          "mocks": 1344,
-          "assertions": 3775,
-          "avg_tests_per_class": 7.1,
-          "assertion_density": 0.74,
+          "total_tests": 5161,
+          "test_classes": 718,
+          "test_functions": 2608,
+          "fixtures": 133,
+          "mocks": 1374,
+          "assertions": 3845,
+          "avg_tests_per_class": 7.2,
+          "assertion_density": 0.75,
           "score": 77
         },
         "coverage_depth": {
           "by_type": {
-            "unit": 1320,
+            "unit": 1359,
             "integration": 1189,
             "e2e": 157,
             "property": 0,
             "parametrized": 19
           },
-          "balance_score": 89.6,
+          "balance_score": 89.9,
           "depth_score": 100,
           "score": 94
         },
         "overall": 51,
         "grade": "F (Critical)"
       },
-      "issue_count": 76
+      "issue_count": 80
     },
     {
       "name": "Security Audit Agent",
@@ -136,16 +137,16 @@
     },
     {
       "name": "Performance",
-      "score": 56,
+      "score": 52,
       "rating": "F (Critical)",
       "metrics": {
         "algorithmic": {
-          "issues": 21,
+          "issues": 25,
           "score": 0
         },
         "memory": {
-          "issues": 2,
-          "score": 90
+          "issues": 3,
+          "score": 85
         },
         "io": {
           "blocking_issues": 1,
@@ -153,25 +154,25 @@
           "score": 90
         },
         "startup": {
-          "heavy_imports": 6,
+          "heavy_imports": 8,
           "global_init": 13,
-          "score": 44
+          "score": 34
         },
-        "overall": 56,
+        "overall": 52,
         "rating": "F (Critical)"
       },
-      "issue_count": 13
+      "issue_count": 14
     },
     {
       "name": "Documentation",
-      "score": 77,
+      "score": 74,
       "rating": "C (Acceptable)",
       "metrics": {
         "docstrings": {
-          "total_public": 219,
-          "documented": 219,
-          "coverage": 100.0,
-          "score": 100
+          "total_public": 284,
+          "documented": 272,
+          "coverage": 95.8,
+          "score": 95
         },
         "readme": {
           "exists": true,
@@ -180,20 +181,20 @@
           "score": 74
         },
         "comments": {
-          "total_lines": 22559,
-          "comment_lines": 4914,
-          "ratio": 21.78,
-          "score": 65
+          "total_lines": 24467,
+          "comment_lines": 4959,
+          "ratio": 20.27,
+          "score": 60
         },
         "architecture": {
           "found": 1,
           "missing": 3,
           "score": 25
         },
-        "overall": 77,
+        "overall": 74,
         "grade": "C (Acceptable)"
       },
-      "issue_count": 8
+      "issue_count": 20
     },
     {
       "name": "Dependency Audit Agent",
@@ -209,18 +210,6 @@
       "agent": "CodeQuality",
       "priority": "CRITICAL",
       "category": "COMPLEXITY",
-      "issue": "_process_voice_command() has complexity 17",
-      "file": "src/chatty_commander/voice/pipeline.py",
-      "line": 188,
-      "recommendation": "Refactor into smaller functions",
-      "impact": "Maintenance burden",
-      "effort": "High (weeks)"
-    },
-    {
-      "rank": 2,
-      "agent": "CodeQuality",
-      "priority": "CRITICAL",
-      "category": "COMPLEXITY",
       "issue": "_get_command_action() has complexity 18",
       "file": "src/chatty_commander/app/command_executor.py",
       "line": 135,
@@ -229,19 +218,7 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 3,
-      "agent": "CodeQuality",
-      "priority": "CRITICAL",
-      "category": "COMPLEXITY",
-      "issue": "validate_command() has complexity 23",
-      "file": "src/chatty_commander/app/command_executor.py",
-      "line": 243,
-      "recommendation": "Refactor into smaller functions",
-      "impact": "Maintenance burden",
-      "effort": "High (weeks)"
-    },
-    {
-      "rank": 4,
+      "rank": 2,
       "agent": "CodeQuality",
       "priority": "CRITICAL",
       "category": "COMPLEXITY",
@@ -253,19 +230,19 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 5,
+      "rank": 3,
       "agent": "CodeQuality",
-      "priority": "HIGH",
+      "priority": "CRITICAL",
       "category": "COMPLEXITY",
-      "issue": "_process_audio_chunk() has complexity 13",
-      "file": "src/chatty_commander/voice/enhanced_processor.py",
-      "line": 309,
+      "issue": "dispatch() has complexity 17",
+      "file": "src/chatty_commander/web/middleware/auth.py",
+      "line": 59,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
     },
     {
-      "rank": 6,
+      "rank": 4,
       "agent": "CodeQuality",
       "priority": "HIGH",
       "category": "COMPLEXITY",
@@ -277,7 +254,7 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 7,
+      "rank": 5,
       "agent": "CodeQuality",
       "priority": "HIGH",
       "category": "COMPLEXITY",
@@ -289,7 +266,7 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 8,
+      "rank": 6,
       "agent": "CodeQuality",
       "priority": "HIGH",
       "category": "COMPLEXITY",
@@ -301,7 +278,7 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 9,
+      "rank": 7,
       "agent": "CodeQuality",
       "priority": "HIGH",
       "category": "COMPLEXITY",
@@ -313,19 +290,31 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 10,
+      "rank": 8,
       "agent": "CodeQuality",
       "priority": "HIGH",
       "category": "COMPLEXITY",
-      "issue": "select_adapters() has complexity 11",
-      "file": "src/chatty_commander/app/orchestrator.py",
-      "line": 273,
+      "issue": "_validate_command_data() has complexity 14",
+      "file": "src/chatty_commander/web/routes/command_authoring.py",
+      "line": 218,
       "recommendation": "Refactor into smaller functions",
       "impact": "Maintenance burden",
       "effort": "High (weeks)"
     },
     {
-      "rank": 11,
+      "rank": 9,
+      "agent": "CodeQuality",
+      "priority": "HIGH",
+      "category": "COMPLEXITY",
+      "issue": "setup_logger() has complexity 15",
+      "file": "src/chatty_commander/utils/logger.py",
+      "line": 138,
+      "recommendation": "Refactor into smaller functions",
+      "impact": "Maintenance burden",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 10,
       "agent": "Coverage",
       "priority": "CRITICAL",
       "category": "GENERAL",
@@ -337,7 +326,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 12,
+      "rank": 11,
       "agent": "Coverage",
       "priority": "CRITICAL",
       "category": "GENERAL",
@@ -349,7 +338,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 13,
+      "rank": 12,
       "agent": "Coverage",
       "priority": "CRITICAL",
       "category": "GENERAL",
@@ -361,7 +350,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 14,
+      "rank": 13,
       "agent": "Coverage",
       "priority": "CRITICAL",
       "category": "GENERAL",
@@ -373,7 +362,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 15,
+      "rank": 14,
       "agent": "Coverage",
       "priority": "CRITICAL",
       "category": "GENERAL",
@@ -385,7 +374,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 16,
+      "rank": 15,
       "agent": "Coverage",
       "priority": "CRITICAL",
       "category": "GENERAL",
@@ -397,19 +386,163 @@
       "effort": "Medium (days)"
     },
     {
+      "rank": 16,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'on_command'",
+      "file": "src/chatty_commander/vision/body_controller.py",
+      "line": 727,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
       "rank": 17,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'on_frame'",
+      "file": "src/chatty_commander/vision/body_controller.py",
+      "line": 730,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 18,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'on_detection'",
+      "file": "src/chatty_commander/vision/body_controller.py",
+      "line": 736,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 19,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'execute_command'",
+      "file": "src/chatty_commander/vision/gesture_adapter.py",
+      "line": 291,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 20,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'on_command'",
+      "file": "src/chatty_commander/vision/gesture_adapter.py",
+      "line": 317,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 21,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'on_progress'",
+      "file": "src/chatty_commander/vision/gesture_adapter.py",
+      "line": 110,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 22,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'on_progress'",
+      "file": "src/chatty_commander/cli/gesture_trainer.py",
+      "line": 112,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 23,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'on_command'",
+      "file": "src/chatty_commander/cli/gesture_trainer.py",
+      "line": 254,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 24,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'decorator'",
+      "file": "src/chatty_commander/utils/security.py",
+      "line": 102,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 25,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'decorator'",
+      "file": "src/chatty_commander/utils/security.py",
+      "line": 155,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 26,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'wrapper'",
+      "file": "src/chatty_commander/utils/security.py",
+      "line": 104,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 27,
+      "agent": "Documentation",
+      "priority": "HIGH",
+      "category": "DOCSTRINGS",
+      "issue": "Missing docstring for function 'wrapper'",
+      "file": "src/chatty_commander/utils/security.py",
+      "line": 157,
+      "recommendation": "Add docstring with description, parameters, returns",
+      "impact": "Developer productivity",
+      "effort": "Low (hours)"
+    },
+    {
+      "rank": 28,
       "agent": "Performance",
       "priority": "HIGH",
       "category": "ALGORITHM",
       "issue": "Unknown",
       "file": "src/chatty_commander/voice/pipeline.py",
-      "line": 318,
+      "line": 267,
       "recommendation": "Consider more efficient data structures or algorithms",
       "impact": "HIGH priority improvement",
       "effort": "High (weeks)"
     },
     {
-      "rank": 18,
+      "rank": 29,
       "agent": "Performance",
       "priority": "HIGH",
       "category": "ALGORITHM",
@@ -421,7 +554,7 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 19,
+      "rank": 30,
       "agent": "Performance",
       "priority": "HIGH",
       "category": "ALGORITHM",
@@ -433,7 +566,7 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 20,
+      "rank": 31,
       "agent": "Performance",
       "priority": "HIGH",
       "category": "ALGORITHM",
@@ -445,7 +578,31 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 21,
+      "rank": 32,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/vision/body_controller.py",
+      "line": 426,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 33,
+      "agent": "Performance",
+      "priority": "HIGH",
+      "category": "ALGORITHM",
+      "issue": "Unknown",
+      "file": "src/chatty_commander/vision/body_controller.py",
+      "line": 470,
+      "recommendation": "Consider more efficient data structures or algorithms",
+      "impact": "HIGH priority improvement",
+      "effort": "High (weeks)"
+    },
+    {
+      "rank": 34,
       "agent": "Performance",
       "priority": "HIGH",
       "category": "ALGORITHM",
@@ -457,7 +614,7 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 22,
+      "rank": 35,
       "agent": "Performance",
       "priority": "HIGH",
       "category": "ALGORITHM",
@@ -469,19 +626,7 @@
       "effort": "High (weeks)"
     },
     {
-      "rank": 23,
-      "agent": "Performance",
-      "priority": "HIGH",
-      "category": "ALGORITHM",
-      "issue": "Unknown",
-      "file": "src/chatty_commander/cli/cli.py",
-      "line": 772,
-      "recommendation": "Consider more efficient data structures or algorithms",
-      "impact": "HIGH priority improvement",
-      "effort": "High (weeks)"
-    },
-    {
-      "rank": 24,
+      "rank": 36,
       "agent": "Performance",
       "priority": "HIGH",
       "category": "I/O",
@@ -493,7 +638,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 25,
+      "rank": 37,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -505,7 +650,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 26,
+      "rank": 38,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -517,7 +662,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 27,
+      "rank": 39,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -529,7 +674,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 28,
+      "rank": 40,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -541,7 +686,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 29,
+      "rank": 41,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -553,7 +698,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 30,
+      "rank": 42,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -565,7 +710,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 31,
+      "rank": 43,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -577,7 +722,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 32,
+      "rank": 44,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -589,7 +734,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 33,
+      "rank": 45,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -601,7 +746,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 34,
+      "rank": 46,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -613,7 +758,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 35,
+      "rank": 47,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -625,7 +770,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 36,
+      "rank": 48,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -637,7 +782,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 37,
+      "rank": 49,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -649,7 +794,7 @@
       "effort": "Medium (days)"
     },
     {
-      "rank": 38,
+      "rank": 50,
       "agent": "Coverage",
       "priority": "HIGH",
       "category": "GENERAL",
@@ -657,150 +802,6 @@
       "file": "src/chatty_commander/web/server.py",
       "line": null,
       "recommendation": "Create tests/test_server.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 39,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/ws.py",
-      "line": null,
-      "recommendation": "Create tests/test_ws.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 40,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/avatar_settings.py",
-      "line": null,
-      "recommendation": "Create tests/test_avatar_settings.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 41,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/core.py",
-      "line": null,
-      "recommendation": "Create tests/test_core.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 42,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/avatar_ws.py",
-      "line": null,
-      "recommendation": "Create tests/test_avatar_ws.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 43,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/system.py",
-      "line": null,
-      "recommendation": "Create tests/test_system.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 44,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/voice.py",
-      "line": null,
-      "recommendation": "Create tests/test_voice.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 45,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/avatar_api.py",
-      "line": null,
-      "recommendation": "Create tests/test_avatar_api.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 46,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/models.py",
-      "line": null,
-      "recommendation": "Create tests/test_models.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 47,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/agents.py",
-      "line": null,
-      "recommendation": "Create tests/test_agents.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 48,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/version.py",
-      "line": null,
-      "recommendation": "Create tests/test_version.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 49,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/command_authoring.py",
-      "line": null,
-      "recommendation": "Create tests/test_command_authoring.py",
-      "impact": "HIGH priority improvement",
-      "effort": "Medium (days)"
-    },
-    {
-      "rank": 50,
-      "agent": "Coverage",
-      "priority": "HIGH",
-      "category": "GENERAL",
-      "issue": "No tests found",
-      "file": "src/chatty_commander/web/routes/audio.py",
-      "line": null,
-      "recommendation": "Create tests/test_audio.py",
       "impact": "HIGH priority improvement",
       "effort": "Medium (days)"
     }

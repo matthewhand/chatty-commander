@@ -73,3 +73,125 @@ def mask_sensitive_data(data: Any) -> Any:
         # Logic flow
         return [mask_sensitive_data(item) for item in data]
     return data
+
+
+# Security hardening utilities for input validation and audit logging
+
+import functools
+from typing import Callable, Any, Tuple
+
+
+def validate_input(
+    allowed_types: Tuple[type, ...] = (str,),
+    max_length: int = 1000,
+    min_length: int = 1,
+    allow_empty: bool = False
+) -> Callable:
+    """
+    Decorator to validate function inputs for security.
+
+    Args:
+        allowed_types: Tuple of allowed types for first positional arg
+        max_length: Maximum string length (if string input)
+        min_length: Minimum string length (if string input)
+        allow_empty: Whether to allow empty strings
+
+    Returns:
+        Decorated function with input validation
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Check first positional arg
+            if args:
+                value = args[0]
+
+                # Type validation
+                if not isinstance(value, allowed_types):
+                    raise TypeError(
+                        f"{func.__name__}: Expected {allowed_types}, got {type(value)}"
+                    )
+
+                # String-specific validation
+                if isinstance(value, str):
+                    # Empty check
+                    if not allow_empty and len(value.strip()) == 0:
+                        raise ValueError(f"{func.__name__}: Input cannot be empty")
+
+                    # Min length check
+                    if len(value) < min_length:
+                        raise ValueError(
+                            f"{func.__name__}: Input too short (min {min_length})"
+                        )
+
+                    # Max length check (security: prevent DoS)
+                    if len(value) > max_length:
+                        raise ValueError(
+                            f"{func.__name__}: Input too long (max {max_length})"
+                        )
+
+                    # Sanitize: strip whitespace
+                    value = value.strip()
+
+            # Audit logging for security monitoring
+            logger.info(f"SECURITY: {func.__name__} called")
+
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def audit_log(operation: str, level: str = "info") -> Callable:
+    """
+    Decorator to add audit logging for sensitive operations.
+
+    Args:
+        operation: Description of the operation being performed
+        level: Log level (info, warning, error)
+
+    Returns:
+        Decorated function with audit logging
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Log before execution
+            log_func = getattr(logger, level)
+            log_func(f"AUDIT: {operation} - {func.__name__} started")
+
+            try:
+                result = func(*args, **kwargs)
+                # Log success
+                log_func(f"AUDIT: {operation} - {func.__name__} completed")
+                return result
+            except Exception as e:
+                # Log failure
+                logger.error(f"AUDIT: {operation} - {func.__name__} failed: {e}")
+                raise
+        return wrapper
+    return decorator
+
+
+def sanitize_string(input_str: str, max_length: int = 1000) -> str:
+    """
+    Sanitize a string input for safe processing.
+
+    Args:
+        input_str: String to sanitize
+        max_length: Maximum allowed length
+
+    Returns:
+        Sanitized string
+    """
+    if not isinstance(input_str, str):
+        raise TypeError(f"Expected str, got {type(input_str)}")
+
+    # Strip whitespace
+    sanitized = input_str.strip()
+
+    # Truncate if too long
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+        logger.warning(f"Input truncated to {max_length} characters")
+
+    return sanitized

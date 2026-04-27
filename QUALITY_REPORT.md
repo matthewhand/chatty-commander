@@ -35,15 +35,15 @@ Successfully transformed codebase from **53/100** to **90-95/100** quality score
 | `execute_command()` | app/command_executor.py | 20 | 5 | 5 |
 | `handle_message()` | advisors/service.py | 18 | ~8 | 3 |
 | `_process_audio_chunk()` | voice/enhanced_processor.py | 13 | ~5 | 3 |
-| `_process_voice_command()` | voice/pipeline.py | 17 | Marked | - |
-| `validate_command()` | app/command_executor.py | 23 | Marked | - |
-| `select_adapters()` | app/orchestrator.py | 11 | Marked | - |
+| `_process_voice_command()` | voice/pipeline.py | 17 | **5** | **5** |
+| `validate_command()` | app/command_executor.py | 23 | **5** | **4** |
+| `select_adapters()` | app/orchestrator.py | 11 | **5** | **6** |
 | `handle_self_test_command()` | voice/self_test.py | 12 | Marked | - |
 | `_handle_llm_status()` | llm/cli.py | 11 | Marked | - |
 | `summarize_url()` | tools/browser_analyst.py | 11 | Marked | - |
 | `browser_analyst_tool()` | advisors/tools/browser_analyst.py | 11 | Marked | - |
 
-**Total: 11 helper methods extracted**
+**Total: 26 helper methods extracted**
 
 ### 2. Test Architecture
 

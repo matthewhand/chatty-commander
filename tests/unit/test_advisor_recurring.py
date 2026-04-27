@@ -13,18 +13,25 @@ class TestAdvisorRecurring:
     
     def test_initialization(self):
         """Test module can be initialized."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.advisors.recurring import RecurringAdvisor
+        advisor = RecurringAdvisor()
+        assert advisor is not None
+        assert hasattr(advisor, 'advise')
     
     def test_basic_operation(self):
         """Test basic operation works."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.advisors.recurring import RecurringAdvisor
+        advisor = RecurringAdvisor()
+        # Test that advisor has required methods
+        assert callable(getattr(advisor, 'advise', None))
     
     def test_error_handling(self):
         """Test error handling."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.advisors.recurring import RecurringAdvisor
+        advisor = RecurringAdvisor()
+        # Test with None input
+        result = advisor.advise(None)
+        assert result is None or result == {} or result == []
 
 
 class TestAdvisorRecurringEdgeCases:

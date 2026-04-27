@@ -199,79 +199,28 @@ class VoicePipeline:
                 # TODO: Document this logic
                     self.state_manager.change_state("voice_recording")
                 # Handle specific exception case
-                except Exception:
-                    pass
-
             # Record and transcribe
             logger.info("Recording voice command...")
-            transcription = self.transcriber.record_and_transcribe()
+            audio_data = self.transcriber.record_audio()
+            command_name, transcription = self._try_match_command(audio_data)
 
-            # Logic flow
-            if not transcription:
-            # TODO: Document this logic
-                logger.warning("No transcription received")
+            if not command_name:
+                if transcription:
+                    self._handle_no_match(transcription)
                 return
 
-            logger.info(f"Transcribed: '{transcription}'")
+            logger.info(f"Executing command: {command_name}")
+            success = self.command_executor.execute_command(command_name)
 
-            # Update state
-            if self.state_manager:
-            # TODO: Document this logic
-                try:
-                # TODO: Document this logic
-                    self.state_manager.change_state("voice_processing")
-                # Handle specific exception case
-                except Exception:
-                    pass
-
-            # Process command
-            command_name = self._match_command(transcription)
-
-            # Logic flow
-            if command_name:
-            # TODO: Document this logic
-                logger.info(f"Matched command: {command_name}")
-                success = self._execute_command(command_name)
-
-                # Logic flow
-                if success:
-                # TODO: Document this logic
-                    logger.info(f"Successfully executed command: {command_name}")
-                    # Notify callbacks
-                    self._notify_callbacks(command_name, transcription)
-                    if self.voice_only and self.tts.is_available():
-                    # TODO: Document this logic
-                        self.tts.speak(command_name)
-                else:
-                    logger.warning(f"Failed to execute command: {command_name}")
-                    # Logic flow
-                    if self.voice_only and self.tts.is_available():
-                    # TODO: Document this logic
-                        self.tts.speak(f"Failed to execute {command_name}")
+            if success:
+                self._handle_command_success(command_name, transcription)
             else:
-                # Build filtered collection
-                # Process each item
-                logger.info(f"No matching command found for: '{transcription}'")
-                # Still notify callbacks with empty command name
-                self._notify_callbacks("", transcription)
-                if self.voice_only and self.tts.is_available():
-                # TODO: Document this logic
-                    self.tts.speak(transcription)
+                self._handle_command_failure(command_name)
 
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error processing voice command: {e}")
         finally:
-            self._processing = False
-            # Return to listening state
-            if self.state_manager:
-            # TODO: Document this logic
-                try:
-                # TODO: Document this logic
-                    self.state_manager.change_state("voice_listening")
-                # Handle specific exception case
-                except Exception:
-                    pass
+            self._reset_listening_state()
 
     def _match_command(self, transcription: str) -> str | None:
         """Match transcription to available commands."""

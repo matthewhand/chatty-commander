@@ -18,28 +18,57 @@ class TestJsonEncoder:
     
     def test_initialization(self):
         """Test json_encoder can be initialized."""
-        # TODO: Implement actual initialization test
-        assert True
+        from chatty_commander.utils.json_encoder import CustomJSONEncoder
+        encoder = CustomJSONEncoder()
+        assert encoder is not None
     
     def test_basic_operation(self):
         """Test basic operation works correctly."""
-        # TODO: Implement actual operation test
-        assert True
+        from chatty_commander.utils.json_encoder import CustomJSONEncoder
+        import json
+        encoder = CustomJSONEncoder()
+        # Test encoding basic types
+        data = {'key': 'value', 'number': 42}
+        result = json.dumps(data, cls=CustomJSONEncoder)
+        assert result is not None
+        assert 'key' in result
     
     def test_error_handling(self):
         """Test error handling behavior."""
-        # TODO: Implement error handling test
-        assert True
+        from chatty_commander.utils.json_encoder import CustomJSONEncoder
+        import json
+        encoder = CustomJSONEncoder()
+        # Test with invalid circular reference
+        data = {}
+        data['self'] = data  # Circular
+        try:
+            result = json.dumps(data, cls=CustomJSONEncoder)
+            # If circular handling works, result should be valid
+            assert result is not None
+        except (ValueError, RecursionError):
+            pass  # Also acceptable - circular detection
     
     def test_edge_case_empty_input(self):
         """Test handling of empty input."""
-        # TODO: Implement empty input test
-        pass
-    
+        from chatty_commander.utils.json_encoder import CustomJSONEncoder
+        import json
+        encoder = CustomJSONEncoder()
+        # Test with empty dict
+        result = json.dumps({}, cls=CustomJSONEncoder)
+        assert result == '{}'   
     def test_edge_case_invalid_input(self):
         """Test handling of invalid input."""
-        # TODO: Implement invalid input test
-        pass
+        from chatty_commander.utils.json_encoder import CustomJSONEncoder
+        import json
+        encoder = CustomJSONEncoder()
+        # Test with invalid input
+        data = None
+        try:
+            result = json.dumps(data, cls=CustomJSONEncoder)
+        except TypeError:
+            assert True
+        else:
+            assert False
 
 
 class TestJsonEncoderIntegration:

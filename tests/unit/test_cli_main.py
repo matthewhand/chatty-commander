@@ -13,18 +13,28 @@ class TestCliMain:
     
     def test_initialization(self):
         """Test module can be initialized."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.cli.main import CLI
+        cli = CLI()
+        assert cli is not None
+        assert hasattr(cli, 'run')
     
     def test_basic_operation(self):
         """Test basic operation works."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.cli.main import CLI
+        cli = CLI()
+        # Test that CLI has required methods
+        assert callable(getattr(cli, 'run', None))
     
     def test_error_handling(self):
         """Test error handling."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.cli.main import CLI
+        cli = CLI()
+        # Test that CLI handles unknown commands gracefully
+        # This should not raise an unhandled exception
+        try:
+            cli.parse_args(['--unknown-flag-that-does-not-exist'])
+        except SystemExit:
+            pass  # Expected for invalid args
 
 
 class TestCliMainEdgeCases:

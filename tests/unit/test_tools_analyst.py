@@ -13,18 +13,25 @@ class TestToolsAnalyst:
     
     def test_initialization(self):
         """Test module can be initialized."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.tools.analyst import Analyst
+        analyst = Analyst()
+        assert analyst is not None
+        assert hasattr(analyst, 'analyze')
     
     def test_basic_operation(self):
         """Test basic operation works."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.tools.analyst import Analyst
+        analyst = Analyst()
+        # Test that analyst has required methods
+        assert callable(getattr(analyst, 'analyze', None))
     
     def test_error_handling(self):
         """Test error handling."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.tools.analyst import Analyst
+        analyst = Analyst()
+        # Test with None input
+        result = analyst.analyze(None)
+        assert result is None or result == {} or result == []
 
 
 class TestToolsAnalystEdgeCases:

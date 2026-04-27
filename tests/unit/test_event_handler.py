@@ -18,18 +18,25 @@ class TestEventHandler:
     
     def test_initialization(self):
         """Test event_handler can be initialized."""
-        # TODO: Implement actual initialization test
-        assert True
+        from chatty_commander.app.event_handler import EventHandler
+        handler = EventHandler()
+        assert handler is not None
+        assert hasattr(handler, 'handle')
     
     def test_basic_operation(self):
         """Test basic operation works correctly."""
-        # TODO: Implement actual operation test
-        assert True
+        from chatty_commander.app.event_handler import EventHandler
+        handler = EventHandler()
+        # Test that handler has required methods
+        assert callable(getattr(handler, 'handle', None))
     
     def test_error_handling(self):
         """Test error handling behavior."""
-        # TODO: Implement error handling test
-        assert True
+        from chatty_commander.app.event_handler import EventHandler
+        handler = EventHandler()
+        # Test with None event
+        result = handler.handle(None)
+        assert result is False or result is None
     
     def test_edge_case_empty_input(self):
         """Test handling of empty input."""

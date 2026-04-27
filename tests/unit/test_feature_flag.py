@@ -18,23 +18,31 @@ class TestFeatureFlag:
     
     def test_initialization(self):
         """Test feature_flag can be initialized."""
-        # TODO: Implement actual initialization test
-        assert True
+        from chatty_commander.app.feature_flag import FeatureFlags
+        ff = FeatureFlags()
+        assert ff is not None
+        assert hasattr(ff, 'flags')
     
     def test_basic_operation(self):
         """Test basic operation works correctly."""
-        # TODO: Implement actual operation test
-        assert True
+        from chatty_commander.app.feature_flag import FeatureFlags
+        ff = FeatureFlags()
+        ff.enable('test_feature')
+        assert ff.is_enabled('test_feature') is True
     
     def test_error_handling(self):
         """Test error handling behavior."""
-        # TODO: Implement error handling test
-        assert True
+        from chatty_commander.app.feature_flag import FeatureFlags
+        ff = FeatureFlags()
+        # Unknown feature returns False, not error
+        assert ff.is_enabled('nonexistent') is False
     
     def test_edge_case_empty_input(self):
         """Test handling of empty input."""
-        # TODO: Implement empty input test
-        pass
+        from chatty_commander.app.feature_flag import FeatureFlags
+        ff = FeatureFlags()
+        # Empty string should not raise exception
+        assert ff.is_enabled('') is False
     
     def test_edge_case_invalid_input(self):
         """Test handling of invalid input."""
