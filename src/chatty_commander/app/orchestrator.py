@@ -269,54 +269,102 @@ class ModeOrchestrator:
         self.flags = flags or OrchestratorFlags()
         self.adapters: list[InputAdapter] = []
 
-    # REFACTORED: Simplified adapter selection logic
-    def select_adapters(self) -> list[str]:
-        # TODO: HIGH - Refactor select_adapters (complexity > 10)
-        """Select Adapters with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        selected: list[Any] = []
-
-        # Apply conditional logic
+    def _create_text_adapter(self) -> InputAdapter | None:
+        """Create text input adapter if enabled."""
         if self.flags.enable_text:
-            selected.append(TextInputAdapter(on_command=self._dispatch_command))
+            return TextInputAdapter(on_command=self._dispatch_command)
+        return None
 
-        # Apply conditional logic
+    def _create_gui_adapter(self) -> InputAdapter | None:
+        """Create GUI adapter if enabled."""
         if self.flags.enable_gui:
-            selected.append(DummyAdapter("gui"))
+            return DummyAdapter("gui")
+        return None
 
-        # Apply conditional logic
+    def _create_web_adapter(self) -> InputAdapter | None:
+        """Create web adapter if enabled."""
         if self.flags.enable_web:
-            selected.append(DummyAdapter("web"))
+            return DummyAdapter("web")
+        return None
 
-        # Apply conditional logic
-        if self.flags.enable_openwakeword:
-            # Apply conditional logic
-            if VOICE_AVAILABLE:
-                try:
-                    adapter = OpenWakeWordAdapter(self._handle_wake_word, self.config)  # type: ignore
-                    selected.append(adapter)
-                # Handle specific exception case
-                except Exception:
-                    selected.append(DummyAdapter("openwakeword"))
-            else:
-                selected.append(DummyAdapter("openwakeword"))
+    def _create_openwakeword_adapter(self) -> InputAdapter | None:
+        """Create OpenWakeWord adapter if enabled and available."""
+        if not self.flags.enable_openwakeword:
+            return None
 
-        # Apply conditional logic
+        if VOICE_AVAILABLE:
+            try:
+                return OpenWakeWordAdapter(self._handle_wake_word, self.config)  # type: ignore
+            except Exception:
+                return DummyAdapter("openwakeword")
+        else:
+            return DummyAdapter("openwakeword")
+
+    def _create_computer_vision_adapter(self) -> InputAdapter | None:
+        """Create computer vision adapter if enabled."""
         if self.flags.enable_computer_vision:
-            selected.append(DummyAdapter("computer_vision"))
+            return DummyAdapter("computer_vision")
+        return None
 
-        # Apply conditional logic
-        if self.flags.enable_discord_bridge and getattr(
-            self.config, "advisors", {}
-        ).get("enabled", False):
-            selected.append(DummyAdapter("discord_bridge"))
+    def _create_discord_bridge_adapter(self) -> InputAdapter | None:
+        """Create Discord bridge adapter if enabled and configured."""
+        if not self.flags.enable_discord_bridge:
+            return None
+
+        advisors_config = getattr(self.config, "advisors", {})
+        if advisors_config.get("enabled", False):
+            return DummyAdapter("discord_bridge")
+        return None
+
+    def _create_gesture_adapter(self) -> InputAdapter | None:
+        """Create gesture input adapter if enabled."""
+        if not self.flags.enable_gesture:
+            return None
+
+        try:
+            from ..vision.gesture_adapter import GestureInputAdapter
+            adapter = GestureInputAdapter({
+                'enabled': True,
+                'camera_index': getattr(self.config, 'gesture_camera_index', 0),
+                'setup_defaults': getattr(self.config, 'gesture_setup_defaults', False),
+                'min_detection_confidence': getattr(self.config, 'gesture_min_confidence', 0.5),
+                'min_tracking_confidence': getattr(self.config, 'gesture_min_tracking', 0.5)
+            })
+            # Set up command callback to route to orchestrator
+            adapter.set_command_callback(self._dispatch_command)
+            return adapter
+        except Exception as e:
+            logger.warning(f"Failed to create gesture adapter: {e}")
+            return DummyAdapter("gesture")
+
+    def select_adapters(self) -> list[str]:
+        """
+        Select and instantiate input adapters based on feature flags.
+
+        Creates adapters for each enabled feature: text, GUI, web,
+        voice (OpenWakeWord), computer vision, gesture, and Discord bridge.
+        Handles graceful fallback to dummy adapters when initialization fails.
+
+        Returns:
+            List of selected adapter names
+        """
+        selected: list[InputAdapter] = []
+
+        # Create adapters for each enabled feature
+        adapters_to_try = [
+            self._create_text_adapter(),
+            self._create_gui_adapter(),
+            self._create_web_adapter(),
+            self._create_openwakeword_adapter(),
+            self._create_computer_vision_adapter(),
+            self._create_gesture_adapter(),
+            self._create_discord_bridge_adapter(),
+        ]
+
+        # Filter out None values
+        selected = [adapter for adapter in adapters_to_try if adapter is not None]
 
         self.adapters = selected
-        # Build filtered collection
-        # Process each item
         return [a.name for a in selected]
 
     def start(self) -> list[str]:

@@ -13,18 +13,25 @@ class TestExecutorShell:
     
     def test_initialization(self):
         """Test module can be initialized."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.app.executor_shell import ShellExecutor
+        executor = ShellExecutor()
+        assert executor is not None
+        assert hasattr(executor, 'execute')
     
     def test_basic_operation(self):
         """Test basic operation works."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.app.executor_shell import ShellExecutor
+        executor = ShellExecutor()
+        # Test that executor has required methods
+        assert callable(getattr(executor, 'execute', None))
     
     def test_error_handling(self):
         """Test error handling."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.app.executor_shell import ShellExecutor
+        executor = ShellExecutor()
+        # Test that invalid commands are handled
+        result = executor.execute('invalid_command_that_does_not_exist_12345')
+        assert result is False or result is None
 
 
 class TestExecutorShellEdgeCases:

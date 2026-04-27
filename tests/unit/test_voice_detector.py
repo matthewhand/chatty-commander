@@ -13,18 +13,25 @@ class TestVoiceDetector:
     
     def test_initialization(self):
         """Test module can be initialized."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.voice.voice_detector import VoiceDetector
+        detector = VoiceDetector()
+        assert detector is not None
+        assert hasattr(detector, 'detect')
     
     def test_basic_operation(self):
         """Test basic operation works."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.voice.voice_detector import VoiceDetector
+        detector = VoiceDetector()
+        # Test that detector has required methods
+        assert callable(getattr(detector, 'detect', None))
     
     def test_error_handling(self):
         """Test error handling."""
-        # TODO: Implement test
-        assert True
+        from chatty_commander.voice.voice_detector import VoiceDetector
+        detector = VoiceDetector()
+        # Test with invalid audio input
+        result = detector.detect(None)
+        assert result is False or result is None or result == []
 
 
 class TestVoiceDetectorEdgeCases:
