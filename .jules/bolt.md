@@ -15,6 +15,3 @@
 ## 2026-04-12 - [Module-Level Variable Imports]
 **Learning:** When a code review flags missing imports or predicts `NameError`s on startup, always verify their presence in the target file using bash commands (e.g., `grep`) before attempting a fix, as the reviewer's context may be hallucinated or outdated.
 **Action:** Use grep to check for imports like `import threading` and `from typing import Any` before assuming they are missing.
-## 2026-04-29 - [React useMemo Conditonal Rendering Bottleneck]
-**Learning:** When using `useMemo` to optimize mapped JSX elements in React (e.g., `data?.map(...)`), declaring the hook inline within JSX conditional rendering blocks (e.g., ternaries) causes `react-hooks/rules-of-hooks` violations. Additionally, if helper functions used inside the map are recreated on every render, the memoization will be invalidated.
-**Action:** Declare the hook at the top level of the component after the data is defined. Extract static helper functions used inside the map outside the component entirely, or wrap them in `useCallback`.
