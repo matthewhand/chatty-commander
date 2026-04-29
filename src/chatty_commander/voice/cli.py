@@ -112,10 +112,7 @@ def add_voice_subcommands(subparsers) -> None:
 
 
 def handle_voice_command(
-    """Process with (args, config_manager, command_executor, state_manager).
 
-    TODO: Add detailed description and parameters.
-    """
     
     args, config_manager=None, command_executor=None, state_manager=None
 ) -> None:

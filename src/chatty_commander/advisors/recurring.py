@@ -28,10 +28,7 @@ from typing import Any
 
 @dataclass
 class RecurringPrompt:
-    """RecurringPrompt class.
 
-    TODO: Add class description.
-    """
     
     id: str
     name: str

@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 def include_ws_routes(
-    """include ws routes."""
     *,
     get_connections: Callable[[], set[WebSocket]],
     set_connections: Callable[[set[WebSocket]], None],

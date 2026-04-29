@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelFileInfo(BaseModel):
-    """Information about a model file."""
+
 
     name: str = Field(..., description="Filename of the model")
     path: str = Field(..., description="Full path to the model file")
@@ -47,7 +47,7 @@ class ModelFileInfo(BaseModel):
 
 
 class ModelListResponse(BaseModel):
-    """Response for listing model files."""
+
 
     models: list[ModelFileInfo] = Field(default_factory=list, description="List of model files")
     total_count: int = Field(..., description="Total number of models")
@@ -56,7 +56,7 @@ class ModelListResponse(BaseModel):
 
 
 class UploadResponse(BaseModel):
-    """Response for file upload."""
+
 
     success: bool = Field(..., description="Whether upload was successful")
     message: str = Field(..., description="Status message")
@@ -65,7 +65,7 @@ class UploadResponse(BaseModel):
 
 
 class DeleteResponse(BaseModel):
-    """Response for file deletion."""
+
 
     success: bool = Field(..., description="Whether deletion was successful")
     message: str = Field(..., description="Status message")
@@ -77,7 +77,7 @@ DEFAULT_MODEL_DIRS = ["models-idle", "models-computer", "models-chatty", "wakewo
 
 
 def _format_size(size_bytes: int) -> str:
-    """Format bytes to human-readable string."""
+
     size: float = float(size_bytes)
     # Build filtered collection
     for unit in ["B", "KB", "MB", "GB"]:
@@ -173,15 +173,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         file: UploadFile = File(...),
         state: str | None = None,
     ):
-        """Upload a new ONNX model file.
-
-        Args:
-            file: The uploaded file
-            state: Optional state to associate (idle/computer/chatty)
-
-        Returns:
-            Upload confirmation
-        """
         # Validate file extension
         if not file.filename or not file.filename.lower().endswith(".onnx"):
             raise HTTPException(

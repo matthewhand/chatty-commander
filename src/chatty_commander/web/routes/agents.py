@@ -64,10 +64,7 @@ router = APIRouter()
 
 @dataclass
 class AgentBlueprint:
-    """AgentBlueprint class.
 
-    TODO: Add class description.
-    """
     
     id: str
     name: str
@@ -95,10 +92,7 @@ class AgentBlueprintModel(BaseModel):
 
 
 class AgentBlueprintResponse(AgentBlueprintModel):
-    """AgentBlueprintResponse class.
 
-    TODO: Add class description.
-    """
     
     id: str
 
@@ -214,20 +208,14 @@ Return ONLY valid JSON.
 
 
 class NLBlueprintRequest(BaseModel):
-    """NLBlueprintRequest class.
 
-    TODO: Add class description.
-    """
     
     description: str
 
 
 @router.post("/api/v1/agents/blueprints", response_model=AgentBlueprintResponse)
 async def create_blueprint(
-    """Create with (payload).
 
-    TODO: Add detailed description and parameters.
-    """
     
     payload: Annotated[dict[str, Any], Body(...)],
 ) -> AgentBlueprintResponse:
@@ -257,10 +245,6 @@ async def create_blueprint(
 
 @router.get("/api/v1/agents/blueprints", response_model=list[AgentBlueprintResponse])
 async def list_blueprints():
-    """List Blueprints operation.
-
-    TODO: Add detailed description and parameters.
-    """
     
     # Each AgentBlueprint already contains its id; avoid passing 'id' twice
     return [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
@@ -305,10 +289,7 @@ async def delete_blueprint(agent_id: str):
 
 
 class TeamInfo(BaseModel):
-    """TeamInfo class.
 
-    TODO: Add class description.
-    """
     
     roles: dict[str, list[str]] = Field(default_factory=dict)
     agents: list[AgentBlueprintResponse] = Field(default_factory=list)
@@ -328,10 +309,7 @@ async def get_team():
 
 
 class HandoffRequest(BaseModel):
-    """HandoffRequest class.
 
-    TODO: Add class description.
-    """
     
     from_agent_id: str
     to_agent_id: str

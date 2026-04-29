@@ -54,7 +54,7 @@ class ThinkingState(Enum):
 
 @dataclass
 class AgentStateInfo:
-    """Information about an agent's current state."""
+
 
     agent_id: str
     avatar_id: str | None
@@ -96,7 +96,7 @@ class ThinkingStateManager:
         self.broadcast_callbacks: set[Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]] = set()
 
     def register_agent(
-        """register agent."""
+
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
     ) -> None:
         """Register a new agent with optional avatar mapping."""
@@ -114,7 +114,7 @@ class ThinkingStateManager:
         self._broadcast_state_change(agent_id)
 
     def set_agent_state(
-        """set agent state."""
+
         self,
         agent_id: str,
         state: ThinkingState,
@@ -154,7 +154,7 @@ class ThinkingStateManager:
             self._broadcast_state_change(agent_id)
 
     def add_broadcast_callback(
-        """add broadcast callback."""
+
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -165,7 +165,7 @@ class ThinkingStateManager:
         self.broadcast_callbacks.add(callback)
 
     def remove_broadcast_callback(
-        """remove broadcast callback."""
+
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -246,10 +246,7 @@ class ThinkingStateManager:
 
     # Agent handoff lifecycle
     def handoff_start(
-        """Handoff Start with (self, agent_id: str, to_agent_persona: str, reason).
 
-        TODO: Add detailed description and parameters.
-        """
         
         self, agent_id: str, to_agent_persona: str, reason: str | None = None
     ) -> None:
@@ -355,7 +352,7 @@ class ThinkingStateContext:
 
 # Decorator for automatic thinking state management
 def with_thinking_state(
-    """with thinking state."""
+
     agent_id: str,
     thinking_msg: str = "Processing...",
     responding_msg: str = "Generating response...",

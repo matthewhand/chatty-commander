@@ -82,10 +82,7 @@ def _infer_category(name: str) -> str:
 
 @router.get("/avatar/animations")
 async def list_animations(
-    """List Animations with (dir).
 
-    TODO: Add detailed description and parameters.
-    """
     
     dir: str | None = Query(
         # Logic flow
@@ -149,7 +146,7 @@ async def list_animations(
 
 @router.post("/avatar/launch")
 async def launch_avatar() -> dict[str, Any]:
-    """Launch the PyQt5 avatar in a separate process."""
+
     try:
         # Get the current Python executable and project root
         python_exe = sys.executable

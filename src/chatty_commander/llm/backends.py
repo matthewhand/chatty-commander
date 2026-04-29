@@ -244,7 +244,7 @@ class OllamaBackend(LLMBackend):
 
     def _try_pull_model(self):
         # Logic flow
-        """Try to pull the model if not available."""
+
         try:
             import httpx
 
@@ -339,7 +339,7 @@ class LocalTransformersBackend(LLMBackend):
 
     def _initialize_model(self):
         # Process each item
-        """Initialize local transformers model."""
+
         try:
         # Attempt operation with error handling
             import torch

@@ -175,7 +175,7 @@ class OllamaProvider(LLMProvider):
             yield f"Error: Failed to stream response - {e}"
 
     def generate_stream_text(self, prompt: str, **kwargs) -> str:
-        """Generate streaming response and return as concatenated string."""
+
         try:
         # Attempt operation with error handling
             chunks = list(self.generate_stream(prompt, **kwargs))
@@ -187,7 +187,7 @@ class OllamaProvider(LLMProvider):
 
     def health_check(self) -> bool:
         # Logic flow
-        """Check if Ollama is healthy and the model is available."""
+
         try:
             # Logic flow
             # Check if Ollama is running
@@ -220,7 +220,7 @@ class OllamaProvider(LLMProvider):
             return False
 
     def list_models(self) -> list[str]:
-        """List available models in Ollama."""
+
         try:
         # Attempt operation with error handling
             response = self.session.get(f"{self.ollama_host}/api/tags", timeout=5)

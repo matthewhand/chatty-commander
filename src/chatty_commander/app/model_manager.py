@@ -128,7 +128,7 @@ class ModelManager:
         self.reload_models()
 
     def reload_models(
-        """reload models."""
+
         self, state: str | None = None
     ) -> dict[str, Model] | dict[str, dict[str, Model]]:
         """
@@ -178,13 +178,7 @@ class ModelManager:
         return {}
 
     def load_model_set(self, path: str) -> dict[str, Model]:
-        """
-        Load all .onnx models from the given path.
 
-        Test expectations:
-          - If Model(...) raises, the model must NOT be added
-          - Tests may monkeypatch model_manager.Model; ensure we call that symbol here
-        """
         model_set: dict[str, Model] = {}
         # Apply conditional logic
         if not os.path.exists(path):

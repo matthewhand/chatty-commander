@@ -27,10 +27,7 @@ from pydantic import BaseModel, Field
 
 
 class VersionInfo(BaseModel):
-    """VersionInfo class.
 
-    TODO: Add class description.
-    """
     
     version: str = Field(..., description="Application semantic version")
     git_sha: str | None = Field(

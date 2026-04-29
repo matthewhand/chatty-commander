@@ -29,10 +29,7 @@ from pydantic import BaseModel
 
 
 class VoiceStatus(BaseModel):
-    """VoiceStatus class.
 
-    TODO: Add class description.
-    """
     
     running: bool
     wake_words: list[str]

@@ -38,7 +38,7 @@ from skimage.transform import resize
 
 @dataclass
 class SSIMComparisonResult:
-    """Result of an SSIM comparison between two images."""
+
 
     passed: bool
     ssim: float
@@ -58,7 +58,7 @@ class SSIMComparisonResult:
 
 @dataclass
 class PixelDiffResult:
-    """Result of pixel-by-pixel comparison."""
+
 
     total_pixels: int
     diff_pixels: int
@@ -369,17 +369,7 @@ class ImageComparator:
         target_height: int | None = None,
         maintain_aspect_ratio: bool = True,
     ) -> np.ndarray:
-        """Resize an image while maintaining aspect ratio.
 
-        Args:
-            image: Input image
-            target_width: Target width in pixels
-            target_height: Target height in pixels
-            maintain_aspect_ratio: Whether to maintain aspect ratio
-
-        Returns:
-            Resized image
-        """
         h, w = image.shape[:2]
 
         if target_width is None and target_height is None:

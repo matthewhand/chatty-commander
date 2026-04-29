@@ -27,12 +27,7 @@ from typing import Any
 
 
 def build_openapi_schema() -> dict[str, Any]:
-    """
-    Construct the OpenAPI schema dictionary.
 
-    Note: This extracts the schema content from the previous APIDocumentationGenerator.generate_openapi_spec.
-    It intentionally remains pure (no I/O, no logging) for ease of testing.
-    """
     spec: dict[str, Any] = {
         "openapi": "3.0.3",
         "info": {

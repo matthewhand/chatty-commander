@@ -76,7 +76,7 @@ def validate_uuid(identifier: str, field_name: str = "ID") -> str:
 
 
 def validate_string_length(
-    """validate string length."""
+
     value: str, min_length: int = 1, max_length: int = 1000, field_name: str = "field"
 ) -> str:
     """
@@ -419,7 +419,7 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
 
 # Enhanced Pydantic models with validation
 class ValidatedAgentBlueprint(BaseModel):
-    """Agent blueprint model with comprehensive validation."""
+
 
     name: str = Field(..., description="Agent name", min_length=1, max_length=48)
     description: str = Field(
@@ -492,7 +492,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
 
 class ValidatedCommandRequest(BaseModel):
-    """Command request model with security validation."""
+
 
     command: str = Field(
         ..., description="Command to execute", min_length=1, max_length=100
@@ -512,7 +512,7 @@ class ValidatedCommandRequest(BaseModel):
 
 
 class ValidatedStateChangeRequest(BaseModel):
-    """State change request model with validation."""
+
 
     state: str = Field(
         ..., description="Target state", pattern="^(idle|computer|chatty)$"
@@ -529,7 +529,7 @@ class ValidatedStateChangeRequest(BaseModel):
 
 
 class ValidatedConfigUpdate(BaseModel):
-    """Configuration update model with sanitization."""
+
 
     config_data: dict[str, Any] = Field(..., description="Configuration data to update")
 

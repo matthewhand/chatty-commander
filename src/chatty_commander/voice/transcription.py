@@ -78,7 +78,7 @@ class WhisperLocalBackend(TranscriptionBackend):
         self._initialize_model()
 
     def _initialize_model(self):
-        """Initialize Whisper model."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -141,7 +141,7 @@ class WhisperAPIBackend(TranscriptionBackend):
         self._initialize_client()
 
     def _initialize_client(self):
-        """Initialize OpenAI client."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic

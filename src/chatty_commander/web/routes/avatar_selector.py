@@ -35,10 +35,7 @@ AllowedLabel = Literal[
 
 
 class AnimationChooseRequest(BaseModel):
-    """AnimationChooseRequest class.
 
-    TODO: Add class description.
-    """
     
     text: str = Field(..., description="Text to classify")
     candidate_labels: list[str] | None = Field(
@@ -47,10 +44,7 @@ class AnimationChooseRequest(BaseModel):
 
 
 class AnimationChooseResponse(BaseModel):
-    """AnimationChooseResponse class.
 
-    TODO: Add class description.
-    """
     
     label: str
     confidence: float = 0.5
@@ -70,10 +64,7 @@ _HINTS = {
 
 @router.post("/avatar/animation/choose", response_model=AnimationChooseResponse)
 async def choose_animation(req: AnimationChooseRequest) -> Any:
-    """Choose Animation with (req: AnimationChooseRequest).
 
-    TODO: Add detailed description and parameters.
-    """
     
     try:
         text = (req.text or "").lower()

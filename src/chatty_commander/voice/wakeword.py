@@ -89,7 +89,7 @@ class WakeWordDetector:
         self._initialize_model()
 
     def _initialize_model(self):
-        """Initialize OpenWakeWord model."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -345,7 +345,7 @@ class MockWakeWordDetector:
         logger.info("Mock wake word detector stopped")
 
     def trigger_wake_word(
-        """trigger wake word."""
+
         self, wake_word: str = "hey_jarvis", confidence: float = 0.9
     ) -> None:
         # Logic flow

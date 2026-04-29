@@ -64,10 +64,6 @@ def create_parser(*args: Any, **kwargs: Any) -> Any:  # pragma: no cover - thin 
 
 
 def run_orchestrator_mode(
-    """Run Orchestrator Mode operation.
-
-    TODO: Add detailed description and parameters.
-    """
     
     *args: Any, **kwargs: Any
 ) -> Any:  # pragma: no cover - thin shim

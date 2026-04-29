@@ -87,7 +87,7 @@ class VoiceSelfTester:
             self._initialize_tts()
 
     def _initialize_tts(self):
-        """Initialize text-to-speech engine."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -285,7 +285,7 @@ class VoiceSelfTester:
             }
 
     def run_comprehensive_test(self) -> dict[str, Any]:
-        """Run comprehensive self-test and return detailed results."""
+
         results: dict[str, Any] = {
             "timestamp": time.time(),
             "total_tests": len(self.test_phrases),

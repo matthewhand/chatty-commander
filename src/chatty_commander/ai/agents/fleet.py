@@ -54,7 +54,7 @@ class AgentStatus(Enum):
 
 @dataclass
 class AgentCapability:
-    """Represents a capability that an agent possesses."""
+
 
     name: str
     description: str
@@ -63,7 +63,7 @@ class AgentCapability:
 
 @dataclass
 class AgentInstance:
-    """Represents a running instance of an AI agent."""
+
 
     agent_id: str
     name: str
@@ -337,15 +337,6 @@ class AgentFleet:
         blueprints_path: str | None = None,
         blueprint_ids: list[str] | None = None,
     ) -> list[AgentInstance]:
-        """Launch multiple agents from stored blueprints.
-
-        Args:
-            blueprints_path: Path to agents.json store file
-            blueprint_ids: Specific blueprint IDs to launch, or None for all
-
-        Returns:
-            List of launched AgentInstance objects
-        """
         # Import here to avoid circular dependencies
         import json
         from pathlib import Path
@@ -393,23 +384,6 @@ class AgentFleet:
         role: str | None = None,
         capability: str | None = None,
     ) -> str | None:
-        """Assign a task to an agent.
-
-        The task will be assigned to:
-        1. The specified agent_id if provided
-        2. An available agent with the specified role
-        3. An available agent with the specified capability
-        4. Any available agent
-
-        Args:
-            task: The task description/prompt
-            agent_id: Specific agent to assign to, or None for auto-selection
-            role: Required team role, or None
-            capability: Required capability, or None
-
-        Returns:
-            task_id if assigned, None if no agent available
-        """
         task_id = str(uuid.uuid4())
 
         # Find suitable agent
@@ -453,7 +427,7 @@ class AgentFleet:
         role: str | None = None,
         capability: str | None = None,
     ) -> AgentInstance | None:
-        """Find an available agent matching the criteria."""
+
         candidates: list[AgentInstance] = []
 
         for agent in self.agents.values():
@@ -490,13 +464,6 @@ class AgentFleet:
         result: str,
         agent_id: str | None = None,
     ) -> None:
-        """Mark a task as complete.
-
-        Args:
-            task_id: The task identifier
-            result: The task result
-            agent_id: Optional agent ID (inferred from task_id if not provided)
-        """
         if task_id not in self.active_tasks:
             logger.warning("Task %s not found in active tasks", task_id)
             return

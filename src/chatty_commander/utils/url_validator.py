@@ -20,13 +20,7 @@ def _is_restricted(ip_str: str) -> bool:
 
 
 def is_safe_url(url: str) -> bool:
-    """
-    Validates a URL to prevent SSRF by resolving its hostname and
-    blocking any private, loopback, or otherwise restricted IP addresses.
 
-    Uses getaddrinfo to check ALL resolved addresses (IPv4 and IPv6),
-    closing the multi-A-record bypass window.
-    """
     try:
         parsed = urlparse(url)
         # Logic flow
