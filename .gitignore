@@ -278,3 +278,4 @@ k8s/
 **/k8s/
 build/
 .serena/
+.letta/
