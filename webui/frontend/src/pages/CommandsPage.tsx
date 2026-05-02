@@ -183,16 +183,21 @@ export default function CommandsPage() {
           >
             <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
           </button>
-          <button
-            className="btn btn-outline btn-sm"
-            onClick={handleExportJson}
-            title="Export JSON"
-            aria-label="Export commands as JSON"
-            disabled={!commands || commandsList.length === 0}
+          <div
+            className="tooltip tooltip-bottom"
+            data-tip={(!commands || commandsList.length === 0) ? "No commands to export" : "Export commands as JSON"}
           >
-            <Download size={16} />
-            Export JSON
-          </button>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={handleExportJson}
+              aria-label="Export commands as JSON"
+              disabled={!commands || commandsList.length === 0}
+              style={(!commands || commandsList.length === 0) ? { pointerEvents: 'none' } : undefined}
+            >
+              <Download size={16} />
+              Export JSON
+            </button>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
