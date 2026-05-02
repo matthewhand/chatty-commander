@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Search,
   Download,
-  Upload
+  Upload,
+  X
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
@@ -239,8 +240,9 @@ export default function CommandsPage() {
               className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
               onClick={() => setSearchParams({})}
               aria-label="Clear search"
+              title="Clear search"
             >
-              ×
+              <X size={16} />
             </button>
           )}
         </div>
