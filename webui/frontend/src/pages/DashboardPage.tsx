@@ -406,14 +406,22 @@ const DashboardPage = React.memo(() => {
               onChange={(e) => setCommandInput(e.target.value)}
               disabled={isSending || !isConnected}
             />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!commandInput.trim() || isSending || !isConnected}
+            <div
+              className={(!isConnected || (!commandInput.trim() && !isSending)) ? "tooltip" : ""}
+              data-tip={!isConnected ? "System disconnected" : "Enter a command"}
+              role="tooltip"
+              aria-label={!isConnected ? "System disconnected" : "Enter a command"}
             >
-              {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
-              Execute
-            </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!commandInput.trim() || isSending || !isConnected}
+                style={(!commandInput.trim() || isSending || !isConnected) ? { pointerEvents: "none" } : undefined}
+              >
+                {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
+                Execute
+              </button>
+            </div>
           </form>
         </div>
       </div>
