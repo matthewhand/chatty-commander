@@ -5,7 +5,7 @@ import tempfile
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -244,3 +244,36 @@ def clear_agents_store() -> Generator[None, None, None]:
         _agents_mod._TEAM.clear()
     except Exception:
         pass
+
+
+@pytest.fixture(autouse=True)
+def mock_llm_backends() -> Generator[None, None, None]:
+    """Prevent real LLM backend initialization from hanging tests.
+
+    get_global_llm_manager() creates a real LLMManager which tries to
+    connect to OpenAI and Ollama backends. The is_available() check makes
+    actual API calls with a 30s timeout, causing tests to hang.
+
+    This fixture patches get_global_llm_manager to return a mock by default.
+    Tests that need real LLM behavior should override this with their own
+    patch of chatty_commander.llm.manager.get_global_llm_manager.
+    """
+    mock_backend = MagicMock()
+    mock_backend.is_available.return_value = False
+    mock_backend.model = "mock"
+    mock_backend.generate_response.return_value = "mock response"
+
+    mock_manager = MagicMock()
+    mock_manager.active_backend = mock_backend
+    mock_manager.get_active_backend_name.return_value = "mock"
+    mock_manager.is_available.return_value = True
+    mock_manager.generate_response.return_value = "mock response"
+
+    with patch("chatty_commander.llm.manager.get_global_llm_manager", return_value=mock_manager):
+        # Also reset the module-level singleton so stale state doesn't leak
+        import chatty_commander.llm.manager as _llm_mgr
+
+        _original = _llm_mgr._default_manager
+        _llm_mgr._default_manager = None
+        yield
+        _llm_mgr._default_manager = _original
