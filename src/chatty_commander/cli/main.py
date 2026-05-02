@@ -122,7 +122,6 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
 
 def run_web_mode(
-    """run web mode."""
     config,
     model_manager,
     state_manager,
@@ -133,6 +132,7 @@ def run_web_mode(
     port: int = 8100,
     no_auth: bool = False,
 ):
+    """run web mode."""
     """Run the web UI mode with FastAPI server and graceful shutdown."""
     import os
 
@@ -238,7 +238,6 @@ def run_web_mode(
 
 
 def run_gui_mode(
-    """run gui mode."""
     config,
     model_manager,
     state_manager,
@@ -247,6 +246,7 @@ def run_gui_mode(
     display_override: str | None = None,
     no_gui: bool = False,
 ):
+    """run gui mode."""
     """Run the GUI mode with graceful handling in headless environments.
 
     Returns:
@@ -571,9 +571,9 @@ def run_interactive_shell(
 
 
 def run_orchestrator_mode(
-    """run orchestrator mode."""
     config, model_manager, state_manager, command_executor, logger, args
 ):
+    """run orchestrator mode."""
     """Run orchestrator-driven mode; adapters route to the same command sink."""
     # Lazy import to avoid heavy imports in --help path
     from chatty_commander.app.orchestrator import (
