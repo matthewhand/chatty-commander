@@ -4,6 +4,12 @@ An advanced AI-powered voice command system with a modern Web interface, capable
 
 ![Dashboard Preview](docs/images/dashboard.png)
 
+## Recent Updates
+- **Test Cleanup**: Removed low-quality test files (`test_cli_coverage.py`, `test_browser_analyst_perf.py`, `test_llm_processor.py`) and improved test coverage
+- **Dependency Updates**: Updated voice pipeline dependencies and audio configuration APIs
+- **Security Enhancements**: Fixed authentication middleware and path traversal vulnerabilities
+- **UI Improvements**: DaisyUI migration for modern interface with improved accessibility
+
 ## Getting Started
 We have recently restructured our documentation to make onboarding easier!
 
