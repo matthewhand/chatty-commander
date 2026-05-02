@@ -15,3 +15,6 @@
 ## 2026-04-12 - [Module-Level Variable Imports]
 **Learning:** When a code review flags missing imports or predicts `NameError`s on startup, always verify their presence in the target file using bash commands (e.g., `grep`) before attempting a fix, as the reviewer's context may be hallucinated or outdated.
 **Action:** Use grep to check for imports like `import threading` and `from typing import Any` before assuming they are missing.
+## 2024-04-22 - Memoize Mapped JSX Elements
+**Learning:** During frequent parent component re-renders (like 1-second ticks or telemetry updates), inline `Array.map()` operations for rendering lists of complex JSX components (such as agent cards or log messages) cause unnecessary component reallocation and reconciliation overhead, degrading performance.
+**Action:** When a parent component renders frequently but its underlying list data changes less often, wrap the derived JSX element arrays in a `useMemo` hook that depends only on the list data. This prevents expensive reallocation of the UI elements during every render cycle.
