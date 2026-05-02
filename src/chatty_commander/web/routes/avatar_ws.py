@@ -109,10 +109,7 @@ class AvatarWSConnectionManager:
             logger.error(f"Failed to send snapshot to avatar client: {e}")
 
     def disconnect(self, websocket: WebSocket):
-        """Disconnect with (self, websocket: WebSocket).
 
-        TODO: Add detailed description and parameters.
-        """
         
         try:
         # Attempt operation with error handling
@@ -122,10 +119,7 @@ class AvatarWSConnectionManager:
             pass
 
     async def send_personal_message(
-        """Send Personal Message with (self, message, websocket: WebSocket).
 
-        TODO: Add detailed description and parameters.
-        """
         
         self, message: dict[str, Any], websocket: WebSocket
     ):
@@ -137,10 +131,6 @@ class AvatarWSConnectionManager:
             logger.error(f"Failed to send to avatar client: {e}")
 
     def broadcast_state_change(self, message: dict[str, Any]) -> None:
-        """Broadcast State Change with (self, message).
-
-        TODO: Add detailed description and parameters.
-        """
         
         # Optionally enrich with theme based on persona_id
         try:
@@ -275,14 +265,12 @@ class AvatarAudioQueue:
         self, agent_id: str, message: str, audio: bytes | None = None
     ) -> None:
         # Logic flow
-        """Add a message to the queue for playback."""
         await self.queue.put((agent_id, message, audio))
         self._ensure_processor()
 
     async def interrupt(
         self, agent_id: str, message: str, audio: bytes | None = None
     ) -> None:
-        """Interrupt current playback and play a priority message immediately."""
         # Clear any pending messages
         while not self.queue.empty():
             try:
@@ -317,14 +305,12 @@ audio_queue = AvatarAudioQueue(manager)
 async def queue_avatar_message(
     agent_id: str, message: str, audio: bytes | None = None
 ) -> None:
-    """Public helper to queue avatar speech."""
     await audio_queue.enqueue(agent_id, message, audio)
 
 
 async def interrupt_avatar_queue(
     agent_id: str, message: str, audio: bytes | None = None
 ) -> None:
-    """Public helper to interrupt current avatar speech with a priority message."""
     await audio_queue.interrupt(agent_id, message, audio)
 
 

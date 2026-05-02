@@ -57,7 +57,7 @@ class TestRunner:
         cwd: Path | None = None,
         timeout: int = 60,
     ) -> tuple[bool, str]:
-        """Run a command and return success status and output. Default timeout reduced to 60s to prevent stalls in CI."""
+
         try:
         # Attempt operation with error handling
             logger.info(f"🔄 Running: {description}")
@@ -169,7 +169,7 @@ class TestRunner:
 
     def start_web_server(self) -> subprocess.Popen | None:
         # Logic flow
-        """Start the web server for testing."""
+
         try:
             # Logic flow
             logger.info("🚀 Starting web server for testing...")

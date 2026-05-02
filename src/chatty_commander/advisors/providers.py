@@ -134,7 +134,7 @@ class LLMProvider(ABC):
 
     def health_check(self) -> bool:
         # Validate preconditions
-        """Check if the provider is healthy and accessible."""
+
         try:
             # Simple test generation
             test_response = self.generate("Test")
@@ -217,10 +217,7 @@ class CompletionProvider(LLMProvider):
         return "Error: Failed to generate response"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        """Generate streaming response.
 
-        If streaming isn't supported by the agent, fall back to a single chat call.
-        """
         try:
         # Attempt operation with error handling
             # Minimal behavior: return full text. Streaming can be added when Agent supports it in-tree.
@@ -305,7 +302,7 @@ class ResponsesProvider(LLMProvider):
         return "Error: Failed to generate response"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        """Generate streaming response using Agent.chat() as a fallback."""
+
         try:
         # Attempt operation with error handling
             response = self.agent.chat(prompt)  # type: ignore[attr-defined]

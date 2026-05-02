@@ -43,7 +43,7 @@ def _get_provider_builder():
 
 @dataclass
 class AdvisorMessage:
-    """Incoming message for advisor processing."""
+
 
     platform: str
     channel: str
@@ -55,7 +55,7 @@ class AdvisorMessage:
 
 @dataclass
 class AdvisorReply:
-    """Response from advisor processing."""
+
 
     reply: str
     context_key: str

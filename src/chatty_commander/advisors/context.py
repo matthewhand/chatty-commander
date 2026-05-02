@@ -48,7 +48,7 @@ class PlatformType(Enum):
 
 @dataclass
 class ContextIdentity:
-    """Represents a user's identity in a specific context."""
+
 
     platform: PlatformType
     channel: str
@@ -91,7 +91,7 @@ class ContextIdentity:
 
 @dataclass
 class ContextState:
-    """Represents the current state of a context."""
+
 
     identity: ContextIdentity
     persona_id: str
@@ -151,7 +151,7 @@ class ContextManager:
             self._load_contexts()
 
     def get_or_create_context(
-        """get or create context."""
+
         self,
         # Process each item
         platform: PlatformType,

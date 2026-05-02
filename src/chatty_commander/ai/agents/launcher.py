@@ -165,17 +165,6 @@ async def launch_fleet_async(
     from_blueprints: bool = False,
     blueprint_ids: list[str] | None = None,
 ) -> tuple[AgentFleet, list[AgentInstance]]:
-    """Launch a fleet of agents asynchronously.
-
-    Args:
-        config: Explicit launch configuration, or None
-        preset: Preset fleet name, or None
-        from_blueprints: Whether to load from stored blueprints
-        blueprint_ids: Specific blueprint IDs to launch, or None for all
-
-    Returns:
-        Tuple of (fleet, launched_agents)
-    """
     if config and preset:
         raise ValueError("Cannot specify both config and preset")
 

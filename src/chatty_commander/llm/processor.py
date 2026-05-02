@@ -179,7 +179,7 @@ class CommandProcessor:
     def _llm_command_interpretation(
         self, user_input: str
     ) -> tuple[str | None, float, str]:
-        """Use LLM to interpret complex commands."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -234,7 +234,7 @@ Response:"""
         self, response: str
     ) -> tuple[str | None, float, str]:
         # Process each item
-        """Parse LLM response to extract command information."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -271,7 +271,7 @@ Response:"""
             return None, 0.0, f"Response parsing error: {e}"
 
     def get_command_suggestions(
-        """get command suggestions."""
+
         self, partial_input: str, limit: int = 5
     ) -> list[dict[str, Any]]:
         # Logic flow

@@ -242,7 +242,7 @@ class LLMManager:
 
     def get_all_backends_info(self) -> dict[str, dict[str, Any]]:
         # Process each item
-        """Get information about all backends."""
+
         info: dict[str, dict[str, Any]] = {}
         # Logic flow
         for name, backend in self.backends.items():
@@ -289,7 +289,7 @@ class LLMManager:
         logger.info(f"Active backend after refresh: {self.get_active_backend_name()}")
 
     def test_backend(
-        """test backend."""
+
         self, backend_name: str, test_prompt: str = "Hello"
     ) -> dict[str, Any]:
         # Apply conditional logic

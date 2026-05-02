@@ -130,10 +130,7 @@ logger = logging.getLogger(__name__)
 
 # Advisor API models
 class AdvisorInbound(BaseModel):
-    """AdvisorInbound class.
 
-    TODO: Add class description.
-    """
     
     platform: str
     channel: str
@@ -144,10 +141,7 @@ class AdvisorInbound(BaseModel):
 
 
 class AdvisorOutbound(BaseModel):
-    """AdvisorOutbound class.
 
-    TODO: Add class description.
-    """
     
     reply: str
     context_key: str
@@ -157,10 +151,7 @@ class AdvisorOutbound(BaseModel):
 
 
 class ContextStats(BaseModel):
-    """ContextStats class.
 
-    TODO: Add class description.
-    """
     
     total_contexts: int
     # Build filtered collection
@@ -206,7 +197,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def get_client_ip(
-    """get client ip."""
+
     request: Request,
     trusted_proxies: list[str] | None = None,
 ) -> str:
@@ -427,10 +418,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 
 class SystemStatus(BaseModel):
-    """SystemStatus class.
 
-    TODO: Add class description.
-    """
     
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
@@ -440,10 +428,7 @@ class SystemStatus(BaseModel):
 
 
 class StateChangeRequest(BaseModel):
-    """StateChangeRequest class.
 
-    TODO: Add class description.
-    """
     
     state: str = Field(
         ..., description="Target state", pattern="^(idle|computer|chatty)$"
@@ -451,10 +436,7 @@ class StateChangeRequest(BaseModel):
 
 
 class CommandRequest(BaseModel):
-    """CommandRequest class.
 
-    TODO: Add class description.
-    """
     
     command: str = Field(..., description="Command name to execute")
     parameters: dict[str, Any] | None = Field(
@@ -463,10 +445,7 @@ class CommandRequest(BaseModel):
 
 
 class CommandResponse(BaseModel):
-    """CommandResponse class.
 
-    TODO: Add class description.
-    """
     
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
@@ -474,10 +453,7 @@ class CommandResponse(BaseModel):
 
 
 class StateInfo(BaseModel):
-    """StateInfo class.
 
-    TODO: Add class description.
-    """
     
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
@@ -486,10 +462,7 @@ class StateInfo(BaseModel):
 
 
 class WebSocketMessage(BaseModel):
-    """WebSocketMessage class.
 
-    TODO: Add class description.
-    """
     
     type: str = Field(..., description="Message type")
     data: dict[str, Any] = Field(..., description="Message data")
@@ -961,10 +934,7 @@ class WebModeServer:
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(
         # Async function for concurrent execution
-            """Advisor Message with (message: AdvisorInbound, x_api_key).
 
-            TODO: Add detailed description and parameters.
-            """
             
             message: AdvisorInbound,
             x_api_key: str | None = Header(None, alias="X-API-Key"),
@@ -1013,10 +983,6 @@ class WebModeServer:
         @app.post("/api/v1/advisors/context/switch")
         async def switch_persona(context_key: str, persona_id: str):
         # Async function for concurrent execution
-            """Switch Persona with (context_key: str, persona_id: str).
-
-            TODO: Add detailed description and parameters.
-            """
             
             svc = self.advisors_service
             # Logic flow
@@ -1069,10 +1035,6 @@ class WebModeServer:
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
         # Async function for concurrent execution
-            """Advisors Memory with (platform: str, channel: str, user: str, limit: int).
-
-            TODO: Add detailed description and parameters.
-            """
             
             # Process each item
             platform: str, channel: str, user: str, limit: int = 20
@@ -1129,10 +1091,7 @@ class WebModeServer:
         @app.post("/bridge/event")
         async def bridge_event(
         # Async function for concurrent execution
-            """Bridge Event with (event, x_bridge_token).
 
-            TODO: Add detailed description and parameters.
-            """
             
             event: dict[str, Any],
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
@@ -1164,7 +1123,6 @@ class WebModeServer:
         return f"{hours}h {minutes}m {seconds_i}s"
 
     async def _broadcast_message(self, message: WebSocketMessage) -> None:
-        """Broadcast a message to all active WebSocket connections."""
         payload = message.model_dump_json()
         # Logic flow
         for ws in list(self.active_connections):
@@ -1228,10 +1186,7 @@ class WebModeServer:
         )
 
     def on_system_event(self, event_type: str, details: str | dict[str, Any]) -> None:
-        """On System Event with (self, event_type: str, details).
 
-        TODO: Add detailed description and parameters.
-        """
         
         try:
         # Attempt operation with error handling
@@ -1248,7 +1203,6 @@ class WebModeServer:
 
 
 def create_app(
-    """create app."""
     *,
     config: Config | None = None,
     config_manager: Config | None = None,
@@ -1267,7 +1221,7 @@ def create_app(
 
 
 def run_server(
-    """run server."""
+
     config_manager: Config,
     state_manager: StateManager,
     model_manager: ModelManager,

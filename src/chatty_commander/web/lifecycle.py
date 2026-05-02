@@ -52,7 +52,7 @@ def _atexit_handler() -> None:
 
 
 def register_lifecycle(
-    """register lifecycle."""
+
     app: FastAPI,
     *,
     get_state_manager: Callable[[], Any],

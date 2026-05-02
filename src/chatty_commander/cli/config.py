@@ -54,7 +54,7 @@ class ConfigCLI:
     # Loading / saving
 
     def load_config(self) -> Config:
-        """Load configuration from ``config_path``."""
+
         try:
         # Attempt operation with error handling
             # Apply conditional logic

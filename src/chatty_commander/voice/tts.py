@@ -144,11 +144,7 @@ class TextToSpeech:
             raise ValueError(f"Unknown TTS backend: {backend}")
 
     def speak(self, text: str) -> None:
-        """Speak with (self, text: str).
-        # TODO: Document this logic
 
-        TODO: Add detailed description and parameters.
-        """
         
         try:
         # Attempt operation with error handling

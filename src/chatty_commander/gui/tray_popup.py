@@ -80,12 +80,7 @@ def _load_settings(config: Any) -> dict[str, Any]:
 
 
 def _icon_image() -> Image.Image | None:
-    """
-    Try to load a tray icon image.
 
-    - Prefer icon.png if present (since PIL cannot rasterize SVG without extra deps).
-    - If only icon.svg exists, skip and allow default OS tray icon.
-    """
     try:
         from PIL import Image  # type: ignore
     # Handle specific exception case

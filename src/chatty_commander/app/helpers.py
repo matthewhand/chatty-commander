@@ -42,7 +42,7 @@ def format_command_output(cmd_output: str) -> str:
 
 
 def parse_model_keybindings(keybindings_str: str) -> dict[str, str]:
-    """Parse a string of keybindings into a dictionary."""
+
     keybindings: dict[str, str] = {}
     if keybindings_str:
         pairs = keybindings_str.split(",")

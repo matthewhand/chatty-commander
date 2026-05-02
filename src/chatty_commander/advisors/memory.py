@@ -31,10 +31,7 @@ from datetime import datetime
 
 @dataclass
 class MemoryItem:
-    """MemoryItem class.
 
-    TODO: Add class description.
-    """
     
     role: str  # "user" | "assistant"
     content: str
@@ -100,13 +97,6 @@ class MemoryStore:
         return f"{platform}:{channel}:{user}"
 
     def add(
-        # Process each item
-        """Add with (self, platform: str, channel: str, user: str, role: str, content: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Process each item
         self, platform: str, channel: str, user: str, role: str, content: str
     ) -> None:
         # Process each item
@@ -140,13 +130,6 @@ class MemoryStore:
                 pass
 
     def get(
-        # Process each item
-        """Get with (self, platform: str, channel: str, user: str, limit: int).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Process each item
         self, platform: str, channel: str, user: str, limit: int = 20
     ) -> list[MemoryItem]:
         # Process each item
@@ -159,10 +142,6 @@ class MemoryStore:
 
     def clear(self, platform: str, channel: str, user: str) -> int:
         # Process each item
-        """Clear with (self, platform: str, channel: str, user: str).
-
-        TODO: Add detailed description and parameters.
-        """
         
         # Process each item
         key = self._ctx(platform, channel, user)

@@ -54,7 +54,7 @@ except ImportError:
 
 @dataclass
 class ValidationResult:
-    """Result of a validation check."""
+
 
     passed: bool
     confidence: float
@@ -75,7 +75,7 @@ class ValidationResult:
 
 @dataclass
 class OCRValidationResult(ValidationResult):
-    """Result of OCR text validation."""
+
 
     expected_texts: list[str] = field(default_factory=list)
     found_texts: list[str] = field(default_factory=list)
@@ -95,7 +95,7 @@ class OCRValidationResult(ValidationResult):
 
 @dataclass
 class LayoutValidationResult(ValidationResult):
-    """Result of layout/position validation."""
+
 
     checked_elements: list[str] = field(default_factory=list)
     found_positions: dict[str, tuple[int, int]] = field(default_factory=dict)
@@ -105,7 +105,7 @@ class LayoutValidationResult(ValidationResult):
 
 @dataclass
 class ColorValidationResult(ValidationResult):
-    """Result of color scheme validation."""
+
 
     checked_colors: list[str] = field(default_factory=list)
     dominant_colors: dict[str, tuple[int, int, int]] = field(default_factory=dict)

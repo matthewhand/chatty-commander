@@ -54,19 +54,7 @@ class StateManager:
         # Use context manager for resource management
 
     def process_command(self, command: str) -> bool:
-        """Process a command and return success status.
 
-        # Process each item
-        This method provides a simple interface for command processing
-        that returns a boolean success status.
-
-        Args:
-            command: The command to process
-
-        Returns:
-            # Apply conditional logic
-            True if command was processed successfully, False otherwise
-        """
         try:
         # Attempt operation with error handling
             result = self.update_state(command)
@@ -137,10 +125,7 @@ class StateManager:
         self.callbacks.append(callback)
 
     def change_state(
-        """Change State with (self, new_state: str, callback).
 
-        TODO: Add detailed description and parameters.
-        """
         
         self, new_state: str, callback: Callable[[str], None] | None = None
     ) -> None:

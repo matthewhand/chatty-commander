@@ -30,7 +30,7 @@ from typing import Any
 
 @dataclass
 class ConversationTurn:
-    """Represents a single turn in a conversation."""
+
 
     timestamp: datetime
     user_input: str
@@ -151,7 +151,7 @@ class ConversationEngine:
         return "\n".join(context_lines)
 
     def build_enhanced_prompt(
-        """build enhanced prompt."""
+
         self,
         user_input: str,
         user_id: str,
@@ -238,7 +238,7 @@ Remember: You're not just answering questions - you're having a conversation wit
         return f"{system_prompt}\n\nUser: {user_input}\n\nAssistant:"
 
     def record_conversation_turn(
-        """record conversation turn."""
+
         self,
         user_id: str,
         user_input: str,

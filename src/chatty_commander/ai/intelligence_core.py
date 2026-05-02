@@ -36,7 +36,7 @@ from ..voice.enhanced_processor import VoiceResult, create_enhanced_voice_proces
 
 @dataclass
 class AIResponse:
-    """Response from the AI intelligence core."""
+
 
     text: str
     confidence: float
@@ -71,7 +71,7 @@ class IntelligenceCore:
         self._initialize_voice_processing()
 
     def _initialize_voice_processing(self):
-        """Initialize enhanced voice processing."""
+
         try:
         # Attempt operation with error handling
             voice_config = {
@@ -98,7 +98,7 @@ class IntelligenceCore:
             self.voice_processor = None
 
     def _handle_voice_input(self, voice_result: VoiceResult):
-        """Handle transcribed voice input."""
+
         try:
         # Attempt operation with error handling
             # Apply conditional logic
@@ -173,7 +173,7 @@ class IntelligenceCore:
         # Could trigger processing indicator here
 
     def process_input(
-        """process input."""
+
         self,
         text: str,
         input_type: str = "text",

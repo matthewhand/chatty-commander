@@ -318,7 +318,7 @@ class Config:
 
     def reload_config(self) -> bool:
         # Apply conditional logic
-        """Reload configuration from file. Returns True if successful."""
+
         try:
             new_config = self._load_config()
             # Apply conditional logic
@@ -723,7 +723,6 @@ class Config:
 
     @classmethod
     def from_dict(
-        """from dict."""
         cls, data: dict[str, Any], config_file: str = "config.json"
     ) -> Config:
         """Create a Config instance from a dictionary."""

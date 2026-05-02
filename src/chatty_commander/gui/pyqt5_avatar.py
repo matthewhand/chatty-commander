@@ -83,16 +83,7 @@ except ImportError:
         """QApplication class.
 
         TODO: Add class description.
-        """
         
-        pass
-
-
-logger = logging.getLogger(__name__)
-
-
-class TransparentBrowser(QMainWindow):
-    """
     Transparent, frameless browser window for avatar display.
 
     Features:
@@ -328,7 +319,7 @@ class TransparentBrowser(QMainWindow):
 
 
 def _load_settings() -> dict[str, Any]:
-    """Load PyQt5 avatar settings from configuration."""
+
     try:
         from chatty_commander.app.config import Config
 

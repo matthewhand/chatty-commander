@@ -42,7 +42,7 @@ router = APIRouter()
 
 
 class CommandAction(BaseModel):
-    """A single action within a command."""
+
 
     type: str = Field(
         ...,
@@ -72,7 +72,7 @@ class CommandAction(BaseModel):
 
 
 class GenerateCommandRequest(BaseModel):
-    """Request to generate a command from natural language description."""
+
 
     description: str = Field(
         ...,
@@ -83,7 +83,7 @@ class GenerateCommandRequest(BaseModel):
 
 
 class GeneratedCommandResponse(BaseModel):
-    """Response containing a generated command configuration."""
+
 
     name: str = Field(
         ...,

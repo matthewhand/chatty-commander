@@ -35,7 +35,7 @@ import numpy as np
 
 @dataclass
 class VoiceProcessingConfig:
-    """Configuration for enhanced voice processing."""
+
 
     sample_rate: int = 16000
     chunk_size: int = 1024
@@ -50,7 +50,7 @@ class VoiceProcessingConfig:
 
 @dataclass
 class VoiceResult:
-    """Result from voice processing."""
+
 
     text: str
     confidence: float
@@ -95,7 +95,7 @@ class EnhancedVoiceProcessor:
         self._initialize_components()
 
     def _initialize_components(self):
-        """Initialize voice processing components."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -122,7 +122,7 @@ class EnhancedVoiceProcessor:
             self.logger.error(f"Failed to initialize voice processor: {e}")
 
     def _initialize_noise_reduction(self):
-        """Initialize noise reduction component."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -138,7 +138,7 @@ class EnhancedVoiceProcessor:
             self.logger.info("Basic noise reduction enabled")
 
     def _initialize_vad(self):
-        """Initialize voice activity detection."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -154,7 +154,7 @@ class EnhancedVoiceProcessor:
             self.logger.info("Energy-based VAD enabled")
 
     def _initialize_transcription(self):
-        """Initialize speech-to-text transcription."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -182,7 +182,7 @@ class EnhancedVoiceProcessor:
                 self.logger.warning("No transcription engine available")
 
     def _initialize_wake_word_detection(self):
-        """Initialize wake word detection."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -307,7 +307,7 @@ class EnhancedVoiceProcessor:
             )
 
     def _process_audio_chunk(self, audio_chunk: bytes) -> VoiceResult | None:
-        """Process a single audio chunk."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -407,7 +407,7 @@ class EnhancedVoiceProcessor:
         self.logger.info("Enhanced voice processing stopped")
 
     def _audio_processing_loop(self):
-        """Main audio processing loop."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -468,7 +468,7 @@ class EnhancedVoiceProcessor:
             self.logger.error(f"Audio processing loop error: {e}")
 
     def process_audio_file(self, file_path: str) -> VoiceResult:
-        """Process an audio file and return transcription."""
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic

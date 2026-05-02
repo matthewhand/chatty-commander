@@ -27,10 +27,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Persona:
-    """Persona class.
 
-    TODO: Add class description.
-    """
     
     name: str
     system: str
@@ -42,10 +39,7 @@ DEFAULT_PERSONAS: dict[str, str] = {
 
 
 def resolve_persona(
-    """Resolve Persona with (name, personas_cfg).
 
-    TODO: Add detailed description and parameters.
-    """
     
     name: str | None, personas_cfg: dict[str, str] | None = None
 ) -> Persona:
