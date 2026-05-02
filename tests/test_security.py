@@ -86,6 +86,39 @@ class TestSecurity:
         # CORS should be properly configured
         assert server.no_auth is True
 
+        # Verify CORS middleware is present and restrictive
+        from fastapi.middleware.cors import CORSMiddleware
+        cors_middleware = next(
+            m for m in server.app.user_middleware if m.cls is CORSMiddleware
+        )
+        allow_origins = cors_middleware.options.get("allow_origins", [])
+        allow_credentials = cors_middleware.options.get("allow_credentials", False)
+
+        # Wildcard should NOT be present in dev mode anymore
+        assert "*" not in allow_origins
+        assert "http://localhost:3000" in allow_origins
+
+        # If wildcard WERE present, allow_credentials must be False
+        if "*" in allow_origins:
+            assert not allow_credentials
+
+    def test_apply_cors_wildcard_safety(self):
+        """Test that apply_cors enforces allow_credentials=False for wildcard origins."""
+        from fastapi import FastAPI
+        from chatty_commander.web.auth import apply_cors
+        from fastapi.middleware.cors import CORSMiddleware
+
+        app = FastAPI()
+        # Manually provide wildcard origin
+        apply_cors(app, no_auth=False, origins=["*"])
+
+        cors_middleware = next(
+            m for m in app.user_middleware if m.cls is CORSMiddleware
+        )
+        assert cors_middleware.options["allow_origins"] == ["*"]
+        # Must be False for wildcard
+        assert cors_middleware.options["allow_credentials"] is False
+
 
 class TestClientIPSecurity:
     """Tests for secure client IP extraction to prevent IP spoofing attacks."""

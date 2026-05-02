@@ -91,6 +91,7 @@ except ImportError:
     include_audio_routes = None
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.voice import include_voice_routes
+from chatty_commander.web.auth import apply_cors
 from chatty_commander.web.routes.ws import include_ws_routes
 
 # Avatar routes (optional)
@@ -563,13 +564,7 @@ class WebModeServer:
         app.add_middleware(ResponseTimeMiddleware)
 
         # CORS policy
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"] if self.no_auth else ["http://localhost:3000"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+        apply_cors(app, no_auth=self.no_auth)
 
         # Core REST via extracted router (status/config/state/command)
         core = include_core_routes(
