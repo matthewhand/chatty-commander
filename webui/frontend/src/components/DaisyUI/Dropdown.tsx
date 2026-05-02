@@ -63,11 +63,13 @@ const Dropdown: React.FC<DropdownProps> = ({
   const sizeCls = size === 'none' ? '' : `btn-${size}`;
   const colorCls = appliedColor === 'none' ? '' : `btn-${appliedColor}`;
 
+  const computedAriaLabel = ariaLabel || (typeof trigger === 'string' ? trigger : 'Toggle dropdown');
+
   return (
     <div className={`dropdown ${positionCls} ${alignCls} ${className}`} ref={dropdownRef}>
       <div tabIndex={disabled ? -1 : 0} role="button"
         className={`btn ${sizeCls} ${colorCls} ${disabled ? 'btn-disabled opacity-50' : ''} ${triggerClassName}`}
-        onClick={handleToggle} aria-haspopup="true" aria-expanded={isOpen} aria-label={ariaLabel || 'Toggle dropdown'}>
+        onClick={handleToggle} aria-haspopup="true" aria-expanded={isOpen} aria-label={computedAriaLabel}>
         {trigger}
         {!hideArrow && <ChevronDown className="h-5 w-5" aria-hidden="true" />}
       </div>
