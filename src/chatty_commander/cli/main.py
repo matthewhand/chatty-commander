@@ -73,7 +73,7 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
         TODO: Add detailed description and parameters.
         """
-        
+
         logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         shutdown_flag["stop"] = True
 
@@ -122,7 +122,6 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
 
 def run_web_mode(
-    """run web mode."""
     config,
     model_manager,
     state_manager,
@@ -166,7 +165,7 @@ def run_web_mode(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         web_server.on_command_detected(command, confidence=1.0)
 
     def on_state_change(old_state, new_state):
@@ -174,7 +173,7 @@ def run_web_mode(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         web_server._on_state_change(old_state, new_state)
 
     # Register callbacks
@@ -190,11 +189,11 @@ def run_web_mode(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         logger.info(f"Received signal {signum}, stopping web server...")
         stop_event.set()
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             stopper = getattr(web_server, "stop", None)
             # Apply conditional logic
             if callable(stopper):
@@ -212,7 +211,7 @@ def run_web_mode(
         host = env_host
     if env_port:
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             port = int(env_port)
         # Handle specific exception case
         except ValueError:
@@ -224,7 +223,7 @@ def run_web_mode(
         web_server.run(host=host, port=port)
     finally:
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Apply conditional logic
             if hasattr(model_manager, "shutdown"):
                 model_manager.shutdown()
@@ -238,7 +237,6 @@ def run_web_mode(
 
 
 def run_gui_mode(
-    """run gui mode."""
     config,
     model_manager,
     state_manager,
@@ -277,6 +275,7 @@ def run_gui_mode(
             from chatty_commander.avatars.avatar_gui import (
                 run_avatar_gui,  # type: ignore
             )
+
             logger.info("Starting Avatar GUI (TalkingHead)")
             rc = run_avatar_gui()
             # Validate input exists
@@ -287,11 +286,12 @@ def run_gui_mode(
                 f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI"
             )
             try:
-            # Attempt operation with error handling
+                # Attempt operation with error handling
                 # Try PyQt5-based transparent browser avatar
                 from chatty_commander.gui.pyqt5_avatar import (
                     run_pyqt5_avatar,  # type: ignore
                 )
+
                 logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
                 rc = run_pyqt5_avatar()
                 # Validate input exists
@@ -316,7 +316,7 @@ def run_gui_mode(
             f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
         )
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Legacy GUI fallback; gui module may not define main()
             from chatty_commander.gui import main as gui_main  # type: ignore[attr-defined]  # noqa: I001
 
@@ -473,10 +473,12 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
 
 def run_interactive_shell(
     # TODO: REFACTOR - Complexity 12, extract sub-functions
-
     # TODO: REFACTOR - Complexity 12, extract sub-functions
-
-    config, model_manager, state_manager, command_executor, logger
+    config,
+    model_manager,
+    state_manager,
+    command_executor,
+    logger,
 ):
     """Run interactive text-based shell mode with tab completion."""
     import readline
@@ -493,7 +495,7 @@ def run_interactive_shell(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Build filtered collection
         # Apply conditional logic
         options = [cmd for cmd in commands if cmd.startswith(text)]
@@ -503,16 +505,18 @@ def run_interactive_shell(
             suboptions = [
                 # Build filtered collection
                 # Apply conditional logic
-                f"execute {act}" for act in model_actions if act.startswith(subtext)
+                f"execute {act}"
+                for act in model_actions
+                if act.startswith(subtext)
             ]
             try:
-            # Attempt operation with error handling
+                # Attempt operation with error handling
                 return suboptions[state]
             # Handle specific exception case
             except IndexError:
                 return None
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             return options[state]
         # Handle specific exception case
         except IndexError:
@@ -523,7 +527,7 @@ def run_interactive_shell(
 
     while True:
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             input_str = input("> ").strip()
             # Apply conditional logic
             if not input_str:
@@ -571,7 +575,6 @@ def run_interactive_shell(
 
 
 def run_orchestrator_mode(
-    """run orchestrator mode."""
     config, model_manager, state_manager, command_executor, logger, args
 ):
     """Run orchestrator-driven mode; adapters route to the same command sink."""
@@ -609,10 +612,10 @@ def run_orchestrator_mode(
     orchestrator.stop()
     return 0
 
-
     # TODO: REFACTOR - Complexity 30, extract sub-functions
 
     # TODO: REFACTOR - Complexity 30, extract sub-functions
+
 
 def main():
     """Entry point for the ChattyCommander application."""
@@ -685,7 +688,7 @@ def main():
     if web_cfg:
         config.web_server = web_cfg
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             config.config["web_server"] = web_cfg
         # Handle specific exception case
         except Exception:
@@ -751,7 +754,7 @@ def main():
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 print(f"AI: {response.text}")
                 # Apply conditional logic
                 if response.actions:

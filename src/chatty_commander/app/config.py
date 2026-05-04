@@ -37,7 +37,7 @@ class Config:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
@@ -59,7 +59,9 @@ class Config:
             "chat_models_path", "models-chatty"
         )
 
-        self.state_models: dict[str, list[str]] = self.config_data.get("state_models", {})
+        self.state_models: dict[str, list[str]] = self.config_data.get(
+            "state_models", {}
+        )
         self.api_endpoints: dict[str, str] = self.config_data.get(
             "api_endpoints",
             {
@@ -97,8 +99,6 @@ class Config:
         # Voice/GUI behaviour
         self._voice_only: bool = bool(self.config_data.get("voice_only", False))
 
-
-
         # Audio configuration
         self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
         self.sample_rate: int = self.config_data.get("sample_rate", 16000)
@@ -125,7 +125,9 @@ class Config:
         # Logic flow
         # Commands for model actions
         default_commands = {}
-        if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
+        if (
+            not self.config_file or "commands" not in self.config_data
+        ):  # Use defaults if file missing or commands missing
             default_commands = {
                 "hello": {
                     "action": "custom_message",
@@ -161,55 +163,55 @@ class Config:
 
             @property
             def default_state(self) -> str:
-            # TODO: Document this logic
+                # TODO: Document this logic
                 """Default State with (self).
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return self._cfg.default_state
 
             @default_state.setter
             def default_state(self, v: str) -> None:
-            # TODO: Document this logic
+                # TODO: Document this logic
                 """Default State with (self, v: str).
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 self._cfg.default_state = v
                 self._cfg.config_data["default_state"] = v
 
             @property
             def debug_mode(self) -> bool:
-            # TODO: Document this logic
+                # TODO: Document this logic
                 """Debug Mode with (self).
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return bool(
                     self._cfg.config_data.get("general", {}).get("debug_mode", True)
                 )
 
             @debug_mode.setter
             def debug_mode(self, v: bool) -> None:
-            # TODO: Document this logic
+                # TODO: Document this logic
                 """Debug Mode with (self, v: bool).
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 self._cfg._update_general_setting("debug_mode", bool(v))
 
             @property
             def inference_framework(self) -> str:
-            # TODO: Document this logic
+                # TODO: Document this logic
                 """Inference Framework with (self).
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return str(
                     self._cfg.config_data.get("general", {}).get(
                         "inference_framework", "onnx"
@@ -218,34 +220,34 @@ class Config:
 
             @inference_framework.setter
             def inference_framework(self, v: str) -> None:
-            # TODO: Document this logic
+                # TODO: Document this logic
                 """Inference Framework with (self, v: str).
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 self._cfg._update_general_setting("inference_framework", v)
 
             @property
             def start_on_boot(self) -> bool:
-            # TODO: Document this logic
+                # TODO: Document this logic
                 """Start On Boot with (self).
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return bool(
                     self._cfg.config_data.get("general", {}).get("start_on_boot", False)
                 )
 
             @start_on_boot.setter
             def start_on_boot(self, v: bool) -> None:
-            # TODO: Document this logic
+                # TODO: Document this logic
                 """Start On Boot with (self, v: bool).
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 self._cfg._update_general_setting("start_on_boot", bool(v))
 
             @property
@@ -255,11 +257,12 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return bool(
                     self._cfg.config_data.get("general", {}).get(
                         # Process each item
-                        "check_for_updates", True
+                        "check_for_updates",
+                        True,
                     )
                 )
 
@@ -271,7 +274,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 # Process each item
                 self._cfg._update_general_setting("check_for_updates", bool(v))
 
@@ -419,9 +422,9 @@ class Config:
     def _load_config(self) -> dict[str, Any]:
         # Apply conditional logic
         if not isinstance(self.config_file, str):
-             raise TypeError("config_file must be a string")
+            raise TypeError("config_file must be a string")
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             with open(self.config_file, encoding="utf-8") as f:
                 config_data = json.load(f)
                 # Logic flow
@@ -452,7 +455,7 @@ class Config:
         general_settings = self.config_data.get("general_settings", {})
 
         def _env_bool(name: str, default: bool) -> bool:
-        # TODO: Document this logic
+            # TODO: Document this logic
             val = os.getenv(name)
             # Validate input exists
             if val is None:
@@ -469,7 +472,9 @@ class Config:
             )
         self.default_state = os.getenv(
             "CHATCOMM_DEFAULT_STATE",
-            general_settings.get("default_state", self.config_data.get("default_state", "idle"))
+            general_settings.get(
+                "default_state", self.config_data.get("default_state", "idle")
+            ),
         )
         self.inference_framework = os.getenv(
             "CHATCOMM_INFERENCE_FRAMEWORK",
@@ -502,10 +507,10 @@ class Config:
                 keys = cfg.get("keys")
                 # Apply conditional logic
                 if isinstance(keys, str):
-                   mapped = keybindings.get(keys, keys)
-                   # Apply conditional logic
-                   if mapped:
-                       actions[name] = {"keypress": mapped}
+                    mapped = keybindings.get(keys, keys)
+                    # Apply conditional logic
+                    if mapped:
+                        actions[name] = {"keypress": mapped}
             # Apply conditional logic
             elif action_type == "url":
                 url = cfg.get("url", "")
@@ -533,7 +538,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return bool(self.config_data.get("general", {}).get("debug_mode", True))
 
     @debug_mode.setter
@@ -542,7 +547,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self.config_data.setdefault("general", {})["debug_mode"] = bool(value)
 
     @property
@@ -551,7 +556,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self._voice_only
 
     @voice_only.setter
@@ -560,7 +565,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._voice_only = bool(value)
 
     # ------------------------------------------------------------------
@@ -570,7 +575,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Validate input exists
         if config_data is not None:
             self.config_data.update(config_data)
@@ -585,7 +590,7 @@ class Config:
             return
         try:
             with open(self.config_file, "w", encoding="utf-8") as f:
-            # Use context manager for resource management
+                # Use context manager for resource management
                 json.dump(self.config_data, f, indent=2)
         # Handle specific exception case
         except (TypeError, ValueError, OSError) as e:
@@ -596,7 +601,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if not self.model_actions:
             raise ValueError("Model actions configuration is empty.")
@@ -620,7 +625,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._update_general_setting("start_on_boot", bool(enabled))
         self.start_on_boot = bool(enabled)
         # Apply conditional logic
@@ -642,7 +647,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Process each item
         self._update_general_setting("check_for_updates", bool(enabled))
         # Process each item
@@ -662,12 +667,12 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Validate preconditions
         if not self.check_for_updates:
             return None
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             result = subprocess.run(
                 ["git", "rev-parse", "--git-dir"],
                 capture_output=True,
@@ -718,12 +723,11 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return cls(config_file)
 
     @classmethod
     def from_dict(
-        """from dict."""
         cls, data: dict[str, Any], config_file: str = "config.json"
     ) -> Config:
         """Create a Config instance from a dictionary."""
@@ -759,7 +763,8 @@ class Config:
         # Process each item
         instance.audio_format = instance.config_data.get("general", {}).get(
             # Process each item
-            "audio_format", "int16"
+            "audio_format",
+            "int16",
         )
         # Process each item
         instance.check_for_updates = bool(

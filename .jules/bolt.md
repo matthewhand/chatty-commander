@@ -15,3 +15,6 @@
 ## 2026-04-12 - [Module-Level Variable Imports]
 **Learning:** When a code review flags missing imports or predicts `NameError`s on startup, always verify their presence in the target file using bash commands (e.g., `grep`) before attempting a fix, as the reviewer's context may be hallucinated or outdated.
 **Action:** Use grep to check for imports like `import threading` and `from typing import Any` before assuming they are missing.
+## 2024-05-04 - [DashboardPage React Component Reallocation]
+**Learning:** Extracting helper functions out of the React component body prevents redefining them during high-frequency parent re-renders caused by WebSocket events. Additionally, mapping large data arrays to JSX elements directly inside the component return statement recalculates on every render cycle.
+**Action:** Always wrap data mapping (like `agentData?.map(...)`) in `useMemo`, and place constant helpers (like `getAgentStatusColor`) outside the React function component to prevent unnecessary allocations and optimize real-time dashboards.

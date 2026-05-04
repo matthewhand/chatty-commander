@@ -50,7 +50,7 @@ def _propagate_patches() -> None:
     ):
         # Logic flow
         if name in globals():
-        # TODO: Document this logic
+            # TODO: Document this logic
             setattr(_cli, name, globals()[name])
 
 
@@ -59,18 +59,17 @@ def create_parser(*args: Any, **kwargs: Any) -> Any:  # pragma: no cover - thin 
 
     TODO: Add detailed description and parameters.
     """
-    
+
     return _cli.create_parser(*args, **kwargs)
 
 
 def run_orchestrator_mode(
+    *args: Any, **kwargs: Any
+) -> Any:  # pragma: no cover - thin shim
     """Run Orchestrator Mode operation.
 
     TODO: Add detailed description and parameters.
     """
-    
-    *args: Any, **kwargs: Any
-) -> Any:  # pragma: no cover - thin shim
     _propagate_patches()
     return _cli.run_orchestrator_mode(*args, **kwargs)
 
@@ -95,4 +94,5 @@ __all__ = [
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())
