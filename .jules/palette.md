@@ -1,3 +1,6 @@
 ## 2024-06-25 - Explicit ID & Label Linking in Dynamic Components
 **Learning:** When building dynamic form lists in React (like mapping over an array of custom inputs), using implicit labels (`<label><input/></label>`) isn't always feasible, but simply placing `<label>` next to `<input>` with no mapping completely breaks screen reader association.
 **Action:** Always explicitly define uniquely generated IDs (e.g. ``id={`field-${index}`}``) and bind them directly using the `htmlFor` property on the label elements in dynamically generated components. Additionally, ensure bare `<textarea>` tags with placeholder text still have a proper `aria-label` or visually hidden label text to serve as the accessible name.
+## 2026-05-13 - Dynamic ARIA labels for dynamic text
+**Learning:** When adding an `aria-label` to a button whose inner text changes dynamically based on state (e.g., `isTesting ? "Testing..." : "Test"`), the `aria-label` must also be dynamic to match the state (e.g., `aria-label={isTesting ? "Testing device" : "Test device"}`). A static `aria-label` completely overrides the inner text for screen readers, hiding the visual state change from assistive technologies.
+**Action:** Always check if a component has dynamic inner text before adding an `aria-label`. If the text changes based on state, make sure the `aria-label` also reflects that state.

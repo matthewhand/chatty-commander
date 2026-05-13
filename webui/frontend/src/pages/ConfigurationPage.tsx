@@ -360,6 +360,7 @@ const ConfigurationPage: React.FC = () => {
                       className="btn btn-xs btn-outline btn-primary"
                       onClick={handleTestMic}
                       disabled={isTestingMic || !inputDevice}
+                      aria-label={isTestingMic ? "Testing microphone device" : "Test microphone device"}
                     >
                       {isTestingMic ? "Testing..." : "Test"}
                     </button>
@@ -407,6 +408,7 @@ const ConfigurationPage: React.FC = () => {
                       className="btn btn-xs btn-outline btn-secondary"
                       onClick={handleTestOutput}
                       disabled={isTestingOutput || !outputDevice}
+                      aria-label={isTestingOutput ? "Playing output device" : "Test output device"}
                     >
                       {isTestingOutput ? "Playing..." : "Test"}
                     </button>
