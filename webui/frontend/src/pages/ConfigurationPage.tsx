@@ -382,6 +382,7 @@ const ConfigurationPage: React.FC = () => {
                         onClick={handleTestMic}
                         disabled={isTestingMic || !inputDevice}
                         title={inputDevice ? "Test microphone" : "Select a device first"}
+                        aria-label={isTestingMic ? "Testing microphone device" : "Test microphone device"}
                       >
                         {isTestingMic ? "Testing..." : "Test"}
                       </button>
@@ -431,6 +432,7 @@ const ConfigurationPage: React.FC = () => {
                         onClick={handleTestOutput}
                         disabled={isTestingOutput || !outputDevice}
                         title={outputDevice ? "Test audio output" : "Select a device first"}
+                        aria-label={isTestingOutput ? "Playing output device" : "Test output device"}
                       >
                         {isTestingOutput ? "Playing..." : "Test"}
                       </button>

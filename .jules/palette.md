@@ -4,3 +4,6 @@
 ## 2024-05-19 - Accessible DaisyUI Modal Backdrops
 **Learning:** In DaisyUI's `<form method="dialog">` modal backdrop pattern, the visually hidden close `<button>` lacks descriptive context. Even if it contains the text "close", a descriptive `aria-label` provides better context for screen reader users about what exactly is being closed.
 **Action:** Always explicitly add a descriptive `aria-label` (e.g., `aria-label="Close dialog"`) to the visually hidden button when implementing or updating DaisyUI modals.
+## 2026-05-13 - Dynamic ARIA labels for dynamic text
+**Learning:** When adding an `aria-label` to a button whose inner text changes dynamically based on state (e.g., `isTesting ? "Testing..." : "Test"`), the `aria-label` must also be dynamic to match the state (e.g., `aria-label={isTesting ? "Testing device" : "Test device"}`). A static `aria-label` completely overrides the inner text for screen readers, hiding the visual state change from assistive technologies.
+**Action:** Always check if a component has dynamic inner text before adding an `aria-label`. If the text changes based on state, make sure the `aria-label` also reflects that state.
