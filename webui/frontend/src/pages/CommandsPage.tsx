@@ -363,7 +363,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
+          <button aria-label="Close delete confirmation dialog" onClick={handleDeleteCancel}>close</button>
         </form>
       </dialog>
     </div>
