@@ -1,0 +1,165 @@
+# Dograh integration overlay for chatty-commander.
+#
+# This file is OPT-IN. Chatty-commander runs standalone without it.
+# To enable, add to your local .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.dograh.yml
+#
+# Then `docker compose up -d` brings up CC + dograh together.
+# Or use it directly:
+#   docker compose -f docker-compose.dograh.yml up -d        # dograh only
+#   docker compose -f docker-compose.yml -f docker-compose.dograh.yml up -d
+#
+# Service/port choices avoid collisions with CC's stock compose:
+#   dograh-api      host 8020 -> container 8000
+#   dograh-ui       host 3020 -> container 3010
+#   dograh-postgres host 5434 -> container 5432
+#   dograh-redis    host 6381 -> container 6379
+#   dograh-minio    host 9010 -> container 9000  (S3 API)
+#   dograh-minio    host 9011 -> container 9001  (console)
+#
+# Cloudflared (which dograh's stock compose enables by default and exposes
+# this stack to a public *.trycloudflare.com URL) is intentionally NOT
+# included. Re-add only if you understand the implications.
+
+services:
+  dograh-postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - dograh_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks:
+      - dograh-network
+
+  dograh-redis:
+    image: redis:7
+    command: --requirepass redissecret
+    ports:
+      - "127.0.0.1:6381:6379"
+    volumes:
+      - dograh_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redissecret", "ping"]
+      interval: 3s
+      timeout: 10s
+      retries: 10
+    networks:
+      - dograh-network
+
+  dograh-minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "127.0.0.1:9010:9000"
+      - "127.0.0.1:9011:9001"
+    volumes:
+      - dograh_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dograh-network
+
+  dograh-api:
+    image: ${DOGRAH_REGISTRY:-ghcr.io/dograh-hq}/dograh-api:latest
+    volumes:
+      - dograh_shared_tmp:/tmp
+    environment:
+      ENVIRONMENT: "local"
+      LOG_LEVEL: "INFO"
+
+      # Browser-facing API URL (we publish dograh-api on host port 8020).
+      BACKEND_API_ENDPOINT: "${DOGRAH_BACKEND_API_ENDPOINT:-http://localhost:8020}"
+
+      # Internal service wiring uses the renamed service hostnames.
+      DATABASE_URL: "postgresql+asyncpg://postgres:postgres@dograh-postgres:5432/postgres"
+      REDIS_URL: "redis://:redissecret@dograh-redis:6379"
+
+      ENABLE_AWS_S3: "false"
+      MINIO_ENDPOINT: "dograh-minio:9000"
+      MINIO_PUBLIC_ENDPOINT: "${DOGRAH_MINIO_PUBLIC_ENDPOINT:-http://localhost:9010}"
+      MINIO_ACCESS_KEY: "minioadmin"
+      MINIO_SECRET_KEY: "minioadmin"
+      MINIO_BUCKET: "voice-audio"
+      MINIO_SECURE: "false"
+
+      FASTAPI_WORKERS: "${DOGRAH_FASTAPI_WORKERS:-1}"
+
+      OSS_JWT_SECRET: "${DOGRAH_OSS_JWT_SECRET:?DOGRAH_OSS_JWT_SECRET must be set in .env}"
+
+      ENABLE_TELEMETRY: "${DOGRAH_ENABLE_TELEMETRY:-false}"
+      POSTHOG_API_KEY: "phc_ItizB1dP6yv7ZYobbcqrpxTdbomDA8hJFSEmAMdYvIr"
+      POSTHOG_HOST: "https://us.i.posthog.com"
+    ports:
+      - "127.0.0.1:8020:8000"
+    depends_on:
+      dograh-postgres:
+        condition: service_healthy
+      dograh-redis:
+        condition: service_healthy
+      dograh-minio:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()\""
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    networks:
+      - dograh-network
+
+  dograh-ui:
+    image: ${DOGRAH_REGISTRY:-ghcr.io/dograh-hq}/dograh-ui:latest
+    environment:
+      BACKEND_URL: "http://dograh-api:8000"
+      NODE_ENV: "oss"
+      ENABLE_TELEMETRY: "${DOGRAH_ENABLE_TELEMETRY:-false}"
+      POSTHOG_KEY: "phc_ItizB1dP6yv7ZYobbcqrpxTdbomDA8hJFSEmAMdYvIr"
+      POSTHOG_HOST: "https://us.posthog.com"
+    ports:
+      - "127.0.0.1:3020:3010"
+    depends_on:
+      dograh-api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "wget --no-verbose --tries=1 --spider http://localhost:3010 || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - dograh-network
+
+volumes:
+  dograh_postgres_data:
+  dograh_redis_data:
+  dograh_minio_data:
+  dograh_shared_tmp:
+
+networks:
+  dograh-network:
+    driver: bridge
