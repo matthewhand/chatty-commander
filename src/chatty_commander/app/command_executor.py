@@ -127,10 +127,12 @@ class CommandExecutor:
                     success = True
                 elif action_type == "voice_chat":
                     success = self._execute_voice_chat(command_name)
+                elif action_type == "dograh_call":
+                    success = self._execute_dograh_call(command_name, command_action)
                 else:
                     raise ValueError(
                         f"Command '{command_name}' has an invalid action type '{action_type}'. "
-                        f"Valid actions are: 'keypress', 'url', 'shell', 'custom_message', 'voice_chat'"
+                        f"Valid actions are: 'keypress', 'url', 'shell', 'custom_message', 'voice_chat', 'dograh_call'"
                     )
             else:
                 # Handle old format (direct keys)
@@ -194,6 +196,7 @@ class CommandExecutor:
                         "shell",
                         "custom_message",
                         "voice_chat",
+                        "dograh_call",
                     ]:
                         return False
                     # Check required fields for each action type
@@ -202,6 +205,8 @@ class CommandExecutor:
                     if action_type == "url" and "url" not in command_action:
                         return False
                     if action_type == "shell" and "cmd" not in command_action:
+                        return False
+                    if action_type == "dograh_call" and "workflow_id" not in command_action:
                         return False
                 else:
                     # Old format validation
@@ -219,6 +224,7 @@ class CommandExecutor:
                         "shell",
                         "custom_message",
                         "voice_chat",
+                        "dograh_call",
                     ]:
                         # Assume valid if action type matches, skip field checks for mocks
                         return True
@@ -319,6 +325,53 @@ class CommandExecutor:
             logging.error(f"shell execution failed: {e}")
             self.report_error(command_name, str(e))
             return False
+
+    def _execute_dograh_call(self, command_name: str, action: dict[str, Any]) -> bool:
+        """Trigger a Dograh workflow run (typically a telephony workflow).
+
+        Expected action shape::
+
+            {"action": "dograh_call",
+             "workflow_id": 42,
+             "phone_number": "+15555550100",   # optional, merged into context
+             "context": {...}}                 # optional extra workflow context
+
+        Requires ``DOGRAH_BASE_URL`` and ``DOGRAH_API_KEY`` env vars; if either
+        is missing the command fails gracefully via ``report_error`` so CC
+        continues running without the dograh overlay.
+        """
+        workflow_id = action.get("workflow_id")
+        if not isinstance(workflow_id, int):
+            self.report_error(command_name, "dograh_call missing integer workflow_id")
+            return False
+
+        context: dict[str, Any] = dict(action.get("context") or {})
+        phone_number = action.get("phone_number")
+        if phone_number:
+            context.setdefault("phone_number", phone_number)
+
+        try:
+            from chatty_commander.integrations.dograh_client import (
+                DograhClient,
+                DograhError,
+            )
+        except ImportError as e:
+            self.report_error(command_name, f"dograh integration import failed: {e}")
+            return False
+
+        try:
+            with DograhClient() as client:
+                run = client.create_workflow_run(workflow_id, context=context)
+        except DograhError as e:
+            self.report_error(command_name, f"dograh unavailable: {e}")
+            return False
+        except Exception as e:
+            self.report_error(command_name, f"dograh call failed: {e}")
+            return False
+
+        logging.info(f"dograh_call ok: workflow {workflow_id} run={run}")
+        logging.info(f"Completed execution of command: {command_name}")
+        return True
 
     def _execute_custom_message(self, command_name: str, message: str) -> None:
         """Execute a custom message action."""

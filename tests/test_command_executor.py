@@ -307,3 +307,75 @@ class TestKeybindingExecution:
             rec.levelname == "CRITICAL" and "Error in kp" in rec.message
             for rec in caplog.records
         )
+
+
+class TestDograhCallAction:
+    @pytest.fixture
+    def executor(self):
+        config = MagicMock()
+        config.model_actions = {
+            "call_support": {
+                "action": "dograh_call",
+                "workflow_id": 42,
+                "phone_number": "+15555550100",
+            },
+            "call_no_workflow": {"action": "dograh_call"},
+            "call_with_context": {
+                "action": "dograh_call",
+                "workflow_id": 7,
+                "context": {"caller_name": "Alice"},
+            },
+        }
+        return CommandExecutor(config, MagicMock(), MagicMock())
+
+    def test_validate_dograh_call_with_workflow_id(self, executor):
+        assert executor.validate_command("call_support") is True
+
+    def test_validate_dograh_call_missing_workflow_id(self, executor):
+        assert executor.validate_command("call_no_workflow") is False
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_execute_dograh_call_success(self, mock_client_cls, executor):
+        instance = MagicMock()
+        instance.create_workflow_run.return_value = {"run_id": "r1"}
+        mock_client_cls.return_value.__enter__.return_value = instance
+
+        assert executor.execute_command("call_support") is True
+
+        instance.create_workflow_run.assert_called_once_with(
+            42, context={"phone_number": "+15555550100"}
+        )
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_execute_dograh_call_merges_context_and_phone(
+        self, mock_client_cls, executor
+    ):
+        instance = MagicMock()
+        mock_client_cls.return_value.__enter__.return_value = instance
+        executor.config.model_actions["call_with_context"]["phone_number"] = "+19999"
+
+        executor.execute_command("call_with_context")
+
+        instance.create_workflow_run.assert_called_once_with(
+            7, context={"caller_name": "Alice", "phone_number": "+19999"}
+        )
+
+    def test_execute_dograh_call_missing_workflow_id_reports_error(
+        self, executor, caplog
+    ):
+        with caplog.at_level("CRITICAL"):
+            assert executor.execute_command("call_no_workflow") is False
+        assert any(
+            "missing integer workflow_id" in rec.message for rec in caplog.records
+        )
+
+    def test_execute_dograh_call_unavailable_when_env_missing(
+        self, executor, caplog, monkeypatch
+    ):
+        monkeypatch.delenv("DOGRAH_BASE_URL", raising=False)
+        monkeypatch.delenv("DOGRAH_API_KEY", raising=False)
+
+        with caplog.at_level("CRITICAL"):
+            assert executor.execute_command("call_support") is False
+
+        assert any("dograh unavailable" in rec.message for rec in caplog.records)
