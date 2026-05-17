@@ -78,7 +78,7 @@ class DograhConfig:
     timeout_seconds: float = 30.0
 
     @classmethod
-    def from_env(cls) -> "DograhConfig":
+    def from_env(cls) -> DograhConfig:
         base_url = os.environ.get("DOGRAH_BASE_URL", "").rstrip("/")
         api_key = os.environ.get("DOGRAH_API_KEY", "")
         if not base_url or not api_key:
@@ -110,7 +110,7 @@ class DograhClient:
     def close(self) -> None:
         self._client.close()
 
-    def __enter__(self) -> "DograhClient":
+    def __enter__(self) -> DograhClient:
         return self
 
     def __exit__(self, *_exc: object) -> None:

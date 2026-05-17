@@ -5,8 +5,6 @@ from __future__ import annotations
 import argparse
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from chatty_commander.cli.dograh_cli import (
     handle_dograh,
     register_dograh_subparser,
