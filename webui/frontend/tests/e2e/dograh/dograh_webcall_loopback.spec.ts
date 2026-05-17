@@ -35,6 +35,13 @@ const SCREENSHOTS_DIR = path.resolve(
   __dirname,
   "../../../../../docs/screenshots/dograh"
 );
+// Signaling frames carry ICE candidates (internal IPs), DTLS fingerprints,
+// and session-scoped identifiers. Never write these under `docs/` — they'd
+// be committable. Use test-results/ which is gitignored at the repo root.
+const ARTIFACTS_DIR = path.resolve(
+  __dirname,
+  "../../../../../test-results/dograh"
+);
 
 const DOGRAH_EMAIL = process.env.DOGRAH_DEMO_EMAIL || "cc-dograh@example.com";
 const DOGRAH_PASSWORD =
@@ -56,6 +63,7 @@ test.use({
 test.describe("Dograh smallwebrtc loopback", () => {
   test.beforeAll(() => {
     fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+    fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
   });
 
   test("webcall-handshake", async ({ page, request }) => {
@@ -129,7 +137,7 @@ test.describe("Dograh smallwebrtc loopback", () => {
     });
 
     fs.writeFileSync(
-      path.join(SCREENSHOTS_DIR, "03-webcall-loopback-signaling.log"),
+      path.join(ARTIFACTS_DIR, "03-webcall-loopback-signaling.log"),
       signalingMessages.join("\n") + "\n"
     );
 
