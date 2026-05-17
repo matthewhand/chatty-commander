@@ -164,6 +164,18 @@ class CompletionProvider(LLMProvider):
             except ImportError:
                 pass
 
+        # Add dograh call tool only if explicitly enabled (opt-in integration).
+        if tools_config.get("dograh_call", {}).get("enabled", False):
+            try:
+                from ..tools.dograh_call import (  # type: ignore[attr-defined]
+                    dograh_call_tool_instance,
+                )
+
+                if dograh_call_tool_instance:
+                    tools.append(dograh_call_tool_instance)
+            except ImportError:
+                pass
+
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []
@@ -236,6 +248,18 @@ class ResponsesProvider(LLMProvider):
 
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
+            except ImportError:
+                pass
+
+        # Add dograh call tool only if explicitly enabled (opt-in integration).
+        if tools_config.get("dograh_call", {}).get("enabled", False):
+            try:
+                from ..tools.dograh_call import (  # type: ignore[attr-defined]
+                    dograh_call_tool_instance,
+                )
+
+                if dograh_call_tool_instance:
+                    tools.append(dograh_call_tool_instance)
             except ImportError:
                 pass
 
