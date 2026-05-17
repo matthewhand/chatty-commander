@@ -114,3 +114,91 @@ def test_mint_api_key_returns_raw_key(seed) -> None:
     with httpx.Client(base_url=BASE) as client:
         key = seed._mint_api_key(client, "ci")
     assert key == "dgr_seed_test"
+
+
+@respx.mock
+def test_ensure_workflow_picks_lowest_id_on_duplicate_names(seed) -> None:
+    """If two workflows share the seed name, return the lowest id deterministically."""
+    respx.get(f"{BASE}/api/v1/workflow/fetch").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {"id": 9, "name": "seed"},
+                {"id": 3, "name": "seed"},
+                {"id": 7, "name": "other"},
+            ],
+        )
+    )
+    with httpx.Client(base_url=BASE) as client:
+        wid = seed._ensure_workflow(client, "seed")
+    assert wid == 3
+
+
+@respx.mock
+def test_main_with_output_redacts_stdout(
+    seed, tmp_path, capsys, monkeypatch
+) -> None:
+    """The whole point of --output: the API key must NOT appear in stdout
+    when a file destination is given, because CI step logs are captured."""
+    respx.post(f"{BASE}/api/v1/auth/signup").mock(
+        return_value=httpx.Response(200, json={"token": "jwt-xyz"})
+    )
+    respx.post(f"{BASE}/api/v1/user/api-keys").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": 1,
+                "api_key": "dgr_SUPER_SECRET_KEY_VALUE",
+                "key_prefix": "dgr_SUPE",
+            },
+        )
+    )
+    respx.get(f"{BASE}/api/v1/workflow/fetch").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    respx.post(f"{BASE}/api/v1/workflow/create/definition").mock(
+        return_value=httpx.Response(200, json={"id": 42})
+    )
+
+    out_file = tmp_path / "seed.env"
+    rc = seed.main(["--base-url", BASE, "--output", str(out_file)])
+    assert rc == 0
+
+    captured = capsys.readouterr()
+    # Stdout must NOT contain the raw secret.
+    assert "dgr_SUPER_SECRET_KEY_VALUE" not in captured.out
+    # Should show redacted prefix instead.
+    assert "redacted" in captured.out
+    # File must contain the real key for the test runner to consume.
+    assert "DOGRAH_API_KEY=dgr_SUPER_SECRET_KEY_VALUE" in out_file.read_text()
+    # File must be owner-only readable (best-effort; POSIX only).
+    import stat
+
+    mode = out_file.stat().st_mode & 0o777
+    assert mode == 0o600
+
+
+@respx.mock
+def test_main_without_output_still_prints_env_block(
+    seed, capsys
+) -> None:
+    """Legacy interactive mode: no --output means stdout carries the env."""
+    respx.post(f"{BASE}/api/v1/auth/signup").mock(
+        return_value=httpx.Response(200, json={"token": "jwt"})
+    )
+    respx.post(f"{BASE}/api/v1/user/api-keys").mock(
+        return_value=httpx.Response(
+            200, json={"id": 1, "api_key": "dgr_interactive", "key_prefix": "dgr_inte"}
+        )
+    )
+    respx.get(f"{BASE}/api/v1/workflow/fetch").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    respx.post(f"{BASE}/api/v1/workflow/create/definition").mock(
+        return_value=httpx.Response(200, json={"id": 1})
+    )
+
+    rc = seed.main(["--base-url", BASE])
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "DOGRAH_API_KEY=dgr_interactive" in captured.out

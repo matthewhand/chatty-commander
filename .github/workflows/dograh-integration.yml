@@ -70,8 +70,26 @@ jobs:
       - name: Seed dograh state
         id: seed
         run: |
+          # --output writes the env file (mode 0600) and prints only a
+          # redacted summary to stdout, so the API key never lands in
+          # job logs.
           python scripts/seed_dograh.py --output dograh_seed.env
-          cat dograh_seed.env >> "$GITHUB_ENV"
+
+          # Mask each value before exporting so that any subsequent step
+          # that prints these variables (test failure dumps, pytest -v,
+          # etc.) shows '***' instead of the literal secret. GitHub
+          # Actions does NOT auto-mask dynamically-generated secrets —
+          # only repo/org Secrets — so we have to opt in.
+          while IFS='=' read -r key value; do
+            case "$key" in
+              \#*|"") continue ;;
+              DOGRAH_API_KEY) echo "::add-mask::$value" ;;
+            esac
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < dograh_seed.env
+
+          # Defense-in-depth: remove the file before the next step.
+          rm -f dograh_seed.env
 
       - name: Run integration tests against live stack
         env:

@@ -14,7 +14,11 @@ existing key, so each seed run mints a fresh one. Old keys accumulate
 in the database; archive them manually via the UI / API if needed.
 
 Output: writes credentials in ``.env`` format to the path given by
-``--output`` (and always echoes to stdout) so a downstream CI step can::
+``--output``. If ``--output`` is omitted, the env block is written to
+stdout — this is convenient for interactive use but **never use stdout
+mode in CI**, because the API key would land in build logs that may be
+publicly readable. When ``--output`` IS given, only a redacted summary
+goes to stdout::
 
     python scripts/seed_dograh.py --output scripts/dograh_seed.env
     set -a && source scripts/dograh_seed.env && set +a
@@ -78,9 +82,27 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if args.output:
+        # Write file with owner-only perms so other users on the host
+        # can't read the freshly-minted API key out of /tmp.
         args.output.write_text(env_block)
-        print(f"# wrote credentials to {args.output}", file=sys.stderr)
+        try:
+            args.output.chmod(0o600)
+        except OSError:
+            pass
+        # Print a redacted summary to stdout — never the key itself, so
+        # CI step logs don't leak it.
+        masked = api_key[:8] + "..." if len(api_key) > 8 else "<short>"
+        sys.stdout.write(
+            f"# wrote credentials to {args.output}\n"
+            f"# DOGRAH_BASE_URL={base}\n"
+            f"# DOGRAH_API_KEY={masked} (redacted)\n"
+            f"# DOGRAH_SEED_WORKFLOW_ID={workflow_id}\n"
+        )
+        return 0
 
+    # No --output: legacy interactive mode. Stdout carries the raw env
+    # block — convenient for `source <(python scripts/seed_dograh.py)`
+    # but unsafe for CI (see module docstring).
     sys.stdout.write(env_block)
     return 0
 
@@ -111,20 +133,43 @@ def _mint_api_key(client: httpx.Client, key_name: str) -> str:
 
 
 def _ensure_workflow(client: httpx.Client, workflow_name: str) -> int:
-    """Return the id of the seed workflow, creating it if missing."""
+    """Return the id of the seed workflow, creating it if missing.
+
+    If multiple workflows share the seed name (shouldn't happen but
+    possible via concurrent seed runs), returns the lowest id for
+    determinism and logs the choice.
+    """
     r = client.get("/api/v1/workflow/fetch")
     r.raise_for_status()
     payload = r.json()
     items = payload if isinstance(payload, list) else payload.get("items", [])
-    for wf in items:
-        if wf.get("name") == workflow_name:
-            return int(wf["id"])
+    matching_ids = sorted(
+        int(wf["id"]) for wf in items if wf.get("name") == workflow_name
+    )
+    if matching_ids:
+        chosen = matching_ids[0]
+        if len(matching_ids) > 1:
+            print(
+                f"# WARN: {len(matching_ids)} workflows named "
+                f"{workflow_name!r} exist (ids={matching_ids}); reusing {chosen}",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"# reusing existing workflow id={chosen} name={workflow_name!r}",
+                file=sys.stderr,
+            )
+        return chosen
     r = client.post(
         "/api/v1/workflow/create/definition",
         json={"name": workflow_name, "workflow_definition": {}},
     )
     r.raise_for_status()
-    return int(r.json()["id"])
+    new_id = int(r.json()["id"])
+    print(
+        f"# created workflow id={new_id} name={workflow_name!r}", file=sys.stderr
+    )
+    return new_id
 
 
 if __name__ == "__main__":
