@@ -1,0 +1,97 @@
+name: Dograh integration
+
+# Runs the live dograh integration tests against a real dograh stack
+# brought up via docker-compose.dograh.yml. Heavy job (image pulls +
+# 90s service warm-up), so we gate it on paths that actually touch
+# the integration surface.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/chatty_commander/integrations/**"
+      - "tests/integrations/**"
+      - "scripts/seed_dograh.py"
+      - "docker-compose.dograh.yml"
+      - ".github/workflows/dograh-integration.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/chatty_commander/integrations/**"
+      - "tests/integrations/**"
+      - "scripts/seed_dograh.py"
+      - "docker-compose.dograh.yml"
+      - ".github/workflows/dograh-integration.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: dograh-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Required by docker-compose.dograh.yml. In real CI override this
+      # with a repo/org secret; the literal default below is fine for
+      # ephemeral CI runs but must not be reused for any other purpose.
+      DOGRAH_OSS_JWT_SECRET: ${{ secrets.DOGRAH_OSS_JWT_SECRET || 'ci-only-jwt-secret-not-secret-rotate-me' }}
+      DOGRAH_REGISTRY: ghcr.io/dograh-hq
+      DOGRAH_ENABLE_TELEMETRY: "false"
+      DOGRAH_FASTAPI_WORKERS: "1"
+      DOGRAH_BACKEND_API_ENDPOINT: http://localhost:8020
+      DOGRAH_MINIO_PUBLIC_ENDPOINT: http://localhost:9010
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-asyncio respx
+
+      - name: Bring up dograh stack
+        run: |
+          docker compose -f docker-compose.dograh.yml up -d --wait --wait-timeout 240
+          docker compose -f docker-compose.dograh.yml ps
+
+      - name: Sanity-check /health
+        run: |
+          curl -fsS http://localhost:8020/api/v1/health | tee /dev/stderr | grep -q '"status":"ok"'
+
+      - name: Seed dograh state
+        id: seed
+        run: |
+          python scripts/seed_dograh.py --output dograh_seed.env
+          cat dograh_seed.env >> "$GITHUB_ENV"
+
+      - name: Run integration tests against live stack
+        env:
+          DOGRAH_LIVE: "1"
+        run: |
+          pytest tests/integrations/ -v --no-cov
+
+      - name: Dograh logs (on failure)
+        if: failure()
+        run: |
+          echo "=== dograh-api ==="
+          docker compose -f docker-compose.dograh.yml logs --tail=200 dograh-api || true
+          echo "=== dograh-postgres ==="
+          docker compose -f docker-compose.dograh.yml logs --tail=100 dograh-postgres || true
+          echo "=== dograh-redis ==="
+          docker compose -f docker-compose.dograh.yml logs --tail=50 dograh-redis || true
+          echo "=== dograh-minio ==="
+          docker compose -f docker-compose.dograh.yml logs --tail=50 dograh-minio || true
+
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose -f docker-compose.dograh.yml down -v
