@@ -89,6 +89,7 @@ try:
     from chatty_commander.web.routes.audio import include_audio_routes
 except ImportError:
     include_audio_routes = None  # type: ignore[assignment]
+from chatty_commander.web.routes.dograh import router as dograh_router
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.voice import include_voice_routes
 from chatty_commander.web.routes.ws import include_ws_routes
@@ -640,6 +641,9 @@ class WebModeServer:
 
         # Version endpoint
         app.include_router(version_router)
+
+        # Dograh integration status + workflow proxy endpoints
+        app.include_router(dograh_router)
 
         # System info endpoints
         system_routes = include_system_routes(

@@ -73,6 +73,11 @@ except ImportError:
     version_router = None  # type: ignore[assignment]
 
 try:
+    from .routes.dograh import router as dograh_router
+except ImportError:
+    dograh_router = None  # type: ignore[assignment]
+
+try:
     from .routes.agents import router as agents_router
 except ImportError:
     agents_router = None  # type: ignore[assignment]
@@ -114,6 +119,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         "avatar_api_router",
         "avatar_selector_router",
         "version_router",
+        "dograh_router",
         "metrics_router",
         "agents_router",
         "models_router",
