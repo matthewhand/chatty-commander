@@ -327,14 +327,14 @@ class CommandExecutor:
             return False
 
     def _execute_dograh_call(self, command_name: str, action: dict[str, Any]) -> bool:
-        """Trigger a Dograh workflow run (typically a telephony workflow).
+        """Place an outbound phone call via a Dograh telephony workflow.
 
         Expected action shape::
 
             {"action": "dograh_call",
              "workflow_id": 42,
-             "phone_number": "+15555550100",   # optional, merged into context
-             "context": {...}}                 # optional extra workflow context
+             "phone_number": "+15555550100",            # optional
+             "telephony_configuration_id": 7}           # optional
 
         Requires ``DOGRAH_BASE_URL`` and ``DOGRAH_API_KEY`` env vars; if either
         is missing the command fails gracefully via ``report_error`` so CC
@@ -345,10 +345,8 @@ class CommandExecutor:
             self.report_error(command_name, "dograh_call missing integer workflow_id")
             return False
 
-        context: dict[str, Any] = dict(action.get("context") or {})
         phone_number = action.get("phone_number")
-        if phone_number:
-            context.setdefault("phone_number", phone_number)
+        telephony_configuration_id = action.get("telephony_configuration_id")
 
         try:
             from chatty_commander.integrations.dograh_client import (
@@ -361,7 +359,11 @@ class CommandExecutor:
 
         try:
             with DograhClient() as client:
-                run = client.create_workflow_run(workflow_id, context=context)
+                result = client.initiate_call(
+                    workflow_id,
+                    phone_number=phone_number,
+                    telephony_configuration_id=telephony_configuration_id,
+                )
         except DograhError as e:
             self.report_error(command_name, f"dograh unavailable: {e}")
             return False
@@ -369,7 +371,7 @@ class CommandExecutor:
             self.report_error(command_name, f"dograh call failed: {e}")
             return False
 
-        logging.info(f"dograh_call ok: workflow {workflow_id} run={run}")
+        logging.info(f"dograh_call ok: workflow {workflow_id} result={result}")
         logging.info(f"Completed execution of command: {command_name}")
         return True
 

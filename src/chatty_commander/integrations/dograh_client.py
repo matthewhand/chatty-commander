@@ -5,9 +5,8 @@ This module never starts dograh or assumes it is reachable; calls fail
 with a clear ``DograhUnavailableError`` when configuration is missing or
 the service is down.
 
-Auth: bearer-token via either a long-lived API key (preferred for
-CC ↔ dograh integration) or a JWT obtained from /api/v1/auth/login.
-Mint an API key with:
+Auth: dograh API keys (``dgr_*``) are passed via the ``X-API-Key``
+header, **not** ``Authorization: Bearer``. Mint a key with:
 
     POST /api/v1/user/api-keys   (authenticated with a JWT)
 
@@ -53,16 +52,17 @@ class DograhConfig:
 class DograhClient:
     """Minimal sync client for dograh's REST surface.
 
-    Methods cover the Phase 1 integration scope: health, workflow listing,
-    workflow run creation. Add more methods here as new CC ↔ dograh
-    touchpoints come online.
+    Methods cover the Phase 1 integration scope: health, workflow
+    listing, telephony call initiation, and generic workflow run
+    creation. Add more methods here as new CC ↔ dograh touchpoints
+    come online.
     """
 
     def __init__(self, config: DograhConfig | None = None) -> None:
         self._config = config or DograhConfig.from_env()
         self._client = httpx.Client(
             base_url=self._config.base_url,
-            headers={"Authorization": f"Bearer {self._config.api_key}"},
+            headers={"X-API-Key": self._config.api_key},
             timeout=self._config.timeout_seconds,
         )
 
@@ -81,29 +81,61 @@ class DograhClient:
         r.raise_for_status()
         return r.json()
 
-    def list_workflows(self) -> list[dict[str, Any]]:
+    def list_workflows(
+        self, status: str | None = None
+    ) -> list[dict[str, Any]]:
         """List workflows in the caller's selected organization.
 
-        Wraps GET /api/v1/workflow/ — the default paginated endpoint.
+        Wraps GET /api/v1/workflow/fetch. ``status`` may be ``active``,
+        ``archived``, or a comma-separated combination.
         """
-        r = self._client.get("/api/v1/workflow/")
+        params: dict[str, str] = {}
+        if status is not None:
+            params["status"] = status
+        r = self._client.get("/api/v1/workflow/fetch", params=params)
         r.raise_for_status()
         payload = r.json()
         if isinstance(payload, list):
             return payload
         return payload.get("items", [])
 
-    def create_workflow_run(
-        self, workflow_id: int, context: dict[str, Any] | None = None
+    def initiate_call(
+        self,
+        workflow_id: int,
+        phone_number: str | None = None,
+        telephony_configuration_id: int | None = None,
     ) -> dict[str, Any]:
-        """Trigger a workflow run.
+        """Place an outbound phone call via the configured telephony provider.
+
+        Wraps POST /api/v1/telephony/initiate-call. Used by the
+        ``dograh_call`` command action.
+
+        Returns 400 ``telephony_not_configured`` if no provider
+        (Twilio/Vonage/etc.) is set up in dograh — that's expected when
+        running the OSS stack without telephony credentials, and the
+        caller should surface it as a config error rather than a bug.
+        """
+        body: dict[str, Any] = {"workflow_id": workflow_id}
+        if phone_number is not None:
+            body["phone_number"] = phone_number
+        if telephony_configuration_id is not None:
+            body["telephony_configuration_id"] = telephony_configuration_id
+        r = self._client.post("/api/v1/telephony/initiate-call", json=body)
+        r.raise_for_status()
+        return r.json()
+
+    def create_workflow_run(
+        self, workflow_id: int, mode: str = "chat", name: str = "cc-run"
+    ) -> dict[str, Any]:
+        """Trigger a non-telephony workflow run (chat or test mode).
 
         Wraps POST /api/v1/workflow/{workflow_id}/runs.
-        Used by Phase 1 telephony commands and advisor triggers.
+        Use ``initiate_call`` for telephony — that endpoint creates the
+        run internally with phone-number context already attached.
         """
         r = self._client.post(
             f"/api/v1/workflow/{workflow_id}/runs",
-            json={"context": context or {}},
+            json={"mode": mode, "name": name},
         )
         r.raise_for_status()
         return r.json()

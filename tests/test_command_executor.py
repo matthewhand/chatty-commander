@@ -337,27 +337,30 @@ class TestDograhCallAction:
     @patch("chatty_commander.integrations.dograh_client.DograhClient")
     def test_execute_dograh_call_success(self, mock_client_cls, executor):
         instance = MagicMock()
-        instance.create_workflow_run.return_value = {"run_id": "r1"}
+        instance.initiate_call.return_value = {"workflow_run_id": 9}
         mock_client_cls.return_value.__enter__.return_value = instance
 
         assert executor.execute_command("call_support") is True
 
-        instance.create_workflow_run.assert_called_once_with(
-            42, context={"phone_number": "+15555550100"}
+        instance.initiate_call.assert_called_once_with(
+            42, phone_number="+15555550100", telephony_configuration_id=None
         )
 
     @patch("chatty_commander.integrations.dograh_client.DograhClient")
-    def test_execute_dograh_call_merges_context_and_phone(
+    def test_execute_dograh_call_passes_telephony_config_id(
         self, mock_client_cls, executor
     ):
         instance = MagicMock()
         mock_client_cls.return_value.__enter__.return_value = instance
+        executor.config.model_actions["call_with_context"][
+            "telephony_configuration_id"
+        ] = 3
         executor.config.model_actions["call_with_context"]["phone_number"] = "+19999"
 
         executor.execute_command("call_with_context")
 
-        instance.create_workflow_run.assert_called_once_with(
-            7, context={"caller_name": "Alice", "phone_number": "+19999"}
+        instance.initiate_call.assert_called_once_with(
+            7, phone_number="+19999", telephony_configuration_id=3
         )
 
     def test_execute_dograh_call_missing_workflow_id_reports_error(

@@ -53,7 +53,7 @@ def test_health_returns_payload(config: DograhConfig) -> None:
 
 @respx.mock
 def test_list_workflows_unwraps_items(config: DograhConfig) -> None:
-    respx.get("http://dograh.test/api/v1/workflow/").mock(
+    respx.get("http://dograh.test/api/v1/workflow/fetch").mock(
         return_value=httpx.Response(
             200, json={"items": [{"id": 1, "name": "demo"}], "total": 1}
         )
@@ -65,7 +65,7 @@ def test_list_workflows_unwraps_items(config: DograhConfig) -> None:
 
 @respx.mock
 def test_list_workflows_passes_through_list(config: DograhConfig) -> None:
-    respx.get("http://dograh.test/api/v1/workflow/").mock(
+    respx.get("http://dograh.test/api/v1/workflow/fetch").mock(
         return_value=httpx.Response(200, json=[{"id": 7}])
     )
     with DograhClient(config) as client:
@@ -74,25 +74,66 @@ def test_list_workflows_passes_through_list(config: DograhConfig) -> None:
 
 
 @respx.mock
-def test_create_workflow_run_sends_context(config: DograhConfig) -> None:
-    route = respx.post("http://dograh.test/api/v1/workflow/42/runs").mock(
-        return_value=httpx.Response(201, json={"run_id": "abc"})
+def test_list_workflows_passes_status_filter(config: DograhConfig) -> None:
+    route = respx.get("http://dograh.test/api/v1/workflow/fetch").mock(
+        return_value=httpx.Response(200, json=[])
     )
     with DograhClient(config) as client:
-        out = client.create_workflow_run(42, context={"phone": "+15555550100"})
-    assert route.called
-    assert route.calls.last.request.read() == b'{"context": {"phone": "+15555550100"}}'
-    assert out["run_id"] == "abc"
+        client.list_workflows(status="active")
+    assert route.calls.last.request.url.params["status"] == "active"
 
 
 @respx.mock
-def test_bearer_header_is_set(config: DograhConfig) -> None:
+def test_create_workflow_run_sends_mode_and_name(config: DograhConfig) -> None:
+    route = respx.post("http://dograh.test/api/v1/workflow/42/runs").mock(
+        return_value=httpx.Response(201, json={"id": 1, "workflow_id": 42})
+    )
+    with DograhClient(config) as client:
+        out = client.create_workflow_run(42, mode="chat", name="smoke")
+    assert route.called
+    assert route.calls.last.request.read() == b'{"mode": "chat", "name": "smoke"}'
+    assert out["id"] == 1
+
+
+@respx.mock
+def test_initiate_call_minimal(config: DograhConfig) -> None:
+    route = respx.post("http://dograh.test/api/v1/telephony/initiate-call").mock(
+        return_value=httpx.Response(200, json={"workflow_run_id": 9})
+    )
+    with DograhClient(config) as client:
+        out = client.initiate_call(42)
+    assert route.called
+    assert route.calls.last.request.read() == b'{"workflow_id": 42}'
+    assert out["workflow_run_id"] == 9
+
+
+@respx.mock
+def test_initiate_call_with_phone_and_config(config: DograhConfig) -> None:
+    route = respx.post("http://dograh.test/api/v1/telephony/initiate-call").mock(
+        return_value=httpx.Response(200, json={})
+    )
+    with DograhClient(config) as client:
+        client.initiate_call(
+            42, phone_number="+15555550100", telephony_configuration_id=7
+        )
+    assert (
+        route.calls.last.request.read()
+        == b'{"workflow_id": 42, "phone_number": "+15555550100", '
+        b'"telephony_configuration_id": 7}'
+    )
+
+
+@respx.mock
+def test_x_api_key_header_is_set(config: DograhConfig) -> None:
     route = respx.get("http://dograh.test/api/v1/health").mock(
         return_value=httpx.Response(200, json={})
     )
     with DograhClient(config) as client:
         client.health()
-    assert route.calls.last.request.headers["authorization"] == "Bearer dgr_test"
+    headers = route.calls.last.request.headers
+    assert headers["x-api-key"] == "dgr_test"
+    # Bearer auth must NOT be sent — dograh rejects it.
+    assert "authorization" not in headers
 
 
 # ---------------------------------------------------------------------------
@@ -102,11 +143,21 @@ def test_bearer_header_is_set(config: DograhConfig) -> None:
     os.environ.get("DOGRAH_LIVE") != "1",
     reason="Set DOGRAH_LIVE=1 with a real dograh stack to run.",
 )
-def test_live_health() -> None:
+def test_live_health_and_auth() -> None:
+    """Round-trip both unauthed (/health) and authed (/workflow/) endpoints.
+
+    A failure on list_workflows specifically proves the X-API-Key header
+    is reaching dograh correctly — /health alone is unauthed and would
+    pass even if auth were broken.
+    """
     client = DograhClient()  # reads DOGRAH_BASE_URL / DOGRAH_API_KEY from env
     try:
         payload = client.health()
+        assert payload.get("status") == "ok"
+        assert payload.get("deployment_mode") == "oss"
+
+        # Authed call — must not 401.
+        workflows = client.list_workflows()
+        assert isinstance(workflows, list)
     finally:
         client.close()
-    assert payload.get("status") == "ok"
-    assert payload.get("deployment_mode") == "oss"
