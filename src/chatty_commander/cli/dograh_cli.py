@@ -51,6 +51,25 @@ def register_dograh_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Optional telephony_configuration_id override",
     )
 
+    show_parser = ops.add_parser("show", help="Show a workflow by id")
+    show_parser.add_argument("workflow_id", type=int)
+
+    runs_parser = ops.add_parser(
+        "runs", help="List runs for a workflow"
+    )
+    runs_parser.add_argument("workflow_id", type=int)
+    runs_parser.add_argument("--page", type=int, default=1)
+    runs_parser.add_argument("--limit", type=int, default=20)
+    runs_parser.add_argument(
+        "--json", action="store_true", help="Output JSON instead of a table"
+    )
+
+    run_parser = ops.add_parser(
+        "run-info", help="Show a single workflow run by id"
+    )
+    run_parser.add_argument("workflow_id", type=int)
+    run_parser.add_argument("run_id", type=int)
+
 
 def handle_dograh(args: argparse.Namespace) -> int:
     """Dispatch a parsed ``dograh`` subcommand. Returns a shell exit code."""
@@ -87,6 +106,20 @@ def handle_dograh(args: argparse.Namespace) -> int:
                 workflow_id=args.workflow_id,
                 phone_number=args.phone_number,
                 telephony_configuration_id=args.telephony_config_id,
+            )
+        if op == "show":
+            return _do_show(client, workflow_id=args.workflow_id)
+        if op == "runs":
+            return _do_runs(
+                client,
+                workflow_id=args.workflow_id,
+                page=args.page,
+                limit=args.limit,
+                as_json=args.json,
+            )
+        if op == "run-info":
+            return _do_run_info(
+                client, workflow_id=args.workflow_id, run_id=args.run_id
             )
     except DograhError as e:
         print(f"dograh error: {e}", file=sys.stderr)
@@ -134,4 +167,40 @@ def _do_call(
         telephony_configuration_id=telephony_configuration_id,
     )
     print(json.dumps(result, indent=2, default=str))
+    return 0
+
+
+def _do_show(client: Any, *, workflow_id: int) -> int:
+    workflow = client.get_workflow(workflow_id)
+    print(json.dumps(workflow, indent=2, default=str))
+    return 0
+
+
+def _do_runs(
+    client: Any,
+    *,
+    workflow_id: int,
+    page: int,
+    limit: int,
+    as_json: bool,
+) -> int:
+    payload = client.list_workflow_runs(workflow_id, page=page, limit=limit)
+    runs = payload.get("runs", []) if isinstance(payload, dict) else payload
+    if as_json:
+        print(json.dumps(payload, indent=2, default=str))
+        return 0
+    if not runs:
+        print("(no runs)")
+        return 0
+    for run in runs:
+        rid = run.get("id", "?")
+        mode = run.get("mode", "?")
+        completed = "done" if run.get("is_completed") else "....."
+        print(f"{rid:>6}  {completed:<5}  {mode:<10}  {run.get('name', '')}")
+    return 0
+
+
+def _do_run_info(client: Any, *, workflow_id: int, run_id: int) -> int:
+    run = client.get_workflow_run(workflow_id, run_id)
+    print(json.dumps(run, indent=2, default=str))
     return 0

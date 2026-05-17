@@ -139,3 +139,38 @@ class DograhClient:
         )
         r.raise_for_status()
         return r.json()
+
+    def get_workflow(self, workflow_id: int) -> dict[str, Any]:
+        """Fetch one workflow's full record. Wraps GET /workflow/fetch/{id}."""
+        r = self._client.get(f"/api/v1/workflow/fetch/{workflow_id}")
+        r.raise_for_status()
+        return r.json()
+
+    def list_workflow_runs(
+        self,
+        workflow_id: int,
+        page: int = 1,
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        """List runs for a workflow. Wraps GET /workflow/{id}/runs (paginated).
+
+        Returns the raw paginated payload: ``{runs, total_count, page,
+        limit, total_pages, applied_filters}``. Callers wanting just the
+        list pull ``payload["runs"]``.
+        """
+        r = self._client.get(
+            f"/api/v1/workflow/{workflow_id}/runs",
+            params={"page": page, "limit": limit},
+        )
+        r.raise_for_status()
+        return r.json()
+
+    def get_workflow_run(
+        self, workflow_id: int, run_id: int
+    ) -> dict[str, Any]:
+        """Fetch one run's full record. Wraps GET /workflow/{wid}/runs/{rid}."""
+        r = self._client.get(
+            f"/api/v1/workflow/{workflow_id}/runs/{run_id}"
+        )
+        r.raise_for_status()
+        return r.json()

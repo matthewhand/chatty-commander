@@ -108,6 +108,60 @@ class TestHandleDograh:
         )
         assert "workflow_run_id" in capsys.readouterr().out
 
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_show_prints_workflow(self, mock_cls, capsys):
+        instance = MagicMock()
+        instance.get_workflow.return_value = {"id": 7, "name": "demo"}
+        mock_cls.return_value = instance
+
+        args = _parse(["dograh", "show", "7"])
+        assert handle_dograh(args) == 0
+
+        instance.get_workflow.assert_called_once_with(7)
+        assert '"id": 7' in capsys.readouterr().out
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_runs_table(self, mock_cls, capsys):
+        instance = MagicMock()
+        instance.list_workflow_runs.return_value = {
+            "runs": [
+                {"id": 1, "mode": "chat", "is_completed": True, "name": "r1"},
+                {"id": 2, "mode": "twilio", "is_completed": False, "name": "r2"},
+            ]
+        }
+        mock_cls.return_value = instance
+
+        args = _parse(["dograh", "runs", "5"])
+        assert handle_dograh(args) == 0
+
+        instance.list_workflow_runs.assert_called_once_with(5, page=1, limit=20)
+        out = capsys.readouterr().out
+        assert "done" in out
+        assert "....." in out
+        assert "r1" in out and "r2" in out
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_runs_empty(self, mock_cls, capsys):
+        instance = MagicMock()
+        instance.list_workflow_runs.return_value = {"runs": []}
+        mock_cls.return_value = instance
+
+        args = _parse(["dograh", "runs", "5"])
+        assert handle_dograh(args) == 0
+        assert "(no runs)" in capsys.readouterr().out
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_run_info_prints_full_run(self, mock_cls, capsys):
+        instance = MagicMock()
+        instance.get_workflow_run.return_value = {"id": 9, "recording_url": "s3://x"}
+        mock_cls.return_value = instance
+
+        args = _parse(["dograh", "run-info", "5", "9"])
+        assert handle_dograh(args) == 0
+
+        instance.get_workflow_run.assert_called_once_with(5, 9)
+        assert '"recording_url": "s3://x"' in capsys.readouterr().out
+
     def test_missing_op_returns_usage(self, capsys):
         args = _parse(["dograh"])
         assert handle_dograh(args) == 2

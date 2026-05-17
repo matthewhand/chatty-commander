@@ -124,6 +124,42 @@ def test_initiate_call_with_phone_and_config(config: DograhConfig) -> None:
 
 
 @respx.mock
+def test_get_workflow(config: DograhConfig) -> None:
+    respx.get("http://dograh.test/api/v1/workflow/fetch/7").mock(
+        return_value=httpx.Response(200, json={"id": 7, "name": "demo"})
+    )
+    with DograhClient(config) as client:
+        wf = client.get_workflow(7)
+    assert wf == {"id": 7, "name": "demo"}
+
+
+@respx.mock
+def test_list_workflow_runs_passes_pagination(config: DograhConfig) -> None:
+    route = respx.get("http://dograh.test/api/v1/workflow/3/runs").mock(
+        return_value=httpx.Response(
+            200,
+            json={"runs": [{"id": 1}], "total_count": 1, "page": 2, "limit": 5},
+        )
+    )
+    with DograhClient(config) as client:
+        payload = client.list_workflow_runs(3, page=2, limit=5)
+    params = route.calls.last.request.url.params
+    assert params["page"] == "2" and params["limit"] == "5"
+    assert payload["runs"] == [{"id": 1}]
+
+
+@respx.mock
+def test_get_workflow_run(config: DograhConfig) -> None:
+    respx.get("http://dograh.test/api/v1/workflow/3/runs/9").mock(
+        return_value=httpx.Response(200, json={"id": 9, "is_completed": True})
+    )
+    with DograhClient(config) as client:
+        run = client.get_workflow_run(3, 9)
+    assert run["id"] == 9
+    assert run["is_completed"] is True
+
+
+@respx.mock
 def test_x_api_key_header_is_set(config: DograhConfig) -> None:
     route = respx.get("http://dograh.test/api/v1/health").mock(
         return_value=httpx.Response(200, json={})
