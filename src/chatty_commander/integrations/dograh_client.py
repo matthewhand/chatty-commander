@@ -30,6 +30,47 @@ class DograhUnavailableError(DograhError):
     """Raised when dograh is not configured or not reachable."""
 
 
+class DograhHTTPError(DograhError):
+    """Raised on non-2xx responses, carrying dograh's error detail.
+
+    The ``detail`` attribute is the parsed ``detail`` field from
+    dograh's JSON error body (e.g. ``"telephony_not_configured"``) when
+    present, falling back to the raw text body or HTTP reason phrase.
+    """
+
+    def __init__(self, status_code: int, detail: str, method: str, url: str) -> None:
+        self.status_code = status_code
+        self.detail = detail
+        self.method = method
+        self.url = url
+        super().__init__(f"{method} {url} -> {status_code}: {detail}")
+
+
+def _raise_for_status(r: httpx.Response) -> None:
+    """Like httpx's raise_for_status, but include dograh's error detail."""
+    if r.is_success:
+        return
+    detail: str
+    try:
+        body = r.json()
+        if isinstance(body, dict) and "detail" in body:
+            detail_value = body["detail"]
+            if isinstance(detail_value, list):
+                detail = "; ".join(str(d) for d in detail_value)
+            else:
+                detail = str(detail_value)
+        else:
+            detail = r.text or r.reason_phrase
+    except ValueError:
+        detail = r.text or r.reason_phrase
+    raise DograhHTTPError(
+        status_code=r.status_code,
+        detail=detail,
+        method=r.request.method,
+        url=str(r.request.url),
+    )
+
+
 @dataclass
 class DograhConfig:
     base_url: str
@@ -78,7 +119,7 @@ class DograhClient:
     def health(self) -> dict[str, Any]:
         """Return dograh's /api/v1/health payload. Does not require auth."""
         r = self._client.get("/api/v1/health")
-        r.raise_for_status()
+        _raise_for_status(r)
         return r.json()
 
     def list_workflows(
@@ -93,7 +134,7 @@ class DograhClient:
         if status is not None:
             params["status"] = status
         r = self._client.get("/api/v1/workflow/fetch", params=params)
-        r.raise_for_status()
+        _raise_for_status(r)
         payload = r.json()
         if isinstance(payload, list):
             return payload
@@ -121,7 +162,7 @@ class DograhClient:
         if telephony_configuration_id is not None:
             body["telephony_configuration_id"] = telephony_configuration_id
         r = self._client.post("/api/v1/telephony/initiate-call", json=body)
-        r.raise_for_status()
+        _raise_for_status(r)
         return r.json()
 
     def create_workflow_run(
@@ -137,13 +178,13 @@ class DograhClient:
             f"/api/v1/workflow/{workflow_id}/runs",
             json={"mode": mode, "name": name},
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         return r.json()
 
     def get_workflow(self, workflow_id: int) -> dict[str, Any]:
         """Fetch one workflow's full record. Wraps GET /workflow/fetch/{id}."""
         r = self._client.get(f"/api/v1/workflow/fetch/{workflow_id}")
-        r.raise_for_status()
+        _raise_for_status(r)
         return r.json()
 
     def list_workflow_runs(
@@ -162,7 +203,7 @@ class DograhClient:
             f"/api/v1/workflow/{workflow_id}/runs",
             params={"page": page, "limit": limit},
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         return r.json()
 
     def get_workflow_run(
@@ -172,5 +213,5 @@ class DograhClient:
         r = self._client.get(
             f"/api/v1/workflow/{workflow_id}/runs/{run_id}"
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         return r.json()

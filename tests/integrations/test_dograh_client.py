@@ -16,6 +16,7 @@ import respx
 from chatty_commander.integrations.dograh_client import (
     DograhClient,
     DograhConfig,
+    DograhHTTPError,
     DograhUnavailableError,
 )
 
@@ -157,6 +158,56 @@ def test_get_workflow_run(config: DograhConfig) -> None:
         run = client.get_workflow_run(3, 9)
     assert run["id"] == 9
     assert run["is_completed"] is True
+
+
+@respx.mock
+def test_http_error_extracts_dograh_detail(config: DograhConfig) -> None:
+    respx.post("http://dograh.test/api/v1/telephony/initiate-call").mock(
+        return_value=httpx.Response(
+            400, json={"detail": "telephony_not_configured"}
+        )
+    )
+    with DograhClient(config) as client:
+        with pytest.raises(DograhHTTPError) as exc_info:
+            client.initiate_call(42, phone_number="+15555550100")
+    err = exc_info.value
+    assert err.status_code == 400
+    assert err.detail == "telephony_not_configured"
+    assert "telephony_not_configured" in str(err)
+    assert err.method == "POST"
+
+
+@respx.mock
+def test_http_error_handles_validation_list_detail(config: DograhConfig) -> None:
+    """FastAPI returns ``detail`` as a list for 422 validation errors."""
+    respx.post("http://dograh.test/api/v1/telephony/initiate-call").mock(
+        return_value=httpx.Response(
+            422,
+            json={
+                "detail": [
+                    {"loc": ["body", "phone_number"], "msg": "field required"},
+                ]
+            },
+        )
+    )
+    with DograhClient(config) as client:
+        with pytest.raises(DograhHTTPError) as exc_info:
+            client.initiate_call(42)
+    assert exc_info.value.status_code == 422
+    assert "field required" in exc_info.value.detail
+
+
+@respx.mock
+def test_http_error_falls_back_to_text(config: DograhConfig) -> None:
+    """When the body isn't JSON, fall back to the raw text."""
+    respx.get("http://dograh.test/api/v1/workflow/fetch").mock(
+        return_value=httpx.Response(503, text="Service Unavailable")
+    )
+    with DograhClient(config) as client:
+        with pytest.raises(DograhHTTPError) as exc_info:
+            client.list_workflows()
+    assert exc_info.value.status_code == 503
+    assert "Service Unavailable" in exc_info.value.detail
 
 
 @respx.mock
