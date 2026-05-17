@@ -112,6 +112,30 @@ async function mockDashboardAPIs(page: Page) {
   await page.route("**/api/v1/commands", (route) =>
     route.fulfill({ status: 200, json: COMMANDS_RESPONSE })
   );
+  // Dograh integration status — show online with one workflow so the
+  // dashboard screenshot demonstrates the cross-system integration in
+  // its healthy state. Use the inverse mocks in dograh_offline.spec.ts
+  // when documenting the unconfigured fallback.
+  await page.route("**/api/v1/dograh/status", (route) =>
+    route.fulfill({
+      status: 200,
+      json: {
+        available: true,
+        reason: null,
+        health: {
+          status: "ok",
+          version: "1.30.0",
+          deployment_mode: "oss",
+        },
+      },
+    })
+  );
+  await page.route("**/api/v1/dograh/workflows", (route) =>
+    route.fulfill({
+      status: 200,
+      json: [{ id: 1, name: "lead-qualification", status: "active" }],
+    })
+  );
 }
 
 /** Set up all API route mocks for configuration screenshots. */

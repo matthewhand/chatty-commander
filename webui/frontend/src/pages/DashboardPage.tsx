@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 import { formatTimestamp } from "../utils/formatTime";
+import DograhStatusCard from "../components/DograhStatusCard";
 
 const MAX_MESSAGES = 100;
 const MAX_RECENT_MESSAGES = 15;
@@ -307,6 +308,8 @@ const DashboardPage = React.memo(() => {
             </div>
           </div>
         </div>
+
+        <DograhStatusCard />
       </div>
 
       {/* Real-time Performance History Chart */}
