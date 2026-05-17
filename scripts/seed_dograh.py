@@ -30,6 +30,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import cast
 
 import httpx
 
@@ -99,14 +100,14 @@ def _ensure_user(
             json={"email": email, "password": password},
         )
     r.raise_for_status()
-    return r.json()["token"]
+    return cast(str, r.json()["token"])
 
 
 def _mint_api_key(client: httpx.Client, key_name: str) -> str:
     """Mint a fresh API key. Old keys with the same name remain in dograh."""
     r = client.post("/api/v1/user/api-keys", json={"name": key_name})
     r.raise_for_status()
-    return r.json()["api_key"]
+    return cast(str, r.json()["api_key"])
 
 
 def _ensure_workflow(client: httpx.Client, workflow_name: str) -> int:

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -120,7 +120,7 @@ class DograhClient:
         """Return dograh's /api/v1/health payload. Does not require auth."""
         r = self._client.get("/api/v1/health")
         _raise_for_status(r)
-        return r.json()
+        return cast(dict[str, Any], r.json())
 
     def list_workflows(
         self, status: str | None = None
@@ -137,8 +137,8 @@ class DograhClient:
         _raise_for_status(r)
         payload = r.json()
         if isinstance(payload, list):
-            return payload
-        return payload.get("items", [])
+            return cast(list[dict[str, Any]], payload)
+        return cast(list[dict[str, Any]], payload.get("items", []))
 
     def initiate_call(
         self,
@@ -163,7 +163,7 @@ class DograhClient:
             body["telephony_configuration_id"] = telephony_configuration_id
         r = self._client.post("/api/v1/telephony/initiate-call", json=body)
         _raise_for_status(r)
-        return r.json()
+        return cast(dict[str, Any], r.json())
 
     def create_workflow_run(
         self, workflow_id: int, mode: str = "chat", name: str = "cc-run"
@@ -179,13 +179,13 @@ class DograhClient:
             json={"mode": mode, "name": name},
         )
         _raise_for_status(r)
-        return r.json()
+        return cast(dict[str, Any], r.json())
 
     def get_workflow(self, workflow_id: int) -> dict[str, Any]:
         """Fetch one workflow's full record. Wraps GET /workflow/fetch/{id}."""
         r = self._client.get(f"/api/v1/workflow/fetch/{workflow_id}")
         _raise_for_status(r)
-        return r.json()
+        return cast(dict[str, Any], r.json())
 
     def list_workflow_runs(
         self,
@@ -204,7 +204,7 @@ class DograhClient:
             params={"page": page, "limit": limit},
         )
         _raise_for_status(r)
-        return r.json()
+        return cast(dict[str, Any], r.json())
 
     def get_workflow_run(
         self, workflow_id: int, run_id: int
@@ -214,4 +214,4 @@ class DograhClient:
             f"/api/v1/workflow/{workflow_id}/runs/{run_id}"
         )
         _raise_for_status(r)
-        return r.json()
+        return cast(dict[str, Any], r.json())

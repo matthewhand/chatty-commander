@@ -152,10 +152,15 @@ class CompletionProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
-        # Add browser analyst tool if enabled
+        # Add browser analyst tool if enabled.
+        # NB: the canonical implementation lives in
+        # chatty_commander.advisors.tools.browser_analyst (this is
+        # `.tools`, NOT `..tools` — there is a separate
+        # chatty_commander.tools/ package that does not export the
+        # FunctionTool instance).
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
-                from ..tools.browser_analyst import (  # type: ignore[attr-defined]
+                from .tools.browser_analyst import (
                     browser_analyst_tool_instance,
                 )
 
@@ -167,9 +172,7 @@ class CompletionProvider(LLMProvider):
         # Add dograh call tool only if explicitly enabled (opt-in integration).
         if tools_config.get("dograh_call", {}).get("enabled", False):
             try:
-                from ..tools.dograh_call import (  # type: ignore[attr-defined]
-                    dograh_call_tool_instance,
-                )
+                from .tools.dograh_call import dograh_call_tool_instance
 
                 if dograh_call_tool_instance:
                     tools.append(dograh_call_tool_instance)
@@ -239,10 +242,15 @@ class ResponsesProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
-        # Add browser analyst tool if enabled
+        # Add browser analyst tool if enabled.
+        # NB: the canonical implementation lives in
+        # chatty_commander.advisors.tools.browser_analyst (this is
+        # `.tools`, NOT `..tools` — there is a separate
+        # chatty_commander.tools/ package that does not export the
+        # FunctionTool instance).
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
-                from ..tools.browser_analyst import (  # type: ignore[attr-defined]
+                from .tools.browser_analyst import (
                     browser_analyst_tool_instance,
                 )
 
@@ -254,9 +262,7 @@ class ResponsesProvider(LLMProvider):
         # Add dograh call tool only if explicitly enabled (opt-in integration).
         if tools_config.get("dograh_call", {}).get("enabled", False):
             try:
-                from ..tools.dograh_call import (  # type: ignore[attr-defined]
-                    dograh_call_tool_instance,
-                )
+                from .tools.dograh_call import dograh_call_tool_instance
 
                 if dograh_call_tool_instance:
                     tools.append(dograh_call_tool_instance)
