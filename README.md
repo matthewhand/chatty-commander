@@ -24,5 +24,8 @@ Please refer to the organized **User Guide** below:
 Looking to modify the core functionality or add new LLM adapters?
 Check out our extensive [Developer Docs](docs/developer/) section.
 
+## Roadmap
+See [`ROADMAP.md`](ROADMAP.md) for the tiered TODO list (P0/P1/P2/P3) covering the dograh integration and remaining production-readiness work.
+
 ## License
 MIT License
