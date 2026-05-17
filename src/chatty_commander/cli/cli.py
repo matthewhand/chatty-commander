@@ -322,6 +322,11 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         help="Show what would be executed without running it",
     )
 
+    # dograh subcommand group (integration utilities)
+    from chatty_commander.cli.dograh_cli import register_dograh_subparser
+
+    register_dograh_subparser(subparsers)
+
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument(
         "--web",
@@ -552,6 +557,12 @@ def cli_main():
         parser.error("Port must be 1024 or higher for non-root users")
     if getattr(args, "no_auth", False) and not getattr(args, "web", False):
         parser.error("--no-auth only applicable in web mode")
+
+    # Dograh CLI commands exit early — they don't need CC's model/state managers.
+    if getattr(args, "subcommand", None) == "dograh":
+        from chatty_commander.cli.dograh_cli import handle_dograh
+
+        return handle_dograh(args)
 
     # If user only asked for help (--help), we would have already returned.
     # If no args other than program name, launch interactive shell
