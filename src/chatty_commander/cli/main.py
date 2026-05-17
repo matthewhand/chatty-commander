@@ -516,6 +516,23 @@ def run_orchestrator_mode(
 
 def main():
     """Entry point for the ChattyCommander application."""
+    # Short-circuit pure-utility subcommands that must not trigger model loading,
+    # state-manager init, or wake-word detection. Both `chatty-commander dograh ...`
+    # (console_script → cli.cli) and `python -m chatty_commander.cli.main dograh ...`
+    # must reach the same handler — without this, the latter falls through to
+    # interactive shell mode and loads the full ONNX pipeline before exiting.
+    if len(sys.argv) > 1 and sys.argv[1] == "dograh":
+        from chatty_commander.cli.dograh_cli import (
+            handle_dograh,
+            register_dograh_subparser,
+        )
+
+        sub_parser = argparse.ArgumentParser(prog="chatty-commander")
+        subparsers = sub_parser.add_subparsers(dest="subcommand")
+        register_dograh_subparser(subparsers)
+        sub_args = sub_parser.parse_args()
+        return handle_dograh(sub_args)
+
     parser = create_parser()
     # Parse as the very first action and immediately return argparse exit code for help/usage
     # We must allow --help to exit(0) without doing any setup, to satisfy tests.

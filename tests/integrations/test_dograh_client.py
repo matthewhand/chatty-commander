@@ -7,6 +7,7 @@ live smoke test is opt-in via DOGRAH_LIVE=1 and hits a real dograh stack
 
 from __future__ import annotations
 
+import json
 import os
 
 import httpx
@@ -92,7 +93,10 @@ def test_create_workflow_run_sends_mode_and_name(config: DograhConfig) -> None:
     with DograhClient(config) as client:
         out = client.create_workflow_run(42, mode="chat", name="smoke")
     assert route.called
-    assert route.calls.last.request.read() == b'{"mode": "chat", "name": "smoke"}'
+    assert json.loads(route.calls.last.request.read()) == {
+        "mode": "chat",
+        "name": "smoke",
+    }
     assert out["id"] == 1
 
 
@@ -104,7 +108,7 @@ def test_initiate_call_minimal(config: DograhConfig) -> None:
     with DograhClient(config) as client:
         out = client.initiate_call(42)
     assert route.called
-    assert route.calls.last.request.read() == b'{"workflow_id": 42}'
+    assert json.loads(route.calls.last.request.read()) == {"workflow_id": 42}
     assert out["workflow_run_id"] == 9
 
 
@@ -117,11 +121,11 @@ def test_initiate_call_with_phone_and_config(config: DograhConfig) -> None:
         client.initiate_call(
             42, phone_number="+15555550100", telephony_configuration_id=7
         )
-    assert (
-        route.calls.last.request.read()
-        == b'{"workflow_id": 42, "phone_number": "+15555550100", '
-        b'"telephony_configuration_id": 7}'
-    )
+    assert json.loads(route.calls.last.request.read()) == {
+        "workflow_id": 42,
+        "phone_number": "+15555550100",
+        "telephony_configuration_id": 7,
+    }
 
 
 @respx.mock
