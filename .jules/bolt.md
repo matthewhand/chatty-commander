@@ -15,3 +15,7 @@
 ## 2026-04-12 - [Module-Level Variable Imports]
 **Learning:** When a code review flags missing imports or predicts `NameError`s on startup, always verify their presence in the target file using bash commands (e.g., `grep`) before attempting a fix, as the reviewer's context may be hallucinated or outdated.
 **Action:** Use grep to check for imports like `import threading` and `from typing import Any` before assuming they are missing.
+
+## 2024-05-21 - Memoizing frequent renders in DashboardPage
+**Learning:** In React, inline mappings (like `data?.map()`) inside heavily-rerendered components (e.g. ones receiving frequent WebSocket telemetry) cause unnecessary reconciliation. Extracting static helper functions out of the component and wrapping mapped JSX in `useMemo` significantly reduces reallocation overhead.
+**Action:** Always wrap mapped JSX arrays that depend on slower-changing data in `useMemo`, and place them at the top-level of the component (not inside conditional JSX) to satisfy hooks rules, especially in components receiving frequent external updates.
