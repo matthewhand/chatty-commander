@@ -416,13 +416,13 @@ const DashboardPage = React.memo(() => {
         <div className="card-body">
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
-          <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1">
+          <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1" role="log" aria-live="polite" aria-label="Command execution log">
             {recentMessages.length > 0 ? (
               recentMessages.map((msg, i) => (
-                <div key={i} className="text-base-content/80 leading-relaxed">{msg}</div>
+                <div key={i} className="text-base-content/80 leading-relaxed" role="listitem">{msg}</div>
               ))
             ) : (
-              <div className="p-4 text-base-content/50 italic text-center pt-24">
+              <div className="p-4 text-base-content/50 italic text-center pt-24" aria-live="polite">
                 Waiting for commands...
               </div>
             )}
@@ -465,19 +465,19 @@ const DashboardPage = React.memo(() => {
       </h3>
 
       {agentsError && (
-        <div className="alert alert-error shadow-lg">
+        <div className="alert alert-error shadow-lg" role="alert">
           <span>{(agentsErrObj as Error)?.message || "Failed to fetch agent status."}</span>
         </div>
       )}
 
       {agentsLoading ? (
-        <div className="flex justify-center p-8">
+        <div className="flex justify-center p-8" role="status" aria-live="polite">
           <span className="loading loading-spinner text-primary"></span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="region" aria-label="Agent status cards">
           {agentData?.map((agent) => (
-            <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
+            <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10" role="article" aria-label={`Agent ${agent.name} status: ${agent.status}`}>
               <div className="card-body p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="card-title text-xl font-bold">{agent.name}</h3>
