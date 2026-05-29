@@ -271,19 +271,19 @@ export default function CommandsPage() {
 
       {/* Loading / Error States */}
       {isLoading && (
-        <div className="flex justify-center p-12">
-          <span className="loading loading-spinner loading-lg text-primary"></span>
+        <div className="flex justify-center p-12" role="status" aria-live="polite" aria-label="Loading commands">
+          <span className="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
         </div>
       )}
 
       {isError && (
-        <div className="alert alert-error shadow-lg">
+        <div className="alert alert-error shadow-lg" role="alert">
           <span>Failed to load commands: {(error as Error).message}</span>
         </div>
       )}
 
       {/* Commands Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6" role="region" aria-label="Commands list">
         <AnimatePresence>
           {filteredCommands.map(([name, config], idx) => (
             <motion.div
