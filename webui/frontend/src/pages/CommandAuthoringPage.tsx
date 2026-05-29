@@ -644,7 +644,7 @@ export default function CommandAuthoringPage() {
         >
           <div className="card-body">
             <h2 className="card-title flex items-center gap-2">
-              <Terminal className="text-primary" size={20} />
+              <Terminal className="text-primary" size={20} aria-hidden="true" />
               Manual Command Editor
             </h2>
 
@@ -663,9 +663,11 @@ export default function CommandAuthoringPage() {
                     setManualCommand((prev) => ({ ...prev, name: e.target.value }))
                   }
                   onBlur={(e) => validateField('name', e.target.value)}
+                  aria-invalid={!!formErrors.name}
+                  aria-describedby={formErrors.name ? "cmd-name-error" : undefined}
                 />
                 {formErrors.name && (
-                  <span className="text-error text-xs mt-1">{formErrors.name}</span>
+                  <span id="cmd-name-error" className="text-error text-xs mt-1">{formErrors.name}</span>
                 )}
               </div>
 
@@ -683,9 +685,11 @@ export default function CommandAuthoringPage() {
                     setManualCommand((prev) => ({ ...prev, display_name: e.target.value }))
                   }
                   onBlur={(e) => validateField('display_name', e.target.value)}
+                  aria-invalid={!!formErrors.display_name}
+                  aria-describedby={formErrors.display_name ? "cmd-display-name-error" : undefined}
                 />
                 {formErrors.display_name && (
-                  <span className="text-error text-xs mt-1">{formErrors.display_name}</span>
+                  <span id="cmd-display-name-error" className="text-error text-xs mt-1">{formErrors.display_name}</span>
                 )}
               </div>
 
@@ -697,15 +701,17 @@ export default function CommandAuthoringPage() {
                   id="cmd-wakeword"
                   type="text"
                   className={`input input-bordered${formErrors.wakeword ? ' input-error' : ''}`}
-                  placeholder="Trigger phrase"
+                  placeholder="wake word"
                   value={manualCommand.wakeword}
                   onChange={(e) =>
                     setManualCommand((prev) => ({ ...prev, wakeword: e.target.value }))
                   }
                   onBlur={(e) => validateField('wakeword', e.target.value)}
+                  aria-invalid={!!formErrors.wakeword}
+                  aria-describedby={formErrors.wakeword ? "cmd-wakeword-error" : undefined}
                 />
                 {formErrors.wakeword && (
-                  <span className="text-error text-xs mt-1">{formErrors.wakeword}</span>
+                  <span id="cmd-wakeword-error" className="text-error text-xs mt-1">{formErrors.wakeword}</span>
                 )}
               </div>
             </div>
