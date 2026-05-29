@@ -26,6 +26,8 @@ const Dropdown: React.FC<DropdownProps> = ({
 }) => {
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const menuItemsRef = useRef<(HTMLLIElement | HTMLAnchorElement | HTMLButtonElement)[]>([]);
   const isOpen = controlledIsOpen ?? uncontrolledIsOpen;
   
   const setIsOpen = useCallback((newState: boolean) => {
@@ -58,6 +60,43 @@ const Dropdown: React.FC<DropdownProps> = ({
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen, setIsOpen]);
 
+  // Keyboard navigation within menu
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      const items = menuItemsRef.current.filter(Boolean);
+      if (items.length === 0) return;
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const currentIndex = items.indexOf(document.activeElement as any);
+        const direction = e.key === 'ArrowDown' ? 1 : -1;
+        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + direction + items.length) % items.length;
+        items[nextIndex]?.focus();
+      }
+
+      if (e.key === 'Enter' || e.key === ' ') {
+        const focusedElement = document.activeElement as any;
+        if (focusedElement && menuItemsRef.current.includes(focusedElement)) {
+          e.preventDefault();
+          focusedElement.click();
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen]);
+
+  // Focus management: move focus to first menu item when dropdown opens
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      const firstItem = menuItemsRef.current[0];
+      if (firstItem) {
+        firstItem.focus();
+      }
+    }
+  }, [isOpen]);
+
   const positionCls = { top: 'dropdown-top', bottom: 'dropdown-bottom', left: 'dropdown-left', right: 'dropdown-right' }[position];
   const alignCls = align === 'right' ? 'dropdown-end' : '';
   const sizeCls = size === 'none' ? '' : `btn-${size}`;
@@ -72,8 +111,24 @@ const Dropdown: React.FC<DropdownProps> = ({
         {!hideArrow && <ChevronDown className="h-5 w-5" aria-hidden="true" />}
       </div>
       {isOpen && (
-        <ul tabIndex={0} className={`dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-50 ${contentClassName}`} role="menu">
-          {children}
+        <ul 
+          ref={menuRef}
+          tabIndex={0} 
+          className={`dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-50 ${contentClassName}`} 
+          role="menu"
+        >
+          {React.Children.map(children, (child, index) => {
+            if (React.isValidElement(child)) {
+              return React.cloneElement(child as React.ReactElement<any>, {
+                ref: (el: HTMLLIElement | HTMLAnchorElement | HTMLButtonElement | null) => {
+                  if (el) menuItemsRef.current[index] = el;
+                },
+                role: 'menuitem',
+                tabIndex: index === 0 ? 0 : -1,
+              });
+            }
+            return child;
+          })}
         </ul>
       )}
     </div>
