@@ -128,7 +128,7 @@ const LoginPage: React.FC = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+                  {showPassword ? <EyeOffIcon size={18} aria-hidden="true" /> : <EyeIcon size={18} aria-hidden="true" />}
                 </button>
               </div>
               {passwordError && (
@@ -137,8 +137,9 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div className="form-control">
-              <label className="label cursor-pointer justify-start gap-3">
+              <label className="label cursor-pointer justify-start gap-3" htmlFor="remember-me">
                 <input
+                  id="remember-me"
                   type="checkbox"
                   className="checkbox checkbox-primary checkbox-sm"
                   checked={rememberMe}
@@ -159,7 +160,7 @@ const LoginPage: React.FC = () => {
               className="btn btn-primary w-full"
               disabled={loading}
             >
-              {loading && <span className="loading loading-spinner"></span>}
+              {loading && <span className="loading loading-spinner" aria-hidden="true"></span>}
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>
