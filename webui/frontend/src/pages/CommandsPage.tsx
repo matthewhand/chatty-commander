@@ -199,7 +199,7 @@ export default function CommandsPage() {
             title="Refresh Commands"
             aria-label="Refresh Commands"
           >
-            <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+            <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} aria-hidden="true" />
           </button>
           <button
             className="btn btn-outline btn-sm"
@@ -208,7 +208,7 @@ export default function CommandsPage() {
             aria-label="Export commands as JSON"
             disabled={!commands || commandsList.length === 0}
           >
-            <Download size={16} />
+            <Download size={16} aria-hidden="true" />
             Export JSON
           </button>
           <input
@@ -224,11 +224,11 @@ export default function CommandsPage() {
             title="Import JSON"
             aria-label="Import commands from JSON"
           >
-            <Upload size={16} />
+            <Upload size={16} aria-hidden="true" />
             Import JSON
           </button>
           <Link to="/commands/authoring" className="btn btn-primary glass">
-            <Plus size={18} />
+            <Plus size={18} aria-hidden="true" />
             New Command
           </Link>
         </div>
@@ -239,7 +239,7 @@ export default function CommandsPage() {
       {/* Search Filter */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={18} aria-hidden="true" />
           <input
             ref={searchInputRef}
             type="text"
