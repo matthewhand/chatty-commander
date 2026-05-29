@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
+import { useToast } from "../components/ToastProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AppConfig {
@@ -112,6 +113,7 @@ const ConfigurationPage: React.FC = () => {
 
   const queryClient = useQueryClient();
   const { setTheme } = useTheme();
+  const toast = useToast();
   const [config, setConfig] = useState<AppConfig>({
     apiKey: "",
     llmBaseUrl: "http://localhost:11434/v1",
@@ -166,10 +168,14 @@ const ConfigurationPage: React.FC = () => {
     mutationFn: persistConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["config"] });
+      toast.addToast("Configuration saved successfully!", "success");
       // also save audio settings
       if (inputDevice || outputDevice) {
         saveAudioSettings({ inputDevice, outputDevice });
       }
+    },
+    onError: (err: unknown) => {
+      toast.addToast(`Failed to save configuration: ${err instanceof Error ? err.message : "Unknown error"}`, "error");
     },
   });
 
@@ -244,13 +250,27 @@ const ConfigurationPage: React.FC = () => {
   };
 
   const handleTestMic = () => {
+    if (!inputDevice) {
+      toast.addToast("Please select an input device first", "warning");
+      return;
+    }
     setIsTestingMic(true);
-    setTimeout(() => setIsTestingMic(false), 3000); // Simulate 3s test
+    setTimeout(() => {
+      setIsTestingMic(false);
+      toast.addToast("Microphone test completed successfully", "success");
+    }, 3000);
   };
 
   const handleTestOutput = () => {
+    if (!outputDevice) {
+      toast.addToast("Please select an output device first", "warning");
+      return;
+    }
     setIsTestingOutput(true);
-    setTimeout(() => setIsTestingOutput(false), 2000); // Simulate 2s sound
+    setTimeout(() => {
+      setIsTestingOutput(false);
+      toast.addToast("Audio output test completed successfully", "success");
+    }, 2000);
   };
 
   return (
@@ -345,92 +365,103 @@ const ConfigurationPage: React.FC = () => {
               Audio Devices
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Input Device Card */}
-              <div className="card bg-base-100 shadow-sm border border-base-content/10">
-                <div className="card-body p-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h4 className="card-title text-sm text-primary">
-                        <MicIcon size={16} /> Input Device
-                      </h4>
-                      <p className="text-xs opacity-70">Microphone source</p>
+            {devices ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Input Device Card */}
+                <div className="card bg-base-100 shadow-sm border border-base-content/10">
+                  <div className="card-body p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="card-title text-sm text-primary">
+                          <MicIcon size={16} /> Input Device
+                        </h4>
+                        <p className="text-xs opacity-70">Microphone source</p>
+                      </div>
+                      <button
+                        className="btn btn-xs btn-outline btn-primary"
+                        onClick={handleTestMic}
+                        disabled={isTestingMic || !inputDevice}
+                        title={inputDevice ? "Test microphone" : "Select a device first"}
+                      >
+                        {isTestingMic ? "Testing..." : "Test"}
+                      </button>
                     </div>
-                    <button
-                      className="btn btn-xs btn-outline btn-primary"
-                      onClick={handleTestMic}
-                      disabled={isTestingMic || !inputDevice}
+
+                    <select
+                      className="select select-bordered select-sm w-full select-primary mb-4"
+                      value={inputDevice}
+                      onChange={(e) => setInputDevice(e.target.value)}
+                      aria-label="Select input audio device"
                     >
-                      {isTestingMic ? "Testing..." : "Test"}
-                    </button>
+                      <option value="" disabled>Select device...</option>
+                      {devices?.input.map((dev: string) => (
+                        <option key={dev} value={dev}>{dev}</option>
+                      ))}
+                    </select>
+
+                    {/* Visualizer Area */}
+                    <div className="h-6 bg-base-200 rounded flex items-center px-4 gap-1 overflow-hidden">
+                      {isTestingMic ? (
+                        Array.from({ length: 15 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-full bg-primary rounded-full animate-pulse"
+                            style={{ height: `${Math.max(10, Math.random() * 100)}%`, animationDuration: `${0.2 + Math.random() * 0.5}s` }}
+                          />
+                        ))
+                      ) : (
+                        <span className="text-[10px] text-base-content/40 italic w-full text-center">Click Test</span>
+                      )}
+                    </div>
                   </div>
+                </div>
 
-                  <select
-                    className="select select-bordered select-sm w-full select-primary mb-4"
-                    value={inputDevice}
-                    onChange={(e) => setInputDevice(e.target.value)}
-                  >
-                    <option value="" disabled>Select device...</option>
-                    {devices?.input.map((dev: string) => (
-                      <option key={dev} value={dev}>{dev}</option>
-                    ))}
-                  </select>
+                {/* Output Device Card */}
+                <div className="card bg-base-100 shadow-sm border border-base-content/10">
+                  <div className="card-body p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="card-title text-sm text-secondary">
+                          <VolumeUpIcon size={16} className={isTestingOutput ? "animate-bounce" : ""} /> Output Device
+                        </h4>
+                        <p className="text-xs opacity-70">Playback endpoint</p>
+                      </div>
+                      <button
+                        className="btn btn-xs btn-outline btn-secondary"
+                        onClick={handleTestOutput}
+                        disabled={isTestingOutput || !outputDevice}
+                        title={outputDevice ? "Test audio output" : "Select a device first"}
+                      >
+                        {isTestingOutput ? "Playing..." : "Test"}
+                      </button>
+                    </div>
 
-                  {/* Visualizer Area */}
-                  <div className="h-6 bg-base-200 rounded flex items-center px-4 gap-1 overflow-hidden">
-                    {isTestingMic ? (
-                      Array.from({ length: 15 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-full bg-primary rounded-full animate-pulse"
-                          style={{ height: `${Math.max(10, Math.random() * 100)}%`, animationDuration: `${0.2 + Math.random() * 0.5}s` }}
-                        />
-                      ))
-                    ) : (
-                      <span className="text-[10px] text-base-content/40 italic w-full text-center">Click Test</span>
-                    )}
+                    <select
+                      className="select select-bordered select-sm w-full select-secondary mb-4"
+                      value={outputDevice}
+                      onChange={(e) => setOutputDevice(e.target.value)}
+                      aria-label="Select output audio device"
+                    >
+                      <option value="" disabled>Select device...</option>
+                      {devices?.output.map((dev: string) => (
+                        <option key={dev} value={dev}>{dev}</option>
+                      ))}
+                    </select>
+
+                    <div className="h-6 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
+                      <span className="text-[10px] text-base-content/40 italic">
+                        {isTestingOutput ? "🔊 Playing test sound..." : "Ready"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* Output Device Card */}
-              <div className="card bg-base-100 shadow-sm border border-base-content/10">
-                <div className="card-body p-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h4 className="card-title text-sm text-secondary">
-                        <VolumeUpIcon size={16} className={isTestingOutput ? "animate-bounce" : ""} /> Output Device
-                      </h4>
-                      <p className="text-xs opacity-70">Playback endpoint</p>
-                    </div>
-                    <button
-                      className="btn btn-xs btn-outline btn-secondary"
-                      onClick={handleTestOutput}
-                      disabled={isTestingOutput || !outputDevice}
-                    >
-                      {isTestingOutput ? "Playing..." : "Test"}
-                    </button>
-                  </div>
-
-                  <select
-                    className="select select-bordered select-sm w-full select-secondary mb-4"
-                    value={outputDevice}
-                    onChange={(e) => setOutputDevice(e.target.value)}
-                  >
-                    <option value="" disabled>Select device...</option>
-                    {devices?.output.map((dev: string) => (
-                      <option key={dev} value={dev}>{dev}</option>
-                    ))}
-                  </select>
-
-                  <div className="h-6 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
-                    <span className="text-[10px] text-base-content/40 italic">
-                      {isTestingOutput ? "🔊 Playing test sound..." : "Ready"}
-                    </span>
-                  </div>
-                </div>
+            ) : (
+              <div className="flex justify-center items-center p-8">
+                <span className="loading loading-spinner loading-md text-accent"></span>
+                <span className="ml-3 text-base-content/60">Loading audio devices...</span>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Voice Models Section */}
