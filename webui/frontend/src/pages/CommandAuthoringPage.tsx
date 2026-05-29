@@ -489,7 +489,7 @@ export default function CommandAuthoringPage() {
             <AlertCircle size={20} aria-hidden="true" />
             <span>{error}</span>
             <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error">
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </motion.div>
         )}
@@ -533,12 +533,12 @@ export default function CommandAuthoringPage() {
               >
                 {generateMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={18} className="animate-spin" aria-hidden="true" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <Wand2 size={18} />
+                    <Wand2 size={18} aria-hidden="true" />
                     Generate Command
                   </>
                 )}
@@ -565,11 +565,11 @@ export default function CommandAuthoringPage() {
               </h2>
               <div className="flex gap-2">
                 <button className="btn btn-ghost btn-sm" onClick={handleRegenerate}>
-                  <RefreshCw size={16} className="mr-1" />
+                  <RefreshCw size={16} className="mr-1" aria-hidden="true" />
                   Regenerate
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={switchToManual}>
-                  <Edit3 size={16} className="mr-1" />
+                  <Edit3 size={16} className="mr-1" aria-hidden="true" />
                   Edit Manually
                 </button>
               </div>
