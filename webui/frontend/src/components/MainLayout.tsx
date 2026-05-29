@@ -83,7 +83,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         onClick={() => setIsSidebarOpen(false)}
                         aria-label="Close sidebar"
                     >
-                        <CloseIcon size={20} />
+                        <CloseIcon size={20} aria-hidden="true" />
                     </button>
                 </div>
 
@@ -113,7 +113,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <ul className="menu w-full p-0">
                         <li>
                             <button onClick={logout} className="text-error hover:bg-error/10">
-                                <LogoutIcon size={20} />
+                                <LogoutIcon size={20} aria-hidden="true" />
                                 Logout
                             </button>
                         </li>
@@ -132,7 +132,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         onClick={() => setIsSidebarOpen(true)}
                         aria-label="Open sidebar"
                     >
-                        <MenuIcon size={24} />
+                        <MenuIcon size={24} aria-hidden="true" />
                     </button>
                     <div className="font-bold">Chatty Commander</div>
                 </header>
