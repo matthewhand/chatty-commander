@@ -439,7 +439,7 @@ export default function CommandAuthoringPage() {
             </ul>
           </div>
           <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-3">
-            <Wand2 size={32} />
+            <Wand2 size={32} aria-hidden="true" />
             Command Authoring
           </h1>
           <p className="text-base-content/60 mt-1">
@@ -457,7 +457,7 @@ export default function CommandAuthoringPage() {
             className={`tab ${mode === 'ai' ? 'tab-active' : ''}`}
             onClick={() => setMode('ai')}
           >
-            <Sparkles size={16} className="mr-2" />
+            <Sparkles size={16} className="mr-2" aria-hidden="true" />
             AI Mode
           </button>
           <button
@@ -468,7 +468,7 @@ export default function CommandAuthoringPage() {
             className={`tab ${mode === 'manual' ? 'tab-active' : ''}`}
             onClick={() => setMode('manual')}
           >
-            <Code size={16} className="mr-2" />
+            <Code size={16} className="mr-2" aria-hidden="true" />
             Manual Mode
           </button>
         </div>
@@ -484,8 +484,9 @@ export default function CommandAuthoringPage() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="alert alert-error"
+            role="alert"
           >
-            <AlertCircle size={20} />
+            <AlertCircle size={20} aria-hidden="true" />
             <span>{error}</span>
             <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error">
               <X size={16} />
