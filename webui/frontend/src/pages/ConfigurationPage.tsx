@@ -467,20 +467,20 @@ const ConfigurationPage: React.FC = () => {
           {/* Voice Models Section */}
           <div className="p-6 border-b border-base-content/10">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <FileAudioIcon className="w-5 h-5 text-warning" />
+              <FileAudioIcon className="w-5 h-5 text-warning" aria-hidden="true" />
               Voice Models (ONNX)
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="col-span-2">
                 <div className="overflow-x-auto bg-base-200/30 rounded-lg border border-base-content/5 max-h-60 overflow-y-auto custom-scrollbar">
-                  <table className="table table-xs w-full">
+                  <table className="table table-xs w-full" role="table" aria-label="Voice models list">
                     <thead className="sticky top-0 bg-base-200 z-10">
                       <tr>
-                        <th>Name</th>
-                        <th>State</th>
-                        <th>Size</th>
-                        <th className="text-right">Actions</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">State</th>
+                        <th scope="col">Size</th>
+                        <th scope="col" className="text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -564,14 +564,14 @@ const ConfigurationPage: React.FC = () => {
                    </label>
                  </div>
 
-                 {isUploading && <progress className="progress progress-primary w-full mt-2"></progress>}
+                 {isUploading && <progress className="progress progress-primary w-full mt-2" role="progressbar" aria-label="Uploading model" aria-valuenow={50} aria-valuemin="0" aria-valuemax="100"></progress>}
                  {uploadError && (
-                   <div className="alert alert-error text-xs mt-2 py-2">
+                   <div className="alert alert-error text-xs mt-2 py-2" role="alert">
                      <span>{uploadError}</span>
                    </div>
                  )}
                  {deleteError && (
-                   <div className="alert alert-error text-xs mt-2 py-2">
+                   <div className="alert alert-error text-xs mt-2 py-2" role="alert">
                      <span>{deleteError}</span>
                    </div>
                  )}
