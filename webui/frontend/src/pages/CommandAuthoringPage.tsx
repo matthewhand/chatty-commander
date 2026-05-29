@@ -729,7 +729,7 @@ export default function CommandAuthoringPage() {
             <AnimatePresence>
               {manualCommand.actions.length === 0 ? (
                 <div className="text-center py-8 text-base-content/50">
-                  <Terminal size={32} className="mx-auto mb-2 opacity-50" />
+                  <Terminal size={32} className="mx-auto mb-2 opacity-50" aria-hidden="true" />
                   <p>No actions defined yet. Click "Add Action" to get started.</p>
                 </div>
               ) : (
@@ -776,8 +776,9 @@ export default function CommandAuthoringPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="alert alert-warning"
+          role="alert"
         >
-          <AlertCircle size={20} />
+          <AlertCircle size={20} aria-hidden="true" />
           <div className="flex-1">
             <p className="font-medium">AI generation is currently unavailable</p>
             <p className="text-sm">You can still create commands manually using the Manual Mode.</p>
@@ -810,12 +811,12 @@ export default function CommandAuthoringPage() {
               <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl">
                 <div className="card-body">
                   <div className="flex items-center gap-3 text-warning mb-4">
-                    <Shield size={28} />
+                    <Shield size={28} aria-hidden="true" />
                     <h3 className="text-xl font-bold">Confirm Command Creation</h3>
                   </div>
 
-                  <div className="alert alert-warning mb-4">
-                    <AlertCircle size={18} />
+                  <div className="alert alert-warning mb-4" role="alert">
+                    <AlertCircle size={18} aria-hidden="true" />
                     <span className="text-sm">
                       Commands can execute shell commands and open URLs. Please review carefully
                       before saving.
