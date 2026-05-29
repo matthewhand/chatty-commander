@@ -339,6 +339,12 @@ const DashboardPage = React.memo(() => {
                 <button
                   className="btn btn-sm btn-ghost btn-square"
                   onClick={() => setIsPaused(!isPaused)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsPaused(!isPaused);
+                    }
+                  }}
                   aria-label={isPaused ? "Resume Chart" : "Pause Chart"}
                 >
                   {isPaused ? <Play size={18} /> : <Pause size={18} />}
@@ -348,6 +354,12 @@ const DashboardPage = React.memo(() => {
                 <button
                   className="btn btn-sm btn-ghost btn-square"
                   onClick={handleExport}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleExport();
+                    }
+                  }}
                   aria-label="Export Data as CSV"
                 >
                   <Download size={18} />
@@ -355,7 +367,7 @@ const DashboardPage = React.memo(() => {
               </div>
             </div>
           </div>
-          <div className="h-64 w-full">
+          <div className="h-64 w-full" role="img" aria-label="Performance history chart showing CPU and memory usage over time">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={history}>
                 <defs>
