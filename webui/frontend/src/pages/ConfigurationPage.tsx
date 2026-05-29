@@ -320,7 +320,7 @@ const ConfigurationPage: React.FC = () => {
           {/* Services Configuration */}
           <div className="p-6 border-b border-base-content/10 bg-base-200/50">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <ServerIcon className="w-5 h-5 text-info" />
+              <ServerIcon className="w-5 h-5 text-info" aria-hidden="true" />
               Services
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -361,7 +361,7 @@ const ConfigurationPage: React.FC = () => {
           {/* Audio Hardware Component */}
           <div className="p-6 border-b border-base-content/10 bg-base-200/30">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <HeadphonesIcon className="w-5 h-5 text-accent" />
+              <HeadphonesIcon className="w-5 h-5 text-accent" aria-hidden="true" />
               Audio Devices
             </h3>
 
@@ -458,7 +458,7 @@ const ConfigurationPage: React.FC = () => {
               </div>
             ) : (
               <div className="flex justify-center items-center p-8">
-                <span className="loading loading-spinner loading-md text-accent"></span>
+                <span className="loading loading-spinner loading-md text-accent" aria-hidden="true"></span>
                 <span className="ml-3 text-base-content/60">Loading audio devices...</span>
               </div>
             )}
