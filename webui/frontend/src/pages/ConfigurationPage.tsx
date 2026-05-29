@@ -510,9 +510,9 @@ const ConfigurationPage: React.FC = () => {
                                 disabled={deleteMutation.isPending}
                               >
                                 {deleteMutation.isPending && deleteMutation.variables === model.name ? (
-                                  <span className="loading loading-spinner loading-xs"></span>
+                                  <span className="loading loading-spinner loading-xs" aria-hidden="true"></span>
                                 ) : (
-                                  <TrashIcon size={14} />
+                                  <TrashIcon size={14} aria-hidden="true" />
                                 )}
                               </button>
                             </td>
@@ -532,7 +532,7 @@ const ConfigurationPage: React.FC = () => {
 
               <div className="card bg-base-200/50 border border-base-content/5 p-4 h-fit">
                  <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                  <UploadIcon size={14}/> Upload Model
+                  <UploadIcon size={14} aria-hidden="true"/> Upload Model
                  </h4>
 
                  <div className="form-control w-full mb-3">
@@ -582,7 +582,7 @@ const ConfigurationPage: React.FC = () => {
           {/* LLM Endpoint Configuration */}
           <div className="p-6 border-b border-base-content/10">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <CpuIcon className="w-5 h-5 text-secondary" />
+              <CpuIcon className="w-5 h-5 text-secondary" aria-hidden="true" />
               LLM Endpoint
             </h3>
             <div className="space-y-4">
