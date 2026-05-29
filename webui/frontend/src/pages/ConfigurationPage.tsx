@@ -704,10 +704,11 @@ const ConfigurationPage: React.FC = () => {
                           type="button"
                           className="btn btn-ghost btn-xs"
                           onClick={() => handleCopy("model", config.llmModel)}
+                          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCopy("model", config.llmModel)}
                           title="Copy to clipboard"
                           aria-label="Copy Model"
                         >
-                          {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+                          {copiedField === "model" ? <CheckIcon size={14} className="text-success" aria-hidden="true" /> : <CopyIcon size={14} aria-hidden="true" />}
                         </button>
                       )}
                     </div>
@@ -719,7 +720,7 @@ const ConfigurationPage: React.FC = () => {
 
           {/* Save Footer */}
           <div className="p-4 bg-base-300/50 rounded-b-xl flex justify-between items-center">
-            <span className="text-xs text-base-content/40">
+            <span className="text-xs text-base-content/40" role="status" aria-live="polite">
               {mutation.isSuccess && "✓ Saved"}
               {mutation.isError && "✗ Save failed"}
             </span>
@@ -728,7 +729,7 @@ const ConfigurationPage: React.FC = () => {
               onClick={() => mutation.mutate(config)}
               disabled={mutation.isPending}
             >
-              {mutation.isPending ? <span className="loading loading-spinner"></span> : <SaveIcon size={20} />}
+              {mutation.isPending ? <span className="loading loading-spinner" aria-hidden="true"></span> : <SaveIcon size={20} aria-hidden="true" />}
               {mutation.isPending ? "Saving..." : "Save Changes"}
             </button>
           </div>
