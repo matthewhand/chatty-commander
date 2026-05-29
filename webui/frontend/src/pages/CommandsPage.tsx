@@ -326,12 +326,12 @@ export default function CommandsPage() {
                 {/* Triggers Section */}
                 <div className="p-6 space-y-4">
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-base-content/50 flex items-center gap-2">
-                    <Settings2 size={14} /> Activation Triggers
+                    <Settings2 size={14} aria-hidden="true" /> Activation Triggers
                   </h3>
 
                   {/* REST API Badge */}
                   <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success/5">
-                    <Globe className="text-success" size={20} />
+                    <Globe className="text-success" size={20} aria-hidden="true" />
                     <div className="flex-1">
                       <p className="font-medium text-sm">REST API Trigger</p>
                       <p className="text-xs text-base-content/60 font-mono mt-0.5">POST /api/v1/command</p>
@@ -345,20 +345,20 @@ export default function CommandsPage() {
         </AnimatePresence>
         {isEmpty && (
           <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
-            <TerminalSquare size={48} className="text-base-content/20 mb-4" />
+            <TerminalSquare size={48} className="text-base-content/20 mb-4" aria-hidden="true" />
             <h3 className="text-lg font-semibold text-base-content/70">No commands configured.</h3>
             <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
               Get started by creating your first command to automate tasks and streamline your workflow.
             </p>
             <Link to="/commands/authoring" className="btn btn-primary">
-              <Plus size={18} />
+              <Plus size={18} aria-hidden="true" />
               Create Command
             </Link>
           </div>
         )}
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
           <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
-            <Search size={48} className="text-base-content/20 mb-4" />
+            <Search size={48} className="text-base-content/20 mb-4" aria-hidden="true" />
             <h3 className="text-lg font-semibold text-base-content/70">No commands match your search.</h3>
             <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
               Try adjusting your search terms or clearing the search filter to see all commands.
@@ -371,10 +371,10 @@ export default function CommandsPage() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <dialog ref={deleteDialogRef} className="modal">
+      <dialog ref={deleteDialogRef} className="modal" aria-labelledby="delete-modal-title" aria-describedby="delete-modal-desc">
         <div className="modal-box">
-          <h3 className="font-bold text-lg">Confirm Deletion</h3>
-          <p className="py-4">Are you sure you want to delete <strong>{pendingDeleteCommand}</strong>?</p>
+          <h3 id="delete-modal-title" className="font-bold text-lg">Confirm Deletion</h3>
+          <p id="delete-modal-desc" className="py-4">Are you sure you want to delete <strong>{pendingDeleteCommand}</strong>?</p>
           <div className="modal-action">
             <button className="btn" onClick={handleDeleteCancel}>Cancel</button>
             <button className="btn btn-error" onClick={handleDeleteConfirm}>Delete</button>
