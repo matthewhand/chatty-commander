@@ -506,7 +506,7 @@ export default function CommandAuthoringPage() {
         >
           <div className="card-body">
             <h2 className="card-title flex items-center gap-2">
-              <Sparkles className="text-primary" size={20} />
+              <Sparkles className="text-primary" size={20} aria-hidden="true" />
               Describe Your Command
             </h2>
             <p className="text-sm text-base-content/60 mb-4">
@@ -553,11 +553,13 @@ export default function CommandAuthoringPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="card glass-card border-primary/30"
+          role="region"
+          aria-label="Generated command preview"
         >
           <div className="card-body">
             <div className="flex justify-between items-start">
               <h2 className="card-title flex items-center gap-2">
-                <Check className="text-success" size={20} />
+                <Check className="text-success" size={20} aria-hidden="true" />
                 Generated Command
               </h2>
               <div className="flex gap-2">
