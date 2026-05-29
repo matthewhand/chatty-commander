@@ -18,6 +18,7 @@ import {
   Code,
   Shield,
 } from 'lucide-react';
+import { useToast } from '../components/ToastProvider';
 
 // --- TypeScript Interfaces ---
 
@@ -238,6 +239,7 @@ export default function CommandAuthoringPage() {
   }, []);
 
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
   const [description, setDescription] = useState('');
   const [generatedCommand, setGeneratedCommand] = useState<GeneratedCommand | null>(null);
@@ -291,10 +293,12 @@ export default function CommandAuthoringPage() {
     onSuccess: (data) => {
       setGeneratedCommand(data);
       setError(null);
+      toast.addToast("Command generated successfully!", "success");
     },
     onError: (err: Error) => {
       setError(err.message);
       setGeneratedCommand(null);
+      toast.addToast(`Failed to generate command: ${err.message}`, "error");
     },
   });
 
@@ -304,6 +308,7 @@ export default function CommandAuthoringPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['commands'] });
       setShowConfirmModal(false);
+      toast.addToast("Command saved successfully!", "success");
       // Reset form
       setDescription('');
       setGeneratedCommand(null);
@@ -314,6 +319,7 @@ export default function CommandAuthoringPage() {
     onError: (err: Error) => {
       setError(err.message);
       setShowConfirmModal(false);
+      toast.addToast(`Failed to save command: ${err.message}`, "error");
     },
   });
 
@@ -783,6 +789,8 @@ export default function CommandAuthoringPage() {
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/50 z-40"
               onClick={() => setShowConfirmModal(false)}
+              aria-hidden="true"
+              role="presentation"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
