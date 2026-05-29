@@ -609,10 +609,11 @@ const ConfigurationPage: React.FC = () => {
                       type="button"
                       className="btn btn-ghost btn-xs"
                       onClick={() => handleCopy("baseUrl", config.llmBaseUrl)}
+                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCopy("baseUrl", config.llmBaseUrl)}
                       title="Copy to clipboard"
                       aria-label="Copy API Base URL"
                     >
-                      {copiedField === "baseUrl" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+                      {copiedField === "baseUrl" ? <CheckIcon size={14} className="text-success" aria-hidden="true" /> : <CopyIcon size={14} aria-hidden="true" />}
                     </button>
                   )}
                 </div>
@@ -652,10 +653,12 @@ const ConfigurationPage: React.FC = () => {
                       type="button"
                       className="btn btn-xs btn-ghost gap-1"
                       onClick={handleFetchModels}
+                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleFetchModels()}
                       disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                       title="Fetch available models from endpoint"
+                      aria-label="Fetch available models from endpoint"
                     >
-                      {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
+                      {fetchingModels ? <span className="loading loading-spinner loading-xs" aria-hidden="true"></span> : <RefreshIcon size={12} aria-hidden="true" />}
                       {fetchingModels ? "Fetching..." : "Fetch list"}
                     </button>
                   </label>
@@ -677,10 +680,11 @@ const ConfigurationPage: React.FC = () => {
                         type="button"
                         className="btn btn-ghost btn-xs"
                         onClick={() => handleCopy("model", config.llmModel)}
+                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCopy("model", config.llmModel)}
                         title="Copy to clipboard"
                         aria-label="Copy Model"
                       >
-                        {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+                        {copiedField === "model" ? <CheckIcon size={14} className="text-success" aria-hidden="true" /> : <CopyIcon size={14} aria-hidden="true" />}
                       </button>
                     </div>
                   ) : (
