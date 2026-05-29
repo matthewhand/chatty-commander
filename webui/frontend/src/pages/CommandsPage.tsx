@@ -300,7 +300,7 @@ export default function CommandsPage() {
                   <div className="flex gap-1">
                     <DynamicDropdown
                       buttonContent={
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
                         </svg>
                       }
@@ -309,13 +309,13 @@ export default function CommandsPage() {
                     >
                       <li>
                         <button aria-label={`Edit ${name}`}>
-                          <Edit3 size={16} className="text-primary" />
+                          <Edit3 size={16} className="text-primary" aria-hidden="true" />
                           Edit Command
                         </button>
                       </li>
                       <li>
                         <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} onClick={() => handleDeleteClick(name)}>
-                          <Trash2 size={16} />
+                          <Trash2 size={16} aria-hidden="true" />
                           Delete Command
                         </button>
                       </li>
