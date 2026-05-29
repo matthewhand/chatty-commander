@@ -50,22 +50,26 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     return (
         <div className="flex h-screen bg-base-200 font-sans text-base-content overflow-hidden">
-            <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:p-2 focus:bg-primary focus:text-primary-content focus:rounded">Skip to main content</a>
             {/* Mobile Backdrop */}
             {isSidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm"
                     onClick={() => setIsSidebarOpen(false)}
+                    aria-hidden="true"
                 />
             )}
 
             {/* Sidebar */}
-            <aside className={`
+            <aside
+                className={`
                 w-64 bg-base-300 flex flex-col border-r border-base-content/10 fixed h-full z-30 overflow-y-auto
                 transition-transform duration-300 ease-in-out
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 lg:translate-x-0
-            `}>
+            `}
+                role="navigation"
+                aria-label="Main navigation"
+            >
                 {/* Header */}
                 <div className="p-4 border-b border-base-content/10 bg-base-300 flex items-center justify-between">
                     <div>
@@ -84,7 +88,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </div>
 
                 {/* Menu */}
-                <ul className="menu p-4 w-full flex-1 gap-2">
+                <ul className="menu p-4 w-full flex-1 gap-2" role="list">
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         return (
@@ -92,8 +96,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                 <Link
                                     to={item.path}
                                     className={`${isActive ? 'active bg-primary/20 text-primary border-l-4 border-primary' : 'hover:bg-base-content/10'} transition-all flex items-center gap-3 p-3 rounded-xl`}
+                                    aria-current={isActive ? 'page' : undefined}
                                 >
-                                    <span className={isActive ? 'text-primary' : 'text-base-content/70'}>
+                                    <span className={isActive ? 'text-primary' : 'text-base-content/70'} aria-hidden="true">
                                         {item.icon}
                                     </span>
                                     <span className="font-medium">{item.label}</span>
