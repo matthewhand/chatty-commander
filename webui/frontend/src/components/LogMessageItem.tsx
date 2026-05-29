@@ -44,13 +44,17 @@ export const LogMessageItem: React.FC<LogMessageProps> = ({ message }) => {
   };
 
   return (
-    <div className={`flex gap-3 p-2 rounded-r border-l-2 text-xs mb-1 animate-in fade-in slide-in-from-bottom-1 duration-300 ${getColors()}`}>
-      <div className="mt-0.5 flex-shrink-0 opacity-70">
+    <div 
+      className={`flex gap-3 p-2 rounded-r border-l-2 text-xs mb-1 animate-in fade-in slide-in-from-bottom-1 duration-300 ${getColors()}`}
+      role="listitem"
+      aria-label={`${message.type} message: ${message.content}`}
+    >
+      <div className="mt-0.5 flex-shrink-0 opacity-70" aria-hidden="true">
         {getIcon()}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline gap-2">
-          <span className="font-mono text-[10px] opacity-40">
+          <span className="font-mono text-[10px] opacity-40" aria-hidden="true">
             {message.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
         </div>
