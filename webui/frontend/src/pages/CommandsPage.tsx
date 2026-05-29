@@ -149,20 +149,20 @@ export default function CommandsPage() {
   }, [commandsList, debouncedSearch]);
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading commands">
+      <div className="space-y-6 animate-pulse" role="status" aria-live="polite" aria-busy="true" aria-label="Loading commands">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="h-10 w-64 skeleton mb-2 rounded-lg"></div>
-            <div className="h-5 w-96 skeleton rounded"></div>
+            <div className="h-10 w-64 skeleton mb-2 rounded-lg" aria-hidden="true"></div>
+            <div className="h-5 w-96 skeleton rounded" aria-hidden="true"></div>
           </div>
-          <div className="h-12 w-32 skeleton rounded-lg"></div>
+          <div className="h-12 w-32 skeleton rounded-lg" aria-hidden="true"></div>
         </div>
 
         <div className="divider divider-accent"></div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="card glass-card overflow-hidden h-64 skeleton rounded-box"></div>
+            <div key={i} className="card glass-card overflow-hidden h-64 skeleton rounded-box" aria-hidden="true"></div>
           ))}
         </div>
       </div>
@@ -171,7 +171,7 @@ export default function CommandsPage() {
 
   if (isError) {
     return (
-      <div className="alert alert-error shadow-lg">
+      <div className="alert alert-error shadow-lg" role="alert">
         <span>Failed to load commands. Please check the backend connection.</span>
       </div>
     );
@@ -195,7 +195,7 @@ export default function CommandsPage() {
           <button
             className="btn btn-ghost"
             onClick={() => refetch()}
-            onKeyDown={(e) => e.key === 'Enter' && refetch()}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && refetch()}
             title="Refresh Commands"
             aria-label="Refresh Commands"
           >
