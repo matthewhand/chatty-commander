@@ -199,24 +199,24 @@ const DashboardPage = React.memo(() => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading dashboard">
-        <div className="h-10 w-48 skeleton rounded-lg"></div>
+      <div className="space-y-6 animate-pulse" role="status" aria-live="polite" aria-busy="true" aria-label="Loading dashboard">
+        <div className="h-10 w-48 skeleton rounded-lg" aria-hidden="true"></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box"></div>
+            <div key={i} className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box" aria-hidden="true"></div>
           ))}
         </div>
 
-        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-80 skeleton rounded-box"></div>
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-80 skeleton rounded-box" aria-hidden="true"></div>
 
-        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-96 skeleton rounded-box"></div>
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-96 skeleton rounded-box" aria-hidden="true"></div>
 
-        <div className="h-8 w-48 skeleton mt-8 mb-4 rounded-lg"></div>
+        <div className="h-8 w-48 skeleton mt-8 mb-4 rounded-lg" aria-hidden="true"></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box"></div>
+            <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box" aria-hidden="true"></div>
           ))}
         </div>
       </div>
@@ -471,8 +471,8 @@ const DashboardPage = React.memo(() => {
       )}
 
       {agentsLoading ? (
-        <div className="flex justify-center p-8" role="status" aria-live="polite">
-          <span className="loading loading-spinner text-primary"></span>
+        <div className="flex justify-center p-8" role="status" aria-live="polite" aria-label="Loading agent status">
+          <span className="loading loading-spinner text-primary" aria-hidden="true"></span>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="region" aria-label="Agent status cards">
@@ -487,7 +487,7 @@ const DashboardPage = React.memo(() => {
                 </div>
 
                 {agent.error && (
-                  <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg">
+                  <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg" role="alert">
                     <span>{agent.error}</span>
                   </div>
                 )}
