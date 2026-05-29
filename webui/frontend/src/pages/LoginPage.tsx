@@ -76,7 +76,7 @@ const LoginPage: React.FC = () => {
           </h2>
           <p className="text-sm opacity-70 mb-4">Voice Control System</p>
 
-          <form onSubmit={handleSubmit} className="w-full space-y-4">
+          <form onSubmit={handleSubmit} className="w-full space-y-4" role="form" aria-label="Login form">
             <div className="form-control w-full">
               <label className="label cursor-pointer" htmlFor="username">
                 <span className="label-text">Username</span>
@@ -149,7 +149,7 @@ const LoginPage: React.FC = () => {
             </div>
 
             {error && (
-              <div className="alert alert-error shadow-lg py-2">
+              <div className="alert alert-error shadow-lg py-2" role="alert">
                 <span>{error}</span>
               </div>
             )}
@@ -166,8 +166,8 @@ const LoginPage: React.FC = () => {
 
           <div className="divider"></div>
 
-          <div className="alert alert-info shadow-sm text-left text-xs">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <div className="alert alert-info shadow-sm text-left text-xs" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <div>
               <span>Auth configured via CLI. No reset function.</span>
               <br />
