@@ -721,7 +721,7 @@ export default function CommandAuthoringPage() {
             <div className="flex justify-between items-center">
               <h3 className="font-semibold">Actions</h3>
               <button className="btn btn-secondary btn-sm" onClick={addManualAction}>
-                <Plus size={16} className="mr-1" />
+                <Plus size={16} className="mr-1" aria-hidden="true" />
                 Add Action
               </button>
             </div>
@@ -755,12 +755,12 @@ export default function CommandAuthoringPage() {
               >
                 {saveMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={18} className="animate-spin" aria-hidden="true" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save size={18} />
+                    <Save size={18} aria-hidden="true" />
                     Save Command
                   </>
                 )}
