@@ -309,7 +309,7 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure">
+            <div className="stat-figure" aria-hidden="true">
               {isConnected ?
                 <Wifi size={32} className="text-success" /> :
                 isReconnecting ?
@@ -322,7 +322,7 @@ const DashboardPage = React.memo(() => {
               {isConnected ? "Connected" : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
             </div>
             <div className="stat-desc flex items-center gap-1">
-              <Zap size={14} className="text-accent" />
+              <Zap size={14} className="text-accent" aria-hidden="true" />
               <span>Last msg: {lastMsgAgo}</span>
             </div>
           </div>
@@ -347,7 +347,7 @@ const DashboardPage = React.memo(() => {
                   }}
                   aria-label={isPaused ? "Resume Chart" : "Pause Chart"}
                 >
-                  {isPaused ? <Play size={18} /> : <Pause size={18} />}
+                  {isPaused ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
                 </button>
               </div>
               <div className="tooltip" data-tip="Export CSV">
@@ -362,7 +362,7 @@ const DashboardPage = React.memo(() => {
                   }}
                   aria-label="Export Data as CSV"
                 >
-                  <Download size={18} />
+                  <Download size={18} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -461,7 +461,7 @@ const DashboardPage = React.memo(() => {
 
       {/* Agent Status Section */}
       <h3 className="text-2xl font-bold bg-gradient-to-r from-error to-warning bg-clip-text text-transparent mt-8 mb-4 flex items-center gap-2">
-        <AssessmentIcon size={24} className="text-error" /> Agent Status
+        <AssessmentIcon size={24} className="text-error" aria-hidden="true" /> Agent Status
       </h3>
 
       {agentsError && (
