@@ -422,7 +422,7 @@ const DashboardPage = React.memo(() => {
                 <div key={i} className="text-base-content/80 leading-relaxed" role="listitem">{msg}</div>
               ))
             ) : (
-              <div className="p-4 text-base-content/50 italic text-center pt-24" aria-live="polite">
+              <div className="p-4 text-base-content/50 italic text-center pt-24" aria-hidden="true">
                 Waiting for commands...
               </div>
             )}
@@ -441,7 +441,7 @@ const DashboardPage = React.memo(() => {
               />
               {!isConnected && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-xs text-error">
-                  <WifiOff size={14} />
+                  <WifiOff size={14} aria-hidden="true" />
                   <span>WebSocket disconnected</span>
                 </div>
               )}
@@ -452,7 +452,7 @@ const DashboardPage = React.memo(() => {
               disabled={!commandInput.trim() || isSending || !isConnected}
               title={!isConnected ? "WebSocket connection required" : ""}
             >
-              {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
+              {isSending ? <span className="loading loading-spinner" aria-hidden="true"></span> : <Send size={18} aria-hidden="true" />}
               Execute
             </button>
           </form>
