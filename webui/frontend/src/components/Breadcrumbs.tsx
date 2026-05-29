@@ -31,14 +31,14 @@ const Breadcrumbs: React.FC = () => {
     }
 
     return (
-        <div className="breadcrumbs text-sm">
+        <div className="breadcrumbs text-sm" aria-label="Breadcrumb navigation">
             <ul>
                 {crumbs.map((crumb, index) => (
                     <li key={crumb.path}>
                         {index < crumbs.length - 1 ? (
                             <Link to={crumb.path}>{crumb.label}</Link>
                         ) : (
-                            <span>{crumb.label}</span>
+                            <span aria-current="page">{crumb.label}</span>
                         )}
                     </li>
                 ))}
