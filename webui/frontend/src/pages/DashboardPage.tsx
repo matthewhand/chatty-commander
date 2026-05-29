@@ -20,11 +20,11 @@ interface PerfMetric {
 const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs">
+      <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs" role="tooltip" aria-label={`Performance data for ${label}`}>
         <p className="font-mono mb-2 text-base-content/60">{label}</p>
         {payload.map((entry: any) => (
           <div key={entry.name} className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} />
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} aria-hidden="true" />
             <span className="font-semibold" style={{ color: entry.stroke }}>
               {entry.name}: {entry.value.toFixed(1)}%
             </span>
@@ -230,11 +230,11 @@ const DashboardPage = React.memo(() => {
       </h2>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="region" aria-label="System statistics">
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-primary">
+            <div className="stat-figure text-primary" aria-hidden="true">
               <Server size={32} />
             </div>
             <div className="stat-title">System Status</div>
@@ -245,7 +245,7 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-secondary">
+            <div className="stat-figure text-secondary" aria-hidden="true">
               <Clock size={32} />
             </div>
             <div className="stat-title">Uptime</div>
@@ -256,7 +256,7 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-accent">
+            <div className="stat-figure text-accent" aria-hidden="true">
               <Terminal size={32} />
             </div>
             <div className="stat-title">Commands</div>
@@ -268,7 +268,17 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-info">
-              <div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>
+              <div 
+                className="radial-progress text-info" 
+                style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} 
+                role="progressbar"
+                aria-valuenow={parseInt(systemStatus?.cpu || "0")}
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-label="CPU usage"
+              >
+                {parseInt(systemStatus?.cpu || "0")}%
+              </div>
             </div>
             <div className="stat-title">CPU Load</div>
             <div className="stat-value text-info text-2xl">{systemStatus?.cpu || "N/A"}</div>
@@ -279,7 +289,17 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-warning">
-              <div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>
+              <div 
+                className="radial-progress text-warning" 
+                style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} 
+                role="progressbar"
+                aria-valuenow={parseInt(systemStatus?.memory || "0")}
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-label="Memory usage"
+              >
+                {parseInt(systemStatus?.memory || "0")}%
+              </div>
             </div>
             <div className="stat-title">Memory</div>
             <div className="stat-value text-warning text-2xl">{systemStatus?.memory || "N/A"}</div>
