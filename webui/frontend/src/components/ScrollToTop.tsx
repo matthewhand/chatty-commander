@@ -33,7 +33,7 @@ const ScrollToTop: React.FC = () => {
             aria-hidden={!visible}
             title="Scroll to top"
         >
-            <ArrowUp size={16} />
+            <ArrowUp size={16} aria-hidden="true" />
         </button>
     );
 };

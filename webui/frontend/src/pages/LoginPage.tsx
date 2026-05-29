@@ -67,7 +67,7 @@ const LoginPage: React.FC = () => {
       <div className="card w-96 bg-base-100 shadow-xl border border-primary/20">
         <div className="card-body items-center text-center">
           <div className="avatar placeholder mb-4">
-            <div className="bg-primary text-primary-content rounded-full w-20 ring ring-primary ring-offset-2 ring-offset-base-100">
+            <div className="bg-primary text-primary-content rounded-full w-20 ring ring-primary ring-offset-2 ring-offset-base-100" aria-hidden="true">
               <MicIcon size={48} />
             </div>
           </div>
