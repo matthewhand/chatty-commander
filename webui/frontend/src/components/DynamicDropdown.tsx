@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useFloating, shift, flip, offset, autoUpdate } from '@floating-ui/react-dom';
 
 interface DropdownProps {
@@ -17,6 +17,8 @@ export function DynamicDropdown({
   ariaLabel = "Open menu"
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuItemsRef = useRef<(HTMLButtonElement | HTMLAnchorElement)[]>([]);
 
   const { x, y, strategy, refs } = useFloating<HTMLButtonElement>({
     placement: 'bottom-end',
@@ -47,6 +49,51 @@ export function DynamicDropdown({
     };
   }, [refs]);
 
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        refs.reference.current?.focus();
+        return;
+      }
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const items = menuItemsRef.current.filter(Boolean);
+        if (items.length === 0) return;
+
+        const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement | HTMLAnchorElement);
+        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + direction + items.length) % items.length;
+        items[nextIndex]?.focus();
+      }
+
+      if (event.key === 'Enter' || event.key === ' ') {
+        const focusedElement = document.activeElement as HTMLButtonElement | HTMLAnchorElement;
+        if (focusedElement && menuItemsRef.current.includes(focusedElement)) {
+          event.preventDefault();
+          focusedElement.click();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, refs]);
+
+  // Focus management: move focus to first menu item when dropdown opens
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      const firstItem = menuItemsRef.current[0];
+      if (firstItem) {
+        firstItem.focus();
+      }
+    }
+  }, [isOpen]);
+
   return (
     <>
       <button
@@ -62,7 +109,10 @@ export function DynamicDropdown({
 
       {isOpen && (
         <div
-          ref={refs.setFloating}
+          ref={(node) => {
+            refs.setFloating(node);
+            if (node) menuRef.current = node;
+          }}
           style={{
             position: strategy,
             top: y ?? 0,
@@ -70,9 +120,21 @@ export function DynamicDropdown({
             zIndex: 50,
           }}
           className={menuClassName}
+          role="menu"
           onClick={() => setIsOpen(false)} // close on item click
         >
-          {children}
+          {React.Children.map(children, (child, index) => {
+            if (React.isValidElement(child)) {
+              return React.cloneElement(child as React.ReactElement<any>, {
+                ref: (el: HTMLButtonElement | HTMLAnchorElement | null) => {
+                  if (el) menuItemsRef.current[index] = el;
+                },
+                role: 'menuitem',
+                tabIndex: index === 0 ? 0 : -1,
+              });
+            }
+            return child;
+          })}
         </div>
       )}
     </>
