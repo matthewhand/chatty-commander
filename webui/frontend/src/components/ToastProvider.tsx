@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useState,
+  useEffect,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -40,10 +41,25 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, 3000);
   }, []);
 
+  const removeToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Handle Escape key to dismiss all toasts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && toasts.length > 0) {
+        setToasts([]);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [toasts]);
+
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2" role="region" aria-live="polite" aria-label="Notifications">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
@@ -53,6 +69,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.25 }}
               className={`alert ${alertClass[toast.type]} shadow-lg`}
+              role="alert"
+              aria-label={`${toast.type}: ${toast.message}`}
             >
               <span>{toast.message}</span>
             </motion.div>
