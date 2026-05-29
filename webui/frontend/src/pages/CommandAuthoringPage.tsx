@@ -808,11 +808,11 @@ export default function CommandAuthoringPage() {
               exit={{ opacity: 0, scale: 0.9 }}
               className="fixed inset-0 flex items-center justify-center z-50 p-4"
             >
-              <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl">
+              <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl" role="dialog" aria-labelledby="modal-title" aria-modal="true">
                 <div className="card-body">
                   <div className="flex items-center gap-3 text-warning mb-4">
                     <Shield size={28} aria-hidden="true" />
-                    <h3 className="text-xl font-bold">Confirm Command Creation</h3>
+                    <h3 id="modal-title" className="text-xl font-bold">Confirm Command Creation</h3>
                   </div>
 
                   <div className="alert alert-warning mb-4" role="alert">
@@ -865,12 +865,12 @@ export default function CommandAuthoringPage() {
                     >
                       {saveMutation.isPending ? (
                         <>
-                          <Loader2 size={16} className="animate-spin mr-1" />
+                          <Loader2 size={16} className="animate-spin mr-1" aria-hidden="true" />
                           Saving...
                         </>
                       ) : (
                         <>
-                          <Check size={16} className="mr-1" />
+                          <Check size={16} className="mr-1" aria-hidden="true" />
                           Confirm Save
                         </>
                       )}
