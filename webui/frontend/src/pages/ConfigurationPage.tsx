@@ -276,7 +276,7 @@ const ConfigurationPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-primary/10 rounded-xl text-primary">
+        <div className="p-3 bg-primary/10 rounded-xl text-primary" aria-hidden="true">
           <SettingsIcon size={32} />
         </div>
         <div>
@@ -293,7 +293,7 @@ const ConfigurationPage: React.FC = () => {
           {/* General Settings */}
           <div className="p-6 border-b border-base-content/10">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <SlidersIcon className="w-5 h-5 text-primary" />
+              <SlidersIcon className="w-5 h-5 text-primary" aria-hidden="true" />
               General Settings
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -373,7 +373,7 @@ const ConfigurationPage: React.FC = () => {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h4 className="card-title text-sm text-primary">
-                          <MicIcon size={16} /> Input Device
+                          <MicIcon size={16} aria-hidden="true" /> Input Device
                         </h4>
                         <p className="text-xs opacity-70">Microphone source</p>
                       </div>
@@ -422,7 +422,7 @@ const ConfigurationPage: React.FC = () => {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h4 className="card-title text-sm text-secondary">
-                          <VolumeUpIcon size={16} className={isTestingOutput ? "animate-bounce" : ""} /> Output Device
+                          <VolumeUpIcon size={16} className={isTestingOutput ? "animate-bounce" : ""} aria-hidden="true" /> Output Device
                         </h4>
                         <p className="text-xs opacity-70">Playback endpoint</p>
                       </div>
