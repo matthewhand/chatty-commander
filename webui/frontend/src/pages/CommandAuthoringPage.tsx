@@ -143,7 +143,7 @@ const ActionField: React.FC<{
           className="btn btn-ghost btn-sm btn-circle text-error"
           aria-label="Remove action"
         >
-          <Trash2 size={16} />
+          <Trash2 size={16} aria-hidden="true" />
         </button>
       </div>
 
@@ -435,7 +435,7 @@ export default function CommandAuthoringPage() {
           <div className="text-sm breadcrumbs mb-2 text-base-content/60" aria-label="breadcrumbs">
             <ul>
               <li><Link to="/commands">Commands</Link></li>
-              <li>Command Authoring</li>
+              <li aria-current="page">Command Authoring</li>
             </ul>
           </div>
           <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-3">
@@ -617,12 +617,12 @@ export default function CommandAuthoringPage() {
               >
                 {saveMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={18} className="animate-spin" aria-hidden="true" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save size={18} />
+                    <Save size={18} aria-hidden="true" />
                     Save Command
                   </>
                 )}
