@@ -397,19 +397,28 @@ const DashboardPage = React.memo(() => {
           </div>
 
           <form onSubmit={handleSendCommand} className="mt-4 flex gap-2">
-            <input
-              type="text"
-              placeholder="Type a command to execute..."
-              aria-label="Type and execute a command"
-              className="input input-bordered w-full focus:input-primary"
-              value={commandInput}
-              onChange={(e) => setCommandInput(e.target.value)}
-              disabled={isSending || !isConnected}
-            />
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="Type a command to execute..."
+                aria-label="Type and execute a command"
+                className={`input input-bordered w-full focus:input-primary ${!isConnected ? 'input-disabled' : ''}`}
+                value={commandInput}
+                onChange={(e) => setCommandInput(e.target.value)}
+                disabled={isSending || !isConnected}
+              />
+              {!isConnected && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-xs text-error">
+                  <WifiOff size={14} />
+                  <span>WebSocket disconnected</span>
+                </div>
+              )}
+            </div>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={!commandInput.trim() || isSending || !isConnected}
+              title={!isConnected ? "WebSocket connection required" : ""}
             >
               {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
               Execute

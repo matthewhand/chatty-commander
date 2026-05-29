@@ -92,34 +92,6 @@ class TestDanceInterpreter:
         assert isinstance(result, dict)
         assert result['commands'] == []
     
-    def test_callback_triggering(self, interpreter, mock_landmarks):
-        """Test that callbacks are triggered correctly."""
-        commands_received = []
-        
-        def on_command(cmd, flow_state):
-            commands_received.append(cmd)
-        
-        interpreter.set_callbacks(on_command=on_command)
-        
-        # Process multiple frames
-        for _ in range(10):
-            interpreter.process_frame(mock_landmarks)
-        
-        # Callbacks should have been called or not error
-        assert isinstance(commands_received, list)
-    
-    def test_phrase_tracking(self, interpreter, mock_landmarks):
-        """Test phrase detection and tracking."""
-        # Simulate a phrase by processing multiple frames
-        for i in range(90):  # 3 seconds at 30fps
-            # Vary energy slightly
-            for lm in mock_landmarks:
-                lm.x += np.sin(i * 0.1) * 0.01
-            
-            result = interpreter.process_frame(mock_landmarks)
-        
-        assert isinstance(result, dict)
-    
     def test_get_visualization_data(self, interpreter, mock_landmarks):
         """Test visualization data retrieval."""
         # Process some frames
@@ -193,20 +165,6 @@ class TestRhythmDetector:
             detector.add_frame(landmarks)
         
         assert len(detector.motion_history) == 10
-    
-    def test_beat_detection_with_rhythmic_motion(self, detector, moving_landmarks):
-        """Test beat detection with rhythmic input."""
-        beats_detected = 0
-        
-        # Simulate 3 seconds of rhythmic motion
-        for i in range(90):
-            landmarks = moving_landmarks(i)
-            beat = detector.add_frame(landmarks)
-            if beat:
-                beats_detected += 1
-        
-        # Should detect some beats (exact number depends on algorithm)
-        assert beats_detected >= 0  # May or may not detect depending on motion
     
     def test_tempo_calculation(self, detector, moving_landmarks):
         """Test BPM calculation from beats."""

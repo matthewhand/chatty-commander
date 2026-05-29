@@ -17,6 +17,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 import { DynamicDropdown } from '../components/DynamicDropdown';
+import { useToast } from '../components/ToastProvider';
 
 // Backend response is a Record<string, CommandConfig>
 interface CommandConfig {
@@ -28,8 +29,24 @@ interface CommandConfig {
 }
 
 export default function CommandsPage() {
+  const toast = useToast();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  
   useEffect(() => {
     document.title = "Commands | ChattyCommander";
+  }, []);
+
+  // Implement Ctrl+K keyboard shortcut to focus search input
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -106,13 +123,14 @@ export default function CommandsPage() {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-          alert('Invalid JSON: expected an object.');
+          toast.addToast('Invalid JSON: expected an object.', 'error');
           return;
         }
         await apiService.updateConfig({ commands: parsed });
         refetch();
+        toast.addToast('Commands imported successfully!', 'success');
       } catch (err) {
-        alert(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+        toast.addToast(`Import failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
       }
     };
     reader.readAsText(file);
@@ -223,13 +241,13 @@ export default function CommandsPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={18} />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search commands..."
             aria-label="Search commands"
             className="input input-bordered w-full pl-10 pr-20"
             value={searchQuery}
             onChange={handleSearchChange}
-            autoFocus
           />
           <kbd className="kbd kbd-sm absolute right-10 top-1/2 -translate-y-1/2 text-base-content/40">
             Ctrl+K
