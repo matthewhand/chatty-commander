@@ -22,9 +22,12 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol
+
+logger = logging.getLogger(__name__)
 
 try:
     from chatty_commander.voice.wakeword import MockWakeWordDetector, WakeWordDetector
@@ -244,6 +247,11 @@ class ModeOrchestrator:
             # If no specific wake word command, try a generic wake command
             try:
                 self._dispatch_command("wake")
-            except Exception:
-                # If no wake command, log the detection
-                pass  # Could add logging here if needed
+            except Exception as e:
+                # No matching command for this wake word; surface for diagnosis.
+                logger.warning(
+                    "Failed to dispatch wake word %r (confidence=%.3f): %s",
+                    wake_word,
+                    confidence,
+                    e,
+                )

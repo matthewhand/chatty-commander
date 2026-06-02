@@ -215,6 +215,7 @@ class VoiceTranscriber:
         channels: int = 1,
         record_timeout: float = 5.0,
         silence_timeout: float = 1.0,
+        silence_threshold: float = 500.0,
         **backend_kwargs,
     ):
         if not AUDIO_DEPS_AVAILABLE:
@@ -225,6 +226,11 @@ class VoiceTranscriber:
         self.channels = channels
         self.record_timeout = record_timeout
         self.silence_timeout = silence_timeout
+        # RMS energy (root-mean-square of int16 samples) below which a chunk is
+        # considered silence. The scale is environment-dependent: quieter rooms
+        # may want a lower value, noisier ones a higher value. Exposed here so it
+        # can be tuned via config rather than being hardcoded in the record loop.
+        self.silence_threshold = silence_threshold
 
         self._backend = self._create_backend(backend, **backend_kwargs)
         self._audio = None
@@ -295,7 +301,7 @@ class VoiceTranscriber:
                     audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
                     volume = np.sqrt(np.dot(audio_array, audio_array) / len(audio_array))
 
-                    if volume < 500:  # Silence threshold
+                    if volume < self.silence_threshold:  # RMS silence threshold
                         if silence_start is None:
                             silence_start = time.time()
                         elif time.time() - silence_start > self.silence_timeout:

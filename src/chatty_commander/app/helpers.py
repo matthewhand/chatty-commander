@@ -27,13 +27,27 @@ Utility functions for the ChattyCommander application. This module contains help
 across different components of the application to perform common tasks.
 """
 
+import logging
 import os
 
+logger = logging.getLogger(__name__)
 
-def ensure_directory_exists(path: str) -> None:
-    """Ensure that a directory exists, and if not, create it."""
-    if not os.path.exists(path):
-        os.makedirs(path)
+
+def ensure_directory_exists(path: str) -> bool:
+    """Ensure that a directory exists, creating it if necessary.
+
+    Returns True if the directory exists (or was created), False if creation
+    failed due to a permission or concurrent-creation issue. Those failures are
+    logged rather than raised so non-critical callers are not interrupted (e.g.
+    when another process created the directory first). Other errors, such as an
+    invalid empty path, still propagate.
+    """
+    try:
+        os.makedirs(path, exist_ok=True)
+        return True
+    except (PermissionError, FileExistsError) as e:
+        logger.warning("Failed to ensure directory %r exists: %s", path, e)
+        return False
 
 
 def format_command_output(cmd_output: str) -> str:
@@ -47,7 +61,13 @@ def parse_model_keybindings(keybindings_str: str) -> dict[str, str]:
     if keybindings_str:
         pairs = keybindings_str.split(",")
         for pair in pairs:
-            model, keys = pair.split("=", 1)
+            if not pair.strip():
+                continue
+            try:
+                model, keys = pair.split("=", 1)
+            except ValueError:
+                logger.warning("Skipping malformed keybinding entry: %r", pair)
+                continue
             keybindings[model.strip()] = keys.strip()
     return keybindings
 

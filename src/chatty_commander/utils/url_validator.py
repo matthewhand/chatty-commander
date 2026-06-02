@@ -1,6 +1,9 @@
 import ipaddress
+import logging
 import socket
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 _ALLOWED_SCHEMES = {"http", "https"}
 
@@ -37,7 +40,7 @@ def is_safe_url(url: str) -> bool:
         # Resolve all addresses (IPv4 + IPv6)
         try:
             addr_infos = socket.getaddrinfo(hostname, None)
-        except socket.gaierror:
+        except (socket.gaierror, socket.timeout):
             return False
 
         if not addr_infos:
@@ -51,5 +54,9 @@ def is_safe_url(url: str) -> bool:
                 return False
 
         return True
-    except Exception:
+    except Exception as e:
+        # Fail closed (treat as unsafe), but surface unexpected errors so an
+        # operator can notice resolver/parsing problems rather than silently
+        # rejecting (or, worse, masking) URLs.
+        logger.warning("URL safety check failed unexpectedly for %r: %s", url, e)
         return False
