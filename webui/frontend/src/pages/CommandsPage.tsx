@@ -69,11 +69,17 @@ export default function CommandsPage() {
     setIsDeleting(true);
     try {
       await apiService.deleteCommand(pendingDeleteCommand);
+      // Only refresh and close once the deletion actually succeeded, so the UI
+      // never reports a deletion that didn't happen on the backend.
       refetch();
-    } finally {
-      setIsDeleting(false);
       deleteDialogRef.current?.close();
       setPendingDeleteCommand(null);
+    } catch (err) {
+      // Keep the dialog open and surface the failure instead of silently
+      // closing and pretending the delete succeeded.
+      alert(`Failed to delete command: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 

@@ -74,8 +74,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
-    socket.onmessage = () => {
-      setLastMessageTime(Date.now());
+    socket.onmessage = (event) => {
+      // Only treat non-empty data frames as activity. Empty frames / keep-alives
+      // should not advance lastMessageTime, which the dashboard uses for UI state.
+      const data = event.data;
+      const isEmpty =
+        data == null ||
+        (typeof data === "string" && data.trim() === "");
+      if (!isEmpty) {
+        setLastMessageTime(Date.now());
+      }
     };
 
     socket.onerror = (error) => {
