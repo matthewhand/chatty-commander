@@ -76,5 +76,12 @@ ChattyCommander uses a JSON-based configuration file (`config.json`) with sensib
 | `LLM_BACKEND` | Preferred LLM backend (`openai`, `ollama`, `local`, `mock`) |
 | `PORT` | Server port (default `8100`) |
 | `NO_AUTH` | Set to `1` to disable authentication |
+| `CHATCOMM_LOG_LEVEL` | Logger level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) applied in web mode. The `--log-level` CLI flag takes precedence. |
 
 See `.env.example` for a template.
+
+## Config File Writes
+
+`config.json` is written **atomically** (written to a temp file, then `os.replace`d into place), so a crash mid-write cannot leave a corrupt or partially-written config on disk.
+
+> **Note:** `set_start_on_boot` persists the preference but does not yet implement OS-level autostart; it logs that the platform integration is not implemented.

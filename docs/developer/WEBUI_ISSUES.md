@@ -73,6 +73,17 @@ For ONNX model management:
 - `GET /api/models/download/{filename}` - Download ONNX model file
 - `DELETE /api/models/files/{filename}` - Delete ONNX model file
 
+## Frontend Fixes Applied
+
+The following frontend (Web UI) issues have been resolved:
+
+| Area | Fix | Status |
+|------|-----|--------|
+| Commands list "Edit" button | Now opens the authoring page **pre-filled** for editing (previously did not). | ✅ Fixed |
+| Command delete | A failed delete now surfaces an error and keeps the dialog open instead of silently closing and implying success. | ✅ Fixed |
+| JSON import | Each command's shape is now validated before overwriting config. | ✅ Fixed |
+| ThemeProvider / authService | Logging cleaned up; WebSocket frame guards added; `useAuth` retry timeout cleared on unmount. | ✅ Fixed |
+
 ## Frontend Pages Status
 
 | Page | Status | Issues |
