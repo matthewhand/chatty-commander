@@ -167,12 +167,25 @@ class AvatarAudioQueue:
             self._current_play_task is not None and not self._current_play_task.done()
         )
 
-    async def _play_audio(self, audio: bytes | None) -> None:
-        """Placeholder for audio playback.
+    # Real speaker output is not implemented; playback is simulated by sleeping
+    # for an estimated duration so queue/interrupt sequencing can be exercised.
+    # Callers can check this flag instead of assuming audio is actually heard.
+    AUDIO_PLAYBACK_SUPPORTED: bool = False
+    _warned_no_playback: bool = False
 
-        Audio output is not currently supported in this version. For testing,
-        we simply sleep for a duration based on the audio length if provided.
+    async def _play_audio(self, audio: bytes | None) -> None:
+        """Simulate audio playback by sleeping for an estimated duration.
+
+        Real audio output is not supported (see ``AUDIO_PLAYBACK_SUPPORTED``).
+        The first time audio is "played" we warn so operators aren't misled into
+        thinking sound is actually being emitted.
         """
+        if audio and not AvatarAudioQueue._warned_no_playback:
+            AvatarAudioQueue._warned_no_playback = True
+            logger.warning(
+                "AvatarAudioQueue received audio but real playback is not "
+                "implemented; simulating duration only (no sound is emitted)."
+            )
         if audio:
             # Rough heuristic: 1000 bytes ~= 1 second
             await asyncio.sleep(max(len(audio) / 1000.0, 0))
