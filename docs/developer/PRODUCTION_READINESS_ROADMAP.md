@@ -67,7 +67,7 @@ This document outlines the work required to achieve production readiness.
   - Database connections
   - Redis connections
 - [ ] **Implement graceful degradation**
-  - Fallback responses when LLM unavailable
+  - [x] Fallback responses when LLM unavailable — advisors now return an intent/sentiment-aware fallback message (marked `[LLM Error]`) on LLM failure; LLM JSON extraction and confidence parsing tolerate malformed/null output
   - Cache-first strategy for config
 
 ### 2.2 Database & Persistence
@@ -84,7 +84,7 @@ This document outlines the work required to achieve production readiness.
 ### 2.3 Observability
 - [ ] **Structured logging**
   - JSON log format for production
-  - Log levels per environment
+  - [x] Log levels per environment — `--log-level {DEBUG,INFO,WARNING,ERROR}` is now actually applied to the logger (was parsed and ignored) and `CHATCOMM_LOG_LEVEL` is honored in web mode
   - Request ID tracing
 - [ ] **Distributed tracing** (OpenTelemetry)
   - Trace requests across services
@@ -234,7 +234,7 @@ This document outlines the work required to achieve production readiness.
 
 ### 7.2 User Experience
 - [ ] **WebUI polish**
-  - Error states
+  - [x] Error states (commands flow) — a failed command delete now surfaces an error and keeps the dialog open instead of silently implying success; JSON import validates each command's shape before overwriting config; the "Edit" button opens the authoring page pre-filled
   - Loading states
   - Offline support
 - [ ] **Desktop app**
