@@ -137,6 +137,45 @@ class AdvisorsService:
             }
         return persona_config
 
+    def get_personas(self) -> list[dict[str, Any]]:
+        """Return the configured personas in a UI-friendly shape.
+
+        Reads personas from the advisors config (either top-level ``personas``
+        or ``context.personas``) and normalises each into a dict with ``id``,
+        ``name``, ``is_default`` and ``system_prompt`` keys. Returns an empty
+        list when no personas are configured.
+        """
+        personas_dict = self.config.get("personas", {}) or self.config.get(
+            "context", {}
+        ).get("personas", {})
+        if not isinstance(personas_dict, dict) or not personas_dict:
+            return []
+
+        default_persona = self.config.get("default_persona") or self.config.get(
+            "context", {}
+        ).get("default_persona")
+
+        personas: list[dict[str, Any]] = []
+        for persona_id, raw in personas_dict.items():
+            if isinstance(raw, str):
+                name = persona_id
+                system_prompt = raw
+            elif isinstance(raw, dict):
+                name = raw.get("name", persona_id)
+                system_prompt = raw.get("system_prompt") or raw.get("prompt") or ""
+            else:
+                name = persona_id
+                system_prompt = ""
+            personas.append(
+                {
+                    "id": persona_id,
+                    "name": name,
+                    "is_default": persona_id == default_persona,
+                    "system_prompt": system_prompt,
+                }
+            )
+        return personas
+
     def _dispatch_special_command(self, message: AdvisorMessage, agent_id: str) -> AdvisorReply | None:
         """Dispatches special commands if identified in the message text.
 
@@ -265,10 +304,22 @@ class AdvisorsService:
                                     )
 
                 except Exception as e:
-                    # Fallback to echo if LLM fails
+                    # Fallback if the LLM fails. Use the intent/sentiment-aware
+                    # smart fallback for a more helpful message, but keep the
+                    # [LLM Error] marker that the API contract (and tests) rely on.
                     model_name = "error"
                     api_mode = "error"
-                    response = f"[LLM Error] {message.text} ({str(e)})"
+                    try:
+                        intent = self.conversation_engine.analyze_intent(message.text)
+                        sentiment = self.conversation_engine.analyze_sentiment(
+                            message.text
+                        )
+                        smart = self.conversation_engine.get_smart_fallback_response(
+                            message.text, intent, sentiment
+                        )
+                        response = f"[LLM Error] {smart} ({str(e)})"
+                    except Exception:
+                        response = f"[LLM Error] {message.text} ({str(e)})"
 
                 # Record conversation for future context. Done outside the
                 # try/except above so error responses are also recorded,
@@ -282,6 +333,32 @@ class AdvisorsService:
                         "platform": message.platform,
                     },
                 )
+
+                # Best-effort: learn lightweight user preferences from this turn.
+                # These feed get_conversation_context/build_enhanced_prompt on
+                # future turns. A failure here must never block the reply.
+                try:
+                    user_key = (
+                        f"{message.platform}:{message.channel}:{message.user}"
+                    )
+                    prev = self.conversation_engine.user_preferences.get(user_key, {})
+                    self.conversation_engine.update_user_preferences(
+                        user_key,
+                        {
+                            "last_intent": self.conversation_engine.analyze_intent(
+                                message.text
+                            ),
+                            "last_sentiment": self.conversation_engine.analyze_sentiment(
+                                message.text
+                            ),
+                            "preferred_persona": context.persona_id,
+                            "platform": message.platform,
+                            "interaction_count": int(prev.get("interaction_count", 0))
+                            + 1,
+                        },
+                    )
+                except Exception:
+                    pass
 
                 # Update to responding state
                 thinking_manager.start_responding(agent_id, "Finalizing response...")

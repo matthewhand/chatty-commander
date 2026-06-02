@@ -775,18 +775,20 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/personas")
         async def advisor_personas():
-            # Return seed data for testing
-            if self.no_auth:
-                return {"personas": [
-                    {"id": "jarvis", "name": "Jarvis", "is_default": True, "system_prompt": "You are a helpful AI assistant named Jarvis."},
-                    {"id": "friday", "name": "Friday", "is_default": False, "system_prompt": "You are a witty AI named Friday."},
-                    {"id": "hal", "name": "HAL 9000", "is_default": False, "system_prompt": "You are a calm, ominous AI."},
-                ]}
-            # Production: use advisors_service if available
+            # Consult the advisors service consistently in every mode. Personas
+            # come from configuration via AdvisorsService.get_personas(); when no
+            # advisors service is wired up we return an empty list rather than
+            # fabricating seed data.
             svc = self.advisors_service
             if not svc:
                 return {"personas": []}
-            return {"personas": getattr(svc, "get_personas", lambda: [])()}
+            get_personas = getattr(svc, "get_personas", None)
+            if not callable(get_personas):
+                return {"personas": []}
+            try:
+                return {"personas": get_personas()}
+            except Exception:  # noqa: BLE001 - never fail the listing endpoint
+                return {"personas": []}
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(

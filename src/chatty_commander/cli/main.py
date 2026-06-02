@@ -27,6 +27,7 @@ voice commands, and handles the execution of commands.
 """
 
 import argparse
+import logging
 
 # Ensure src/ is on sys.path so root execution finds package modules without PYTHONPATH
 import os as _os
@@ -181,7 +182,17 @@ def run_web_mode(
             port = int(env_port)
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
-    _log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")  # noqa: F841
+    env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
+    if env_log_level:
+        level = logging.getLevelName(env_log_level.strip().upper())
+        if isinstance(level, int):
+            logger.setLevel(level)
+            logging.getLogger().setLevel(level)
+        else:
+            logger.warning(
+                "Invalid CHATCOMM_LOG_LEVEL '%s'; keeping current level",
+                env_log_level,
+            )
 
     # Start the server
     try:
