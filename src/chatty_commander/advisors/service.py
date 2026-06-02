@@ -137,6 +137,45 @@ class AdvisorsService:
             }
         return persona_config
 
+    def get_personas(self) -> list[dict[str, Any]]:
+        """Return the configured personas in a UI-friendly shape.
+
+        Reads personas from the advisors config (either top-level ``personas``
+        or ``context.personas``) and normalises each into a dict with ``id``,
+        ``name``, ``is_default`` and ``system_prompt`` keys. Returns an empty
+        list when no personas are configured.
+        """
+        personas_dict = self.config.get("personas", {}) or self.config.get(
+            "context", {}
+        ).get("personas", {})
+        if not isinstance(personas_dict, dict) or not personas_dict:
+            return []
+
+        default_persona = self.config.get("default_persona") or self.config.get(
+            "context", {}
+        ).get("default_persona")
+
+        personas: list[dict[str, Any]] = []
+        for persona_id, raw in personas_dict.items():
+            if isinstance(raw, str):
+                name = persona_id
+                system_prompt = raw
+            elif isinstance(raw, dict):
+                name = raw.get("name", persona_id)
+                system_prompt = raw.get("system_prompt") or raw.get("prompt") or ""
+            else:
+                name = persona_id
+                system_prompt = ""
+            personas.append(
+                {
+                    "id": persona_id,
+                    "name": name,
+                    "is_default": persona_id == default_persona,
+                    "system_prompt": system_prompt,
+                }
+            )
+        return personas
+
     def _dispatch_special_command(self, message: AdvisorMessage, agent_id: str) -> AdvisorReply | None:
         """Dispatches special commands if identified in the message text.
 
