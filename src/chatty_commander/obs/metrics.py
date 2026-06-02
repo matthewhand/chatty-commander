@@ -320,8 +320,11 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
         return response  # type: ignore[no-any-return]
 
 
-def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:  # type: ignore[misc]
+def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter | None:  # type: ignore[misc]
     """Return a FastAPI router exposing metrics in JSON and Prometheus text format.
+
+    Returns ``None`` when FastAPI is not installed (``APIRouter`` unavailable);
+    callers must guard against this before mounting the router.
 
     Endpoints:
     - GET /metrics/json
