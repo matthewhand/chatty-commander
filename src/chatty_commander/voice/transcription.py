@@ -33,6 +33,7 @@ Supports:
 from __future__ import annotations
 
 import logging
+import os
 import tempfile
 import time
 import wave
@@ -141,9 +142,12 @@ class WhisperAPIBackend(TranscriptionBackend):
         if not self._client:
             raise RuntimeError("OpenAI client not available")
 
+        tmp_path: str | None = None
         try:
-            # Create temporary WAV file
+            # Create temporary WAV file (delete=False so we can reopen it for
+            # upload; cleaned up in the finally block below).
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                tmp_path = tmp_file.name
                 # Write WAV header and data
                 with wave.open(tmp_file.name, "wb") as wav_file:
                     wav_file.setnchannels(1)
@@ -164,6 +168,13 @@ class WhisperAPIBackend(TranscriptionBackend):
         except Exception as e:
             logger.error(f"OpenAI Whisper API transcription failed: {e}")
             return ""
+        finally:
+            # Always remove the temp file so repeated calls don't leak files.
+            if tmp_path:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
 
     def is_available(self) -> bool:
         return self._client is not None
