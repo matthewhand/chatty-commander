@@ -166,7 +166,14 @@ class LLMManager:
             # Try to fallback to next available backend
             if self._try_fallback():
                 logger.info(f"Falling back to {self.get_active_backend_name()}")
-                return self.active_backend.generate_response(prompt, **kwargs)
+                try:
+                    return self.active_backend.generate_response(prompt, **kwargs)
+                except Exception as fallback_error:
+                    logger.error(
+                        f"Generation failed with fallback backend "
+                        f"{self.get_active_backend_name()}: {fallback_error}"
+                    )
+                    raise
             else:
                 raise
 
