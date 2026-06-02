@@ -77,7 +77,10 @@ class AdvisorSink(Protocol):
 
 
 class InputAdapter(Protocol):
+    """InputAdapter class.
 
+    TODO: Add class description.
+    """
     
     name: str
 
@@ -100,7 +103,10 @@ class InputAdapter(Protocol):
 
 @dataclass
 class OrchestratorFlags:
+    """OrchestratorFlags class.
 
+    TODO: Add class description.
+    """
     
     enable_text: bool = False
     enable_gui: bool = False
@@ -388,7 +394,10 @@ class ModeOrchestrator:
 
     def select_adapters(self) -> list[str]:
         # TODO: HIGH - Refactor select_adapters (complexity > 10)
+        """Select Adapters with (self).
 
+        TODO: Add detailed description and parameters.
+        """
         
         selected: list[Any] = []
 

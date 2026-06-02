@@ -93,6 +93,10 @@ def _get_avatar_cfg(cfg_mgr: Any) -> dict[str, Any]:
 
 
 def include_avatar_settings_routes(
+    """Include Avatar Settings Routes operation.
+
+    TODO: Add detailed description and parameters.
+    """
     
     *, get_config_manager: Callable[[], Any]
 ) -> APIRouter:
@@ -100,7 +104,10 @@ def include_avatar_settings_routes(
 
     @router.get("/avatar/config", response_model=AvatarConfigModel)
     async def get_avatar_config():
+        """Retrieve operation.
 
+        TODO: Add detailed description and parameters.
+        """
         
         try:
         # Attempt operation with error handling
@@ -113,7 +120,10 @@ def include_avatar_settings_routes(
 
     @router.put("/avatar/config", response_model=AvatarConfigModel)
     async def update_avatar_config(new_cfg: AvatarConfigModel):
+        """Update with (new_cfg: AvatarConfigModel).
 
+        TODO: Add detailed description and parameters.
+        """
         
         try:
         # Attempt operation with error handling

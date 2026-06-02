@@ -36,7 +36,6 @@ const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   return null;
 });
 
-
 const getAgentStatusColor = (status: Agent["status"]) => {
   switch (status) {
     case "online": return "badge-success";
@@ -48,7 +47,6 @@ const getAgentStatusColor = (status: Agent["status"]) => {
 };
 
 const DashboardPage = React.memo(() => {
-
   useEffect(() => {
     document.title = "Dashboard | ChattyCommander";
   }, []);

@@ -103,7 +103,10 @@ class CommandRequest(BaseModel):
 
 
 class CommandResponse(BaseModel):
+    """CommandResponse class.
 
+    TODO: Add class description.
+    """
     
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
@@ -111,7 +114,10 @@ class CommandResponse(BaseModel):
 
 
 class StateInfo(BaseModel):
+    """StateInfo class.
 
+    TODO: Add class description.
+    """
     
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
@@ -120,7 +126,10 @@ class StateInfo(BaseModel):
 
 
 class HealthStatus(BaseModel):
+    """HealthStatus class.
 
+    TODO: Add class description.
+    """
     
     status: str = Field(..., description="Health status")
     uptime: str = Field(..., description="System uptime")
@@ -156,7 +165,10 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
             )
 
     async def dispatch(
+        """Dispatch with (self, request: Request, call_next).
 
+        TODO: Add detailed description and parameters.
+        """
         
         self, request: Request, call_next: Callable[[Request], Any]
     ) -> Any:
@@ -173,7 +185,10 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
 
 
 class MetricsData(BaseModel):
+    """MetricsData class.
 
+    TODO: Add class description.
+    """
     
     total_requests: int = Field(..., description="Total API requests")
     uptime_seconds: float = Field(..., description="Uptime in seconds")
@@ -188,6 +203,7 @@ class MetricsData(BaseModel):
 
 
 def include_core_routes(
+    """include core routes."""
     *,
     get_start_time: Callable[[], float],
     get_state_manager: Callable[[], Any],
@@ -200,6 +216,12 @@ def include_core_routes(
     get_total_commands: Callable[[], int] | None = None,
     response_time_middleware: ResponseTimeMiddleware | None = None,
 ) -> APIRouter:
+    """
+    Provide core REST routes as an APIRouter. This module is pure routing; it pulls
+    required data/functionality through callables to avoid tight coupling.
+
+    The signatures match what legacy web_mode currently exposes.
+    """
     router = APIRouter()
 
     def _format_uptime(seconds: float) -> str:
@@ -332,7 +354,10 @@ def include_core_routes(
 
     @router.get("/api/v1/commands")
     async def get_commands():  # type: ignore[no-redef]
+        """Retrieve operation.
 
+        TODO: Add detailed description and parameters.
+        """
         
         try:
         # Attempt operation with error handling
