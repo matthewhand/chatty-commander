@@ -27,6 +27,7 @@ voice commands, and handles the execution of commands.
 """
 
 import argparse
+import logging
 import os
 import signal
 import sys
@@ -321,6 +322,12 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         action="store_true",
         help="Show what would be executed without running it",
     )
+    exec_parser.add_argument(
+        "--timeout",
+        type=float,
+        default=None,
+        help="Abort the command if it runs longer than this many seconds",
+    )
 
     # dograh subcommand group (integration utilities)
     from chatty_commander.cli.dograh_cli import register_dograh_subparser
@@ -579,8 +586,11 @@ def cli_main():
     else:
         interactive_mode = False
 
-    # Ensure logger is created with the expected name for tests
-    logger = setup_logger("main", "logs/chattycommander.log")
+    # Ensure logger is created with the expected name for tests, honoring --log-level
+    _level_name = str(getattr(args, "log_level", "INFO") or "INFO").upper()
+    _level = getattr(logging, _level_name, logging.INFO)
+    logging.getLogger().setLevel(_level)
+    logger = setup_logger("main", "logs/chattycommander.log", level=_level)
     logger.info("Starting ChattyCommander application")
 
     # Generate default configuration if needed
@@ -697,8 +707,25 @@ def cli_main():
             print(f"DRY RUN: would execute command '{command_name}'")
             return 0
 
-        # Actually execute the command
-        command_executor.execute_command(str(command_name))
+        # Actually execute the command, honoring --timeout if provided.
+        timeout = getattr(args, "timeout", None)
+        if timeout is None:
+            command_executor.execute_command(str(command_name))
+            return 0
+
+        worker = threading.Thread(
+            target=command_executor.execute_command,
+            args=(str(command_name),),
+            daemon=True,
+        )
+        worker.start()
+        worker.join(timeout)
+        if worker.is_alive():
+            print(
+                f"Command '{command_name}' timed out after {timeout}s",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     # Initialize AI intelligence core for enhanced conversations
