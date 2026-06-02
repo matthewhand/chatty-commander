@@ -445,8 +445,26 @@ class Config:
             # Skip saving when config_file is empty (for tests)
             return
         try:
-            with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump(self.config_data, f, indent=2)
+            # Write atomically: serialize to a sibling temp file, then replace.
+            # This prevents a crash mid-write from corrupting the live config.
+            import os as _os
+            import tempfile as _tempfile
+
+            target_dir = _os.path.dirname(_os.path.abspath(self.config_file)) or "."
+            fd, tmp_path = _tempfile.mkstemp(
+                prefix=".config-", suffix=".tmp", dir=target_dir
+            )
+            try:
+                with _os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(self.config_data, f, indent=2)
+                _os.replace(tmp_path, self.config_file)
+            except BaseException:
+                # Never leave a temp file behind on failure.
+                try:
+                    _os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
         except (TypeError, ValueError, OSError) as e:
             logger.error(f"Could not save config file: {e}")
 
@@ -473,12 +491,24 @@ class Config:
             self._disable_start_on_boot()
 
     def _enable_start_on_boot(self) -> None:
-        """Enable start on boot functionality."""
-        pass
+        """Enable start-on-boot at the OS level.
+
+        Platform-specific autostart integration (systemd user unit / launchd /
+        Windows registry) is not implemented yet. The preference is persisted in
+        config so it can be honored once implemented; warn so the caller isn't
+        misled into thinking autostart was actually configured.
+        """
+        logging.warning(
+            "start_on_boot enabled in config, but OS-level autostart is not yet "
+            "implemented for this platform; no autostart entry was created."
+        )
 
     def _disable_start_on_boot(self) -> None:
-        """Disable start on boot functionality."""
-        pass
+        """Disable start-on-boot at the OS level (see _enable_start_on_boot)."""
+        logging.warning(
+            "start_on_boot disabled in config, but OS-level autostart is not yet "
+            "implemented for this platform; no autostart entry was removed."
+        )
 
     def set_check_for_updates(self, enabled: bool) -> None:
         self._update_general_setting("check_for_updates", bool(enabled))
