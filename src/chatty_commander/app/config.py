@@ -597,11 +597,21 @@ class Config:
         instance = cls.__new__(cls)
         instance.config_file = config_file
         instance.config_data = data.copy()
+        # Mirror __init__: web handlers/tests expect `.config` as the raw dict.
+        instance.config = instance.config_data
 
         # Set basic attributes first
         instance.default_state = instance.config_data.get("default_state", "idle")
         instance.general_models_path = instance.config_data.get("general", {}).get(
             "models_path", "models"
+        )
+        # system/chat model paths were omitted here (only general was set), so
+        # ModelManager built from a from_dict() Config couldn't find them.
+        instance.system_models_path = instance.config_data.get(
+            "system_models_path", "models-computer"
+        )
+        instance.chat_models_path = instance.config_data.get(
+            "chat_models_path", "models-chatty"
         )
         instance.state_models = instance.config_data.get("state_models", {})
         instance.api_endpoints = instance.config_data.get("api_endpoints", {})
