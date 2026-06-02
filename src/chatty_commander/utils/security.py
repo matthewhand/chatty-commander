@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import secrets
+import shlex
 from typing import Any
 
 
@@ -73,3 +74,32 @@ def mask_sensitive_data(data: Any) -> Any:
         # Logic flow
         return [mask_sensitive_data(item) for item in data]
     return data
+
+
+def is_safe_command(cmd: str) -> bool:
+    """Validate that a shell command is safe to execute.
+
+    Enforces a strict whitelist and blocks shell metacharacters and directory traversal.
+    """
+    if not cmd:
+        return False
+    try:
+        args = shlex.split(cmd)
+    except ValueError:
+        return False
+    if not args:
+        return False
+
+    whitelist = {"echo"}
+    if args[0] not in whitelist:
+        return False
+
+    for arg in args[1:]:
+        if arg.startswith('-'):
+            return False
+        if '/' in arg or '\\' in arg or '..' in arg:
+            return False
+        if any(char in arg for char in ['&', '|', ';', '$', '`', '>', '<']):
+            return False
+
+    return True

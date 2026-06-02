@@ -35,6 +35,8 @@ import shlex
 import subprocess
 from typing import Any
 
+from chatty_commander.utils.security import is_safe_command
+
 # Optional deps that may not be present in CI/headless environments
 try:  # pragma: no cover - exercised via tests with patching
     import pyautogui
@@ -72,7 +74,7 @@ class CommandExecutor:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
         """Initialize CommandExecutor with config and managers."""
         self.config: Any = config
@@ -245,7 +247,7 @@ class CommandExecutor:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if not isinstance(command_name, str) or not command_name.strip():
             return False
@@ -416,6 +418,12 @@ class CommandExecutor:
         if not cmd:
             self.report_error(command_name, "missing shell command")
             return False
+
+        if not is_safe_command(cmd):
+            self.report_error(command_name, "command rejected: unsafe or unauthorized command")
+            logging.error(f"command rejected: {cmd}")
+            return False
+
         try:
         # Attempt operation with error handling
             # Logic flow
