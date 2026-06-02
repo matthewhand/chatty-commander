@@ -111,6 +111,27 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
         sys.exit(0)
 
 
+def _detect_action_type(action) -> str:
+    """Classify a model action as 'shell', 'url', 'keypress', or 'unknown'.
+
+    Actions may be dicts (e.g. ``{"shell": {...}}`` or ``{"keypress": "ctrl+c"}``)
+    or plain strings. For dicts we inspect the keys; for strings we fall back to
+    a substring heuristic so legacy string actions still classify sensibly.
+    """
+    known = ("shell", "url", "keypress")
+    if isinstance(action, dict):
+        for key in known:
+            if key in action:
+                return key
+        return "unknown"
+    if isinstance(action, str):
+        for key in known:
+            if key in action:
+                return key
+        return "unknown"
+    return "unknown"
+
+
 def run_web_mode(
     config,
     model_manager,
@@ -182,7 +203,17 @@ def run_web_mode(
             port = int(env_port)
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
-    _log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")  # noqa: F841
+    env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
+    if env_log_level:
+        level = logging.getLevelName(env_log_level.strip().upper())
+        if isinstance(level, int):
+            logger.setLevel(level)
+            logging.getLogger().setLevel(level)
+        else:
+            logger.warning(
+                "Invalid CHATCOMM_LOG_LEVEL '%s'; keeping current level",
+                env_log_level,
+            )
 
     # Start the server
     try:
@@ -699,8 +730,7 @@ def cli_main():
             # Output as JSON array
             result = []
             for name, action in actions.items():
-                action_type = "shell" if "shell" in action else "url" if "url" in action else "unknown"
-                result.append({"name": name, "type": action_type})
+                result.append({"name": name, "type": _detect_action_type(action)})
             print(json_module.dumps(result, indent=2))
         else:
             # Output as text
