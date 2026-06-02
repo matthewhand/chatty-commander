@@ -41,6 +41,11 @@ class AuthService {
         if (response.ok) {
           return await response.json();
         }
+        // The token was present but rejected by the backend. Log the reason so
+        // an invalid/expired token isn't silently masked by the no-auth probe.
+        console.warn(
+          `authService: token auth rejected (${response.status} ${response.statusText})`,
+        );
       } catch (e) {
         console.warn("Auth check failed with token", e);
       }
