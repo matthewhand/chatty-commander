@@ -465,7 +465,14 @@ def run_interactive_shell(
                 print(f"Current state: {state_manager.current_state}")
                 continue
             if input_str.lower() == "models":
-                print("Loaded models: " + ", ".join(model_manager.get_models()))
+                # get_models(state) requires a state arg; list every loaded model
+                # across all states (mirrors the interactive shell in cli.py).
+                all_models = [
+                    name
+                    for state_models in model_manager.models.values()
+                    for name in state_models.keys()
+                ]
+                print("Loaded models: " + ", ".join(all_models))
                 continue
             if input_str.startswith("execute "):
                 command = input_str[8:].strip()
@@ -543,6 +550,15 @@ def main():
         register_dograh_subparser(subparsers)
         sub_args = sub_parser.parse_args()
         return handle_dograh(sub_args)
+
+    # `list` and `exec` are pure-utility subcommands fully implemented in
+    # cli.cli. Delegate to it so `python -m chatty_commander.cli.main list/exec`
+    # behaves like the console_script instead of falling through to mode startup
+    # (which loads the full ONNX pipeline and hangs in non-interactive use).
+    if len(sys.argv) > 1 and sys.argv[1] in ("list", "exec"):
+        from chatty_commander.cli.cli import cli_main
+
+        return cli_main()
 
     parser = create_parser()
     # Parse as the very first action and immediately return argparse exit code for help/usage
