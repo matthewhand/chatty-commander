@@ -116,6 +116,8 @@ def handle_voice_command(
         print("No voice command specified. Use --help for available commands.")
         return
 
+    elif args.voice_command == "test":
+        _handle_voice_test(args, config_manager, command_executor, state_manager)
     elif args.voice_command == "status":
         _handle_voice_status(args)
     elif args.voice_command == "transcribe":
