@@ -137,10 +137,6 @@ class StateManager:
         self.callbacks.append(callback)
 
     def change_state(
-        """Change State with (self, new_state: str, callback).
-
-        TODO: Add detailed description and parameters.
-        """
         
         self, new_state: str, callback: Callable[[str], None] | None = None
     ) -> None:

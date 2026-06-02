@@ -122,10 +122,6 @@ class AvatarWSConnectionManager:
             pass
 
     async def send_personal_message(
-        """Send Personal Message with (self, message, websocket: WebSocket).
-
-        TODO: Add detailed description and parameters.
-        """
         
         self, message: dict[str, Any], websocket: WebSocket
     ):

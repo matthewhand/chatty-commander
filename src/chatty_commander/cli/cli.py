@@ -152,18 +152,10 @@ def run_web_mode(
 
     # Setup callbacks for voice command integration
     def on_command_detected(command):
-        """On Command Detected with (command).
-
-        TODO: Add detailed description and parameters.
-        """
         
         web_server.on_command_detected(command, confidence=1.0)
 
     def on_state_change(old_state, new_state):
-        """On State Change with (old_state, new_state).
-
-        TODO: Add detailed description and parameters.
-        """
         
         web_server._on_state_change(old_state, new_state)
 

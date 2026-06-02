@@ -122,7 +122,6 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
 
 def run_web_mode(
-    """run web mode."""
     config,
     model_manager,
     state_manager,

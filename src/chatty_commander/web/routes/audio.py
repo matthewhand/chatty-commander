@@ -48,10 +48,6 @@ class AudioDeviceRequest(BaseModel):
     device_id: str
 
 def include_audio_routes(
-    """Include Audio Routes operation.
-
-    TODO: Add detailed description and parameters.
-    """
     
     *,
     get_config_manager: Any,

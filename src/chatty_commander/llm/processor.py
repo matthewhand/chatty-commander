@@ -271,7 +271,6 @@ Response:"""
             return None, 0.0, f"Response parsing error: {e}"
 
     def get_command_suggestions(
-        """get command suggestions."""
         self, partial_input: str, limit: int = 5
     ) -> list[dict[str, Any]]:
         # Logic flow

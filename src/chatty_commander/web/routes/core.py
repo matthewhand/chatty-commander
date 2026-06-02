@@ -165,10 +165,6 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
             )
 
     async def dispatch(
-        """Dispatch with (self, request: Request, call_next).
-
-        TODO: Add detailed description and parameters.
-        """
         
         self, request: Request, call_next: Callable[[Request], Any]
     ) -> Any:
@@ -203,7 +199,6 @@ class MetricsData(BaseModel):
 
 
 def include_core_routes(
-    """include core routes."""
     *,
     get_start_time: Callable[[], float],
     get_state_manager: Callable[[], Any],

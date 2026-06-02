@@ -82,10 +82,6 @@ def _infer_category(name: str) -> str:
 
 @router.get("/avatar/animations")
 async def list_animations(
-    """List Animations with (dir).
-
-    TODO: Add detailed description and parameters.
-    """
     
     dir: str | None = Query(
         # Logic flow
