@@ -25,8 +25,6 @@ from importlib.metadata import version as _version
 
 try:
     __version__ = _version("chatty-commander")
-
-# This is a demonstration comment added after __version__
 except PackageNotFoundError:
     __version__ = "0.0.0+dev"
 
