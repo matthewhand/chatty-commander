@@ -245,7 +245,31 @@ class Config:
             if new_config != self.config_data:
                 self.config_data = new_config
                 self.config = new_config
+                # Refresh top-level derived attributes that callers read directly;
+                # otherwise edits to these in the config file are silently ignored.
+                self.general_models_path = self.config_data.get(
+                    "general_models_path", "models-idle"
+                )
+                self.system_models_path = self.config_data.get(
+                    "system_models_path", "models-computer"
+                )
+                self.chat_models_path = self.config_data.get(
+                    "chat_models_path", "models-chatty"
+                )
+                self.state_models = self.config_data.get("state_models", {})
+                self.api_endpoints = self.config_data.get(
+                    "api_endpoints", self.api_endpoints
+                )
+                self.wakeword_state_map = self.config_data.get(
+                    "wakeword_state_map", {}
+                )
+                self.state_transitions = self.config_data.get("state_transitions", {})
+                self.commands = self.config_data.get("commands", self.commands)
                 self._validate_config()
+                # Re-apply env overrides + web server config so they keep
+                # precedence over freshly-loaded file values (matches __init__).
+                self._apply_env_overrides()
+                self._apply_web_server_config()
                 self._load_general_settings()  # Load general settings to update default_state
                 # Force re-load of other properties that depend on config_data
                 self.model_actions = self._build_model_actions()
