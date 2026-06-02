@@ -23,10 +23,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -73,9 +76,8 @@ class MemoryStore:
                             )
                     except (json.JSONDecodeError, KeyError):
                         continue
-        except Exception:
-            # If metrics/logging were available, we'd log this
-            pass
+        except Exception as e:
+            logger.warning("Failed to load advisor memory from %s: %s", self._path, e)
 
     def _ctx(self, platform: str, channel: str, user: str) -> str:
         return f"{platform}:{channel}:{user}"
@@ -105,8 +107,8 @@ class MemoryStore:
                         )
                         + "\n"
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Failed to persist advisor memory to %s: %s", self._path, e)
 
     def get(
         self, platform: str, channel: str, user: str, limit: int = 20
