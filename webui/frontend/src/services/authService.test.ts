@@ -66,10 +66,28 @@ describe("AuthService", () => {
     expect(user).toEqual(userData);
   });
 
-  test("getCurrentUser throws error when no token", async () => {
+  test("getCurrentUser throws when no token and no-auth probe fails", async () => {
+    // No token, and the /config probe is unreachable -> auth is required.
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce(null);
+    mockFetch.mockRejectedValueOnce(new Error("network"));
+
     await expect(authService.getCurrentUser()).rejects.toThrow(
-      "No token available",
+      "Authentication required",
     );
+  });
+
+  test("getCurrentUser grants no-auth session when config endpoint is reachable", async () => {
+    // No token, but /config responds OK -> backend has auth disabled.
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce(null);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({}),
+    } as Response);
+
+    const user = await authService.getCurrentUser();
+
+    expect(user.noAuth).toBe(true);
+    expect(user.roles).toContain("admin");
   });
 
   test("handles login errors", async () => {
@@ -84,17 +102,42 @@ describe("AuthService", () => {
     );
   });
 
-  test("getCurrentUser handles API errors", async () => {
-    // Ensure token is present so we exercise the fetch error path
+  test("getCurrentUser falls back to no-auth probe when token is rejected", async () => {
+    // Token present but rejected (401); the no-auth /config probe then succeeds,
+    // so we get a local admin session rather than a hard failure.
     (localStorage.getItem as jest.Mock).mockReturnValueOnce("invalid-token");
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      statusText: "Unauthorized",
-    } as Response);
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({}),
+      } as Response);
+
+    const user = await authService.getCurrentUser();
+
+    expect(user.noAuth).toBe(true);
+  });
+
+  test("getCurrentUser throws when token rejected and no-auth probe also fails", async () => {
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce("invalid-token");
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+      } as Response);
 
     await expect(authService.getCurrentUser()).rejects.toThrow(
-      "Failed to get user info",
+      "Authentication required",
     );
   });
 });
