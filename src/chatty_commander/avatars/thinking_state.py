@@ -28,6 +28,7 @@ to connected avatar UIs for synchronized animations and visual feedback.
 """
 
 import asyncio
+import functools
 import inspect
 import logging
 import time
@@ -326,6 +327,7 @@ def with_thinking_state(
     """Decorator to automatically manage thinking states during function execution."""
 
     def decorator(func):
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             with ThinkingStateContext(agent_id, thinking_msg, responding_msg) as ctx:
                 result = func(*args, **kwargs)
