@@ -33,6 +33,7 @@ Provides a complete voice interface:
 from __future__ import annotations
 
 import logging
+import re
 import threading
 from collections.abc import Callable
 from typing import Any
@@ -163,8 +164,8 @@ class VoicePipeline:
             if self.state_manager:
                 try:
                     self.state_manager.change_state("voice_recording")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Could not update state to voice_recording: {e}")
 
             # Record and transcribe
             logger.info("Recording voice command...")
@@ -180,8 +181,8 @@ class VoicePipeline:
             if self.state_manager:
                 try:
                     self.state_manager.change_state("voice_processing")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Could not update state to voice_processing: {e}")
 
             # Process command
             command_name = self._match_command(transcription)
@@ -205,7 +206,10 @@ class VoicePipeline:
                 # Still notify callbacks with empty command name
                 self._notify_callbacks("", transcription)
                 if self.voice_only and self.tts.is_available():
-                    self.tts.speak(transcription)
+                    # Give clear no-match feedback rather than echoing the
+                    # (possibly mis-transcribed) text back at the user. The raw
+                    # transcription is logged above for operator debugging.
+                    self.tts.speak("Sorry, I didn't understand that")
 
         except Exception as e:
             logger.error(f"Error processing voice command: {e}")
@@ -215,8 +219,8 @@ class VoicePipeline:
             if self.state_manager:
                 try:
                     self.state_manager.change_state("voice_listening")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Could not update state to voice_listening: {e}")
 
     def _match_command(self, transcription: str) -> str | None:
         """Match transcription to available commands."""
@@ -231,12 +235,35 @@ class VoicePipeline:
                 logger.debug("No model actions available")
                 return None
 
-            # Simple keyword matching (can be enhanced with fuzzy matching, NLP, etc.)
+            # Keyword matching with word-boundary awareness. Substring matching is
+            # avoided because a command named "play" would otherwise match words
+            # like "replay", "display" or "player" and misdispatch commands.
             transcription_lower = transcription.lower()
+            tokens = re.findall(r"[a-z0-9']+", transcription_lower)
+            token_set = set(tokens)
 
-            # Direct name match first
+            def _matches_phrase(phrase: str) -> bool:
+                """Return True if ``phrase`` appears as a whole word/phrase."""
+                phrase = phrase.lower().strip()
+                if not phrase:
+                    return False
+                phrase_tokens = re.findall(r"[a-z0-9']+", phrase)
+                if not phrase_tokens:
+                    return False
+                # Single-word commands: require an exact token match.
+                if len(phrase_tokens) == 1:
+                    return phrase_tokens[0] in token_set
+                # Multi-word commands: require the token sequence to appear
+                # contiguously within the transcription tokens.
+                n = len(phrase_tokens)
+                for i in range(len(tokens) - n + 1):
+                    if tokens[i : i + n] == phrase_tokens:
+                        return True
+                return False
+
+            # Direct name match first (whole-word, not substring)
             for command_name in model_actions.keys():
-                if command_name.lower() in transcription_lower:
+                if _matches_phrase(str(command_name)):
                     return str(command_name)  # type: ignore[no-any-return]
 
             # Keyword-based matching
@@ -252,7 +279,7 @@ class VoicePipeline:
             for command_name, keywords in command_keywords.items():
                 if command_name in model_actions:
                     for keyword in keywords:
-                        if keyword in transcription_lower:
+                        if _matches_phrase(keyword):
                             return command_name
 
             return None
@@ -304,8 +331,9 @@ class VoicePipeline:
             if self.voice_only and self.tts.is_available():
                 self.tts.speak(f"Failed to execute {command_name}")
         else:
+            logger.info(f"No matching command found for: '{text}'")
             if self.voice_only and self.tts.is_available():
-                self.tts.speak(text)
+                self.tts.speak("Sorry, I didn't understand that")
         return None
 
     def get_status(self) -> dict[str, Any]:
