@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -233,9 +233,13 @@ const ActionField: React.FC<{
 // --- Main Page Component ---
 
 export default function CommandAuthoringPage() {
+  const [searchParams] = useSearchParams();
+  const editName = searchParams.get('edit');
+  const isEditing = Boolean(editName);
+
   useEffect(() => {
-    document.title = "Command Editor | ChattyCommander";
-  }, []);
+    document.title = (isEditing ? "Edit Command" : "Command Editor") + " | ChattyCommander";
+  }, [isEditing]);
 
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
@@ -250,6 +254,44 @@ export default function CommandAuthoringPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // When arriving with ?edit=<name>, load that command from config and
+  // preload the manual editor so the existing definition can be modified.
+  useEffect(() => {
+    if (!editName) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/v1/config');
+        if (!res.ok) throw new Error('Failed to load configuration');
+        const config = await res.json();
+        const cmd = config?.commands?.[editName];
+        if (!cmd) {
+          if (!cancelled) setError(`Command "${editName}" was not found.`);
+          return;
+        }
+        const actions: CommandAction[] = Array.isArray(cmd.actions)
+          ? cmd.actions
+          : cmd.action
+            ? [cmd.action]
+            : [];
+        if (!cancelled) {
+          setManualCommand({
+            name: editName,
+            display_name: cmd.name || editName,
+            wakeword: cmd.wakeword || '',
+            actions,
+          });
+          setMode('manual');
+        }
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load command for editing');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editName]);
 
   const validateField = useCallback((field: string, value: string) => {
     let errorMsg = '';
@@ -429,15 +471,17 @@ export default function CommandAuthoringPage() {
           <div className="text-sm breadcrumbs mb-2 text-base-content/60" aria-label="breadcrumbs">
             <ul>
               <li><Link to="/commands">Commands</Link></li>
-              <li>Command Authoring</li>
+              <li>{isEditing ? 'Edit Command' : 'Command Authoring'}</li>
             </ul>
           </div>
           <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-3">
             <Wand2 size={32} />
-            Command Authoring
+            {isEditing ? `Edit: ${editName}` : 'Command Authoring'}
           </h1>
           <p className="text-base-content/60 mt-1">
-            Create new voice commands using AI assistance or manual configuration.
+            {isEditing
+              ? 'Update the actions, display name, and wake word for this command, then save your changes.'
+              : 'Create new voice commands using AI assistance or manual configuration.'}
           </p>
         </div>
 
