@@ -304,10 +304,22 @@ class AdvisorsService:
                                     )
 
                 except Exception as e:
-                    # Fallback to echo if LLM fails
+                    # Fallback if the LLM fails. Use the intent/sentiment-aware
+                    # smart fallback for a more helpful message, but keep the
+                    # [LLM Error] marker that the API contract (and tests) rely on.
                     model_name = "error"
                     api_mode = "error"
-                    response = f"[LLM Error] {message.text} ({str(e)})"
+                    try:
+                        intent = self.conversation_engine.analyze_intent(message.text)
+                        sentiment = self.conversation_engine.analyze_sentiment(
+                            message.text
+                        )
+                        smart = self.conversation_engine.get_smart_fallback_response(
+                            message.text, intent, sentiment
+                        )
+                        response = f"[LLM Error] {smart} ({str(e)})"
+                    except Exception:
+                        response = f"[LLM Error] {message.text} ({str(e)})"
 
                 # Record conversation for future context. Done outside the
                 # try/except above so error responses are also recorded,
@@ -321,6 +333,32 @@ class AdvisorsService:
                         "platform": message.platform,
                     },
                 )
+
+                # Best-effort: learn lightweight user preferences from this turn.
+                # These feed get_conversation_context/build_enhanced_prompt on
+                # future turns. A failure here must never block the reply.
+                try:
+                    user_key = (
+                        f"{message.platform}:{message.channel}:{message.user}"
+                    )
+                    prev = self.conversation_engine.user_preferences.get(user_key, {})
+                    self.conversation_engine.update_user_preferences(
+                        user_key,
+                        {
+                            "last_intent": self.conversation_engine.analyze_intent(
+                                message.text
+                            ),
+                            "last_sentiment": self.conversation_engine.analyze_sentiment(
+                                message.text
+                            ),
+                            "preferred_persona": context.persona_id,
+                            "platform": message.platform,
+                            "interaction_count": int(prev.get("interaction_count", 0))
+                            + 1,
+                        },
+                    )
+                except Exception:
+                    pass
 
                 # Update to responding state
                 thinking_manager.start_responding(agent_id, "Finalizing response...")
