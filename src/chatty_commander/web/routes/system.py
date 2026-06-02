@@ -103,8 +103,12 @@ def include_system_routes(
             )
             for name, (desc, default, required) in _ENV_VAR_CATALOG.items()
         ] + [
+            # Only include description-only vars that aren't already in the
+            # catalog, otherwise the response carries duplicate entries (every
+            # _ENV_VAR_DESCRIPTIONS key currently also lives in the catalog).
             EnvVarInfo(name=name, set=(name in os.environ), description=desc, default=None, required=False)
             for name, desc in _ENV_VAR_DESCRIPTIONS.items()
+            if name not in _ENV_VAR_CATALOG
         ]
 
         info = SystemInfo(

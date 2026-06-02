@@ -260,7 +260,7 @@ class AdvisorsService:
                         user_input=combined_user_text,
                         user_id=f"{message.platform}:{message.channel}:{message.user}",
                         persona_config=persona_config,
-                        current_mode=getattr(self.config, "current_mode", "chatty"),
+                        current_mode=self.config.get("current_mode", "chatty"),
                     )
 
                     # Use LLMManager to generate response
