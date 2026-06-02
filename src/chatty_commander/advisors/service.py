@@ -259,8 +259,11 @@ class AdvisorsService:
                                     )
 
                     # Record conversation for future context
+                    user_key = (
+                        f"{message.platform}:{message.channel}:{message.user}"
+                    )
                     self.conversation_engine.record_conversation_turn(
-                        user_id=f"{message.platform}:{message.channel}:{message.user}",
+                        user_id=user_key,
                         user_input=message.text,
                         assistant_response=response,
                         context={
@@ -268,11 +271,60 @@ class AdvisorsService:
                             "platform": message.platform,
                         },
                     )
+
+                    # Learn lightweight user preferences from this interaction so
+                    # future prompts can adapt (communication style, recent
+                    # intent/sentiment, preferred persona/platform).
+                    try:
+                        learned_intent = self.conversation_engine.analyze_intent(
+                            message.text
+                        )
+                        learned_sentiment = (
+                            self.conversation_engine.analyze_sentiment(message.text)
+                        )
+                        self.conversation_engine.update_user_preferences(
+                            user_key,
+                            {
+                                "last_intent": learned_intent,
+                                "last_sentiment": learned_sentiment,
+                                "preferred_persona": context.persona_id,
+                                "platform": message.platform,
+                                "interaction_count": (
+                                    self.conversation_engine.user_preferences.get(
+                                        user_key, {}
+                                    ).get("interaction_count", 0)
+                                    + 1
+                                ),
+                            },
+                        )
+                    except Exception:
+                        # Preference learning is best-effort; never block a reply.
+                        pass
                 except Exception as e:
-                    # Fallback to echo if LLM fails
+                    # Fallback when LLM fails: keep the diagnostic marker (tests
+                    # and callers rely on "[LLM Error]" / model=="error"), but
+                    # additively provide an intent/sentiment-aware fallback so the
+                    # user still gets a contextual reply instead of a bare error.
                     model_name = "error"
                     api_mode = "error"
-                    response = f"[LLM Error] {message.text} ({str(e)})"
+                    try:
+                        intent = self.conversation_engine.analyze_intent(message.text)
+                        sentiment = self.conversation_engine.analyze_sentiment(
+                            message.text
+                        )
+                        smart_fallback = (
+                            self.conversation_engine.get_smart_fallback_response(
+                                message.text, intent, sentiment
+                            )
+                        )
+                    except Exception:
+                        smart_fallback = ""
+                    if smart_fallback:
+                        response = (
+                            f"[LLM Error] {smart_fallback} ({str(e)})"
+                        )
+                    else:
+                        response = f"[LLM Error] {message.text} ({str(e)})"
 
                 # Update to responding state
                 thinking_manager.start_responding(agent_id, "Finalizing response...")
