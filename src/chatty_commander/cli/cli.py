@@ -69,22 +69,32 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
     try:
         while not shutdown_flag["stop"]:
-            # Listen for voice input
-            command = model_manager.listen_for_commands()
-            if not command:
+            try:
+                # Listen for voice input
+                command = model_manager.listen_for_commands()
+                if not command:
+                    continue
+
+                logger.info(f"Command detected: {command}")
+
+                # Update system state based on command
+                new_state = state_manager.update_state(command)
+                if new_state:
+                    logger.info(f"Transitioning to new state: {new_state}")
+                    model_manager.reload_models(new_state)
+
+                # Execute the detected command if it's actionable
+                if command in config.model_actions:
+                    command_executor.execute_command(command)
+            except KeyboardInterrupt:
+                # Propagate to outer handler for graceful shutdown
+                raise
+            except Exception as e:
+                # Keep the loop alive on transient errors (listen, state
+                # transition, model reload, or command execution failures)
+                # so a single bad iteration does not crash the process.
+                logger.error(f"Error while processing command loop: {e}")
                 continue
-
-            logger.info(f"Command detected: {command}")
-
-            # Update system state based on command
-            new_state = state_manager.update_state(command)
-            if new_state:
-                logger.info(f"Transitioning to new state: {new_state}")
-                model_manager.reload_models(new_state)
-
-            # Execute the detected command if it's actionable
-            if command in config.model_actions:
-                command_executor.execute_command(command)
 
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt received; shutting down")
@@ -491,8 +501,11 @@ def run_interactive_shell(
             if input_str.startswith("execute "):
                 command = input_str[8:].strip()
                 if command in config.model_actions:
-                    command_executor.execute_command(command)
-                    print(f"Executed: {command}")
+                    try:
+                        command_executor.execute_command(command)
+                        print(f"Executed: {command}")
+                    except Exception as e:
+                        print(f"Error executing '{command}': {e}")
                 else:
                     print(f"Unknown command: {command}")
                 continue
@@ -503,7 +516,10 @@ def run_interactive_shell(
                 logger.info(f"Transitioning to new state: {new_state}")
                 model_manager.reload_models(new_state)
             if input_str in config.model_actions:
-                command_executor.execute_command(input_str)
+                try:
+                    command_executor.execute_command(input_str)
+                except Exception as e:
+                    print(f"Error executing '{input_str}': {e}")
         except EOFError:
             break
     logger.info("Exiting interactive shell")
@@ -624,8 +640,11 @@ def cli_main():
         config.web_server = web_cfg
         try:
             config.config["web_server"] = web_cfg
-        except Exception:
-            pass
+        except (AttributeError, KeyError, TypeError) as e:
+            # config may not expose a mutable `.config` mapping; the
+            # web_server attribute above is the source of truth, so this
+            # is best-effort only.
+            logger.debug(f"Could not persist web_server into config.config: {e}")
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:
@@ -698,6 +717,10 @@ def cli_main():
         command_name = getattr(args, "command_name", None)
         dry_run = getattr(args, "dry_run", False)
         actions = getattr(config, "model_actions", {}) or {}
+
+        if not command_name:
+            print("No command name provided.", file=sys.stderr)
+            raise SystemExit(1)
 
         if command_name not in actions:
             print(f"Unknown command: {command_name}", file=sys.stderr)
