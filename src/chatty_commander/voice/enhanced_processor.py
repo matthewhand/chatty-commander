@@ -73,6 +73,7 @@ class EnhancedVoiceProcessor:
 
         # Voice activity detection state
         self.vad_enabled = config.voice_activity_detection
+        self.vad: Any = None
         self.silence_counter = 0
         self.speech_detected = False
 
@@ -141,6 +142,12 @@ class EnhancedVoiceProcessor:
             # Fallback to energy-based VAD
             self.vad = self._energy_based_vad
             self.logger.info("Energy-based VAD enabled")
+        except Exception as e:
+            # Never leave self.vad in an undefined state; fall back safely
+            self.vad = self._energy_based_vad
+            self.logger.warning(
+                f"VAD initialization failed ({e}); using energy-based VAD"
+            )
 
     def _initialize_transcription(self):
         """Initialize speech-to-text transcription."""
@@ -287,7 +294,7 @@ class EnhancedVoiceProcessor:
                     )
 
             # Voice activity detection
-            if self.vad_enabled:
+            if self.vad_enabled and self.vad is not None:
                 if callable(self.vad):
                     speech_detected = self.vad(audio_chunk)
                 else:
