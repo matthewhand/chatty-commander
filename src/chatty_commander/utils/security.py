@@ -38,29 +38,38 @@ def constant_time_compare(provided: str | None, expected: str | None) -> bool:
     )
 
 
+_SENSITIVE_PATTERNS = (
+    "api_key",
+    "api_token",
+    "access_token",
+    "auth_token",
+    "bridge_token",
+    "password",
+    "passwd",
+    "secret",
+    "database_url",
+    "token",
+)
+
+
 def mask_sensitive_data(data: Any) -> Any:
     """Recursively mask sensitive keys in a dictionary or list."""
-    sensitive_patterns = {
-        "api_key",
-        "api_token",
-        "access_token",
-        "auth_token",
-        "bridge_token",
-        "password",
-        "passwd",
-        "secret",
-        "database_url",
-        "token",
-    }
-
     if isinstance(data, dict):
         masked = {}
         # Logic flow
         for k, v in data.items():
-            if any(p in str(k).lower() for p in sensitive_patterns):
+            k_lower = str(k).lower()
+
+            is_sensitive = False
+            for p in _SENSITIVE_PATTERNS:
+                if p in k_lower:
+                    is_sensitive = True
+                    break
+
+            if is_sensitive:
                 masked[k] = "********"
             # Logic flow
-            elif str(k).lower() == "auth":
+            elif k_lower == "auth":
                 # Special case for 'auth' which often contains credentials
                 if isinstance(v, dict):
                     masked[k] = mask_sensitive_data(v)
