@@ -169,7 +169,13 @@ class AdvisorsService:
             raise RuntimeError("Advisors are not enabled")
 
         # Get or create context for this identity
-        platform = PlatformType(message.platform.lower())
+        try:
+            platform = PlatformType(message.platform.lower())
+        except ValueError as e:
+            valid = ", ".join(p.value for p in PlatformType)
+            raise RuntimeError(
+                f"Unsupported platform '{message.platform}'; expected one of: {valid}"
+            ) from e
         context = self.context_manager.get_or_create_context(
             platform=platform,
             channel=message.channel,
@@ -251,28 +257,31 @@ class AdvisorsService:
                                     sm = StateManager()
                                     sm.change_state(target.strip())
                                     response = response.replace(
-                                        line, f"✓ Switched to {target.strip()} mode"
+                                        line, f"✓ Switched to {target.strip()} mode", 1
                                     )
                                 except Exception as e:
                                     response = response.replace(
-                                        line, f"✗ Mode switch failed: {e}"
+                                        line, f"✗ Mode switch failed: {e}", 1
                                     )
 
-                    # Record conversation for future context
-                    self.conversation_engine.record_conversation_turn(
-                        user_id=f"{message.platform}:{message.channel}:{message.user}",
-                        user_input=message.text,
-                        assistant_response=response,
-                        context={
-                            "persona_id": context.persona_id,
-                            "platform": message.platform,
-                        },
-                    )
                 except Exception as e:
                     # Fallback to echo if LLM fails
                     model_name = "error"
                     api_mode = "error"
                     response = f"[LLM Error] {message.text} ({str(e)})"
+
+                # Record conversation for future context. Done outside the
+                # try/except above so error responses are also recorded,
+                # keeping conversation history consistent for future turns.
+                self.conversation_engine.record_conversation_turn(
+                    user_id=f"{message.platform}:{message.channel}:{message.user}",
+                    user_input=message.text,
+                    assistant_response=response,
+                    context={
+                        "persona_id": context.persona_id,
+                        "platform": message.platform,
+                    },
+                )
 
                 # Update to responding state
                 thinking_manager.start_responding(agent_id, "Finalizing response...")
@@ -304,7 +313,15 @@ class AdvisorsService:
         """Handle the summarize command."""
         from .tools.browser_analyst import browser_analyst_tool
 
-        url = message.text[10:]  # Remove "summarize "
+        url = message.text[10:].strip()  # Remove "summarize " and surrounding whitespace
+        if not url:
+            return AdvisorReply(
+                reply="Usage: summarize <url>",
+                context_key="summarize",
+                persona_id="analyst",
+                model=self.provider.model,
+                api_mode=self.provider.api_mode,
+            )
         summary = browser_analyst_tool(url)
 
         return AdvisorReply(

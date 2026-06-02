@@ -29,6 +29,8 @@ per application/tab context.
 """
 
 import json
+import os
+import tempfile
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
@@ -223,7 +225,7 @@ class ContextManager:
 
         context = self.contexts[context_key]
         context.persona_id = persona_id
-        context.system_prompt = self.personas[persona_id]["system_prompt"]
+        context.system_prompt = self.personas[persona_id].get("system_prompt", "")
         context.last_activity = time.time()
 
         if self.persistence_enabled:
@@ -329,15 +331,34 @@ class ContextManager:
             pass
 
     def _save_contexts(self) -> None:
-        """Save contexts to persistence file."""
+        """Save contexts to persistence file using an atomic write.
+
+        Writes to a temporary file in the same directory and then atomically
+        replaces the target via os.replace(). This prevents a corrupted or
+        partially written file if the process is interrupted mid-write or if
+        multiple saves race; the target file always reflects a complete state.
+        """
         self.persistence_path.parent.mkdir(parents=True, exist_ok=True)
 
         data = {}
         for context_key, context in self.contexts.items():
             data[context_key] = context.to_dict()
 
-        with open(self.persistence_path, "w") as f:
-            json.dump(data, f, indent=2)
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(self.persistence_path.parent),
+            prefix=self.persistence_path.name,
+            suffix=".tmp",
+        )
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp_path, self.persistence_path)
+        except Exception:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
     def get_stats(self) -> dict[str, Any]:
         """Get statistics about current contexts."""
