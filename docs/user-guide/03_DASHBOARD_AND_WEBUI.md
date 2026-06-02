@@ -5,6 +5,11 @@ ChattyCommander includes a rich WebUI built with React and Vite.
 ## Accessing the Dashboard
 By default, the dashboard is served at `http://localhost:8100/` when the application is running.
 
+> **Note:** The server no longer builds the frontend automatically at startup. The
+> WebUI must be pre-built before the dashboard can be served. See the
+> [Documentation Maintenance](#documentation-maintenance) section and the
+> developer docs for building the `webui/frontend` assets.
+
 ## Features
 - **Real-time Metrics**: View CPU usage, Memory Usage, and total API Commands Executed on the home page.
 - **WebSocket Streaming**: All AI generated logs, state transitions, and system errors are streamed directly to the UI.

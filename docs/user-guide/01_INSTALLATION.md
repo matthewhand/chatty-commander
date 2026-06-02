@@ -20,3 +20,19 @@ Welcome to ChattyCommander!
    ```bash
    uv run chatty-commander
    ```
+
+## Logging
+
+You can control the logging verbosity with the `--log-level` flag, which accepts
+`DEBUG`, `INFO`, `WARNING`, or `ERROR`:
+
+```bash
+uv run chatty-commander --log-level DEBUG
+```
+
+When running in web mode, the `CHATCOMM_LOG_LEVEL` environment variable is also
+honoured:
+
+```bash
+CHATCOMM_LOG_LEVEL=DEBUG uv run chatty-commander
+```
