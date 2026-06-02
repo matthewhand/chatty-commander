@@ -58,7 +58,11 @@ async function loadConfig(): Promise<AppConfig> {
         },
       };
     }
-  } catch { /* fall through */ }
+  } catch (err) {
+    // Surface the failure for debugging instead of silently swallowing it.
+    // The caller still falls back to default config below so the UI stays usable.
+    console.error("Failed to load configuration; falling back to defaults:", err);
+  }
   return {
     apiKey: "",
     llmBaseUrl: "http://localhost:11434/v1",
