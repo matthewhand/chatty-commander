@@ -157,15 +157,29 @@ def run_tray_popup(config: Any, logger) -> int:
 
     icon_img = _icon_image()
 
+    # Track the single webview worker thread so we can avoid spawning a second
+    # window while one is open and join it on shutdown instead of leaking it.
+    window_thread: dict[str, threading.Thread | None] = {"t": None}
+
     def on_open(_icon, _item):
         # open window on a background thread to avoid blocking the tray loop
+        existing = window_thread["t"]
+        if existing is not None and existing.is_alive():
+            logger.info("Avatar popup window already open; ignoring open request")
+            return
         settings = _load_settings(config)
-        threading.Thread(
+        t = threading.Thread(
             target=_open_window, args=(settings, logger), daemon=True
-        ).start()
+        )
+        window_thread["t"] = t
+        t.start()
 
     def on_quit(_icon, _item):
         _icon.stop()
+        # Best-effort graceful shutdown of the webview worker thread.
+        t = window_thread["t"]
+        if t is not None and t.is_alive():
+            t.join(timeout=2.0)
 
     menu = Menu(
         MenuItem("Open", on_open, default=True),

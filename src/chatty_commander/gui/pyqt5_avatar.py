@@ -136,18 +136,29 @@ class TransparentBrowser(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
-        # Load the avatar page
-        url = self.config.get(
-            "url", "file:///src/chatty_commander/webui/avatar/index.html"
-        )
+        # Load the avatar page. The default points at the bundled avatar UI
+        # resolved relative to this installation rather than an absolute
+        # "/src/..." path, which is not portable across installations.
+        base_path = Path(__file__).resolve().parent.parent.parent.parent
+        default_index = base_path / "src" / "chatty_commander" / "webui" / "avatar" / "index.html"
+        url = self.config.get("url", default_index.as_uri())
         if url.startswith("file://") and not url.startswith("file:///"):
             # Convert relative file paths to absolute
             file_path = url[7:]  # Remove 'file://'
             if not file_path.startswith("/"):
-                # Relative path, make it absolute
-                base_path = Path(__file__).parent.parent.parent.parent
-                file_path = str(base_path / file_path)
-            url = f"file:///{file_path}"
+                # Relative path, resolve it against the installation directory
+                # and reject any traversal that escapes that base.
+                resolved = (base_path / file_path).resolve()
+                try:
+                    resolved.relative_to(base_path)
+                except ValueError:
+                    logger.error(
+                        f"Refusing to load avatar URL outside installation root: {url}"
+                    )
+                    resolved = default_index.resolve()
+                url = resolved.as_uri()
+            else:
+                url = f"file:///{file_path.lstrip('/')}"
 
         logger.info(f"Loading avatar URL: {url}")
         self.web_view.load(QUrl(url))  # type: ignore[attr-defined]
@@ -313,9 +324,18 @@ def _load_settings() -> dict[str, Any]:
     except Exception as e:
         logger.warning(f"Failed to load configuration: {e}")
 
-    # Default settings
+    # Default settings. Resolve the bundled avatar UI relative to this
+    # installation rather than an absolute "/src/..." path.
+    default_index = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "src"
+        / "chatty_commander"
+        / "webui"
+        / "avatar"
+        / "index.html"
+    )
     return {
-        "url": "file:///src/chatty_commander/webui/avatar/index.html",
+        "url": default_index.as_uri(),
         "width": 400,
         "height": 600,
         "x": 100,
