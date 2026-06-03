@@ -31,6 +31,16 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_COMMANDS = {
+    "hello": {
+        "action": "custom_message",
+        "message": "Hello from ChattyCommander!",
+    },
+    "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
+    "paste": {"action": "keypress", "keys": "paste"},
+    "submit": {"action": "keypress", "keys": "submit"},
+}
+
 
 class Config:
     def __init__(self, config_file: str = "config.json") -> None:
@@ -65,18 +75,7 @@ class Config:
         self.state_transitions: dict[str, dict[str, str]] = self.config_data.get(
             "state_transitions", {}
         )
-        self.commands: dict[str, Any] = self.config_data.get(
-            "commands",
-            {
-                "hello": {
-                    "action": "custom_message",
-                    "message": "Hello from ChattyCommander!",
-                },
-                "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
-                "paste": {"action": "keypress", "keys": "paste"},
-                "submit": {"action": "keypress", "keys": "submit"},
-            },
-        )
+        self.commands: dict[str, Any] = self.config_data.get("commands", DEFAULT_COMMANDS)
 
         # Advisors configuration
         advisors_cfg = self.config_data.get("advisors", {})
@@ -112,19 +111,6 @@ class Config:
             self.config_data.get("general", {}).get("inference_framework", "onnx")
         )
 
-        # Commands for model actions
-        default_commands = {}
-        if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
-            default_commands = {
-                "hello": {
-                    "action": "custom_message",
-                    "message": "Hello from ChattyCommander!",
-                },
-                "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
-                "paste": {"action": "keypress", "keys": "paste"},
-                "submit": {"action": "keypress", "keys": "submit"},
-            }
-        self.commands: dict[str, Any] = self.config_data.get("commands", default_commands)  # type: ignore[no-redef]
 
         # Start on boot setting
         self.start_on_boot: bool = bool(
