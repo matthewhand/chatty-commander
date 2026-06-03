@@ -13,3 +13,6 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2026-03-28 - Actionable Empty States and Custom Component A11y
 **Learning:** Bare text for empty states or zero-results states is unhelpful. Users benefit from clear visual indicators (icons) and actionable next steps. Also, custom reusable components like dropdown triggers often forget `ariaLabel` props, making them inaccessible when they wrap icon-only buttons.
 **Action:** Always replace bare text empty states with an illustrative icon (e.g., from `lucide-react`), explanatory text, and a primary call-to-action button, utilizing existing DaisyUI utility classes (`bg-base-200/50`, `rounded-box`). Ensure custom UI components with icon-only triggers accept an optional `ariaLabel` prop with sensible default fallbacks.
+## 2026-03-31 - Better Icons for Better UX
+**Learning:** Raw text characters like 'x' or '×' shouldn't be used for icons as they lack the visual consistency of proper SVG icons, might not center correctly, and can vary based on the system font.
+**Action:** When implementing close or clear buttons, use proper vector icons (e.g., `X` from `lucide-react`) instead of raw text characters.
