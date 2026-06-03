@@ -322,7 +322,7 @@ class IntelligenceCore:
                     self.logger.info("Executing screenshot command")
                     # Could integrate with command executor here
 
-                elif action_type in ["lights_on", "lights_off"]:
+                elif action_type in {"lights_on", "lights_off"}:
                     self.logger.info(f"Executing {action_type} command")
                     # Could integrate with home automation here
 
