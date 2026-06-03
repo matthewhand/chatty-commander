@@ -89,7 +89,9 @@ class Config:
         # Voice/GUI behaviour
         self._voice_only: bool = bool(self.config_data.get("voice_only", False))
 
-
+        self.allowed_shell_commands: list[str] = self.config_data.get(
+            "allowed_shell_commands", ["echo"]
+        )
 
         # Audio configuration
         self.mic_chunk_size: int = self.config_data.get("mic_chunk_size", 1024)
@@ -209,6 +211,11 @@ class Config:
 
     def _validate_config(self) -> None:
         """Validate configuration data and log warnings for potential issues."""
+        # Validate allowed shell commands
+        if not isinstance(self.allowed_shell_commands, list):
+            logger.warning("allowed_shell_commands should be a list")
+            self.allowed_shell_commands = ["echo"]
+
         # Validate state models
         if not isinstance(self.state_models, dict):
             logger.warning("state_models should be a dictionary")
@@ -558,6 +565,9 @@ class Config:
         instance.voice_only = instance.config_data.get("general", {}).get(
             "voice_only", False
         )
+        instance.allowed_shell_commands = instance.config_data.get(
+            "allowed_shell_commands", ["echo"]
+        )
         instance.mic_chunk_size = int(
             instance.config_data.get("general", {}).get("mic_chunk_size", 1024)
         )
@@ -597,6 +607,7 @@ class Config:
         result["listen_for"] = self.listen_for
         result["modes"] = self.modes
         result["default_state"] = self.default_state
+        result["allowed_shell_commands"] = self.allowed_shell_commands
 
         # Update general settings
         if "general" not in result:
