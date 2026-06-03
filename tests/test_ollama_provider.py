@@ -32,7 +32,11 @@ from unittest.mock import Mock, patch
 import pytest
 import requests
 
-from src.chatty_commander.providers.ollama_provider import OllamaProvider
+from src.chatty_commander.providers.ollama_provider import (
+    OllamaProvider,
+    build_ollama_provider,
+    create_ollama_provider,
+)
 
 
 class TestOllamaProviderInitialization:
@@ -76,6 +80,18 @@ class TestOllamaProviderInitialization:
         provider = OllamaProvider({"num_ctx": 4096})
         
         assert provider.num_ctx == 4096
+
+    def test_num_predict_setting(self):
+        """Test num_predict configuration."""
+        provider = OllamaProvider({"num_predict": 1024})
+
+        assert provider.num_predict == 1024
+
+    def test_num_predict_fallback(self):
+        """Test num_predict fallback to max_tokens."""
+        provider = OllamaProvider({"max_tokens": 512})
+
+        assert provider.num_predict == 512
 
     def test_session_headers(self):
         """Test that session headers are set correctly."""
@@ -393,3 +409,23 @@ class TestOllamaProviderEdgeCases:
             
             assert 'Hello "world"' in chunks
             assert "Special: <>&" in chunks
+
+
+class TestOllamaProviderFactories:
+    """Tests for OllamaProvider factory functions."""
+
+    def test_create_ollama_provider(self):
+        """Test create_ollama_provider factory."""
+        config = {"model": "test-model"}
+        provider = create_ollama_provider(config)
+
+        assert isinstance(provider, OllamaProvider)
+        assert provider.model == "test-model"
+
+    def test_build_ollama_provider(self):
+        """Test build_ollama_provider factory."""
+        config = {"model": "test-model-build"}
+        provider = build_ollama_provider(config)
+
+        assert isinstance(provider, OllamaProvider)
+        assert provider.model == "test-model-build"
