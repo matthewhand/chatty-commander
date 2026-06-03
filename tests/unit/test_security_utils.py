@@ -24,7 +24,7 @@
 
 import pytest
 
-from src.chatty_commander.utils.security import constant_time_compare, mask_sensitive_data
+from src.chatty_commander.utils.security import constant_time_compare, is_safe_command, mask_sensitive_data
 
 
 class TestConstantTimeCompare:
@@ -191,3 +191,39 @@ class TestMaskSensitiveData:
         assert mask_sensitive_data(123) == 123
         assert mask_sensitive_data(None) is None
         assert mask_sensitive_data(True) is True
+
+
+class TestIsSafeCommand:
+    """Tests for is_safe_command function."""
+
+    def test_allowed_echo_command(self):
+        """Test that whitelisted echo command returns True."""
+        assert is_safe_command("echo hello world") is True
+
+    def test_disallowed_command(self):
+        """Test that non-whitelisted command returns False."""
+        assert is_safe_command("ls -la") is False
+        assert is_safe_command("rm -rf /") is False
+
+    def test_dangerous_characters(self):
+        """Test that commands with dangerous characters return False."""
+        assert is_safe_command("echo hello; ls") is False
+        assert is_safe_command("echo hello & ls") is False
+        assert is_safe_command("echo hello | ls") is False
+        assert is_safe_command("echo hello > out.txt") is False
+        assert is_safe_command("echo $USER") is False
+        assert is_safe_command("echo `whoami`") is False
+
+    def test_invalid_input(self):
+        """Test that invalid inputs return False."""
+        assert is_safe_command("") is False
+        assert is_safe_command(None) is False  # type: ignore[arg-type]
+        assert is_safe_command(123) is False  # type: ignore[arg-type]
+
+    def test_suspicious_arguments(self):
+        """Test that suspicious arguments return False."""
+        # Flag injection with path traversal
+        assert is_safe_command("echo -f/etc/passwd") is False
+        assert is_safe_command("echo --config=../secret") is False
+        # Normal arguments should be fine
+        assert is_safe_command("echo -n hello") is True

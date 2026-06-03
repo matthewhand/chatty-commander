@@ -128,9 +128,9 @@ class ModelManager:
         self.reload_models()
 
     def reload_models(
-        """reload models."""
         self, state: str | None = None
     ) -> dict[str, Model] | dict[str, dict[str, Model]]:
+        """reload models."""
         """
         Reload models from configured directories.
         If state is provided, only that state's models are loaded.
