@@ -25,6 +25,7 @@
 import logging
 import posixpath
 from collections.abc import Callable
+from urllib.parse import unquote
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -63,7 +64,19 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Normalize path to prevent path traversal bypasses
         # Use exact match or explicit trailing slash check to prevent partial path matching
-        path = posixpath.normpath(request.url.path)
+        # Recursively unquote to handle double-encoded paths
+        path = request.url.path
+        while "%" in path:
+            new_path = unquote(path)
+            if new_path == path:
+                break
+            path = new_path
+
+        path = posixpath.normpath(path)
+
+        # Ensure exactly one leading slash to prevent bypassing with multiple slashes
+        if path.startswith("//"):
+            path = "/" + path.lstrip("/")
 
         # Skip auth for public endpoints
         if (
