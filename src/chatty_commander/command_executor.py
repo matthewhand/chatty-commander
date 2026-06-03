@@ -32,12 +32,7 @@ try:  # pragma: no cover - best effort import
 except Exception:
     pyautogui = None  # type: ignore
 
-try:
-    import requests  # type: ignore
-except Exception:
-    requests = None  # type: ignore
-
-__all__ = ["pyautogui", "requests"]
+__all__ = ["pyautogui"]
 
 
 def __getattr__(name: str):  # type: ignore[override]
@@ -51,4 +46,4 @@ def __getattr__(name: str):  # type: ignore[override]
 
 
 # Make these names visible to patchers; CommandExecutor is provided lazily via __getattr__
-__all__ = ["pyautogui", "requests"]
+__all__ = ["pyautogui"]

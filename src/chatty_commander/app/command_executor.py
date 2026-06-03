@@ -54,13 +54,6 @@ except Exception:  # pragma: no cover - optional
 if _shim_pg is not None:  # pragma: no cover - optional
     pyautogui = _shim_pg
 
-try:  # pragma: no cover
-    from command_executor import requests as _shim_requests
-except Exception:  # pragma: no cover - optional
-    _shim_requests = None
-if _shim_requests is not None:  # pragma: no cover - optional
-    # Map legacy tests to our httpx var for test compatibility if needed
-    httpx = _shim_requests
 
 
 class CommandExecutor:
