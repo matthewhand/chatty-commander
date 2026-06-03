@@ -26,7 +26,7 @@ import logging
 import posixpath
 from collections.abc import Callable
 
-from fastapi import Request, Response
+from fastapi import HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger(__name__)
@@ -106,11 +106,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
             if not api_key or api_key != expected_key:
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
-                # Return 401 response directly instead of raising exception
-                from fastapi.responses import JSONResponse
-
-                return JSONResponse(
-                    status_code=401, content={"detail": "Invalid or missing API key"}
+                # Raise HTTPException instead of returning JSONResponse directly
+                # to ensure it's handled by FastAPI exception handlers
+                raise HTTPException(
+                    status_code=401, detail="Invalid or missing API key"
                 )
 
             logger.debug("Authentication successful")
