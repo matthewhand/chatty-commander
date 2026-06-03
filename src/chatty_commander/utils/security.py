@@ -76,6 +76,8 @@ def mask_sensitive_data(data: Any) -> Any:
     return data
 
 
+
+
 def is_safe_command(cmd: str) -> bool:
     """Validate that a shell command is safe to execute.
 
@@ -90,13 +92,11 @@ def is_safe_command(cmd: str) -> bool:
     if not args:
         return False
 
-    whitelist = {"echo"}
+    whitelist = {"echo", "ls", "cat", "pwd", "date", "whoami", "hostname", "uptime", "free", "df"}
     if args[0] not in whitelist:
         return False
 
     for arg in args[1:]:
-        if arg.startswith('-'):
-            return False
         if '/' in arg or '\\' in arg or '..' in arg:
             return False
         if any(char in arg for char in ['&', '|', ';', '$', '`', '>', '<']):
