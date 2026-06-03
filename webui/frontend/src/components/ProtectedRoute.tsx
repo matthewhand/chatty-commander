@@ -7,20 +7,13 @@ type ProtectedRouteProps = {
 };
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
-  // Show loading state while checking authentication
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" role="status" aria-live="polite" aria-label="Verifying authentication">
-        <span className="loading loading-spinner loading-lg text-primary" aria-hidden="true"></span>
-        <span className="ml-3 text-base-content/60">Verifying authentication...</span>
-      </div>
-    );
-  }
-
-  // Allow bypassing auth in development/no-auth mode based on dynamic backend configuration
+  // Allow bypassing auth in development/no-auth mode based on dynamic backend configuration.
+  // This is only ever set when the backend itself reports auth is disabled; log it so the
+  // bypass is auditable rather than silent.
   if (user?.noAuth) {
+    console.warn("ProtectedRoute: serving protected route without auth (backend no-auth mode)");
     return <>{children}</>;
   }
 

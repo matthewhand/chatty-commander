@@ -30,21 +30,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class AvatarConfigModel(BaseModel):
-    """AvatarConfigModel class.
-
-    TODO: Add class description.
-    """
-    
     model_config = ConfigDict(extra="forbid")
     animations_dir: str | None = Field(
-        # Logic flow
         default=None, description="Directory to scan for animations"
     )
     enabled: bool = Field(
         default=True, description="Whether avatar animations are enabled"
     )
     defaults: dict[str, Any] | None = Field(
-        # Logic flow
         default=None, description="Default settings for avatar"
     )
     state_map: dict[str, str] | None = Field(
@@ -82,9 +75,7 @@ _DEFAULTS = {
 
 def _get_avatar_cfg(cfg_mgr: Any) -> dict[str, Any]:
     cfg = getattr(cfg_mgr, "config", {})
-    # Build filtered collection
     gui = cfg.setdefault("gui", {}) if isinstance(cfg, dict) else {}
-    # Build filtered collection
     avatar = gui.setdefault("avatar", {}) if isinstance(gui, dict) else {}
     # fill defaults without overwriting explicit user settings
     for k, v in _DEFAULTS.items():
@@ -93,56 +84,34 @@ def _get_avatar_cfg(cfg_mgr: Any) -> dict[str, Any]:
 
 
 def include_avatar_settings_routes(
-    """Include Avatar Settings Routes operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
     *, get_config_manager: Callable[[], Any]
 ) -> APIRouter:
     router = APIRouter()
 
     @router.get("/avatar/config", response_model=AvatarConfigModel)
     async def get_avatar_config():
-        """Retrieve operation.
-
-        TODO: Add detailed description and parameters.
-        """
-        
         try:
-        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             avatar = _get_avatar_cfg(cfg_mgr)
             return AvatarConfigModel(**avatar)
-        # Handle specific exception case
         except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(e)) from e
 
     @router.put("/avatar/config", response_model=AvatarConfigModel)
     async def update_avatar_config(new_cfg: AvatarConfigModel):
-        """Update with (new_cfg: AvatarConfigModel).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         try:
-        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             avatar = _get_avatar_cfg(cfg_mgr)
             payload = new_cfg.model_dump(exclude_none=True)
             avatar.update(payload)
-            # Logic flow
             # Persist via cfg_mgr.save_config if available
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:
-                # Attempt operation with error handling
                     save()  # type: ignore[call-arg]
-                # Handle specific exception case
                 except TypeError:
                     save(getattr(cfg_mgr, "config", {}))  # type: ignore[misc]
             return AvatarConfigModel(**avatar)
-        # Handle specific exception case
         except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(e)) from e
 

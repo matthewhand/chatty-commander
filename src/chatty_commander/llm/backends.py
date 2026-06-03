@@ -39,7 +39,6 @@ class LLMBackend(ABC):
 
     @abstractmethod
     def is_available(self) -> bool:
-        # Validate preconditions
         """Check if backend is available and ready."""
         pass
 
@@ -50,7 +49,6 @@ class LLMBackend(ABC):
 
     @abstractmethod
     def get_backend_info(self) -> dict[str, Any]:
-        # Process each item
         """Get backend information."""
         pass
 
@@ -72,17 +70,20 @@ class OpenAIBackend(LLMBackend):
         self.max_retries = kwargs.get("max_retries", 3)
         self.timeout = kwargs.get("timeout", 30.0)
         self._client: Any = None
+        # Cache the (expensive) availability probe so repeated checks don't fire
+        # a live API request every time; reset whenever the client re-initializes.
+        self._available_cache: bool | None = None
         self._initialize_client()
 
     def _initialize_client(self):
         """Initialize OpenAI client."""
-        # Apply conditional logic
+        # A fresh client means the previous availability result is stale.
+        self._available_cache = None
         if not self.api_key:
             logger.debug("No OpenAI API key provided")
             return
 
         try:
-        # Attempt operation with error handling
             import openai
 
             self._client = openai.OpenAI(
@@ -92,39 +93,35 @@ class OpenAIBackend(LLMBackend):
                 max_retries=0  # We handle retries manually
             )
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
-        # Handle specific exception case
         except ImportError:
             logger.warning(
                 "OpenAI library not available. Install with: pip install openai"
             )
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e}")
 
     def is_available(self) -> bool:
-        # Validate preconditions
-        """Check if OpenAI backend is available."""
-        # Apply conditional logic
+        """Check if OpenAI backend is available (result cached after first probe)."""
         if not self._client:
             return False
+        if self._available_cache is not None:
+            return self._available_cache
 
         try:
-        # Attempt operation with error handling
             # Test with a minimal request
             self._client.chat.completions.create(
                 model=getattr(self, "model", "gpt-3.5-turbo"),
                 messages=[{"role": "user", "content": "test"}],
                 max_tokens=1,
             )
-            return True
-        # Handle specific exception case
+            self._available_cache = True
         except Exception as e:
             logger.debug(f"OpenAI availability check failed: {e}")
-            return False
+            self._available_cache = False
+        return self._available_cache
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         """Generate response using OpenAI API with retries."""
-        # Apply conditional logic
         if not self._client:
             raise RuntimeError("OpenAI client not available")
 
@@ -136,7 +133,6 @@ class OpenAIBackend(LLMBackend):
 
         last_error = None
 
-        # Iterate with index
         for attempt in range(self.max_retries + 1):
             try:
                 response = self._client.chat.completions.create(
@@ -146,11 +142,9 @@ class OpenAIBackend(LLMBackend):
                     temperature=temperature,
                 )
                 return response.choices[0].message.content.strip()  # type: ignore[no-any-return]
-            # Handle specific exception case
             except Exception as e:
                 last_error = e
                 logger.warning(f"OpenAI generation attempt {attempt + 1} failed: {e}")
-                # Apply conditional logic
                 if attempt < self.max_retries:
                     sleep_time = 1.0 * (2 ** attempt)  # Exponential backoff
                     time.sleep(sleep_time)
@@ -158,7 +152,6 @@ class OpenAIBackend(LLMBackend):
         raise RuntimeError(f"OpenAI generation failed after {self.max_retries} retries: {last_error}")
 
     def get_backend_info(self) -> dict[str, Any]:
-        # Process each item
         """Get OpenAI backend information."""
         return {
             "backend": "openai",
@@ -180,37 +173,28 @@ class OllamaBackend(LLMBackend):
         logger.info(f"Initialized Ollama backend: {self.base_url}, model: {self.model}")
 
     def is_available(self) -> bool:
-        # Validate preconditions
         """Check if Ollama server is available."""
-        # Validate input exists
         if self._available is not None:
             return self._available
 
         try:
-        # Attempt operation with error handling
             import httpx
 
             from chatty_commander.utils.url_validator import is_safe_url
 
-            # Build filtered collection
-            # Apply conditional logic
             if not is_safe_url(f"{self.base_url}/api/tags"):
                 logger.warning(f"Ollama base URL {self.base_url} rejected by security policy.")
                 self._available = False
                 return self._available
 
-            # Logic flow
             # Check if Ollama server is running
             with httpx.Client() as client:
                 response = client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
-                # Apply conditional logic
                 if response.status_code == 200:
                     # Check if our model is available
                     models = response.json().get("models", [])
-                    # Build filtered collection
                     model_names = [m.get("name", "") for m in models]
 
-                    # Logic flow
                     if self.model in model_names:
                         self._available = True
                         logger.info(f"Ollama model {self.model} is available")
@@ -222,7 +206,6 @@ class OllamaBackend(LLMBackend):
                         self._try_pull_model()
                         self._available = self.model in [
                             m.get("name", "")
-                            # Logic flow
                             for m in client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
                             .json()
                             .get("models", [])
@@ -232,10 +215,8 @@ class OllamaBackend(LLMBackend):
                     logger.debug(f"Ollama server not responding: {response.status_code}")
 
         except ImportError:
-            # Logic flow
             logger.warning("httpx library not available for Ollama backend")
             self._available = False
-        # Handle specific exception case
         except Exception as e:
             logger.debug(f"Ollama availability check failed: {e}")
             self._available = False
@@ -243,23 +224,19 @@ class OllamaBackend(LLMBackend):
         return self._available
 
     def _try_pull_model(self):
-        # Logic flow
         """Try to pull the model if not available."""
         try:
             import httpx
 
             logger.info(f"Attempting to pull model {self.model}...")
             with httpx.Client() as client:
-            # Use context manager for resource management
                 response = client.post(
                     f"{self.base_url}/api/pull",
                     json={"name": self.model},
-                    # Logic flow
                     timeout=300,  # 5 minutes timeout for model download
                     follow_redirects=False,
                 )
 
-                # Logic flow
                 if response.status_code == 200:
                     logger.info(f"Successfully pulled model {self.model}")
                 else:
@@ -267,25 +244,21 @@ class OllamaBackend(LLMBackend):
                         f"Failed to pull model {self.model}: {response.status_code}"
                     )
 
-        # Handle specific exception case
         except Exception as e:
             logger.warning(f"Error pulling model {self.model}: {e}")
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         """Generate response using Ollama."""
-        # Logic flow
         if not self.is_available():
             raise RuntimeError("Ollama backend not available")
 
         try:
-        # Attempt operation with error handling
             import httpx
 
             max_tokens = kwargs.get("max_tokens", 150)
             temperature = kwargs.get("temperature", 0.7)
 
             with httpx.Client() as client:
-            # Use context manager for resource management
                 response = client.post(
                     f"{self.base_url}/api/generate",
                     json={
@@ -301,20 +274,17 @@ class OllamaBackend(LLMBackend):
                     follow_redirects=False,
                 )
 
-                # Logic flow
                 if response.status_code == 200:
                     result = response.json()
                     return result.get("response", "").strip()  # type: ignore[no-any-return]
                 else:
                     raise RuntimeError(f"Ollama request failed: {response.status_code}")
 
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Ollama generation failed: {e}")
             raise
 
     def get_backend_info(self) -> dict[str, Any]:
-        # Process each item
         """Get Ollama backend information."""
         return {
             "backend": "ollama",
@@ -326,10 +296,15 @@ class OllamaBackend(LLMBackend):
 
 
 class LocalTransformersBackend(LLMBackend):
-    """Local transformers backend using gpt-oss:20b."""
+    """Local HuggingFace transformers backend.
+
+    Defaults to ``microsoft/DialoGPT-medium`` — a small conversational model
+    that downloads quickly and runs on CPU. Pass ``model_name`` to use a larger
+    model. (The previous docstring claimed gpt-oss:20b, which was never the
+    default and would not fit most local machines.)
+    """
 
     def __init__(self, model_name: str = "microsoft/DialoGPT-medium"):
-        # Logic flow
         # Use a smaller model that actually exists for now
         self.model_name = model_name
         self._model: Any = None
@@ -338,10 +313,8 @@ class LocalTransformersBackend(LLMBackend):
         self._initialize_model()
 
     def _initialize_model(self):
-        # Process each item
         """Initialize local transformers model."""
         try:
-        # Attempt operation with error handling
             import torch
             from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -355,47 +328,35 @@ class LocalTransformersBackend(LLMBackend):
             self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             self._model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
-                # Logic flow
                 torch_dtype=torch.float16 if self._device == "cuda" else torch.float32,
                 device_map="auto" if self._device == "cuda" else None,
             )
 
-            # Logic flow
             if self._device == "cpu":
                 self._model = self._model.to(self._device)
 
-            # Logic flow
             # Add pad token if missing
             if self._tokenizer.pad_token is None:
                 self._tokenizer.pad_token = self._tokenizer.eos_token
 
             logger.info(f"Successfully loaded local model: {self.model_name}")
 
-        # Handle specific exception case
         except ImportError as e:
-            # Build filtered collection
-            # Process each item
             logger.warning(f"Transformers dependencies not available: {e}")
-            # Process each item
             logger.info("Install with: pip install torch transformers")
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to load local model: {e}")
 
     def is_available(self) -> bool:
-        # Logic flow
         """Check if local transformers backend is available."""
         return self._model is not None and self._tokenizer is not None
 
     def generate_response(self, prompt: str, **kwargs) -> str:
-        # Process each item
         """Generate response using local transformers model."""
-        # Logic flow
         if not self.is_available():
             raise RuntimeError("Local transformers backend not available")
 
         try:
-        # Attempt operation with error handling
             import torch
 
             max_tokens = kwargs.get("max_tokens", 150)
@@ -423,18 +384,13 @@ class LocalTransformersBackend(LLMBackend):
 
             return response.strip()  # type: ignore[no-any-return]
 
-        # Handle specific exception case
         except Exception as e:
-            # Build filtered collection
-            # Process each item
             logger.error(f"Local transformers generation failed: {e}")
             raise
 
     def get_backend_info(self) -> dict[str, Any]:
-        # Process each item
         """Get local transformers backend information."""
         return {
-            # Process each item
             "backend": "local_transformers",
             "available": self.is_available(),
             "model_name": self.model_name,
@@ -448,40 +404,23 @@ class MockLLMBackend(LLMBackend):
     def __init__(self, responses: list[str] | None = None):
         self.responses = responses or [
             "I understand you want to execute a command. Let me help with that.",
-            # Use context manager for resource management
             "Based on your request, I'll trigger the appropriate action.",
             "Processing your voice command now.",
             "Command received and understood.",
-            # Logic flow
             "I'll execute that action for you.",
         ]
         self.call_count = 0
 
     def is_available(self) -> bool:
-        """Check with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return True
 
     def generate_response(self, prompt: str, **kwargs) -> str:
-        """Generate Response with (self, prompt: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         response = self.responses[self.call_count % len(self.responses)]
         self.call_count += 1
         logger.debug(f"Mock LLM response: '{response}'")
         return response
 
     def get_backend_info(self) -> dict[str, Any]:
-        """Retrieve with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return {
             "backend": "mock",
             "available": True,

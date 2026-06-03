@@ -31,28 +31,13 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 class AudioDevices(BaseModel):
-    """AudioDevices class.
-
-    TODO: Add class description.
-    """
-    
     input: list[str] = Field(default_factory=list)
     output: list[str] = Field(default_factory=list)
 
 class AudioDeviceRequest(BaseModel):
-    """AudioDeviceRequest class.
-
-    TODO: Add class description.
-    """
-    
     device_id: str
 
 def include_audio_routes(
-    """Include Audio Routes operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
     *,
     get_config_manager: Any,
 ) -> APIRouter:
@@ -60,71 +45,50 @@ def include_audio_routes(
 
     @router.get("/api/v1/audio/devices", response_model=AudioDevices)
     async def get_audio_devices():
-        """Retrieve operation.
-
-        TODO: Add detailed description and parameters.
-        """
-        
         try:
-        # Attempt operation with error handling
             import pyaudio
             p = pyaudio.PyAudio()
             input_devices = []
             output_devices = []
             try:
-            # Attempt operation with error handling
                 info = p.get_host_api_info_by_index(0)
                 numdevices = info.get('deviceCount') or 0
 
-                # Logic flow
                 for i in range(0, numdevices):
                     device_info = p.get_device_info_by_host_api_device_index(0, i)
-                    # Logic flow
                     if (device_info.get('maxInputChannels') or 0) > 0:
                         input_devices.append(device_info.get('name'))
-                    # Logic flow
                     if (device_info.get('maxOutputChannels') or 0) > 0:
                         output_devices.append(device_info.get('name'))
             finally:
                 p.terminate()
             return AudioDevices(input=input_devices, output=output_devices)
         except ImportError:
-            # Logic flow
             # Fallback for environments without PyAudio or audio hardware (e.g., CI/Container)
             return AudioDevices(
                 input=["Mock Microphone 1", "Mock Microphone 2"],
                 output=["Mock Speaker 1", "Mock Speaker 2"]
             )
-        # Handle specific exception case
         except Exception as e:
             logger.warning(f"Failed to list audio devices: {e}")
             return AudioDevices()
 
     @router.post("/api/v1/audio/device")
     async def set_audio_device(request: AudioDeviceRequest):
-        """Update with (request: AudioDeviceRequest).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         try:
-        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             logger.info(f"Setting audio device to: {request.device_id}")
 
-            # Logic flow
             # Attempt to save if structure exists
             if hasattr(cfg_mgr, "config"):
                 if "audio" not in cfg_mgr.config:
                     cfg_mgr.config["audio"] = {}
                 cfg_mgr.config["audio"]["device"] = request.device_id
 
-                # Logic flow
                 if hasattr(cfg_mgr, "save_config"):
                     cfg_mgr.save_config()
 
             return {"success": True, "device": request.device_id}
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to set audio device: {e}")
             raise HTTPException(status_code=500, detail="Failed to update audio device configuration") from e

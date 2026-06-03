@@ -1,6 +1,9 @@
 import ipaddress
+import logging
 import socket
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 _ALLOWED_SCHEMES = {"http", "https"}
 
@@ -14,7 +17,6 @@ def _is_restricted(ip_str: str) -> bool:
         or ip_obj.is_link_local
         or ip_obj.is_multicast
         or ip_obj.is_reserved
-        # Apply conditional logic
         or ip_obj.is_unspecified
     )
 
@@ -29,22 +31,18 @@ def is_safe_url(url: str) -> bool:
     """
     try:
         parsed = urlparse(url)
-        # Logic flow
         if parsed.scheme not in _ALLOWED_SCHEMES:
             return False
         hostname = parsed.hostname
-        # Logic flow
         if not hostname:
             return False
 
         # Resolve all addresses (IPv4 + IPv6)
         try:
             addr_infos = socket.getaddrinfo(hostname, None)
-        # Handle specific exception case
-        except socket.gaierror:
+        except (socket.gaierror, socket.timeout):
             return False
 
-        # Logic flow
         if not addr_infos:
             return False
 
@@ -52,11 +50,13 @@ def is_safe_url(url: str) -> bool:
         for _family, _type, _proto, _canonname, sockaddr in addr_infos:
             ip_str = sockaddr[0]
             assert isinstance(ip_str, str)  # sockaddr[0] is always an IP string
-            # Apply conditional logic
             if _is_restricted(ip_str):
                 return False
 
         return True
-    # Handle specific exception case
-    except Exception:
+    except Exception as e:
+        # Fail closed (treat as unsafe), but surface unexpected errors so an
+        # operator can notice resolver/parsing problems rather than silently
+        # rejecting (or, worse, masking) URLs.
+        logger.warning("URL safety check failed unexpectedly for %r: %s", url, e)
         return False

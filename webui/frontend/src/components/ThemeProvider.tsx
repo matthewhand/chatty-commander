@@ -4,20 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 interface ThemeContextType {
     theme: string;
     setTheme: (theme: string) => void;
-    isLoading: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setTheme] = useState<string>(() => {
-        // Initialize from localStorage for faster load
-        return localStorage.getItem('theme') || 'dark';
-    });
-    const [isInitialized, setIsInitialized] = useState(false);
+    const [theme, setTheme] = useState<string>('dark'); // Default to dark
 
     // Fetch initial theme from backend configuration
-    const { isLoading } = useQuery({
+    useQuery({
         queryKey: ['configTheme'],
         queryFn: async () => {
             try {
@@ -26,16 +21,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                     const data = await res.json();
                     if (data.ui?.theme) {
                         setTheme(data.ui.theme);
-                        localStorage.setItem('theme', data.ui.theme);
                         return data.ui.theme;
                     }
                 }
-            } catch (error) {
-                console.warn('Failed to fetch theme from backend, using localStorage or default:', error);
-            } finally {
-                setIsInitialized(true);
+            } catch (e) {
+                // Non-fatal: fall back to the default theme, but don't fail silently.
+                console.debug('ThemeProvider: could not load theme from /api/v1/config, using default', e);
             }
-            return localStorage.getItem('theme') || 'dark'; // Fallback to localStorage or default
+            return 'dark'; // Fallback
         },
         staleTime: Infinity, // Only fetch once on mount
     });
@@ -43,12 +36,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Apply theme to the HTML document root for DaisyUI
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
-        // Persist to localStorage whenever theme changes
-        localStorage.setItem('theme', theme);
     }, [theme]);
 
     return (
-        <ThemeContext.Provider value={{ theme, setTheme, isLoading: !isInitialized }}>
+        <ThemeContext.Provider value={{ theme, setTheme }}>
             {children}
         </ThemeContext.Provider>
     );

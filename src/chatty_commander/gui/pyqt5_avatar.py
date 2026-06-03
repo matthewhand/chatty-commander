@@ -50,41 +50,20 @@ try:
     )
 
     PYQT5_AVAILABLE = True
-# Handle specific exception case
 except ImportError:
     PYQT5_AVAILABLE = False
 
     # Create dummy classes for type hints
     class QMainWindow:  # type: ignore[no-redef]
-        """QMainWindow class.
-
-        TODO: Add class description.
-        """
-        
         pass
 
     class QWebEngineView:  # type: ignore[no-redef]
-        """QWebEngineView class.
-
-        TODO: Add class description.
-        """
-        
         pass
 
     class QSystemTrayIcon:  # type: ignore[no-redef]
-        """QSystemTrayIcon class.
-
-        TODO: Add class description.
-        """
-        
         pass
 
     class QApplication:  # type: ignore[no-redef]
-        """QApplication class.
-
-        TODO: Add class description.
-        """
-        
         pass
 
 
@@ -118,7 +97,6 @@ class TransparentBrowser(QMainWindow):
 
     def _setup_window(self):
         """Configure the main window properties."""
-        # Logic flow
         # Window flags for frameless, transparent, always on top
         self.setWindowFlags(
             Qt.FramelessWindowHint
@@ -158,19 +136,29 @@ class TransparentBrowser(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
-        # Load the avatar page
-        url = self.config.get(
-            "url", "file:///src/chatty_commander/webui/avatar/index.html"
-        )
-        # Apply conditional logic
+        # Load the avatar page. The default points at the bundled avatar UI
+        # resolved relative to this installation rather than an absolute
+        # "/src/..." path, which is not portable across installations.
+        base_path = Path(__file__).resolve().parent.parent.parent.parent
+        default_index = base_path / "src" / "chatty_commander" / "webui" / "avatar" / "index.html"
+        url = self.config.get("url", default_index.as_uri())
         if url.startswith("file://") and not url.startswith("file:///"):
             # Convert relative file paths to absolute
             file_path = url[7:]  # Remove 'file://'
             if not file_path.startswith("/"):
-                # Relative path, make it absolute
-                base_path = Path(__file__).parent.parent.parent.parent
-                file_path = str(base_path / file_path)
-            url = f"file:///{file_path}"
+                # Relative path, resolve it against the installation directory
+                # and reject any traversal that escapes that base.
+                resolved = (base_path / file_path).resolve()
+                try:
+                    resolved.relative_to(base_path)
+                except ValueError:
+                    logger.error(
+                        f"Refusing to load avatar URL outside installation root: {url}"
+                    )
+                    resolved = default_index.resolve()
+                url = resolved.as_uri()
+            else:
+                url = f"file:///{file_path.lstrip('/')}"
 
         logger.info(f"Loading avatar URL: {url}")
         self.web_view.load(QUrl(url))  # type: ignore[attr-defined]
@@ -202,7 +190,6 @@ class TransparentBrowser(QMainWindow):
 
     def _setup_system_tray(self):
         """Setup system tray icon and menu."""
-        # Apply conditional logic
         if not QSystemTrayIcon.isSystemTrayAvailable():
             logger.warning("System tray is not available")
             return
@@ -260,9 +247,7 @@ class TransparentBrowser(QMainWindow):
             Path(__file__).parent.parent / "assets" / "icon.png",
         ]
 
-        # Process each item
         for path in possible_paths:
-            # Apply conditional logic
             if path.exists():
                 return path
 
@@ -270,13 +255,11 @@ class TransparentBrowser(QMainWindow):
 
     def _tray_icon_activated(self, reason):
         """Handle tray icon activation."""
-        # Apply conditional logic
         if reason == QSystemTrayIcon.DoubleClick:
             self.toggle_visibility()
 
     def toggle_visibility(self):
         """Toggle window visibility."""
-        # Apply conditional logic
         if self.isVisible():
             self.hide()
             self.show_action.setText("Show Avatar")
@@ -288,30 +271,24 @@ class TransparentBrowser(QMainWindow):
 
     def reload_page(self):
         """Reload the web page."""
-        # Apply conditional logic
         if self.web_view:
             self.web_view.reload()
 
     def quit_application(self):
         """Quit the application."""
-        # Apply conditional logic
         if self.tray_icon:
             self.tray_icon.hide()
         self.window_closed.emit()
         QApplication.quit()
 
     def mousePressEvent(self, event):
-        # Process each item
         """Handle mouse press for window dragging."""
-        # Apply conditional logic
         if event.button() == Qt.LeftButton:
             self._drag_position = event.globalPos() - self.frameGeometry().topLeft()
             event.accept()
 
     def mouseMoveEvent(self, event):
-        # Process each item
         """Handle mouse move for window dragging."""
-        # Apply conditional logic
         if event.buttons() == Qt.LeftButton and self._drag_position:
             self.move(event.globalPos() - self._drag_position)
             event.accept()
@@ -344,13 +321,21 @@ def _load_settings() -> dict[str, Any]:
         if isinstance(avatar_config, dict):
             return avatar_config
 
-    # Handle specific exception case
     except Exception as e:
         logger.warning(f"Failed to load configuration: {e}")
 
-    # Default settings
+    # Default settings. Resolve the bundled avatar UI relative to this
+    # installation rather than an absolute "/src/..." path.
+    default_index = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "src"
+        / "chatty_commander"
+        / "webui"
+        / "avatar"
+        / "index.html"
+    )
     return {
-        "url": "file:///src/chatty_commander/webui/avatar/index.html",
+        "url": default_index.as_uri(),
         "width": 400,
         "height": 600,
         "x": 100,
@@ -366,7 +351,6 @@ def run_pyqt5_avatar() -> bool:
     Run the PyQt5-based transparent avatar browser.
 
     Returns:
-        # Handle error condition
         bool: True if successful, False if failed or PyQt5 not available
     """
     if not PYQT5_AVAILABLE:
@@ -376,7 +360,6 @@ def run_pyqt5_avatar() -> bool:
         return False
 
     try:
-        # Logic flow
         # Create QApplication if it doesn't exist
         app = QApplication.instance()
         if app is None:
@@ -396,7 +379,6 @@ def run_pyqt5_avatar() -> bool:
         # Run the application
         return app.exec_() == 0  # type: ignore[no-any-return]
 
-    # Handle specific exception case
     except Exception as e:
         logger.error(f"Failed to start PyQt5 avatar browser: {e}")
         return False

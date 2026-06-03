@@ -12,10 +12,3 @@
 ## 2024-04-11 - [Config Payload Iteration Optimization]
 **Learning:** Iterating over an unbounded user-provided payload (like a JSON dictionary via `config_data.items()`) during filtering is inefficient (O(M)) and opens a small window for processing delay attacks. Iterating over the application's strict, fixed allowlist set (O(K)) instead is mathematically faster and safer.
 **Action:** When applying a fixed allowlist to an input dictionary in Python, iterate over the allowlist keys (e.g., `{k: input[k] for k in ALLOWLIST if k in input}`) rather than the input dictionary items.
-## 2026-04-12 - [Module-Level Variable Imports]
-**Learning:** When a code review flags missing imports or predicts `NameError`s on startup, always verify their presence in the target file using bash commands (e.g., `grep`) before attempting a fix, as the reviewer's context may be hallucinated or outdated.
-**Action:** Use grep to check for imports like `import threading` and `from typing import Any` before assuming they are missing.
-
-## 2024-06-25 - [Generator Expression Allocation Overhead in Recursion]
-**Learning:** In highly-recursive utility functions (e.g., `mask_sensitive_data` processing deeply nested JSON), placing generator expressions inside inner loops (like `any(p in k.lower() for p in patterns)`) forces redundant string conversions and generator allocation overhead on every iteration, leading to significant slowdowns.
-**Action:** Extract static sets to module-level tuples (to leverage CPython peephole optimization), cache expensive string conversions before the loop, and explicitly unroll `any()` generator expressions into standard `for` loops with early `break` statements.

@@ -22,10 +22,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 import re
+import tempfile
+import threading
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Annotated, Any
@@ -36,7 +39,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 try:
     from chatty_commander.llm.manager import LLMManager as _LLMManager
-# Handle specific exception case
 except ImportError:
     _LLMManager = None  # type: ignore[misc, assignment]
 
@@ -51,9 +53,7 @@ def _get_llm_manager() -> Any:
     global _llm_manager
     if _llm_manager is None and _LLMManager is not None:
         try:
-        # Attempt operation with error handling
             _llm_manager = _LLMManager()
-        # Handle specific exception case
         except Exception as exc:
             logger.debug("LLMManager init failed: %s", exc)
     return _llm_manager
@@ -64,11 +64,6 @@ router = APIRouter()
 
 @dataclass
 class AgentBlueprint:
-    """AgentBlueprint class.
-
-    TODO: Add class description.
-    """
-    
     id: str
     name: str
     description: str
@@ -79,11 +74,6 @@ class AgentBlueprint:
 
 
 class AgentBlueprintModel(BaseModel):
-    """AgentBlueprintModel class.
-
-    TODO: Add class description.
-    """
-    
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., max_length=200)
@@ -95,11 +85,6 @@ class AgentBlueprintModel(BaseModel):
 
 
 class AgentBlueprintResponse(AgentBlueprintModel):
-    """AgentBlueprintResponse class.
-
-    TODO: Add class description.
-    """
-    
     id: str
 
 
@@ -107,6 +92,9 @@ _STORE_PATH = Path(os.path.expanduser(os.environ.get("CHATTY_AGENTS_STORE", "~/.
 
 _STORE: dict[str, AgentBlueprint] = {}
 _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
+# Serializes reads/writes to _STORE/_TEAM and the backing file so concurrent
+# create/update/delete requests can't interleave or corrupt agents.json.
+_STORE_LOCK = threading.RLock()
 
 
 def _load_store() -> None:
@@ -114,34 +102,41 @@ def _load_store() -> None:
     if not _STORE_PATH.exists():
         return
     try:
-        with _STORE_PATH.open("r", encoding="utf-8") as f:
-        # Use context manager for resource management
+        with _STORE_LOCK, _STORE_PATH.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
             _STORE.clear()
             _TEAM.clear()
 
-            # Logic flow
             for agent_dict in data.get("agents", []):
                 agent = AgentBlueprint(**agent_dict)
                 _STORE[agent.id] = agent
-                # Logic flow
                 if agent.team_role:
                     _TEAM.setdefault(agent.team_role, []).append(agent.id)
-    # Handle specific exception case
     except Exception as e:
         logger.warning("Error loading agent store from %s: %s", _STORE_PATH, e)
 
 def _save_store() -> None:
     try:
-        _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        # Logic flow
-        agents = [asdict(agent) for agent in _STORE.values()]
-        data = {"agents": agents}
-        with _STORE_PATH.open("w", encoding="utf-8") as f:
-        # Use context manager for resource management
-            json.dump(data, f, indent=2)
-    # Handle specific exception case
+        with _STORE_LOCK:
+            _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            agents = [asdict(agent) for agent in _STORE.values()]
+            data = {"agents": agents}
+            # Atomic write: serialize to a sibling temp file, then replace, so a
+            # crash mid-write can't truncate/corrupt the existing store.
+            fd, tmp_path = tempfile.mkstemp(
+                prefix=".agents-", suffix=".tmp", dir=str(_STORE_PATH.parent)
+            )
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+                os.replace(tmp_path, _STORE_PATH)
+            except BaseException:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
     except Exception as e:
         logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
 
@@ -158,15 +153,9 @@ def _extract_json_from_response(response: str) -> str:
 
 
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
-    """Parse Blueprint From Text with (text: str).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     llm = _get_llm_manager()
     if llm is not None and llm.is_available():
         try:
-        # Attempt operation with error handling
             prompt = f"""
 Extract an agent blueprint from the following text.
 Return a JSON object with EXACTLY these keys:
@@ -193,13 +182,11 @@ Return ONLY valid JSON.
                 team_role=data.get("team_role"),
                 handoff_triggers=[],
             )
-        # Handle specific exception case
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
             logger.debug("LLM blueprint parsing failed, using heuristic fallback: %s", exc)
 
     # Very naive heuristic parser fallback
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
-    # Build filtered collection
     name = lines[0][:48] if lines else "Agent"
     description = text.strip()[:256]
     persona_prompt = text.strip()
@@ -214,21 +201,11 @@ Return ONLY valid JSON.
 
 
 class NLBlueprintRequest(BaseModel):
-    """NLBlueprintRequest class.
-
-    TODO: Add class description.
-    """
-    
     description: str
 
 
 @router.post("/api/v1/agents/blueprints", response_model=AgentBlueprintResponse)
 async def create_blueprint(
-    """Create with (payload).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     payload: Annotated[dict[str, Any], Body(...)],
 ) -> AgentBlueprintResponse:
     try:
@@ -238,30 +215,28 @@ async def create_blueprint(
             and "description" in payload
             and len(payload.keys()) == 1
         ):
-            model = parse_blueprint_from_text(str(payload.get("description", "")))
+            # Offload the blocking (synchronous LLM I/O) parse off the event
+            # loop so concurrent blueprint creations don't serialize behind it.
+            model = await asyncio.to_thread(
+                parse_blueprint_from_text, str(payload.get("description", ""))
+            )
         else:
             # Try to parse as structured blueprint
             model = AgentBlueprintModel(**payload)
         uid = str(uuid4())
         ent = AgentBlueprint(id=uid, **model.model_dump())
-        _STORE[uid] = ent
-        # Logic flow
-        if ent.team_role:
-            _TEAM.setdefault(ent.team_role, []).append(uid)
-        _save_store()
+        with _STORE_LOCK:
+            _STORE[uid] = ent
+            if ent.team_role:
+                _TEAM.setdefault(ent.team_role, []).append(uid)
+            _save_store()
         return AgentBlueprintResponse(id=uid, **model.model_dump())
-    # Handle specific exception case
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/api/v1/agents/blueprints", response_model=list[AgentBlueprintResponse])
 async def list_blueprints():
-    """List Blueprints operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
     # Each AgentBlueprint already contains its id; avoid passing 'id' twice
     return [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
 
@@ -270,69 +245,43 @@ async def list_blueprints():
     "/api/v1/agents/blueprints/{agent_id}", response_model=AgentBlueprintResponse
 )
 async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
-    """Update with (agent_id: str, bp: AgentBlueprintModel).
-
-    TODO: Add detailed description and parameters.
-    """
-    
-    if agent_id not in _STORE:
-        raise HTTPException(status_code=404, detail="Agent not found")
     ent = AgentBlueprint(id=agent_id, **bp.model_dump())
-    _STORE[agent_id] = ent
-    _save_store()
+    with _STORE_LOCK:
+        if agent_id not in _STORE:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        _STORE[agent_id] = ent
+        _save_store()
     return AgentBlueprintResponse(id=agent_id, **bp.model_dump())
 
 
 @router.delete("/api/v1/agents/blueprints/{agent_id}")
 async def delete_blueprint(agent_id: str):
-    """Remove with (agent_id: str).
-
-    TODO: Add detailed description and parameters.
-    """
-    
-    if agent_id not in _STORE:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    # Safety: ensure not in active team relations (simplified)
-    for role, ids in list(_TEAM.items()):
-        if agent_id in ids:
-            ids.remove(agent_id)
-            # Logic flow
-            if not ids:
-                _TEAM.pop(role, None)
-    _STORE.pop(agent_id, None)
-    _save_store()
+    with _STORE_LOCK:
+        if agent_id not in _STORE:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        # Safety: ensure not in active team relations (simplified)
+        for role, ids in list(_TEAM.items()):
+            if agent_id in ids:
+                ids.remove(agent_id)
+                if not ids:
+                    _TEAM.pop(role, None)
+        _STORE.pop(agent_id, None)
+        _save_store()
     return {"deleted": True, "id": agent_id}
 
 
 class TeamInfo(BaseModel):
-    """TeamInfo class.
-
-    TODO: Add class description.
-    """
-    
     roles: dict[str, list[str]] = Field(default_factory=dict)
     agents: list[AgentBlueprintResponse] = Field(default_factory=list)
 
 
 @router.get("/api/v1/agents/team", response_model=TeamInfo)
 async def get_team():
-    """Retrieve operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
-    # Build filtered collection
     agents = [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
-    # Build filtered collection
     return TeamInfo(roles={k: list(v) for k, v in _TEAM.items()}, agents=agents)
 
 
 class HandoffRequest(BaseModel):
-    """HandoffRequest class.
-
-    TODO: Add class description.
-    """
-    
     from_agent_id: str
     to_agent_id: str
     reason: str | None = None
@@ -340,11 +289,6 @@ class HandoffRequest(BaseModel):
 
 @router.post("/api/v1/agents/team/handoff")
 async def handoff(h: HandoffRequest):
-    """Handoff with (h: HandoffRequest).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     if h.from_agent_id not in _STORE or h.to_agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     # For now, just acknowledge; future: integrate with thinking_state + avatar_ws

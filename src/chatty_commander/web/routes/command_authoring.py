@@ -33,7 +33,6 @@ from pydantic import BaseModel, Field
 
 try:
     from ...llm.manager import LLMManager
-# Handle specific exception case
 except ImportError:
     LLMManager = None  # type: ignore
 
@@ -51,22 +50,18 @@ class CommandAction(BaseModel):
     )
     keys: str | None = Field(
         default=None,
-        # Logic flow
         description="Keyboard shortcut for keypress actions (e.g., 'ctrl+alt+t')",
     )
     url: str | None = Field(
         default=None,
-        # Logic flow
         description="URL for url actions",
     )
     cmd: str | None = Field(
         default=None,
-        # Logic flow
         description="Shell command for shell actions",
     )
     message: str | None = Field(
         default=None,
-        # Logic flow
         description="Message text for custom_message actions",
     )
 
@@ -87,7 +82,6 @@ class GeneratedCommandResponse(BaseModel):
 
     name: str = Field(
         ...,
-        # Apply conditional logic
         description="Snake_case command identifier",
     )
     display_name: str = Field(
@@ -96,7 +90,6 @@ class GeneratedCommandResponse(BaseModel):
     )
     wakeword: str = Field(
         ...,
-        # Logic flow
         description="Voice trigger phrase for the command",
     )
     actions: list[CommandAction] = Field(
@@ -121,7 +114,6 @@ Output ONLY valid JSON in this format:
   "display_name": "Human Readable Name",
   "wakeword": "voice trigger phrase",
   "actions": [
-    # Build filtered collection
     {{"type": "action_type", ...action_specific_fields}}
   ]
 }}
@@ -142,7 +134,6 @@ def _sanitize_user_input(description: str) -> str:
         description: Raw user input
 
     Returns:
-        # Logic flow
         Sanitized input safe for embedding in prompts
     """
     # Remove null bytes
@@ -172,7 +163,6 @@ def _build_prompt(description: str) -> str:
         description: Raw user description
 
     Returns:
-        # Logic flow
         Safe prompt string ready for LLM generation
     """
     sanitized = _sanitize_user_input(description)
@@ -185,7 +175,6 @@ def _get_llm_manager() -> LLMManager | None:
         return None
     try:
         return LLMManager()
-    # Handle specific exception case
     except Exception as e:
         logger.warning(f"Failed to initialize LLM manager: {e}")
         return None
@@ -209,7 +198,6 @@ def _parse_llm_response(response: str) -> dict[str, Any]:
 
     try:
         return json.loads(cleaned)  # type: ignore[no-any-return]
-    # Handle specific exception case
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse LLM response as JSON: {e}")
         raise ValueError(f"Invalid JSON in LLM response: {e}") from e
@@ -228,24 +216,19 @@ def _validate_command_data(data: dict[str, Any]) -> GeneratedCommandResponse:
         raise ValueError("'actions' must be a list")
 
     for i, action in enumerate(actions):
-        # Logic flow
         if not isinstance(action, dict):
             raise ValueError(f"Action {i} must be an object")
         action_type = action.get("type")
-        # Logic flow
         if action_type not in {"keypress", "url", "shell", "custom_message"}:
             raise ValueError(f"Invalid action type '{action_type}' at index {i}")
 
         # Validate action-specific fields
         if action_type == "keypress" and not action.get("keys"):
             raise ValueError(f"keypress action at index {i} requires 'keys' field")
-        # Logic flow
         if action_type == "url" and not action.get("url"):
             raise ValueError(f"url action at index {i} requires 'url' field")
-        # Logic flow
         if action_type == "shell" and not action.get("cmd"):
             raise ValueError(f"shell action at index {i} requires 'cmd' field")
-        # Logic flow
         if action_type == "custom_message" and not action.get("message"):
             raise ValueError(
                 f"custom_message action at index {i} requires 'message' field"
@@ -287,10 +270,8 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
 
     Returns:
         Generated command configuration with name, display_name, wakeword, and actions
-        # Use context manager for resource management
 
     Raises:
-        # Logic flow
         HTTPException: 503 if LLM unavailable, 422 if response parsing fails
     """
     # Check LLM availability
@@ -307,7 +288,6 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
     try:
         # Get LLM response
         response = llm.generate_response(prompt)
-    # Handle specific exception case
     except Exception as e:
         logger.error(f"LLM generation failed: {e}")
         raise HTTPException(
@@ -319,14 +299,12 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
     try:
         command_data = _parse_llm_response(response)
         validated_command = _validate_command_data(command_data)
-    # Handle specific exception case
     except ValueError as e:
         logger.error(f"Failed to validate LLM response: {e}")
         raise HTTPException(
             status_code=422,
             detail=f"Invalid command structure from LLM: {str(e)}",
         ) from e
-    # Handle specific exception case
     except Exception as e:
         logger.error(f"Unexpected error processing LLM response: {e}")
         raise HTTPException(

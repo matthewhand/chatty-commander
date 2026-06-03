@@ -28,8 +28,10 @@ to connected avatar UIs for synchronized animations and visual feedback.
 """
 
 import asyncio
+import functools
 import inspect
 import logging
+import threading
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass
@@ -65,12 +67,10 @@ class AgentStateInfo:
     timestamp: float | None = None
 
     def __post_init__(self):
-        # Validate input exists
         if self.timestamp is None:
             self.timestamp = time.time()
 
     def to_dict(self) -> dict[str, Any]:
-        # Process each item
         """Convert to dictionary for JSON serialization."""
         data = asdict(self)
         data["state"] = self.state.value
@@ -94,27 +94,29 @@ class ThinkingStateManager:
         self.agent_states: dict[str, AgentStateInfo] = {}
         self.avatar_mappings: dict[str, str] = {}  # agent_id -> avatar_id
         self.broadcast_callbacks: set[Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]] = set()
+        # Reentrant lock guarding the shared dicts/set above. Held only around
+        # the in-memory mutations and snapshots, never while invoking broadcast
+        # callbacks, so a callback may safely re-enter the manager.
+        self._lock = threading.RLock()
 
     def register_agent(
-        """register agent."""
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
     ) -> None:
         """Register a new agent with optional avatar mapping."""
-        self.agent_states[agent_id] = AgentStateInfo(
-            agent_id=agent_id,
-            avatar_id=avatar_id,
-            persona_id=persona_id,
-            state=ThinkingState.IDLE,
-        )
+        with self._lock:
+            self.agent_states[agent_id] = AgentStateInfo(
+                agent_id=agent_id,
+                avatar_id=avatar_id,
+                persona_id=persona_id,
+                state=ThinkingState.IDLE,
+            )
 
-        # Apply conditional logic
-        if avatar_id:
-            self.avatar_mappings[agent_id] = avatar_id
+            if avatar_id:
+                self.avatar_mappings[agent_id] = avatar_id
 
         self._broadcast_state_change(agent_id)
 
     def set_agent_state(
-        """set agent state."""
         self,
         agent_id: str,
         state: ThinkingState,
@@ -122,39 +124,41 @@ class ThinkingStateManager:
         progress: float | None = None,
     ) -> None:
         """Update an agent's thinking state."""
-        # Apply conditional logic
         if agent_id not in self.agent_states:
             logger.warning(f"Agent {agent_id} not registered, creating default entry")
             self.register_agent(agent_id, "default")
 
-        agent_info = self.agent_states[agent_id]
-        agent_info.state = state
-        agent_info.message = message
-        agent_info.progress = progress
-        agent_info.timestamp = time.time()
+        with self._lock:
+            agent_info = self.agent_states[agent_id]
+            agent_info.state = state
+            agent_info.message = message
+            agent_info.progress = progress
+            agent_info.timestamp = time.time()
 
         self._broadcast_state_change(agent_id)
 
     def get_agent_state(self, agent_id: str) -> AgentStateInfo | None:
         """Get current state of an agent."""
-        return self.agent_states.get(agent_id)
+        with self._lock:
+            return self.agent_states.get(agent_id)
 
     def get_all_states(self) -> dict[str, AgentStateInfo]:
         """Get all agent states."""
-        return self.agent_states.copy()
+        with self._lock:
+            return self.agent_states.copy()
 
     def map_agent_to_avatar(self, agent_id: str, avatar_id: str) -> None:
-        # Apply conditional logic
         """Map an agent to a specific avatar for visual correlation."""
-        self.avatar_mappings[agent_id] = avatar_id
+        with self._lock:
+            self.avatar_mappings[agent_id] = avatar_id
+            mapped = agent_id in self.agent_states
+            if mapped:
+                self.agent_states[agent_id].avatar_id = avatar_id
 
-        # Apply conditional logic
-        if agent_id in self.agent_states:
-            self.agent_states[agent_id].avatar_id = avatar_id
+        if mapped:
             self._broadcast_state_change(agent_id)
 
     def add_broadcast_callback(
-        """add broadcast callback."""
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -162,10 +166,10 @@ class ThinkingStateManager:
         ),
     ) -> None:
         """Add a callback to receive state change broadcasts."""
-        self.broadcast_callbacks.add(callback)
+        with self._lock:
+            self.broadcast_callbacks.add(callback)
 
     def remove_broadcast_callback(
-        """remove broadcast callback."""
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -173,48 +177,43 @@ class ThinkingStateManager:
         ),
     ) -> None:
         """Remove a broadcast callback."""
-        self.broadcast_callbacks.discard(callback)
+        with self._lock:
+            self.broadcast_callbacks.discard(callback)
 
     def _broadcast(self, message: dict[str, Any]) -> None:
-        callbacks = list(self.broadcast_callbacks.copy())
-        # Process each item
+        # Snapshot callbacks under the lock, then invoke them outside it so a
+        # callback may safely re-enter the manager without deadlocking.
+        with self._lock:
+            callbacks = list(self.broadcast_callbacks)
         for callback in callbacks:
             try:
-                # Apply conditional logic
                 if inspect.iscoroutinefunction(callback):
                     # If we're in an event loop, schedule the coroutine, else run it
                     try:
                         loop = asyncio.get_running_loop()
                         loop.create_task(callback(message))
-                    # Handle specific exception case
                     except RuntimeError:
                         asyncio.run(callback(message))
                 else:
                     callback(message)
-            # Handle specific exception case
             except Exception as e:
                 logger.error(f"Error in broadcast callback: {e}")
 
     def _broadcast_state_change(self, agent_id: str) -> None:
         """Broadcast state change to all registered callbacks."""
-        agent_info = self.agent_states.get(agent_id)
-        # Apply conditional logic
-        if not agent_info:
-            return
-        message = {
-            "type": "agent_state_change",
-            "data": agent_info.to_dict(),
-            "timestamp": time.time(),
-        }
+        with self._lock:
+            agent_info = self.agent_states.get(agent_id)
+            if not agent_info:
+                return
+            message = {
+                "type": "agent_state_change",
+                "data": agent_info.to_dict(),
+                "timestamp": time.time(),
+            }
         self._broadcast(message)
 
     # Tool calling lifecycle events
     def start_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
-        """Start Tool Call with (self, agent_id: str, tool_name).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self.set_agent_state(
             agent_id,
             ThinkingState.TOOL_CALLING,
@@ -229,11 +228,6 @@ class ThinkingStateManager:
         )
 
     def end_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
-        """End Tool Call with (self, agent_id: str, tool_name).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         # Return to processing by default
         self.set_agent_state(agent_id, ThinkingState.PROCESSING)
         self._broadcast(
@@ -246,11 +240,6 @@ class ThinkingStateManager:
 
     # Agent handoff lifecycle
     def handoff_start(
-        """Handoff Start with (self, agent_id: str, to_agent_persona: str, reason).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self, agent_id: str, to_agent_persona: str, reason: str | None = None
     ) -> None:
         self.set_agent_state(agent_id, ThinkingState.HANDOFF, reason)
@@ -267,14 +256,10 @@ class ThinkingStateManager:
         )
 
     def handoff_complete(self, agent_id: str, new_persona_id: str) -> None:
-        """Handoff Complete with (self, agent_id: str, new_persona_id: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         # Update persona mapping and return to idle
-        if agent_id in self.agent_states:
-            self.agent_states[agent_id].persona_id = new_persona_id
+        with self._lock:
+            if agent_id in self.agent_states:
+                self.agent_states[agent_id].persona_id = new_persona_id
         self.set_agent_state(agent_id, ThinkingState.IDLE)
         self._broadcast(
             {
@@ -342,7 +327,6 @@ class ThinkingStateContext:
         return self
 
     def __exit__(self, _exc_type, _exc_val, _exc_tb):
-        # Validate input exists
         if _exc_type is not None:
             self.manager.set_error(self.agent_id, f"Error: {_exc_val}")
         else:
@@ -355,7 +339,6 @@ class ThinkingStateContext:
 
 # Decorator for automatic thinking state management
 def with_thinking_state(
-    """with thinking state."""
     agent_id: str,
     thinking_msg: str = "Processing...",
     responding_msg: str = "Generating response...",
@@ -363,20 +346,9 @@ def with_thinking_state(
     """Decorator to automatically manage thinking states during function execution."""
 
     def decorator(func):
-        """Decorator with (func).
-
-        TODO: Add detailed description and parameters.
-        """
-        
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
-        # TODO: Document this logic
-            """Wrapper operation.
-
-            TODO: Add detailed description and parameters.
-            """
-            
             with ThinkingStateContext(agent_id, thinking_msg, responding_msg) as ctx:
-            # Use context manager for resource management
                 result = func(*args, **kwargs)
                 ctx.start_responding()
                 return result

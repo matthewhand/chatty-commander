@@ -22,6 +22,8 @@
 
 """Advisor service for handling AI advisor interactions."""
 
+from collections.abc import Generator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
 
@@ -72,7 +74,6 @@ class AdvisorsService:
         base_cfg = getattr(config, "advisors", None)
         if base_cfg is None and isinstance(config, dict):
             base_cfg = config
-        # Validate input exists
         elif base_cfg is None:
             # Fallback to empty dict if unsupported type provided
             base_cfg = {}
@@ -86,82 +87,115 @@ class AdvisorsService:
             persist_path=mem_cfg.get("persistence_path") or mem_cfg.get("persist_path"),
         )
         provider_builder = _get_provider_builder()
-        self.provider = provider
-    def _get_persona_config(self, context) -> dict:
-        """Extract persona configuration from context or config."""
-        personas_dict = self.config.get("personas", {}) or self.config.get(
-            "context", {}
-        ).get("personas", {})
-        persona_config = personas_dict.get(context.persona_id, {})
-        
-        if isinstance(persona_config, str):
-            return {"prompt": persona_config, "name": context.persona_id}
-        return persona_config
-
-    def _generate_llm_response(self, user_input: str, persona_config: dict, context) -> str:
-        """Generate LLM response with fallback handling."""
-        enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
-            user_input=user_input,
-            user_id=f"{context.platform}:{context.channel}:{context.user}",
-            persona_config=persona_config,
-            current_mode=getattr(self.config, "current_mode", "chatty"),
-        )
-        
-        if hasattr(self, "llm_manager") and self.llm_manager:
-            return self.llm_manager.generate_response(
-                enhanced_prompt,
-                model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
-                max_tokens=self.config.get("max_tokens", 150),
-                temperature=self.config.get("temperature", 0.7)
-            )
-        else:
-            return self.provider.generate(enhanced_prompt)
-
-    def _handle_mode_switch(self, response: str) -> str:
-        """Process SWITCH_MODE directives in LLM response."""
-        if "SWITCH_MODE:" not in response:
-            return response
-            
-        lines = response.split("\n")
-        for line in lines:
-            if line.strip().startswith("SWITCH_MODE:"):
-                _, target = line.strip().split(":", 1)
-                try:
-                    from ..app.state_manager import StateManager
-                    sm = StateManager()
-                    sm.change_state(target.strip())
-                    response = response.replace(line, f"✓ Switched to {target.strip()} mode")
-                except Exception as e:
-                    response = response.replace(line, f"✗ Switch failed: {e}")
-        return response
-
-_builder(base_cfg.get("providers", {}))
+        self.provider = provider_builder(base_cfg.get("providers", {}))
         self.context_manager = ContextManager(base_cfg.get("context", {}))
 
-        # Logic flow
         # Check if advisors are enabled
         self.enabled = base_cfg.get("enabled", False)
 
-        # Logic flow
         # Initialize conversation engine for enhanced AI interactions
         self.conversation_engine = create_conversation_engine(base_cfg)
 
-        # Logic flow
         # Initialize LLM Manager for unified provider handling
         from ..llm.manager import get_global_llm_manager
 
-        # Logic flow
-        # Use global manager if available or create new one
-        self.llm_manager = get_global_llm_manager(
-             openai_api_key=base_cfg.get("openai_api_key") or base_cfg.get("api_key"),
-             ollama_host=base_cfg.get("ollama_host"),
-             use_mock=False
-        )
+        self.llm_manager = get_global_llm_manager()
+
+    @contextmanager
+    def thinking_state(self, agent_id: str, persona_id: str) -> Generator[None, None, None]:
+        """Context manager for managing avatar thinking state life-cycle.
+
+        Args:
+            agent_id: Unique ID for the agent.
+            persona_id: The persona ID being used.
+        """
+        thinking_manager = get_thinking_manager()
+        thinking_manager.register_agent(agent_id, persona_id)
+        thinking_manager.start_thinking(agent_id, "Processing your message...")
+        try:
+            yield
+        finally:
+            thinking_manager.set_idle(agent_id)
+
+    def _get_persona_config(self, persona_id: str) -> dict[str, Any]:
+        """Resolves and normalizes persona configuration.
+
+        Args:
+            persona_id: The ID of the persona to resolve.
+
+        Returns:
+            Normalized persona configuration dictionary.
+        """
+        personas_dict = self.config.get("personas", {}) or self.config.get(
+            "context", {}
+        ).get("personas", {})
+        persona_config = personas_dict.get(persona_id, {})
+        if isinstance(persona_config, str):
+            persona_config = {
+                "prompt": persona_config,
+                "name": persona_id,
+            }
+        return persona_config
+
+    def get_personas(self) -> list[dict[str, Any]]:
+        """Return the configured personas in a UI-friendly shape.
+
+        Reads personas from the advisors config (either top-level ``personas``
+        or ``context.personas``) and normalises each into a dict with ``id``,
+        ``name``, ``is_default`` and ``system_prompt`` keys. Returns an empty
+        list when no personas are configured.
+        """
+        personas_dict = self.config.get("personas", {}) or self.config.get(
+            "context", {}
+        ).get("personas", {})
+        if not isinstance(personas_dict, dict) or not personas_dict:
+            return []
+
+        default_persona = self.config.get("default_persona") or self.config.get(
+            "context", {}
+        ).get("default_persona")
+
+        personas: list[dict[str, Any]] = []
+        for persona_id, raw in personas_dict.items():
+            if isinstance(raw, str):
+                name = persona_id
+                system_prompt = raw
+            elif isinstance(raw, dict):
+                name = raw.get("name", persona_id)
+                system_prompt = raw.get("system_prompt") or raw.get("prompt") or ""
+            else:
+                name = persona_id
+                system_prompt = ""
+            personas.append(
+                {
+                    "id": persona_id,
+                    "name": name,
+                    "is_default": persona_id == default_persona,
+                    "system_prompt": system_prompt,
+                }
+            )
+        return personas
+
+    def _dispatch_special_command(self, message: AdvisorMessage, agent_id: str) -> AdvisorReply | None:
+        """Dispatches special commands if identified in the message text.
+
+        Args:
+            message: The incoming message.
+            agent_id: The unique ID for the agent for thinking state updates.
+
+        Returns:
+            AdvisorReply if a command was handled, otherwise None.
+        """
+        if message.text.startswith("summarize "):
+            thinking_manager = get_thinking_manager()
+            thinking_manager.start_tool_call(agent_id, tool_name="browser_analyst")
+            try:
+                return self._handle_summarize_command(message)
+            finally:
+                thinking_manager.end_tool_call(agent_id, tool_name="browser_analyst")
+        return None
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
-        # TODO: REFACTOR - High complexity (handle_message)
-        # Break into: validation, execution, cleanup sub-functions
-
         """Process an incoming message and return an advisor response.
 
         Args:
@@ -169,21 +203,19 @@ _builder(base_cfg.get("providers", {}))
 
         Returns:
             AdvisorReply with response and metadata.
-            # Use context manager for resource management
         """
-        # Apply conditional logic
         if not self.enabled:
             raise RuntimeError("Advisors are not enabled")
 
-        # Handle special commands
-        if message.text.startswith("summarize "):
-            return self._handle_summarize_command(message)
-
-        # Logic flow
         # Get or create context for this identity
-        platform = PlatformType(message.platform.lower())
+        try:
+            platform = PlatformType(message.platform.lower())
+        except ValueError as e:
+            valid = ", ".join(p.value for p in PlatformType)
+            raise RuntimeError(
+                f"Unsupported platform '{message.platform}'; expected one of: {valid}"
+            ) from e
         context = self.context_manager.get_or_create_context(
-            # Process each item
             platform=platform,
             channel=message.channel,
             user_id=message.user,
@@ -191,172 +223,166 @@ _builder(base_cfg.get("providers", {}))
             **(message.metadata or {}),
         )
 
-        # Logic flow
-        # Set thinking state for avatar
         agent_id = f"{message.platform}-{message.channel}-{message.user}"
-        thinking_manager = get_thinking_manager()
-        thinking_manager.register_agent(agent_id, context.persona_id)
-        thinking_manager.start_thinking(agent_id, "Processing your message...")
 
         try:
-        # Attempt operation with error handling
-            # Build prompt using context-aware persona and recent memory
-            memory_items = self.memory.get(
-                platform.value, message.channel, message.user
-            )
-            history_text = (
-                # Build filtered collection
-                # Iterate collection
-                "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items])
-                # Apply conditional logic
-                if memory_items
-                else ""
-            )
-            combined_user_text = (
-                # Build filtered collection
-                # Apply conditional logic
-                f"{history_text}\n{message.text}" if history_text else message.text
-            )
+            with self.thinking_state(agent_id, context.persona_id):
+                thinking_manager = get_thinking_manager()
 
-            # Update to processing state
-            thinking_manager.start_processing(agent_id, "Generating response...")
+                # Handle special commands (Dispatcher)
+                command_reply = self._dispatch_special_command(message, agent_id)
+                if command_reply:
+                    return command_reply
 
-            # Logic flow
-            # Example: instrument a tool call (browser_analyst) if present in text
-            if message.text.startswith("summarize "):
-                thinking_manager.start_tool_call(agent_id, tool_name="browser_analyst")
-                try:
-                # Attempt operation with error handling
-                    # In real flows this would be the as_tool/MCP call
-                    pass
-                finally:
-                    thinking_manager.end_tool_call(
-                        agent_id, tool_name="browser_analyst"
-                    )
-
-            # Generate real LLM response
-            try:
-                # Get persona configuration for enhanced conversation
-                # Check both direct personas and context.personas for backward compatibility
-                personas_dict = self.config.get("personas", {}) or self.config.get(
-                    "context", {}
-                ).get("personas", {})
-                persona_config = personas_dict.get(context.persona_id, {})
-                # Apply conditional logic
-                if isinstance(persona_config, str):
-                    persona_config = {
-                        "prompt": persona_config,
-                        "name": context.persona_id,
-                    }
-
-                # Logic flow
-                # Use conversation engine for enhanced prompt building
-                enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
-                    user_input=combined_user_text,
-                    # Build filtered collection
-                    # Process each item
-                    user_id=f"{message.platform}:{message.channel}:{message.user}",
-                    persona_config=persona_config,
-                    current_mode=getattr(self.config, "current_mode", "chatty"),
+                # Build prompt using context-aware persona and recent memory
+                memory_items = self.memory.get(
+                    platform.value, message.channel, message.user
+                )
+                history_text = (
+                    "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items])
+                    if memory_items
+                    else ""
+                )
+                combined_user_text = (
+                    f"{history_text}\n{message.text}" if history_text else message.text
                 )
 
-                # Use LLMManager to generate response
-                # We prioritize the manager if available, otherwise fallback to legacy provider
-                if hasattr(self, "llm_manager") and self.llm_manager:
-                     response = self.llm_manager.generate_response(
-                        enhanced_prompt,
-                        model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
-                        max_tokens=self.config.get("max_tokens", 150),
-                        temperature=self.config.get("temperature", 0.7)
+                # Update to processing state
+                thinking_manager.start_processing(agent_id, "Generating response...")
+
+                # Generate real LLM response
+                try:
+                    # Use centralized persona resolution
+                    persona_config = self._get_persona_config(context.persona_id)
+
+                    # Use conversation engine for enhanced prompt building
+                    enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
+                        user_input=combined_user_text,
+                        user_id=f"{message.platform}:{message.channel}:{message.user}",
+                        persona_config=persona_config,
+                        current_mode=self.config.get("current_mode", "chatty"),
                     )
-                     # Use the backend name, but prefer provider's configured model when
-                     # the backend is a generic fallback (mock/none/unknown).
-                     _backend_name = self.llm_manager.get_active_backend_name()
-                     _fallback_names = {"mock", "none", "unknown"}
-                     # Apply conditional logic
-                     if _backend_name in _fallback_names:
-                         model_name = getattr(self.provider, "model", _backend_name)
-                         api_mode = getattr(self.provider, "api_mode", "chat")
-                     else:
-                         model_name = _backend_name
-                         api_mode = "chat"
-                else:
-                    # Legacy provider path
-                    response = self.provider.generate(enhanced_prompt)
-                    model_name = getattr(self.provider, "model", "unknown")
-                    api_mode = getattr(self.provider, "api_mode", "unknown")
 
-                # Logic flow
-                # Enhanced directive handling for tool-like replies
-                if isinstance(response, str) and "SWITCH_MODE:" in response:
-                    lines = response.split("\n")
-                    # Process each item
-                    for line in lines:
-                        # Apply conditional logic
-                        if line.strip().startswith("SWITCH_MODE:"):
-                            _, target = line.strip().split(":", 1)
-                            try:
-                            # Attempt operation with error handling
-                                from ..app.state_manager import StateManager
+                    # Use LLMManager to generate response
+                    if hasattr(self, "llm_manager") and self.llm_manager:
+                        response = self.llm_manager.generate_response(
+                            enhanced_prompt,
+                            model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
+                            max_tokens=self.config.get("max_tokens", 150),
+                            temperature=self.config.get("temperature", 0.7),
+                        )
+                        _backend_name = self.llm_manager.get_active_backend_name()
+                        _fallback_names = {"mock", "none", "unknown"}
+                        if _backend_name in _fallback_names:
+                            model_name = getattr(self.provider, "model", _backend_name)
+                            api_mode = getattr(self.provider, "api_mode", "chat")
+                        else:
+                            model_name = _backend_name
+                            api_mode = "chat"
+                    else:
+                        # Legacy provider path
+                        response = self.provider.generate(enhanced_prompt)
+                        model_name = getattr(self.provider, "model", "unknown")
+                        api_mode = getattr(self.provider, "api_mode", "unknown")
 
-                                sm = StateManager()
-                                sm.change_state(target.strip())
-                                response = response.replace(
-                                    line, f"✓ Switched to {target.strip()} mode"
-                                )
-                            # Handle specific exception case
-                            except Exception as e:
-                                response = response.replace(
-                                    line, f"✗ Mode switch failed: {e}"
-                                )
+                    # Enhanced directive handling for tool-like replies
+                    if isinstance(response, str) and "SWITCH_MODE:" in response:
+                        lines = response.split("\n")
+                        for line in lines:
+                            if line.strip().startswith("SWITCH_MODE:"):
+                                _, target = line.strip().split(":", 1)
+                                try:
+                                    from ..app.state_manager import StateManager
+                                    sm = StateManager()
+                                    sm.change_state(target.strip())
+                                    response = response.replace(
+                                        line, f"✓ Switched to {target.strip()} mode", 1
+                                    )
+                                except Exception as e:
+                                    response = response.replace(
+                                        line, f"✗ Mode switch failed: {e}", 1
+                                    )
 
-                # Logic flow
-                # Record conversation for future context
+                except Exception as e:
+                    # Fallback if the LLM fails. Use the intent/sentiment-aware
+                    # smart fallback for a more helpful message, but keep the
+                    # [LLM Error] marker that the API contract (and tests) rely on.
+                    model_name = "error"
+                    api_mode = "error"
+                    try:
+                        intent = self.conversation_engine.analyze_intent(message.text)
+                        sentiment = self.conversation_engine.analyze_sentiment(
+                            message.text
+                        )
+                        smart = self.conversation_engine.get_smart_fallback_response(
+                            message.text, intent, sentiment
+                        )
+                        response = f"[LLM Error] {smart} ({str(e)})"
+                    except Exception:
+                        response = f"[LLM Error] {message.text} ({str(e)})"
+
+                # Record conversation for future context. Done outside the
+                # try/except above so error responses are also recorded,
+                # keeping conversation history consistent for future turns.
                 self.conversation_engine.record_conversation_turn(
-                    # Build filtered collection
                     user_id=f"{message.platform}:{message.channel}:{message.user}",
                     user_input=message.text,
                     assistant_response=response,
                     context={
                         "persona_id": context.persona_id,
-                        # Process each item
                         "platform": message.platform,
                     },
                 )
-            except Exception as e:
-                # Logic flow
-                # Fallback to echo if LLM fails
-                model_name = "error"
-                api_mode = "error"
-                response = f"[LLM Error] {message.text} ({str(e)})"
 
-            # Update to responding state
-            thinking_manager.start_responding(agent_id, "Finalizing response...")
+                # Best-effort: learn lightweight user preferences from this turn.
+                # These feed get_conversation_context/build_enhanced_prompt on
+                # future turns. A failure here must never block the reply.
+                try:
+                    user_key = (
+                        f"{message.platform}:{message.channel}:{message.user}"
+                    )
+                    prev = self.conversation_engine.user_preferences.get(user_key, {})
+                    self.conversation_engine.update_user_preferences(
+                        user_key,
+                        {
+                            "last_intent": self.conversation_engine.analyze_intent(
+                                message.text
+                            ),
+                            "last_sentiment": self.conversation_engine.analyze_sentiment(
+                                message.text
+                            ),
+                            "preferred_persona": context.persona_id,
+                            "platform": message.platform,
+                            "interaction_count": int(prev.get("interaction_count", 0))
+                            + 1,
+                        },
+                    )
+                except Exception:
+                    pass
 
-            # Add to memory using tri-key (platform, channel, user)
-            self.memory.add(
-                platform.value, message.channel, message.user, "user", message.text
-            )
-            self.memory.add(
-                # Process each item
-                platform.value, message.channel, message.user, "assistant", response
-            )
+                # Update to responding state
+                thinking_manager.start_responding(agent_id, "Finalizing response...")
 
-            reply = AdvisorReply(
-                reply=response,
-                context_key=context.identity.context_key,
-                persona_id=context.persona_id,
-                model=model_name,
-                api_mode=api_mode,
-            )
+                # Add to memory using tri-key (platform, channel, user)
+                self.memory.add(
+                    platform.value, message.channel, message.user, "user", message.text
+                )
+                self.memory.add(
+                    platform.value, message.channel, message.user, "assistant", response
+                )
 
-            # Return to idle state
-            thinking_manager.set_idle(agent_id)
-            return reply
+                reply = AdvisorReply(
+                    reply=response,
+                    context_key=context.identity.context_key,
+                    persona_id=context.persona_id,
+                    model=model_name,
+                    api_mode=api_mode,
+                )
+                return reply
 
         except Exception as e:
-            # Logic flow
             # Set error state if processing fails
+            thinking_manager = get_thinking_manager()
             thinking_manager.set_error(agent_id, f"Error processing message: {str(e)}")
             raise
 
@@ -364,7 +390,15 @@ _builder(base_cfg.get("providers", {}))
         """Handle the summarize command."""
         from .tools.browser_analyst import browser_analyst_tool
 
-        url = message.text[10:]  # Remove "summarize "
+        url = message.text[10:].strip()  # Remove "summarize " and surrounding whitespace
+        if not url:
+            return AdvisorReply(
+                reply="Usage: summarize <url>",
+                context_key="summarize",
+                persona_id="analyst",
+                model=self.provider.model,
+                api_mode=self.provider.api_mode,
+            )
         summary = browser_analyst_tool(url)
 
         return AdvisorReply(
@@ -376,7 +410,6 @@ _builder(base_cfg.get("providers", {}))
         )
 
     def switch_persona(self, context_key: str, persona_id: str) -> bool:
-        # Apply conditional logic
         """Switch persona for a specific context."""
         return self.context_manager.switch_persona(context_key, persona_id)
 
@@ -385,6 +418,5 @@ _builder(base_cfg.get("providers", {}))
         return self.context_manager.get_stats()
 
     def clear_context(self, context_key: str) -> bool:
-        # Apply conditional logic
         """Clear a specific context."""
         return self.context_manager.clear_context(context_key)

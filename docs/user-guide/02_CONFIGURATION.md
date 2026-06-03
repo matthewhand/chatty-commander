@@ -18,6 +18,12 @@ You can view sample configurations in `config/`:
 - `full-assistant-example.json`
 - `voice-only-example.json`
 
+Saved changes to `config.json` are written atomically (via a temporary file that is then swapped into place), so an interrupted save or crash will not corrupt your configuration.
+
+### Logging Level
+
+Set the `CHATCOMM_LOG_LEVEL` environment variable (`DEBUG`, `INFO`, `WARNING`, or `ERROR`) to control log verbosity when running in web mode. On the command line, the `--log-level` flag takes precedence over this variable.
+
 ## Web Dashboard Configuration
 
 Once running, you can modify configuration in real-time using the **Web Dashboard Component**.

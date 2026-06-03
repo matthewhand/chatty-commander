@@ -33,6 +33,7 @@ Provides a complete voice interface:
 from __future__ import annotations
 
 import logging
+import re
 import threading
 from collections.abc import Callable
 from typing import Any
@@ -63,10 +64,8 @@ class VoicePipeline:
         self.command_executor = command_executor
         self.state_manager = state_manager
 
-        # Logic flow
         # Use mock components if voice deps not available or explicitly requested
         if not VOICE_DEPS_AVAILABLE or use_mock:
-        # TODO: Document this logic
             logger.info("Using mock voice components")
             self.wake_detector: WakeWordDetector | MockWakeWordDetector = MockWakeWordDetector(wake_words=wake_words, **kwargs)
             transcription_backend = "mock"
@@ -90,53 +89,36 @@ class VoicePipeline:
         logger.info("Voice pipeline initialized")
 
     def add_command_callback(self, callback: Callable[[str, str], None]) -> None:
-        # Logic flow
         """Add callback for processed voice commands.
-        # TODO: Document this logic
 
         Args:
             callback: Function called with (command_name, transcription) when command processed
-            # Use context manager for resource management
-            # TODO: Document this logic
         """
         self._callbacks.append(callback)
 
     def remove_command_callback(self, callback: Callable[[str, str], None]) -> None:
         """Remove command callback."""
-        # Logic flow
         if callback in self._callbacks:
-        # TODO: Document this logic
             self._callbacks.remove(callback)
 
     def start(self) -> None:
         """Start the voice pipeline."""
-        # Logic flow
         if self._listening:
-        # TODO: Document this logic
             logger.warning("Voice pipeline already running")
             return
 
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             self.wake_detector.start_listening()
             self._listening = True
-            # Logic flow
             logger.info("Voice pipeline started - listening for wake words")
-            # TODO: Document this logic
 
-            # Logic flow
             # Update state if state manager available
             if self.state_manager:
-            # TODO: Document this logic
                 try:
-                # TODO: Document this logic
                     self.state_manager.change_state("voice_listening")
-                # Handle specific exception case
                 except Exception as e:
                     logger.debug(f"Could not update state: {e}")
 
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to start voice pipeline: {e}")
             raise
@@ -146,31 +128,22 @@ class VoicePipeline:
         self._listening = False
 
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             self.wake_detector.stop_listening()
             logger.info("Voice pipeline stopped")
 
-            # Logic flow
             # Update state if state manager available
             if self.state_manager:
-            # TODO: Document this logic
                 try:
-                # TODO: Document this logic
                     self.state_manager.change_state("idle")
-                # Handle specific exception case
                 except Exception as e:
                     logger.debug(f"Could not update state: {e}")
 
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error stopping voice pipeline: {e}")
 
     def _on_wake_word_detected(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection."""
-        # Logic flow
         if self._processing:
-        # TODO: Document this logic
             logger.debug("Already processing voice command, ignoring wake word")
             return
 
@@ -179,9 +152,6 @@ class VoicePipeline:
         # Start processing in background thread
         thread = threading.Thread(
             target=self._process_voice_command, args=(wake_word,), daemon=True
-                # TODO: REFACTOR - High complexity (_process_voice_command)
-                # Break into: validation, execution, cleanup sub-functions
-
         )
         thread.start()
 
@@ -190,65 +160,110 @@ class VoicePipeline:
         self._processing = True
 
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             # Update state
             if self.state_manager:
-            # TODO: Document this logic
                 try:
-                # TODO: Document this logic
                     self.state_manager.change_state("voice_recording")
-                # Handle specific exception case
+                except Exception as e:
+                    logger.warning(f"Could not update state to voice_recording: {e}")
+
             # Record and transcribe
             logger.info("Recording voice command...")
-            audio_data = self.transcriber.record_audio()
-            command_name, transcription = self._try_match_command(audio_data)
+            transcription = self.transcriber.record_and_transcribe()
 
-            if not command_name:
-                if transcription:
-                    self._handle_no_match(transcription)
+            if not transcription:
+                logger.warning("No transcription received")
                 return
 
-            logger.info(f"Executing command: {command_name}")
-            success = self.command_executor.execute_command(command_name)
+            logger.info(f"Transcribed: '{transcription}'")
 
-            if success:
-                self._handle_command_success(command_name, transcription)
+            # Update state
+            if self.state_manager:
+                try:
+                    self.state_manager.change_state("voice_processing")
+                except Exception as e:
+                    logger.warning(f"Could not update state to voice_processing: {e}")
+
+            # Process command
+            command_name = self._match_command(transcription)
+
+            if command_name:
+                logger.info(f"Matched command: {command_name}")
+                success = self._execute_command(command_name)
+
+                if success:
+                    logger.info(f"Successfully executed command: {command_name}")
+                    # Notify callbacks
+                    self._notify_callbacks(command_name, transcription)
+                    if self.voice_only and self.tts.is_available():
+                        self.tts.speak(command_name)
+                else:
+                    logger.warning(f"Failed to execute command: {command_name}")
+                    if self.voice_only and self.tts.is_available():
+                        self.tts.speak(f"Failed to execute {command_name}")
             else:
-                self._handle_command_failure(command_name)
+                logger.info(f"No matching command found for: '{transcription}'")
+                # Still notify callbacks with empty command name
+                self._notify_callbacks("", transcription)
+                if self.voice_only and self.tts.is_available():
+                    # Give clear no-match feedback rather than echoing the
+                    # (possibly mis-transcribed) text back at the user. The raw
+                    # transcription is logged above for operator debugging.
+                    self.tts.speak("Sorry, I didn't understand that")
 
         except Exception as e:
             logger.error(f"Error processing voice command: {e}")
         finally:
-            self._reset_listening_state()
+            self._processing = False
+            # Return to listening state
+            if self.state_manager:
+                try:
+                    self.state_manager.change_state("voice_listening")
+                except Exception as e:
+                    logger.warning(f"Could not update state to voice_listening: {e}")
 
     def _match_command(self, transcription: str) -> str | None:
         """Match transcription to available commands."""
-        # Logic flow
         if not self.config_manager:
-        # TODO: Document this logic
             logger.debug("No config manager available for command matching")
-            # TODO: Document this logic
             return None
 
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             # Get available commands from config
             model_actions = getattr(self.config_manager, "model_actions", {})
             if not model_actions:
-            # TODO: Document this logic
                 logger.debug("No model actions available")
                 return None
 
-            # Simple keyword matching (can be enhanced with fuzzy matching, NLP, etc.)
+            # Keyword matching with word-boundary awareness. Substring matching is
+            # avoided because a command named "play" would otherwise match words
+            # like "replay", "display" or "player" and misdispatch commands.
             transcription_lower = transcription.lower()
+            tokens = re.findall(r"[a-z0-9']+", transcription_lower)
+            token_set = set(tokens)
 
-            # Direct name match first
+            def _matches_phrase(phrase: str) -> bool:
+                """Return True if ``phrase`` appears as a whole word/phrase."""
+                phrase = phrase.lower().strip()
+                if not phrase:
+                    return False
+                phrase_tokens = re.findall(r"[a-z0-9']+", phrase)
+                if not phrase_tokens:
+                    return False
+                # Single-word commands: require an exact token match.
+                if len(phrase_tokens) == 1:
+                    return phrase_tokens[0] in token_set
+                # Multi-word commands: require the token sequence to appear
+                # contiguously within the transcription tokens.
+                n = len(phrase_tokens)
+                for i in range(len(tokens) - n + 1):
+                    if tokens[i : i + n] == phrase_tokens:
+                        return True
+                return False
+
+            # Direct name match first (whole-word, not substring)
             for command_name in model_actions.keys():
-            # TODO: Document this logic
-                if command_name.lower() in transcription_lower:
-                # TODO: Document this logic
+                if _matches_phrase(str(command_name)):
                     return str(command_name)  # type: ignore[no-any-return]
 
             # Keyword-based matching
@@ -256,130 +271,90 @@ class VoicePipeline:
                 "hello": ["hello", "hi", "hey", "greet"],
                 "lights": ["lights", "light", "lamp", "illumination"],
                 "music": ["music", "song", "play", "audio"],
-                # Build filtered collection
-                # Process each item
                 "weather": ["weather", "temperature", "forecast"],
                 "time": ["time", "clock", "hour"],
                 "timer": ["timer", "alarm", "remind"],
             }
 
-            # Logic flow
             for command_name, keywords in command_keywords.items():
-            # TODO: Document this logic
                 if command_name in model_actions:
-                # TODO: Document this logic
-                    # Logic flow
                     for keyword in keywords:
-                    # TODO: Document this logic
-                        if keyword in transcription_lower:
-                        # TODO: Document this logic
+                        if _matches_phrase(keyword):
                             return command_name
 
             return None
 
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error matching command: {e}")
             return None
 
     def _execute_command(self, command_name: str) -> bool:
         """Execute a matched command."""
-        # Logic flow
         if not self.command_executor:
-        # TODO: Document this logic
             logger.debug("No command executor available")
             return False
 
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             # Execute command through existing command executor
             result = self.command_executor.execute_command(command_name)
             return result is not False  # Consider None as success
 
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error executing command '{command_name}': {e}")
             return False
 
     def _notify_callbacks(self, command_name: str, transcription: str) -> None:
-        # Apply conditional logic
         """Notify all registered callbacks."""
-        # Logic flow
         for callback in self._callbacks.copy():
-        # TODO: Document this logic
             try:
-            # TODO: Document this logic
                 callback(command_name, transcription)
-            # Handle specific exception case
             except Exception as e:
                 logger.error(f"Error in voice command callback: {e}")
 
     def trigger_mock_wake_word(self, wake_word: str = "hey_jarvis") -> None:
-        # Logic flow
         """Trigger mock wake word detection (for testing)."""
-        # TODO: Document this logic
         if hasattr(self.wake_detector, "trigger_wake_word"):
-        # TODO: Document this logic
             self.wake_detector.trigger_wake_word(wake_word)
         else:
             logger.warning("Mock wake word trigger not available")
 
     def process_text_command(self, text: str) -> str | None:
-        # Logic flow
         """Process text as if it were a voice command (for testing)."""
-        # TODO: Document this logic
         command_name = self._match_command(text)
-        # Logic flow
         if command_name:
-        # TODO: Document this logic
             success = self._execute_command(command_name)
-            # Logic flow
             if success:
-            # TODO: Document this logic
                 self._notify_callbacks(command_name, text)
-                # Logic flow
                 if self.voice_only and self.tts.is_available():
-                # TODO: Document this logic
                     self.tts.speak(command_name)
                 return command_name
-            # Logic flow
             if self.voice_only and self.tts.is_available():
-            # TODO: Document this logic
                 self.tts.speak(f"Failed to execute {command_name}")
         else:
-            # Logic flow
+            logger.info(f"No matching command found for: '{text}'")
             if self.voice_only and self.tts.is_available():
-            # TODO: Document this logic
-                self.tts.speak(text)
+                self.tts.speak("Sorry, I didn't understand that")
         return None
 
     def get_status(self) -> dict[str, Any]:
-        # Process each item
         """Get pipeline status information."""
         return {
             "listening": self._listening,
             "processing": self._processing,
             "wake_detector_available": (
                 self.wake_detector.is_listening()
-                # Logic flow
                 if hasattr(self.wake_detector, "is_listening")
-                # TODO: Document this logic
                 else True
             ),
             "transcriber_available": self.transcriber.is_available(),
             "transcriber_info": self.transcriber.get_backend_info(),
             "available_wake_words": (
                 self.wake_detector.get_available_models()
-                # Logic flow
                 if hasattr(self.wake_detector, "get_available_models")
-                # TODO: Document this logic
                 else []
             ),
         }
 
     def is_listening(self) -> bool:
-        # Logic flow
         """Check if pipeline is actively listening."""
-        # TODO: Document this logic
         return self._listening and not self._processing
