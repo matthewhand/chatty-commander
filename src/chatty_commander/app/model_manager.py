@@ -128,7 +128,6 @@ class ModelManager:
         self.reload_models()
 
     def reload_models(
-        """reload models."""
         self, state: str | None = None
     ) -> dict[str, Model] | dict[str, dict[str, Model]]:
         """

@@ -289,7 +289,6 @@ class LLMManager:
         logger.info(f"Active backend after refresh: {self.get_active_backend_name()}")
 
     def test_backend(
-        """test backend."""
         self, backend_name: str, test_prompt: str = "Hello"
     ) -> dict[str, Any]:
         # Apply conditional logic
