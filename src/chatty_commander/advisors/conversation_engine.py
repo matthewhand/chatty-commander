@@ -27,6 +27,34 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+# Optimization: Module-level constants to avoid re-creation on every call
+_MODE_SWITCH_WORDS = ("switch", "change", "go to")
+_TASK_REQUEST_WORDS = ("help", "assist", "do", "make", "create")
+_GREETING_WORDS = ("hello", "hi", "hey", "good morning", "good afternoon")
+_FAREWELL_WORDS = ("bye", "goodbye", "see you", "farewell")
+_INFORMATION_SEEKING_WORDS = ("tell me", "explain", "describe", "what is")
+
+_POSITIVE_WORDS = (
+    "good",
+    "great",
+    "awesome",
+    "excellent",
+    "love",
+    "like",
+    "happy",
+    "pleased",
+)
+_NEGATIVE_WORDS = (
+    "bad",
+    "terrible",
+    "awful",
+    "hate",
+    "dislike",
+    "sad",
+    "angry",
+    "frustrated",
+)
+
 
 @dataclass
 class ConversationTurn:
@@ -53,7 +81,7 @@ class ConversationEngine:
         text_lower = text.lower()
 
         # Command intents
-        if any(word in text_lower for word in ["switch", "change", "go to"]):
+        if any(word in text_lower for word in _MODE_SWITCH_WORDS):
             if "mode" in text_lower:
                 return "mode_switch"
 
@@ -62,57 +90,27 @@ class ConversationEngine:
             return "question"
 
         # Task intents
-        if any(
-            word in text_lower for word in ["help", "assist", "do", "make", "create"]
-        ):
+        if any(word in text_lower for word in _TASK_REQUEST_WORDS):
             return "task_request"
 
         # Social intents
-        if any(
-            word in text_lower
-            for word in ["hello", "hi", "hey", "good morning", "good afternoon"]
-        ):
+        if any(word in text_lower for word in _GREETING_WORDS):
             return "greeting"
 
-        if any(
-            word in text_lower for word in ["bye", "goodbye", "see you", "farewell"]
-        ):
+        if any(word in text_lower for word in _FAREWELL_WORDS):
             return "farewell"
 
         # Information seeking
-        if any(
-            word in text_lower for word in ["tell me", "explain", "describe", "what is"]
-        ):
+        if any(word in text_lower for word in _INFORMATION_SEEKING_WORDS):
             return "information_seeking"
 
         return "general_conversation"
 
     def analyze_sentiment(self, text: str) -> str:
         """Simple sentiment analysis."""
-        positive_words = [
-            "good",
-            "great",
-            "awesome",
-            "excellent",
-            "love",
-            "like",
-            "happy",
-            "pleased",
-        ]
-        negative_words = [
-            "bad",
-            "terrible",
-            "awful",
-            "hate",
-            "dislike",
-            "sad",
-            "angry",
-            "frustrated",
-        ]
-
         text_lower = text.lower()
-        positive_count = sum(1 for word in positive_words if word in text_lower)
-        negative_count = sum(1 for word in negative_words if word in text_lower)
+        positive_count = sum(1 for word in _POSITIVE_WORDS if word in text_lower)
+        negative_count = sum(1 for word in _NEGATIVE_WORDS if word in text_lower)
 
         if positive_count > negative_count:
             return "positive"
