@@ -74,7 +74,6 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
 
 
 def apply_cors(
-    """apply cors."""
     app: FastAPI, *, no_auth: bool, origins: Iterable[str] | None = None
 ) -> None:
     """
@@ -84,7 +83,16 @@ def apply_cors(
     - Otherwise: restrict to provided origins, defaulting to localhost:3000.
     """
     if no_auth:
-        allow_origins = ["*"]
+        # Restrict to local development origins even in no_auth mode to prevent
+        # cross-origin attacks from malicious websites.
+        allow_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:8100",
+            "http://127.0.0.1:8100",
+        ]
     else:
         allow_origins = (
             # Logic flow
