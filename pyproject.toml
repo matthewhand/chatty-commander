@@ -37,7 +37,7 @@ dependencies = [
     "requests>=2.32.4",
     "psutil>=7.0.0",
     "fastapi>=0.116.1",
-    "uvicorn[standard]>=0.44.0",
+    "uvicorn[standard]>=0.35.0",
     # python-jose has known CVEs (CVE-2024-33664, CVE-2024-33663); replaced by pyjwt
     # "python-jose[cryptography]>=3.5.0",  # REMOVED: use pyjwt instead
     # passlib is unmaintained (last release 2020); use bcrypt directly
@@ -68,14 +68,6 @@ dependencies = [
 
 [project.optional-dependencies]
 audio = ["pyaudio>=0.2.13"]
-cv = [
-    "opencv-python-headless>=4.5.0",
-    "pillow>=12.1.1",
-    "scikit-image>=0.20.0",
-    "numpy>=1.24.0",
-    "pytesseract>=0.3.10",
-    "scikit-learn>=1.3.0",
-]
 
 [project.scripts]
 chatty-commander = "chatty_commander.cli.cli:cli_main"
@@ -85,9 +77,9 @@ dev = [
     "ruff>=0.1.0",
     "black>=23.0.0",
     "doc8>=1.1.1",
-    "pydocstyle>=6.3.0",
+    "pydocstyle>=6.0.0",
     "jsonschema>=4.0.0",
-    "pytest-check-links>=0.10.1",
+    "pytest-check-links>=0.5.0",
     "mypy>=1.8.0",
     "bandit>=1.7.0",
     "pre-commit>=3.0.0",
@@ -96,7 +88,7 @@ dev = [
     "pytest>=8.4.1",
     "pytest-mock>=3.12.0",
     "pytest-cov>=4.1.0",
-    "pytest-asyncio>=1.3.0",
+    "pytest-asyncio>=0.21.0",
     "pytest-xdist>=3.0.0",
     "pytest-html>=4.0.0",
     "pytest-benchmark>=4.0.0",

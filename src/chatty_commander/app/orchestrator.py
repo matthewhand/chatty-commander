@@ -22,92 +22,45 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Protocol
+
+logger = logging.getLogger(__name__)
 
 try:
     from chatty_commander.voice.wakeword import MockWakeWordDetector, WakeWordDetector
 
     VOICE_AVAILABLE = True
-# Handle specific exception case
 except ImportError:
     MockWakeWordDetector = None  # type: ignore
     WakeWordDetector = None  # type: ignore
     VOICE_AVAILABLE = False
 
-# Computer Vision availability
-try:
-    from chatty_commander.cv.validator import ComputerVisionValidator
-
-    CV_AVAILABLE = True
-except ImportError:
-    CV_AVAILABLE = False
-
 
 class CommandSink(Protocol):
-    """CommandSink class.
-
-    TODO: Add class description.
-    """
-    
     def execute_command(self, command_name: str) -> Any:  # pragma: no cover - protocol
-        """Execute Command with (self, command_name: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         ...
 
 
 class AdvisorSink(Protocol):
-    """AdvisorSink class.
-
-    TODO: Add class description.
-    """
-    
     def handle_message(self, message: Any) -> Any:  # pragma: no cover - protocol
-        """Process with (self, message: Any).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         ...
 
 
 class InputAdapter(Protocol):
-    """InputAdapter class.
-
-    TODO: Add class description.
-    """
-    
     name: str
 
     def start(self) -> None:  # pragma: no cover - protocol
-        """Start with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         ...
 
     def stop(self) -> None:  # pragma: no cover - protocol
-        """Stop with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         ...
 
 
 @dataclass
 class OrchestratorFlags:
-    """OrchestratorFlags class.
-
-    TODO: Add class description.
-    """
-    
     enable_text: bool = False
     enable_gui: bool = False
     enable_web: bool = False
@@ -117,11 +70,6 @@ class OrchestratorFlags:
 
 
 class TextInputAdapter:
-    """TextInputAdapter class.
-
-    TODO: Add class description.
-    """
-    
     name = "text"
 
     def __init__(self, on_command: Callable[[str], None]) -> None:
@@ -129,29 +77,13 @@ class TextInputAdapter:
         self._started = False
 
     def start(self) -> None:
-        """Start with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self._started = True
 
     def stop(self) -> None:
-        """Stop with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self._started = False
 
     # Helper for tests/manual feeding
     def feed(self, text: str) -> None:
-        """Feed with (self, text: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Apply conditional logic
         if self._started:
             self._on_command(text)
 
@@ -167,134 +99,10 @@ class DummyAdapter:
         self._started = False
 
     def start(self) -> None:
-        """Start with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self._started = True
 
     def stop(self) -> None:
-        """Stop with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self._started = False
-
-
-class ComputerVisionAdapter:
-    """Adapter for Computer Vision module.
-
-    Provides screenshot validation and visual regression testing capabilities.
-    Can be enabled via --enable-computer-vision flag.
-    """
-
-    name = "computer_vision"
-
-    def __init__(
-        self,
-        screenshots_dir: str | Path = "docs/screenshots",
-        reference_dir: str | Path | None = None,
-        threshold: float = 0.95,
-        on_validation: Callable[[dict], None] | None = None,
-    ) -> None:
-        self._screenshots_dir = Path(screenshots_dir)
-        self._reference_dir = Path(reference_dir) if reference_dir else None
-        self._threshold = threshold
-        self._on_validation = on_validation
-        self._validator: ComputerVisionValidator | None = None
-        self._started = False
-
-    def start(self) -> None:
-        """Start the Computer Vision adapter."""
-        if self._started:
-            return
-
-        if not CV_AVAILABLE:
-            self._validator = None
-        else:
-            self._validator = ComputerVisionValidator(
-                screenshots_dir=self._screenshots_dir,
-                reference_dir=self._reference_dir,
-                threshold=self._threshold,
-            )
-
-        self._started = True
-
-    def stop(self) -> None:
-        """Stop the Computer Vision adapter."""
-        self._started = False
-
-    def validate_screenshot(
-        self,
-        image_path: str | Path,
-        expected_texts: list[str] | None = None,
-    ) -> dict | None:
-        """Validate a screenshot using Computer Vision.
-
-        Args:
-            image_path: Path to the screenshot to validate
-            expected_texts: Optional list of expected texts
-
-        Returns:
-            Validation result as dictionary, or None if CV not available
-        """
-        if not CV_AVAILABLE or self._validator is None:
-            return None
-
-        result = self._validator.validate_screenshot(
-            image_path=image_path,
-            expected_texts=expected_texts,
-            threshold=self._threshold,
-        )
-
-        if self._on_validation:
-            self._on_validation(result.to_dict())
-
-        return result.to_dict()
-
-    def compare_screenshots(
-        self,
-        current_path: str | Path,
-        reference_path: str | Path,
-    ) -> dict | None:
-        """Compare two screenshots.
-
-        Args:
-            current_path: Path to current screenshot
-            reference_path: Path to reference screenshot
-
-        Returns:
-            Comparison result as dictionary, or None if CV not available
-        """
-        if not CV_AVAILABLE or self._validator is None:
-            return None
-
-        result = self._validator.compare_screenshots(
-            current_path=current_path,
-            reference_path=reference_path,
-            threshold=self._threshold,
-        )
-
-        return result.to_dict()
-
-    def validate_directory(self) -> dict | None:
-        """Validate all screenshots in the configured directory.
-
-        Returns:
-            Dictionary of validation results, or None if CV not available
-        """
-        if not CV_AVAILABLE or self._validator is None:
-            return None
-
-        results = self._validator.validate_directory(
-            directory=self._screenshots_dir,
-            reference_dir=self._reference_dir,
-            threshold=self._threshold,
-        )
-
-        return {k: v.to_dict() for k, v in results.items()}
 
 
 class OpenWakeWordAdapter:
@@ -311,16 +119,9 @@ class OpenWakeWordAdapter:
         self._started = False
 
     def start(self) -> None:
-        """Start with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Apply conditional logic
         if not VOICE_AVAILABLE:
             raise ImportError("Voice dependencies not available. Install with: uv sync")
 
-        # Apply conditional logic
         if self._started:
             return
 
@@ -331,7 +132,6 @@ class OpenWakeWordAdapter:
         ]
         threshold = getattr(self._config, "wake_word_threshold", 0.5)
 
-        # Logic flow
         # Use MockWakeWordDetector if no audio hardware available
         if WakeWordDetector is not None and MockWakeWordDetector is not None:
             try:
@@ -344,7 +144,6 @@ class OpenWakeWordAdapter:
         else:
             self._detector = None
 
-        # Logic flow
         # Add callback for wake word detection
         if self._detector is not None:
             self._detector.add_callback(self._handle_wake_word)
@@ -352,12 +151,6 @@ class OpenWakeWordAdapter:
         self._started = True
 
     def stop(self) -> None:
-        """Stop with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Apply conditional logic
         if self._detector and self._started:
             self._detector.stop_listening()
         self._started = False
@@ -392,142 +185,50 @@ class ModeOrchestrator:
         self.flags = flags or OrchestratorFlags()
         self.adapters: list[InputAdapter] = []
 
-    def _create_text_adapter(self) -> InputAdapter | None:
-        """Create text input adapter if enabled."""
-        if self.flags.enable_text:
-            return TextInputAdapter(on_command=self._dispatch_command)
-        return None
-
-    def _create_gui_adapter(self) -> InputAdapter | None:
-        """Create GUI adapter if enabled."""
-        if self.flags.enable_gui:
-            return DummyAdapter("gui")
-        return None
-
-    def _create_web_adapter(self) -> InputAdapter | None:
-        """Create web adapter if enabled."""
-        if self.flags.enable_web:
-            return DummyAdapter("web")
-        return None
-
-    def _create_openwakeword_adapter(self) -> InputAdapter | None:
-        """Create OpenWakeWord adapter if enabled and available."""
-        if not self.flags.enable_openwakeword:
-            return None
-
-        if VOICE_AVAILABLE:
-            try:
-                return OpenWakeWordAdapter(self._handle_wake_word, self.config)  # type: ignore
-            except Exception:
-                return DummyAdapter("openwakeword")
-        else:
-            return DummyAdapter("openwakeword")
-
-    def _create_computer_vision_adapter(self) -> InputAdapter | None:
-        """Create computer vision adapter if enabled."""
-        if not self.flags.enable_computer_vision:
-            return None
-
-        if CV_AVAILABLE:
-            try:
-                adapter = ComputerVisionAdapter(
-                    screenshots_dir="docs/screenshots",
-                    threshold=0.95,
-                )
-                return adapter
-            except Exception:
-                return DummyAdapter("computer_vision")
-        else:
-            return DummyAdapter("computer_vision")
-
-    def _create_discord_bridge_adapter(self) -> InputAdapter | None:
-        """Create Discord bridge adapter if enabled and configured."""
-        if not self.flags.enable_discord_bridge:
-            return None
-
-        advisors_config = getattr(self.config, "advisors", {})
-        if advisors_config.get("enabled", False):
-            return DummyAdapter("discord_bridge")
-        return None
-
-    def _create_gesture_adapter(self) -> InputAdapter | None:
-        """Create gesture input adapter if enabled."""
-        if not self.flags.enable_gesture:
-            return None
-
-        try:
-            from ..vision.gesture_adapter import GestureInputAdapter
-            adapter = GestureInputAdapter({
-                'enabled': True,
-                'camera_index': getattr(self.config, 'gesture_camera_index', 0),
-                'setup_defaults': getattr(self.config, 'gesture_setup_defaults', False),
-                'min_detection_confidence': getattr(self.config, 'gesture_min_confidence', 0.5),
-                'min_tracking_confidence': getattr(self.config, 'gesture_min_tracking', 0.5)
-            })
-            # Set up command callback to route to orchestrator
-            adapter.set_command_callback(self._dispatch_command)
-            return adapter
-        except Exception as e:
-            logger.warning(f"Failed to create gesture adapter: {e}")
-            return DummyAdapter("gesture")
-
     def select_adapters(self) -> list[str]:
-        """
-        Select and instantiate input adapters based on feature flags.
+        selected: list[Any] = []
 
-        Creates adapters for each enabled feature: text, GUI, web,
-        voice (OpenWakeWord), computer vision, gesture, and Discord bridge.
-        Handles graceful fallback to dummy adapters when initialization fails.
+        if self.flags.enable_text:
+            selected.append(TextInputAdapter(on_command=self._dispatch_command))
 
-        Returns:
-            List of selected adapter names
-        """
-        selected: list[InputAdapter] = []
+        if self.flags.enable_gui:
+            selected.append(DummyAdapter("gui"))
 
-        # Create adapters for each enabled feature
-        adapters_to_try = [
-            self._create_text_adapter(),
-            self._create_gui_adapter(),
-            self._create_web_adapter(),
-            self._create_openwakeword_adapter(),
-            self._create_computer_vision_adapter(),
-            self._create_gesture_adapter(),
-            self._create_discord_bridge_adapter(),
-        ]
+        if self.flags.enable_web:
+            selected.append(DummyAdapter("web"))
 
-        # Filter out None values
-        selected = [adapter for adapter in adapters_to_try if adapter is not None]
+        if self.flags.enable_openwakeword:
+            if VOICE_AVAILABLE:
+                try:
+                    adapter = OpenWakeWordAdapter(self._handle_wake_word, self.config)  # type: ignore
+                    selected.append(adapter)
+                except Exception:
+                    selected.append(DummyAdapter("openwakeword"))
+            else:
+                selected.append(DummyAdapter("openwakeword"))
+
+        if self.flags.enable_computer_vision:
+            selected.append(DummyAdapter("computer_vision"))
+
+        if self.flags.enable_discord_bridge and getattr(
+            self.config, "advisors", {}
+        ).get("enabled", False):
+            selected.append(DummyAdapter("discord_bridge"))
 
         self.adapters = selected
         return [a.name for a in selected]
 
     def start(self) -> list[str]:
-        """Start with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Apply conditional logic
         if not self.adapters:
             self.select_adapters()
-        # Process each item
         for adapter in self.adapters:
             adapter.start()
-        # Build filtered collection
-        # Process each item
         return [a.name for a in self.adapters]
 
     def stop(self) -> None:
-        """Stop with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Process each item
         for adapter in self.adapters:
             try:
                 adapter.stop()
-            # Handle specific exception case
             except Exception:
                 pass
 
@@ -546,6 +247,11 @@ class ModeOrchestrator:
             # If no specific wake word command, try a generic wake command
             try:
                 self._dispatch_command("wake")
-            except Exception:
-                # If no wake command, log the detection
-                pass  # Could add logging here if needed
+            except Exception as e:
+                # No matching command for this wake word; surface for diagnosis.
+                logger.warning(
+                    "Failed to dispatch wake word %r (confidence=%.3f): %s",
+                    wake_word,
+                    confidence,
+                    e,
+                )

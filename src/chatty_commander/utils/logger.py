@@ -52,23 +52,18 @@ class JSONFormatter(logging.Formatter):
         """Format a log record as a JSON string.
 
         Args:
-            # Process each item
             record: The log record to format
 
         Returns:
-            # Process each item
             str: JSON-formatted log entry
         """
         log_entry = {
-            # Process each item
             "time": self.formatTime(record),
             "name": record.name,
             "level": record.levelname,
             "message": record.getMessage(),
         }
-        # Logic flow
         if record.exc_info:
-            # Build filtered collection
             log_entry["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_entry)
 
@@ -97,18 +92,14 @@ class HTTPLogHandler(logging.Handler):
         self._requests = None
         self._url_safe = False
         try:
-        # Attempt operation with error handling
             import requests
 
             self._requests = requests
-        # Handle specific exception case
         except ImportError:
             pass
         try:
-        # Attempt operation with error handling
             from chatty_commander.utils.url_validator import is_safe_url
             self._url_safe = is_safe_url(url)
-        # Handle specific exception case
         except Exception:
             self._url_safe = False
 
@@ -118,11 +109,9 @@ class HTTPLogHandler(logging.Handler):
         Args:
             record: The log record to send
         """
-        # Logic flow
         if self._requests is None or not self._url_safe:
             return
         try:
-        # Attempt operation with error handling
             log_entry = self.format(record)
             self._requests.post(
                 self.url,
@@ -153,7 +142,6 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
     # Use config level if available
     if config and hasattr(config, "logging") and config.logging.get("level"):
         config_level = config.logging["level"]
-        # Logic flow
         if isinstance(config_level, str):
             level = getattr(logging, config_level.upper(), level)
         else:
@@ -162,11 +150,9 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
     logger.setLevel(level)
 
     if log_file:
-        # Logic flow
         # Ensure the directory for the log file exists
         directory = os.path.dirname(log_file)
         try:
-            # Logic flow
             # Always call makedirs for empty directory (test.log case) or if directory doesn't exist
             if directory == "" or (directory and not os.path.exists(directory)):
                 os.makedirs(directory)
@@ -178,22 +164,18 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
         handler = RotatingFileHandler(log_file, maxBytes=1000000, backupCount=5)
         handler.setFormatter(formatter)
 
-        # Logic flow
         # Avoid duplicate handlers for same file
         if not any(
             isinstance(h, RotatingFileHandler)
             and getattr(h, "baseFilename", None)
             == getattr(handler, "baseFilename", None)
-            # Logic flow
             for h in logger.handlers
         ):
             logger.addHandler(handler)
     else:
-        # Logic flow
         # Add console handler if no log file
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
-        # Logic flow
         if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
             logger.addHandler(console_handler)
 
@@ -201,11 +183,6 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
 
 
 def report_error(e, context=None):
-    """Report Error with (e, context).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     if context:
         logging.error(f"Error reported: {e}, context: {context}")
     else:

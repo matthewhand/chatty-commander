@@ -38,6 +38,23 @@ from .manager import LLMManager
 logger = logging.getLogger(__name__)
 
 
+def _safe_confidence(value: Any) -> float:
+    """Coerce an LLM-supplied confidence into a float, defaulting to 0.0.
+
+    LLMs may return ``null``, non-numeric strings ("high"), or other invalid
+    values for the confidence field; rather than raising we treat any value we
+    cannot interpret as a number as zero confidence.
+    """
+    try:
+        confidence = float(value)
+    except (ValueError, TypeError):
+        return 0.0
+    # Guard against NaN/inf which would survive float() but break clamping.
+    if confidence != confidence or confidence in (float("inf"), float("-inf")):
+        return 0.0
+    return confidence
+
+
 class CommandProcessor:
     """Processes natural language commands using LLM."""
 
@@ -46,8 +63,6 @@ class CommandProcessor:
         "hello": ["hello", "hi", "hey", "greet", "greeting"],
         "lights": ["light", "lights", "lamp", "illumination", "brightness"],
         "music": ["music", "song", "play", "audio", "sound"],
-        # Build filtered collection
-        # Process each item
         "weather": ["weather", "temperature", "forecast", "climate"],
         "time": ["time", "clock", "hour", "minute"],
         "timer": ["timer", "alarm", "remind", "countdown"],
@@ -59,8 +74,6 @@ class CommandProcessor:
     SUGGESTION_MAP = {
         "lights": ["control lights", "toggle illumination"],
         "music": ["play audio", "control music"],
-        # Build filtered collection
-        # Process each item
         "weather": ["get weather", "check forecast"],
         "hello": ["greeting", "say hello"],
     }
@@ -81,38 +94,28 @@ class CommandProcessor:
 
     def _update_available_commands(self):
         """Update cache of available commands from config."""
-        # Logic flow
         if not self.config_manager:
-        # TODO: Document this logic
             return
 
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             model_actions = getattr(self.config_manager, "model_actions", {})
             self._available_commands = model_actions.copy()
 
-            # Logic flow
             # Pre-compute optimized data structures for fast command matching
             self._available_commands_lower = {
                 cmd.lower(): cmd for cmd in self._available_commands
-                # TODO: Document this logic
             }
 
             # Pre-filter keywords to only include available commands
             self._available_keyword_map = {
                 cmd: keywords
-                # Logic flow
                 for cmd, keywords in self.KEYWORD_MAP.items()
-                # TODO: Document this logic
                 if cmd in self._available_commands
-                # TODO: Document this logic
             }
 
             logger.debug(
                 f"Updated available commands: {list(self._available_commands.keys())}"
             )
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to update available commands: {e}")
 
@@ -123,30 +126,22 @@ class CommandProcessor:
         Returns:
             Tuple of (command_name, confidence, explanation)
         """
-        # Logic flow
         if not user_input.strip():
-        # TODO: Document this logic
             return None, 0.0, "Empty input"
 
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             # First try simple keyword matching (fast path)
             simple_match = self._simple_command_matching(user_input)
             if simple_match:
-            # TODO: Document this logic
                 command_name, confidence = simple_match
                 return command_name, confidence, f"Keyword match: '{command_name}'"
 
-            # Logic flow
             # Use LLM for complex interpretation
             if self.llm_manager.is_available():
-            # TODO: Document this logic
                 return self._llm_command_interpretation(user_input)
             else:
                 return None, 0.0, "No LLM backend available"
 
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Command processing failed: {e}")
             return None, 0.0, f"Processing error: {e}"
@@ -158,20 +153,14 @@ class CommandProcessor:
         # Direct command name match - use cached lowercase keys to avoid repeated
         # .lower() calls and dict view allocations in this hot path
         for cmd_lower in self._available_commands_lower:
-        # TODO: Document this logic
             if cmd_lower in user_lower:
-            # TODO: Document this logic
                 return self._available_commands_lower[cmd_lower], 0.9
 
         # Keyword-based matching - use pre-filtered map to avoid checking
         # if cmd_name is in available_commands for every map entry
         for cmd_name in self._available_keyword_map:
-        # TODO: Document this logic
             for keyword in self._available_keyword_map[cmd_name]:
-            # TODO: Document this logic
-                # Logic flow
                 if keyword in user_lower:
-                # TODO: Document this logic
                     return cmd_name, 0.7
 
         return None
@@ -181,28 +170,21 @@ class CommandProcessor:
     ) -> tuple[str | None, float, str]:
         """Use LLM to interpret complex commands."""
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             prompt = self._build_interpretation_prompt(user_input)
             response = self.llm_manager.generate_response(
                 prompt,
                 max_tokens=100,
-                # Logic flow
                 temperature=0.3,  # Lower temperature for more consistent results
-                # TODO: Document this logic
             )
 
             return self._parse_llm_response(response)
 
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"LLM interpretation failed: {e}")
             return None, 0.0, f"LLM error: {e}"
 
     def _build_interpretation_prompt(self, user_input: str) -> str:
-        # Logic flow
         """Build prompt for LLM command interpretation."""
-        # TODO: Document this logic
         available_commands = list(self._available_commands.keys())
 
         prompt = f"""You are a voice assistant command interpreter.
@@ -233,27 +215,33 @@ Response:"""
     def _parse_llm_response(
         self, response: str
     ) -> tuple[str | None, float, str]:
-        # Process each item
         """Parse LLM response to extract command information."""
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
-            # Try to extract JSON from response
-            json_match = re.search(r"\{.*\}", response, re.DOTALL)
-            if not json_match:
-            # TODO: Document this logic
+            # Try to extract JSON from response. Use a non-greedy match so a
+            # response containing multiple JSON objects does not produce an
+            # invalid span (e.g. '{"a":1} and {"b":2}'). If the first match
+            # fails to decode, fall back to a greedy match for objects that
+            # legitimately contain nested braces.
+            data = None
+            for pattern in (r"\{.*?\}", r"\{.*\}"):
+                match = re.search(pattern, response, re.DOTALL)
+                if not match:
+                    continue
+                try:
+                    data = json.loads(match.group())
+                    break
+                except json.JSONDecodeError:
+                    continue
+
+            if data is None:
                 return None, 0.0, "No JSON found in LLM response"
 
-            json_str = json_match.group()
-            data = json.loads(json_str)
-
             command = data.get("command")
-            confidence = float(data.get("confidence", 0.0))
+            confidence = _safe_confidence(data.get("confidence", 0.0))
             reasoning = data.get("reasoning", "LLM interpretation")
 
             # Validate command exists
             if command and command not in self._available_commands:
-            # TODO: Document this logic
                 return None, 0.0, f"LLM suggested unknown command: {command}"
 
             # Clamp confidence
@@ -261,33 +249,24 @@ Response:"""
 
             return command, confidence, reasoning
 
-        # Handle specific exception case
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse LLM JSON response: {e}")
             return None, 0.0, f"Invalid JSON in LLM response: {e}"
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to parse LLM response: {e}")
             return None, 0.0, f"Response parsing error: {e}"
 
     def get_command_suggestions(
-        """get command suggestions."""
         self, partial_input: str, limit: int = 5
     ) -> list[dict[str, Any]]:
-        # Logic flow
         """Get command suggestions for partial input."""
-        # TODO: Document this logic
         suggestions = []
         partial_lower = partial_input.lower()
 
         # Direct name matches
         for cmd_name, cmd_config in self._available_commands.items():
-        # TODO: Document this logic
             if cmd_name.lower().startswith(partial_lower):
-            # TODO: Document this logic
-                # Logic flow
                 action_type = list(cmd_config.keys())[0] if cmd_config else "unknown"
-                # TODO: Document this logic
                 suggestions.append(
                     {
                         "command": cmd_name,
@@ -299,14 +278,9 @@ Response:"""
 
         # Keyword matches
         for cmd_name in self._available_commands:
-        # TODO: Document this logic
             if cmd_name in self.SUGGESTION_MAP:
-            # TODO: Document this logic
-                # Logic flow
                 for desc in self.SUGGESTION_MAP[cmd_name]:
-                # TODO: Document this logic
                     if partial_lower in desc.lower():
-                    # TODO: Document this logic
                         suggestions.append(
                             {
                                 "command": cmd_name,
@@ -319,13 +293,9 @@ Response:"""
         # Remove duplicates and sort by confidence
         seen = set()
         unique_suggestions = []
-        # Logic flow
         for suggestion in suggestions:
-        # TODO: Document this logic
             key = suggestion["command"]
-            # Logic flow
             if key not in seen:
-            # TODO: Document this logic
                 seen.add(key)
                 unique_suggestions.append(suggestion)
 
@@ -334,15 +304,11 @@ Response:"""
 
     def explain_command(self, command_name: str) -> dict[str, Any]:
         """Get explanation of what a command does."""
-        # Logic flow
         if command_name not in self._available_commands:
-        # TODO: Document this logic
             return {"error": f"Command '{command_name}' not found"}
 
         cmd_config = self._available_commands[command_name]
-        # Logic flow
         action_type = list(cmd_config.keys())[0] if cmd_config else "unknown"
-        # TODO: Document this logic
         action_config = cmd_config.get(action_type, {})
 
         explanation = {
@@ -353,17 +319,12 @@ Response:"""
 
         # Add human-readable description
         if action_type == "keypress":
-        # TODO: Document this logic
             keys = action_config.get("keys", "")
             explanation["description"] = f"Simulates keypress: {keys}"
-        # Logic flow
         elif action_type == "url":
-        # TODO: Document this logic
             url = action_config.get("url", "")
             explanation["description"] = f"Opens URL: {url}"
-        # Logic flow
         elif action_type == "message":
-        # TODO: Document this logic
             text = action_config.get("text", "")
             explanation["description"] = f"Displays message: {text}"
         else:
@@ -372,7 +333,6 @@ Response:"""
         return explanation
 
     def get_processor_status(self) -> dict[str, Any]:
-        # Process each item
         """Get status information about the command processor."""
         return {
             "llm_available": self.llm_manager.is_available(),

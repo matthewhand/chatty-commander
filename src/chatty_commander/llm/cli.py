@@ -58,8 +58,6 @@ def add_llm_subcommands(subparsers) -> None:
         "test",
         help="Test LLM backends",
         description="Test LLM backends with sample prompts.",
-        # Use context manager for resource management
-        # TODO: Document this logic
     )
     test_parser.add_argument("--backend", help="Specific backend to test")
     test_parser.add_argument(
@@ -74,8 +72,6 @@ def add_llm_subcommands(subparsers) -> None:
         "process",
         help="Process natural language command",
         description="Test command processing with natural language input.",
-        # Use context manager for resource management
-        # TODO: Document this logic
     )
     process_parser.add_argument("text", help="Natural language command to process")
     process_parser.add_argument(
@@ -86,7 +82,6 @@ def add_llm_subcommands(subparsers) -> None:
     llm_subparsers.add_parser(
         "backends",
         help="List available backends",
-        # Process each item
         description="Show information about all LLM backends.",
     )
 
@@ -95,9 +90,7 @@ def handle_llm_command(args, config_manager=None) -> None:
     """Handle LLM-related CLI commands."""
 
     if not hasattr(args, "llm_command") or not args.llm_command:
-        # Logic flow
         print("No LLM command specified. Use --help for available commands.")
-        # TODO: Document this logic
         return
 
     if args.llm_command == "status":
@@ -112,7 +105,6 @@ def handle_llm_command(args, config_manager=None) -> None:
         print(f"Unknown LLM command: {args.llm_command}")
 
 
-     # TODO: HIGH - Refactor _handle_llm_status (complexity > 10)
 def _handle_llm_status(args) -> None:
     """Handle LLM status command."""
     print("🧠 LLM System Status")
@@ -125,17 +117,13 @@ def _handle_llm_status(args) -> None:
         deps = [
             ("OpenAI", "openai"),
             ("Requests (Ollama)", "requests"),
-            # Process each item
             ("Transformers (Local)", "transformers"),
             ("PyTorch (Local)", "torch"),
         ]
 
         print("📦 Dependencies:")
-        # Logic flow
         for name, module in deps:
-        # TODO: Document this logic
             if importlib.util.find_spec(module):
-            # TODO: Document this logic
                 print(f"   ✅ {name}: Available")
             else:
                 print(f"   ❌ {name}: Not installed")
@@ -143,7 +131,6 @@ def _handle_llm_status(args) -> None:
         # Test LLM manager
         print("\n🧠 LLM Manager:")
         manager = LLMManager(use_mock=True)  # Start with mock for status
-        # TODO: Document this logic
 
         print(f"   Active backend: {manager.get_active_backend_name()}")
         print(f"   Available: {manager.is_available()}")
@@ -151,44 +138,30 @@ def _handle_llm_status(args) -> None:
         # Show all backends
         all_info = manager.get_all_backends_info()
         print("\n📊 Backend Status:")
-        # Logic flow
         for backend_name, info in all_info.items():
-        # TODO: Document this logic
             if backend_name == "active":
-            # TODO: Document this logic
                 continue
 
             available = info.get("available", False)
-            # Logic flow
             status_icon = "✅" if available else "❌"
-            # TODO: Document this logic
             print(
-                # Logic flow
                 f"   {status_icon} {backend_name}: {'Available' if available else 'Not available'}"
-                # TODO: Document this logic
             )
 
-            # Logic flow
             if "error" in info:
-            # TODO: Document this logic
                 print(f"      Error: {info['error']}")
 
         # Environment variables
         print("\n🔧 Environment:")
         env_vars = ["OPENAI_API_KEY", "OPENAI_API_BASE", "OLLAMA_HOST", "LLM_BACKEND"]
 
-        # Logic flow
         for var in env_vars:
-        # TODO: Document this logic
             import os
 
             value = os.getenv(var)
-            # Logic flow
             if value:
-            # TODO: Document this logic
                 # Mask API keys
                 if "KEY" in var and len(value) > 8:
-                # TODO: Document this logic
                     display_value = value[:4] + "..." + value[-4:]
                 else:
                     display_value = value
@@ -196,7 +169,6 @@ def _handle_llm_status(args) -> None:
             else:
                 print(f"   {var}: Not set")
 
-    # Handle specific exception case
     except Exception as e:
         print(f"❌ Status check failed: {e}")
 
@@ -208,16 +180,12 @@ def _handle_llm_test(args) -> None:
     try:
         manager = LLMManager(use_mock=args.mock)
 
-        # Logic flow
         if args.backend:
-        # TODO: Document this logic
             # Test specific backend
             print(f"Testing backend: {args.backend}")
             result = manager.test_backend(args.backend, args.prompt)
 
-            # Logic flow
             if result.get("success"):
-            # TODO: Document this logic
                 print("✅ Success!")
                 print(f"   Response: {result['response']}")
                 print(f"   Time: {result['response_time']:.3f}s")
@@ -229,24 +197,18 @@ def _handle_llm_test(args) -> None:
             print(f"Testing active backend: {backend_name}")
 
             try:
-            # Attempt operation with error handling
-            # TODO: Document this logic
                 response = manager.generate_response(args.prompt, max_tokens=50)
                 print("✅ Success!")
                 print(f"   Response: {response}")
-            # Handle specific exception case
             except Exception as e:
                 print(f"❌ Failed: {e}")
 
         # Show backend info
         info = manager.get_backend_info()
         print("\n📊 Backend Info:")
-        # Logic flow
         for key, value in info.items():
-        # TODO: Document this logic
             print(f"   {key}: {value}")
 
-    # Handle specific exception case
     except Exception as e:
         print(f"❌ LLM test failed: {e}")
 
@@ -270,9 +232,7 @@ def _handle_llm_process(args, config_manager=None) -> None:
         command, confidence, explanation = processor.process_command(args.text)
 
         print("\n🎯 Processing Result:")
-        # Logic flow
         if command:
-        # TODO: Document this logic
             print(f"   ✅ Matched command: {command}")
             print(f"   🎲 Confidence: {confidence:.2f}")
             print(f"   💭 Explanation: {explanation}")
@@ -287,16 +247,12 @@ def _handle_llm_process(args, config_manager=None) -> None:
         # Show suggestions
         suggestions = processor.get_command_suggestions(args.text[:3])
         if suggestions:
-        # TODO: Document this logic
             print("\n💡 Suggestions:")
-            # Logic flow
             for suggestion in suggestions[:3]:
-            # TODO: Document this logic
                 print(
                     f"   - {suggestion['command']} (confidence: {suggestion['confidence']:.2f})"
                 )
 
-    # Handle specific exception case
     except Exception as e:
         print(f"❌ Command processing failed: {e}")
 
@@ -307,58 +263,40 @@ def _handle_llm_backends(args) -> None:
     print("=" * 40)
 
     try:
-        # Logic flow
         manager = LLMManager(use_mock=True)  # Include mock for complete info
-        # TODO: Document this logic
         all_info = manager.get_all_backends_info()
 
         active_backend = all_info.pop("active", "none")
         print(f"🎯 Active Backend: {active_backend}")
         print()
 
-        # Logic flow
         for backend_name, info in all_info.items():
-        # TODO: Document this logic
             available = info.get("available", False)
-            # Logic flow
             status_icon = "✅" if available else "❌"
-            # TODO: Document this logic
 
             print(f"{status_icon} {backend_name.upper()}")
             print(f"   Available: {available}")
 
             # Backend-specific info
             if backend_name == "openai":
-            # TODO: Document this logic
                 print(f"   Base URL: {info.get('base_url', 'N/A')}")
                 print(f"   Has API Key: {info.get('has_api_key', False)}")
-            # Logic flow
             elif backend_name == "ollama":
-            # TODO: Document this logic
                 print(f"   Host: {info.get('host', 'N/A')}")
                 print(f"   Model: {info.get('model', 'N/A')}")
-            # Logic flow
             elif backend_name == "local":
-            # TODO: Document this logic
                 print(f"   Model: {info.get('model_name', 'N/A')}")
                 print(f"   Device: {info.get('device', 'N/A')}")
-            # Logic flow
             elif backend_name == "mock":
-            # TODO: Document this logic
                 print(f"   Responses: {info.get('responses_count', 0)}")
                 print(f"   Calls: {info.get('call_count', 0)}")
 
-            # Logic flow
             if "error" in info:
-            # TODO: Document this logic
                 print(f"   ❌ Error: {info['error']}")
 
             print()
 
-    # Handle specific exception case
     except Exception as e:
-        # Build filtered collection
-        # Process each item
         print(f"❌ Failed to get backend information: {e}")
 
 
@@ -389,16 +327,12 @@ def demo_llm_integration(config_manager=None) -> None:
         ]
 
         print("\n🔄 Processing Demo Commands:")
-        # Logic flow
         for user_input in demo_inputs:
-        # TODO: Document this logic
             print(f"\n💬 Input: '{user_input}'")
 
             command, confidence, explanation = processor.process_command(user_input)
 
-            # Logic flow
             if command:
-            # TODO: Document this logic
                 print(f"   ✅ → {command} (confidence: {confidence:.2f})")
                 print(f"   💭 {explanation}")
             else:
@@ -406,7 +340,6 @@ def demo_llm_integration(config_manager=None) -> None:
 
         print("\n✅ LLM integration demo completed!")
 
-    # Handle specific exception case
     except Exception as e:
         print(f"❌ Demo failed: {e}")
         logger.error(f"LLM demo error: {e}")

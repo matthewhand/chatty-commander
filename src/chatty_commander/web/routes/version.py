@@ -27,14 +27,8 @@ from pydantic import BaseModel, Field
 
 
 class VersionInfo(BaseModel):
-    """VersionInfo class.
-
-    TODO: Add class description.
-    """
-    
     version: str = Field(..., description="Application semantic version")
     git_sha: str | None = Field(
-        # Logic flow
         default=None, description="Short git commit SHA if available"
     )
 
@@ -44,11 +38,6 @@ router = APIRouter()
 
 @router.get("/api/v1/version", response_model=VersionInfo)
 async def get_version() -> VersionInfo:
-    """Retrieve operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
     # Base version should come from a single source of truth if available
     # Here we mirror the SystemStatus default to keep tests stable.
     base_version = "0.2.0"
@@ -64,7 +53,6 @@ async def get_version() -> VersionInfo:
             .decode()
             .strip()
         )
-    # Handle specific exception case
     except Exception:
         git_sha = None
 

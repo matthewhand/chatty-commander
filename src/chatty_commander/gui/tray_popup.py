@@ -29,20 +29,17 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     try:
         from PIL import Image
-    # Handle specific exception case
     except ImportError:
         Image = None  # type: ignore[assignment]
 
 try:
     import pystray
     from pystray import Menu, MenuItem
-# Handle specific exception case
 except Exception:  # pragma: no cover
     pystray = None  # type: ignore
 
 try:
     import webview
-# Handle specific exception case
 except Exception:  # pragma: no cover
     webview = None  # type: ignore
 
@@ -73,7 +70,6 @@ def _load_settings(config: Any) -> dict[str, Any]:
     try:
         settings["width"] = int(settings.get("width", defaults["width"]))
         settings["height"] = int(settings.get("height", defaults["height"]))
-    # Handle specific exception case
     except Exception:
         settings["width"], settings["height"] = defaults["width"], defaults["height"]
     return settings
@@ -88,16 +84,13 @@ def _icon_image() -> Image.Image | None:
     """
     try:
         from PIL import Image  # type: ignore
-    # Handle specific exception case
     except Exception:
         return None
 
     icon_path_png = Path("icon.png")
     if icon_path_png.exists():
         try:
-        # Attempt operation with error handling
             return Image.open(icon_path_png)
-        # Handle specific exception case
         except Exception:
             return None
     # If only SVG exists, we skip rasterization here (no cairosvg dependency in core)
@@ -120,7 +113,6 @@ def _open_window(settings: dict[str, Any], logger) -> None:
     enable_transparency = transparent
 
     try:
-        # Logic flow
         # Some backends support transparency better with the "qt" GUI; if not available, webview.start will fallback.
         webview.create_window(
             title="ChattyCommander",
@@ -147,7 +139,6 @@ def _open_window(settings: dict[str, Any], logger) -> None:
                 transparent=False,
             )
             webview.start(gui=None, http_server=False)
-        # Handle specific exception case
         except Exception as e2:
             logger.error(f"Failed to open webview window: {e2}")
 
@@ -158,7 +149,6 @@ def run_tray_popup(config: Any, logger) -> int:
     config.gui.popup.url.
 
     Returns:
-        # Apply conditional logic
         int: 0 on normal exit, 2 if dependencies are missing.
     """
     if pystray is None:
@@ -167,25 +157,29 @@ def run_tray_popup(config: Any, logger) -> int:
 
     icon_img = _icon_image()
 
-    def on_open(_icon, _item):
-        """On Open with (_icon, _item).
+    # Track the single webview worker thread so we can avoid spawning a second
+    # window while one is open and join it on shutdown instead of leaking it.
+    window_thread: dict[str, threading.Thread | None] = {"t": None}
 
-        TODO: Add detailed description and parameters.
-        """
-        
+    def on_open(_icon, _item):
         # open window on a background thread to avoid blocking the tray loop
+        existing = window_thread["t"]
+        if existing is not None and existing.is_alive():
+            logger.info("Avatar popup window already open; ignoring open request")
+            return
         settings = _load_settings(config)
-        threading.Thread(
+        t = threading.Thread(
             target=_open_window, args=(settings, logger), daemon=True
-        ).start()
+        )
+        window_thread["t"] = t
+        t.start()
 
     def on_quit(_icon, _item):
-        """On Quit with (_icon, _item).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         _icon.stop()
+        # Best-effort graceful shutdown of the webview worker thread.
+        t = window_thread["t"]
+        if t is not None and t.is_alive():
+            t.join(timeout=2.0)
 
     menu = Menu(
         MenuItem("Open", on_open, default=True),

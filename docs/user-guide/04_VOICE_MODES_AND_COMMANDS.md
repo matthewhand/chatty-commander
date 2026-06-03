@@ -13,3 +13,38 @@ You can configure the exact model and threshold passing in `config.json`.
 
 ## Custom Voice Commands
 You can map specific voice triggers to CLI commands or internal Python functions by modifying the JSON profiles within the backend configs.
+
+## Listing and Running Commands from the CLI
+
+You can inspect and execute configured commands directly from the terminal:
+
+```bash
+# List all configured commands
+chatty-commander list
+
+# Machine-readable output (keypress/url/shell actions are classified by type)
+chatty-commander list --json
+
+# Run a command by name
+chatty-commander exec <command>
+
+# Abort the command if it runs longer than N seconds (exits with code 1 on overrun)
+chatty-commander exec <command> --timeout <seconds>
+```
+
+These subcommands are also reachable through the module entry point, which behaves
+identically to the `chatty-commander` console script:
+
+```bash
+python -m chatty_commander.cli.main list
+python -m chatty_commander.cli.main exec <command>
+```
+
+## Testing the Voice Pipeline
+
+Use the `voice test` subcommand to exercise the voice pipeline without going through
+the full wake-word flow:
+
+```bash
+chatty-commander voice test
+```

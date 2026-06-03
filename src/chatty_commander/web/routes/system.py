@@ -12,11 +12,6 @@ from pydantic import BaseModel, Field
 
 
 class EnvVarInfo(BaseModel):
-    """EnvVarInfo class.
-
-    TODO: Add class description.
-    """
-    
     name: str = Field(..., description="Environment variable name")
     set: bool = Field(..., description="Whether the variable is currently set")
     description: str = Field(..., description="Human-readable description of the variable")
@@ -71,11 +66,6 @@ _ENV_VAR_DESCRIPTIONS: dict[str, str] = {
 
 
 class SystemInfo(BaseModel):
-    """SystemInfo class.
-
-    TODO: Add class description.
-    """
-    
     cpu_percent: float | None = Field(None, description="Current CPU utilization as a percentage")
     memory_total_mb: int | None = Field(None, description="Total physical memory in MB")
     memory_used_mb: int | None = Field(None, description="Used physical memory in MB")
@@ -94,11 +84,6 @@ class SystemInfo(BaseModel):
     )
 
 def include_system_routes(
-    """Include System Routes operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
     *,
     get_start_time: Callable[[], float],
 ) -> APIRouter:
@@ -106,11 +91,6 @@ def include_system_routes(
 
     @router.get("/api/system/info", response_model=SystemInfo)
     async def get_system_info():
-        """Retrieve operation.
-
-        TODO: Add detailed description and parameters.
-        """
-        
         uptime_seconds = time.time() - get_start_time()
 
         env_vars = [
@@ -121,12 +101,14 @@ def include_system_routes(
                 default=default,
                 required=required,
             )
-            # Logic flow
             for name, (desc, default, required) in _ENV_VAR_CATALOG.items()
         ] + [
+            # Only include description-only vars that aren't already in the
+            # catalog, otherwise the response carries duplicate entries (every
+            # _ENV_VAR_DESCRIPTIONS key currently also lives in the catalog).
             EnvVarInfo(name=name, set=(name in os.environ), description=desc, default=None, required=False)
-            # Logic flow
             for name, desc in _ENV_VAR_DESCRIPTIONS.items()
+            if name not in _ENV_VAR_CATALOG
         ]
 
         info = SystemInfo(
@@ -138,9 +120,7 @@ def include_system_routes(
             disk_used_gb=None,
             disk_percent=None,
             python_version=sys.version,
-            # Process each item
             platform=platform.platform(),
-            # Process each item
             architecture=platform.machine(),
             pid=os.getpid(),
             uptime_seconds=uptime_seconds,
@@ -148,7 +128,6 @@ def include_system_routes(
         )
 
         try:
-        # Attempt operation with error handling
             import psutil
 
             # CPU — use interval=0.1 to avoid the misleading 0.0 on first call
@@ -167,7 +146,6 @@ def include_system_routes(
             info.disk_used_gb = round(disk.used / (1024 * 1024 * 1024), 2)
             info.disk_percent = disk.percent
 
-        # Handle specific exception case
         except ImportError:
             pass
 

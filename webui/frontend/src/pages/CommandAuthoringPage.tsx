@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -18,7 +18,6 @@ import {
   Code,
   Shield,
 } from 'lucide-react';
-import { useToast } from '../components/ToastProvider';
 
 // --- TypeScript Interfaces ---
 
@@ -143,7 +142,7 @@ const ActionField: React.FC<{
           className="btn btn-ghost btn-sm btn-circle text-error"
           aria-label="Remove action"
         >
-          <Trash2 size={16} aria-hidden="true" />
+          <Trash2 size={16} />
         </button>
       </div>
 
@@ -234,12 +233,15 @@ const ActionField: React.FC<{
 // --- Main Page Component ---
 
 export default function CommandAuthoringPage() {
+  const [searchParams] = useSearchParams();
+  const editName = searchParams.get('edit');
+  const isEditing = Boolean(editName);
+
   useEffect(() => {
-    document.title = "Command Editor | ChattyCommander";
-  }, []);
+    document.title = (isEditing ? "Edit Command" : "Command Editor") + " | ChattyCommander";
+  }, [isEditing]);
 
   const queryClient = useQueryClient();
-  const toast = useToast();
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
   const [description, setDescription] = useState('');
   const [generatedCommand, setGeneratedCommand] = useState<GeneratedCommand | null>(null);
@@ -252,6 +254,44 @@ export default function CommandAuthoringPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // When arriving with ?edit=<name>, load that command from config and
+  // preload the manual editor so the existing definition can be modified.
+  useEffect(() => {
+    if (!editName) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/v1/config');
+        if (!res.ok) throw new Error('Failed to load configuration');
+        const config = await res.json();
+        const cmd = config?.commands?.[editName];
+        if (!cmd) {
+          if (!cancelled) setError(`Command "${editName}" was not found.`);
+          return;
+        }
+        const actions: CommandAction[] = Array.isArray(cmd.actions)
+          ? cmd.actions
+          : cmd.action
+            ? [cmd.action]
+            : [];
+        if (!cancelled) {
+          setManualCommand({
+            name: editName,
+            display_name: cmd.name || editName,
+            wakeword: cmd.wakeword || '',
+            actions,
+          });
+          setMode('manual');
+        }
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load command for editing');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editName]);
 
   const validateField = useCallback((field: string, value: string) => {
     let errorMsg = '';
@@ -293,12 +333,10 @@ export default function CommandAuthoringPage() {
     onSuccess: (data) => {
       setGeneratedCommand(data);
       setError(null);
-      toast.addToast("Command generated successfully!", "success");
     },
     onError: (err: Error) => {
       setError(err.message);
       setGeneratedCommand(null);
-      toast.addToast(`Failed to generate command: ${err.message}`, "error");
     },
   });
 
@@ -308,7 +346,6 @@ export default function CommandAuthoringPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['commands'] });
       setShowConfirmModal(false);
-      toast.addToast("Command saved successfully!", "success");
       // Reset form
       setDescription('');
       setGeneratedCommand(null);
@@ -319,7 +356,6 @@ export default function CommandAuthoringPage() {
     onError: (err: Error) => {
       setError(err.message);
       setShowConfirmModal(false);
-      toast.addToast(`Failed to save command: ${err.message}`, "error");
     },
   });
 
@@ -435,15 +471,17 @@ export default function CommandAuthoringPage() {
           <div className="text-sm breadcrumbs mb-2 text-base-content/60" aria-label="breadcrumbs">
             <ul>
               <li><Link to="/commands">Commands</Link></li>
-              <li aria-current="page">Command Authoring</li>
+              <li>{isEditing ? 'Edit Command' : 'Command Authoring'}</li>
             </ul>
           </div>
           <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-3">
-            <Wand2 size={32} aria-hidden="true" />
-            Command Authoring
+            <Wand2 size={32} />
+            {isEditing ? `Edit: ${editName}` : 'Command Authoring'}
           </h1>
           <p className="text-base-content/60 mt-1">
-            Create new voice commands using AI assistance or manual configuration.
+            {isEditing
+              ? 'Update the actions, display name, and wake word for this command, then save your changes.'
+              : 'Create new voice commands using AI assistance or manual configuration.'}
           </p>
         </div>
 
@@ -457,7 +495,7 @@ export default function CommandAuthoringPage() {
             className={`tab ${mode === 'ai' ? 'tab-active' : ''}`}
             onClick={() => setMode('ai')}
           >
-            <Sparkles size={16} className="mr-2" aria-hidden="true" />
+            <Sparkles size={16} className="mr-2" />
             AI Mode
           </button>
           <button
@@ -468,7 +506,7 @@ export default function CommandAuthoringPage() {
             className={`tab ${mode === 'manual' ? 'tab-active' : ''}`}
             onClick={() => setMode('manual')}
           >
-            <Code size={16} className="mr-2" aria-hidden="true" />
+            <Code size={16} className="mr-2" />
             Manual Mode
           </button>
         </div>
@@ -484,12 +522,11 @@ export default function CommandAuthoringPage() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="alert alert-error"
-            role="alert"
           >
-            <AlertCircle size={20} aria-hidden="true" />
+            <AlertCircle size={20} />
             <span>{error}</span>
             <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error">
-              <X size={16} aria-hidden="true" />
+              <X size={16} />
             </button>
           </motion.div>
         )}
@@ -507,7 +544,7 @@ export default function CommandAuthoringPage() {
         >
           <div className="card-body">
             <h2 className="card-title flex items-center gap-2">
-              <Sparkles className="text-primary" size={20} aria-hidden="true" />
+              <Sparkles className="text-primary" size={20} />
               Describe Your Command
             </h2>
             <p className="text-sm text-base-content/60 mb-4">
@@ -533,12 +570,12 @@ export default function CommandAuthoringPage() {
               >
                 {generateMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                    <Loader2 size={18} className="animate-spin" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <Wand2 size={18} aria-hidden="true" />
+                    <Wand2 size={18} />
                     Generate Command
                   </>
                 )}
@@ -554,22 +591,20 @@ export default function CommandAuthoringPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="card glass-card border-primary/30"
-          role="region"
-          aria-label="Generated command preview"
         >
           <div className="card-body">
             <div className="flex justify-between items-start">
               <h2 className="card-title flex items-center gap-2">
-                <Check className="text-success" size={20} aria-hidden="true" />
+                <Check className="text-success" size={20} />
                 Generated Command
               </h2>
               <div className="flex gap-2">
                 <button className="btn btn-ghost btn-sm" onClick={handleRegenerate}>
-                  <RefreshCw size={16} className="mr-1" aria-hidden="true" />
+                  <RefreshCw size={16} className="mr-1" />
                   Regenerate
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={switchToManual}>
-                  <Edit3 size={16} className="mr-1" aria-hidden="true" />
+                  <Edit3 size={16} className="mr-1" />
                   Edit Manually
                 </button>
               </div>
@@ -617,12 +652,12 @@ export default function CommandAuthoringPage() {
               >
                 {saveMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                    <Loader2 size={18} className="animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save size={18} aria-hidden="true" />
+                    <Save size={18} />
                     Save Command
                   </>
                 )}
@@ -644,7 +679,7 @@ export default function CommandAuthoringPage() {
         >
           <div className="card-body">
             <h2 className="card-title flex items-center gap-2">
-              <Terminal className="text-primary" size={20} aria-hidden="true" />
+              <Terminal className="text-primary" size={20} />
               Manual Command Editor
             </h2>
 
@@ -663,11 +698,9 @@ export default function CommandAuthoringPage() {
                     setManualCommand((prev) => ({ ...prev, name: e.target.value }))
                   }
                   onBlur={(e) => validateField('name', e.target.value)}
-                  aria-invalid={!!formErrors.name}
-                  aria-describedby={formErrors.name ? "cmd-name-error" : undefined}
                 />
                 {formErrors.name && (
-                  <span id="cmd-name-error" className="text-error text-xs mt-1">{formErrors.name}</span>
+                  <span className="text-error text-xs mt-1">{formErrors.name}</span>
                 )}
               </div>
 
@@ -685,11 +718,9 @@ export default function CommandAuthoringPage() {
                     setManualCommand((prev) => ({ ...prev, display_name: e.target.value }))
                   }
                   onBlur={(e) => validateField('display_name', e.target.value)}
-                  aria-invalid={!!formErrors.display_name}
-                  aria-describedby={formErrors.display_name ? "cmd-display-name-error" : undefined}
                 />
                 {formErrors.display_name && (
-                  <span id="cmd-display-name-error" className="text-error text-xs mt-1">{formErrors.display_name}</span>
+                  <span className="text-error text-xs mt-1">{formErrors.display_name}</span>
                 )}
               </div>
 
@@ -701,17 +732,15 @@ export default function CommandAuthoringPage() {
                   id="cmd-wakeword"
                   type="text"
                   className={`input input-bordered${formErrors.wakeword ? ' input-error' : ''}`}
-                  placeholder="wake word"
+                  placeholder="Trigger phrase"
                   value={manualCommand.wakeword}
                   onChange={(e) =>
                     setManualCommand((prev) => ({ ...prev, wakeword: e.target.value }))
                   }
                   onBlur={(e) => validateField('wakeword', e.target.value)}
-                  aria-invalid={!!formErrors.wakeword}
-                  aria-describedby={formErrors.wakeword ? "cmd-wakeword-error" : undefined}
                 />
                 {formErrors.wakeword && (
-                  <span id="cmd-wakeword-error" className="text-error text-xs mt-1">{formErrors.wakeword}</span>
+                  <span className="text-error text-xs mt-1">{formErrors.wakeword}</span>
                 )}
               </div>
             </div>
@@ -721,7 +750,7 @@ export default function CommandAuthoringPage() {
             <div className="flex justify-between items-center">
               <h3 className="font-semibold">Actions</h3>
               <button className="btn btn-secondary btn-sm" onClick={addManualAction}>
-                <Plus size={16} className="mr-1" aria-hidden="true" />
+                <Plus size={16} className="mr-1" />
                 Add Action
               </button>
             </div>
@@ -729,7 +758,7 @@ export default function CommandAuthoringPage() {
             <AnimatePresence>
               {manualCommand.actions.length === 0 ? (
                 <div className="text-center py-8 text-base-content/50">
-                  <Terminal size={32} className="mx-auto mb-2 opacity-50" aria-hidden="true" />
+                  <Terminal size={32} className="mx-auto mb-2 opacity-50" />
                   <p>No actions defined yet. Click "Add Action" to get started.</p>
                 </div>
               ) : (
@@ -755,12 +784,12 @@ export default function CommandAuthoringPage() {
               >
                 {saveMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                    <Loader2 size={18} className="animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save size={18} aria-hidden="true" />
+                    <Save size={18} />
                     Save Command
                   </>
                 )}
@@ -776,9 +805,8 @@ export default function CommandAuthoringPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="alert alert-warning"
-          role="alert"
         >
-          <AlertCircle size={20} aria-hidden="true" />
+          <AlertCircle size={20} />
           <div className="flex-1">
             <p className="font-medium">AI generation is currently unavailable</p>
             <p className="text-sm">You can still create commands manually using the Manual Mode.</p>
@@ -799,8 +827,6 @@ export default function CommandAuthoringPage() {
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/50 z-40"
               onClick={() => setShowConfirmModal(false)}
-              aria-hidden="true"
-              role="presentation"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -808,15 +834,15 @@ export default function CommandAuthoringPage() {
               exit={{ opacity: 0, scale: 0.9 }}
               className="fixed inset-0 flex items-center justify-center z-50 p-4"
             >
-              <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl" role="dialog" aria-labelledby="modal-title" aria-modal="true">
+              <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl">
                 <div className="card-body">
                   <div className="flex items-center gap-3 text-warning mb-4">
-                    <Shield size={28} aria-hidden="true" />
-                    <h3 id="modal-title" className="text-xl font-bold">Confirm Command Creation</h3>
+                    <Shield size={28} />
+                    <h3 className="text-xl font-bold">Confirm Command Creation</h3>
                   </div>
 
-                  <div className="alert alert-warning mb-4" role="alert">
-                    <AlertCircle size={18} aria-hidden="true" />
+                  <div className="alert alert-warning mb-4">
+                    <AlertCircle size={18} />
                     <span className="text-sm">
                       Commands can execute shell commands and open URLs. Please review carefully
                       before saving.
@@ -865,12 +891,12 @@ export default function CommandAuthoringPage() {
                     >
                       {saveMutation.isPending ? (
                         <>
-                          <Loader2 size={16} className="animate-spin mr-1" aria-hidden="true" />
+                          <Loader2 size={16} className="animate-spin mr-1" />
                           Saving...
                         </>
                       ) : (
                         <>
-                          <Check size={16} className="mr-1" aria-hidden="true" />
+                          <Check size={16} className="mr-1" />
                           Confirm Save
                         </>
                       )}
