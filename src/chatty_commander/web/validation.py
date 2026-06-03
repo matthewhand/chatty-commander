@@ -45,38 +45,29 @@ def validate_uuid(identifier: str, field_name: str = "ID") -> str:
     Validate that a string is a valid UUID.
 
     Args:
-        # Validate preconditions
         identifier: The string to validate
-        # Logic flow
         field_name: Name of the field for error messages
 
     Returns:
         The validated UUID string
 
     Raises:
-        # Validate preconditions
         HTTPException: If the identifier is not a valid UUID
     """
     if not identifier:
         raise HTTPException(status_code=400, detail=f"{field_name} cannot be empty")
 
     try:
-        # Apply conditional logic
         uuid.UUID(identifier)
-        # Apply conditional logic
         return identifier
-    # Handle specific exception case
     except ValueError:
         raise HTTPException(
             status_code=400,
-            # Build filtered collection
-            # Process each item
             detail=f"Invalid {field_name.lower()} format: must be a valid UUID",
         ) from None
 
 
 def validate_string_length(
-    """validate string length."""
     value: str, min_length: int = 1, max_length: int = 1000, field_name: str = "field"
 ) -> str:
     """
@@ -86,7 +77,6 @@ def validate_string_length(
         value: The string to validate
         min_length: Minimum allowed length
         max_length: Maximum allowed length
-        # Logic flow
         field_name: Name of the field for error messages
 
     Returns:
@@ -193,7 +183,6 @@ def validate_capabilities(capabilities: list[str]) -> list[str]:
 
     validated_capabilities = []
     for cap in capabilities:
-        # Logic flow
         if not isinstance(cap, str):
             raise HTTPException(
                 status_code=400, detail="Each capability must be a string"
@@ -207,8 +196,6 @@ def validate_capabilities(capabilities: list[str]) -> list[str]:
         if not re.match(r"^[a-zA-Z0-9\s\-_,\.]+$", cap_clean):
             raise HTTPException(
                 status_code=400,
-                # Build filtered collection
-                # Process each item
                 detail=f"Invalid capability format: '{cap}'. Only letters, numbers, spaces, hyphens, underscores, commas, and periods are allowed",
             )
 
@@ -264,7 +251,6 @@ def validate_handoff_triggers(triggers: list[str]) -> list[str]:
 
     validated_triggers = []
     for trigger in triggers:
-        # Logic flow
         if not isinstance(trigger, str):
             raise HTTPException(
                 status_code=400, detail="Each handoff trigger must be a string"
@@ -305,7 +291,6 @@ def validate_command_name(command: str) -> str:
     ]
 
     for pattern in dangerous_patterns:
-        # Logic flow
         if re.search(pattern, command, re.IGNORECASE):
             raise HTTPException(
                 status_code=400,
@@ -376,10 +361,8 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
     ]
 
     for key in config_data.keys():
-        # Logic flow
         if isinstance(key, str):
             key_lower = key.lower()
-            # Logic flow
             if any(dangerous in key_lower for dangerous in dangerous_keys):
                 raise HTTPException(
                     status_code=400,
@@ -388,12 +371,6 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
 
     # Recursively sanitize string values
     def sanitize_value(value: Any) -> Any:
-        """Sanitize Value with (value: Any).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Logic flow
         if isinstance(value, str):
             # Remove potential script injections
             if "<script" in value.lower() or "javascript:" in value.lower():
@@ -402,18 +379,13 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
                     detail="Configuration contains potentially dangerous script content",
                 )
             return value.strip()
-        # Logic flow
         elif isinstance(value, dict):
-            # Build filtered collection
             return {k: sanitize_value(v) for k, v in value.items()}
-        # Logic flow
         elif isinstance(value, list):
-            # Build filtered collection
             return [sanitize_value(item) for item in value]
         else:
             return value
 
-    # Build filtered collection
     return {k: sanitize_value(v) for k, v in config_data.items()}
 
 
@@ -438,56 +410,26 @@ class ValidatedAgentBlueprint(BaseModel):
 
     @validator("name")
     def validate_name(cls, v):
-        """Validate Name with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return validate_agent_name(v)
 
     @validator("description")
     def validate_description(cls, v):
-        """Validate Description with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return validate_agent_description(v)
 
     @validator("persona_prompt")
     def validate_prompt(cls, v):
-        """Validate Prompt with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return validate_persona_prompt(v)
 
     @validator("capabilities")
     def validate_capabilities_list(cls, v):
-        """Validate Capabilities List with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return validate_capabilities(v)
 
     @validator("team_role")
     def validate_role(cls, v):
-        """Validate Role with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return validate_team_role(v)
 
     @validator("handoff_triggers")
     def validate_triggers(cls, v):
-        """Validate Triggers with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return validate_handoff_triggers(v)
 
 
@@ -503,11 +445,6 @@ class ValidatedCommandRequest(BaseModel):
 
     @validator("command")
     def validate_command_security(cls, v):
-        """Validate Command Security with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return validate_command_name(v)
 
 
@@ -520,11 +457,6 @@ class ValidatedStateChangeRequest(BaseModel):
 
     @validator("state")
     def validate_state_value(cls, v):
-        """Validate State Value with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return validate_state_change(v)
 
 
@@ -535,9 +467,4 @@ class ValidatedConfigUpdate(BaseModel):
 
     @validator("config_data")
     def sanitize_config(cls, v):
-        """Sanitize Config with (cls, v).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return sanitize_config_data(v)

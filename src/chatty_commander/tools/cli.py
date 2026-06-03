@@ -33,11 +33,6 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse Args with (argv).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     # Accept unknown options to avoid pytest-provided flags (-q, test paths) breaking parsing
     parser = argparse.ArgumentParser(
         prog="generate-api-docs",
@@ -54,7 +49,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--output",
         type=Path,
         default=Path("docs"),
-        # Logic flow
         help="Output directory for docs (defaults to ./docs).",
     )
     parser.add_argument(
@@ -62,7 +56,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--verbose",
         action="count",
         default=0,
-        # Apply conditional logic
         help="Increase verbosity (can be specified multiple times).",
     )
     # Accept and ignore any extra args (e.g., pytest passes -k, -q, test paths)
@@ -87,24 +80,17 @@ def _configure_logging(verbosity: int) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Main with (argv).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     args = parse_args(argv)
     _configure_logging(args.verbose)
 
     try:
         result = generate_docs(output_dir=args.output)
-        # Logic flow
         logger.info("Generated docs: %s", {k: str(v) for k, v in result.items()})
         return 0
     except SystemExit as e:
         # When invoked via runpy/run_module, pytest may inject flags causing argparse/SystemExit.
         # Our parser swallows unknowns; if a SystemExit still bubbles, map non-int to 1.
         return int(e.code) if isinstance(e.code, int) else 1
-    # Handle specific exception case
     except Exception as e:  # noqa: BLE001
         logger.error("Failed to generate docs: %s", e)
         return 1

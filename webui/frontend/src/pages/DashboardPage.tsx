@@ -20,11 +20,11 @@ interface PerfMetric {
 const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs" role="tooltip" aria-label={`Performance data for ${label}`}>
+      <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs">
         <p className="font-mono mb-2 text-base-content/60">{label}</p>
         {payload.map((entry: any) => (
           <div key={entry.name} className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} aria-hidden="true" />
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} />
             <span className="font-semibold" style={{ color: entry.stroke }}>
               {entry.name}: {entry.value.toFixed(1)}%
             </span>
@@ -82,10 +82,10 @@ const DashboardPage = React.memo(() => {
   const messageElements = useMemo(() => {
     return recentMessages.length > 0 ? (
       recentMessages.map((msg, i) => (
-        <div key={i} className="text-base-content/80 leading-relaxed" role="listitem">{msg}</div>
+        <div key={i} className="text-base-content/80 leading-relaxed">{msg}</div>
       ))
     ) : (
-      <div className="p-4 text-base-content/50 italic text-center pt-24" aria-hidden="true">
+      <div className="p-4 text-base-content/50 italic text-center pt-24">
         Waiting for commands...
       </div>
     );
@@ -181,7 +181,7 @@ const DashboardPage = React.memo(() => {
   // Memoize agent cards to avoid unnecessary re-renders
   const agentCards = useMemo(() => {
     return agentData?.map((agent) => (
-      <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10" role="article" aria-label={`Agent ${agent.name} status: ${agent.status}`}>
+      <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
         <div className="card-body p-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="card-title text-xl font-bold">{agent.name}</h3>
@@ -191,7 +191,7 @@ const DashboardPage = React.memo(() => {
           </div>
 
           {agent.error && (
-            <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg" role="alert">
+            <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg">
               <span>{agent.error}</span>
             </div>
           )}
@@ -251,24 +251,24 @@ const DashboardPage = React.memo(() => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-pulse" role="status" aria-live="polite" aria-busy="true" aria-label="Loading dashboard">
-        <div className="h-10 w-48 skeleton rounded-lg" aria-hidden="true"></div>
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading dashboard">
+        <div className="h-10 w-48 skeleton rounded-lg"></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box" aria-hidden="true"></div>
+            <div key={i} className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box"></div>
           ))}
         </div>
 
-        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-80 skeleton rounded-box" aria-hidden="true"></div>
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-80 skeleton rounded-box"></div>
 
-        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-96 skeleton rounded-box" aria-hidden="true"></div>
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-96 skeleton rounded-box"></div>
 
-        <div className="h-8 w-48 skeleton mt-8 mb-4 rounded-lg" aria-hidden="true"></div>
+        <div className="h-8 w-48 skeleton mt-8 mb-4 rounded-lg"></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box" aria-hidden="true"></div>
+            <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box"></div>
           ))}
         </div>
       </div>
@@ -282,11 +282,11 @@ const DashboardPage = React.memo(() => {
       </h2>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="region" aria-label="System statistics">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-primary" aria-hidden="true">
+            <div className="stat-figure text-primary">
               <Server size={32} />
             </div>
             <div className="stat-title">System Status</div>
@@ -297,7 +297,7 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-secondary" aria-hidden="true">
+            <div className="stat-figure text-secondary">
               <Clock size={32} />
             </div>
             <div className="stat-title">Uptime</div>
@@ -308,7 +308,7 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-accent" aria-hidden="true">
+            <div className="stat-figure text-accent">
               <Terminal size={32} />
             </div>
             <div className="stat-title">Commands</div>
@@ -320,17 +320,7 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-info">
-              <div 
-                className="radial-progress text-info" 
-                style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} 
-                role="progressbar"
-                aria-valuenow={parseInt(systemStatus?.cpu || "0")}
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-label="CPU usage"
-              >
-                {parseInt(systemStatus?.cpu || "0")}%
-              </div>
+              <div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>
             </div>
             <div className="stat-title">CPU Load</div>
             <div className="stat-value text-info text-2xl">{systemStatus?.cpu || "N/A"}</div>
@@ -341,17 +331,7 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-warning">
-              <div 
-                className="radial-progress text-warning" 
-                style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} 
-                role="progressbar"
-                aria-valuenow={parseInt(systemStatus?.memory || "0")}
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-label="Memory usage"
-              >
-                {parseInt(systemStatus?.memory || "0")}%
-              </div>
+              <div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>
             </div>
             <div className="stat-title">Memory</div>
             <div className="stat-value text-warning text-2xl">{systemStatus?.memory || "N/A"}</div>
@@ -361,7 +341,7 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure" aria-hidden="true">
+            <div className="stat-figure">
               {isConnected ?
                 <Wifi size={32} className="text-success" /> :
                 isReconnecting ?
@@ -374,7 +354,7 @@ const DashboardPage = React.memo(() => {
               {isConnected ? "Connected" : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
             </div>
             <div className="stat-desc flex items-center gap-1">
-              <Zap size={14} className="text-accent" aria-hidden="true" />
+              <Zap size={14} className="text-accent" />
               <span>Last msg: {lastMsgAgo}</span>
             </div>
           </div>
@@ -391,35 +371,23 @@ const DashboardPage = React.memo(() => {
                 <button
                   className="btn btn-sm btn-ghost btn-square"
                   onClick={() => setIsPaused(!isPaused)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setIsPaused(!isPaused);
-                    }
-                  }}
                   aria-label={isPaused ? "Resume Chart" : "Pause Chart"}
                 >
-                  {isPaused ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
+                  {isPaused ? <Play size={18} /> : <Pause size={18} />}
                 </button>
               </div>
               <div className="tooltip" data-tip="Export CSV">
                 <button
                   className="btn btn-sm btn-ghost btn-square"
                   onClick={handleExport}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleExport();
-                    }
-                  }}
                   aria-label="Export Data as CSV"
                 >
-                  <Download size={18} aria-hidden="true" />
+                  <Download size={18} />
                 </button>
               </div>
             </div>
           </div>
-          <div className="h-64 w-full" role="img" aria-label="Performance history chart showing CPU and memory usage over time">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={history}>
                 <defs>
@@ -468,35 +436,26 @@ const DashboardPage = React.memo(() => {
         <div className="card-body">
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
-          <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1" role="log" aria-live="polite" aria-label="Command execution log">
+          <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1">
             {messageElements}
           </div>
 
           <form onSubmit={handleSendCommand} className="mt-4 flex gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Type a command to execute..."
-                aria-label="Type and execute a command"
-                className={`input input-bordered w-full focus:input-primary ${!isConnected ? 'input-disabled' : ''}`}
-                value={commandInput}
-                onChange={(e) => setCommandInput(e.target.value)}
-                disabled={isSending || !isConnected}
-              />
-              {!isConnected && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-xs text-error">
-                  <WifiOff size={14} aria-hidden="true" />
-                  <span>WebSocket disconnected</span>
-                </div>
-              )}
-            </div>
+            <input
+              type="text"
+              placeholder="Type a command to execute..."
+              aria-label="Type and execute a command"
+              className="input input-bordered w-full focus:input-primary"
+              value={commandInput}
+              onChange={(e) => setCommandInput(e.target.value)}
+              disabled={isSending || !isConnected}
+            />
             <button
               type="submit"
               className="btn btn-primary"
               disabled={!commandInput.trim() || isSending || !isConnected}
-              title={!isConnected ? "WebSocket connection required" : ""}
             >
-              {isSending ? <span className="loading loading-spinner" aria-hidden="true"></span> : <Send size={18} aria-hidden="true" />}
+              {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
               Execute
             </button>
           </form>
@@ -505,21 +464,21 @@ const DashboardPage = React.memo(() => {
 
       {/* Agent Status Section */}
       <h3 className="text-2xl font-bold bg-gradient-to-r from-error to-warning bg-clip-text text-transparent mt-8 mb-4 flex items-center gap-2">
-        <AssessmentIcon size={24} className="text-error" aria-hidden="true" /> Agent Status
+        <AssessmentIcon size={24} className="text-error" /> Agent Status
       </h3>
 
       {agentsError && (
-        <div className="alert alert-error shadow-lg" role="alert">
+        <div className="alert alert-error shadow-lg">
           <span>{(agentsErrObj as Error)?.message || "Failed to fetch agent status."}</span>
         </div>
       )}
 
       {agentsLoading ? (
-        <div className="flex justify-center p-8" role="status" aria-live="polite" aria-label="Loading agent status">
-          <span className="loading loading-spinner text-primary" aria-hidden="true"></span>
+        <div className="flex justify-center p-8">
+          <span className="loading loading-spinner text-primary"></span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="region" aria-label="Agent status cards">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {agentCards}
         </div>
       )}

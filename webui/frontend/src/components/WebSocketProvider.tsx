@@ -6,7 +6,6 @@ type WebSocketContextType = {
   isConnected: boolean;
   reconnectAttempt: number;
   lastMessageTime: number | null;
-  manualReconnect: () => void;
 };
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
@@ -28,19 +27,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const shouldReconnectRef = useRef(true);
   const maxReconnectAttempts = 10;
   const baseReconnectDelay = 1000; // 1 second
-
-  const manualReconnect = useCallback(() => {
-    // Cancel any pending reconnection
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    // Reset attempt counter
-    reconnectAttemptRef.current = 0;
-    setReconnectAttempt(0);
-    // Trigger immediate reconnection
-    connect();
-  }, [connect]);
 
   const connect = useCallback(() => {
     if (!user) return;
@@ -70,14 +56,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("WebSocketProvider: Disconnected", ev.code, ev.reason);
       setIsConnected(false);
       setWs(null);
-      setLastMessageTime(null); // Reset last message time on disconnect
 
       if (!shouldReconnectRef.current) return;
 
       if (reconnectAttemptRef.current < maxReconnectAttempts) {
         const attempt = reconnectAttemptRef.current;
-        // Improved delay calculation: faster initial reconnection, capped at 30s
-        const delay = Math.min(30000, baseReconnectDelay * Math.pow(1.3, attempt));
+        const delay = Math.min(30000, baseReconnectDelay * Math.pow(1.5, attempt));
         console.log(`WebSocketProvider: Reconnecting in ${delay}ms...`);
 
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -125,7 +109,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user, connect]); // Only re-run when user changes, not on every reconnect attempt
 
   return (
-    <WebSocketContext.Provider value={{ ws, isConnected, reconnectAttempt, lastMessageTime, manualReconnect }}>
+    <WebSocketContext.Provider value={{ ws, isConnected, reconnectAttempt, lastMessageTime }}>
       {children}
     </WebSocketContext.Provider>
   );

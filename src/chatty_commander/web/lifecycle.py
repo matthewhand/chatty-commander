@@ -52,7 +52,6 @@ def _atexit_handler() -> None:
 
 
 def register_lifecycle(
-    """register lifecycle."""
     app: FastAPI,
     *,
     get_state_manager: Callable[[], Any],
@@ -75,7 +74,6 @@ def register_lifecycle(
         signal.signal(signal.SIGINT, _handle_shutdown_signal)
         atexit.register(_atexit_handler)
 
-        # Logic flow
         # Intentionally minimal; invoke optional callback if present.
         if on_startup is not None:
             try:
@@ -86,11 +84,9 @@ def register_lifecycle(
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:  # noqa: D401
-        # Process each item
         timestamp = datetime.now(tz=UTC).isoformat()
         logger.info("Shutting down gracefully... (%s)", timestamp)
 
-        # Logic flow
         # Intentionally minimal; invoke optional callback if present.
         if on_shutdown is not None:
             try:
