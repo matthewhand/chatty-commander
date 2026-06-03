@@ -20,6 +20,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .command_executor import CommandExecutor
-
-__all__ = ["CommandExecutor"]
+# Empty file to indicate that the directory is a Python package.
