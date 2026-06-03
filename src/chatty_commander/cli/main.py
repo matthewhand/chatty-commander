@@ -36,9 +36,9 @@ import sys
 import sys as _sys
 import threading
 
-# Fix sys.path to include the project src root (one level up from this package directory)
+# Fix sys.path to include the project src root (two levels up from this package directory)
 _pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
-_root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
+_root_src = _os.path.abspath(_os.path.join(_pkg_dir, "..", ".."))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
 
