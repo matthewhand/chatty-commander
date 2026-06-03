@@ -563,10 +563,11 @@ class WebModeServer:
         app.add_middleware(ResponseTimeMiddleware)
 
         # CORS policy
+        allow_origins = ["*"] if self.no_auth else ["http://localhost:3000"]
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"] if self.no_auth else ["http://localhost:3000"],
-            allow_credentials=True,
+            allow_origins=allow_origins,
+            allow_credentials="*" not in allow_origins,
             allow_methods=["*"],
             allow_headers=["*"],
         )
