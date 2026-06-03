@@ -76,7 +76,6 @@ def validate_uuid(identifier: str, field_name: str = "ID") -> str:
 
 
 def validate_string_length(
-    """validate string length."""
     value: str, min_length: int = 1, max_length: int = 1000, field_name: str = "field"
 ) -> str:
     """
@@ -375,16 +374,15 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
         "javascript:",
     ]
 
-    for key in config_data.keys():
-        # Logic flow
+    def check_key(key: Any) -> Any:
         if isinstance(key, str):
             key_lower = key.lower()
-            # Logic flow
             if any(dangerous in key_lower for dangerous in dangerous_keys):
                 raise HTTPException(
                     status_code=400,
                     detail=f"Configuration contains potentially dangerous key: {key}",
                 )
+        return key
 
     # Recursively sanitize string values
     def sanitize_value(value: Any) -> Any:
@@ -392,7 +390,7 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Logic flow
         if isinstance(value, str):
             # Remove potential script injections
@@ -405,7 +403,7 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
         # Logic flow
         elif isinstance(value, dict):
             # Build filtered collection
-            return {k: sanitize_value(v) for k, v in value.items()}
+            return {check_key(k): sanitize_value(v) for k, v in value.items()}
         # Logic flow
         elif isinstance(value, list):
             # Build filtered collection
@@ -414,7 +412,7 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
             return value
 
     # Build filtered collection
-    return {k: sanitize_value(v) for k, v in config_data.items()}
+    return {check_key(k): sanitize_value(v) for k, v in config_data.items()}
 
 
 # Enhanced Pydantic models with validation
@@ -442,7 +440,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_agent_name(v)
 
     @validator("description")
@@ -451,7 +449,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_agent_description(v)
 
     @validator("persona_prompt")
@@ -460,7 +458,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_persona_prompt(v)
 
     @validator("capabilities")
@@ -469,7 +467,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_capabilities(v)
 
     @validator("team_role")
@@ -478,7 +476,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_team_role(v)
 
     @validator("handoff_triggers")
@@ -487,7 +485,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_handoff_triggers(v)
 
 
@@ -507,7 +505,7 @@ class ValidatedCommandRequest(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_command_name(v)
 
 
@@ -524,7 +522,7 @@ class ValidatedStateChangeRequest(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_state_change(v)
 
 
@@ -539,5 +537,5 @@ class ValidatedConfigUpdate(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return sanitize_config_data(v)
