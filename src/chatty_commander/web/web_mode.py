@@ -607,7 +607,11 @@ class WebModeServer:
         # CORS policy — delegate to shared apply_cors() for consistency
         from chatty_commander.web.auth import apply_cors
 
-        apply_cors(app, no_auth=self.no_auth)
+        allowed_origins = None
+        if hasattr(self.config_manager, "web_server"):
+            allowed_origins = self.config_manager.web_server.get("allowed_origins")
+
+        apply_cors(app, no_auth=self.no_auth, origins=allowed_origins)
 
         # Core REST via extracted router (status/config/state/command)
         core = include_core_routes(

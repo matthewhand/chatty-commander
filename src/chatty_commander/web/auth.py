@@ -72,7 +72,15 @@ def apply_cors(
     - Otherwise: restrict to provided origins, defaulting to localhost:3000.
     """
     if no_auth:
-        allow_origins = ["*"]
+        # Avoid wildcard for better security and to allow credentials in dev
+        allow_origins = [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:8100",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:8100",
+        ]
     else:
         allow_origins = (
             list(origins) if origins is not None else ["http://localhost:3000"]
