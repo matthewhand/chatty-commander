@@ -33,6 +33,26 @@ from typing import Any
 from fastapi import HTTPException
 from pydantic import BaseModel, Field, validator
 
+# Constants for configuration sanitization
+DANGEROUS_CONFIG_KEYS = [
+    "__proto__",
+    "constructor",
+    "prototype",
+    "eval",
+    "function",
+    "script",
+    "javascript:",
+]
+
+DANGEROUS_CONFIG_VALUES = [
+    "<script",
+    "javascript:",
+]
+
+# Pre-compiled regular expressions for performance
+DANGEROUS_KEYS_RE = re.compile("|".join(map(re.escape, DANGEROUS_CONFIG_KEYS)))
+DANGEROUS_VALUES_RE = re.compile("|".join(map(re.escape, DANGEROUS_CONFIG_VALUES)))
+
 
 class ValidationError(Exception):
     """Custom validation error for better error handling."""
@@ -349,21 +369,11 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
             status_code=400, detail="Configuration data must be a dictionary"
         )
 
-    # Check for potentially dangerous keys
-    dangerous_keys = [
-        "__proto__",
-        "constructor",
-        "prototype",
-        "eval",
-        "function",
-        "script",
-        "javascript:",
-    ]
-
+    # Check for potentially dangerous keys using optimized regex
     for key in config_data.keys():
         if isinstance(key, str):
             key_lower = key.lower()
-            if any(dangerous in key_lower for dangerous in dangerous_keys):
+            if DANGEROUS_KEYS_RE.search(key_lower):
                 raise HTTPException(
                     status_code=400,
                     detail=f"Configuration contains potentially dangerous key: {key}",
@@ -372,8 +382,9 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
     # Recursively sanitize string values
     def sanitize_value(value: Any) -> Any:
         if isinstance(value, str):
-            # Remove potential script injections
-            if "<script" in value.lower() or "javascript:" in value.lower():
+            # Remove potential script injections using optimized regex
+            value_lower = value.lower()
+            if DANGEROUS_VALUES_RE.search(value_lower):
                 raise HTTPException(
                     status_code=400,
                     detail="Configuration contains potentially dangerous script content",

@@ -1,3 +1,4 @@
+from src.chatty_commander.web.validation import (validate_uuid, validate_string_length, validate_agent_name, validate_capabilities, validate_command_name, sanitize_config_data, validate_command_security)
 # MIT License
 #
 # Copyright (c) 2024 mhand
@@ -29,7 +30,6 @@ from fastapi import HTTPException
 
 # Note: These validation functions have been moved or refactored
 # Tests below are kept for reference but may need updating
-pytest.skip("Validation functions moved to web.validation module", allow_module_level=True)
 
 
 class TestUUIDValidation:
@@ -38,7 +38,7 @@ class TestUUIDValidation:
     def test_valid_uuid(self):
         """Test that valid UUIDs pass validation."""
         valid_uuid = "550e8400-e29b-41d4-a716-446655440000"
-        result = validate_uuid_field(valid_uuid, "Test ID")
+        result = validate_uuid(valid_uuid, "Test ID")
         assert result == valid_uuid
 
     def test_invalid_uuid_format(self):
@@ -53,14 +53,14 @@ class TestUUIDValidation:
 
         for invalid_uuid in invalid_uuids:
             with pytest.raises(HTTPException) as exc_info:
-                validate_uuid_field(invalid_uuid, "Test ID")
+                validate_uuid(invalid_uuid, "Test ID")
             assert exc_info.value.status_code == 400
             assert "invalid" in exc_info.value.detail.lower()
 
     def test_empty_uuid(self):
         """Test that empty UUID raises HTTPException."""
         with pytest.raises(HTTPException) as exc_info:
-            validate_uuid_field("", "Test ID")
+            validate_uuid("", "Test ID")
         assert exc_info.value.status_code == 400
         assert "cannot be empty" in exc_info.value.detail
 
@@ -70,13 +70,13 @@ class TestStringValidation:
 
     def test_valid_string(self):
         """Test that valid strings pass validation."""
-        result = validate_string_field("test string", 1, 100, "Test Field")
+        result = validate_string_length("test string", 1, 100, "Test Field")
         assert result == "test string"
 
     def test_string_too_short(self):
         """Test that strings too short raise HTTPException."""
         with pytest.raises(HTTPException) as exc_info:
-            validate_string_field("ab", 5, 100, "Test Field")
+            validate_string_length("ab", 5, 100, "Test Field")
         assert exc_info.value.status_code == 400
         assert "at least 5 characters" in exc_info.value.detail
 
@@ -84,20 +84,20 @@ class TestStringValidation:
         """Test that strings too long raise HTTPException."""
         long_string = "a" * 101
         with pytest.raises(HTTPException) as exc_info:
-            validate_string_field(long_string, 1, 100, "Test Field")
+            validate_string_length(long_string, 1, 100, "Test Field")
         assert exc_info.value.status_code == 400
         assert "not exceed 100 characters" in exc_info.value.detail
 
     def test_non_string_input(self):
         """Test that non-string inputs raise HTTPException."""
         with pytest.raises(HTTPException) as exc_info:
-            validate_string_field(123, 1, 100, "Test Field")
+            validate_string_length(123, 1, 100, "Test Field")
         assert exc_info.value.status_code == 400
         assert "must be a string" in exc_info.value.detail
 
     def test_string_whitespace_trimming(self):
         """Test that whitespace is trimmed from strings."""
-        result = validate_string_field("  test string  ", 1, 100, "Test Field")
+        result = validate_string_length("  test string  ", 1, 100, "Test Field")
         assert result == "test string"
 
 
@@ -115,7 +115,7 @@ class TestAgentNameValidation:
         ]
 
         for name in valid_names:
-            result = validate_agent_name_field(name)
+            result = validate_agent_name(name)
             assert result == name
 
     def test_invalid_agent_names(self):
@@ -130,7 +130,7 @@ class TestAgentNameValidation:
 
         for name in invalid_names:
             with pytest.raises(HTTPException) as exc_info:
-                validate_agent_name_field(name)
+                validate_agent_name(name)
             assert exc_info.value.status_code == 400
 
 
@@ -146,13 +146,13 @@ class TestCapabilitiesValidation:
         ]
 
         for caps in valid_caps:
-            result = validate_capabilities_field(caps)
+            result = validate_capabilities(caps)
             assert result == caps
 
     def test_invalid_capabilities_type(self):
         """Test that non-list capabilities raise HTTPException."""
         with pytest.raises(HTTPException) as exc_info:
-            validate_capabilities_field("not-a-list")
+            validate_capabilities("not-a-list")
         assert exc_info.value.status_code == 400
         assert "must be a list" in exc_info.value.detail
 
@@ -160,7 +160,7 @@ class TestCapabilitiesValidation:
         """Test that too many capabilities raise HTTPException."""
         too_many_caps = [f"cap_{i}" for i in range(51)]
         with pytest.raises(HTTPException) as exc_info:
-            validate_capabilities_field(too_many_caps)
+            validate_capabilities(too_many_caps)
         assert exc_info.value.status_code == 400
         assert "more than 50" in exc_info.value.detail
 
@@ -174,13 +174,13 @@ class TestCapabilitiesValidation:
 
         for caps in invalid_caps:
             with pytest.raises(HTTPException) as exc_info:
-                validate_capabilities_field(caps)
+                validate_capabilities(caps)
             assert exc_info.value.status_code == 400
 
     def test_non_string_capability(self):
         """Test that non-string capabilities raise HTTPException."""
         with pytest.raises(HTTPException) as exc_info:
-            validate_capabilities_field([123, "valid-cap"])
+            validate_capabilities([123, "valid-cap"])
         assert exc_info.value.status_code == 400
         assert "must be a string" in exc_info.value.detail
 
@@ -257,13 +257,13 @@ class TestConfigDataValidation:
             "list_setting": ["item1", "item2"],
         }
 
-        result = validate_config_data(valid_config)
+        result = sanitize_config_data(valid_config)
         assert result == valid_config
 
     def test_invalid_config_type(self):
         """Test that non-dict config data raises HTTPException."""
         with pytest.raises(HTTPException) as exc_info:
-            validate_config_data("not-a-dict")
+            sanitize_config_data("not-a-dict")
         assert exc_info.value.status_code == 400
         assert "must be a dictionary" in exc_info.value.detail
 
@@ -282,7 +282,7 @@ class TestConfigDataValidation:
         for key in dangerous_keys:
             config = {key: "value"}
             with pytest.raises(HTTPException) as exc_info:
-                validate_config_data(config)
+                sanitize_config_data(config)
             assert exc_info.value.status_code == 400
             assert "dangerous key" in exc_info.value.detail.lower()
 
@@ -297,7 +297,7 @@ class TestConfigDataValidation:
         for value in dangerous_values:
             config = {"setting": value}
             with pytest.raises(HTTPException) as exc_info:
-                validate_config_data(config)
+                sanitize_config_data(config)
             assert exc_info.value.status_code == 400
             assert "script content" in exc_info.value.detail.lower()
 
@@ -314,7 +314,7 @@ class TestConfigDataValidation:
             },
         }
 
-        result = validate_config_data(config)
+        result = sanitize_config_data(config)
         assert result["nested"]["list_setting"][1] == "whitespace_item"
 
 
