@@ -32,10 +32,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 def main():
     """Entry point wrapper."""
-    # ruff: noqa: E402
-    import chatty_commander.main
+    from chatty_commander.main import main as main_func
 
-    main_func = chatty_commander.main.main
     return main_func()
 
 
