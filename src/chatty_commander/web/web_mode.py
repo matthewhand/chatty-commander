@@ -566,7 +566,7 @@ class WebModeServer:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"] if self.no_auth else ["http://localhost:3000"],
-            allow_credentials=True,
+            allow_credentials=not self.no_auth,
             allow_methods=["*"],
             allow_headers=["*"],
         )

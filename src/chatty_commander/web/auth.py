@@ -72,10 +72,12 @@ def apply_cors(
     """
     if no_auth:
         allow_origins = ["*"]
+        allow_credentials = False
     else:
         allow_origins = (
             list(origins) if origins is not None else ["http://localhost:3000"]
         )
+        allow_credentials = True
 
     # Remove existing CORS middleware if already present to avoid duplicates.
     app.user_middleware = [
@@ -85,7 +87,7 @@ def apply_cors(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,
-        allow_credentials=True,
+        allow_credentials=allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )
