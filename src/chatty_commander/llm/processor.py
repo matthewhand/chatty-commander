@@ -139,8 +139,6 @@ class CommandProcessor:
             if cmd_lower in user_lower:
                 return self._available_commands_lower[cmd_lower], 0.9
 
-        # Keyword-based matching - use pre-filtered map to avoid checking
-        # if cmd_name is in available_commands for every map entry
         for cmd_name in self._available_keyword_map:
             for keyword in self._available_keyword_map[cmd_name]:
                 if keyword in user_lower:
