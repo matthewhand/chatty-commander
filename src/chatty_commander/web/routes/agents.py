@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -195,7 +196,9 @@ async def create_blueprint(
             and "description" in payload
             and len(payload.keys()) == 1
         ):
-            model = parse_blueprint_from_text(str(payload.get("description", "")))
+            model = await asyncio.to_thread(
+                parse_blueprint_from_text, str(payload.get("description", ""))
+            )
         else:
             # Try to parse as structured blueprint
             model = AgentBlueprintModel(**payload)
