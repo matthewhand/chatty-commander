@@ -67,11 +67,22 @@ def apply_cors(
     """
     Apply CORS middleware consistent with legacy behavior.
 
-    - When no_auth is True: fully permissive for local/dev usage.
+    - When no_auth is True: allows common local development origins.
     - Otherwise: restrict to provided origins, defaulting to localhost:3000.
     """
     if no_auth:
-        allow_origins = ["*"]
+        # Default local development origins instead of wildcard
+        allow_origins = [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+        ]
+        # If explicit origins provided in no_auth mode, merge them
+        if origins is not None:
+            for o in origins:
+                if o not in allow_origins:
+                    allow_origins.append(o)
     else:
         allow_origins = (
             list(origins) if origins is not None else ["http://localhost:3000"]
