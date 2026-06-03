@@ -118,14 +118,27 @@ class AvatarWSConnectionManager:
             pass
 
         async def _broadcast():
-            dead: list[WebSocket] = []
-            for connection in list(self.active_connections):
+            if not self.active_connections:
+                return
+
+            payload = json.dumps(message)
+
+            async def _send(connection: WebSocket):
                 try:
-                    await connection.send_text(json.dumps(message))
+                    await connection.send_text(payload)
+                    return None
                 except Exception:
-                    dead.append(connection)
-            for d in dead:
-                self.disconnect(d)
+                    return connection
+
+            # Send to all connections concurrently
+            results = await asyncio.gather(
+                *[_send(conn) for conn in list(self.active_connections)]
+            )
+
+            # Remove dead connections
+            for dead_conn in results:
+                if dead_conn:
+                    self.disconnect(dead_conn)
 
         # Schedule or run the coroutine safely depending on context
         try:
