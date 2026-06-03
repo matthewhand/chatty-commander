@@ -1,8 +1,28 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  Server,
+  Clock,
+  Terminal,
+  Wifi,
+  WifiOff,
+  Send,
+  Activity as AssessmentIcon,
+  Pause,
+  Play,
+  Download,
+  Zap,
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 import { formatTimestamp } from "../utils/formatTime";
@@ -24,7 +44,10 @@ const CustomTooltip = React.memo(({ active, payload, label }: any) => {
         <p className="font-mono mb-2 text-base-content/60">{label}</p>
         {payload.map((entry: any) => (
           <div key={entry.name} className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} />
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: entry.stroke }}
+            />
             <span className="font-semibold" style={{ color: entry.stroke }}>
               {entry.name}: {entry.value.toFixed(1)}%
             </span>
@@ -65,7 +88,9 @@ const DashboardPage = React.memo(() => {
 
   // Memoize the recent messages slice to avoid inline allocation during frequent re-renders.
   const recentMessages = useMemo(() => {
-    return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
+    return messages.length > MAX_RECENT_MESSAGES
+      ? messages.slice(-MAX_RECENT_MESSAGES)
+      : messages;
   }, [messages]);
 
   const [commandInput, setCommandInput] = useState("");
@@ -83,13 +108,21 @@ const DashboardPage = React.memo(() => {
 
     // Optimistically add to log
     const ts = formatTimestamp(new Date());
-    setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${ts}] > Executing: ${cmd}`] : [...prev, `[${ts}] > Executing: ${cmd}`]);
+    setMessages((prev) =>
+      prev.length >= MAX_MESSAGES
+        ? [...prev.slice(1), `[${ts}] > Executing: ${cmd}`]
+        : [...prev, `[${ts}] > Executing: ${cmd}`],
+    );
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
       const errTs = formatTimestamp(new Date());
-      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${errTs}] Error: ${err.message}`] : [...prev, `[${errTs}] Error: ${err.message}`]);
+      setMessages((prev) =>
+        prev.length >= MAX_MESSAGES
+          ? [...prev.slice(1), `[${errTs}] Error: ${err.message}`]
+          : [...prev, `[${errTs}] Error: ${err.message}`],
+      );
     } finally {
       setIsSending(false);
     }
@@ -99,10 +132,18 @@ const DashboardPage = React.memo(() => {
     queryKey: ["systemStatus"],
     queryFn: async () => {
       const res = await fetch("/health");
-      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0, cpu: "N/A", memory: "N/A" };
+      if (!res.ok)
+        return {
+          status: "Unknown",
+          uptime: "N/A",
+          commandsExecuted: 0,
+          cpu: "N/A",
+          memory: "N/A",
+        };
       const data = await res.json();
       return {
-        status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
+        status:
+          data.status === "healthy" ? "Healthy" : (data.status ?? "Unknown"),
         uptime: data.uptime ?? "N/A",
         commandsExecuted: data.commands_executed ?? 0,
         version: data.version,
@@ -114,7 +155,10 @@ const DashboardPage = React.memo(() => {
   });
 
   const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
-  const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
+  const systemStatus = useMemo(
+    () => ({ ...initialSystemStatus, ...realtimeStatus }),
+    [initialSystemStatus, realtimeStatus],
+  );
 
   // Update history chart from telemetry
   useEffect(() => {
@@ -127,18 +171,21 @@ const DashboardPage = React.memo(() => {
 
       // Performance optimization: prevent unnecessary intermediate array allocation
       // by slicing `prev` conditionally before creating the new array.
-      setHistory(prev => {
+      setHistory((prev) => {
         const item = { time: now, cpu: cpuVal, memory: memVal };
-        return prev.length >= MAX_HISTORY_ITEMS ? [...prev.slice(1), item] : [...prev, item];
+        return prev.length >= MAX_HISTORY_ITEMS
+          ? [...prev.slice(1), item]
+          : [...prev, item];
       });
     }
   }, [systemStatus, isPaused]);
 
   const handleExport = () => {
     const headers = "Time,CPU,Memory\n";
-    const csvContent = "data:text/csv;charset=utf-8,"
-      + headers
-      + history.map(row => `${row.time},${row.cpu},${row.memory}`).join("\n");
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      headers +
+      history.map((row) => `${row.time},${row.cpu},${row.memory}`).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -148,7 +195,12 @@ const DashboardPage = React.memo(() => {
     document.body.removeChild(link);
   };
 
-  const { data: agentData, isLoading: agentsLoading, isError: agentsError, error: agentsErrObj } = useQuery<Agent[]>({
+  const {
+    data: agentData,
+    isLoading: agentsLoading,
+    isError: agentsError,
+    error: agentsErrObj,
+  } = useQuery<Agent[]>({
     queryKey: ["agentStatus"],
     queryFn: fetchAgentStatus,
     refetchInterval: 30000,
@@ -157,11 +209,16 @@ const DashboardPage = React.memo(() => {
 
   const getAgentStatusColor = (status: Agent["status"]) => {
     switch (status) {
-      case "online": return "badge-success";
-      case "offline": return "badge-ghost";
-      case "error": return "badge-error";
-      case "processing": return "badge-warning";
-      default: return "badge-ghost";
+      case "online":
+        return "badge-success";
+      case "offline":
+        return "badge-ghost";
+      case "error":
+        return "badge-error";
+      case "processing":
+        return "badge-warning";
+      default:
+        return "badge-ghost";
     }
   };
 
@@ -171,20 +228,34 @@ const DashboardPage = React.memo(() => {
       if (msg.type === "telemetry" && msg.data) {
         setRealtimeStatus((prev: any) => ({
           ...prev,
-          cpu: msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu,
-          memory: msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory,
+          cpu:
+            msg.data.cpu !== undefined
+              ? `${Number(msg.data.cpu).toFixed(1)}`
+              : prev?.cpu,
+          memory:
+            msg.data.memory !== undefined
+              ? `${Number(msg.data.memory).toFixed(1)}`
+              : prev?.memory,
         }));
         return;
       }
       // Fallback for non-JSON or other messages
       if (msg.data && typeof msg.data === "string") {
         const wsTs = formatTimestamp(new Date());
-        setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${wsTs}] ${msg.data as string}`] : [...prev, `[${wsTs}] ${msg.data as string}`]);
+        setMessages((prev) =>
+          prev.length >= MAX_MESSAGES
+            ? [...prev.slice(1), `[${wsTs}] ${msg.data as string}`]
+            : [...prev, `[${wsTs}] ${msg.data as string}`],
+        );
       }
     } catch {
       // Plain text message
       const wsTs = formatTimestamp(new Date());
-      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${wsTs}] ${event.data as string}`] : [...prev, `[${wsTs}] ${event.data as string}`]);
+      setMessages((prev) =>
+        prev.length >= MAX_MESSAGES
+          ? [...prev.slice(1), `[${wsTs}] ${event.data as string}`]
+          : [...prev, `[${wsTs}] ${event.data as string}`],
+      );
     }
   }, []); // setRealtimeStatus and setMessages are stable; no external deps
 
@@ -199,12 +270,19 @@ const DashboardPage = React.memo(() => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading dashboard">
+      <div
+        className="space-y-6 animate-pulse"
+        aria-busy="true"
+        aria-label="Loading dashboard"
+      >
         <div className="h-10 w-48 skeleton rounded-lg"></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box"></div>
+            <div
+              key={i}
+              className="stats shadow bg-base-100 border border-base-content/10 h-28 skeleton rounded-box"
+            ></div>
           ))}
         </div>
 
@@ -216,7 +294,10 @@ const DashboardPage = React.memo(() => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box"></div>
+            <div
+              key={i}
+              className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box"
+            ></div>
           ))}
         </div>
       </div>
@@ -231,14 +312,15 @@ const DashboardPage = React.memo(() => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-primary">
               <Server size={32} />
             </div>
             <div className="stat-title">System Status</div>
-            <div className="stat-value text-primary">{systemStatus?.status || "Unknown"}</div>
+            <div className="stat-value text-primary">
+              {systemStatus?.status || "Unknown"}
+            </div>
             <div className="stat-desc">Core services running</div>
           </div>
         </div>
@@ -249,7 +331,9 @@ const DashboardPage = React.memo(() => {
               <Clock size={32} />
             </div>
             <div className="stat-title">Uptime</div>
-            <div className="stat-value text-secondary text-2xl">{systemStatus?.uptime || "N/A"}</div>
+            <div className="stat-value text-secondary text-2xl">
+              {systemStatus?.uptime || "N/A"}
+            </div>
             <div className="stat-desc">Since last restart</div>
           </div>
         </div>
@@ -260,7 +344,9 @@ const DashboardPage = React.memo(() => {
               <Terminal size={32} />
             </div>
             <div className="stat-title">Commands</div>
-            <div className="stat-value text-accent">{systemStatus?.commandsExecuted || 0}</div>
+            <div className="stat-value text-accent">
+              {systemStatus?.commandsExecuted || 0}
+            </div>
             <div className="stat-desc">Total executed</div>
           </div>
         </div>
@@ -268,10 +354,20 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-info">
-              <div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>
+              <div
+                className="radial-progress text-info"
+                style={
+                  { "--value": parseFloat(systemStatus?.cpu || "0") } as any
+                }
+                role="progressbar"
+              >
+                {parseInt(systemStatus?.cpu || "0")}%
+              </div>
             </div>
             <div className="stat-title">CPU Load</div>
-            <div className="stat-value text-info text-2xl">{systemStatus?.cpu || "N/A"}</div>
+            <div className="stat-value text-info text-2xl">
+              {systemStatus?.cpu || "N/A"}
+            </div>
             <div className="stat-desc">Processor usage</div>
           </div>
         </div>
@@ -279,10 +375,20 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-warning">
-              <div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>
+              <div
+                className="radial-progress text-warning"
+                style={
+                  { "--value": parseFloat(systemStatus?.memory || "0") } as any
+                }
+                role="progressbar"
+              >
+                {parseInt(systemStatus?.memory || "0")}%
+              </div>
             </div>
             <div className="stat-title">Memory</div>
-            <div className="stat-value text-warning text-2xl">{systemStatus?.memory || "N/A"}</div>
+            <div className="stat-value text-warning text-2xl">
+              {systemStatus?.memory || "N/A"}
+            </div>
             <div className="stat-desc">RAM usage</div>
           </div>
         </div>
@@ -290,16 +396,23 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure">
-              {isConnected ?
-                <Wifi size={32} className="text-success" /> :
-                isReconnecting ?
-                  <Wifi size={32} className="text-warning animate-pulse" /> :
-                  <WifiOff size={32} className="text-error" />
-              }
+              {isConnected ? (
+                <Wifi size={32} className="text-success" />
+              ) : isReconnecting ? (
+                <Wifi size={32} className="text-warning animate-pulse" />
+              ) : (
+                <WifiOff size={32} className="text-error" />
+              )}
             </div>
             <div className="stat-title">WebSocket</div>
-            <div className={`stat-value text-2xl ${isConnected ? 'text-success' : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}`}>
-              {isConnected ? "Connected" : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
+            <div
+              className={`stat-value text-2xl ${isConnected ? "text-success" : isReconnecting ? "text-warning animate-pulse" : "text-error"}`}
+            >
+              {isConnected
+                ? "Connected"
+                : isReconnecting
+                  ? `Reconnecting... (attempt ${reconnectAttempt})`
+                  : "Offline"}
             </div>
             <div className="stat-desc flex items-center gap-1">
               <Zap size={14} className="text-accent" />
@@ -313,7 +426,9 @@ const DashboardPage = React.memo(() => {
       <div className="card bg-base-100 shadow-xl border border-base-content/10">
         <div className="card-body">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="card-title text-xl">Real-time Performance History</h3>
+            <h3 className="card-title text-xl">
+              Real-time Performance History
+            </h3>
             <div className="flex gap-2">
               <div className="tooltip" data-tip={isPaused ? "Resume" : "Pause"}>
                 <button
@@ -387,7 +502,9 @@ const DashboardPage = React.memo(() => {
           <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1">
             {recentMessages.length > 0 ? (
               recentMessages.map((msg, i) => (
-                <div key={i} className="text-base-content/80 leading-relaxed">{msg}</div>
+                <div key={i} className="text-base-content/80 leading-relaxed">
+                  {msg}
+                </div>
               ))
             ) : (
               <div className="p-4 text-base-content/50 italic text-center pt-24">
@@ -406,14 +523,37 @@ const DashboardPage = React.memo(() => {
               onChange={(e) => setCommandInput(e.target.value)}
               disabled={isSending || !isConnected}
             />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!commandInput.trim() || isSending || !isConnected}
+            <div
+              className="tooltip tooltip-left"
+              data-tip={
+                !isConnected
+                  ? "Not connected to server"
+                  : !commandInput.trim()
+                    ? "Enter a command first"
+                    : isSending
+                      ? "Executing..."
+                      : "Execute command"
+              }
             >
-              {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
-              Execute
-            </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!commandInput.trim() || isSending || !isConnected}
+                style={{
+                  pointerEvents:
+                    !commandInput.trim() || isSending || !isConnected
+                      ? "none"
+                      : "auto",
+                }}
+              >
+                {isSending ? (
+                  <span className="loading loading-spinner"></span>
+                ) : (
+                  <Send size={18} />
+                )}
+                Execute
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -425,7 +565,10 @@ const DashboardPage = React.memo(() => {
 
       {agentsError && (
         <div className="alert alert-error shadow-lg">
-          <span>{(agentsErrObj as Error)?.message || "Failed to fetch agent status."}</span>
+          <span>
+            {(agentsErrObj as Error)?.message ||
+              "Failed to fetch agent status."}
+          </span>
         </div>
       )}
 
@@ -436,11 +579,16 @@ const DashboardPage = React.memo(() => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {agentData?.map((agent) => (
-            <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
+            <div
+              key={agent.id}
+              className="card bg-base-100 shadow-xl border border-base-content/10"
+            >
               <div className="card-body p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="card-title text-xl font-bold">{agent.name}</h3>
-                  <div className={`badge ${getAgentStatusColor(agent.status)} badge-lg font-bold uppercase`}>
+                  <div
+                    className={`badge ${getAgentStatusColor(agent.status)} badge-lg font-bold uppercase`}
+                  >
                     {agent.status}
                   </div>
                 </div>
@@ -454,16 +602,28 @@ const DashboardPage = React.memo(() => {
                 <div className="mockup-code bg-base-300 text-xs mt-2 before:hidden p-0">
                   <div className="px-4 py-3 space-y-3">
                     <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Sent</span>
-                      <span className="font-mono text-primary">{agent.lastMessageSent || "-"}</span>
+                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">
+                        Last Sent
+                      </span>
+                      <span className="font-mono text-primary">
+                        {agent.lastMessageSent || "-"}
+                      </span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Last Received</span>
-                      <span className="font-mono text-secondary">{agent.lastMessageReceived || "-"}</span>
+                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">
+                        Last Received
+                      </span>
+                      <span className="font-mono text-secondary">
+                        {agent.lastMessageReceived || "-"}
+                      </span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">Content</span>
-                      <span className="font-mono text-base-content/70 break-words mt-1">{agent.lastMessageContent || "-"}</span>
+                      <span className="text-base-content/50 uppercase text-[10px] tracking-wider font-bold">
+                        Content
+                      </span>
+                      <span className="font-mono text-base-content/70 break-words mt-1">
+                        {agent.lastMessageContent || "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
