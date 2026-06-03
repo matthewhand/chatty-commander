@@ -9,3 +9,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2024-05-23 - Accessibility & Micro-UX Additions
 **Learning:** Icon-only buttons (like error dismissals and model deletions) frequently lack `aria-label`s, preventing screen readers from understanding their purpose. Also, async operations (like deletions) bound to lists without granular loading states can leave users wondering if their action registered.
 **Action:** Always add `aria-label`s to icon-only buttons. Consider conditionally rendering a small spinner component in place of an icon for actions bound to `useMutation` that take noticeable time.
+
+## 2026-03-17 - Explicit Label Linking with DaisyUI wrappers
+**Learning:** DaisyUI `form-control` wrappers still require explicit `htmlFor`/`id` linking for inputs and labels, as they do not automatically handle this critical accessibility requirement.
+**Action:** Always manually link labels and inputs using `htmlFor` and `id` when authoring forms, even when utilizing styled wrappers.
