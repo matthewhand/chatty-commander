@@ -31,6 +31,14 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Default command set used when no `commands` are present in the config file.
+DEFAULT_COMMANDS: dict[str, Any] = {
+    "hello": {"action": "custom_message", "message": "Hello from ChattyCommander!"},
+    "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
+    "paste": {"action": "keypress", "keys": "paste"},
+    "submit": {"action": "keypress", "keys": "submit"},
+}
+
 
 class Config:
     def __init__(self, config_file: str = "config.json") -> None:
@@ -66,16 +74,7 @@ class Config:
             "state_transitions", {}
         )
         self.commands: dict[str, Any] = self.config_data.get(
-            "commands",
-            {
-                "hello": {
-                    "action": "custom_message",
-                    "message": "Hello from ChattyCommander!",
-                },
-                "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
-                "paste": {"action": "keypress", "keys": "paste"},
-                "submit": {"action": "keypress", "keys": "submit"},
-            },
+            "commands", dict(DEFAULT_COMMANDS)
         )
 
         # Advisors configuration
@@ -112,19 +111,6 @@ class Config:
             self.config_data.get("general", {}).get("inference_framework", "onnx")
         )
 
-        # Commands for model actions
-        default_commands = {}
-        if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
-            default_commands = {
-                "hello": {
-                    "action": "custom_message",
-                    "message": "Hello from ChattyCommander!",
-                },
-                "take_screenshot": {"action": "keypress", "keys": "take_screenshot"},
-                "paste": {"action": "keypress", "keys": "paste"},
-                "submit": {"action": "keypress", "keys": "submit"},
-            }
-        self.commands: dict[str, Any] = self.config_data.get("commands", default_commands)  # type: ignore[no-redef]
 
         # Start on boot setting
         self.start_on_boot: bool = bool(
@@ -245,7 +231,31 @@ class Config:
             if new_config != self.config_data:
                 self.config_data = new_config
                 self.config = new_config
+                # Refresh top-level derived attributes that callers read directly;
+                # otherwise edits to these in the config file are silently ignored.
+                self.general_models_path = self.config_data.get(
+                    "general_models_path", "models-idle"
+                )
+                self.system_models_path = self.config_data.get(
+                    "system_models_path", "models-computer"
+                )
+                self.chat_models_path = self.config_data.get(
+                    "chat_models_path", "models-chatty"
+                )
+                self.state_models = self.config_data.get("state_models", {})
+                self.api_endpoints = self.config_data.get(
+                    "api_endpoints", self.api_endpoints
+                )
+                self.wakeword_state_map = self.config_data.get(
+                    "wakeword_state_map", {}
+                )
+                self.state_transitions = self.config_data.get("state_transitions", {})
+                self.commands = self.config_data.get("commands", self.commands)
                 self._validate_config()
+                # Re-apply env overrides + web server config so they keep
+                # precedence over freshly-loaded file values (matches __init__).
+                self._apply_env_overrides()
+                self._apply_web_server_config()
                 self._load_general_settings()  # Load general settings to update default_state
                 # Force re-load of other properties that depend on config_data
                 self.model_actions = self._build_model_actions()
@@ -445,8 +455,26 @@ class Config:
             # Skip saving when config_file is empty (for tests)
             return
         try:
-            with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump(self.config_data, f, indent=2)
+            # Write atomically: serialize to a sibling temp file, then replace.
+            # This prevents a crash mid-write from corrupting the live config.
+            import os as _os
+            import tempfile as _tempfile
+
+            target_dir = _os.path.dirname(_os.path.abspath(self.config_file)) or "."
+            fd, tmp_path = _tempfile.mkstemp(
+                prefix=".config-", suffix=".tmp", dir=target_dir
+            )
+            try:
+                with _os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(self.config_data, f, indent=2)
+                _os.replace(tmp_path, self.config_file)
+            except BaseException:
+                # Never leave a temp file behind on failure.
+                try:
+                    _os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
         except (TypeError, ValueError, OSError) as e:
             logger.error(f"Could not save config file: {e}")
 
@@ -473,12 +501,24 @@ class Config:
             self._disable_start_on_boot()
 
     def _enable_start_on_boot(self) -> None:
-        """Enable start on boot functionality."""
-        pass
+        """Enable start-on-boot at the OS level.
+
+        Platform-specific autostart integration (systemd user unit / launchd /
+        Windows registry) is not implemented yet. The preference is persisted in
+        config so it can be honored once implemented; warn so the caller isn't
+        misled into thinking autostart was actually configured.
+        """
+        logging.warning(
+            "start_on_boot enabled in config, but OS-level autostart is not yet "
+            "implemented for this platform; no autostart entry was created."
+        )
 
     def _disable_start_on_boot(self) -> None:
-        """Disable start on boot functionality."""
-        pass
+        """Disable start-on-boot at the OS level (see _enable_start_on_boot)."""
+        logging.warning(
+            "start_on_boot disabled in config, but OS-level autostart is not yet "
+            "implemented for this platform; no autostart entry was removed."
+        )
 
     def set_check_for_updates(self, enabled: bool) -> None:
         self._update_general_setting("check_for_updates", bool(enabled))
@@ -543,11 +583,21 @@ class Config:
         instance = cls.__new__(cls)
         instance.config_file = config_file
         instance.config_data = data.copy()
+        # Mirror __init__: web handlers/tests expect `.config` as the raw dict.
+        instance.config = instance.config_data
 
         # Set basic attributes first
         instance.default_state = instance.config_data.get("default_state", "idle")
         instance.general_models_path = instance.config_data.get("general", {}).get(
             "models_path", "models"
+        )
+        # system/chat model paths were omitted here (only general was set), so
+        # ModelManager built from a from_dict() Config couldn't find them.
+        instance.system_models_path = instance.config_data.get(
+            "system_models_path", "models-computer"
+        )
+        instance.chat_models_path = instance.config_data.get(
+            "chat_models_path", "models-chatty"
         )
         instance.state_models = instance.config_data.get("state_models", {})
         instance.api_endpoints = instance.config_data.get("api_endpoints", {})

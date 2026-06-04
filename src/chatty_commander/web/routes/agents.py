@@ -22,10 +22,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 import re
+import tempfile
+import threading
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Annotated, Any
@@ -89,6 +92,9 @@ _STORE_PATH = Path(os.path.expanduser(os.environ.get("CHATTY_AGENTS_STORE", "~/.
 
 _STORE: dict[str, AgentBlueprint] = {}
 _TEAM: dict[str, list[str]] = {}  # role -> [agent_ids]
+# Serializes reads/writes to _STORE/_TEAM and the backing file so concurrent
+# create/update/delete requests can't interleave or corrupt agents.json.
+_STORE_LOCK = threading.RLock()
 
 
 def _load_store() -> None:
@@ -96,7 +102,7 @@ def _load_store() -> None:
     if not _STORE_PATH.exists():
         return
     try:
-        with _STORE_PATH.open("r", encoding="utf-8") as f:
+        with _STORE_LOCK, _STORE_PATH.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
             _STORE.clear()
@@ -112,11 +118,25 @@ def _load_store() -> None:
 
 def _save_store() -> None:
     try:
-        _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        agents = [asdict(agent) for agent in _STORE.values()]
-        data = {"agents": agents}
-        with _STORE_PATH.open("w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+        with _STORE_LOCK:
+            _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            agents = [asdict(agent) for agent in _STORE.values()]
+            data = {"agents": agents}
+            # Atomic write: serialize to a sibling temp file, then replace, so a
+            # crash mid-write can't truncate/corrupt the existing store.
+            fd, tmp_path = tempfile.mkstemp(
+                prefix=".agents-", suffix=".tmp", dir=str(_STORE_PATH.parent)
+            )
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+                os.replace(tmp_path, _STORE_PATH)
+            except BaseException:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
     except Exception as e:
         logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
 
@@ -195,16 +215,21 @@ async def create_blueprint(
             and "description" in payload
             and len(payload.keys()) == 1
         ):
-            model = parse_blueprint_from_text(str(payload.get("description", "")))
+            # Offload the blocking (synchronous LLM I/O) parse off the event
+            # loop so concurrent blueprint creations don't serialize behind it.
+            model = await asyncio.to_thread(
+                parse_blueprint_from_text, str(payload.get("description", ""))
+            )
         else:
             # Try to parse as structured blueprint
             model = AgentBlueprintModel(**payload)
         uid = str(uuid4())
         ent = AgentBlueprint(id=uid, **model.model_dump())
-        _STORE[uid] = ent
-        if ent.team_role:
-            _TEAM.setdefault(ent.team_role, []).append(uid)
-        _save_store()
+        with _STORE_LOCK:
+            _STORE[uid] = ent
+            if ent.team_role:
+                _TEAM.setdefault(ent.team_role, []).append(uid)
+            _save_store()
         return AgentBlueprintResponse(id=uid, **model.model_dump())
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -220,26 +245,28 @@ async def list_blueprints():
     "/api/v1/agents/blueprints/{agent_id}", response_model=AgentBlueprintResponse
 )
 async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
-    if agent_id not in _STORE:
-        raise HTTPException(status_code=404, detail="Agent not found")
     ent = AgentBlueprint(id=agent_id, **bp.model_dump())
-    _STORE[agent_id] = ent
-    _save_store()
+    with _STORE_LOCK:
+        if agent_id not in _STORE:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        _STORE[agent_id] = ent
+        _save_store()
     return AgentBlueprintResponse(id=agent_id, **bp.model_dump())
 
 
 @router.delete("/api/v1/agents/blueprints/{agent_id}")
 async def delete_blueprint(agent_id: str):
-    if agent_id not in _STORE:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    # Safety: ensure not in active team relations (simplified)
-    for role, ids in list(_TEAM.items()):
-        if agent_id in ids:
-            ids.remove(agent_id)
-            if not ids:
-                _TEAM.pop(role, None)
-    _STORE.pop(agent_id, None)
-    _save_store()
+    with _STORE_LOCK:
+        if agent_id not in _STORE:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        # Safety: ensure not in active team relations (simplified)
+        for role, ids in list(_TEAM.items()):
+            if agent_id in ids:
+                ids.remove(agent_id)
+                if not ids:
+                    _TEAM.pop(role, None)
+        _STORE.pop(agent_id, None)
+        _save_store()
     return {"deleted": True, "id": agent_id}
 
 

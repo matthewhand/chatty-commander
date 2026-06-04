@@ -41,30 +41,26 @@ class AuthService {
         if (response.ok) {
           return await response.json();
         }
+        // The token was present but rejected by the backend. Log the reason so
+        // an invalid/expired token isn't silently masked by the no-auth probe.
+        console.warn(
+          `authService: token auth rejected (${response.status} ${response.statusText})`,
+        );
       } catch (e) {
         console.warn("Auth check failed with token", e);
       }
     }
 
-    // Check for no-auth mode by hitting the config endpoint
+    // Check for no-auth mode: if the config endpoint is reachable without a
+    // token, the backend is running with auth disabled and we grant a local
+    // admin session. A relative path works when same-origin or behind the proxy.
     try {
-      // In development/test, window.location might not match API location if proxied incorrectly.
-      // But usually relative path works if served by Vite proxy or same origin.
-
-      const configUrl = `${this.baseUrl}/config`;
-      console.log(`Checking no-auth mode at ${configUrl}`);
-
-      const confRes = await fetch(configUrl);
+      const confRes = await fetch(`${this.baseUrl}/config`);
       if (confRes.ok) {
-        console.log("No-auth mode detected via config endpoint");
         return { username: 'local_admin', roles: ['admin'], is_active: true, noAuth: true };
-      } else {
-         console.log("Config endpoint returned non-200", confRes.status);
-         // Fallback: If we get a 200 from ANY public endpoint, we might assume no-auth if auth endpoints fail?
-         // No, that's risky. But for this specific bug, maybe the URL is just missing the /api prefix or similar.
       }
     } catch (e) {
-      console.error("Failed to check no-auth mode", e);
+      console.debug("authService: no-auth probe failed", e);
     }
 
     throw new Error("Authentication required");

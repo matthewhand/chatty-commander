@@ -27,6 +27,7 @@ voice commands, and handles the execution of commands.
 """
 
 import argparse
+import logging
 
 # Ensure src/ is on sys.path so root execution finds package modules without PYTHONPATH
 import os as _os
@@ -35,9 +36,9 @@ import sys
 import sys as _sys
 import threading
 
-# Fix sys.path to include the project src root (one level up from this package directory)
+# Fix sys.path to include the project src root (two levels up from this package directory)
 _pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
-_root_src = _os.path.abspath(_os.path.join(_pkg_dir, ".."))
+_root_src = _os.path.abspath(_os.path.join(_pkg_dir, "..", ".."))
 if _root_src not in _sys.path:
     _sys.path.insert(0, _root_src)
 
@@ -181,7 +182,17 @@ def run_web_mode(
             port = int(env_port)
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
-    _log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")  # noqa: F841
+    env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
+    if env_log_level:
+        level = logging.getLevelName(env_log_level.strip().upper())
+        if isinstance(level, int):
+            logger.setLevel(level)
+            logging.getLogger().setLevel(level)
+        else:
+            logger.warning(
+                "Invalid CHATCOMM_LOG_LEVEL '%s'; keeping current level",
+                env_log_level,
+            )
 
     # Start the server
     try:
@@ -462,7 +473,14 @@ def run_interactive_shell(
                 print(f"Current state: {state_manager.current_state}")
                 continue
             if input_str.lower() == "models":
-                print("Loaded models: " + ", ".join(model_manager.get_models()))
+                # get_models(state) requires a state arg; list every loaded model
+                # across all states (mirrors the interactive shell in cli.py).
+                all_models = [
+                    name
+                    for state_models in model_manager.models.values()
+                    for name in state_models.keys()
+                ]
+                print("Loaded models: " + ", ".join(all_models))
                 continue
             if input_str.startswith("execute "):
                 command = input_str[8:].strip()
@@ -524,6 +542,32 @@ def run_orchestrator_mode(
 
 def main():
     """Entry point for the ChattyCommander application."""
+    # Short-circuit pure-utility subcommands that must not trigger model loading,
+    # state-manager init, or wake-word detection. Both `chatty-commander dograh ...`
+    # (console_script → cli.cli) and `python -m chatty_commander.cli.main dograh ...`
+    # must reach the same handler — without this, the latter falls through to
+    # interactive shell mode and loads the full ONNX pipeline before exiting.
+    if len(sys.argv) > 1 and sys.argv[1] == "dograh":
+        from chatty_commander.cli.dograh_cli import (
+            handle_dograh,
+            register_dograh_subparser,
+        )
+
+        sub_parser = argparse.ArgumentParser(prog="chatty-commander")
+        subparsers = sub_parser.add_subparsers(dest="subcommand")
+        register_dograh_subparser(subparsers)
+        sub_args = sub_parser.parse_args()
+        return handle_dograh(sub_args)
+
+    # `list` and `exec` are pure-utility subcommands fully implemented in
+    # cli.cli. Delegate to it so `python -m chatty_commander.cli.main list/exec`
+    # behaves like the console_script instead of falling through to mode startup
+    # (which loads the full ONNX pipeline and hangs in non-interactive use).
+    if len(sys.argv) > 1 and sys.argv[1] in ("list", "exec"):
+        from chatty_commander.cli.cli import cli_main
+
+        return cli_main()
+
     parser = create_parser()
     # Parse as the very first action and immediately return argparse exit code for help/usage
     # We must allow --help to exit(0) without doing any setup, to satisfy tests.

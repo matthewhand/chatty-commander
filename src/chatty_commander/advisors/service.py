@@ -137,6 +137,45 @@ class AdvisorsService:
             }
         return persona_config
 
+    def get_personas(self) -> list[dict[str, Any]]:
+        """Return the configured personas in a UI-friendly shape.
+
+        Reads personas from the advisors config (either top-level ``personas``
+        or ``context.personas``) and normalises each into a dict with ``id``,
+        ``name``, ``is_default`` and ``system_prompt`` keys. Returns an empty
+        list when no personas are configured.
+        """
+        personas_dict = self.config.get("personas", {}) or self.config.get(
+            "context", {}
+        ).get("personas", {})
+        if not isinstance(personas_dict, dict) or not personas_dict:
+            return []
+
+        default_persona = self.config.get("default_persona") or self.config.get(
+            "context", {}
+        ).get("default_persona")
+
+        personas: list[dict[str, Any]] = []
+        for persona_id, raw in personas_dict.items():
+            if isinstance(raw, str):
+                name = persona_id
+                system_prompt = raw
+            elif isinstance(raw, dict):
+                name = raw.get("name", persona_id)
+                system_prompt = raw.get("system_prompt") or raw.get("prompt") or ""
+            else:
+                name = persona_id
+                system_prompt = ""
+            personas.append(
+                {
+                    "id": persona_id,
+                    "name": name,
+                    "is_default": persona_id == default_persona,
+                    "system_prompt": system_prompt,
+                }
+            )
+        return personas
+
     def _dispatch_special_command(self, message: AdvisorMessage, agent_id: str) -> AdvisorReply | None:
         """Dispatches special commands if identified in the message text.
 
@@ -169,7 +208,13 @@ class AdvisorsService:
             raise RuntimeError("Advisors are not enabled")
 
         # Get or create context for this identity
-        platform = PlatformType(message.platform.lower())
+        try:
+            platform = PlatformType(message.platform.lower())
+        except ValueError as e:
+            valid = ", ".join(p.value for p in PlatformType)
+            raise RuntimeError(
+                f"Unsupported platform '{message.platform}'; expected one of: {valid}"
+            ) from e
         context = self.context_manager.get_or_create_context(
             platform=platform,
             channel=message.channel,
@@ -215,7 +260,7 @@ class AdvisorsService:
                         user_input=combined_user_text,
                         user_id=f"{message.platform}:{message.channel}:{message.user}",
                         persona_config=persona_config,
-                        current_mode=getattr(self.config, "current_mode", "chatty"),
+                        current_mode=self.config.get("current_mode", "chatty"),
                     )
 
                     # Use LLMManager to generate response
@@ -251,60 +296,17 @@ class AdvisorsService:
                                     sm = StateManager()
                                     sm.change_state(target.strip())
                                     response = response.replace(
-                                        line, f"✓ Switched to {target.strip()} mode"
+                                        line, f"✓ Switched to {target.strip()} mode", 1
                                     )
                                 except Exception as e:
                                     response = response.replace(
-                                        line, f"✗ Mode switch failed: {e}"
+                                        line, f"✗ Mode switch failed: {e}", 1
                                     )
 
-                    # Record conversation for future context
-                    user_key = (
-                        f"{message.platform}:{message.channel}:{message.user}"
-                    )
-                    self.conversation_engine.record_conversation_turn(
-                        user_id=user_key,
-                        user_input=message.text,
-                        assistant_response=response,
-                        context={
-                            "persona_id": context.persona_id,
-                            "platform": message.platform,
-                        },
-                    )
-
-                    # Learn lightweight user preferences from this interaction so
-                    # future prompts can adapt (communication style, recent
-                    # intent/sentiment, preferred persona/platform).
-                    try:
-                        learned_intent = self.conversation_engine.analyze_intent(
-                            message.text
-                        )
-                        learned_sentiment = (
-                            self.conversation_engine.analyze_sentiment(message.text)
-                        )
-                        self.conversation_engine.update_user_preferences(
-                            user_key,
-                            {
-                                "last_intent": learned_intent,
-                                "last_sentiment": learned_sentiment,
-                                "preferred_persona": context.persona_id,
-                                "platform": message.platform,
-                                "interaction_count": (
-                                    self.conversation_engine.user_preferences.get(
-                                        user_key, {}
-                                    ).get("interaction_count", 0)
-                                    + 1
-                                ),
-                            },
-                        )
-                    except Exception:
-                        # Preference learning is best-effort; never block a reply.
-                        pass
                 except Exception as e:
-                    # Fallback when LLM fails: keep the diagnostic marker (tests
-                    # and callers rely on "[LLM Error]" / model=="error"), but
-                    # additively provide an intent/sentiment-aware fallback so the
-                    # user still gets a contextual reply instead of a bare error.
+                    # Fallback if the LLM fails. Use the intent/sentiment-aware
+                    # smart fallback for a more helpful message, but keep the
+                    # [LLM Error] marker that the API contract (and tests) rely on.
                     model_name = "error"
                     api_mode = "error"
                     try:
@@ -312,19 +314,51 @@ class AdvisorsService:
                         sentiment = self.conversation_engine.analyze_sentiment(
                             message.text
                         )
-                        smart_fallback = (
-                            self.conversation_engine.get_smart_fallback_response(
-                                message.text, intent, sentiment
-                            )
+                        smart = self.conversation_engine.get_smart_fallback_response(
+                            message.text, intent, sentiment
                         )
+                        response = f"[LLM Error] {smart} ({str(e)})"
                     except Exception:
-                        smart_fallback = ""
-                    if smart_fallback:
-                        response = (
-                            f"[LLM Error] {smart_fallback} ({str(e)})"
-                        )
-                    else:
                         response = f"[LLM Error] {message.text} ({str(e)})"
+
+                # Record conversation for future context. Done outside the
+                # try/except above so error responses are also recorded,
+                # keeping conversation history consistent for future turns.
+                self.conversation_engine.record_conversation_turn(
+                    user_id=f"{message.platform}:{message.channel}:{message.user}",
+                    user_input=message.text,
+                    assistant_response=response,
+                    context={
+                        "persona_id": context.persona_id,
+                        "platform": message.platform,
+                    },
+                )
+
+                # Best-effort: learn lightweight user preferences from this turn.
+                # These feed get_conversation_context/build_enhanced_prompt on
+                # future turns. A failure here must never block the reply.
+                try:
+                    user_key = (
+                        f"{message.platform}:{message.channel}:{message.user}"
+                    )
+                    prev = self.conversation_engine.user_preferences.get(user_key, {})
+                    self.conversation_engine.update_user_preferences(
+                        user_key,
+                        {
+                            "last_intent": self.conversation_engine.analyze_intent(
+                                message.text
+                            ),
+                            "last_sentiment": self.conversation_engine.analyze_sentiment(
+                                message.text
+                            ),
+                            "preferred_persona": context.persona_id,
+                            "platform": message.platform,
+                            "interaction_count": int(prev.get("interaction_count", 0))
+                            + 1,
+                        },
+                    )
+                except Exception:
+                    pass
 
                 # Update to responding state
                 thinking_manager.start_responding(agent_id, "Finalizing response...")
@@ -356,7 +390,15 @@ class AdvisorsService:
         """Handle the summarize command."""
         from .tools.browser_analyst import browser_analyst_tool
 
-        url = message.text[10:]  # Remove "summarize "
+        url = message.text[10:].strip()  # Remove "summarize " and surrounding whitespace
+        if not url:
+            return AdvisorReply(
+                reply="Usage: summarize <url>",
+                context_key="summarize",
+                persona_id="analyst",
+                model=self.provider.model,
+                api_mode=self.provider.api_mode,
+            )
         summary = browser_analyst_tool(url)
 
         return AdvisorReply(

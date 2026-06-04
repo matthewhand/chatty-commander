@@ -35,6 +35,7 @@ export default function CommandsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const [pendingDeleteCommand, setPendingDeleteCommand] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
@@ -64,12 +65,22 @@ export default function CommandsPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (pendingDeleteCommand) {
+    if (!pendingDeleteCommand || isDeleting) return;
+    setIsDeleting(true);
+    try {
       await apiService.deleteCommand(pendingDeleteCommand);
+      // Only refresh and close once the deletion actually succeeded, so the UI
+      // never reports a deletion that didn't happen on the backend.
       refetch();
+      deleteDialogRef.current?.close();
+      setPendingDeleteCommand(null);
+    } catch (err) {
+      // Keep the dialog open and surface the failure instead of silently
+      // closing and pretending the delete succeeded.
+      alert(`Failed to delete command: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsDeleting(false);
     }
-    deleteDialogRef.current?.close();
-    setPendingDeleteCommand(null);
   };
 
   const handleDeleteCancel = () => {
@@ -106,7 +117,21 @@ export default function CommandsPage() {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-          alert('Invalid JSON: expected an object.');
+          alert('Invalid JSON: expected an object mapping command names to definitions.');
+          return;
+        }
+        // Validate each command entry has a recognizable shape before importing,
+        // so a malformed file can't silently overwrite the live config.
+        const invalid = Object.entries(parsed as Record<string, unknown>).filter(([, def]) => {
+          if (typeof def !== 'object' || def === null || Array.isArray(def)) return true;
+          const d = def as Record<string, unknown>;
+          const hasActions = Array.isArray(d.actions) && d.actions.length > 0;
+          const hasLegacyAction = typeof d.action === 'string' || typeof d.keypress === 'string' || typeof d.url === 'string';
+          return !hasActions && !hasLegacyAction;
+        });
+        if (invalid.length > 0) {
+          const names = invalid.map(([n]) => n).slice(0, 5).join(', ');
+          alert(`Import rejected: ${invalid.length} command(s) have no valid actions (${names}${invalid.length > 5 ? ', …' : ''}).`);
           return;
         }
         await apiService.updateConfig({ commands: parsed });
@@ -290,10 +315,10 @@ export default function CommandsPage() {
                       ariaLabel={`Options for ${name}`}
                     >
                       <li>
-                        <button aria-label={`Edit ${name}`}>
+                        <Link to={`/commands/authoring?edit=${encodeURIComponent(name)}`} aria-label={`Edit ${name}`}>
                           <Edit3 size={16} className="text-primary" />
                           Edit Command
-                        </button>
+                        </Link>
                       </li>
                       <li>
                         <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} onClick={() => handleDeleteClick(name)}>
@@ -358,8 +383,11 @@ export default function CommandsPage() {
           <h3 className="font-bold text-lg">Confirm Deletion</h3>
           <p className="py-4">Are you sure you want to delete <strong>{pendingDeleteCommand}</strong>?</p>
           <div className="modal-action">
-            <button className="btn" onClick={handleDeleteCancel}>Cancel</button>
-            <button className="btn btn-error" onClick={handleDeleteConfirm}>Delete</button>
+            <button className="btn" onClick={handleDeleteCancel} disabled={isDeleting}>Cancel</button>
+            <button className="btn btn-error" onClick={handleDeleteConfirm} disabled={isDeleting}>
+              {isDeleting ? <span className="loading loading-spinner loading-sm" aria-hidden="true"></span> : null}
+              Delete
+            </button>
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">

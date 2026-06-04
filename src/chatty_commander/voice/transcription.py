@@ -33,6 +33,7 @@ Supports:
 from __future__ import annotations
 
 import logging
+import os
 import tempfile
 import time
 import wave
@@ -141,9 +142,12 @@ class WhisperAPIBackend(TranscriptionBackend):
         if not self._client:
             raise RuntimeError("OpenAI client not available")
 
+        tmp_path: str | None = None
         try:
-            # Create temporary WAV file
+            # Create temporary WAV file (delete=False so we can reopen it for
+            # upload; cleaned up in the finally block below).
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                tmp_path = tmp_file.name
                 # Write WAV header and data
                 with wave.open(tmp_file.name, "wb") as wav_file:
                     wav_file.setnchannels(1)
@@ -164,6 +168,13 @@ class WhisperAPIBackend(TranscriptionBackend):
         except Exception as e:
             logger.error(f"OpenAI Whisper API transcription failed: {e}")
             return ""
+        finally:
+            # Always remove the temp file so repeated calls don't leak files.
+            if tmp_path:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
 
     def is_available(self) -> bool:
         return self._client is not None
@@ -204,6 +215,7 @@ class VoiceTranscriber:
         channels: int = 1,
         record_timeout: float = 5.0,
         silence_timeout: float = 1.0,
+        silence_threshold: float = 500.0,
         **backend_kwargs,
     ):
         if not AUDIO_DEPS_AVAILABLE:
@@ -214,6 +226,11 @@ class VoiceTranscriber:
         self.channels = channels
         self.record_timeout = record_timeout
         self.silence_timeout = silence_timeout
+        # RMS energy (root-mean-square of int16 samples) below which a chunk is
+        # considered silence. The scale is environment-dependent: quieter rooms
+        # may want a lower value, noisier ones a higher value. Exposed here so it
+        # can be tuned via config rather than being hardcoded in the record loop.
+        self.silence_threshold = silence_threshold
 
         self._backend = self._create_backend(backend, **backend_kwargs)
         self._audio = None
@@ -284,7 +301,7 @@ class VoiceTranscriber:
                     audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
                     volume = np.sqrt(np.dot(audio_array, audio_array) / len(audio_array))
 
-                    if volume < 500:  # Silence threshold
+                    if volume < self.silence_threshold:  # RMS silence threshold
                         if silence_start is None:
                             silence_start = time.time()
                         elif time.time() - silence_start > self.silence_timeout:

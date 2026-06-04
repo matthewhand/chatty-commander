@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import tempfile
 import time
 from typing import Any
@@ -142,8 +143,10 @@ class VoiceSelfTester:
             logger.warning("TTS engine not available")
             return None
 
+        tmp_path: str | None = None
         try:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                tmp_path = tmp_file.name
                 self._tts_engine.save_to_file(text, tmp_file.name)
                 self._tts_engine.runAndWait()
 
@@ -156,6 +159,13 @@ class VoiceSelfTester:
         except Exception as e:
             logger.error(f"TTS generation failed for '{text}': {e}")
             return None
+        finally:
+            # Always remove the temp WAV so repeated self-tests don't leak files.
+            if tmp_path:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
 
     def test_transcription_accuracy(self, text: str) -> tuple[str, float]:
         """Test transcription accuracy for a given text."""

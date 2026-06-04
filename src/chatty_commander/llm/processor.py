@@ -38,6 +38,23 @@ from .manager import LLMManager
 logger = logging.getLogger(__name__)
 
 
+def _safe_confidence(value: Any) -> float:
+    """Coerce an LLM-supplied confidence into a float, defaulting to 0.0.
+
+    LLMs may return ``null``, non-numeric strings ("high"), or other invalid
+    values for the confidence field; rather than raising we treat any value we
+    cannot interpret as a number as zero confidence.
+    """
+    try:
+        confidence = float(value)
+    except (ValueError, TypeError):
+        return 0.0
+    # Guard against NaN/inf which would survive float() but break clamping.
+    if confidence != confidence or confidence in (float("inf"), float("-inf")):
+        return 0.0
+    return confidence
+
+
 class CommandProcessor:
     """Processes natural language commands using LLM."""
 
@@ -200,16 +217,27 @@ Response:"""
     ) -> tuple[str | None, float, str]:
         """Parse LLM response to extract command information."""
         try:
-            # Try to extract JSON from response
-            json_match = re.search(r"\{.*\}", response, re.DOTALL)
-            if not json_match:
+            # Try to extract JSON from response. Use a non-greedy match so a
+            # response containing multiple JSON objects does not produce an
+            # invalid span (e.g. '{"a":1} and {"b":2}'). If the first match
+            # fails to decode, fall back to a greedy match for objects that
+            # legitimately contain nested braces.
+            data = None
+            for pattern in (r"\{.*?\}", r"\{.*\}"):
+                match = re.search(pattern, response, re.DOTALL)
+                if not match:
+                    continue
+                try:
+                    data = json.loads(match.group())
+                    break
+                except json.JSONDecodeError:
+                    continue
+
+            if data is None:
                 return None, 0.0, "No JSON found in LLM response"
 
-            json_str = json_match.group()
-            data = json.loads(json_str)
-
             command = data.get("command")
-            confidence = float(data.get("confidence", 0.0))
+            confidence = _safe_confidence(data.get("confidence", 0.0))
             reasoning = data.get("reasoning", "LLM interpretation")
 
             # Validate command exists

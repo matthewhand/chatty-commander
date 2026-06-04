@@ -70,10 +70,15 @@ class OpenAIBackend(LLMBackend):
         self.max_retries = kwargs.get("max_retries", 3)
         self.timeout = kwargs.get("timeout", 30.0)
         self._client: Any = None
+        # Cache the (expensive) availability probe so repeated checks don't fire
+        # a live API request every time; reset whenever the client re-initializes.
+        self._available_cache: bool | None = None
         self._initialize_client()
 
     def _initialize_client(self):
         """Initialize OpenAI client."""
+        # A fresh client means the previous availability result is stale.
+        self._available_cache = None
         if not self.api_key:
             logger.debug("No OpenAI API key provided")
             return
@@ -96,9 +101,11 @@ class OpenAIBackend(LLMBackend):
             logger.error(f"Failed to initialize OpenAI client: {e}")
 
     def is_available(self) -> bool:
-        """Check if OpenAI backend is available."""
+        """Check if OpenAI backend is available (result cached after first probe)."""
         if not self._client:
             return False
+        if self._available_cache is not None:
+            return self._available_cache
 
         try:
             # Test with a minimal request
@@ -107,10 +114,11 @@ class OpenAIBackend(LLMBackend):
                 messages=[{"role": "user", "content": "test"}],
                 max_tokens=1,
             )
-            return True
+            self._available_cache = True
         except Exception as e:
             logger.debug(f"OpenAI availability check failed: {e}")
-            return False
+            self._available_cache = False
+        return self._available_cache
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         """Generate response using OpenAI API with retries."""
@@ -288,7 +296,13 @@ class OllamaBackend(LLMBackend):
 
 
 class LocalTransformersBackend(LLMBackend):
-    """Local transformers backend using gpt-oss:20b."""
+    """Local HuggingFace transformers backend.
+
+    Defaults to ``microsoft/DialoGPT-medium`` — a small conversational model
+    that downloads quickly and runs on CPU. Pass ``model_name`` to use a larger
+    model. (The previous docstring claimed gpt-oss:20b, which was never the
+    default and would not fit most local machines.)
+    """
 
     def __init__(self, model_name: str = "microsoft/DialoGPT-medium"):
         # Use a smaller model that actually exists for now

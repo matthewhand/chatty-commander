@@ -15,21 +15,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const retryCount = useRef(0);
+  // Track the pending retry timer and mount state so we can cancel in-flight
+  // retries on unmount and avoid setting state on an unmounted component.
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
 
   const checkAuth = useCallback(async () => {
     try {
       const userData = await authService.getCurrentUser();
+      if (!isMountedRef.current) return;
       setUser(userData);
       setLoading(false);
     } catch (error) {
       console.warn("Auth check failed:", error);
+      if (!isMountedRef.current) return;
       // If we failed, specifically in a dev/test environment where the server might be starting up,
       // we should retry a few times for the 'no-auth' check.
       if (retryCount.current < 5) {
         retryCount.current += 1;
         const delay = 1000 * retryCount.current;
         console.log(`Retrying auth check in ${delay}ms...`);
-        setTimeout(checkAuth, delay);
+        retryTimeoutRef.current = setTimeout(checkAuth, delay);
       } else {
         localStorage.removeItem("auth_token");
         setLoading(false);
@@ -38,7 +44,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []); // authService is a module-level singleton; no reactive deps needed
 
   useEffect(() => {
+    isMountedRef.current = true;
     checkAuth();
+    return () => {
+      // Cancel any pending retry so we don't update state after unmount.
+      isMountedRef.current = false;
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
   }, [checkAuth]); // Include checkAuth per exhaustive-deps rule
 
   const login = async (username: string, password: string): Promise<boolean> => {

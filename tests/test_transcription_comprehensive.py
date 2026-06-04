@@ -3,7 +3,7 @@ Comprehensive tests for transcription.py to improve coverage from 38% to 80%+.
 Tests all backends, error conditions, and edge cases.
 """
 
-import importlib.util
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -56,14 +56,22 @@ class TestWhisperLocalBackend:
     """Test the local Whisper backend."""
 
     def test_initialization_success(self):
-        """Test successful initialization."""
-        # Skip this test if whisper is not available
-        if importlib.util.find_spec("whisper") is None:
-            pytest.skip("Whisper not available")
+        """Test successful initialization with the whisper library mocked.
 
-        backend = WhisperLocalBackend(model_size="base")
+        Mocks the `whisper` module so the test exercises the init logic
+        deterministically without requiring the heavy openai-whisper dependency
+        or downloading a model.
+        """
+        fake_whisper = MagicMock()
+        fake_model = MagicMock()
+        fake_whisper.load_model.return_value = fake_model
+        with patch.dict(sys.modules, {"whisper": fake_whisper}):
+            backend = WhisperLocalBackend(model_size="base")
+
         assert isinstance(backend, WhisperLocalBackend)
         assert backend.model_size == "base"
+        assert backend._model is fake_model
+        fake_whisper.load_model.assert_called_once_with("base")
 
     def test_initialization_import_error_handling(self):
         """Test that initialization handles import errors gracefully."""
@@ -106,14 +114,18 @@ class TestWhisperAPIBackend:
     """Test the OpenAI Whisper API backend."""
 
     def test_initialization_success(self):
-        """Test successful initialization."""
-        # Skip this test if openai is not available
-        if importlib.util.find_spec("openai") is None:
-            pytest.skip("OpenAI not available")
+        """Test successful initialization with the openai library mocked.
 
-        backend = WhisperAPIBackend(api_key="test-key")
+        Mocks the `openai` module so the test runs deterministically regardless
+        of whether the optional openai dependency is installed.
+        """
+        fake_openai = MagicMock()
+        with patch.dict(sys.modules, {"openai": fake_openai}):
+            backend = WhisperAPIBackend(api_key="test-key")
+
         assert isinstance(backend, WhisperAPIBackend)
         assert backend.api_key == "test-key"
+        fake_openai.OpenAI.assert_called_once_with(api_key="test-key")
 
     def test_initialization_import_error_handling(self):
         """Test that initialization handles import errors gracefully."""

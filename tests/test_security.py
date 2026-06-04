@@ -93,6 +93,20 @@ class TestSecurity:
         # CORS should be properly configured
         assert server.no_auth is True
 
+    def test_apply_cors_wildcard_safety(self):
+        """apply_cors must never combine credentials with a wildcard origin (RFC 6454)."""
+        from fastapi import FastAPI
+        from fastapi.middleware.cors import CORSMiddleware
+
+        from chatty_commander.web.auth import apply_cors
+
+        app = FastAPI()
+        apply_cors(app, no_auth=False, origins=["*"])
+        cors = next(m for m in app.user_middleware if m.cls is CORSMiddleware)
+        assert cors.kwargs["allow_origins"] == ["*"]
+        # Credentials must be disabled whenever the wildcard origin is in effect.
+        assert cors.kwargs["allow_credentials"] is False
+
 
 class TestClientIPSecurity:
     """Tests for secure client IP extraction to prevent IP spoofing attacks."""

@@ -58,7 +58,7 @@ class ConversationEngine:
                 return "mode_switch"
 
         # Question intents
-        if text.startswith(("what", "how", "why", "when", "where", "who")):
+        if text_lower.startswith(("what", "how", "why", "when", "where", "who")):
             return "question"
 
         # Task intents

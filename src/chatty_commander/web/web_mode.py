@@ -49,7 +49,7 @@ except ImportError:
 
 from collections import defaultdict
 
-from fastapi import FastAPI, Header, HTTPException, Request, WebSocket
+from fastapi import FastAPI, Header, HTTPException, Query, Request, WebSocket
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -313,8 +313,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         current_time = time.time()
 
         # Periodic global cleanup: evict stale IP entries to prevent
-        # memory exhaustion from many unique IPs
-        if current_time - self._last_cleanup > 60:
+        # memory exhaustion from many unique IPs. A secondary size-based
+        # trigger guards against bursts of rotating IPs between the
+        # periodic sweeps (e.g. a DDoS) accumulating unbounded entries.
+        if current_time - self._last_cleanup > 60 or len(self.requests) > 10000:
             self._last_cleanup = current_time
             for ip in list(self.requests):
                 self.requests[ip] = [
@@ -719,32 +721,18 @@ class WebModeServer:
         self._register_bridge_routes(app)
 
         # Serve static web UI (optional)
+        # The frontend must be pre-built at deployment time (CI/CD responsibility).
+        # We never run npm at server startup: that would block app init, require
+        # Node.js in production, and could fail silently.
         frontend_path = Path("webui/frontend/dist")
         if not frontend_path.exists():
             frontend_path = Path("webui/frontend/build")
         if not frontend_path.exists():
-            logger.info("Frontend build not found. Automagically building the frontend UI...")
-            try:
-                import subprocess
-                import sys
-
-                # Check if npm is available
-                subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-
-                logger.info("Installing frontend dependencies...")
-                subprocess.run(["npm", "install", "--no-audit", "--no-fund", "--legacy-peer-deps"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
-
-                logger.info("Building frontend assets...")
-                subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
-
-                if Path("webui/frontend/dist").exists():
-                    frontend_path = Path("webui/frontend/dist")
-                elif Path("webui/frontend/build").exists():
-                    frontend_path = Path("webui/frontend/build")
-            except FileNotFoundError:
-                logger.error("Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/.")
-            except Exception as e:
-                logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
+            logger.warning(
+                "Frontend build not found at webui/frontend/dist or "
+                "webui/frontend/build. Serving a fallback page. Run "
+                "'npm run build' in webui/frontend/ as part of deployment."
+            )
 
         if frontend_path.exists():
             static_assets = frontend_path / "assets"
@@ -778,7 +766,8 @@ class WebModeServer:
                 # If API or static file request fails, let it 404.
                 # Otherwise, serve index.html for SPA routing.
                 if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
-                     return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
+                    # Genuine 404 for API/static paths — do not serve the SPA shell.
+                    return HTMLResponse("Not Found", status_code=404)
 
                 index_file = frontend_path / "index.html"
                 if index_file.exists():
@@ -813,18 +802,20 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/personas")
         async def advisor_personas():
-            # Return seed data for testing
-            if self.no_auth:
-                return {"personas": [
-                    {"id": "jarvis", "name": "Jarvis", "is_default": True, "system_prompt": "You are a helpful AI assistant named Jarvis."},
-                    {"id": "friday", "name": "Friday", "is_default": False, "system_prompt": "You are a witty AI named Friday."},
-                    {"id": "hal", "name": "HAL 9000", "is_default": False, "system_prompt": "You are a calm, ominous AI."},
-                ]}
-            # Production: use advisors_service if available
+            # Consult the advisors service consistently in every mode. Personas
+            # come from configuration via AdvisorsService.get_personas(); when no
+            # advisors service is wired up we return an empty list rather than
+            # fabricating seed data.
             svc = self.advisors_service
             if not svc:
                 return {"personas": []}
-            return {"personas": getattr(svc, "get_personas", lambda: [])()}
+            get_personas = getattr(svc, "get_personas", None)
+            if not callable(get_personas):
+                return {"personas": []}
+            try:
+                return {"personas": get_personas()}
+            except Exception:  # noqa: BLE001 - never fail the listing endpoint
+                return {"personas": []}
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(
@@ -903,7 +894,10 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
-            platform: str, channel: str, user: str, limit: int = 20
+            platform: str,
+            channel: str,
+            user: str,
+            limit: int = Query(default=20, ge=1, le=100),
         ):
             svc = self.advisors_service
             if not svc or not getattr(svc, "enabled", False):
@@ -939,11 +933,17 @@ class WebModeServer:
             event: dict[str, Any],
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
-            # Check for bridge token in header
-            expected_token = self.config_manager.web_server.get("bridge_token")
+            # Check for bridge token in header. Guard against a config_manager
+            # that lacks the web_server attribute (e.g. minimal/stub configs).
+            expected_token = None
+            if hasattr(self.config_manager, "web_server"):
+                expected_token = self.config_manager.web_server.get("bridge_token")
             if not expected_token:
                 logger.warning("Bridge token not configured; rejecting request")
                 raise HTTPException(status_code=401, detail="Bridge not configured")
+
+            if not x_bridge_token:
+                raise HTTPException(status_code=401, detail="Missing bridge token")
 
             if not constant_time_compare(x_bridge_token, expected_token):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
@@ -979,21 +979,40 @@ class WebModeServer:
         self.last_state_change = datetime.now()
         try:
             loop = asyncio.get_event_loop()
+            loop.create_task(
+                self._broadcast_message(
+                    WebSocketMessage(
+                        type="state_change",
+                        data={
+                            "old_state": old_state,
+                            "new_state": new_state,
+                            "timestamp": self.last_state_change.isoformat(),
+                        },
+                    )
+                )
+            )
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        loop.create_task(
-            self._broadcast_message(
-                WebSocketMessage(
-                    type="state_change",
-                    data={
-                        "old_state": old_state,
-                        "new_state": new_state,
-                        "timestamp": self.last_state_change.isoformat(),
-                    },
+            try:
+                loop.create_task(
+                    self._broadcast_message(
+                        WebSocketMessage(
+                            type="state_change",
+                            data={
+                                "old_state": old_state,
+                                "new_state": new_state,
+                                "timestamp": self.last_state_change.isoformat(),
+                            },
+                        )
+                    )
                 )
-            )
-        )
+            except Exception as e:  # noqa: BLE001
+                logger.debug("state_change broadcast scheduling failed: %s", e)
+        except Exception as e:  # noqa: BLE001
+            # e.g. the event loop is closed — fail gracefully rather than
+            # propagating into the state manager callback chain.
+            logger.debug("state_change broadcast scheduling failed: %s", e)
 
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:

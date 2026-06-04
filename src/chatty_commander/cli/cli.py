@@ -27,6 +27,7 @@ voice commands, and handles the execution of commands.
 """
 
 import argparse
+import logging
 import os
 import signal
 import sys
@@ -68,22 +69,32 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
     try:
         while not shutdown_flag["stop"]:
-            # Listen for voice input
-            command = model_manager.listen_for_commands()
-            if not command:
+            try:
+                # Listen for voice input
+                command = model_manager.listen_for_commands()
+                if not command:
+                    continue
+
+                logger.info(f"Command detected: {command}")
+
+                # Update system state based on command
+                new_state = state_manager.update_state(command)
+                if new_state:
+                    logger.info(f"Transitioning to new state: {new_state}")
+                    model_manager.reload_models(new_state)
+
+                # Execute the detected command if it's actionable
+                if command in config.model_actions:
+                    command_executor.execute_command(command)
+            except KeyboardInterrupt:
+                # Propagate to outer handler for graceful shutdown
+                raise
+            except Exception as e:
+                # Keep the loop alive on transient errors (listen, state
+                # transition, model reload, or command execution failures)
+                # so a single bad iteration does not crash the process.
+                logger.error(f"Error while processing command loop: {e}")
                 continue
-
-            logger.info(f"Command detected: {command}")
-
-            # Update system state based on command
-            new_state = state_manager.update_state(command)
-            if new_state:
-                logger.info(f"Transitioning to new state: {new_state}")
-                model_manager.reload_models(new_state)
-
-            # Execute the detected command if it's actionable
-            if command in config.model_actions:
-                command_executor.execute_command(command)
 
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt received; shutting down")
@@ -98,6 +109,27 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
             logger.error(f"Error during shutdown: {e}")
         logger.info("ChattyCommander CLI shutdown complete")
         sys.exit(0)
+
+
+def _detect_action_type(action) -> str:
+    """Classify a model action as 'shell', 'url', 'keypress', or 'unknown'.
+
+    Actions may be dicts (e.g. ``{"shell": {...}}`` or ``{"keypress": "ctrl+c"}``)
+    or plain strings. For dicts we inspect the keys; for strings we fall back to
+    a substring heuristic so legacy string actions still classify sensibly.
+    """
+    known = ("shell", "url", "keypress")
+    if isinstance(action, dict):
+        for key in known:
+            if key in action:
+                return key
+        return "unknown"
+    if isinstance(action, str):
+        for key in known:
+            if key in action:
+                return key
+        return "unknown"
+    return "unknown"
 
 
 def run_web_mode(
@@ -171,7 +203,17 @@ def run_web_mode(
             port = int(env_port)
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
-    _log_level = os.getenv("CHATCOMM_LOG_LEVEL", "info")  # noqa: F841
+    env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
+    if env_log_level:
+        level = logging.getLevelName(env_log_level.strip().upper())
+        if isinstance(level, int):
+            logger.setLevel(level)
+            logging.getLogger().setLevel(level)
+        else:
+            logger.warning(
+                "Invalid CHATCOMM_LOG_LEVEL '%s'; keeping current level",
+                env_log_level,
+            )
 
     # Start the server
     try:
@@ -320,6 +362,12 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--dry-run",
         action="store_true",
         help="Show what would be executed without running it",
+    )
+    exec_parser.add_argument(
+        "--timeout",
+        type=float,
+        default=None,
+        help="Abort the command if it runs longer than this many seconds",
     )
 
     # dograh subcommand group (integration utilities)
@@ -484,8 +532,11 @@ def run_interactive_shell(
             if input_str.startswith("execute "):
                 command = input_str[8:].strip()
                 if command in config.model_actions:
-                    command_executor.execute_command(command)
-                    print(f"Executed: {command}")
+                    try:
+                        command_executor.execute_command(command)
+                        print(f"Executed: {command}")
+                    except Exception as e:
+                        print(f"Error executing '{command}': {e}")
                 else:
                     print(f"Unknown command: {command}")
                 continue
@@ -496,7 +547,10 @@ def run_interactive_shell(
                 logger.info(f"Transitioning to new state: {new_state}")
                 model_manager.reload_models(new_state)
             if input_str in config.model_actions:
-                command_executor.execute_command(input_str)
+                try:
+                    command_executor.execute_command(input_str)
+                except Exception as e:
+                    print(f"Error executing '{input_str}': {e}")
         except EOFError:
             break
     logger.info("Exiting interactive shell")
@@ -594,8 +648,11 @@ def cli_main():
     else:
         interactive_mode = False
 
-    # Ensure logger is created with the expected name for tests
-    logger = setup_logger("main", "logs/chattycommander.log")
+    # Ensure logger is created with the expected name for tests, honoring --log-level
+    _level_name = str(getattr(args, "log_level", "INFO") or "INFO").upper()
+    _level = getattr(logging, _level_name, logging.INFO)
+    logging.getLogger().setLevel(_level)
+    logger = setup_logger("main", "logs/chattycommander.log", level=_level)
     logger.info("Starting ChattyCommander application")
 
     # Generate default configuration if needed
@@ -629,8 +686,11 @@ def cli_main():
         config.web_server = web_cfg
         try:
             config.config["web_server"] = web_cfg
-        except Exception:
-            pass
+        except (AttributeError, KeyError, TypeError) as e:
+            # config may not expose a mutable `.config` mapping; the
+            # web_server attribute above is the source of truth, so this
+            # is best-effort only.
+            logger.debug(f"Could not persist web_server into config.config: {e}")
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:
@@ -685,8 +745,7 @@ def cli_main():
             # Output as JSON array
             result = []
             for name, action in actions.items():
-                action_type = "shell" if "shell" in action else "url" if "url" in action else "unknown"
-                result.append({"name": name, "type": action_type})
+                result.append({"name": name, "type": _detect_action_type(action)})
             print(json_module.dumps(result, indent=2))
         else:
             # Output as text
@@ -704,6 +763,10 @@ def cli_main():
         dry_run = getattr(args, "dry_run", False)
         actions = getattr(config, "model_actions", {}) or {}
 
+        if not command_name:
+            print("No command name provided.", file=sys.stderr)
+            raise SystemExit(1)
+
         if command_name not in actions:
             print(f"Unknown command: {command_name}", file=sys.stderr)
             raise SystemExit(1)
@@ -712,8 +775,25 @@ def cli_main():
             print(f"DRY RUN: would execute command '{command_name}'")
             return 0
 
-        # Actually execute the command
-        command_executor.execute_command(str(command_name))
+        # Actually execute the command, honoring --timeout if provided.
+        timeout = getattr(args, "timeout", None)
+        if timeout is None:
+            command_executor.execute_command(str(command_name))
+            return 0
+
+        worker = threading.Thread(
+            target=command_executor.execute_command,
+            args=(str(command_name),),
+            daemon=True,
+        )
+        worker.start()
+        worker.join(timeout)
+        if worker.is_alive():
+            print(
+                f"Command '{command_name}' timed out after {timeout}s",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     # Initialize AI intelligence core for enhanced conversations
