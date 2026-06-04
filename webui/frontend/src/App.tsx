@@ -33,8 +33,8 @@ const queryClient = new QueryClient({
 });
 
 const PageSpinner = () => (
-  <div className="flex items-center justify-center py-24" role="status" aria-live="polite" aria-label="Loading page">
-    <span className="loading loading-spinner text-primary loading-lg" aria-hidden="true"></span>
+  <div className="flex items-center justify-center py-24">
+    <span className="loading loading-spinner text-primary loading-lg"></span>
   </div>
 );
 
@@ -43,8 +43,8 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite" aria-label="Loading application">
-        <span className="loading loading-spinner text-primary loading-lg" aria-hidden="true"></span>
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner text-primary loading-lg"></span>
       </div>
     );
   }
@@ -66,12 +66,6 @@ function AppContent() {
 
   return (
     <Router>
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-content focus:rounded"
-      >
-        Skip to main content
-      </a>
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public Routes */}
@@ -113,7 +107,7 @@ function App() {
         <ThemeProvider>
           <WebSocketProvider>
             <ToastProvider>
-              <div id="main-content" className="min-h-screen bg-base-100 text-base-content">
+              <div className="min-h-screen bg-base-100 text-base-content">
                 <AppContent />
               </div>
             </ToastProvider>

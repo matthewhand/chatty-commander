@@ -66,20 +66,6 @@ if _shim_requests is not None:  # pragma: no cover - optional
     # Map legacy tests to our httpx var for test compatibility if needed
     httpx = _shim_requests
 
-# Security hardening imports
-try:
-    from ..utils.security import validate_input, audit_log
-except ImportError:
-    # Fallback if security module not available
-    def validate_input(**kwargs):
-        def decorator(func):
-            return func
-        return decorator
-    def audit_log(operation, level='info'):
-        def decorator(func):
-            return func
-        return decorator
-
 
 class CommandExecutor:
     """CommandExecutor class.
@@ -94,8 +80,6 @@ class CommandExecutor:
         self.state_manager: Any = state_manager
         self.last_command: str | None = None
 
-    @audit_log(operation="command_execution", level="info")
-    @validate_input(allowed_types=(str,), max_length=100, min_length=1)
     def execute_command(self, command_name: str) -> bool:
         """
         Execute a configured command by name.
@@ -249,78 +233,96 @@ class CommandExecutor:
             self.post_execute_hook(command_name)
         return success
 
-    def _get_model_action(self, command_name: str) -> dict | None:
-        """Retrieve command action from model_actions safely."""
-        try:
-            model_actions = self.config.model_actions
-            if model_actions is None or not hasattr(model_actions, "get"):
-                return None
-            return model_actions.get(command_name)
-        except (AttributeError, TypeError):
-            return None
+    # TODO: REFACTOR - Complexity 15, extract sub-functions
 
-    def _validate_action_type(self, action_type: str, action_config: dict) -> bool:
-        """Validate that action type is valid and required fields are present."""
-        if action_type not in ["keypress", "url", "shell", "custom_message", "voice_chat"]:
-            return False
+    # TODO: REFACTOR - High complexity (validate_command)
+    # Break into: validation, execution, cleanup sub-functions
 
-        required_fields = {
-            "keypress": "keys",
-            "url": "url",
-            "shell": "cmd",
-        }
+    # TODO: REFACTOR - Complexity 15, extract sub-functions
 
-        if action_type in required_fields:
-            return required_fields[action_type] in action_config
-        return True
-
-    def _validate_new_format(self, action_config: dict) -> bool:
-        """Validate new format action configuration."""
-        action_type = action_config.get("action")
-        if not isinstance(action_type, str):
-            return False
-        return self._validate_action_type(action_type, action_config)
-
-    def _validate_old_format(self, action_config: dict) -> bool:
-        """Validate old format action configuration."""
-        return any(key in action_config for key in ["keypress", "url", "shell"])
-
-    @audit_log(operation="command_validation", level="info")
-    @validate_input(allowed_types=(str,), max_length=100, min_length=1)
     def validate_command(self, command_name: str) -> bool:
+        """Validate Command with (self, command_name: str).
+
+        TODO: Add detailed description and parameters.
         """
-        Validate that a command exists and has a valid action configuration.
 
-        Supports both new format (action: type with fields) and old format
-        (direct key mapping). Handles mock objects gracefully.
-
-        Args:
-            command_name: Name of the command to validate
-
-        Returns:
-            bool: True if command is valid and executable, False otherwise
-        """
+        # Apply conditional logic
         if not isinstance(command_name, str) or not command_name.strip():
             return False
 
-        command_action = self._get_model_action(command_name)
+        try:
+        # Attempt operation with error handling
+            # Ensure model_actions is accessible
+            model_actions = self.config.model_actions
+            if model_actions is None:
+                return False
+            # Apply conditional logic
+            if not hasattr(model_actions, "get"):
+                return False
+            command_action = model_actions.get(command_name)
+        # Handle specific exception case
+        except (AttributeError, TypeError):
+            return False
+
+        # Apply conditional logic
         if not command_action:
             return False
 
         try:
+        # Attempt operation with error handling
+            # Apply conditional logic
             if isinstance(command_action, dict):
+                # Validate that the command has a valid action configuration
                 if "action" in command_action:
-                    return self._validate_new_format(command_action)
+                    # New format validation
+                    action_type = command_action.get("action")
+                    if not isinstance(action_type, str):
+                        return False
+                    # Build filtered collection
+                    # Apply conditional logic
+                    if action_type not in [
+                        "keypress",
+                        "url",
+                        "shell",
+                        "custom_message",
+                        "voice_chat",
+                    ]:
+                        return False
+                    # Logic flow
+                    # Check required fields for each action type
+                    if action_type == "keypress" and "keys" not in command_action:
+                        return False
+                    # Apply conditional logic
+                    if action_type == "url" and "url" not in command_action:
+                        return False
+                    # Apply conditional logic
+                    if action_type == "shell" and "cmd" not in command_action:
+                        return False
                 else:
-                    return self._validate_old_format(command_action)
+                    # Old format validation
+                    if not any(
+                        # Build filtered collection
+                        key in command_action for key in ["keypress", "url", "shell"]
+                    ):
+                        return False
             else:
-                # Handle mock/non-dict objects
+                # For mocks or non-dict, attempt basic check
                 if hasattr(command_action, "get"):
                     action_type = command_action.get("action")
-                    return isinstance(action_type, str) and action_type in [
-                        "keypress", "url", "shell", "custom_message", "voice_chat"
-                    ]
+                    # Build filtered collection
+                    # Apply conditional logic
+                    if isinstance(action_type, str) and action_type in [
+                        "keypress",
+                        "url",
+                        "shell",
+                        "custom_message",
+                        "voice_chat",
+                    ]:
+                        # Logic flow
+                        # Assume valid if action type matches, skip field checks for mocks
+                        return True
                 return False
+        # Handle specific exception case
         except (AttributeError, TypeError, KeyError):
             return False
 

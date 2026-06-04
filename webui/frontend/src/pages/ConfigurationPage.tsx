@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
-import { useToast } from "../components/ToastProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AppConfig {
@@ -113,7 +112,6 @@ const ConfigurationPage: React.FC = () => {
 
   const queryClient = useQueryClient();
   const { setTheme } = useTheme();
-  const toast = useToast();
   const [config, setConfig] = useState<AppConfig>({
     apiKey: "",
     llmBaseUrl: "http://localhost:11434/v1",
@@ -168,14 +166,10 @@ const ConfigurationPage: React.FC = () => {
     mutationFn: persistConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["config"] });
-      toast.addToast("Configuration saved successfully!", "success");
       // also save audio settings
       if (inputDevice || outputDevice) {
         saveAudioSettings({ inputDevice, outputDevice });
       }
-    },
-    onError: (err: unknown) => {
-      toast.addToast(`Failed to save configuration: ${err instanceof Error ? err.message : "Unknown error"}`, "error");
     },
   });
 
@@ -250,33 +244,19 @@ const ConfigurationPage: React.FC = () => {
   };
 
   const handleTestMic = () => {
-    if (!inputDevice) {
-      toast.addToast("Please select an input device first", "warning");
-      return;
-    }
     setIsTestingMic(true);
-    setTimeout(() => {
-      setIsTestingMic(false);
-      toast.addToast("Microphone test completed successfully", "success");
-    }, 3000);
+    setTimeout(() => setIsTestingMic(false), 3000); // Simulate 3s test
   };
 
   const handleTestOutput = () => {
-    if (!outputDevice) {
-      toast.addToast("Please select an output device first", "warning");
-      return;
-    }
     setIsTestingOutput(true);
-    setTimeout(() => {
-      setIsTestingOutput(false);
-      toast.addToast("Audio output test completed successfully", "success");
-    }, 2000);
+    setTimeout(() => setIsTestingOutput(false), 2000); // Simulate 2s sound
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-primary/10 rounded-xl text-primary" aria-hidden="true">
+        <div className="p-3 bg-primary/10 rounded-xl text-primary">
           <SettingsIcon size={32} />
         </div>
         <div>
@@ -293,7 +273,7 @@ const ConfigurationPage: React.FC = () => {
           {/* General Settings */}
           <div className="p-6 border-b border-base-content/10">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <SlidersIcon className="w-5 h-5 text-primary" aria-hidden="true" />
+              <SlidersIcon className="w-5 h-5 text-primary" />
               General Settings
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -320,7 +300,7 @@ const ConfigurationPage: React.FC = () => {
           {/* Services Configuration */}
           <div className="p-6 border-b border-base-content/10 bg-base-200/50">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <ServerIcon className="w-5 h-5 text-info" aria-hidden="true" />
+              <ServerIcon className="w-5 h-5 text-info" />
               Services
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -361,128 +341,117 @@ const ConfigurationPage: React.FC = () => {
           {/* Audio Hardware Component */}
           <div className="p-6 border-b border-base-content/10 bg-base-200/30">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <HeadphonesIcon className="w-5 h-5 text-accent" aria-hidden="true" />
+              <HeadphonesIcon className="w-5 h-5 text-accent" />
               Audio Devices
             </h3>
 
-            {devices ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Input Device Card */}
-                <div className="card bg-base-100 shadow-sm border border-base-content/10">
-                  <div className="card-body p-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h4 className="card-title text-sm text-primary">
-                          <MicIcon size={16} aria-hidden="true" /> Input Device
-                        </h4>
-                        <p className="text-xs opacity-70">Microphone source</p>
-                      </div>
-                      <button
-                        className="btn btn-xs btn-outline btn-primary"
-                        onClick={handleTestMic}
-                        disabled={isTestingMic || !inputDevice}
-                        title={inputDevice ? "Test microphone" : "Select a device first"}
-                        aria-label={isTestingMic ? "Testing microphone device" : "Test microphone device"}
-                      >
-                        {isTestingMic ? "Testing..." : "Test"}
-                      </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Input Device Card */}
+              <div className="card bg-base-100 shadow-sm border border-base-content/10">
+                <div className="card-body p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="card-title text-sm text-primary">
+                        <MicIcon size={16} /> Input Device
+                      </h4>
+                      <p className="text-xs opacity-70">Microphone source</p>
                     </div>
-
-                    <select
-                      className="select select-bordered select-sm w-full select-primary mb-4"
-                      value={inputDevice}
-                      onChange={(e) => setInputDevice(e.target.value)}
-                      aria-label="Select input audio device"
+                    <button
+                      className="btn btn-xs btn-outline btn-primary"
+                      onClick={handleTestMic}
+                      disabled={isTestingMic || !inputDevice}
+                      aria-label={isTestingMic ? "Testing microphone device" : "Test microphone device"}
                     >
-                      <option value="" disabled>Select device...</option>
-                      {devices?.input.map((dev: string) => (
-                        <option key={dev} value={dev}>{dev}</option>
-                      ))}
-                    </select>
-
-                    {/* Visualizer Area */}
-                    <div className="h-6 bg-base-200 rounded flex items-center px-4 gap-1 overflow-hidden">
-                      {isTestingMic ? (
-                        Array.from({ length: 15 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-full bg-primary rounded-full animate-pulse"
-                            style={{ height: `${Math.max(10, Math.random() * 100)}%`, animationDuration: `${0.2 + Math.random() * 0.5}s` }}
-                          />
-                        ))
-                      ) : (
-                        <span className="text-[10px] text-base-content/40 italic w-full text-center">Click Test</span>
-                      )}
-                    </div>
+                      {isTestingMic ? "Testing..." : "Test"}
+                    </button>
                   </div>
-                </div>
 
-                {/* Output Device Card */}
-                <div className="card bg-base-100 shadow-sm border border-base-content/10">
-                  <div className="card-body p-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h4 className="card-title text-sm text-secondary">
-                          <VolumeUpIcon size={16} className={isTestingOutput ? "animate-bounce" : ""} aria-hidden="true" /> Output Device
-                        </h4>
-                        <p className="text-xs opacity-70">Playback endpoint</p>
-                      </div>
-                      <button
-                        className="btn btn-xs btn-outline btn-secondary"
-                        onClick={handleTestOutput}
-                        disabled={isTestingOutput || !outputDevice}
-                        title={outputDevice ? "Test audio output" : "Select a device first"}
-                        aria-label={isTestingOutput ? "Playing output device" : "Test output device"}
-                      >
-                        {isTestingOutput ? "Playing..." : "Test"}
-                      </button>
-                    </div>
+                  <select
+                    className="select select-bordered select-sm w-full select-primary mb-4"
+                    value={inputDevice}
+                    onChange={(e) => setInputDevice(e.target.value)}
+                  >
+                    <option value="" disabled>Select device...</option>
+                    {devices?.input.map((dev: string) => (
+                      <option key={dev} value={dev}>{dev}</option>
+                    ))}
+                  </select>
 
-                    <select
-                      className="select select-bordered select-sm w-full select-secondary mb-4"
-                      value={outputDevice}
-                      onChange={(e) => setOutputDevice(e.target.value)}
-                      aria-label="Select output audio device"
-                    >
-                      <option value="" disabled>Select device...</option>
-                      {devices?.output.map((dev: string) => (
-                        <option key={dev} value={dev}>{dev}</option>
-                      ))}
-                    </select>
-
-                    <div className="h-6 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
-                      <span className="text-[10px] text-base-content/40 italic">
-                        {isTestingOutput ? "🔊 Playing test sound..." : "Ready"}
-                      </span>
-                    </div>
+                  {/* Visualizer Area */}
+                  <div className="h-6 bg-base-200 rounded flex items-center px-4 gap-1 overflow-hidden">
+                    {isTestingMic ? (
+                      Array.from({ length: 15 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-full bg-primary rounded-full animate-pulse"
+                          style={{ height: `${Math.max(10, Math.random() * 100)}%`, animationDuration: `${0.2 + Math.random() * 0.5}s` }}
+                        />
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-base-content/40 italic w-full text-center">Click Test</span>
+                    )}
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="flex justify-center items-center p-8">
-                <span className="loading loading-spinner loading-md text-accent" aria-hidden="true"></span>
-                <span className="ml-3 text-base-content/60">Loading audio devices...</span>
+
+              {/* Output Device Card */}
+              <div className="card bg-base-100 shadow-sm border border-base-content/10">
+                <div className="card-body p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="card-title text-sm text-secondary">
+                        <VolumeUpIcon size={16} className={isTestingOutput ? "animate-bounce" : ""} /> Output Device
+                      </h4>
+                      <p className="text-xs opacity-70">Playback endpoint</p>
+                    </div>
+                    <button
+                      className="btn btn-xs btn-outline btn-secondary"
+                      onClick={handleTestOutput}
+                      disabled={isTestingOutput || !outputDevice}
+                      aria-label={isTestingOutput ? "Playing output device" : "Test output device"}
+                    >
+                      {isTestingOutput ? "Playing..." : "Test"}
+                    </button>
+                  </div>
+
+                  <select
+                    className="select select-bordered select-sm w-full select-secondary mb-4"
+                    value={outputDevice}
+                    onChange={(e) => setOutputDevice(e.target.value)}
+                  >
+                    <option value="" disabled>Select device...</option>
+                    {devices?.output.map((dev: string) => (
+                      <option key={dev} value={dev}>{dev}</option>
+                    ))}
+                  </select>
+
+                  <div className="h-6 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
+                    <span className="text-[10px] text-base-content/40 italic">
+                      {isTestingOutput ? "🔊 Playing test sound..." : "Ready"}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Voice Models Section */}
           <div className="p-6 border-b border-base-content/10">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <FileAudioIcon className="w-5 h-5 text-warning" aria-hidden="true" />
+              <FileAudioIcon className="w-5 h-5 text-warning" />
               Voice Models (ONNX)
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="col-span-2">
                 <div className="overflow-x-auto bg-base-200/30 rounded-lg border border-base-content/5 max-h-60 overflow-y-auto custom-scrollbar">
-                  <table className="table table-xs w-full" role="table" aria-label="Voice models list">
+                  <table className="table table-xs w-full">
                     <thead className="sticky top-0 bg-base-200 z-10">
                       <tr>
-                        <th scope="col">Name</th>
-                        <th scope="col">State</th>
-                        <th scope="col">Size</th>
-                        <th scope="col" className="text-right">Actions</th>
+                        <th>Name</th>
+                        <th>State</th>
+                        <th>Size</th>
+                        <th className="text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -512,9 +481,9 @@ const ConfigurationPage: React.FC = () => {
                                 disabled={deleteMutation.isPending}
                               >
                                 {deleteMutation.isPending && deleteMutation.variables === model.name ? (
-                                  <span className="loading loading-spinner loading-xs" aria-hidden="true"></span>
+                                  <span className="loading loading-spinner loading-xs"></span>
                                 ) : (
-                                  <TrashIcon size={14} aria-hidden="true" />
+                                  <TrashIcon size={14} />
                                 )}
                               </button>
                             </td>
@@ -534,7 +503,7 @@ const ConfigurationPage: React.FC = () => {
 
               <div className="card bg-base-200/50 border border-base-content/5 p-4 h-fit">
                  <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                  <UploadIcon size={14} aria-hidden="true"/> Upload Model
+                  <UploadIcon size={14}/> Upload Model
                  </h4>
 
                  <div className="form-control w-full mb-3">
@@ -566,14 +535,14 @@ const ConfigurationPage: React.FC = () => {
                    </label>
                  </div>
 
-                 {isUploading && <progress className="progress progress-primary w-full mt-2" role="progressbar" aria-label="Uploading model" aria-valuenow={50} aria-valuemin="0" aria-valuemax="100"></progress>}
+                 {isUploading && <progress className="progress progress-primary w-full mt-2"></progress>}
                  {uploadError && (
-                   <div className="alert alert-error text-xs mt-2 py-2" role="alert">
+                   <div className="alert alert-error text-xs mt-2 py-2">
                      <span>{uploadError}</span>
                    </div>
                  )}
                  {deleteError && (
-                   <div className="alert alert-error text-xs mt-2 py-2" role="alert">
+                   <div className="alert alert-error text-xs mt-2 py-2">
                      <span>{deleteError}</span>
                    </div>
                  )}
@@ -584,7 +553,7 @@ const ConfigurationPage: React.FC = () => {
           {/* LLM Endpoint Configuration */}
           <div className="p-6 border-b border-base-content/10">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <CpuIcon className="w-5 h-5 text-secondary" aria-hidden="true" />
+              <CpuIcon className="w-5 h-5 text-secondary" />
               LLM Endpoint
             </h3>
             <div className="space-y-4">
@@ -611,11 +580,10 @@ const ConfigurationPage: React.FC = () => {
                       type="button"
                       className="btn btn-ghost btn-xs"
                       onClick={() => handleCopy("baseUrl", config.llmBaseUrl)}
-                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCopy("baseUrl", config.llmBaseUrl)}
                       title="Copy to clipboard"
                       aria-label="Copy API Base URL"
                     >
-                      {copiedField === "baseUrl" ? <CheckIcon size={14} className="text-success" aria-hidden="true" /> : <CopyIcon size={14} aria-hidden="true" />}
+                      {copiedField === "baseUrl" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
                     </button>
                   )}
                 </div>
@@ -655,12 +623,10 @@ const ConfigurationPage: React.FC = () => {
                       type="button"
                       className="btn btn-xs btn-ghost gap-1"
                       onClick={handleFetchModels}
-                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleFetchModels()}
                       disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                       title="Fetch available models from endpoint"
-                      aria-label="Fetch available models from endpoint"
                     >
-                      {fetchingModels ? <span className="loading loading-spinner loading-xs" aria-hidden="true"></span> : <RefreshIcon size={12} aria-hidden="true" />}
+                      {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
                       {fetchingModels ? "Fetching..." : "Fetch list"}
                     </button>
                   </label>
@@ -682,11 +648,10 @@ const ConfigurationPage: React.FC = () => {
                         type="button"
                         className="btn btn-ghost btn-xs"
                         onClick={() => handleCopy("model", config.llmModel)}
-                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCopy("model", config.llmModel)}
                         title="Copy to clipboard"
                         aria-label="Copy Model"
                       >
-                        {copiedField === "model" ? <CheckIcon size={14} className="text-success" aria-hidden="true" /> : <CopyIcon size={14} aria-hidden="true" />}
+                        {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
                       </button>
                     </div>
                   ) : (
@@ -706,11 +671,10 @@ const ConfigurationPage: React.FC = () => {
                           type="button"
                           className="btn btn-ghost btn-xs"
                           onClick={() => handleCopy("model", config.llmModel)}
-                          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCopy("model", config.llmModel)}
                           title="Copy to clipboard"
                           aria-label="Copy Model"
                         >
-                          {copiedField === "model" ? <CheckIcon size={14} className="text-success" aria-hidden="true" /> : <CopyIcon size={14} aria-hidden="true" />}
+                          {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
                         </button>
                       )}
                     </div>
@@ -722,7 +686,7 @@ const ConfigurationPage: React.FC = () => {
 
           {/* Save Footer */}
           <div className="p-4 bg-base-300/50 rounded-b-xl flex justify-between items-center">
-            <span className="text-xs text-base-content/40" role="status" aria-live="polite">
+            <span className="text-xs text-base-content/40">
               {mutation.isSuccess && "✓ Saved"}
               {mutation.isError && "✗ Save failed"}
             </span>
@@ -731,7 +695,7 @@ const ConfigurationPage: React.FC = () => {
               onClick={() => mutation.mutate(config)}
               disabled={mutation.isPending}
             >
-              {mutation.isPending ? <span className="loading loading-spinner" aria-hidden="true"></span> : <SaveIcon size={20} aria-hidden="true" />}
+              {mutation.isPending ? <span className="loading loading-spinner"></span> : <SaveIcon size={20} />}
               {mutation.isPending ? "Saving..." : "Save Changes"}
             </button>
           </div>
