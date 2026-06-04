@@ -69,7 +69,7 @@ See also: [`docs/developer/PRODUCTION_READINESS_ROADMAP.md`](docs/developer/PROD
 - [ ] **Configure a Twilio/Vonage provider** so `dograh_call` returns success instead of `telephony_not_configured` (user action).
 - [ ] **Wire dograh's LLM / STT / TTS providers for self-hosted use**
   The dograh OSS image ships pointing all three at a hosted "dograh" provider that requires their cloud account. To run an end-to-end voice call locally (no Twilio needed — dograh ships a `smallwebrtc` browser-call mode), we must replace those with self-hosted or BYO-credential providers. Options: (a) OpenAI keys for all three, simplest; (b) stand up the optional Speaches stack (local Whisper + Kokoro TTS) and point dograh at it via `PUT /api/v1/user/configurations/user`. See `webui/frontend/tests/e2e/dograh/dograh_webcall_loopback.spec.ts` and `docs/screenshots/dograh/03-webcall-loopback.png` for the captured "blocked at LLM config" state.
-- [ ] **Rebase `feat/dograh-phase-1` onto `main`** (currently based on `fix/advisors-summarize-dead-code`).
+- [x] **Rebase `feat/dograh-phase-1` onto `main`** — done via merge `454f3873` (97-commit divergence made a literal rebase impractical; origin/main fully integrated, suite green).
 
 ---
 

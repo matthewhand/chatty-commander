@@ -1,0 +1,33 @@
+# Opt-in overlay: local Speaches server (Whisper STT + Kokoro TTS) for dograh.
+#
+# Speaches (https://github.com/speaches-ai/speaches) exposes an OpenAI-compatible
+# audio API that dograh supports natively (provider: "speaches"), letting webcalls
+# run fully self-hosted — no dograh-cloud, OpenAI, or Twilio account needed.
+#
+# Activate together with the dograh overlay in .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.dograh.yml:docker-compose.speaches.yml
+#
+# Then run scripts/setup_dograh_providers.sh to download the models and point
+# dograh's STT/TTS (and optionally LLM) at it.
+#
+# Port 8960 chosen to avoid CC (8100), dograh api/ui (8020/3020), minio (9010/9011).
+
+services:
+  speaches:
+    image: ghcr.io/speaches-ai/speaches:0.8.2-cpu
+    container_name: chatty-commander-speaches-1
+    restart: unless-stopped
+    ports:
+      - "8960:8000"
+    volumes:
+      - speaches_models:/home/ubuntu/.cache/huggingface
+    networks:
+      - dograh-network
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  speaches_models:
