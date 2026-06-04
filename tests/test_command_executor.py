@@ -382,3 +382,26 @@ class TestDograhCallAction:
             assert executor.execute_command("call_support") is False
 
         assert any("dograh unavailable" in rec.message for rec in caplog.records)
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_execute_dograh_call_generic_exception_distinct_reason(
+        self, mock_client_cls, executor, caplog
+    ):
+        """Non-DograhError failures must surface a distinct grep-able reason.
+
+        Operators grep logs by phrase, so the generic ``Exception`` branch
+        (``dograh call failed``) must NOT collapse into the ``DograhError``
+        branch's phrase (``dograh unavailable``).
+        """
+        instance = MagicMock()
+        instance.initiate_call.side_effect = RuntimeError("boom")
+        mock_client_cls.return_value.__enter__.return_value = instance
+
+        with caplog.at_level("CRITICAL"):
+            assert executor.execute_command("call_support") is False
+
+        messages = [rec.message for rec in caplog.records]
+        # Generic branch reason is present...
+        assert any("dograh call failed: boom" in m for m in messages)
+        # ...and is distinct from the DograhError branch's phrase.
+        assert not any("dograh unavailable" in m for m in messages)
