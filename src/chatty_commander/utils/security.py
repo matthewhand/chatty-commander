@@ -73,3 +73,33 @@ def mask_sensitive_data(data: Any) -> Any:
         # Logic flow
         return [mask_sensitive_data(item) for item in data]
     return data
+
+import shlex
+
+def is_safe_command(cmd: str) -> bool:
+    """Validates if a shell command is safe to execute.
+
+    Prevents command injection by blocking shell metacharacters.
+    """
+    if not cmd:
+        return False
+
+    # shlex.split drops unquoted newlines, so check raw string first
+    if "\n" in cmd or "\r" in cmd:
+        return False
+
+    try:
+        args = shlex.split(cmd)
+    except ValueError:
+        return False
+    if not args:
+        return False
+
+    metachars = {";", "|", "&", "$", ">", "<", "`"}
+
+    for arg in args:
+        # Block shell metacharacters
+        if any(char in arg for char in metachars):
+            return False
+
+    return True
