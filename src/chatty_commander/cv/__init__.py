@@ -30,19 +30,10 @@ This module provides visual validation and analysis capabilities for:
 - Visual regression testing
 """
 
-from .comparator import ImageComparator, SSIMComparisonResult
-from .validator import (
-    ComputerVisionValidator,
-    LayoutValidationResult,
-    OCRValidationResult,
-    ValidationResult,
-)
+from .comparator import ImageComparator
+from .validator import ComputerVisionValidator
 
 __all__ = [
     "ComputerVisionValidator",
     "ImageComparator",
-    "ValidationResult",
-    "OCRValidationResult",
-    "LayoutValidationResult",
-    "SSIMComparisonResult",
 ]

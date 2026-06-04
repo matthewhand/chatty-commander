@@ -38,7 +38,7 @@ class DefaultConfigGenerator:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self):
         self.base_dir = Path.cwd()
         self.wakewords_dir = self.base_dir / "wakewords"

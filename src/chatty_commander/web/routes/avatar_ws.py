@@ -46,7 +46,7 @@ class AvatarWSConnectionManager:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self, theme_resolver: Callable[[str], str] | None = None):
         self.active_connections: list[WebSocket] = []
         # optional persona -> theme resolver
@@ -83,7 +83,7 @@ class AvatarWSConnectionManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         await websocket.accept()
         self.active_connections.append(websocket)
         # ensure we are bound to the current manager (handles reset in tests)
@@ -113,7 +113,7 @@ class AvatarWSConnectionManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         try:
         # Attempt operation with error handling
             self.active_connections.remove(websocket)
@@ -122,13 +122,12 @@ class AvatarWSConnectionManager:
             pass
 
     async def send_personal_message(
+        self, message: dict[str, Any], websocket: WebSocket
+    ):
         """Send Personal Message with (self, message, websocket: WebSocket).
 
         TODO: Add detailed description and parameters.
         """
-        
-        self, message: dict[str, Any], websocket: WebSocket
-    ):
         try:
         # Attempt operation with error handling
             await websocket.send_text(json.dumps(message))
@@ -141,7 +140,7 @@ class AvatarWSConnectionManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Optionally enrich with theme based on persona_id
         try:
             data = message.get("data") if isinstance(message, dict) else None
@@ -334,7 +333,7 @@ async def avatar_ws_endpoint(websocket: WebSocket):
 
     TODO: Add detailed description and parameters.
     """
-    
+
     await manager.connect(websocket)
     try:
         # Logic flow

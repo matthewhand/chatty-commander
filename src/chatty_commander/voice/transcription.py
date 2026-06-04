@@ -128,7 +128,7 @@ class WhisperLocalBackend(TranscriptionBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self._model is not None
 
 
@@ -201,7 +201,7 @@ class WhisperAPIBackend(TranscriptionBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self._client is not None
 
 
@@ -233,7 +233,7 @@ class MockTranscriptionBackend(TranscriptionBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return True
 
 

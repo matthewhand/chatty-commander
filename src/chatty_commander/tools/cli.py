@@ -37,7 +37,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     # Accept unknown options to avoid pytest-provided flags (-q, test paths) breaking parsing
     parser = argparse.ArgumentParser(
         prog="generate-api-docs",
@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     args = parse_args(argv)
     _configure_logging(args.verbose)
 

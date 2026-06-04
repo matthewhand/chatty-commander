@@ -309,7 +309,7 @@ class MockWakeWordDetector:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._callbacks.append(callback)
 
     def remove_callback(self, callback: Callable[[str, float], None]) -> None:
@@ -318,7 +318,7 @@ class MockWakeWordDetector:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Logic flow
         if callback in self._callbacks:
         # TODO: Document this logic
@@ -330,7 +330,7 @@ class MockWakeWordDetector:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._running = True
         logger.info("Mock wake word detector started")
 
@@ -340,12 +340,11 @@ class MockWakeWordDetector:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._running = False
         logger.info("Mock wake word detector stopped")
 
     def trigger_wake_word(
-        """trigger wake word."""
         self, wake_word: str = "hey_jarvis", confidence: float = 0.9
     ) -> None:
         # Logic flow
@@ -369,7 +368,7 @@ class MockWakeWordDetector:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return ["hey_jarvis", "alexa", "hey_google"]
 
     def is_listening(self) -> bool:
@@ -378,5 +377,5 @@ class MockWakeWordDetector:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self._running

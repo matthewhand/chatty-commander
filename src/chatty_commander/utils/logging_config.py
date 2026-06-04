@@ -73,7 +73,7 @@ class StructuredJSONFormatter(logging.Formatter):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         entry: dict[str, Any] = {
         # Attempt operation with error handling
             "time": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S"),
@@ -97,7 +97,6 @@ class StructuredJSONFormatter(logging.Formatter):
 
 
 def configure_logging(
-    """configure logging."""
     level: str | None = None,
     log_format: str | None = None,
 ) -> None:
@@ -169,14 +168,12 @@ try:
         """
 
         async def dispatch(
-        # Async function for concurrent execution
+            self, request: Request, call_next: Callable[[Request], Any]
+        ) -> Response:
             """Dispatch with (self, request: Request, call_next).
 
             TODO: Add detailed description and parameters.
             """
-            
-            self, request: Request, call_next: Callable[[Request], Any]
-        ) -> Response:
             request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
             token = _request_id_var.set(request_id)
             try:

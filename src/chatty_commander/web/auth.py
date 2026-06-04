@@ -49,7 +49,7 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             return get_swagger_ui_html(
                 openapi_url=app.openapi_url or "/openapi.json",
                 title=app.title + " - Swagger UI",
@@ -65,7 +65,7 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             return get_redoc_html(
                 openapi_url=app.openapi_url or "/openapi.json",
                 title=app.title + " - ReDoc",
@@ -74,7 +74,6 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
 
 
 def apply_cors(
-    """apply cors."""
     app: FastAPI, *, no_auth: bool, origins: Iterable[str] | None = None
 ) -> None:
     """

@@ -73,7 +73,7 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
         TODO: Add detailed description and parameters.
         """
-        
+
         logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         shutdown_flag["stop"] = True
 
@@ -122,7 +122,6 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
 
 
 def run_web_mode(
-    """run web mode."""
     config,
     model_manager,
     state_manager,
@@ -166,7 +165,7 @@ def run_web_mode(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         web_server.on_command_detected(command, confidence=1.0)
 
     def on_state_change(old_state, new_state):
@@ -174,7 +173,7 @@ def run_web_mode(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         web_server._on_state_change(old_state, new_state)
 
     # Register callbacks
@@ -190,7 +189,7 @@ def run_web_mode(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         logger.info(f"Received signal {signum}, stopping web server...")
         stop_event.set()
         try:
@@ -238,7 +237,6 @@ def run_web_mode(
 
 
 def run_gui_mode(
-    """run gui mode."""
     config,
     model_manager,
     state_manager,
@@ -493,7 +491,7 @@ def run_interactive_shell(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Build filtered collection
         # Apply conditional logic
         options = [cmd for cmd in commands if cmd.startswith(text)]
@@ -571,7 +569,6 @@ def run_interactive_shell(
 
 
 def run_orchestrator_mode(
-    """run orchestrator mode."""
     config, model_manager, state_manager, command_executor, logger, args
 ):
     """Run orchestrator-driven mode; adapters route to the same command sink."""
@@ -751,7 +748,7 @@ def main():
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 print(f"AI: {response.text}")
                 # Apply conditional logic
                 if response.actions:

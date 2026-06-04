@@ -65,7 +65,7 @@ class SystemStatus(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     model_config = ConfigDict(extra="forbid")
 
     status: str = Field(..., description="Overall system status")
@@ -80,7 +80,7 @@ class StateChangeRequest(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     model_config = ConfigDict(extra="forbid")
 
     state: str = Field(
@@ -93,7 +93,7 @@ class CommandRequest(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     model_config = ConfigDict(extra="forbid")
 
     command: str = Field(..., description="Command name to execute")
@@ -107,7 +107,7 @@ class CommandResponse(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
     execution_time: float = Field(..., description="Execution time in milliseconds")
@@ -118,7 +118,7 @@ class StateInfo(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
     last_command: str | None = Field(default=None, description="Last detected command")
@@ -130,7 +130,7 @@ class HealthStatus(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     status: str = Field(..., description="Health status")
     uptime: str = Field(..., description="System uptime")
     version: str = Field(..., description="Application version")
@@ -165,13 +165,12 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
             )
 
     async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Any]
+    ) -> Any:
         """Dispatch with (self, request: Request, call_next).
 
         TODO: Add detailed description and parameters.
         """
-        
-        self, request: Request, call_next: Callable[[Request], Any]
-    ) -> Any:
         start_time = time.time()
         response = await call_next(request)
         duration_ms = (time.time() - start_time) * 1000.0
@@ -189,7 +188,7 @@ class MetricsData(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     total_requests: int = Field(..., description="Total API requests")
     uptime_seconds: float = Field(..., description="Uptime in seconds")
     active_connections: int = Field(
@@ -203,7 +202,6 @@ class MetricsData(BaseModel):
 
 
 def include_core_routes(
-    """include core routes."""
     *,
     get_start_time: Callable[[], float],
     get_state_manager: Callable[[], Any],
@@ -239,7 +237,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         uptime_seconds = time.time() - get_start_time()
         # Process each item
         uptime_str = _format_uptime(uptime_seconds)
@@ -358,7 +356,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         try:
         # Attempt operation with error handling
             cfg_mgr = get_config_manager()
@@ -420,7 +418,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         counters["config_get"] += 1
         cfg_mgr = get_config_manager()
         config_data = dict(getattr(cfg_mgr, "config", {}))
@@ -445,7 +443,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         counters["config_put"] += 1
 
         rejected_keys = sorted(set(config_data) - ALLOWED_CONFIG_KEYS)
@@ -497,7 +495,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         counters["state_get"] += 1
         sm = get_state_manager()
         return StateInfo(
@@ -517,7 +515,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         counters["state_post"] += 1
         try:
         # Attempt operation with error handling
@@ -535,7 +533,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         counters["command_post"] += 1
         start_time = time.time()
         try:
@@ -585,7 +583,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         counters["status"] += 1
         return await health_check()
 
@@ -595,7 +593,7 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Shallow copy to avoid external mutation
         metrics_dict: dict[str, float | int] = {**counters}
         avg_duration = (

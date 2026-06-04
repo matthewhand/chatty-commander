@@ -36,7 +36,7 @@ def get_prompt_template(model: str, persona_name: str, api_mode: str) -> str:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     persona_name = persona_name or "default"
     api_mode = (api_mode or "completion").lower()
     model = model or "*"
@@ -58,5 +58,5 @@ def render_with_template(template: str, *, system: str, text: str) -> str:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     return template.format(system=system, text=text)

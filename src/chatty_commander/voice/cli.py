@@ -112,13 +112,12 @@ def add_voice_subcommands(subparsers) -> None:
 
 
 def handle_voice_command(
+    args, config_manager=None, command_executor=None, state_manager=None
+) -> None:
     """Process with (args, config_manager, command_executor, state_manager).
 
     TODO: Add detailed description and parameters.
     """
-    
-    args, config_manager=None, command_executor=None, state_manager=None
-) -> None:
     if not hasattr(args, "voice_command") or not args.voice_command:
         # Logic flow
         print("No voice command specified. Use --help for available commands.")
@@ -168,7 +167,7 @@ def _handle_voice_test(
 
             TODO: Add detailed description and parameters.
             """
-            
+
             # Logic flow
             if command_name:
             # TODO: Document this logic
@@ -346,7 +345,7 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             # Logic flow
             if command_name:
             # TODO: Document this logic

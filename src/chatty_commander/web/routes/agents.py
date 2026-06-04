@@ -68,7 +68,7 @@ class AgentBlueprint:
 
     TODO: Add class description.
     """
-    
+
     id: str
     name: str
     description: str
@@ -83,7 +83,7 @@ class AgentBlueprintModel(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., max_length=200)
@@ -99,7 +99,7 @@ class AgentBlueprintResponse(AgentBlueprintModel):
 
     TODO: Add class description.
     """
-    
+
     id: str
 
 
@@ -162,7 +162,7 @@ def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     llm = _get_llm_manager()
     if llm is not None and llm.is_available():
         try:
@@ -218,19 +218,18 @@ class NLBlueprintRequest(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     description: str
 
 
 @router.post("/api/v1/agents/blueprints", response_model=AgentBlueprintResponse)
 async def create_blueprint(
+    payload: Annotated[dict[str, Any], Body(...)],
+) -> AgentBlueprintResponse:
     """Create with (payload).
 
     TODO: Add detailed description and parameters.
     """
-    
-    payload: Annotated[dict[str, Any], Body(...)],
-) -> AgentBlueprintResponse:
     try:
         # If a simple NL description payload
         if (
@@ -261,7 +260,7 @@ async def list_blueprints():
 
     TODO: Add detailed description and parameters.
     """
-    
+
     # Each AgentBlueprint already contains its id; avoid passing 'id' twice
     return [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
 
@@ -274,7 +273,7 @@ async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
 
     TODO: Add detailed description and parameters.
     """
-    
+
     if agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     ent = AgentBlueprint(id=agent_id, **bp.model_dump())
@@ -289,7 +288,7 @@ async def delete_blueprint(agent_id: str):
 
     TODO: Add detailed description and parameters.
     """
-    
+
     if agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     # Safety: ensure not in active team relations (simplified)
@@ -309,7 +308,7 @@ class TeamInfo(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     roles: dict[str, list[str]] = Field(default_factory=dict)
     agents: list[AgentBlueprintResponse] = Field(default_factory=list)
 
@@ -320,7 +319,7 @@ async def get_team():
 
     TODO: Add detailed description and parameters.
     """
-    
+
     # Build filtered collection
     agents = [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
     # Build filtered collection
@@ -332,7 +331,7 @@ class HandoffRequest(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     from_agent_id: str
     to_agent_id: str
     reason: str | None = None
@@ -344,7 +343,7 @@ async def handoff(h: HandoffRequest):
 
     TODO: Add detailed description and parameters.
     """
-    
+
     if h.from_agent_id not in _STORE or h.to_agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     # For now, just acknowledge; future: integrate with thinking_state + avatar_ws

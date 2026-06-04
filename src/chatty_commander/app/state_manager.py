@@ -40,7 +40,7 @@ class StateManager:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self, config: Config | None = None) -> None:
         self.config: Config = config or Config()
         self.logger: logging.Logger = logging.getLogger(__name__)
@@ -133,17 +133,16 @@ class StateManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self.callbacks.append(callback)
 
     def change_state(
+        self, new_state: str, callback: Callable[[str], None] | None = None
+    ) -> None:
         """Change State with (self, new_state: str, callback).
 
         TODO: Add detailed description and parameters.
         """
-        
-        self, new_state: str, callback: Callable[[str], None] | None = None
-    ) -> None:
         # Apply conditional logic
         if new_state in self.config.state_models:
             old_state = self.current_state
@@ -167,7 +166,7 @@ class StateManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self.active_models
 
     def post_state_change_hook(self, new_state: str) -> None:
@@ -175,7 +174,7 @@ class StateManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Build filtered collection
         # Process each item
         self.logger.debug(f"Post state change actions for {new_state} executed.")

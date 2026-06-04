@@ -436,7 +436,7 @@ class StubCompletionProvider(LLMProvider):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
@@ -444,7 +444,7 @@ class StubCompletionProvider(LLMProvider):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
 
@@ -456,7 +456,7 @@ class StubResponsesProvider(LLMProvider):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
@@ -464,7 +464,7 @@ class StubResponsesProvider(LLMProvider):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
 

@@ -37,26 +37,23 @@ except Exception:  # very minimal stub if FastAPI missing (tests won't hit real 
 
         TODO: Add class description.
         """
-        
+
         def __init__(self, *a: Any, **k: Any) -> None: ...
         # TODO: Document this logic
 
-        def include_router(self, *a: Any, **k: Any) -> None: ...
-        # TODO: Document this logic
+        def include_router(self, *a: Any, **k: Any) -> None:
             """Include Router with (self).
 
             TODO: Add detailed description and parameters.
             """
-            
+            ...
 
         @property
         def routes(self):
-        # TODO: Document this logic
             """Routes with (self).
 
             TODO: Add detailed description and parameters.
             """
-            
             return []
 
 
@@ -139,7 +136,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     app = FastAPI()
 
     # Include routers that are available

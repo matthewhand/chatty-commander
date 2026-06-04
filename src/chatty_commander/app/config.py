@@ -37,7 +37,7 @@ class Config:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
@@ -166,7 +166,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return self._cfg.default_state
 
             @default_state.setter
@@ -176,7 +176,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 self._cfg.default_state = v
                 self._cfg.config_data["default_state"] = v
 
@@ -187,7 +187,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return bool(
                     self._cfg.config_data.get("general", {}).get("debug_mode", True)
                 )
@@ -199,7 +199,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 self._cfg._update_general_setting("debug_mode", bool(v))
 
             @property
@@ -209,7 +209,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return str(
                     self._cfg.config_data.get("general", {}).get(
                         "inference_framework", "onnx"
@@ -223,7 +223,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 self._cfg._update_general_setting("inference_framework", v)
 
             @property
@@ -233,7 +233,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return bool(
                     self._cfg.config_data.get("general", {}).get("start_on_boot", False)
                 )
@@ -245,7 +245,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 self._cfg._update_general_setting("start_on_boot", bool(v))
 
             @property
@@ -255,7 +255,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 return bool(
                     self._cfg.config_data.get("general", {}).get(
                         # Process each item
@@ -271,7 +271,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 # Process each item
                 self._cfg._update_general_setting("check_for_updates", bool(v))
 
@@ -533,7 +533,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return bool(self.config_data.get("general", {}).get("debug_mode", True))
 
     @debug_mode.setter
@@ -542,7 +542,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self.config_data.setdefault("general", {})["debug_mode"] = bool(value)
 
     @property
@@ -551,7 +551,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self._voice_only
 
     @voice_only.setter
@@ -560,7 +560,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._voice_only = bool(value)
 
     # ------------------------------------------------------------------
@@ -570,7 +570,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Validate input exists
         if config_data is not None:
             self.config_data.update(config_data)
@@ -596,7 +596,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if not self.model_actions:
             raise ValueError("Model actions configuration is empty.")
@@ -620,7 +620,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._update_general_setting("start_on_boot", bool(enabled))
         self.start_on_boot = bool(enabled)
         # Apply conditional logic
@@ -642,7 +642,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Process each item
         self._update_general_setting("check_for_updates", bool(enabled))
         # Process each item
@@ -662,7 +662,7 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Validate preconditions
         if not self.check_for_updates:
             return None
@@ -718,12 +718,11 @@ class Config:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return cls(config_file)
 
     @classmethod
     def from_dict(
-        """from dict."""
         cls, data: dict[str, Any], config_file: str = "config.json"
     ) -> Config:
         """Create a Config instance from a dictionary."""

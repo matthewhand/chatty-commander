@@ -96,7 +96,6 @@ class ThinkingStateManager:
         self.broadcast_callbacks: set[Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]] = set()
 
     def register_agent(
-        """register agent."""
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
     ) -> None:
         """Register a new agent with optional avatar mapping."""
@@ -114,7 +113,6 @@ class ThinkingStateManager:
         self._broadcast_state_change(agent_id)
 
     def set_agent_state(
-        """set agent state."""
         self,
         agent_id: str,
         state: ThinkingState,
@@ -154,7 +152,6 @@ class ThinkingStateManager:
             self._broadcast_state_change(agent_id)
 
     def add_broadcast_callback(
-        """add broadcast callback."""
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -165,7 +162,6 @@ class ThinkingStateManager:
         self.broadcast_callbacks.add(callback)
 
     def remove_broadcast_callback(
-        """remove broadcast callback."""
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -214,7 +210,7 @@ class ThinkingStateManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self.set_agent_state(
             agent_id,
             ThinkingState.TOOL_CALLING,
@@ -233,7 +229,7 @@ class ThinkingStateManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Return to processing by default
         self.set_agent_state(agent_id, ThinkingState.PROCESSING)
         self._broadcast(
@@ -246,13 +242,12 @@ class ThinkingStateManager:
 
     # Agent handoff lifecycle
     def handoff_start(
+        self, agent_id: str, to_agent_persona: str, reason: str | None = None
+    ) -> None:
         """Handoff Start with (self, agent_id: str, to_agent_persona: str, reason).
 
         TODO: Add detailed description and parameters.
         """
-        
-        self, agent_id: str, to_agent_persona: str, reason: str | None = None
-    ) -> None:
         self.set_agent_state(agent_id, ThinkingState.HANDOFF, reason)
         self._broadcast(
             {
@@ -271,7 +266,7 @@ class ThinkingStateManager:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Update persona mapping and return to idle
         if agent_id in self.agent_states:
             self.agent_states[agent_id].persona_id = new_persona_id
@@ -355,7 +350,6 @@ class ThinkingStateContext:
 
 # Decorator for automatic thinking state management
 def with_thinking_state(
-    """with thinking state."""
     agent_id: str,
     thinking_msg: str = "Processing...",
     responding_msg: str = "Generating response...",
@@ -367,14 +361,14 @@ def with_thinking_state(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         def wrapper(*args, **kwargs):
         # TODO: Document this logic
             """Wrapper operation.
 
             TODO: Add detailed description and parameters.
             """
-            
+
             with ThinkingStateContext(agent_id, thinking_msg, responding_msg) as ctx:
             # Use context manager for resource management
                 result = func(*args, **kwargs)

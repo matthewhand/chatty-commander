@@ -34,7 +34,7 @@ def main() -> int:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     if not CFG.exists():
         print("config.json not found", file=sys.stderr)
         return 2

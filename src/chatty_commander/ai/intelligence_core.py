@@ -173,7 +173,6 @@ class IntelligenceCore:
         # Could trigger processing indicator here
 
     def process_input(
-        """process input."""
         self,
         text: str,
         input_type: str = "text",

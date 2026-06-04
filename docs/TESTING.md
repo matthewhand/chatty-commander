@@ -262,8 +262,8 @@ from PIL import Image
 from chatty_commander.cv import (
     ComputerVisionValidator,
     ImageComparator,
-    SSIMComparisonResult,
 )
+from chatty_commander.cv.comparator import SSIMComparisonResult
 
 
 class TestImageComparator:

@@ -46,7 +46,7 @@ class AnalystRequest:
 
     TODO: Add class description.
     """
-    
+
     url: str
 
 
@@ -56,7 +56,7 @@ class AnalystResult:
 
     TODO: Add class description.
     """
-    
+
     title: str
     summary: str
     url: str

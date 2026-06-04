@@ -35,7 +35,7 @@ class MemoryItem:
 
     TODO: Add class description.
     """
-    
+
     role: str  # "user" | "assistant"
     content: str
     timestamp: str
@@ -46,7 +46,7 @@ class MemoryStore:
 
     TODO: Add class description.
     """
-    
+
     def __init__(
         self,
         max_items_per_context: int = 100,
@@ -100,15 +100,12 @@ class MemoryStore:
         return f"{platform}:{channel}:{user}"
 
     def add(
-        # Process each item
+        self, platform: str, channel: str, user: str, role: str, content: str
+    ) -> None:
         """Add with (self, platform: str, channel: str, user: str, role: str, content: str).
 
         TODO: Add detailed description and parameters.
         """
-        
-        # Process each item
-        self, platform: str, channel: str, user: str, role: str, content: str
-    ) -> None:
         # Process each item
         key = self._ctx(platform, channel, user)
         q = self._store.setdefault(key, deque(maxlen=self._max))
@@ -140,15 +137,12 @@ class MemoryStore:
                 pass
 
     def get(
-        # Process each item
+        self, platform: str, channel: str, user: str, limit: int = 20
+    ) -> list[MemoryItem]:
         """Get with (self, platform: str, channel: str, user: str, limit: int).
 
         TODO: Add detailed description and parameters.
         """
-        
-        # Process each item
-        self, platform: str, channel: str, user: str, limit: int = 20
-    ) -> list[MemoryItem]:
         # Process each item
         key = self._ctx(platform, channel, user)
         items = list(self._store.get(key, deque()))
@@ -163,7 +157,7 @@ class MemoryStore:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Process each item
         key = self._ctx(platform, channel, user)
         count = len(self._store.get(key, []))

@@ -81,7 +81,7 @@ class ConfigCLI:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         with open(self.config_path, "w") as f:  # noqa: PTH123 - user path
         # Use context manager for resource management
             json.dump(self.config.to_dict(), f, indent=4)
@@ -94,7 +94,7 @@ class ConfigCLI:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self.config.model_actions[model_name] = action
         self.save_config()
 
@@ -103,7 +103,7 @@ class ConfigCLI:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Build filtered collection
         # Process each item
         self.config.state_models[state] = [m.strip() for m in models_str.split(",")]
@@ -114,7 +114,7 @@ class ConfigCLI:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Build filtered collection
         # Process each item
         self.config.listen_for[key] = value
@@ -125,7 +125,7 @@ class ConfigCLI:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self.config.modes[mode] = value
         self.save_config()
 
@@ -137,7 +137,7 @@ class ConfigCLI:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         print("Current Configuration:")
         print("\nModel Actions:")
         # Iterate collection
@@ -179,7 +179,7 @@ class ConfigCLI:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Loop until condition met
         while True:
             config_type = input(

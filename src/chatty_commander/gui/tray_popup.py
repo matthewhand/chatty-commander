@@ -172,7 +172,7 @@ def run_tray_popup(config: Any, logger) -> int:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # open window on a background thread to avoid blocking the tray loop
         settings = _load_settings(config)
         threading.Thread(
@@ -184,7 +184,7 @@ def run_tray_popup(config: Any, logger) -> int:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         _icon.stop()
 
     menu = Menu(

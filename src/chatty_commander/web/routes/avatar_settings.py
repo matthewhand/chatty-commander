@@ -34,7 +34,7 @@ class AvatarConfigModel(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     model_config = ConfigDict(extra="forbid")
     animations_dir: str | None = Field(
         # Logic flow
@@ -93,13 +93,12 @@ def _get_avatar_cfg(cfg_mgr: Any) -> dict[str, Any]:
 
 
 def include_avatar_settings_routes(
+    *, get_config_manager: Callable[[], Any]
+) -> APIRouter:
     """Include Avatar Settings Routes operation.
 
     TODO: Add detailed description and parameters.
     """
-    
-    *, get_config_manager: Callable[[], Any]
-) -> APIRouter:
     router = APIRouter()
 
     @router.get("/avatar/config", response_model=AvatarConfigModel)
@@ -108,7 +107,7 @@ def include_avatar_settings_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         try:
         # Attempt operation with error handling
             cfg_mgr = get_config_manager()
@@ -124,7 +123,7 @@ def include_avatar_settings_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         try:
         # Attempt operation with error handling
             cfg_mgr = get_config_manager()

@@ -81,7 +81,7 @@ class Pyttsx3Backend(TTSBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Logic flow
         if not self._engine:
         # TODO: Document this logic
@@ -95,7 +95,7 @@ class Pyttsx3Backend(TTSBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self._engine is not None
 
 
@@ -111,7 +111,7 @@ class MockTTSBackend(TTSBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self.spoken.append(text)
 
     def is_available(self) -> bool:
@@ -120,7 +120,7 @@ class MockTTSBackend(TTSBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return True
 
 
@@ -149,7 +149,7 @@ class TextToSpeech:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -164,7 +164,7 @@ class TextToSpeech:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self.backend.is_available()
 
     def get_backend_info(self) -> dict[str, str | bool]:
@@ -173,7 +173,7 @@ class TextToSpeech:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return {
             "backend_type": type(self.backend).__name__,
             "is_available": self.backend.is_available(),

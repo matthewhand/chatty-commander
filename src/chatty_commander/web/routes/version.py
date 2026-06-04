@@ -31,7 +31,7 @@ class VersionInfo(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     version: str = Field(..., description="Application semantic version")
     git_sha: str | None = Field(
         # Logic flow
@@ -48,7 +48,7 @@ async def get_version() -> VersionInfo:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     # Base version should come from a single source of truth if available
     # Here we mirror the SystemStatus default to keep tests stable.
     base_version = "0.2.0"

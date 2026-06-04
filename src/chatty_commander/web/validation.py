@@ -76,7 +76,6 @@ def validate_uuid(identifier: str, field_name: str = "ID") -> str:
 
 
 def validate_string_length(
-    """validate string length."""
     value: str, min_length: int = 1, max_length: int = 1000, field_name: str = "field"
 ) -> str:
     """
@@ -392,7 +391,7 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Logic flow
         if isinstance(value, str):
             # Remove potential script injections
@@ -442,7 +441,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_agent_name(v)
 
     @validator("description")
@@ -451,7 +450,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_agent_description(v)
 
     @validator("persona_prompt")
@@ -460,7 +459,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_persona_prompt(v)
 
     @validator("capabilities")
@@ -469,7 +468,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_capabilities(v)
 
     @validator("team_role")
@@ -478,7 +477,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_team_role(v)
 
     @validator("handoff_triggers")
@@ -487,7 +486,7 @@ class ValidatedAgentBlueprint(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_handoff_triggers(v)
 
 
@@ -507,7 +506,7 @@ class ValidatedCommandRequest(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_command_name(v)
 
 
@@ -524,7 +523,7 @@ class ValidatedStateChangeRequest(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return validate_state_change(v)
 
 
@@ -539,5 +538,5 @@ class ValidatedConfigUpdate(BaseModel):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return sanitize_config_data(v)

@@ -151,15 +151,14 @@ class ContextManager:
             self._load_contexts()
 
     def get_or_create_context(
-        """get or create context."""
         self,
-        # Process each item
         platform: PlatformType,
         channel: str,
         user_id: str,
         username: str | None = None,
         **kwargs,
     ) -> ContextState:
+        """get or create context."""
         """
         # Process each item
         Get existing context or create new one for the given identity.

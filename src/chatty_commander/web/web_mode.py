@@ -134,7 +134,7 @@ class AdvisorInbound(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     platform: str
     channel: str
     user: str
@@ -148,7 +148,7 @@ class AdvisorOutbound(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     reply: str
     context_key: str
     persona_id: str
@@ -161,7 +161,7 @@ class ContextStats(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     total_contexts: int
     # Build filtered collection
     platform_distribution: dict[str, int]
@@ -178,7 +178,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         response = await call_next(request)
 
         # Security headers
@@ -206,7 +206,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def get_client_ip(
-    """get client ip."""
     request: Request,
     trusted_proxies: list[str] | None = None,
 ) -> str:
@@ -361,7 +360,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Use secure IP extraction to prevent spoofing
         client_ip = get_client_ip(request, self.trusted_proxies)
 
@@ -431,7 +430,7 @@ class SystemStatus(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of loaded models")
@@ -444,7 +443,7 @@ class StateChangeRequest(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     state: str = Field(
         ..., description="Target state", pattern="^(idle|computer|chatty)$"
     )
@@ -455,7 +454,7 @@ class CommandRequest(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     command: str = Field(..., description="Command name to execute")
     parameters: dict[str, Any] | None = Field(
         default=None, description="Optional parameters"
@@ -467,7 +466,7 @@ class CommandResponse(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     success: bool = Field(..., description="Whether command executed successfully")
     message: str = Field(..., description="Execution result message")
     execution_time: float = Field(..., description="Execution time in milliseconds")
@@ -478,7 +477,7 @@ class StateInfo(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of active models")
     last_command: str | None = Field(default=None, description="Last detected command")
@@ -490,7 +489,7 @@ class WebSocketMessage(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     type: str = Field(..., description="Message type")
     data: dict[str, Any] = Field(..., description="Message data")
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
@@ -553,7 +552,7 @@ class WebModeServer:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             self._telemetry_running = True
             self._telemetry_task = asyncio.create_task(self._telemetry_loop())
 
@@ -564,7 +563,7 @@ class WebModeServer:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             self._telemetry_running = False
             # Logic flow
             if self._telemetry_task and not self._telemetry_task.done():
@@ -894,7 +893,7 @@ class WebModeServer:
 
                 TODO: Add detailed description and parameters.
                 """
-                
+
                 # If API or static file request fails, let it 404.
                 # Otherwise, serve index.html for SPA routing.
                 if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
@@ -942,7 +941,7 @@ class WebModeServer:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             # Logic flow
             # Return seed data for testing
             if self.no_auth:
@@ -960,15 +959,13 @@ class WebModeServer:
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(
-        # Async function for concurrent execution
+            message: AdvisorInbound,
+            x_api_key: str | None = Header(None, alias="X-API-Key"),
+        ):
             """Advisor Message with (message: AdvisorInbound, x_api_key).
 
             TODO: Add detailed description and parameters.
             """
-            
-            message: AdvisorInbound,
-            x_api_key: str | None = Header(None, alias="X-API-Key"),
-        ):
             # Check authentication
             if not self.no_auth:
                 expected_key = None
@@ -1017,7 +1014,7 @@ class WebModeServer:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             svc = self.advisors_service
             # Logic flow
             if not svc or not getattr(svc, "enabled", False):
@@ -1047,7 +1044,7 @@ class WebModeServer:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             svc = self.advisors_service
             # Logic flow
             if not svc or not getattr(svc, "enabled", False):
@@ -1068,15 +1065,12 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
-        # Async function for concurrent execution
+            platform: str, channel: str, user: str, limit: int = 20
+        ):
             """Advisors Memory with (platform: str, channel: str, user: str, limit: int).
 
             TODO: Add detailed description and parameters.
             """
-            
-            # Process each item
-            platform: str, channel: str, user: str, limit: int = 20
-        ):
             svc = self.advisors_service
             # Logic flow
             if not svc or not getattr(svc, "enabled", False):
@@ -1098,7 +1092,7 @@ class WebModeServer:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             svc = self.advisors_service
             # Logic flow
             if not svc or not getattr(svc, "enabled", False):
@@ -1114,7 +1108,7 @@ class WebModeServer:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             svc = self.advisors_service
             # Logic flow
             if not svc or not getattr(svc, "enabled", False):
@@ -1128,15 +1122,13 @@ class WebModeServer:
 
         @app.post("/bridge/event")
         async def bridge_event(
-        # Async function for concurrent execution
+            event: dict[str, Any],
+            x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
+        ):
             """Bridge Event with (event, x_bridge_token).
 
             TODO: Add detailed description and parameters.
             """
-            
-            event: dict[str, Any],
-            x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
-        ):
             # Logic flow
             # Check for bridge token in header
             expected_token = self.config_manager.web_server.get("bridge_token")
@@ -1208,7 +1200,7 @@ class WebModeServer:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self.commands_executed += 1
         self.last_command = command
         try:
@@ -1232,7 +1224,7 @@ class WebModeServer:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         try:
         # Attempt operation with error handling
             loop = asyncio.get_event_loop()
@@ -1248,7 +1240,6 @@ class WebModeServer:
 
 
 def create_app(
-    """create app."""
     *,
     config: Config | None = None,
     config_manager: Config | None = None,
@@ -1267,7 +1258,6 @@ def create_app(
 
 
 def run_server(
-    """run server."""
     config_manager: Config,
     state_manager: StateManager,
     model_manager: ModelManager,

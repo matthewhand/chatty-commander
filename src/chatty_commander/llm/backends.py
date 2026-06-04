@@ -462,7 +462,7 @@ class MockLLMBackend(LLMBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return True
 
     def generate_response(self, prompt: str, **kwargs) -> str:
@@ -470,7 +470,7 @@ class MockLLMBackend(LLMBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         response = self.responses[self.call_count % len(self.responses)]
         self.call_count += 1
         logger.debug(f"Mock LLM response: '{response}'")
@@ -481,7 +481,7 @@ class MockLLMBackend(LLMBackend):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return {
             "backend": "mock",
             "available": True,

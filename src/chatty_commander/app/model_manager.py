@@ -47,7 +47,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised via fallback
 
         TODO: Add class description.
         """
-        
+
         def __init__(self, path: str):
         # TODO: Document this logic
             self.path = path
@@ -113,7 +113,7 @@ class ModelManager:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self, config: Any, mock_models: bool = False) -> None:
         """Initialize with configuration and preload models."""
         logging.basicConfig(level=logging.INFO)
@@ -128,7 +128,6 @@ class ModelManager:
         self.reload_models()
 
     def reload_models(
-        """reload models."""
         self, state: str | None = None
     ) -> dict[str, Model] | dict[str, dict[str, Model]]:
         """

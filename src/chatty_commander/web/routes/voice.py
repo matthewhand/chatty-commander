@@ -33,7 +33,7 @@ class VoiceStatus(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     running: bool
     wake_words: list[str]
     backend: str
@@ -44,7 +44,7 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     router = APIRouter()
 
     # Simple state for tracking voice pipeline status
@@ -56,7 +56,7 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         config_manager = get_config_manager()
         config = getattr(config_manager, "config", {})
         wake_words = config.get("wake_words", ["hey_jarvis", "alexa"])
@@ -73,7 +73,7 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Logic flow
         if not state["running"]:
             state["running"] = True
@@ -86,7 +86,7 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Logic flow
         if state["running"]:
             state["running"] = False

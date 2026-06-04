@@ -132,7 +132,6 @@ const slackApp = new App({
 
 // Advisor API client
 class AdvisorAPIClient {
-    """AdvisorAPIClient { class."""
   constructor() {
     this.baseURL = process.env.ADVISOR_API_URL || 'http://localhost:8100';
     this.bridgeToken = process.env.BRIDGE_TOKEN;

@@ -32,7 +32,7 @@ class RecurringPrompt:
 
     TODO: Add class description.
     """
-    
+
     id: str
     name: str
     description: str
@@ -50,7 +50,7 @@ class RecurringPrompt:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         required = [
             "id",
             "name",
@@ -83,7 +83,7 @@ class RecurringPrompt:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         merged = dict(self.variables)
         # Apply conditional logic
         if runtime_vars:

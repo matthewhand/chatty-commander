@@ -60,7 +60,7 @@ except ImportError:
 
         TODO: Add class description.
         """
-        
+
         pass
 
     class QWebEngineView:  # type: ignore[no-redef]
@@ -68,7 +68,7 @@ except ImportError:
 
         TODO: Add class description.
         """
-        
+
         pass
 
     class QSystemTrayIcon:  # type: ignore[no-redef]
@@ -76,7 +76,7 @@ except ImportError:
 
         TODO: Add class description.
         """
-        
+
         pass
 
     class QApplication:  # type: ignore[no-redef]
@@ -84,7 +84,7 @@ except ImportError:
 
         TODO: Add class description.
         """
-        
+
         pass
 
 

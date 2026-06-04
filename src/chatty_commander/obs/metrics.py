@@ -96,7 +96,7 @@ class Counter(Metric):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Logic flow
         if amount < 0:
             amount = 0
@@ -110,7 +110,7 @@ class Counter(Metric):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self._values.get(self._key(labels), 0)
 
     def samples(self) -> list[tuple[dict[str, str], int]]:
@@ -118,7 +118,7 @@ class Counter(Metric):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         out: list[tuple[dict[str, str], int]] = []
         # Logic flow
         for key, value in self._values.items():
@@ -139,7 +139,7 @@ class Gauge(Metric):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         key = self._key(labels)
         with self._lock:
         # Use context manager for resource management
@@ -150,7 +150,7 @@ class Gauge(Metric):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return self._values.get(self._key(labels), 0.0)
 
     def samples(self) -> list[tuple[dict[str, str], float]]:
@@ -158,7 +158,7 @@ class Gauge(Metric):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         out: list[tuple[dict[str, str], float]] = []
         # Logic flow
         for key, value in self._values.items():
@@ -173,7 +173,7 @@ class HistogramBuckets:
 
     TODO: Add class description.
     """
-    
+
     edges: list[float] = field(
         default_factory=lambda: [
             0.001,
@@ -196,7 +196,7 @@ class HistogramBuckets:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return max(0.0, float(value))
 
 
@@ -218,7 +218,7 @@ class Histogram(Metric):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         v = self._buckets.clamp(value)
         key = self._key(labels)
         with self._lock:
@@ -248,7 +248,7 @@ class Histogram(Metric):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         out: dict[str, Any] = {"buckets": self._buckets.edges, "series": []}
         # Logic flow
         for key, counts in self._counts.items():
@@ -287,7 +287,7 @@ class Timer:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             with self:
             # Use context manager for resource management
                 return fn(*args, **kwargs)
@@ -309,7 +309,7 @@ class MetricsRegistry:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         with self._lock:
         # Use context manager for resource management
             m = self.counters.get(name)
@@ -324,7 +324,7 @@ class MetricsRegistry:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         with self._lock:
         # Use context manager for resource management
             m = self.gauges.get(name)
@@ -335,13 +335,12 @@ class MetricsRegistry:
             return m
 
     def histogram(
+        self, name: str, description: str = "", buckets: HistogramBuckets | None = None
+    ) -> Histogram:
         """Histogram with (self, name: str, description: str, buckets).
 
         TODO: Add detailed description and parameters.
         """
-        
-        self, name: str, description: str = "", buckets: HistogramBuckets | None = None
-    ) -> Histogram:
         with self._lock:
         # Use context manager for resource management
             m = self.hists.get(name)
@@ -356,7 +355,7 @@ class MetricsRegistry:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         out: dict[str, Any] = {"counters": {}, "gauges": {}, "histograms": {}}
         # Logic flow
         for k, c in self.counters.items():
@@ -397,13 +396,12 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
         )
 
     async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Any]
+    ) -> Response:  # type: ignore[name-defined]
         """Dispatch with (self, request: Request, call_next).
 
         TODO: Add detailed description and parameters.
         """
-        
-        self, request: Request, call_next: Callable[[Request], Any]
-    ) -> Response:  # type: ignore[name-defined]
         # path variable intentionally unused to minimize attribute access overhead
         method = getattr(request, "method", "GET")
         # Measure with unknown route first; route set after call_next
@@ -447,7 +445,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         return reg.to_json()
 
     @router.get("/metrics/prom")
@@ -456,7 +454,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         lines: list[str] = []
         # Counters
         for name, c in reg.counters.items():

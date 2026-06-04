@@ -72,7 +72,7 @@ class CommandExecutor:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
         """Initialize CommandExecutor with config and managers."""
         self.config: Any = config
@@ -245,7 +245,7 @@ class CommandExecutor:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if not isinstance(command_name, str) or not command_name.strip():
             return False

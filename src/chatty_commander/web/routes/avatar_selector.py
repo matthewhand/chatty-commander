@@ -39,7 +39,7 @@ class AnimationChooseRequest(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     text: str = Field(..., description="Text to classify")
     candidate_labels: list[str] | None = Field(
         default=None, description="Optional subset of allowed labels"
@@ -51,7 +51,7 @@ class AnimationChooseResponse(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     label: str
     confidence: float = 0.5
     rationale: str | None = None
@@ -74,7 +74,7 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
 
     TODO: Add detailed description and parameters.
     """
-    
+
     try:
         text = (req.text or "").lower()
         labels = set(req.candidate_labels or [])
@@ -88,7 +88,7 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
 
             TODO: Add detailed description and parameters.
             """
-            
+
             return (not labels) or (label in labels)
 
         # Logic flow

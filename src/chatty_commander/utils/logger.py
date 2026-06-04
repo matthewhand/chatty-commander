@@ -205,7 +205,7 @@ def report_error(e, context=None):
 
     TODO: Add detailed description and parameters.
     """
-    
+
     if context:
         logging.error(f"Error reported: {e}, context: {context}")
     else:

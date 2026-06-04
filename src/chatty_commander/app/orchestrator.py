@@ -51,13 +51,13 @@ class CommandSink(Protocol):
 
     TODO: Add class description.
     """
-    
+
     def execute_command(self, command_name: str) -> Any:  # pragma: no cover - protocol
         """Execute Command with (self, command_name: str).
 
         TODO: Add detailed description and parameters.
         """
-        
+
         ...
 
 
@@ -66,13 +66,13 @@ class AdvisorSink(Protocol):
 
     TODO: Add class description.
     """
-    
+
     def handle_message(self, message: Any) -> Any:  # pragma: no cover - protocol
         """Process with (self, message: Any).
 
         TODO: Add detailed description and parameters.
         """
-        
+
         ...
 
 
@@ -81,7 +81,7 @@ class InputAdapter(Protocol):
 
     TODO: Add class description.
     """
-    
+
     name: str
 
     def start(self) -> None:  # pragma: no cover - protocol
@@ -89,7 +89,7 @@ class InputAdapter(Protocol):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         ...
 
     def stop(self) -> None:  # pragma: no cover - protocol
@@ -97,7 +97,7 @@ class InputAdapter(Protocol):
 
         TODO: Add detailed description and parameters.
         """
-        
+
         ...
 
 
@@ -107,7 +107,7 @@ class OrchestratorFlags:
 
     TODO: Add class description.
     """
-    
+
     enable_text: bool = False
     enable_gui: bool = False
     enable_web: bool = False
@@ -121,7 +121,7 @@ class TextInputAdapter:
 
     TODO: Add class description.
     """
-    
+
     name = "text"
 
     def __init__(self, on_command: Callable[[str], None]) -> None:
@@ -133,7 +133,7 @@ class TextInputAdapter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._started = True
 
     def stop(self) -> None:
@@ -141,7 +141,7 @@ class TextInputAdapter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._started = False
 
     # Helper for tests/manual feeding
@@ -150,7 +150,7 @@ class TextInputAdapter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if self._started:
             self._on_command(text)
@@ -171,7 +171,7 @@ class DummyAdapter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._started = True
 
     def stop(self) -> None:
@@ -179,7 +179,7 @@ class DummyAdapter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         self._started = False
 
 
@@ -315,7 +315,7 @@ class OpenWakeWordAdapter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if not VOICE_AVAILABLE:
             raise ImportError("Voice dependencies not available. Install with: uv sync")
@@ -356,7 +356,7 @@ class OpenWakeWordAdapter:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if self._detector and self._started:
             self._detector.stop_listening()
@@ -398,7 +398,7 @@ class ModeOrchestrator:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         selected: list[Any] = []
 
         # Apply conditional logic
@@ -456,7 +456,7 @@ class ModeOrchestrator:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if not self.adapters:
             self.select_adapters()
@@ -472,7 +472,7 @@ class ModeOrchestrator:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Process each item
         for adapter in self.adapters:
             try:

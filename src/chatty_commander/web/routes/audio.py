@@ -35,7 +35,7 @@ class AudioDevices(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     input: list[str] = Field(default_factory=list)
     output: list[str] = Field(default_factory=list)
 
@@ -44,18 +44,17 @@ class AudioDeviceRequest(BaseModel):
 
     TODO: Add class description.
     """
-    
+
     device_id: str
 
 def include_audio_routes(
+    *,
+    get_config_manager: Any,
+) -> APIRouter:
     """Include Audio Routes operation.
 
     TODO: Add detailed description and parameters.
     """
-    
-    *,
-    get_config_manager: Any,
-) -> APIRouter:
     router = APIRouter()
 
     @router.get("/api/v1/audio/devices", response_model=AudioDevices)
@@ -64,7 +63,7 @@ def include_audio_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         try:
         # Attempt operation with error handling
             import pyaudio
@@ -106,7 +105,7 @@ def include_audio_routes(
 
         TODO: Add detailed description and parameters.
         """
-        
+
         try:
         # Attempt operation with error handling
             cfg_mgr = get_config_manager()
