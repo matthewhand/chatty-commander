@@ -17,13 +17,13 @@ See also: [`docs/developer/PRODUCTION_READINESS_ROADMAP.md`](docs/developer/PROD
 
 ### Security
 
-- [ ] **HIGH — `server.create_app()` is missing `AuthMiddleware`** ([`src/chatty_commander/web/server.py:113`](src/chatty_commander/web/server.py))
+- [x] **HIGH — `server.create_app()` is missing `AuthMiddleware`** ([`src/chatty_commander/web/server.py:113`](src/chatty_commander/web/server.py))
   Anyone reaching a server started via `server.create_app` can hit `/api/v1/dograh/status` and `/api/v1/dograh/workflows` with zero auth. `web_mode.WebModeHandler` is fine because it adds the middleware. Fix: attach `AuthMiddleware` in `create_app` or refuse to bind to a non-loopback interface.
 
-- [ ] **MED — Raw dograh `/health` body passthrough** ([`src/chatty_commander/web/routes/dograh.py:74`](src/chatty_commander/web/routes/dograh.py))
+- [x] **MED — Raw dograh `/health` body passthrough** ([`src/chatty_commander/web/routes/dograh.py:74`](src/chatty_commander/web/routes/dograh.py))
   The route returns `DograhStatus(health=payload)` verbatim. Today that's just `status`/`version`/`deployment_mode` (mild version disclosure). When dograh adds queue depths / DB info / internal URLs in a future release, those leak straight to any UI caller. Project an allowlist (`status`, `version` only).
 
-- [ ] **MED — `DograhHTTPError` leaks internal URL into client-visible `reason`** ([`src/chatty_commander/integrations/dograh_client.py:41`](src/chatty_commander/integrations/dograh_client.py))
+- [x] **MED — `DograhHTTPError` leaks internal URL into client-visible `reason`** ([`src/chatty_commander/integrations/dograh_client.py:41`](src/chatty_commander/integrations/dograh_client.py))
   Exception message is `"{method} {url} -> {status}: {detail}"`. The route swallows it into `reason=f"unreachable: {e}"`, exposing the dograh hostname. Return a generic `"unreachable"` from the route; log details server-side.
 
 - [ ] **MED — Rotate the secrets currently in on-disk `.env`** (`.env:29`, `.env:35`)
@@ -31,7 +31,7 @@ See also: [`docs/developer/PRODUCTION_READINESS_ROADMAP.md`](docs/developer/PROD
 
 ### Correctness
 
-- [ ] **Silent dual-registration in `cli/main.py`** ([`src/chatty_commander/cli/main.py:524`](src/chatty_commander/cli/main.py))
+- [x] **Silent dual-registration in `cli/main.py`** ([`src/chatty_commander/cli/main.py:524`](src/chatty_commander/cli/main.py))
   Today there's both a hard-coded short-circuit (added in `48017506` to fix the original bug) AND a `register_dograh_subparser` call in `create_parser()`. Pick one. The parser path is cleaner — remove the short-circuit once we verify `parse_known_args()` doesn't trigger heavy init for `dograh` subcommands.
 
 ---
@@ -40,30 +40,30 @@ See also: [`docs/developer/PRODUCTION_READINESS_ROADMAP.md`](docs/developer/PROD
 
 ### Code hygiene
 
-- [ ] **Delete the shadow `src/chatty_commander/tools/` package**
+- [x] **Delete the shadow `src/chatty_commander/tools/` package**
   This is the trap that caused the original `..tools.X` → wrong-package bug (fixed in `69a124d0`). The package currently only holds incidental CLI utilities. Move them under `advisors/tools/` or `cli/` and delete the directory, eliminating the import-resolution footgun.
 
-- [ ] **Unify `web_mode._create_app` vs `server.create_app`**
+- [x] **Unify `web_mode._create_app` vs `server.create_app`**
   Both factories exist and both wire dograh, but they diverge in pattern (explicit `include_router` vs `_include_optional` loop). Consolidate to one — ideally `web_mode.py` since it's the production path. `server.py` should either delegate to it or be deleted.
 
-- [ ] **Orchestrator `advisor_sink` is accepted but never used** ([`src/chatty_commander/app/orchestrator.py:181`](src/chatty_commander/app/orchestrator.py))
+- [x] **Orchestrator `advisor_sink` is accepted but never used** ([`src/chatty_commander/app/orchestrator.py:181`](src/chatty_commander/app/orchestrator.py))
   Either route advisor messages through it (so `--orchestrate --enable-discord-bridge --advisors` actually works), or mark as `TODO` and stop pretending to accept it.
 
-- [ ] **Seed script "legacy" stdout mode still prints raw API key** ([`scripts/seed_dograh.py:103`](scripts/seed_dograh.py))
+- [x] **Seed script "legacy" stdout mode still prints raw API key** ([`scripts/seed_dograh.py:103`](scripts/seed_dograh.py))
   `bbb550e5` fixed CI by adding `--output`, but interactive `python scripts/seed_dograh.py` (no flags) still echoes the live key into terminal scrollback. Either deprecate stdout mode or require `--print-secret` to opt in.
 
-- [ ] **`dograh_call.py` warning logs full `DograhHTTPError`** ([`src/chatty_commander/advisors/tools/dograh_call.py:60`](src/chatty_commander/advisors/tools/dograh_call.py))
+- [x] **`dograh_call.py` warning logs full `DograhHTTPError`** ([`src/chatty_commander/advisors/tools/dograh_call.py:60`](src/chatty_commander/advisors/tools/dograh_call.py))
   Same shape as the route leak — includes method + URL. Log `e.status_code` and `e.detail` separately.
 
 ### Test coverage
 
-- [ ] **CLI error branches** — `cli/dograh_cli.py:124-129` (DograhError + generic Exception in dispatcher), `:133-134` (unknown op exit code 2), `:146-147` + `:190-191` (`--json` output for list/runs). All user-facing surfaces.
+- [x] **CLI error branches** — `cli/dograh_cli.py:124-129` (DograhError + generic Exception in dispatcher), `:133-134` (unknown op exit code 2), `:146-147` + `:190-191` (`--json` output for list/runs). All user-facing surfaces.
 
-- [ ] **`_execute_dograh_call` generic Exception path** — `command_executor.py:370-372`. Different `reason` string from `DograhError`; operators grep logs by phrase.
+- [x] **`_execute_dograh_call` generic Exception path** — `command_executor.py:370-372`. Different `reason` string from `DograhError`; operators grep logs by phrase.
 
 ### UX / Documentation
 
-- [ ] **README has no mention of dograh.** Add a short "Optional: dograh integration" section pointing at the docker overlay + `.env.example` block.
+- [x] **README has no mention of dograh.** Add a short "Optional: dograh integration" section pointing at the docker overlay + `.env.example` block.
 
 - [ ] **Author a real telephony workflow in dograh's UI** and document the steps (user action).
 - [ ] **Configure a Twilio/Vonage provider** so `dograh_call` returns success instead of `telephony_not_configured` (user action).
