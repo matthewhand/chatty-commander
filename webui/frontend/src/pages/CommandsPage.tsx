@@ -290,13 +290,13 @@ export default function CommandsPage() {
                       ariaLabel={`Options for ${name}`}
                     >
                       <li>
-                        <button aria-label={`Edit ${name}`}>
+                        <button aria-label={`Edit ${name}`} title="Edit Command">
                           <Edit3 size={16} className="text-primary" />
                           Edit Command
                         </button>
                       </li>
                       <li>
-                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} onClick={() => handleDeleteClick(name)}>
+                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} title="Delete Command" onClick={() => handleDeleteClick(name)}>
                           <Trash2 size={16} />
                           Delete Command
                         </button>
@@ -345,7 +345,7 @@ export default function CommandsPage() {
             <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
               Try adjusting your search terms or clearing the search filter to see all commands.
             </p>
-            <button className="btn btn-outline" onClick={() => setSearchParams({})}>
+            <button className="btn btn-outline" aria-label="Clear Search" onClick={() => setSearchParams({})}>
               Clear Search
             </button>
           </div>
@@ -358,12 +358,12 @@ export default function CommandsPage() {
           <h3 className="font-bold text-lg">Confirm Deletion</h3>
           <p className="py-4">Are you sure you want to delete <strong>{pendingDeleteCommand}</strong>?</p>
           <div className="modal-action">
-            <button className="btn" onClick={handleDeleteCancel}>Cancel</button>
-            <button className="btn btn-error" onClick={handleDeleteConfirm}>Delete</button>
+            <button className="btn" aria-label="Cancel deletion" onClick={handleDeleteCancel}>Cancel</button>
+            <button className="btn btn-error" aria-label="Confirm deletion" onClick={handleDeleteConfirm}>Delete</button>
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
+          <button aria-label="Close dialog" onClick={handleDeleteCancel}>close</button>
         </form>
       </dialog>
     </div>

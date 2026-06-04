@@ -409,6 +409,7 @@ const DashboardPage = React.memo(() => {
             <button
               type="submit"
               className="btn btn-primary"
+              aria-label="Execute command"
               disabled={!commandInput.trim() || isSending || !isConnected}
             >
               {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}

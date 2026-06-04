@@ -141,6 +141,7 @@ const ActionField: React.FC<{
           onClick={onRemove}
           className="btn btn-ghost btn-sm btn-circle text-error"
           aria-label="Remove action"
+          title="Remove action"
         >
           <Trash2 size={16} />
         </button>
@@ -481,7 +482,7 @@ export default function CommandAuthoringPage() {
           >
             <AlertCircle size={20} />
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error">
+            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm btn-circle" aria-label="Dismiss error" title="Dismiss error">
               <X size={16} />
             </button>
           </motion.div>
