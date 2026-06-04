@@ -15,3 +15,6 @@
 ## 2026-04-12 - [Module-Level Variable Imports]
 **Learning:** When a code review flags missing imports or predicts `NameError`s on startup, always verify their presence in the target file using bash commands (e.g., `grep`) before attempting a fix, as the reviewer's context may be hallucinated or outdated.
 **Action:** Use grep to check for imports like `import threading` and `from typing import Any` before assuming they are missing.
+## 2026-06-04 - Optimize `mask_sensitive_data` to reduce generator overhead
+**Learning:** Generator expressions inside tight inner loops over dictionaries with heavily-used recursive utility functions create significant re-computation overhead and generator allocation costs. Pre-calculating lowercase string operations and using explicit loops with early breaks is measurably faster.
+**Action:** When auditing frequently called recursive utilities, replace nested generator expressions with explicit iteration and hoisted constant operations to minimize CPU cycles.
