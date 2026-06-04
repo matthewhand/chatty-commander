@@ -135,9 +135,7 @@ def test_ensure_workflow_picks_lowest_id_on_duplicate_names(seed) -> None:
 
 
 @respx.mock
-def test_main_with_output_redacts_stdout(
-    seed, tmp_path, capsys, monkeypatch
-) -> None:
+def test_main_with_output_redacts_stdout(seed, tmp_path, capsys, monkeypatch) -> None:
     """The whole point of --output: the API key must NOT appear in stdout
     when a file destination is given, because CI step logs are captured."""
     respx.post(f"{BASE}/api/v1/auth/signup").mock(
@@ -172,23 +170,25 @@ def test_main_with_output_redacts_stdout(
     # File must contain the real key for the test runner to consume.
     assert "DOGRAH_API_KEY=dgr_SUPER_SECRET_KEY_VALUE" in out_file.read_text()
     # File must be owner-only readable (best-effort; POSIX only).
-    import stat
-
     mode = out_file.stat().st_mode & 0o777
     assert mode == 0o600
 
 
-@respx.mock
-def test_main_without_output_still_prints_env_block(
-    seed, capsys
-) -> None:
-    """Legacy interactive mode: no --output means stdout carries the env."""
+def test_mask_api_key_keeps_prefix_and_last4(seed) -> None:
+    assert seed._mask_api_key("dgr_SUPER_SECRET_abcd") == "dgr_****abcd"
+    # No dgr_ prefix still masks the body.
+    assert seed._mask_api_key("plainkey1234") == "****1234"
+    # Very short keys don't crash.
+    assert seed._mask_api_key("ab") == "****ab"
+
+
+def _mock_seed_flow(api_key: str) -> None:
     respx.post(f"{BASE}/api/v1/auth/signup").mock(
         return_value=httpx.Response(200, json={"token": "jwt"})
     )
     respx.post(f"{BASE}/api/v1/user/api-keys").mock(
         return_value=httpx.Response(
-            200, json={"id": 1, "api_key": "dgr_interactive", "key_prefix": "dgr_inte"}
+            200, json={"id": 1, "api_key": api_key, "key_prefix": api_key[:8]}
         )
     )
     respx.get(f"{BASE}/api/v1/workflow/fetch").mock(
@@ -198,7 +198,30 @@ def test_main_without_output_still_prints_env_block(
         return_value=httpx.Response(200, json={"id": 1})
     )
 
+
+@respx.mock
+def test_main_without_output_masks_key_by_default(seed, capsys) -> None:
+    """Default no-flag stdout mode must NOT leak the raw key into scrollback."""
+    _mock_seed_flow("dgr_interactive_SECRET_w9z2")
+
     rc = seed.main(["--base-url", BASE])
     assert rc == 0
     captured = capsys.readouterr()
-    assert "DOGRAH_API_KEY=dgr_interactive" in captured.out
+    # Raw key must not appear.
+    assert "dgr_interactive_SECRET_w9z2" not in captured.out
+    # Masked form is shown.
+    assert "DOGRAH_API_KEY=dgr_****w9z2" in captured.out
+    # Hint mentions how to get the real key.
+    assert "--print-secret" in captured.out
+    assert "--output" in captured.out
+
+
+@respx.mock
+def test_main_print_secret_echoes_raw_key(seed, capsys) -> None:
+    """--print-secret is the explicit opt-in for `source <(...)` use."""
+    _mock_seed_flow("dgr_interactive_SECRET_w9z2")
+
+    rc = seed.main(["--base-url", BASE, "--print-secret"])
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "DOGRAH_API_KEY=dgr_interactive_SECRET_w9z2" in captured.out
