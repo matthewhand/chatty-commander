@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import json
 from unittest.mock import MagicMock, patch
 
 from chatty_commander.cli.dograh_cli import (
     handle_dograh,
     register_dograh_subparser,
 )
-from chatty_commander.integrations.dograh_client import DograhUnavailableError
+from chatty_commander.integrations.dograh_client import (
+    DograhError,
+    DograhUnavailableError,
+)
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:
@@ -177,3 +181,84 @@ class TestHandleDograh:
         args = _parse(["dograh", "health"])
         assert handle_dograh(args) == 1
         assert "not configured" in capsys.readouterr().err.lower()
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_dograh_error_during_op_returns_1(self, mock_cls, capsys):
+        instance = MagicMock()
+        instance.health.side_effect = DograhError("boom")
+        mock_cls.return_value = instance
+
+        args = _parse(["dograh", "health"])
+        assert handle_dograh(args) == 1
+
+        err = capsys.readouterr().err
+        assert "dograh error: boom" in err
+        # The client must always be closed via the finally block.
+        instance.close.assert_called_once()
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_generic_exception_during_op_returns_1(self, mock_cls, capsys):
+        instance = MagicMock()
+        instance.health.side_effect = ValueError("kaput")
+        mock_cls.return_value = instance
+
+        args = _parse(["dograh", "health"])
+        assert handle_dograh(args) == 1
+
+        err = capsys.readouterr().err
+        assert "request failed: kaput" in err
+        instance.close.assert_called_once()
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_unknown_op_returns_2(self, mock_cls, capsys):
+        instance = MagicMock()
+        mock_cls.return_value = instance
+
+        # Build a valid namespace, then force an op that no branch handles so
+        # the dispatcher falls through to the unknown-op guard.
+        args = _parse(["dograh", "health"])
+        args.dograh_op = "bogus"
+        assert handle_dograh(args) == 2
+
+        err = capsys.readouterr().err
+        assert "unknown dograh op: bogus" in err
+        # No real operation ran, but the client is still closed.
+        instance.close.assert_called_once()
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_list_json_output(self, mock_cls, capsys):
+        instance = MagicMock()
+        instance.list_workflows.return_value = [
+            {"id": 1, "name": "first"},
+            {"id": 22, "name": "second"},
+        ]
+        mock_cls.return_value = instance
+
+        args = _parse(["dograh", "list", "--json"])
+        assert handle_dograh(args) == 0
+
+        out = capsys.readouterr().out
+        # Output must be valid JSON, not the table format.
+        parsed = json.loads(out)
+        assert parsed == [
+            {"id": 1, "name": "first"},
+            {"id": 22, "name": "second"},
+        ]
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_runs_json_output(self, mock_cls, capsys):
+        instance = MagicMock()
+        payload = {
+            "runs": [
+                {"id": 1, "mode": "chat", "is_completed": True, "name": "r1"},
+            ]
+        }
+        instance.list_workflow_runs.return_value = payload
+        mock_cls.return_value = instance
+
+        args = _parse(["dograh", "runs", "5", "--json"])
+        assert handle_dograh(args) == 0
+
+        out = capsys.readouterr().out
+        # Emits the full payload as JSON rather than the run table.
+        assert json.loads(out) == payload

@@ -306,6 +306,14 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         """,
     )
 
+    # dograh subcommand group (integration utilities). Registering it on the
+    # parser keeps the dispatch on the normal parse path; main() handles it
+    # before any model/state-manager init so it stays fast.
+    subparsers = parser.add_subparsers(dest="subcommand", help="Subcommands")
+    from chatty_commander.cli.dograh_cli import register_dograh_subparser
+
+    register_dograh_subparser(subparsers)
+
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument(
         "--web",
@@ -516,23 +524,6 @@ def run_orchestrator_mode(
 
 def main():
     """Entry point for the ChattyCommander application."""
-    # Short-circuit pure-utility subcommands that must not trigger model loading,
-    # state-manager init, or wake-word detection. Both `chatty-commander dograh ...`
-    # (console_script → cli.cli) and `python -m chatty_commander.cli.main dograh ...`
-    # must reach the same handler — without this, the latter falls through to
-    # interactive shell mode and loads the full ONNX pipeline before exiting.
-    if len(sys.argv) > 1 and sys.argv[1] == "dograh":
-        from chatty_commander.cli.dograh_cli import (
-            handle_dograh,
-            register_dograh_subparser,
-        )
-
-        sub_parser = argparse.ArgumentParser(prog="chatty-commander")
-        subparsers = sub_parser.add_subparsers(dest="subcommand")
-        register_dograh_subparser(subparsers)
-        sub_args = sub_parser.parse_args()
-        return handle_dograh(sub_args)
-
     parser = create_parser()
     # Parse as the very first action and immediately return argparse exit code for help/usage
     # We must allow --help to exit(0) without doing any setup, to satisfy tests.
@@ -549,6 +540,13 @@ def main():
         parser.error("Port must be 1024 or higher for non-root users")
     if getattr(args, "no_auth", False) and not getattr(args, "web", False):
         parser.error("--no-auth only applicable in web mode")
+
+    # Dograh CLI commands exit early — they don't need CC's model/state managers,
+    # so they must dispatch before any heavy init (model loading, ONNX pipeline).
+    if getattr(args, "subcommand", None) == "dograh":
+        from chatty_commander.cli.dograh_cli import handle_dograh
+
+        return handle_dograh(args)
 
     # If user only asked for help (--help), we would have already returned.
     # If no args other than program name, launch interactive shell
