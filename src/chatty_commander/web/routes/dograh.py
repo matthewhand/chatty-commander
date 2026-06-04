@@ -15,10 +15,18 @@ Routes:
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+
+# Only these keys from dograh's /health body are projected to clients.
+# Everything else (internal diagnostics, hostnames, etc.) is dropped so we
+# never leak unexpected dograh internals through CC's public API surface.
+_HEALTH_ALLOWLIST = ("status", "version")
 
 
 class DograhStatus(BaseModel):
@@ -30,7 +38,11 @@ class DograhStatus(BaseModel):
         description="When available is false, why (env not set, network, etc.).",
     )
     health: dict[str, Any] | None = Field(
-        default=None, description="Raw /api/v1/health body from dograh when reachable."
+        default=None,
+        description=(
+            "Allowlisted subset of dograh's /api/v1/health body when reachable "
+            "(only 'status' and 'version' are exposed)."
+        ),
     )
 
 
@@ -67,11 +79,21 @@ async def get_dograh_status() -> DograhStatus:
     try:
         payload = client.health()
     except Exception as e:
-        return DograhStatus(available=False, reason=f"unreachable: {e}")
+        # Log the detailed error (which may include the dograh URL/hostname)
+        # server-side only; never surface it to the client.
+        logger.warning("dograh /health probe failed: %s", e)
+        return DograhStatus(available=False, reason="unreachable")
     finally:
         client.close()
 
-    return DograhStatus(available=True, health=payload)
+    # Project only an allowlist of keys so unexpected dograh internals never
+    # reach the client.
+    projected = {
+        key: payload[key]
+        for key in _HEALTH_ALLOWLIST
+        if isinstance(payload, dict) and key in payload
+    }
+    return DograhStatus(available=True, health=projected)
 
 
 @router.get(

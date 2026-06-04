@@ -44,6 +44,7 @@ def dograh_place_call_tool(workflow_id: int, phone_number: str) -> str:
     try:
         from chatty_commander.integrations.dograh_client import (
             DograhClient,
+            DograhHTTPError,
             DograhUnavailableError,
         )
     except ImportError as e:  # pragma: no cover - integration package present
@@ -56,6 +57,15 @@ def dograh_place_call_tool(workflow_id: int, phone_number: str) -> str:
 
     try:
         result = client.initiate_call(workflow_id, phone_number=phone_number)
+    except DograhHTTPError as e:
+        # Log only status + detail; never the method/URL (avoids leaking the
+        # internal dograh endpoint into logs, same as the route handler).
+        logger.warning(
+            "dograh_place_call failed: status_code=%s detail=%s",
+            e.status_code,
+            e.detail,
+        )
+        return f"dograh call failed: {e.detail}"
     except Exception as e:
         logger.warning("dograh_place_call failed: %s", e)
         return f"dograh call failed: {e}"

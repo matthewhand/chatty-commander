@@ -365,6 +365,73 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return response
 
 
+def apply_middleware_stack(
+    app: FastAPI, *, config_manager: Any = None, no_auth: bool = False
+) -> None:
+    """Apply the standard ChattyCommander middleware stack to ``app``.
+
+    This is the single source of truth for the security/observability
+    middleware chain shared by both app factories (``WebModeServer._create_app``
+    and ``web.server.create_app``). Keeping it here ensures every public entry
+    point — including ``server.create_app`` — wires ``AuthMiddleware`` so that
+    ``/api`` routes (e.g. ``/api/v1/dograh/*``) are never exposed without auth
+    when ``no_auth`` is False.
+
+    Middleware is added inner-to-outer (FastAPI applies them in reverse add
+    order), matching the historical ordering in ``WebModeServer._create_app``.
+    """
+    # Request ID middleware — must be outermost so all downstream middleware
+    # and handlers see the request_id in their log context.
+    if _LOGGING_CONFIG_AVAILABLE and RequestIdMiddleware is not None:
+        app.add_middleware(RequestIdMiddleware)
+
+    # Observability: request metrics middleware (must be added before other
+    # middleware so it wraps the full request lifecycle)
+    if _OBS_METRICS_AVAILABLE and RequestMetricsMiddleware is not None:
+        app.add_middleware(RequestMetricsMiddleware)
+
+    # Security headers
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    # Auth middleware (protects /api routes globally). This is the P0 fix:
+    # without it, server.create_app() left /api/v1/dograh/* unauthenticated.
+    from chatty_commander.web.middleware.auth import AuthMiddleware
+
+    app.add_middleware(
+        AuthMiddleware, config_manager=config_manager, no_auth=no_auth
+    )
+
+    # Get trusted proxies from config (for secure IP extraction behind proxies)
+    trusted_proxies: list[str] = []
+    if hasattr(config_manager, "web_server"):
+        try:
+            trusted_proxies = config_manager.web_server.get("trusted_proxies", [])
+        except Exception:  # noqa: BLE001 - tolerate exotic mock configs
+            trusted_proxies = []
+    if not trusted_proxies:
+        # Default: trust common private proxy ranges for Docker/Kubernetes
+        trusted_proxies = [
+            "127.0.0.1",
+            "::1",
+            "10.0.0.0/8",
+            "172.16.0.0/12",
+            "192.168.0.0/16",
+        ]
+
+    app.add_middleware(
+        RateLimitMiddleware,
+        requests_per_minute=10000,
+        trusted_proxies=trusted_proxies,
+    )
+
+    app.add_middleware(ResponseTimeMiddleware)
+
+    # CORS policy — delegate to shared apply_cors() for consistency
+    from chatty_commander.web.auth import apply_cors
+
+    apply_cors(app, no_auth=no_auth)
+
+
 class SystemStatus(BaseModel):
     status: str = Field(..., description="Overall system status")
     current_state: str = Field(..., description="Current operational state")
@@ -568,51 +635,11 @@ class WebModeServer:
             redoc_url="/redoc" if self.no_auth else None,
         )
 
-        # Request ID middleware — must be outermost so all downstream middleware
-        # and handlers see the request_id in their log context.
-        if _LOGGING_CONFIG_AVAILABLE and RequestIdMiddleware is not None:
-            app.add_middleware(RequestIdMiddleware)
-
-        # Observability: request metrics middleware (must be added before other middleware
-        # so it wraps the full request lifecycle)
-        if _OBS_METRICS_AVAILABLE and RequestMetricsMiddleware is not None:
-            app.add_middleware(RequestMetricsMiddleware)
-
-        # Security middleware
-        app.add_middleware(SecurityHeadersMiddleware)
-
-        # Auth middleware (protects /api routes globally)
-        from chatty_commander.web.middleware.auth import AuthMiddleware
-
-        app.add_middleware(
-            AuthMiddleware, config_manager=self.config_manager, no_auth=self.no_auth
+        # Apply the shared security/observability middleware stack. This is the
+        # single source of truth used by both app factories.
+        apply_middleware_stack(
+            app, config_manager=self.config_manager, no_auth=self.no_auth
         )
-
-        # Get trusted proxies from config (for secure IP extraction behind proxies)
-        trusted_proxies: list[str] = []
-        if hasattr(self.config_manager, "web_server"):
-            trusted_proxies = self.config_manager.web_server.get("trusted_proxies", [])
-        if not trusted_proxies:
-            # Default: trust common private proxy ranges for Docker/Kubernetes
-            trusted_proxies = [
-                "127.0.0.1",
-                "::1",
-                "10.0.0.0/8",
-                "172.16.0.0/12",
-                "192.168.0.0/16",
-            ]
-
-        app.add_middleware(
-            RateLimitMiddleware,
-            requests_per_minute=10000,
-            trusted_proxies=trusted_proxies,
-        )
-
-        app.add_middleware(ResponseTimeMiddleware)
-
-        # CORS policy — delegate to shared apply_cors() for consistency
-        from chatty_commander.web.auth import apply_cors
-        apply_cors(app, no_auth=self.no_auth)
 
         # Core REST via extracted router (status/config/state/command)
         core = include_core_routes(

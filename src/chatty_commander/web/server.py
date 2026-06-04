@@ -113,6 +113,20 @@ def _include_optional(app: FastAPI, name: str) -> None:
 def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
     app = FastAPI()
 
+    # Apply the shared security/observability middleware stack (single source of
+    # truth lives in web_mode). This is the P0 security fix: without it, /api
+    # routes such as /api/v1/dograh/status and /api/v1/dograh/workflows were
+    # exposed with zero auth on apps built via this factory. The auth middleware
+    # is a no-op when no_auth=True, so dev/test usage is unaffected.
+    try:
+        from chatty_commander.web.web_mode import apply_middleware_stack
+
+        apply_middleware_stack(app, config_manager=config_manager, no_auth=no_auth)
+    except Exception:  # pragma: no cover - defensive; FastAPI stub / import edge
+        logging.getLogger(__name__).debug(
+            "Could not apply shared middleware stack", exc_info=True
+        )
+
     # Include routers that are available
     for nm in (
         "avatar_ws_router",

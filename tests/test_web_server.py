@@ -194,6 +194,86 @@ class TestWebServer:
 
 
 # ---------------------------------------------------------------------------
+# Dograh route auth (P0 security regression guard)
+# ---------------------------------------------------------------------------
+
+
+class TestServerCreateAppDograhAuth:
+    """server.create_app() must wire AuthMiddleware so /api/v1/dograh/* is not
+    exposed without authentication. Regression guard for the P0 fix where the
+    factory previously built an app with no auth middleware at all.
+    """
+
+    def test_dograh_status_rejected_without_auth(self):
+        # Default no_auth=False, no config -> no valid API key configured,
+        # so an unauthenticated request must be rejected.
+        app = create_app(no_auth=False)
+        client = TestClient(app)
+        response = client.get("/api/v1/dograh/status")
+        assert response.status_code in (401, 403)
+
+    def test_dograh_workflows_rejected_without_auth(self):
+        app = create_app(no_auth=False)
+        client = TestClient(app)
+        response = client.get("/api/v1/dograh/workflows")
+        assert response.status_code in (401, 403)
+
+    def test_dograh_status_rejected_with_wrong_api_key(self):
+        mock_config = Mock()
+        mock_config.auth = {"api_key": "correct-key"}
+        mock_config.web_server = {}
+        app = create_app(no_auth=False, config_manager=mock_config)
+        client = TestClient(app)
+        response = client.get(
+            "/api/v1/dograh/status", headers={"X-API-Key": "wrong-key"}
+        )
+        assert response.status_code in (401, 403)
+
+    def test_dograh_status_allowed_with_valid_api_key(self):
+        mock_config = Mock()
+        mock_config.auth = {"api_key": "correct-key"}
+        mock_config.web_server = {}
+        app = create_app(no_auth=False, config_manager=mock_config)
+        client = TestClient(app)
+        response = client.get(
+            "/api/v1/dograh/status", headers={"X-API-Key": "correct-key"}
+        )
+        assert response.status_code == 200
+        assert "available" in response.json()
+
+    def test_dograh_status_served_in_no_auth_mode(self):
+        app = create_app(no_auth=True)
+        client = TestClient(app)
+        response = client.get("/api/v1/dograh/status")
+        assert response.status_code == 200
+        assert "available" in response.json()
+
+    def test_dograh_workflows_served_in_no_auth_mode(self):
+        app = create_app(no_auth=True)
+        client = TestClient(app)
+        response = client.get("/api/v1/dograh/workflows")
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+    def test_both_factories_share_auth_middleware(self):
+        """P1 unification: both app factories route through the single shared
+        middleware builder, so both attach AuthMiddleware identically."""
+        from chatty_commander.web.middleware.auth import AuthMiddleware
+        from chatty_commander.web.web_mode import create_app as web_mode_create_app
+
+        server_app = create_app(no_auth=False)
+        web_mode_app = web_mode_create_app(no_auth=False)
+
+        def has_auth(app):
+            return any(
+                m.cls is AuthMiddleware for m in app.user_middleware
+            )
+
+        assert has_auth(server_app)
+        assert has_auth(web_mode_app)
+
+
+# ---------------------------------------------------------------------------
 # Bridge endpoint security
 # ---------------------------------------------------------------------------
 

@@ -8,7 +8,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from chatty_commander.advisors.tools.dograh_call import dograh_place_call_tool
-from chatty_commander.integrations.dograh_client import DograhUnavailableError
+from chatty_commander.integrations.dograh_client import (
+    DograhHTTPError,
+    DograhUnavailableError,
+)
 
 
 @patch("chatty_commander.integrations.dograh_client.DograhClient")
@@ -59,6 +62,38 @@ def test_place_call_request_error_returns_status_string(mock_cls):
 
     assert "dograh call failed" in result
     assert "boom" in result
+    instance.close.assert_called_once()
+
+
+@patch("chatty_commander.integrations.dograh_client.DograhClient")
+def test_place_call_http_error_does_not_leak_url(mock_cls, caplog):
+    """DograhHTTPError carries the internal method+URL in its str(); the log
+    must only record status_code and detail, never the URL or method."""
+    internal_url = "http://dograh-internal:8000/api/v1/workflow/run-twilio"
+    instance = MagicMock()
+    instance.initiate_call.side_effect = DograhHTTPError(
+        status_code=400,
+        detail="telephony_not_configured",
+        method="POST",
+        url=internal_url,
+    )
+    mock_cls.return_value = instance
+
+    with caplog.at_level("WARNING"):
+        result = dograh_place_call_tool(42, "+15555550100")
+
+    log_text = "\n".join(record.getMessage() for record in caplog.records)
+    # The internal URL/host and HTTP method must not appear in the log output.
+    assert internal_url not in log_text
+    assert "dograh-internal" not in log_text
+    assert "/api/v1/" not in log_text
+    assert "POST" not in log_text
+    # The useful, non-leaky fields must be present.
+    assert "400" in log_text
+    assert "telephony_not_configured" in log_text
+    # The returned status string also avoids the URL.
+    assert internal_url not in result
+    assert "telephony_not_configured" in result
     instance.close.assert_called_once()
 
 
