@@ -35,7 +35,11 @@ class TestSecurity:
         ],
     )
     def test_config_security_path_traversal(
-        self, malicious_input: str, should_be_safe: bool, temp_dir: Path
+        self,
+        malicious_input: str,
+        should_be_safe: bool,
+        temp_dir: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """
         Test Config prevents path traversal and injection attacks.
@@ -43,6 +47,9 @@ class TestSecurity:
         Ensures that Config properly sanitizes and validates file paths
         to prevent security vulnerabilities.
         """
+        # Contain any relative-path writes (e.g. save_config) to the temp dir
+        # instead of littering the repo root with artifact files.
+        monkeypatch.chdir(temp_dir)
         config = Config()
 
         # Test path assignment
