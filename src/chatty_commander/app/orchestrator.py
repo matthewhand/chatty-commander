@@ -22,9 +22,12 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol
+
+logger = logging.getLogger(__name__)
 
 try:
     from chatty_commander.voice.wakeword import MockWakeWordDetector, WakeWordDetector
@@ -100,6 +103,33 @@ class DummyAdapter:
 
     def stop(self) -> None:
         self._started = False
+
+
+class DiscordBridgeAdapter:
+    """Adapter for the Discord bridge that routes incoming messages to advisors.
+
+    The Node.js Discord bridge feeds messages into the orchestrator; each
+    message is forwarded to the supplied advisor callback so the advisor sink
+    actually produces a reply instead of the message being silently dropped.
+    """
+
+    name = "discord_bridge"
+
+    def __init__(self, on_message: Callable[[Any], Any]) -> None:
+        self._on_message = on_message
+        self._started = False
+
+    def start(self) -> None:
+        self._started = True
+
+    def stop(self) -> None:
+        self._started = False
+
+    # Helper for tests/manual feeding (mirrors TextInputAdapter.feed)
+    def feed(self, message: Any) -> Any:
+        if self._started:
+            return self._on_message(message)
+        return None
 
 
 class OpenWakeWordAdapter:
@@ -210,7 +240,20 @@ class ModeOrchestrator:
         if self.flags.enable_discord_bridge and getattr(
             self.config, "advisors", {}
         ).get("enabled", False):
-            selected.append(DummyAdapter("discord_bridge"))
+            if self.advisor_sink is not None:
+                selected.append(
+                    DiscordBridgeAdapter(on_message=self._dispatch_advisor)
+                )
+            else:
+                # Honest behaviour: the bridge has nowhere to send advisor
+                # messages without a sink, so warn loudly instead of silently
+                # dropping them via a no-op DummyAdapter.
+                logger.warning(
+                    "Discord bridge enabled but no advisor_sink provided; "
+                    "advisor messages will be dropped. Pass advisor_sink to "
+                    "ModeOrchestrator to route them."
+                )
+                selected.append(DummyAdapter("discord_bridge"))
 
         self.adapters = selected
         return [a.name for a in selected]
@@ -232,6 +275,21 @@ class ModeOrchestrator:
     # Routing
     def _dispatch_command(self, command_name: str) -> Any:
         return self.command_sink.execute_command(command_name)
+
+    def _dispatch_advisor(self, message: Any) -> Any:
+        """Route an incoming advisor message through the advisor sink.
+
+        Returns the advisor's reply (e.g. an ``AdvisorReply``) so adapters can
+        relay it back to the originating platform. If no sink is configured the
+        message is dropped with a warning rather than silently lost.
+        """
+        if self.advisor_sink is None:
+            logger.warning(
+                "Advisor message received but no advisor_sink is configured; "
+                "dropping message."
+            )
+            return None
+        return self.advisor_sink.handle_message(message)
 
     def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection."""

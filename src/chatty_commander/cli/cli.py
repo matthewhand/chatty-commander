@@ -520,10 +520,25 @@ def run_orchestrator_mode(
         enable_computer_vision=bool(getattr(args, "enable_computer_vision", False)),
         enable_discord_bridge=bool(getattr(args, "enable_discord_bridge", False)),
     )
+
+    # Build a real advisor sink so flows like
+    # "--orchestrate --enable-discord-bridge --advisors" actually route
+    # advisor messages instead of silently dropping them.
+    advisor_sink = None
+    if flags.enable_discord_bridge and getattr(config, "advisors", {}).get(
+        "enabled", False
+    ):
+        try:
+            from chatty_commander.advisors.service import AdvisorsService
+
+            advisor_sink = AdvisorsService(config)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f"Failed to initialize advisor sink: {exc}")
+
     orchestrator = ModeOrchestrator(
         config=config,
         command_sink=command_executor,
-        advisor_sink=None,
+        advisor_sink=advisor_sink,
         flags=flags,
     )
     selected = orchestrator.start()
