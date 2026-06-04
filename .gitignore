@@ -280,3 +280,6 @@ k8s/
 build/
 .serena/
 .letta/
+
+# Claude Code local session state
+.claude/
