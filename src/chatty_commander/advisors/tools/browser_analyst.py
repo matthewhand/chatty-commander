@@ -73,7 +73,7 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
     allowlist = config_data.get("advisors", {}).get("browser_analyst", {}).get("allowlist", None)
     timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
     # Validate timeout: fall back to default if not a positive number
-    if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
+    if not isinstance(timeout, int | float) or isinstance(timeout, bool) or timeout <= 0:
         timeout = 10.0
 
     parsed_url = urlparse(request.url)
@@ -154,7 +154,7 @@ def browser_analyst_tool(url: str) -> str:
         allowlist = config_data.get("advisors", {}).get("browser_analyst", {}).get("allowlist", None)
         timeout = config_data.get("advisors", {}).get("browser_analyst", {}).get("timeout", 10.0)
         # Validate timeout: fall back to default if not a positive number
-        if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
+        if not isinstance(timeout, int | float) or isinstance(timeout, bool) or timeout <= 0:
             timeout = 10.0
 
         parsed_url = urlparse(url)
