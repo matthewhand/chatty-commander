@@ -19,3 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+"""
+API documentation generation CLI utilities.
+
+Self-contained cluster (relocated from the former ``chatty_commander.tools``
+shadow package):
+
+- ``builder`` builds the OpenAPI schema and Markdown docs (pure functions)
+- ``fs_ops`` thin filesystem helpers
+- ``workflow`` orchestrates the docs generation
+- ``cli`` argument parsing and exit codes
+- ``generate_api_docs`` script entry-point facade
+"""

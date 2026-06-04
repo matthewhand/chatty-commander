@@ -155,9 +155,7 @@ class CompletionProvider(LLMProvider):
         # Add browser analyst tool if enabled.
         # NB: the canonical implementation lives in
         # chatty_commander.advisors.tools.browser_analyst (this is
-        # `.tools`, NOT `..tools` — there is a separate
-        # chatty_commander.tools/ package that does not export the
-        # FunctionTool instance).
+        # `.tools`, NOT `..tools`).
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
                 from .tools.browser_analyst import (
@@ -245,9 +243,7 @@ class ResponsesProvider(LLMProvider):
         # Add browser analyst tool if enabled.
         # NB: the canonical implementation lives in
         # chatty_commander.advisors.tools.browser_analyst (this is
-        # `.tools`, NOT `..tools` — there is a separate
-        # chatty_commander.tools/ package that does not export the
-        # FunctionTool instance).
+        # `.tools`, NOT `..tools`).
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
                 from .tools.browser_analyst import (

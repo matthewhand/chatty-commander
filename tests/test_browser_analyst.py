@@ -2,9 +2,12 @@ import httpx
 import pytest
 import respx
 
-from chatty_commander.advisors.tools.browser_analyst import browser_analyst_tool
+from chatty_commander.advisors.tools.browser_analyst import (
+    AnalystRequest,
+    browser_analyst_tool,
+    summarize_url,
+)
 from chatty_commander.app.config import Config
-from chatty_commander.tools.browser_analyst import AnalystRequest, summarize_url
 
 
 @pytest.fixture(autouse=True)
