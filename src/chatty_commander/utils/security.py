@@ -73,3 +73,28 @@ def mask_sensitive_data(data: Any) -> Any:
         # Logic flow
         return [mask_sensitive_data(item) for item in data]
     return data
+
+
+def is_safe_command(cmd: str) -> bool:
+    """Check if a shell command is safe to execute."""
+    # Only allow "echo" commands for now
+    if not cmd.startswith("echo "):
+        return False
+
+    # Prevent shell metacharacters
+    dangerous_chars = [";", "|", "&", "<", ">", "$", "(", ")", "`"]
+    if any(c in cmd for c in dangerous_chars):
+        return False
+
+    # Check for flag injection or path traversal
+    # by splitting arguments (basic space split is enough here since we blocked metacharacters and quotes aren't strictly needed for echo)
+    parts = cmd.split()
+    for part in parts[1:]:
+        if part.startswith("-"):  # block flag injection
+            return False
+        if (
+            "/" in part or "\\" in part or ".." in part
+        ):  # block path traversal in arguments
+            return False
+
+    return True

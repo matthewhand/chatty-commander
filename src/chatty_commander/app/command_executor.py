@@ -39,7 +39,9 @@ from typing import Any
 try:  # pragma: no cover - exercised via tests with patching
     import pyautogui
 # Handle specific exception case
-except Exception:  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
+except (
+    Exception
+):  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
     pyautogui = None  # type: ignore[assignment]
 
 try:  # pragma: no cover - optional
@@ -72,7 +74,7 @@ class CommandExecutor:
 
     TODO: Add class description.
     """
-    
+
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
         """Initialize CommandExecutor with config and managers."""
         self.config: Any = config
@@ -122,8 +124,7 @@ class CommandExecutor:
             return self._execute_shell(action.get("command", ""))
         elif action_type == "http":
             return self._execute_http(
-                action.get("url", ""),
-                action.get("method", "GET")
+                action.get("url", ""), action.get("method", "GET")
             )
         elif action_type == "message":
             logging.info(f"Message action: {action.get('text', '')}")
@@ -139,7 +140,7 @@ class CommandExecutor:
         return command.get("action") if command else None
 
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Ensure model_actions is accessible
             model_actions = self.config.model_actions
             if model_actions is None:
@@ -165,7 +166,7 @@ class CommandExecutor:
 
         success = False
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Handle both old format and new format with 'action' key
             if "action" in command_action:
                 action_type = command_action["action"]
@@ -245,13 +246,13 @@ class CommandExecutor:
 
         TODO: Add detailed description and parameters.
         """
-        
+
         # Apply conditional logic
         if not isinstance(command_name, str) or not command_name.strip():
             return False
 
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Ensure model_actions is accessible
             model_actions = self.config.model_actions
             if model_actions is None:
@@ -269,7 +270,7 @@ class CommandExecutor:
             return False
 
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Apply conditional logic
             if isinstance(command_action, dict):
                 # Validate that the command has a valid action configuration
@@ -302,7 +303,8 @@ class CommandExecutor:
                     # Old format validation
                     if not any(
                         # Build filtered collection
-                        key in command_action for key in ["keypress", "url", "shell"]
+                        key in command_action
+                        for key in ["keypress", "url", "shell"]
                     ):
                         return False
             else:
@@ -349,7 +351,7 @@ class CommandExecutor:
             self.report_error(command_name, "pyautogui is not installed")
             return
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Support either a list of keys (hotkey/chord) or a single key sequence
             if isinstance(keys, list | tuple):
                 pyautogui.hotkey(*keys)
@@ -382,6 +384,7 @@ class CommandExecutor:
             return
 
         from chatty_commander.utils.url_validator import is_safe_url
+
         # Apply conditional logic
         if not is_safe_url(url):
             self.report_error(command_name, "unsafe URL rejected")
@@ -392,7 +395,7 @@ class CommandExecutor:
             self.report_error(command_name, "httpx not available")
             return
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Logic flow
             # Add timeout and disable redirects for security
             with httpx.Client() as client:
@@ -416,8 +419,13 @@ class CommandExecutor:
         if not cmd:
             self.report_error(command_name, "missing shell command")
             return False
+        from chatty_commander.utils.security import is_safe_command
+
+        if not is_safe_command(cmd):
+            self.report_error(command_name, "unsafe shell command rejected")
+            return False
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Logic flow
             # Prefer shlex.split for safer execution without shell=True
             args = shlex.split(cmd)
@@ -468,7 +476,7 @@ class CommandExecutor:
             return False
 
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # 1. Verify component availability
             if (
                 not hasattr(voice_pipeline, "transcriber")
