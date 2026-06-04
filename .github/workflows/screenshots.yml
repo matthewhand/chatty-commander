@@ -25,13 +25,8 @@ jobs:
       - name: Install backend dependencies
         run: pip install uv && uv sync
 
-      - name: Start backend (test mode)
-        run: |
-          uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth &
-          sleep 5
-        env:
-          PYTHONPATH: src
-
+      # Backend is started by Playwright's webServer config (playwright.config.ts);
+      # starting it here too made webServer fail with "port already used" in CI.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
