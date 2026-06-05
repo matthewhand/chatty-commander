@@ -107,7 +107,7 @@ class HTTPLogHandler(logging.Handler):
         try:
         # Attempt operation with error handling
             from chatty_commander.utils.url_validator import is_safe_url
-            self._url_safe = is_safe_url(url)
+            self._url_safe, _ = is_safe_url(url)
         # Handle specific exception case
         except Exception:
             self._url_safe = False
