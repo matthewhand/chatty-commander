@@ -203,6 +203,10 @@ class MetricsData(BaseModel):
 
 
 def include_core_routes(
+# Store command execution timestamps (client_ip -> list of timestamps)
+_command_rates: dict[str, list[float]] = {}
+_COMMAND_RATE_LIMIT = 60  # max 60 commands per minute
+
     """include core routes."""
     *,
     get_start_time: Callable[[], float],
@@ -530,7 +534,7 @@ def include_core_routes(
             raise HTTPException(status_code=400, detail=str(err)) from err
 
     @router.post("/api/v1/command", response_model=CommandResponse)
-    async def execute_command(request: CommandRequest):
+    async def execute_command(req: Request, command_request: CommandRequest):
         """Execute Command with (request: CommandRequest).
 
         TODO: Add detailed description and parameters.
@@ -538,13 +542,34 @@ def include_core_routes(
         
         counters["command_post"] += 1
         start_time = time.time()
+
+        # Rate limit check (commands are sensitive and shouldn't be spammed)
+        client_ip = req.client.host if req.client else "unknown"
+        current_time = time.time()
+
+        # Clean old entries for this IP
+        if client_ip in _command_rates:
+            _command_rates[client_ip] = [
+                t for t in _command_rates[client_ip] if current_time - t < 60
+            ]
+        else:
+            _command_rates[client_ip] = []
+
+        if len(_command_rates[client_ip]) >= _COMMAND_RATE_LIMIT:
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded for command execution"
+            )
+
+        _command_rates[client_ip].append(current_time)
+
         try:
         # Attempt operation with error handling
             # Delegate to provided executor bridge to ensure consistent integration surface
             # Use run_in_executor to prevent blocking the event loop
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
-                None, execute_command_fn, request.command
+                None, execute_command_fn, command_request.command
             )
             success = bool(result)
             execution_time = (time.time() - start_time) * 1000
