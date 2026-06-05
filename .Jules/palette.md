@@ -13,3 +13,7 @@ This journal records critical UX and accessibility learnings for the Chatty Comm
 ## 2026-03-28 - Actionable Empty States and Custom Component A11y
 **Learning:** Bare text for empty states or zero-results states is unhelpful. Users benefit from clear visual indicators (icons) and actionable next steps. Also, custom reusable components like dropdown triggers often forget `ariaLabel` props, making them inaccessible when they wrap icon-only buttons.
 **Action:** Always replace bare text empty states with an illustrative icon (e.g., from `lucide-react`), explanatory text, and a primary call-to-action button, utilizing existing DaisyUI utility classes (`bg-base-200/50`, `rounded-box`). Ensure custom UI components with icon-only triggers accept an optional `ariaLabel` prop with sensible default fallbacks.
+
+## 2026-06-05 - DaisyUI Modal Backdrop A11y
+**Learning:** DaisyUI modal backdrops (`<form method="dialog" className="modal-backdrop">`) use a visually hidden `<button>close</button>` element which requires an explicit `aria-label` (e.g., `aria-label="Close modal"`) to ensure screen readers announce it with appropriate context instead of just reading the raw "close" text.
+**Action:** Always add an explicit `aria-label` to the hidden close buttons within DaisyUI modal backdrops to improve screen reader context.
