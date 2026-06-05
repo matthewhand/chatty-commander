@@ -200,9 +200,10 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         target_dir.mkdir(parents=True, exist_ok=True)
 
         # Sanitize filename to prevent path traversal attacks
-        # Use only the basename (strip any directory components)
-        safe_filename = Path(file.filename).name
-        if not safe_filename or safe_filename != file.filename:
+        # Use only the basename (strip any directory components, treating backslashes as slashes)
+        normalized_filename = file.filename.replace("\\", "/")
+        safe_filename = Path(normalized_filename).name
+        if not safe_filename or safe_filename != normalized_filename or ".." in safe_filename:
             raise HTTPException(
                 status_code=400,
                 detail="Invalid filename: directory traversal not allowed"
