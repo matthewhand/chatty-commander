@@ -206,7 +206,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def get_client_ip(
-    """get client ip."""
     request: Request,
     trusted_proxies: list[str] | None = None,
 ) -> str:
@@ -960,15 +959,13 @@ class WebModeServer:
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(
-        # Async function for concurrent execution
+            message: AdvisorInbound,
+            x_api_key: str | None = Header(None, alias="X-API-Key"),
+        ):
             """Advisor Message with (message: AdvisorInbound, x_api_key).
 
             TODO: Add detailed description and parameters.
             """
-            
-            message: AdvisorInbound,
-            x_api_key: str | None = Header(None, alias="X-API-Key"),
-        ):
             # Check authentication
             if not self.no_auth:
                 expected_key = None
@@ -1068,15 +1065,13 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
-        # Async function for concurrent execution
+            platform: str, channel: str, user: str, limit: int = 20
+        ):
             """Advisors Memory with (platform: str, channel: str, user: str, limit: int).
 
             TODO: Add detailed description and parameters.
             """
-            
             # Process each item
-            platform: str, channel: str, user: str, limit: int = 20
-        ):
             svc = self.advisors_service
             # Logic flow
             if not svc or not getattr(svc, "enabled", False):
@@ -1128,15 +1123,13 @@ class WebModeServer:
 
         @app.post("/bridge/event")
         async def bridge_event(
-        # Async function for concurrent execution
+            event: dict[str, Any],
+            x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
+        ):
             """Bridge Event with (event, x_bridge_token).
 
             TODO: Add detailed description and parameters.
             """
-            
-            event: dict[str, Any],
-            x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
-        ):
             # Logic flow
             # Check for bridge token in header
             expected_token = self.config_manager.web_server.get("bridge_token")
@@ -1248,7 +1241,6 @@ class WebModeServer:
 
 
 def create_app(
-    """create app."""
     *,
     config: Config | None = None,
     config_manager: Config | None = None,
@@ -1267,7 +1259,6 @@ def create_app(
 
 
 def run_server(
-    """run server."""
     config_manager: Config,
     state_manager: StateManager,
     model_manager: ModelManager,

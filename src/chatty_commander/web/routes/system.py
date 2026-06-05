@@ -94,11 +94,6 @@ class SystemInfo(BaseModel):
     )
 
 def include_system_routes(
-    """Include System Routes operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
     *,
     get_start_time: Callable[[], float],
 ) -> APIRouter:
