@@ -206,7 +206,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def get_client_ip(
-    """get client ip."""
     request: Request,
     trusted_proxies: list[str] | None = None,
 ) -> str:
@@ -961,11 +960,6 @@ class WebModeServer:
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(
         # Async function for concurrent execution
-            """Advisor Message with (message: AdvisorInbound, x_api_key).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             message: AdvisorInbound,
             x_api_key: str | None = Header(None, alias="X-API-Key"),
         ):
@@ -1069,11 +1063,6 @@ class WebModeServer:
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
         # Async function for concurrent execution
-            """Advisors Memory with (platform: str, channel: str, user: str, limit: int).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             # Process each item
             platform: str, channel: str, user: str, limit: int = 20
         ):
@@ -1099,11 +1088,6 @@ class WebModeServer:
             TODO: Add detailed description and parameters.
             """
             
-            svc = self.advisors_service
-            # Logic flow
-            if not svc or not getattr(svc, "enabled", False):
-                raise HTTPException(status_code=400, detail="Advisors not enabled")
-            # Process each item
             count = svc.memory.clear(platform, channel, user)
             return {"cleared": int(count)}
 
@@ -1129,11 +1113,6 @@ class WebModeServer:
         @app.post("/bridge/event")
         async def bridge_event(
         # Async function for concurrent execution
-            """Bridge Event with (event, x_bridge_token).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             event: dict[str, Any],
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
@@ -1248,7 +1227,6 @@ class WebModeServer:
 
 
 def create_app(
-    """create app."""
     *,
     config: Config | None = None,
     config_manager: Config | None = None,
@@ -1267,7 +1245,6 @@ def create_app(
 
 
 def run_server(
-    """run server."""
     config_manager: Config,
     state_manager: StateManager,
     model_manager: ModelManager,

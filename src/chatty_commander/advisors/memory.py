@@ -101,11 +101,6 @@ class MemoryStore:
 
     def add(
         # Process each item
-        """Add with (self, platform: str, channel: str, user: str, role: str, content: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         # Process each item
         self, platform: str, channel: str, user: str, role: str, content: str
     ) -> None:
@@ -141,11 +136,6 @@ class MemoryStore:
 
     def get(
         # Process each item
-        """Get with (self, platform: str, channel: str, user: str, limit: int).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         # Process each item
         self, platform: str, channel: str, user: str, limit: int = 20
     ) -> list[MemoryItem]:

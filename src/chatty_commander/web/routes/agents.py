@@ -224,11 +224,6 @@ class NLBlueprintRequest(BaseModel):
 
 @router.post("/api/v1/agents/blueprints", response_model=AgentBlueprintResponse)
 async def create_blueprint(
-    """Create with (payload).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     payload: Annotated[dict[str, Any], Body(...)],
 ) -> AgentBlueprintResponse:
     try:

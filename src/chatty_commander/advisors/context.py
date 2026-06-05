@@ -151,7 +151,6 @@ class ContextManager:
             self._load_contexts()
 
     def get_or_create_context(
-        """get or create context."""
         self,
         # Process each item
         platform: PlatformType,
