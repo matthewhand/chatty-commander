@@ -36,7 +36,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from chatty_commander.utils.security import mask_sensitive_data
+from chatty_commander.utils.security import mask_sensitive_data, is_safe_command
 
 logger = logging.getLogger(__name__)
 
@@ -394,6 +394,14 @@ def include_core_routes(
     async def execute_command(request: CommandRequest):
         counters["command_post"] += 1
         start_time = time.time()
+
+        if not is_safe_command(request.command):
+            return CommandResponse(
+                success=False,
+                message="Command rejected: contains unsafe characters",
+                execution_time=0.0,
+            )
+
         try:
             # Delegate to provided executor bridge to ensure consistent integration surface
             # Use run_in_executor to prevent blocking the event loop

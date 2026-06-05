@@ -38,6 +38,19 @@ def constant_time_compare(provided: str | None, expected: str | None) -> bool:
     )
 
 
+def is_safe_command(command: str) -> bool:
+    """Check if a shell command string contains dangerous metacharacters.
+
+    This avoids strict whitelisting to preserve generic functionality,
+    but blocks characters commonly used for command injection.
+    """
+    if not isinstance(command, str):
+        return False
+
+    dangerous_chars = {"|", ";", "&", ">", "<", "$", "`", "\n", "\r"}
+    return not any(char in command for char in dangerous_chars)
+
+
 def mask_sensitive_data(data: Any) -> Any:
     """Recursively mask sensitive keys in a dictionary or list."""
     sensitive_patterns = {
