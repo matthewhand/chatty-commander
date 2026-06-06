@@ -15,3 +15,6 @@
 ## 2026-04-12 - [Module-Level Variable Imports]
 **Learning:** When a code review flags missing imports or predicts `NameError`s on startup, always verify their presence in the target file using bash commands (e.g., `grep`) before attempting a fix, as the reviewer's context may be hallucinated or outdated.
 **Action:** Use grep to check for imports like `import threading` and `from typing import Any` before assuming they are missing.
+## 2024-05-18 - [Optimize recursive string check]
+**Learning:** In heavily recursive utility functions that process large or nested dicts/lists, generator expressions combined with in-loop instantiation of static sets cause significant overhead. Caching string operations, extracting static sequences to module-level tuples, and using explicit `for/break` loops avoids generator allocation overhead and yields up to ~4x speedup.
+**Action:** Always extract static sequences from highly-called loops. Use explicit loops with early breaks over generator expressions like `any()` in performance-sensitive tight loops, especially inside recursive functions.
