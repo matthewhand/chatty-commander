@@ -204,7 +204,7 @@ export default function CommandsPage() {
             onClick={() => refetch()}
             onKeyDown={(e) => e.key === 'Enter' && refetch()}
             title="Refresh Commands"
-            aria-label="Refresh Commands"
+            aria-label={isLoading ? "Refreshing Commands" : "Refresh Commands"}
           >
             <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
           </button>

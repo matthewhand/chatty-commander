@@ -158,7 +158,7 @@ const ConfigurationPage: React.FC = () => {
   });
 
   // Load config on mount
-  const { data: remoteConfig } = useQuery({
+  const { data: remoteConfig, isLoading, isError, error } = useQuery({
     queryKey: ["config"],
     queryFn: loadConfig,
   });
@@ -256,6 +256,29 @@ const ConfigurationPage: React.FC = () => {
     setIsTestingOutput(true);
     setTimeout(() => setIsTestingOutput(false), 2000); // Simulate 2s sound
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading configuration">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-12 w-12 skeleton rounded-xl"></div>
+          <div>
+            <div className="h-8 w-48 skeleton mb-2 rounded-lg"></div>
+            <div className="h-4 w-64 skeleton rounded"></div>
+          </div>
+        </div>
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-96 skeleton rounded-box"></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="alert alert-error shadow-lg">
+        <span>Failed to load configuration: {(error as Error)?.message || "Unknown error"}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
