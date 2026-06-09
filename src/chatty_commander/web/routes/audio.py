@@ -30,12 +30,58 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
+# Module-level fallback state for the selected device, used when no config
+# manager is available (or persisting through it fails).
+_selected_device: dict[str, str | None] = {"device_id": None}
+
+
 class AudioDevices(BaseModel):
     input: list[str] = Field(default_factory=list)
     output: list[str] = Field(default_factory=list)
+    # False when no audio backend (pyaudio) or hardware is available.
+    available: bool = True
+
 
 class AudioDeviceRequest(BaseModel):
     device_id: str
+
+
+def _list_audio_devices() -> AudioDevices:
+    """Enumerate audio devices via pyaudio, degrading gracefully.
+
+    Returns empty device lists with ``available=False`` when pyaudio is not
+    installed or device enumeration fails (e.g. headless CI containers).
+    """
+    try:
+        import pyaudio
+    except ImportError:
+        logger.info("pyaudio is not installed; reporting no audio devices")
+        return AudioDevices(available=False)
+
+    try:
+        p = pyaudio.PyAudio()
+        input_devices: list[str] = []
+        output_devices: list[str] = []
+        try:
+            info = p.get_host_api_info_by_index(0)
+            numdevices = info.get("deviceCount") or 0
+
+            for i in range(0, numdevices):
+                device_info = p.get_device_info_by_host_api_device_index(0, i)
+                name = device_info.get("name")
+                if name is None:
+                    continue
+                if (device_info.get("maxInputChannels") or 0) > 0:
+                    input_devices.append(name)
+                if (device_info.get("maxOutputChannels") or 0) > 0:
+                    output_devices.append(name)
+        finally:
+            p.terminate()
+        return AudioDevices(input=input_devices, output=output_devices, available=True)
+    except Exception as e:  # pragma: no cover - depends on host audio stack
+        logger.warning(f"Failed to list audio devices: {e}")
+        return AudioDevices(available=False)
+
 
 def include_audio_routes(
     *,
@@ -43,54 +89,39 @@ def include_audio_routes(
 ) -> APIRouter:
     router = APIRouter()
 
+    # Registered on both the legacy/v1 path (used by ConfigurationPage.tsx)
+    # and the unversioned path (used by apiService.js / AudioSettingsPage).
+    @router.get("/api/audio/devices", response_model=AudioDevices)
     @router.get("/api/v1/audio/devices", response_model=AudioDevices)
     async def get_audio_devices():
-        try:
-            import pyaudio
-            p = pyaudio.PyAudio()
-            input_devices = []
-            output_devices = []
-            try:
-                info = p.get_host_api_info_by_index(0)
-                numdevices = info.get('deviceCount') or 0
+        return _list_audio_devices()
 
-                for i in range(0, numdevices):
-                    device_info = p.get_device_info_by_host_api_device_index(0, i)
-                    if (device_info.get('maxInputChannels') or 0) > 0:
-                        input_devices.append(device_info.get('name'))
-                    if (device_info.get('maxOutputChannels') or 0) > 0:
-                        output_devices.append(device_info.get('name'))
-            finally:
-                p.terminate()
-            return AudioDevices(input=input_devices, output=output_devices)
-        except ImportError:
-            # Fallback for environments without PyAudio or audio hardware (e.g., CI/Container)
-            return AudioDevices(
-                input=["Mock Microphone 1", "Mock Microphone 2"],
-                output=["Mock Speaker 1", "Mock Speaker 2"]
-            )
-        except Exception as e:
-            logger.warning(f"Failed to list audio devices: {e}")
-            return AudioDevices()
-
+    @router.post("/api/audio/device")
     @router.post("/api/v1/audio/device")
     async def set_audio_device(request: AudioDeviceRequest):
+        device_id = request.device_id.strip()
+        if not device_id:
+            raise HTTPException(
+                status_code=400, detail="device_id must be a non-empty string"
+            )
+
+        logger.info(f"Setting audio device to: {device_id}")
+        # Always remember the selection in module state so the choice survives
+        # even when no config manager is wired up.
+        _selected_device["device_id"] = device_id
+
+        persisted = False
         try:
-            cfg_mgr = get_config_manager()
-            logger.info(f"Setting audio device to: {request.device_id}")
-
-            # Attempt to save if structure exists
-            if hasattr(cfg_mgr, "config"):
-                if "audio" not in cfg_mgr.config:
-                    cfg_mgr.config["audio"] = {}
-                cfg_mgr.config["audio"]["device"] = request.device_id
-
+            cfg_mgr = get_config_manager() if callable(get_config_manager) else None
+            if cfg_mgr is not None and isinstance(getattr(cfg_mgr, "config", None), dict):
+                cfg_mgr.config.setdefault("audio", {})["device"] = device_id
                 if hasattr(cfg_mgr, "save_config"):
                     cfg_mgr.save_config()
-
-            return {"success": True, "device": request.device_id}
+                persisted = True
         except Exception as e:
-            logger.error(f"Failed to set audio device: {e}")
-            raise HTTPException(status_code=500, detail="Failed to update audio device configuration") from e
+            # Degrade gracefully: the selection is kept in module state above.
+            logger.warning(f"Failed to persist audio device selection: {e}")
+
+        return {"success": True, "device": device_id, "persisted": persisted}
 
     return router
