@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
-from chatty_commander.tools.fs_ops import ensure_dir, write_json, write_text
+
+from chatty_commander.cli.api_docs.fs_ops import ensure_dir, write_json, write_text
+
 
 def test_ensure_dir(tmp_path: Path):
     """Test that ensure_dir creates a directory and handles existing ones."""

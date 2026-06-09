@@ -19,3 +19,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+"""API documentation generator for ChattyCommander.
+
+Run as a module to generate OpenAPI JSON + Markdown docs:
+
+    python -m chatty_commander.cli.api_docs -o docs
+
+Modules:
+- ``cli``: argument parsing and exit codes
+- ``workflow``: orchestrates generation and writes artifacts
+- ``builder``: pure builders for the OpenAPI schema and Markdown docs
+- ``fs_ops``: atomic filesystem write helpers
+"""
+
+from .cli import main
+
+__all__ = ["main"]

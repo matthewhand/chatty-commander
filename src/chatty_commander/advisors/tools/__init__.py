@@ -21,5 +21,44 @@
 # SOFTWARE.
 
 """
-Tools used by AdvisorsService (stub implementations for tests).
+Tools used by AdvisorsService.
+
+``TOOL_REGISTRY`` maps each advisor tool name to the module (within this
+package) that defines its openai-agents ``FunctionTool`` instance. Use
+:func:`get_tool_instance` to resolve an instance lazily; it returns ``None``
+when the openai-agents SDK (or the tool's optional dependencies) are not
+available, mirroring how providers guard their tool imports.
 """
+
+from __future__ import annotations
+
+import importlib
+from typing import Any
+
+# tool name -> (module within this package, attribute holding the FunctionTool)
+TOOL_REGISTRY: dict[str, tuple[str, str]] = {
+    "browser_analyst": ("browser_analyst", "browser_analyst_tool_instance"),
+    "dograh_place_call": ("dograh_call", "dograh_call_tool_instance"),
+    "switch_mode": ("switch_mode", "switch_mode_tool_instance"),
+}
+
+
+def get_tool_instance(name: str) -> Any | None:
+    """Return the FunctionTool instance registered under ``name``.
+
+    Returns ``None`` for unknown names, when the tool module cannot be
+    imported, or when the instance is unavailable (e.g. the openai-agents
+    SDK is not installed).
+    """
+    entry = TOOL_REGISTRY.get(name)
+    if entry is None:
+        return None
+    module_name, attr = entry
+    try:
+        module = importlib.import_module(f".{module_name}", __name__)
+    except ImportError:
+        return None
+    return getattr(module, attr, None)
+
+
+__all__ = ["TOOL_REGISTRY", "get_tool_instance"]

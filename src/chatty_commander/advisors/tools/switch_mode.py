@@ -22,6 +22,13 @@
 
 from __future__ import annotations
 
+try:
+    from agents import FunctionTool
+
+    AGENTS_AVAILABLE = True
+except ImportError:
+    AGENTS_AVAILABLE = False
+
 
 def switch_mode(mode: str) -> str:
     """Tool: Request a mode switch.
@@ -33,3 +40,30 @@ def switch_mode(mode: str) -> str:
     if not mode:
         return "SWITCH_MODE:invalid"
     return f"SWITCH_MODE:{mode}"
+
+
+# FunctionTool instance for the openai-agents SDK, mirroring dograh_call.
+# AdvisorsService.handle_message intercepts the returned "SWITCH_MODE:<mode>"
+# directive and performs the actual state transition.
+switch_mode_tool_instance = None
+if AGENTS_AVAILABLE:
+    switch_mode_tool_instance = FunctionTool(
+        name="switch_mode",
+        description=(
+            "Switch ChattyCommander into a different operating mode (e.g. "
+            "'idle', 'computer', 'chatty'). Use this when the user asks to "
+            "change modes. Returns a SWITCH_MODE directive that the service "
+            "layer executes."
+        ),
+        params_json_schema={
+            "type": "object",
+            "properties": {
+                "mode": {
+                    "type": "string",
+                    "description": "Name of the mode/state to switch to.",
+                },
+            },
+            "required": ["mode"],
+        },
+        on_invoke_tool=switch_mode,  # type: ignore[arg-type]
+    )

@@ -100,9 +100,9 @@ def test_place_call_http_error_logs_status_detail_not_url(mock_cls, caplog):
 # ---------------------------------------------------------------------------
 # Regression tests for the provider-import bug.
 #
-# advisors/providers.py used to import "..tools.X" which resolves to
-# chatty_commander.tools.X — the wrong package (chatty_commander has both
-# tools/ and advisors/tools/). The except-ImportError swallowed the failure
+# advisors/providers.py used to import "..tools.X" which resolved to
+# chatty_commander.tools.X — a shadow package (since deleted) that did not
+# export the tool instances. The except-ImportError swallowed the failure
 # so the FunctionTool was silently never registered with the LLM agent.
 # These tests pin the correct import path AND verify the tool ends up
 # in the agent's tools list when enabled.

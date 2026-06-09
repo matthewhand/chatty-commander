@@ -4,7 +4,6 @@ import respx
 
 from chatty_commander.advisors.tools.browser_analyst import browser_analyst_tool
 from chatty_commander.app.config import Config
-from chatty_commander.tools.browser_analyst import AnalystRequest, summarize_url
 
 
 @pytest.fixture(autouse=True)
@@ -20,44 +19,6 @@ def mock_config(monkeypatch):
     def mock_init(self, *args, **kwargs):
         self.config_data = mock_data
     monkeypatch.setattr(Config, "__init__", mock_init)
-
-
-@respx.mock
-def test_summarize_url_success():
-    html_content = """
-    <html>
-      <head><title>Test Page</title></head>
-      <body>
-        <script>var x = 1;</script>
-        <h1>Hello World</h1>
-        <p>This is a test paragraph with <b>bold</b> text.</p>
-        <div>""" + ("A" * 600) + """</div>
-      </body>
-    </html>
-    """
-    respx.get("https://example.com/test").mock(return_value=httpx.Response(200, text=html_content))
-
-    req = AnalystRequest(url="https://example.com/test")
-    result = summarize_url(req)
-
-    assert result.title == "Test Page"
-    assert "Hello World" in result.summary
-    assert "This is a test paragraph with bold text." in result.summary
-    assert "var x = 1" not in result.summary
-    assert len(result.summary) == 500
-    assert result.url == "https://example.com/test"
-
-
-@respx.mock
-def test_summarize_url_fallback():
-    respx.get("https://example.com/error").mock(side_effect=httpx.ConnectError("Network error"))
-
-    req = AnalystRequest(url="https://example.com/error")
-    result = summarize_url(req)
-
-    assert result.title == "Error"
-    assert "Failed to fetch: Network error" in result.summary
-    assert result.url == "https://example.com/error"
 
 
 @respx.mock
@@ -102,13 +63,6 @@ def test_allowlist_blocking(monkeypatch):
         self.config_data = mock_data
     monkeypatch.setattr(Config, "__init__", mock_init)
 
-    # test summarize_url
-    req = AnalystRequest(url="https://blocked.com/page")
-    result = summarize_url(req)
-    assert result.title == "Error"
-    assert result.summary == "Domain not allowed."
-
-    # test browser_analyst_tool
     result_tool = browser_analyst_tool("https://blocked.com/page")
     assert "Error: Domain blocked.com is not allowed." in result_tool
 
@@ -125,11 +79,6 @@ def test_allowlist_empty_blocking(monkeypatch):
     def mock_init(self, *args, **kwargs):
         self.config_data = mock_data
     monkeypatch.setattr(Config, "__init__", mock_init)
-
-    req = AnalystRequest(url="https://example.com/page")
-    result = summarize_url(req)
-    assert result.title == "Error"
-    assert result.summary == "Domain not allowed."
 
     result_tool = browser_analyst_tool("https://example.com/page")
     assert "Error: Domain example.com is not allowed." in result_tool

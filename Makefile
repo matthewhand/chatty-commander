@@ -46,7 +46,7 @@ format-fix:
 
 # API docs generation
 api-docs:
-	uv run python -m src.chatty_commander.tools.generate_api_docs -o docs
+	uv run python -m src.chatty_commander.cli.api_docs -o docs
 
 # Development server with auto-reload
 dev:
