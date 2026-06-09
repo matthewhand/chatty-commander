@@ -68,6 +68,16 @@ except ImportError:
     include_audio_routes = None  # type: ignore[assignment]
 
 try:
+    from .routes.preferences import include_preferences_routes
+except ImportError:
+    include_preferences_routes = None  # type: ignore[assignment]
+
+try:
+    from .routes.themes import include_theme_routes
+except ImportError:
+    include_theme_routes = None  # type: ignore[assignment]
+
+try:
     from .routes.version import router as version_router
 except ImportError:
     version_router = None  # type: ignore[assignment]
@@ -113,6 +123,21 @@ def _include_optional(app: FastAPI, name: str) -> None:
 def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
     app = FastAPI()
 
+    # Auth middleware (protects /api routes globally); mirrors the wiring in
+    # web_mode.WebModeServer._create_app so servers built via create_app are
+    # not left unauthenticated when no_auth is False.
+    if hasattr(app, "add_middleware"):
+        try:
+            from chatty_commander.web.middleware.auth import AuthMiddleware
+
+            app.add_middleware(
+                AuthMiddleware, config_manager=config_manager, no_auth=no_auth
+            )
+        except ImportError:
+            logging.getLogger(__name__).warning(
+                "AuthMiddleware unavailable; /api routes are unprotected"
+            )
+
     # Include routers that are available
     for nm in (
         "avatar_ws_router",
@@ -141,6 +166,16 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             get_config_manager=lambda: config_manager
         )
         _include_optional(app, "audio_router")
+
+    if include_preferences_routes is not None:
+        app.include_router(
+            include_preferences_routes(get_config_manager=lambda: config_manager)
+        )
+
+    if include_theme_routes is not None:
+        app.include_router(
+            include_theme_routes(get_config_manager=lambda: config_manager)
+        )
 
     # Add bridge endpoint for tests
     try:

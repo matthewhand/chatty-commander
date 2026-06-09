@@ -9,16 +9,23 @@ the client — they always proxy through the in-process DograhClient
 which reads its credentials from environment variables.
 
 Routes:
-    GET /api/v1/dograh/status   — availability + dograh /health passthrough
+    GET /api/v1/dograh/status   — availability + filtered dograh /health info
     GET /api/v1/dograh/workflows — list of workflow {id, name, status}
 """
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+
+# Only these keys from dograh's /health body are exposed to clients; the
+# rest of the payload may contain internal details (hostnames, config).
+_HEALTH_ALLOWED_KEYS = ("status", "version")
 
 
 class DograhStatus(BaseModel):
@@ -30,7 +37,11 @@ class DograhStatus(BaseModel):
         description="When available is false, why (env not set, network, etc.).",
     )
     health: dict[str, Any] | None = Field(
-        default=None, description="Raw /api/v1/health body from dograh when reachable."
+        default=None,
+        description=(
+            "Filtered /api/v1/health body from dograh when reachable "
+            "(only 'status' and 'version' keys are exposed)."
+        ),
     )
 
 
@@ -66,12 +77,19 @@ async def get_dograh_status() -> DograhStatus:
 
     try:
         payload = client.health()
-    except Exception as e:
-        return DograhStatus(available=False, reason=f"unreachable: {e}")
+    except Exception:
+        # Full details (including the internal dograh URL carried by
+        # DograhHTTPError) stay in server-side logs; clients only see a
+        # generic reason so internal endpoints are never leaked.
+        logger.exception("dograh health check failed")
+        return DograhStatus(available=False, reason="unreachable")
     finally:
         client.close()
 
-    return DograhStatus(available=True, health=payload)
+    health: dict[str, Any] | None = None
+    if isinstance(payload, dict):
+        health = {k: payload[k] for k in _HEALTH_ALLOWED_KEYS if k in payload}
+    return DograhStatus(available=True, health=health)
 
 
 @router.get(

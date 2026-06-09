@@ -58,7 +58,54 @@ class TestDograhStatusEndpoint:
         r = _client().get("/api/v1/dograh/status")
         body = r.json()
         assert body["available"] is False
-        assert "unreachable" in body["reason"]
+        assert body["reason"] == "unreachable"
+        # Exception details must not leak to the client.
+        assert "nope" not in body["reason"]
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_status_unreachable_reason_does_not_leak_internal_url(self, mock_cls):
+        instance = MagicMock()
+        instance.health.side_effect = DograhHTTPError(
+            status_code=502,
+            detail="bad gateway",
+            method="GET",
+            url="http://internal-dograh.local:8080/api/v1/health",
+        )
+        mock_cls.return_value = instance
+
+        r = _client().get("/api/v1/dograh/status")
+        body = r.json()
+        assert body["available"] is False
+        assert body["reason"] == "unreachable"
+        assert "internal-dograh.local" not in body["reason"]
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_status_health_filtered_to_allowlist(self, mock_cls):
+        instance = MagicMock()
+        instance.health.return_value = {
+            "status": "ok",
+            "version": "1.30.0",
+            "database_url": "postgres://internal:5432/dograh",
+            "hostname": "dograh-prod-1",
+        }
+        mock_cls.return_value = instance
+
+        r = _client().get("/api/v1/dograh/status")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["available"] is True
+        assert body["health"] == {"status": "ok", "version": "1.30.0"}
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_status_health_allowlist_tolerates_missing_keys(self, mock_cls):
+        instance = MagicMock()
+        instance.health.return_value = {"status": "ok", "extra": "ignored"}
+        mock_cls.return_value = instance
+
+        r = _client().get("/api/v1/dograh/status")
+        body = r.json()
+        assert body["available"] is True
+        assert body["health"] == {"status": "ok"}
 
 
 class TestDograhWorkflowsEndpoint:

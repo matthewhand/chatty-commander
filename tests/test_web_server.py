@@ -194,6 +194,63 @@ class TestWebServer:
 
 
 # ---------------------------------------------------------------------------
+# Auth middleware on create_app (protects /api routes)
+# ---------------------------------------------------------------------------
+
+
+class TestCreateAppAuthMiddleware:
+    """create_app must attach AuthMiddleware so /api routes require auth."""
+
+    def _config_with_key(self, key: str = "secret-key") -> Mock:
+        config = Mock()
+        config.auth = {"api_key": key}
+        return config
+
+    def test_auth_middleware_attached(self):
+        from chatty_commander.web.middleware.auth import AuthMiddleware
+
+        app = create_app(no_auth=False)
+        assert any(m.cls is AuthMiddleware for m in app.user_middleware)
+
+    def test_api_requires_auth_when_no_auth_false(self):
+        app = create_app(no_auth=False, config_manager=self._config_with_key())
+        client = TestClient(app)
+        response = client.get("/api/v1/dograh/status")
+        assert response.status_code == 401
+        assert "Invalid or missing API key" in response.json()["detail"]
+
+    def test_api_rejects_wrong_key(self):
+        app = create_app(no_auth=False, config_manager=self._config_with_key())
+        client = TestClient(app)
+        response = client.get(
+            "/api/v1/dograh/status", headers={"X-API-Key": "wrong-key"}
+        )
+        assert response.status_code == 401
+
+    def test_api_accessible_with_valid_key(self):
+        app = create_app(no_auth=False, config_manager=self._config_with_key())
+        client = TestClient(app)
+        response = client.get(
+            "/api/v1/dograh/status", headers={"X-API-Key": "secret-key"}
+        )
+        assert response.status_code == 200
+
+    def test_api_accessible_when_no_auth_true(self):
+        app = create_app(no_auth=True)
+        client = TestClient(app)
+        response = client.get("/api/v1/dograh/status")
+        assert response.status_code == 200
+
+    def test_api_secure_by_default_without_config_manager(self):
+        # No config manager means no API key configured: requests must be
+        # rejected rather than allowed through.
+        app = create_app(no_auth=False)
+        client = TestClient(app)
+        response = client.get("/api/v1/dograh/status")
+        assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
 # Bridge endpoint security
 # ---------------------------------------------------------------------------
 
