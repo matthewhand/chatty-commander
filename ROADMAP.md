@@ -104,6 +104,16 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 
 ## P2 — Post-launch
 
+### In-browser voice testing (0/5)
+
+Test voice functionality from the webapp as if running locally: enable the microphone in the browser and watch what the pipeline does with what you say.
+
+- [ ] **Microphone capture in the webapp** — `getUserMedia` with explicit permission UX, input-level meter, and start/stop control on a "Voice Test" page (or panel on the Audio Settings page)
+- [ ] **Stream browser audio to the backend** — over the existing `/ws` channel or a dedicated `/ws/audio` endpoint, feeding the same wakeword → transcription → command-matching pipeline used locally (reuses P2 WebRTC bridge groundwork below)
+- [ ] **Live action feedback panel** — show each pipeline stage as it happens: wake word detected → transcript → matched command → action taken (keypress/URL/system/dograh call) with success/failure and timing
+- [ ] **Dry-run mode (default)** — run detection and matching for real but stub action execution, reporting "would have pressed ctrl+shift+x" so remote-browser testing can't fire arbitrary system actions; explicit opt-in to live execution, auth-gated
+- [ ] **E2E test** — Playwright with a prerecorded audio fixture via `--use-fake-device-for-media-stream`, asserting the feedback panel shows the expected command and dry-run action
+
 ### WebRTC audio bridge (0/3)
 
 - [ ] Bring CC's wake-word detector and dograh's pipecat audio pipeline onto a shared audio stream so a wake-word can interrupt and hand off to an in-progress dograh call
