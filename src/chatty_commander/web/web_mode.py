@@ -90,6 +90,8 @@ try:
 except ImportError:
     include_audio_routes = None  # type: ignore[assignment]
 from chatty_commander.web.routes.dograh import router as dograh_router
+from chatty_commander.web.routes.preferences import include_preferences_routes
+from chatty_commander.web.routes.themes import include_theme_routes
 from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.voice import include_voice_routes
 from chatty_commander.web.routes.ws import include_ws_routes
@@ -635,11 +637,19 @@ class WebModeServer:
             audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
             app.include_router(audio)
 
+        # UI theme endpoints
+        app.include_router(include_theme_routes(get_config_manager=lambda: self.config_manager))
+
         # Voice routing
         voice = include_voice_routes(
             get_config_manager=lambda: self.config_manager,
         )
         app.include_router(voice)
+
+        # User preferences endpoints
+        app.include_router(
+            include_preferences_routes(get_config_manager=lambda: self.config_manager)
+        )
 
         # Version endpoint
         app.include_router(version_router)
