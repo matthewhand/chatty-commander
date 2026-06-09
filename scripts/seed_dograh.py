@@ -14,11 +14,11 @@ existing key, so each seed run mints a fresh one. Old keys accumulate
 in the database; archive them manually via the UI / API if needed.
 
 Output: writes credentials in ``.env`` format to the path given by
-``--output``. If ``--output`` is omitted, the env block is written to
-stdout — this is convenient for interactive use but **never use stdout
-mode in CI**, because the API key would land in build logs that may be
-publicly readable. When ``--output`` IS given, only a redacted summary
-goes to stdout::
+``--output``. If ``--output`` is omitted, only a redacted summary is
+printed; pass ``--print-secret`` to opt in to printing the raw env
+block to stdout. **Never use --print-secret in CI**, because the API
+key would land in build logs that may be publicly readable. When
+``--output`` IS given, only a redacted summary goes to stdout::
 
     python scripts/seed_dograh.py --output scripts/dograh_seed.env
     set -a && source scripts/dograh_seed.env && set +a
@@ -59,7 +59,13 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help="Optional path to write env-format credentials. "
-        "Always also echoed to stdout.",
+        "A redacted summary is echoed to stdout.",
+    )
+    parser.add_argument(
+        "--print-secret",
+        action="store_true",
+        help="Without --output, print the raw API key to stdout instead of "
+        "a redacted summary. Never use in CI — the key lands in build logs.",
     )
     args = parser.parse_args(argv)
 
@@ -91,20 +97,36 @@ def main(argv: list[str] | None = None) -> int:
             pass
         # Print a redacted summary to stdout — never the key itself, so
         # CI step logs don't leak it.
-        masked = api_key[:8] + "..." if len(api_key) > 8 else "<short>"
         sys.stdout.write(
             f"# wrote credentials to {args.output}\n"
             f"# DOGRAH_BASE_URL={base}\n"
-            f"# DOGRAH_API_KEY={masked} (redacted)\n"
+            f"# DOGRAH_API_KEY={_redact(api_key)} (redacted)\n"
             f"# DOGRAH_SEED_WORKFLOW_ID={workflow_id}\n"
         )
         return 0
 
-    # No --output: legacy interactive mode. Stdout carries the raw env
-    # block — convenient for `source <(python scripts/seed_dograh.py)`
-    # but unsafe for CI (see module docstring).
-    sys.stdout.write(env_block)
+    if args.print_secret:
+        # Explicit opt-in: stdout carries the raw env block — convenient
+        # for `source <(python scripts/seed_dograh.py --print-secret)`
+        # but unsafe for CI (see module docstring).
+        sys.stdout.write(env_block)
+        return 0
+
+    # No --output and no --print-secret: refuse to echo the live key into
+    # terminal scrollback or CI logs. Print a redacted summary plus a hint.
+    sys.stdout.write(
+        f"# DOGRAH_BASE_URL={base}\n"
+        f"# DOGRAH_API_KEY={_redact(api_key)} (redacted)\n"
+        f"# DOGRAH_SEED_WORKFLOW_ID={workflow_id}\n"
+        "# API key redacted; re-run with --output FILE to write credentials "
+        "to a file, or --print-secret to print the raw key to stdout.\n"
+    )
     return 0
+
+
+def _redact(api_key: str) -> str:
+    """Return a non-recoverable display form of the key (first 6 chars)."""
+    return api_key[:6] + "…" if len(api_key) > 6 else "<short>"
 
 
 def _ensure_user(

@@ -178,17 +178,13 @@ def test_main_with_output_redacts_stdout(
     assert mode == 0o600
 
 
-@respx.mock
-def test_main_without_output_still_prints_env_block(
-    seed, capsys
-) -> None:
-    """Legacy interactive mode: no --output means stdout carries the env."""
+def _mock_happy_path_routes(api_key: str) -> None:
     respx.post(f"{BASE}/api/v1/auth/signup").mock(
         return_value=httpx.Response(200, json={"token": "jwt"})
     )
     respx.post(f"{BASE}/api/v1/user/api-keys").mock(
         return_value=httpx.Response(
-            200, json={"id": 1, "api_key": "dgr_interactive", "key_prefix": "dgr_inte"}
+            200, json={"id": 1, "api_key": api_key, "key_prefix": api_key[:8]}
         )
     )
     respx.get(f"{BASE}/api/v1/workflow/fetch").mock(
@@ -198,7 +194,31 @@ def test_main_without_output_still_prints_env_block(
         return_value=httpx.Response(200, json={"id": 1})
     )
 
+
+@respx.mock
+def test_main_without_output_redacts_key_by_default(seed, capsys) -> None:
+    """No --output and no --print-secret: the raw key must NOT reach stdout;
+    a redacted prefix and a hint about --output/--print-secret appear instead."""
+    _mock_happy_path_routes("dgr_interactive_secret")
+
     rc = seed.main(["--base-url", BASE])
     assert rc == 0
     captured = capsys.readouterr()
-    assert "DOGRAH_API_KEY=dgr_interactive" in captured.out
+    assert "dgr_interactive_secret" not in captured.out
+    # Redacted form: first 6 chars + ellipsis.
+    assert "dgr_in…" in captured.out
+    assert "redacted" in captured.out
+    # Hint tells the user how to actually get the key.
+    assert "--output" in captured.out
+    assert "--print-secret" in captured.out
+
+
+@respx.mock
+def test_main_print_secret_opts_in_to_raw_env_block(seed, capsys) -> None:
+    """Explicit --print-secret restores the legacy sourceable env block."""
+    _mock_happy_path_routes("dgr_interactive_secret")
+
+    rc = seed.main(["--base-url", BASE, "--print-secret"])
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "DOGRAH_API_KEY=dgr_interactive_secret" in captured.out

@@ -20,6 +20,19 @@ Please refer to the organized **User Guide** below:
 3. [Dashboard & Web UI](docs/user-guide/03_DASHBOARD_AND_WEBUI.md)
 4. [Voice Modes & Commands](docs/user-guide/04_VOICE_MODES_AND_COMMANDS.md)
 
+## Optional: dograh voice-call integration
+ChattyCommander can drive [dograh](https://github.com/dograh-tech/dograh), a self-hosted voice-call workflow engine, to place and manage phone/web calls.
+
+- **Enable the stack**: run the dograh services alongside ChattyCommander via the compose overlay:
+  ```bash
+  COMPOSE_FILE=docker-compose.yml:docker-compose.dograh.yml docker compose up -d
+  ```
+- **Configure**: copy `.env.example` to `.env` and fill in the dograh block (`DOGRAH_BASE_URL`, `DOGRAH_API_KEY`). The `scripts/seed_dograh.py` helper can bootstrap a user, API key, and workflow for you (`--output FILE` keeps the key out of your terminal).
+- **CLI**: `chatty-commander dograh health`, `... dograh list`, and `... dograh call WORKFLOW_ID PHONE_NUMBER` cover the common operations.
+- **Web UI**: the dashboard shows a dograh status card with reachability and version info.
+
+The integration is entirely optional — without dograh configured, the rest of ChattyCommander works as usual.
+
 ## Developer Documentation
 Looking to modify the core functionality or add new LLM adapters?
 Check out our extensive [Developer Docs](docs/developer/) section.
