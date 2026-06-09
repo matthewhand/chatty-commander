@@ -22,6 +22,8 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:e2e": "playwright test",
     "generate-docs": "playwright test tests/e2e/screenshots.spec.ts",
     "lint": "eslint src --ext .ts,.tsx",

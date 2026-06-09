@@ -1,4 +1,5 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
+import { vi } from "vitest";
 import { useWebSocket } from "./useWebSocket";
 
 type WSHandler = ((ev?: any) => void) | null;
@@ -64,7 +65,8 @@ const RealWebSocket = (global as any).WebSocket;
 function installWSMock() {
   ControlledWebSocket.reset();
   // @ts-ignore
-  (global as any).WebSocket = jest.fn().mockImplementation((url: string) => {
+  // NOTE: must be a `function` (not an arrow) so it is constructible via `new`.
+  (global as any).WebSocket = vi.fn(function (url: string) {
     const ws = new ControlledWebSocket(url);
     // Auto-behavior based on URL to remove manual timing races (schedule on next tick):
     // - ws://test-open and ws://test-send should OPEN automatically on next tick
@@ -90,17 +92,17 @@ function uninstallWSMock() {
 beforeEach(() => {
   installWSMock();
   // Use fake timers so we can deterministically advance the macrotask tick used by the mock
-  jest.useFakeTimers();
+  vi.useFakeTimers();
 });
 
 afterEach(() => {
   // Ensure no pending timers leak across tests
   try {
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
   } catch { }
   uninstallWSMock();
-  jest.useRealTimers();
-  jest.restoreAllMocks();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe("useWebSocket Hook", () => {

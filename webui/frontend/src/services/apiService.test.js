@@ -1,7 +1,8 @@
+import { vi } from "vitest";
 import apiService from "./apiService";
 
 beforeAll(() => {
-  global.fetch = jest.fn();
+  global.fetch = vi.fn();
   apiService.setBaseURL("http://localhost:8100");
 });
 

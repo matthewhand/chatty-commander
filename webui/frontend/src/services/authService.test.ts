@@ -1,29 +1,20 @@
+import { vi } from "vitest";
 import { authService } from "./authService";
 
 // Mock fetch globally
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch as any;
 
-// Mock localStorage methods
-beforeAll(() => {
-  Object.defineProperty(global, "localStorage", {
-    value: {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-      clear: jest.fn(),
-    },
-    writable: true,
-  });
-});
+// Spy on jsdom's real localStorage so tests can control token presence.
+const getItemSpy = vi.spyOn(Storage.prototype, "getItem");
+const removeItemSpy = vi.spyOn(Storage.prototype, "removeItem");
 
 describe("AuthService", () => {
   beforeEach(() => {
     localStorage.clear();
     mockFetch.mockClear();
-    (localStorage.getItem as jest.Mock).mockClear();
-    (localStorage.setItem as jest.Mock).mockClear();
-    (localStorage.removeItem as jest.Mock).mockClear();
+    getItemSpy.mockClear();
+    removeItemSpy.mockClear();
   });
 
   test("login returns token response", async () => {
@@ -48,13 +39,14 @@ describe("AuthService", () => {
 
     authService.logout();
 
-    expect(localStorage.removeItem).toHaveBeenCalledWith("auth_token");
+    expect(removeItemSpy).toHaveBeenCalledWith("auth_token");
+    expect(localStorage.getItem("auth_token")).toBeNull();
   });
 
   test("getCurrentUser returns user data when token exists", async () => {
     const userData = { username: "testuser", is_active: true, roles: ["user"] };
     // Ensure token exists before calling
-    (localStorage.getItem as jest.Mock).mockReturnValueOnce("valid-token");
+    getItemSpy.mockReturnValueOnce("valid-token");
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -68,7 +60,7 @@ describe("AuthService", () => {
 
   test("getCurrentUser throws when no token and no-auth probe fails", async () => {
     // No token, and the /config probe is unreachable -> auth is required.
-    (localStorage.getItem as jest.Mock).mockReturnValueOnce(null);
+    getItemSpy.mockReturnValueOnce(null);
     mockFetch.mockRejectedValueOnce(new Error("network"));
 
     await expect(authService.getCurrentUser()).rejects.toThrow(
@@ -78,7 +70,7 @@ describe("AuthService", () => {
 
   test("getCurrentUser grants no-auth session when config endpoint is reachable", async () => {
     // No token, but /config responds OK -> backend has auth disabled.
-    (localStorage.getItem as jest.Mock).mockReturnValueOnce(null);
+    getItemSpy.mockReturnValueOnce(null);
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({}),
@@ -105,7 +97,7 @@ describe("AuthService", () => {
   test("getCurrentUser falls back to no-auth probe when token is rejected", async () => {
     // Token present but rejected (401); the no-auth /config probe then succeeds,
     // so we get a local admin session rather than a hard failure.
-    (localStorage.getItem as jest.Mock).mockReturnValueOnce("invalid-token");
+    getItemSpy.mockReturnValueOnce("invalid-token");
     mockFetch
       .mockResolvedValueOnce({
         ok: false,
@@ -123,7 +115,7 @@ describe("AuthService", () => {
   });
 
   test("getCurrentUser throws when token rejected and no-auth probe also fails", async () => {
-    (localStorage.getItem as jest.Mock).mockReturnValueOnce("invalid-token");
+    getItemSpy.mockReturnValueOnce("invalid-token");
     mockFetch
       .mockResolvedValueOnce({
         ok: false,

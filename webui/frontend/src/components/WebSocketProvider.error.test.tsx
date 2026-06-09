@@ -1,26 +1,22 @@
 import React from "react";
 import { render, act } from "@testing-library/react";
+import { vi, it, beforeEach, afterEach } from "vitest";
 import { WebSocketProvider } from "./WebSocketProvider";
 
-jest.useFakeTimers();
-
-afterEach(() => {
-  jest.clearAllMocks();
-  jest.useRealTimers();
-});
-
-jest.mock("../hooks/useAuth", () => ({
-  useAuth: () => ({ isAuthenticated: true }),
-}));
-
-Object.defineProperty(window, "localStorage", {
-  value: { getItem: (k: string) => (k === "auth_token" ? "token" : null) },
+// The user object must be referentially stable across renders, because the
+// provider's connect effect depends on it.
+vi.mock("../hooks/useAuth", () => {
+  const user = { username: "tester", is_active: true, roles: ["admin"] };
+  return {
+    useAuth: () => ({ user, isAuthenticated: true }),
+  };
 });
 
 class ErrorWS {
   public onopen: any = null;
   public onclose: any = null;
   public onerror: any = null;
+  public onmessage: any = null;
   public url: string;
   constructor(url: string) {
     this.url = url;
@@ -29,18 +25,29 @@ class ErrorWS {
   }
   close() { }
 }
-// @ts-ignore
-global.WebSocket = ErrorWS;
+
+beforeEach(() => {
+  localStorage.setItem("auth_token", "token");
+  // @ts-ignore
+  global.WebSocket = ErrorWS;
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.useRealTimers();
+  localStorage.clear();
+});
 
 it("handles websocket error and close without crashing", () => {
-  const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => { });
+  const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { });
   const { unmount } = render(
     <WebSocketProvider>
       <div>Child</div>
     </WebSocketProvider>,
   );
   act(() => {
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
   });
   unmount();
   consoleSpy.mockRestore();
