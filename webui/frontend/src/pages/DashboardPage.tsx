@@ -235,8 +235,8 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-primary">
-              <Server size={32} />
+            <div className="stat-figure text-primary" aria-hidden="true">
+              <Server size={32} aria-hidden="true" />
             </div>
             <div className="stat-title">System Status</div>
             <div className="stat-value text-primary">{systemStatus?.status || "Unknown"}</div>
