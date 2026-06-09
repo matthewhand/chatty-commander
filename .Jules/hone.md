@@ -1,0 +1,1 @@
+## 2024-05-24 | [Architectural Audit] | Insight: Implicit form bindings and missing async state boundaries severely degrade screen reader experiences and perceived performance. | Protocol: Enforce explicit htmlFor/ID bindings on all form elements and require exhaustive Loading/Error/Success boundaries on all network-dependent components.

@@ -28,6 +28,9 @@ export function DynamicDropdown({
     whileElementsMounted: autoUpdate,
   });
 
+  const idId = React.useId();
+  const dropdownId = `dropdown-${idId}`;
+
   // Handle clicking outside to close
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -55,6 +58,7 @@ export function DynamicDropdown({
         className={buttonClassName}
         aria-expanded={isOpen}
         aria-haspopup="true"
+        aria-controls={isOpen ? dropdownId : undefined}
         aria-label={ariaLabel}
       >
         {buttonContent}
@@ -62,6 +66,7 @@ export function DynamicDropdown({
 
       {isOpen && (
         <div
+          id={dropdownId}
           ref={refs.setFloating}
           style={{
             position: strategy,

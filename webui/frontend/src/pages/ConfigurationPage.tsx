@@ -147,18 +147,18 @@ const ConfigurationPage: React.FC = () => {
     });
   }, []);
 
-  const { data: devices } = useQuery({
+  const { data: devices, isLoading: devicesLoading, isError: devicesError } = useQuery({
     queryKey: ["audioDevices"],
     queryFn: getAudioDevices,
   });
 
-  const { data: voiceModels, refetch: refetchVoiceModels } = useQuery({
+  const { data: voiceModels, isLoading: modelsLoading, isError: modelsError, refetch: refetchVoiceModels } = useQuery({
     queryKey: ["voiceModels"],
     queryFn: fetchVoiceModels,
   });
 
   // Load config on mount
-  const { data: remoteConfig } = useQuery({
+  const { data: remoteConfig, isLoading: configLoading, isError: configError } = useQuery({
     queryKey: ["config"],
     queryFn: loadConfig,
   });
@@ -257,6 +257,37 @@ const ConfigurationPage: React.FC = () => {
     setTimeout(() => setIsTestingOutput(false), 2000); // Simulate 2s sound
   };
 
+
+  const isPageLoading = configLoading || devicesLoading || modelsLoading;
+  const hasPageError = configError || devicesError || modelsError;
+
+  if (isPageLoading) {
+    return (
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading configuration">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-8 w-8 skeleton rounded-full"></div>
+          <div>
+            <div className="h-6 w-32 skeleton mb-2 rounded"></div>
+            <div className="h-4 w-48 skeleton rounded"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="h-64 skeleton rounded-box"></div>
+          <div className="h-64 skeleton rounded-box"></div>
+          <div className="h-64 skeleton rounded-box md:col-span-2"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasPageError) {
+    return (
+      <div className="alert alert-error shadow-lg">
+        <span>Failed to load configuration. Please check the backend connection.</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
@@ -309,8 +340,9 @@ const ConfigurationPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
+                <label className="label cursor-pointer justify-start gap-4" htmlFor="toggle-voice-commands">
                   <input
+                    id="toggle-voice-commands"
                     type="checkbox"
                     className="toggle toggle-info"
                     checked={config.services.voiceCommands}
@@ -325,8 +357,9 @@ const ConfigurationPage: React.FC = () => {
               </div>
 
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
+                <label className="label cursor-pointer justify-start gap-4" htmlFor="toggle-rest-api">
                   <input
+                    id="toggle-rest-api"
                     type="checkbox"
                     className="toggle toggle-info"
                     checked={config.services.restApi}
@@ -526,7 +559,11 @@ const ConfigurationPage: React.FC = () => {
                  </div>
 
                  <div className="form-control w-full">
+                   <label className="label py-1" htmlFor="upload-voice-model">
+                     <span className="label-text-alt text-warning">.onnx files only</span>
+                   </label>
                    <input
+                    id="upload-voice-model"
                     type="file"
                     accept=".onnx"
                     aria-label="Select ONNX voice model file"
@@ -534,9 +571,6 @@ const ConfigurationPage: React.FC = () => {
                     onChange={handleFileUpload}
                     disabled={isUploading}
                    />
-                   <label className="label py-1">
-                     <span className="label-text-alt text-warning">.onnx files only</span>
-                   </label>
                  </div>
 
                  {isUploading && <progress className="progress progress-primary w-full mt-2"></progress>}
