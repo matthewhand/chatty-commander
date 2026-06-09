@@ -382,3 +382,67 @@ class TestDograhCallAction:
             assert executor.execute_command("call_support") is False
 
         assert any("dograh unavailable" in rec.message for rec in caplog.records)
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_execute_dograh_call_dograh_error_reason_string(
+        self, mock_client_cls, executor, caplog
+    ):
+        # Operators grep logs for the exact "dograh unavailable:" phrase, so
+        # pin the full reason string produced by the DograhError path.
+        from chatty_commander.integrations.dograh_client import DograhError
+
+        instance = MagicMock()
+        instance.initiate_call.side_effect = DograhError("server returned 503")
+        mock_client_cls.return_value.__enter__.return_value = instance
+
+        with caplog.at_level("CRITICAL"):
+            assert executor.execute_command("call_support") is False
+
+        assert any(
+            "Error in call_support: dograh unavailable: server returned 503"
+            in rec.message
+            for rec in caplog.records
+        )
+        # The generic-Exception phrase must NOT appear for DograhError.
+        assert not any("dograh call failed" in rec.message for rec in caplog.records)
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_execute_dograh_call_generic_exception_reason_string(
+        self, mock_client_cls, executor, caplog
+    ):
+        # Generic exceptions produce a distinct "dograh call failed:" phrase
+        # that operators grep for separately from DograhError.
+        instance = MagicMock()
+        instance.initiate_call.side_effect = ValueError("unexpected payload")
+        mock_client_cls.return_value.__enter__.return_value = instance
+
+        with caplog.at_level("CRITICAL"):
+            assert executor.execute_command("call_support") is False
+
+        assert any(
+            "Error in call_support: dograh call failed: unexpected payload"
+            in rec.message
+            for rec in caplog.records
+        )
+        # The DograhError phrase must NOT appear for generic exceptions.
+        assert not any("dograh unavailable" in rec.message for rec in caplog.records)
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_execute_dograh_call_success_logs_completion(
+        self, mock_client_cls, executor, caplog
+    ):
+        instance = MagicMock()
+        instance.initiate_call.return_value = {"workflow_run_id": 9}
+        mock_client_cls.return_value.__enter__.return_value = instance
+
+        with caplog.at_level("INFO"):
+            assert executor.execute_command("call_support") is True
+
+        assert any(
+            "dograh_call ok: workflow 42" in rec.message for rec in caplog.records
+        )
+        assert any(
+            "Completed execution of command: call_support" in rec.message
+            for rec in caplog.records
+        )
+        assert not any(rec.levelname == "CRITICAL" for rec in caplog.records)
