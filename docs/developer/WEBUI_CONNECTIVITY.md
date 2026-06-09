@@ -8,7 +8,7 @@ How the React frontend connects to the Python FastAPI backend.
 |---------|------|-----|
 | FastAPI backend | 8100 | `http://localhost:8100` |
 | React dev server | 3000 | `http://localhost:3000` |
-| WebSocket (avatar) | 8100 | `ws://localhost:8100/avatar/ws` |
+| WebSocket (events) | 8100 | `ws://localhost:8100/ws` |
 | API docs (Swagger) | 8100 | `http://localhost:8100/docs` |
 
 ## Starting Both Services
@@ -40,7 +40,7 @@ In production (auth enabled), CORS origins must be explicitly listed in the serv
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/health` | Health check |
+| GET | `/health` | Health check |
 | GET | `/api/v1/status` | Application status |
 | GET | `/api/v1/version` | Version info |
 | GET | `/api/v1/config` | Get configuration |
@@ -49,15 +49,17 @@ In production (auth enabled), CORS origins must be explicitly listed in the serv
 | GET | `/metrics/json` | Metrics (JSON) |
 | GET | `/metrics/prom` | Metrics (Prometheus) |
 
-## WebSocket (Avatar)
+## WebSocket
 
-The avatar GUI connects via WebSocket to receive state change notifications:
+The React frontend connects via WebSocket to receive state change and command notifications:
 
 ```
-ws://localhost:8100/avatar/ws
+ws://localhost:8100/ws
 ```
 
-Messages are JSON objects with `type` and `data` fields. See [AVATAR_GUI.md](AVATAR_GUI.md) for the full protocol.
+Messages are JSON objects with `type` and `data` fields (see `docs/API.md` for message types).
+
+A legacy `ws://localhost:8100/avatar/ws` endpoint still exists in the backend (`web/routes/avatar_ws.py`), but the desktop Avatar GUI that consumed it has been removed.
 
 ## Troubleshooting
 

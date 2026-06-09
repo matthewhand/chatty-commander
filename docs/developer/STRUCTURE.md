@@ -9,29 +9,24 @@ chatty-commander/
 ├── config/                 # Configuration files and templates
 │   ├── config.json
 │   ├── config.json.template
-│   └── .env.example
+│   └── *-example.json     # Sample configurations
 ├── deploy/                 # Deployment and packaging
 │   ├── docker/            # Container definitions
-│   ├── k8s/               # Kubernetes manifests
+│   ├── monitoring/        # Monitoring configuration
 │   ├── packaging/         # Distribution packages
 │   └── Dockerfile         # Main container definition
-├── frontend/               # User interface applications
-│   ├── desktop-app/       # Native desktop application
-│   └── web-app/           # Web-based interface
+├── webui/frontend/         # React web UI (the active frontend)
 ├── models/                 # AI models and assets
 │   ├── chatty/            # Conversational AI models
 │   ├── computer/          # Computer automation models
 │   ├── idle/              # Background processing models
 │   └── wakewords/         # Wake word detection models
-├── server/                 # Backend services
-│   ├── workers/           # Background processing workers
-│   └── [server files]     # Core server implementation
 ├── src/chatty_commander/   # Main Python package
-│   └── [core modules]     # Application logic and APIs
+│   └── [core modules]     # Application logic, FastAPI server, APIs
 ├── docs/                   # Documentation
 ├── tests/                  # Test suites
 ├── scripts/                # Utility scripts
-└── [project files]        # README, LICENSE, etc.
+└── [project files]        # README, LICENSE, .env.example, etc.
 ```
 
 ## Quick Navigation
@@ -41,17 +36,15 @@ chatty-commander/
 - **Core Logic**: `src/chatty_commander/`
 - **Configuration**: `config/`
 - **Tests**: `tests/`
-- **Documentation**: `docs/`, `README.md`, `DEVELOPER.md`, `ARCHITECTURE.md`
+- **Documentation**: `docs/`, `README.md`, `docs/developer/ARCHITECTURE.md`
 
 ### Frontend Development
 
-- **Desktop App**: `frontend/desktop-app/`
-- **Web Interface**: `frontend/web-app/`
+- **Web Interface**: `webui/frontend/` (React, built with `npm run build`)
 
 ### Backend Development
 
-- **Server**: `server/`
-- **Workers**: `server/workers/`
+- **FastAPI Server**: `src/chatty_commander/web/`
 
 ### AI/ML Development
 
@@ -64,7 +57,7 @@ chatty-commander/
 
 - **All Deployment**: `deploy/`
 - **Containers**: `deploy/docker/`
-- **Kubernetes**: `deploy/k8s/`
+- **Monitoring**: `deploy/monitoring/`
 - **Packaging**: `deploy/packaging/`
 
 ## Key Changes from Previous Structure
@@ -73,10 +66,11 @@ This organization consolidates what were previously scattered directories:
 
 - `models-*` → `models/*/`
 - `wakewords/` → `models/wakewords/`
-- `app/` → `frontend/desktop-app/`
-- `webui/` → `frontend/web-app/`
-- `workers/` → `server/workers/`
-- `docker/`, `k8s/`, `packaging/` → `deploy/*/`
+- `docker/`, `packaging/` → `deploy/*/`
 - Configuration files → `config/`
+
+The active React frontend lives in `webui/frontend/`. Some legacy directories
+(`frontend/`, `server/`, `workers/`) remain at the top level from earlier
+experiments but are not part of the current application.
 
 This reduces top-level complexity while maintaining logical groupings and clear separation of concerns.

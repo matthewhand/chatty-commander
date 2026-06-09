@@ -1,7 +1,7 @@
 
 # ChattyCommander API Documentation
 
-*Generated on 2026-03-05 09:36:47*
+*Last updated 2026-06-10*
 
 ## Overview
 
@@ -124,6 +124,104 @@ Executes a voice command programmatically.
   "message": "Command executed successfully",
   "execution_time": 150
 }
+```
+
+### Audio Devices
+
+#### GET /api/audio/devices
+
+Lists available audio input and output devices. Also available at `/api/v1/audio/devices`. Returns `available: false` with empty lists when no audio backend is installed (e.g. headless servers).
+
+**Response Example:**
+```json
+{
+  "input": ["Built-in Microphone"],
+  "output": ["Built-in Speakers"],
+  "available": true
+}
+```
+
+#### POST /api/audio/device
+
+Selects the active audio device. Also available at `/api/v1/audio/device`.
+
+**Request Body:**
+```json
+{
+  "device_id": "Built-in Microphone"
+}
+```
+
+### Preferences
+
+#### GET /api/preferences
+
+Returns saved user preferences (theme, notifications, language, auto_start, telemetry), with defaults filled in.
+
+#### PUT /api/preferences
+
+Updates user preferences. Known keys are type-validated; extra keys are preserved.
+
+**Request Body Example:**
+```json
+{
+  "theme": "dark",
+  "notifications": true
+}
+```
+
+### Themes
+
+#### GET /api/themes
+
+Lists the UI themes the frontend can render and the currently selected one.
+
+**Response Example:**
+```json
+{
+  "themes": ["dark", "light", "cyberpunk", "synthwave"],
+  "current": "dark"
+}
+```
+
+#### GET /api/theme
+
+Returns the currently selected UI theme.
+
+#### POST /api/theme
+
+Selects a UI theme and persists it under `ui.theme` in the configuration. Returns `400` for unknown theme names.
+
+**Request Body:**
+```json
+{
+  "theme": "light"
+}
+```
+
+### Dograh Voice Calls
+
+#### GET /api/v1/dograh/status
+
+Probes whether the configured dograh stack is reachable. Returns `available: false` with a generic `reason` when `DOGRAH_BASE_URL` / `DOGRAH_API_KEY` are missing or the service is down.
+
+**Response Example:**
+```json
+{
+  "available": true,
+  "health": {"status": "ok"}
+}
+```
+
+#### GET /api/v1/dograh/workflows
+
+Lists workflows proxied from dograh. Returns an empty list when dograh is unconfigured or unreachable so the UI degrades gracefully.
+
+**Response Example:**
+```json
+[
+  {"id": 1, "name": "Outbound greeting", "status": "active"}
+]
 ```
 
 ## WebSocket Interface

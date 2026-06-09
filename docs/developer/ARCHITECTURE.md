@@ -51,16 +51,15 @@ Consolidated directory for all AI models and related assets:
 - `idle/` - Background processing and idle state models
 - `wakewords/` - Wake word detection models and configurations
 
-### Frontend Applications (`frontend/`)
-User interface components separated by platform:
-- `desktop-app/` - Native desktop application
-- `web-app/` - Web-based user interface (WebUI)
+### Frontend Application (`webui/frontend/`)
+The React/Vite web UI (WebUI). It talks to the FastAPI backend over REST and
+WebSocket and is built with `npm run build`.
 
-### Server Infrastructure (`server/`)
-Backend services and worker processes:
-- Core server implementation
-- `workers/` - Background processing and canvas building workers
-- API endpoints and service coordination
+### Server Infrastructure (`src/chatty_commander/web/`)
+The FastAPI backend lives inside the main Python package:
+- `server.py` / `web_mode.py` - App factory and server entry points
+- `routes/` - REST and WebSocket routers (config, state, audio, themes, preferences, dograh, ...)
+- `middleware/` - Authentication and security middleware
 
 ### Configuration (`config/`)
 Centralized configuration management:
@@ -71,7 +70,7 @@ Centralized configuration management:
 ### Deployment (`deploy/`)
 Deployment and packaging artifacts:
 - `docker/` - Container definitions and orchestration
-- `k8s/` - Kubernetes manifests and configurations
+- `monitoring/` - Monitoring configuration
 - `packaging/` - Distribution packages and installers
 - `Dockerfile` - Main container definition
 
@@ -103,7 +102,7 @@ Deployment configurations support multiple environments.
 6. **Response Generation**: Responses generated and delivered through frontend
 
 ## Trigger Vectors & Entity Relationship
-1. **WebUI / REST API**: Direct execution by the user clicking a button, or an external script hitting the API (`POST /api/v1/commands/execute`).
+1. **WebUI / REST API**: Direct execution by the user clicking a button, or an external script hitting the API (`POST /api/v1/command`).
 2. **Wakewords**: Audio triggers processed by the OpenWakeWord engine.
 
 ```mermaid
@@ -149,12 +148,12 @@ erDiagram
 - **Frontend**: Web-based via React/Vite
 - **Models**: Various AI/ML frameworks
 - **Server**: FastAPI
-- **Deployment**: Docker, Kubernetes, native packaging
+- **Deployment**: Docker, native packaging
 
 ## Communication Flows
 
 - **REST**: `GET/POST /api/v1/*` for config, commands, agents
-- **WebSocket**: `/api/v1/ws` for real-time events
+- **WebSocket**: `/ws` for real-time events
 - **Metrics**: `/metrics/json` (JSON) and `/metrics/prom` (Prometheus)
 
 ## Security

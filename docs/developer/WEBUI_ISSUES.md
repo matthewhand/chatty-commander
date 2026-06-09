@@ -1,25 +1,26 @@
 # WebUI Issues Analysis
 
-**Date:** 2026-02-20  
+**Date:** 2026-02-20 (updated 2026-06-10)  
 **Tested against:** Backend running on port 8100 with `--no-auth`
 
 ## Summary
 
-Several frontend pages call API endpoints that don't exist on the backend, causing 404 errors and degraded user experience.
+Several frontend pages called API endpoints that didn't exist on the backend, causing 404 errors and degraded user experience. Most of these have since been implemented (audio devices, themes, preferences); the remaining gaps are system restart/shutdown and backup/restore.
 
 ## Issues Found
 
-### 1. Missing API Endpoints (404 Not Found)
+### 1. Endpoint Status
 
 | Endpoint | Used By | Status |
 |----------|---------|--------|
-| `/api/audio/devices` | AudioSettingsPage.tsx | ❌ Missing |
+| `/api/audio/devices` | AudioSettingsPage.tsx | ✅ Implemented (`web/routes/audio.py`, also `/api/v1/audio/devices`) |
+| `/api/audio/device` (POST) | AudioSettingsPage.tsx | ✅ Implemented (`web/routes/audio.py`) |
 | `/api/voice/status` | apiService.js | ✅ Working |
 | `/api/voice/start` | apiService.js | ✅ Working |
 | `/api/voice/stop` | apiService.js | ✅ Working |
-| `/api/themes` | apiService.js | ❌ Missing |
-| `/api/theme` | apiService.js | ❌ Missing |
-| `/api/preferences` | apiService.js | ❌ Missing |
+| `/api/themes` | apiService.js | ✅ Implemented (`web/routes/themes.py`) |
+| `/api/theme` (GET/POST) | apiService.js | ✅ Implemented (`web/routes/themes.py`) |
+| `/api/preferences` (GET/PUT) | apiService.js | ✅ Implemented (`web/routes/preferences.py`) |
 | `/api/system/info` | apiService.js | ✅ Working |
 | `/api/system/restart` | apiService.js | ❌ Missing |
 | `/api/system/shutdown` | apiService.js | ❌ Missing |
@@ -46,22 +47,22 @@ Several frontend pages call API endpoints that don't exist on the backend, causi
 
 ## Recommendations
 
-### Priority 1: Add Missing Audio Endpoints
+### Priority 1: Add Missing Audio Endpoints — ✅ Done
 
-The AudioSettingsPage.tsx needs:
+The AudioSettingsPage.tsx needed (now implemented in `web/routes/audio.py`):
 - `GET /api/audio/devices` - List available audio input devices
 - `POST /api/audio/device` - Set active audio device
 
-### Priority 2: Add Voice Status Endpoints
+### Priority 2: Add Voice Status Endpoints — ✅ Done
 
-For voice control features:
+For voice control features (implemented in `web/routes/voice.py`):
 - `GET /api/voice/status` - Get voice recognition status
 - `POST /api/voice/start` - Start voice recognition
 - `POST /api/voice/stop` - Stop voice recognition
 
-### Priority 3: Add System Info Endpoints
+### Priority 3: Add Preferences Endpoints — ✅ Done
 
-For dashboard and system management:
+For dashboard and system management (implemented in `web/routes/preferences.py`):
 - `GET /api/preferences` - Get user preferences
 - `PUT /api/preferences` - Update user preferences
 
@@ -91,12 +92,13 @@ The following frontend (Web UI) issues have been resolved:
 | LoginPage | ✅ Working | None |
 | DashboardPage | ⚠️ Partial | Uses placeholder data, WebSocket may fail |
 | ConfigurationPage | ⚠️ Partial | Uses placeholder save function |
-| AudioSettingsPage | ❌ Broken | Calls missing `/api/audio/devices` |
+| AudioSettingsPage | ✅ Working | `/api/audio/devices` now implemented |
 | PersonasPage | ⚠️ Partial | Context stats fail when advisors disabled |
 
 ## Next Steps
 
-1. Implement missing audio device endpoints
-2. Implement ONNX file upload/download feature
-3. Add proper error handling in frontend for missing endpoints
-4. Add fallback/mock data in frontend when endpoints unavailable
+1. ~~Implement missing audio device endpoints~~ ✅ Done (`web/routes/audio.py`)
+2. ~~Implement themes/preferences endpoints~~ ✅ Done (`web/routes/themes.py`, `web/routes/preferences.py`)
+3. Decide whether to implement or drop the remaining missing endpoints: `/api/system/restart`, `/api/system/shutdown`, `/api/backup`, `/api/restore`
+4. Implement ONNX file upload/download feature
+5. Add proper error handling in frontend for any remaining missing endpoints

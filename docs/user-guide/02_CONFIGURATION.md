@@ -28,13 +28,13 @@ Set the `CHATCOMM_LOG_LEVEL` environment variable (`DEBUG`, `INFO`, `WARNING`, o
 
 Once running, you can modify configuration in real-time using the **Web Dashboard Component**.
 
-![Configuration General](../screenshots/configuration-general.png)
+![Configuration Page](../screenshots/configuration.png)
 
 ### Voice Model Management
 
 You can manage your ONNX voice models directly from the configuration page. This allows you to upload custom wake words or command models without manually accessing the filesystem.
 
-![Voice Models](../screenshots/configuration-models.png)
+![Voice Models](../screenshots/configuration-voice-models.png)
 
 - **Upload Model**: Select a `.onnx` file and choose the target state (Idle, Computer, or Chatty).
 - **Delete Model**: Remove unused models to free up space.
@@ -44,10 +44,12 @@ You can manage your ONNX voice models directly from the configuration page. This
 
 Configure your LLM endpoint and model parameters.
 
-![LLM Configuration](../screenshots/configuration-llm.png)
+### Audio
+
+Select your audio input/output devices from the Audio section.
+
+![Audio Configuration](../screenshots/configuration-audio.png)
 
 ### Services
 
 Toggle core services like Voice Commands and REST API on or off.
-
-![Services Configuration](../screenshots/configuration-services.png)
