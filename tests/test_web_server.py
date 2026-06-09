@@ -29,6 +29,7 @@ from chatty_commander.app.state_manager import StateManager
 from chatty_commander.web.server import (
     _include_optional,
     create_app,
+    ensure_no_auth_allowed,
     settings_router,
 )
 from chatty_commander.web.web_mode import (
@@ -248,6 +249,89 @@ class TestCreateAppAuthMiddleware:
         client = TestClient(app)
         response = client.get("/api/v1/dograh/status")
         assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Production refusal of the no_auth dev bypass (CHATTY_ENV=production)
+# ---------------------------------------------------------------------------
+
+
+class TestNoAuthProductionGuard:
+    """no_auth=True is a dev bypass and must refuse to run in production.
+
+    Canonical environment indicator: CHATTY_ENV=production (see
+    chatty_commander.web.server.ensure_no_auth_allowed).
+    """
+
+    def _mock_managers(self):
+        config = Mock(spec=Config)
+        config.config = {"test": "value"}
+
+        state_manager = Mock(spec=StateManager)
+        state_manager.current_state = "idle"
+        state_manager.get_active_models.return_value = []
+        state_manager.add_state_change_callback = Mock()
+
+        model_manager = Mock(spec=ModelManager)
+        command_executor = Mock(spec=CommandExecutor)
+
+        return config, state_manager, model_manager, command_executor
+
+    def test_create_app_refuses_no_auth_in_production(self, monkeypatch):
+        monkeypatch.setenv("CHATTY_ENV", "production")
+        with pytest.raises(RuntimeError, match="development bypass"):
+            create_app(no_auth=True)
+
+    def test_create_app_refuses_no_auth_case_insensitive(self, monkeypatch):
+        monkeypatch.setenv("CHATTY_ENV", "Production")
+        with pytest.raises(RuntimeError, match="CHATTY_ENV=production"):
+            create_app(no_auth=True)
+
+    def test_create_app_allows_no_auth_without_env(self, monkeypatch):
+        monkeypatch.delenv("CHATTY_ENV", raising=False)
+        app = create_app(no_auth=True)
+        assert isinstance(app, FastAPI)
+
+    def test_create_app_allows_no_auth_in_non_production_env(self, monkeypatch):
+        monkeypatch.setenv("CHATTY_ENV", "development")
+        app = create_app(no_auth=True)
+        assert isinstance(app, FastAPI)
+
+    def test_create_app_allows_auth_in_production(self, monkeypatch):
+        monkeypatch.setenv("CHATTY_ENV", "production")
+        app = create_app(no_auth=False)
+        assert isinstance(app, FastAPI)
+
+    def test_web_mode_server_refuses_no_auth_in_production(self, monkeypatch):
+        monkeypatch.setenv("CHATTY_ENV", "production")
+        managers = self._mock_managers()
+        with pytest.raises(RuntimeError, match="development bypass"):
+            WebModeServer(*managers, no_auth=True)
+
+    def test_web_mode_server_allows_no_auth_without_env(self, monkeypatch):
+        monkeypatch.delenv("CHATTY_ENV", raising=False)
+        managers = self._mock_managers()
+        server = WebModeServer(*managers, no_auth=True)
+        assert isinstance(server.app, FastAPI)
+
+    def test_web_mode_server_allows_auth_in_production(self, monkeypatch):
+        monkeypatch.setenv("CHATTY_ENV", "production")
+        managers = self._mock_managers()
+        server = WebModeServer(*managers, no_auth=False)
+        assert isinstance(server.app, FastAPI)
+
+    def test_helper_is_noop_when_no_auth_false(self, monkeypatch):
+        monkeypatch.setenv("CHATTY_ENV", "production")
+        ensure_no_auth_allowed(False)  # must not raise
+
+    def test_helper_raises_with_clear_message(self, monkeypatch):
+        monkeypatch.setenv("CHATTY_ENV", "production")
+        with pytest.raises(RuntimeError) as excinfo:
+            ensure_no_auth_allowed(True)
+        assert (
+            "no_auth=True is a development bypass and refuses to run with "
+            "CHATTY_ENV=production"
+        ) in str(excinfo.value)
 
 
 # ---------------------------------------------------------------------------

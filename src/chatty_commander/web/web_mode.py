@@ -86,7 +86,9 @@ from chatty_commander.web.routes.ws import include_ws_routes
 
 # Shared router assembly (avatar, version, dograh, metrics, agents, audio,
 # preferences, themes) — single source of truth shared with server.create_app.
-from chatty_commander.web.server import register_shared_routers
+# ensure_no_auth_allowed is the shared production guard for the dev auth
+# bypass (refuses no_auth=True when CHATTY_ENV=production).
+from chatty_commander.web.server import ensure_no_auth_allowed, register_shared_routers
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -528,6 +530,10 @@ class WebModeServer:
     # App and routing
     # --------------------------
     def _create_app(self) -> FastAPI:
+        # Structural production refusal: never allow the dev auth bypass when
+        # CHATTY_ENV=production (shared guard with server.create_app).
+        ensure_no_auth_allowed(self.no_auth)
+
         # Configure logging based on environment variables (LOG_FORMAT, LOG_LEVEL)
         # This is idempotent — safe to call multiple times.
         if _LOGGING_CONFIG_AVAILABLE and configure_logging is not None:

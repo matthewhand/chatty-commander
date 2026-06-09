@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 from chatty_commander.utils.security import constant_time_compare
@@ -119,6 +120,30 @@ def _include_optional(app: FastAPI, name: str) -> None:
         app.include_router(r)
 
 
+def ensure_no_auth_allowed(no_auth: bool) -> None:
+    """Refuse the development auth bypass in production environments.
+
+    ``no_auth=True`` disables authentication entirely and exists purely as a
+    development convenience. To prevent it ever reaching production, this
+    guard raises ``RuntimeError`` at app-factory time when the deployment
+    environment is marked as production.
+
+    The canonical environment indicator is the ``CHATTY_ENV`` environment
+    variable (chosen deliberately over generic alternatives such as
+    ``ENVIRONMENT`` or ``NODE_ENV`` so there is exactly one switch to set and
+    audit). The check is case-insensitive: ``CHATTY_ENV=production`` (or
+    ``Production`` etc.) combined with ``no_auth=True`` is refused.
+
+    Called by both FastAPI app factories — ``server.create_app`` and
+    ``web_mode.WebModeServer._create_app`` — so neither path can drift.
+    """
+    if no_auth and os.environ.get("CHATTY_ENV", "").strip().lower() == "production":
+        raise RuntimeError(
+            "no_auth=True is a development bypass and refuses to run with "
+            "CHATTY_ENV=production"
+        )
+
+
 def register_shared_routers(app: FastAPI, config_manager: Any = None) -> None:
     """Register routers shared by both FastAPI app factories.
 
@@ -159,6 +184,10 @@ def register_shared_routers(app: FastAPI, config_manager: Any = None) -> None:
 
 
 def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
+    # Structural production refusal: never allow the dev auth bypass when
+    # CHATTY_ENV=production (see ensure_no_auth_allowed for the rationale).
+    ensure_no_auth_allowed(no_auth)
+
     app = FastAPI()
 
     # Auth middleware (protects /api routes globally); mirrors the wiring in
