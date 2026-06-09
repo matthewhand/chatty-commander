@@ -170,46 +170,6 @@ class ApiService {
   }
 
   /**
-   * Get command history
-   */
-  async getCommandHistory(limit = 50) {
-    return this.get("/api/commands/history", { limit });
-  }
-
-  /**
-   * Get system logs
-   */
-  async getLogs(level = "info", limit = 100) {
-    return this.get("/api/logs", { level, limit });
-  }
-
-  /**
-   * Get model information
-   */
-  async getModels() {
-    return this.get("/api/models");
-  }
-
-  /**
-   * Load a specific model
-   */
-  async loadModel(modelPath, modelType = "general") {
-    return this.post("/api/models/load", {
-      model_path: modelPath,
-      model_type: modelType,
-    });
-  }
-
-  /**
-   * Unload a model
-   */
-  async unloadModel(modelPath) {
-    return this.post("/api/models/unload", {
-      model_path: modelPath,
-    });
-  }
-
-  /**
    * Get audio devices
    */
   async getAudioDevices() {
@@ -247,48 +207,10 @@ class ApiService {
   }
 
   /**
-   * Test command execution (dry run)
-   */
-  async testCommand(command, parameters = {}) {
-    return this.post("/api/command/test", {
-      command,
-      parameters,
-    });
-  }
-
-  /**
    * Get system metrics
    */
   async getMetrics() {
     return this.get("/api/v1/metrics");
-  }
-
-  /**
-   * Export configuration
-   */
-  async exportConfig() {
-    return this.get("/api/config/export");
-  }
-
-  /**
-   * Import configuration
-   */
-  async importConfig(configData) {
-    return this.post("/api/config/import", configData);
-  }
-
-  /**
-   * Reset configuration to defaults
-   */
-  async resetConfig() {
-    return this.post("/api/config/reset");
-  }
-
-  /**
-   * Validate configuration
-   */
-  async validateConfig(config) {
-    return this.post("/api/config/validate", config);
   }
 
   /**
@@ -320,52 +242,10 @@ class ApiService {
   }
 
   /**
-   * Backup system data
-   */
-  async createBackup() {
-    return this.post("/api/backup");
-  }
-
-  /**
-   * Restore from backup
-   */
-  async restoreBackup(backupData) {
-    return this.post("/api/restore", backupData);
-  }
-
-  /**
    * Get system information
    */
   async getSystemInfo() {
     return this.get("/api/system/info");
-  }
-
-  /**
-   * Restart system
-   */
-  async restartSystem() {
-    return this.post("/api/system/restart");
-  }
-
-  /**
-   * Shutdown system
-   */
-  async shutdownSystem() {
-    return this.post("/api/system/shutdown");
-  }
-
-  /**
-   * Update system
-   */
-  async updateSystem() {
-    return this.post("/api/system/update");
-  }
-
-  /**
-   * Check for updates
-   */
-  async checkUpdates() {
-    return this.get("/api/system/updates");
   }
 
   /**
