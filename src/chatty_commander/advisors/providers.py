@@ -154,9 +154,9 @@ class CompletionProvider(LLMProvider):
 
         # Add browser analyst tool if enabled.
         # NB: the canonical implementation lives in
-        # chatty_commander.advisors.tools.browser_analyst (this is
-        # `.tools`, NOT `..tools` — there is a separate
-        # chatty_commander.tools/ package that does not export the
+        # chatty_commander.advisors.tools.browser_analyst (package-relative
+        # `.tools`; a `..tools` import would have resolved to a now-deleted
+        # chatty_commander.tools shadow package that did not export the
         # FunctionTool instance).
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
@@ -176,6 +176,18 @@ class CompletionProvider(LLMProvider):
 
                 if dograh_call_tool_instance:
                     tools.append(dograh_call_tool_instance)
+            except ImportError:
+                pass
+
+        # Add mode-switch tool only if explicitly enabled (opt-in; the
+        # SWITCH_MODE directive it returns is intercepted and executed by
+        # the service layer).
+        if tools_config.get("switch_mode", {}).get("enabled", False):
+            try:
+                from .tools.switch_mode import switch_mode_tool_instance
+
+                if switch_mode_tool_instance:
+                    tools.append(switch_mode_tool_instance)
             except ImportError:
                 pass
 
@@ -244,9 +256,9 @@ class ResponsesProvider(LLMProvider):
 
         # Add browser analyst tool if enabled.
         # NB: the canonical implementation lives in
-        # chatty_commander.advisors.tools.browser_analyst (this is
-        # `.tools`, NOT `..tools` — there is a separate
-        # chatty_commander.tools/ package that does not export the
+        # chatty_commander.advisors.tools.browser_analyst (package-relative
+        # `.tools`; a `..tools` import would have resolved to a now-deleted
+        # chatty_commander.tools shadow package that did not export the
         # FunctionTool instance).
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
@@ -266,6 +278,18 @@ class ResponsesProvider(LLMProvider):
 
                 if dograh_call_tool_instance:
                     tools.append(dograh_call_tool_instance)
+            except ImportError:
+                pass
+
+        # Add mode-switch tool only if explicitly enabled (opt-in; the
+        # SWITCH_MODE directive it returns is intercepted and executed by
+        # the service layer).
+        if tools_config.get("switch_mode", {}).get("enabled", False):
+            try:
+                from .tools.switch_mode import switch_mode_tool_instance
+
+                if switch_mode_tool_instance:
+                    tools.append(switch_mode_tool_instance)
             except ImportError:
                 pass
 

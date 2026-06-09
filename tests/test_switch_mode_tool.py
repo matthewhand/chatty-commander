@@ -72,3 +72,133 @@ def test_switch_mode_function_tool_instance():
 def test_registry_resolves_switch_mode_instance():
     instance = get_tool_instance("switch_mode")
     assert instance is switch_mode_tool_instance
+
+
+# ---------------------------------------------------------------------------
+# Provider gating: providers.py only registers switch_mode with the Agent
+# when the advisors tools config explicitly enables it (mirrors dograh_call).
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def _stub_agents_module(monkeypatch):
+    """Stub the openai-agents SDK surface so provider construction runs in
+    tests without the real SDK (mirrors tests/test_dograh_advisor_tool.py),
+    then restore the real modules on teardown."""
+    import importlib
+    import sys
+    import types
+
+    fake_agents = types.ModuleType("agents")
+
+    class _StubAgent:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        def chat(self, prompt):
+            return ""
+
+    fake_agents.Agent = _StubAgent
+    fake_agents.FunctionTool = type(
+        "FunctionTool",
+        (),
+        {"__init__": lambda self, **kw: setattr(self, "kwargs", kw)},
+    )
+
+    monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+    # Re-import providers + tool modules so they see the fake agents module.
+    import chatty_commander.advisors.providers as providers_mod
+    import chatty_commander.advisors.tools.browser_analyst as ba
+    import chatty_commander.advisors.tools.dograh_call as dc
+    import chatty_commander.advisors.tools.switch_mode as sm
+
+    modules = (providers_mod, ba, dc, sm)
+    for mod in modules:
+        importlib.reload(mod)
+    yield
+    # Put the real `agents` module back before re-reloading so other tests
+    # see the genuine SDK objects again.
+    monkeypatch.undo()
+    for mod in modules:
+        importlib.reload(mod)
+
+
+def _agent_tool_names(provider):
+    return [
+        getattr(t, "kwargs", {}).get("name") for t in provider.agent.kwargs["tools"]
+    ]
+
+
+def _provider_config(tools):
+    return {
+        "api_key": "k",
+        "model": "test",
+        "base_url": "http://example",
+        "tools": tools,
+    }
+
+
+@pytest.mark.usefixtures("_stub_agents_module")
+def test_completion_provider_loads_switch_mode_when_enabled():
+    from chatty_commander.advisors.providers import CompletionProvider
+
+    provider = CompletionProvider(
+        _provider_config(
+            {
+                "browser_analyst": {"enabled": False},
+                "switch_mode": {"enabled": True},
+            }
+        )
+    )
+    assert "switch_mode" in _agent_tool_names(provider)
+
+
+@pytest.mark.usefixtures("_stub_agents_module")
+def test_completion_provider_omits_switch_mode_by_default():
+    from chatty_commander.advisors.providers import CompletionProvider
+
+    provider = CompletionProvider(
+        _provider_config({"browser_analyst": {"enabled": False}})
+    )
+    assert "switch_mode" not in _agent_tool_names(provider)
+
+
+@pytest.mark.usefixtures("_stub_agents_module")
+def test_completion_provider_omits_switch_mode_when_disabled():
+    from chatty_commander.advisors.providers import CompletionProvider
+
+    provider = CompletionProvider(
+        _provider_config(
+            {
+                "browser_analyst": {"enabled": False},
+                "switch_mode": {"enabled": False},
+            }
+        )
+    )
+    assert "switch_mode" not in _agent_tool_names(provider)
+
+
+@pytest.mark.usefixtures("_stub_agents_module")
+def test_responses_provider_loads_switch_mode_when_enabled():
+    from chatty_commander.advisors.providers import ResponsesProvider
+
+    config = _provider_config(
+        {
+            "browser_analyst": {"enabled": False},
+            "switch_mode": {"enabled": True},
+        }
+    )
+    config["llm_api_mode"] = "responses"
+    provider = ResponsesProvider(config)
+    assert "switch_mode" in _agent_tool_names(provider)
+
+
+@pytest.mark.usefixtures("_stub_agents_module")
+def test_responses_provider_omits_switch_mode_by_default():
+    from chatty_commander.advisors.providers import ResponsesProvider
+
+    config = _provider_config({"browser_analyst": {"enabled": False}})
+    config["llm_api_mode"] = "responses"
+    provider = ResponsesProvider(config)
+    assert "switch_mode" not in _agent_tool_names(provider)

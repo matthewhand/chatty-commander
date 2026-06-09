@@ -108,8 +108,10 @@ class DummyAdapter:
 class DiscordBridgeAdapter:
     """Adapter routing Discord/Slack bridge messages to an advisor sink.
 
-    The external Node.js bridge (see tools/bridge_nodejs.py) delivers platform
-    messages; this adapter forwards them to the advisors service via ``feed``.
+    The bridge is an external process (e.g. a Node.js Discord/Slack connector)
+    speaking the advisors bridge protocol documented in
+    ``docs/developer/ADAPTERS.md``; it delivers platform messages and this
+    adapter forwards them to the advisors service via ``feed``.
     """
 
     name = "discord_bridge"

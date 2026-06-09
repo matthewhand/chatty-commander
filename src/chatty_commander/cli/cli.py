@@ -556,6 +556,35 @@ def run_interactive_shell(
     logger.info("Exiting interactive shell")
 
 
+def build_advisor_sink(config, logger):
+    """Construct the advisors sink (AdvisorsService) when advisors are enabled.
+
+    Returns None when advisors are disabled in config, or when AdvisorsService
+    cannot be constructed (missing optional deps/config) — in the latter case a
+    warning is logged and the orchestrator degrades gracefully (it warns again
+    and falls back to a placeholder bridge adapter).
+    """
+    advisors_cfg = getattr(config, "advisors", None) or {}
+    enabled = (
+        advisors_cfg.get("enabled", False)
+        if isinstance(advisors_cfg, dict)
+        else getattr(advisors_cfg, "enabled", False)
+    )
+    if not enabled:
+        return None
+    try:
+        # Lazy import: advisors pull in LLM/provider machinery
+        from chatty_commander.advisors.service import AdvisorsService
+
+        return AdvisorsService(config)
+    except Exception as e:
+        logger.warning(
+            f"Advisors enabled but AdvisorsService could not be constructed; "
+            f"continuing without advisor sink: {e}"
+        )
+        return None
+
+
 def run_orchestrator_mode(
     config, model_manager, state_manager, command_executor, logger, args
 ):
@@ -577,7 +606,7 @@ def run_orchestrator_mode(
     orchestrator = ModeOrchestrator(
         config=config,
         command_sink=command_executor,
-        advisor_sink=None,
+        advisor_sink=build_advisor_sink(config, logger),
         flags=flags,
     )
     selected = orchestrator.start()

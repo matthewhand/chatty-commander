@@ -514,6 +514,10 @@ def run_orchestrator_mode(
         OrchestratorFlags,
     )
 
+    # Shared with cli.cli: builds an AdvisorsService sink when advisors are
+    # enabled, logging a warning and returning None on construction failure.
+    from chatty_commander.cli.cli import build_advisor_sink
+
     flags = OrchestratorFlags(
         enable_text=bool(getattr(args, "enable_text", False)),
         enable_gui=bool(getattr(args, "gui", False)),
@@ -525,7 +529,7 @@ def run_orchestrator_mode(
     orchestrator = ModeOrchestrator(
         config=config,
         command_sink=command_executor,
-        advisor_sink=None,
+        advisor_sink=build_advisor_sink(config, logger),
         flags=flags,
     )
     selected = orchestrator.start()
