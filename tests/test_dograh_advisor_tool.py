@@ -8,7 +8,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from chatty_commander.advisors.tools.dograh_call import dograh_place_call_tool
-from chatty_commander.integrations.dograh_client import DograhUnavailableError
+from chatty_commander.integrations.dograh_client import (
+    DograhHTTPError,
+    DograhUnavailableError,
+)
 
 
 @patch("chatty_commander.integrations.dograh_client.DograhClient")
@@ -59,6 +62,38 @@ def test_place_call_request_error_returns_status_string(mock_cls):
 
     assert "dograh call failed" in result
     assert "boom" in result
+    instance.close.assert_called_once()
+
+
+@patch("chatty_commander.integrations.dograh_client.DograhClient")
+def test_place_call_http_error_logs_status_detail_not_url(mock_cls, caplog):
+    """The warning log must carry status/detail but never the internal
+    request URL, which could leak into surfaced logs."""
+    instance = MagicMock()
+    instance.initiate_call.side_effect = DograhHTTPError(
+        status_code=400,
+        detail="telephony_not_configured",
+        method="POST",
+        url="http://internal.dograh:3010/api/v1/telephony/initiate-call",
+    )
+    mock_cls.return_value = instance
+
+    with caplog.at_level(
+        "WARNING", logger="chatty_commander.advisors.tools.dograh_call"
+    ):
+        result = dograh_place_call_tool(42, "+15555550100")
+
+    assert "dograh call failed" in result
+    assert "telephony_not_configured" in result
+    assert "internal.dograh" not in result
+
+    warning_text = "\n".join(
+        rec.getMessage() for rec in caplog.records if rec.levelname == "WARNING"
+    )
+    assert "status=400" in warning_text
+    assert "telephony_not_configured" in warning_text
+    assert "internal.dograh" not in warning_text
+    assert "http" not in warning_text
     instance.close.assert_called_once()
 
 

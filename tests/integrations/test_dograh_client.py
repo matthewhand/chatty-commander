@@ -179,6 +179,32 @@ def test_http_error_extracts_dograh_detail(config: DograhConfig) -> None:
     assert err.detail == "telephony_not_configured"
     assert "telephony_not_configured" in str(err)
     assert err.method == "POST"
+    # The URL must stay available as a structured attribute...
+    assert err.url == "http://dograh.test/api/v1/telephony/initiate-call"
+    # ...but must never appear in the client-visible message.
+    assert "dograh.test" not in str(err)
+
+
+def test_http_error_str_omits_url_but_repr_keeps_it() -> None:
+    """str(e) is client-visible and must not leak the internal URL;
+    repr(e) keeps everything for server-side logs."""
+    err = DograhHTTPError(
+        status_code=400,
+        detail="telephony_not_configured",
+        method="POST",
+        url="http://internal.dograh:3010/api/v1/telephony/initiate-call",
+    )
+    msg = str(err)
+    assert "http" not in msg
+    assert "internal.dograh" not in msg
+    assert "/api/v1" not in msg
+    assert "400" in msg
+    assert "telephony_not_configured" in msg
+    # Structured attributes and repr retain the full request context.
+    assert err.url == "http://internal.dograh:3010/api/v1/telephony/initiate-call"
+    assert err.method == "POST"
+    assert "internal.dograh" in repr(err)
+    assert "POST" in repr(err)
 
 
 @respx.mock

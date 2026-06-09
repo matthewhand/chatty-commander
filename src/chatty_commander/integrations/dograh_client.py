@@ -36,6 +36,12 @@ class DograhHTTPError(DograhError):
     The ``detail`` attribute is the parsed ``detail`` field from
     dograh's JSON error body (e.g. ``"telephony_not_configured"``) when
     present, falling back to the raw text body or HTTP reason phrase.
+
+    ``str(e)`` deliberately omits the request URL — these messages end
+    up in client-visible strings (tool results, CLI output, API error
+    payloads) and must not leak internal endpoints. The full URL stays
+    available on the ``url`` attribute and in ``repr(e)`` for
+    server-side logging.
     """
 
     def __init__(self, status_code: int, detail: str, method: str, url: str) -> None:
@@ -43,7 +49,13 @@ class DograhHTTPError(DograhError):
         self.detail = detail
         self.method = method
         self.url = url
-        super().__init__(f"{method} {url} -> {status_code}: {detail}")
+        super().__init__(f"dograh request failed ({status_code}): {detail}")
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}(status_code={self.status_code!r}, "
+            f"detail={self.detail!r}, method={self.method!r}, url={self.url!r})"
+        )
 
 
 def _raise_for_status(r: httpx.Response) -> None:
