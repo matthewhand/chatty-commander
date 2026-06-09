@@ -105,6 +105,32 @@ class DummyAdapter:
         self._started = False
 
 
+class DiscordBridgeAdapter:
+    """Adapter routing Discord/Slack bridge messages to an advisor sink.
+
+    The external Node.js bridge (see tools/bridge_nodejs.py) delivers platform
+    messages; this adapter forwards them to the advisors service via ``feed``.
+    """
+
+    name = "discord_bridge"
+
+    def __init__(self, on_message: Callable[[Any], Any]) -> None:
+        self._on_message = on_message
+        self._started = False
+
+    def start(self) -> None:
+        self._started = True
+
+    def stop(self) -> None:
+        self._started = False
+
+    # Helper for tests/bridge transports to deliver a message
+    def feed(self, message: Any) -> Any:
+        if self._started:
+            return self._on_message(message)
+        return None
+
+
 class OpenWakeWordAdapter:
     """Adapter for OpenWakeWord wake word detection."""
 
@@ -168,7 +194,8 @@ class ModeOrchestrator:
     - Web mode: placeholder referencing existing FastAPI server lifecycle
     - OpenWakeWord: optional adapter placeholder
     - Computer Vision: optional adapter placeholder
-    - Discord bridge: optional adapter placeholder for Node.js bridge
+    - Discord bridge: routes Node.js bridge messages to the advisor sink
+      (falls back to a placeholder with a warning when no sink is provided)
     """
 
     def __init__(
@@ -213,7 +240,16 @@ class ModeOrchestrator:
         if self.flags.enable_discord_bridge and getattr(
             self.config, "advisors", {}
         ).get("enabled", False):
-            selected.append(DummyAdapter("discord_bridge"))
+            if self.advisor_sink is not None:
+                selected.append(
+                    DiscordBridgeAdapter(on_message=self._dispatch_advisor_message)
+                )
+            else:
+                logger.warning(
+                    "Discord bridge enabled with advisors but no advisor_sink "
+                    "provided; bridge messages will be dropped"
+                )
+                selected.append(DummyAdapter("discord_bridge"))
 
         self.adapters = selected
         return [a.name for a in selected]
@@ -235,6 +271,12 @@ class ModeOrchestrator:
     # Routing
     def _dispatch_command(self, command_name: str) -> Any:
         return self.command_sink.execute_command(command_name)
+
+    def _dispatch_advisor_message(self, message: Any) -> Any:
+        if self.advisor_sink is None:
+            logger.warning("Advisor message dropped: no advisor_sink configured")
+            return None
+        return self.advisor_sink.handle_message(message)
 
     def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection."""
