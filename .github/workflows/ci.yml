@@ -12,8 +12,6 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    # Lint/type findings are reported but do not block the test signal.
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v5

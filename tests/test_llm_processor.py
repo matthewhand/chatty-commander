@@ -1,8 +1,10 @@
 import json
 from unittest.mock import MagicMock
+
 import pytest
 
 from chatty_commander.llm.processor import CommandProcessor
+
 
 @pytest.fixture
 def mock_llm_manager():

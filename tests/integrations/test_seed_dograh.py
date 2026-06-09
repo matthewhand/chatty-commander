@@ -172,8 +172,6 @@ def test_main_with_output_redacts_stdout(
     # File must contain the real key for the test runner to consume.
     assert "DOGRAH_API_KEY=dgr_SUPER_SECRET_KEY_VALUE" in out_file.read_text()
     # File must be owner-only readable (best-effort; POSIX only).
-    import stat
-
     mode = out_file.stat().st_mode & 0o777
     assert mode == 0o600
 

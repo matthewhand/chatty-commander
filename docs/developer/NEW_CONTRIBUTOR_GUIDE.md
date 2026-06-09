@@ -33,4 +33,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full details on commit conventions, P
 
 - Open a GitHub Issue for bugs or questions
 - Check existing docs in the `docs/` folder
-- See [Architecture Overview](ARCHITECTURE_OVERVIEW.md) for system design
+- See [Architecture](ARCHITECTURE.md) for system design

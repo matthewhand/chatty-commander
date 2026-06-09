@@ -40,7 +40,7 @@ def is_safe_url(url: str) -> bool:
         # Resolve all addresses (IPv4 + IPv6)
         try:
             addr_infos = socket.getaddrinfo(hostname, None)
-        except (socket.gaierror, socket.timeout):
+        except (socket.gaierror, TimeoutError):
             return False
 
         if not addr_infos:

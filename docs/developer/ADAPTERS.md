@@ -73,4 +73,4 @@ tools.append(my_tool)
 
 ## Wake Word Model Adapters
 
-ONNX models are loaded from state directories (`models-idle/`, `models-computer/`, `models-chatty/`). Drop in any ONNX-compatible model file — see [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) for directory layout.
+ONNX models are loaded from state directories (`models-idle/`, `models-computer/`, `models-chatty/`). Drop in any ONNX-compatible model file — see [ARCHITECTURE.md](ARCHITECTURE.md) for directory layout.

@@ -1,0 +1,60 @@
+# VCS / CI
+.git
+.github
+.gitignore
+
+# Python artifacts
+**/__pycache__
+*.py[cod]
+*.egg-info
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage*
+
+# Node / frontend build trees (built and served separately)
+node_modules
+frontend
+webui
+server
+workers
+
+# Build / packaging artifacts
+build
+dist
+*.spec
+packaging
+deploy
+
+# Tests, QA and local result dumps
+tests
+qa
+verification
+test_results_*.txt
+failing_tests.txt
+conftest.py
+
+# Documentation
+docs
+*.md
+
+# Runtime data and models (mounted as volumes, not baked into the image)
+logs
+data
+models
+models-*
+uploads
+*.onnx
+MagicMock
+
+# Local environment / secrets
+.env
+.env.*
+
+# Docker files themselves
+Dockerfile
+docker-compose*.yml
+.dockerignore

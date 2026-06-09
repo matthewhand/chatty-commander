@@ -38,9 +38,11 @@ router = APIRouter()
 
 @router.get("/api/v1/version", response_model=VersionInfo)
 async def get_version() -> VersionInfo:
-    # Base version should come from a single source of truth if available
-    # Here we mirror the SystemStatus default to keep tests stable.
-    base_version = "0.2.0"
+    # Single source of truth: package metadata (pyproject.toml version)
+    # surfaced via chatty_commander.__version__.
+    from chatty_commander import __version__
+
+    base_version = __version__
 
     git_sha: str | None = None
     try:  # best-effort; avoid failing when git is unavailable

@@ -129,7 +129,7 @@ class AdvisorsService:
         personas_dict = self.config.get("personas", {}) or self.config.get(
             "context", {}
         ).get("personas", {})
-        persona_config = personas_dict.get(persona_id, {})
+        persona_config: dict[str, Any] | str = personas_dict.get(persona_id, {})
         if isinstance(persona_config, str):
             persona_config = {
                 "prompt": persona_config,

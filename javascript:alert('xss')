@@ -1,0 +1,10 @@
+{
+  "test": "safe",
+  "web_server": {
+    "host": "0.0.0.0",
+    "port": 8100,
+    "auth_enabled": true,
+    "bridge_token": null
+  },
+  "voice_only": false
+}

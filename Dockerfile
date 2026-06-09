@@ -1,88 +1,70 @@
+# syntax=docker/dockerfile:1
+
 # ================================
 # Multi-stage Docker build for ChattyCommander
 # ================================
 
-# Stage 1: Builder
-FROM python:3.11-slim as builder
+# ---- Stage 1: Builder ----
+FROM python:3.11-slim AS builder
 
-# Install system dependencies for building
-RUN apt-get update && apt-get install -y \
+# Build-only system dependencies (never shipped in the final image)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    gcc \
-    g++ \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for fast Python package management
+# uv for fast, reproducible dependency installation
 RUN pip install --no-cache-dir uv
 
-# Create virtual environment
-ENV VIRTUAL_ENV=/opt/venv
-RUN python -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-# Set working directory
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
+# Install locked production dependencies into an isolated virtualenv.
+# UV_PROJECT_ENVIRONMENT makes `uv sync` target /opt/venv instead of .venv;
+# UV_COMPILE_BYTECODE precompiles .pyc so the runtime stage can run with a
+# read-only filesystem (see docker-compose.yml) without losing startup speed.
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
-# Install Python dependencies (production only)
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
-# Stage 2: Runtime
-FROM python:3.11-slim as runtime
+# ---- Stage 2: Runtime ----
+FROM python:3.11-slim AS runtime
 
-# Install runtime system dependencies
-RUN apt-get update && apt-get install -y \
-    # Audio/video processing dependencies
-    libasound2-dev \
-    libportaudio2 \
-    alsa-utils \
-    pulseaudio-utils \
-    # Image processing
-    libjpeg-dev \
-    libpng-dev \
-    libtiff-dev \
-    # System monitoring
-    procps \
-    htop \
-    # Security and SSL
-    openssl \
+# Minimal runtime system dependencies.
+# curl is required by the HEALTHCHECK below and by the docker-compose healthcheck.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
-    wget \
-    # Timezone data
     tzdata \
-    # Cleanup
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
+# Non-root runtime user
 RUN groupadd -r -g 1000 chatty && \
-    useradd -r -g chatty -u 1000 -m -d /home/chatty -s /bin/bash chatty && \
-    mkdir -p /home/chatty && \
-    chown -R chatty:chatty /home/chatty
+    useradd -r -g chatty -u 1000 -m -d /home/chatty -s /usr/sbin/nologin chatty
 
-# Set working directory
 WORKDIR /app
 
-# Copy virtual environment from builder stage
+# Virtualenv with production dependencies only (no compilers, no dev tools)
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy application code with proper ownership
-COPY --chown=chatty:chatty . .
+# Application source. Left root-owned (world-readable) on purpose: the app
+# must not be able to modify its own code at runtime.
+COPY src/ ./src/
+COPY config.json config.json.example ./
 
-# Create necessary directories with proper permissions
-RUN mkdir -p /app/logs /app/data /app/models /app/uploads && \
-    chown -R chatty:chatty /app && \
-    chmod -R 755 /app
+# Writable directories are the only paths owned by the runtime user.
+# models-* are wakeword model locations referenced by config.json; mount real
+# models over them (see docker-compose.yml volumes).
+RUN mkdir -p /app/logs /app/data /app/models /app/uploads \
+        /app/models-idle /app/models-computer /app/models-chatty && \
+    chown chatty:chatty /app/logs /app/data /app/models /app/uploads \
+        /app/models-idle /app/models-computer /app/models-chatty
 
-# Switch to non-root user
 USER chatty
 
-# Set environment variables
 ENV PYTHONPATH=/app/src \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -90,17 +72,18 @@ ENV PYTHONPATH=/app/src \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Health check with comprehensive endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -fsS http://localhost:8000/health || exit 1
 
-# Expose port
 EXPOSE 8000
 
-# Default command with production settings
-CMD ["python", "main.py", "--web", "--no-auth", "--host", "0.0.0.0", "--port", "8000"]
+# Start the web server on :8000 (same external behavior as before; the old
+# CMD referenced /app/main.py, which never existed in the image).
+CMD ["python", "-m", "chatty_commander.cli.main", "--web", "--no-auth", "--host", "0.0.0.0", "--port", "8000"]
 
 # Metadata labels
+ARG BUILD_DATE
+ARG VCS_REF
 LABEL org.opencontainers.image.title="ChattyCommander" \
       org.opencontainers.image.description="Advanced AI-powered voice command system with web interface" \
       org.opencontainers.image.version="0.2.0" \

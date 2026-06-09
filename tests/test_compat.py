@@ -20,10 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pytest
 import warnings
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from chatty_commander import compat
+
 
 def test_load_with_alias():
     """Test that compat.load triggers a DeprecationWarning for aliased modules."""
