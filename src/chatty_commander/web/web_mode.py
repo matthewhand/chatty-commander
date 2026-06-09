@@ -76,48 +76,17 @@ except Exception:  # pragma: no cover
     configure_logging = None  # type: ignore[assignment]
     _LOGGING_CONFIG_AVAILABLE = False
 try:
-    from chatty_commander.obs.metrics import (
-        RequestMetricsMiddleware,
-        create_metrics_router,
-    )
+    from chatty_commander.obs.metrics import RequestMetricsMiddleware
     _OBS_METRICS_AVAILABLE = True
 except Exception:  # pragma: no cover - optional dependency path
     RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
-    create_metrics_router = None  # type: ignore[assignment]
     _OBS_METRICS_AVAILABLE = False
-try:
-    from chatty_commander.web.routes.audio import include_audio_routes
-except ImportError:
-    include_audio_routes = None  # type: ignore[assignment]
-from chatty_commander.web.routes.dograh import router as dograh_router
-from chatty_commander.web.routes.preferences import include_preferences_routes
-from chatty_commander.web.routes.themes import include_theme_routes
-from chatty_commander.web.routes.version import router as version_router
 from chatty_commander.web.routes.voice import include_voice_routes
 from chatty_commander.web.routes.ws import include_ws_routes
 
-# Avatar routes (optional)
-try:
-    from chatty_commander.web.routes.avatar_api import router as avatar_api_router
-except ImportError:
-    avatar_api_router = None  # type: ignore[assignment]
-
-try:
-    from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
-except ImportError:
-    avatar_ws_router = None  # type: ignore[assignment]
-
-try:
-    from chatty_commander.web.routes.avatar_selector import (
-        router as avatar_selector_router,
-    )
-except ImportError:
-    avatar_selector_router = None  # type: ignore[assignment]
-
-try:
-    from .routes.agents import router as agents_router
-except ImportError:
-    agents_router = None  # type: ignore[assignment]
+# Shared router assembly (avatar, version, dograh, metrics, agents, audio,
+# preferences, themes) — single source of truth shared with server.create_app.
+from chatty_commander.web.server import register_shared_routers
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -632,13 +601,11 @@ class WebModeServer:
         )
         app.include_router(core)
 
-        # Audio endpoints
-        if include_audio_routes is not None:
-            audio = include_audio_routes(get_config_manager=lambda: self.config_manager)
-            app.include_router(audio)
-
-        # UI theme endpoints
-        app.include_router(include_theme_routes(get_config_manager=lambda: self.config_manager))
+        # Shared routers: avatar (api/ws/selector), version, dograh, metrics,
+        # agents, audio, preferences and themes. The list lives in
+        # chatty_commander.web.server.register_shared_routers so this factory
+        # and server.create_app cannot drift apart.
+        register_shared_routers(app, self.config_manager)
 
         # Voice routing
         voice = include_voice_routes(
@@ -646,38 +613,11 @@ class WebModeServer:
         )
         app.include_router(voice)
 
-        # User preferences endpoints
-        app.include_router(
-            include_preferences_routes(get_config_manager=lambda: self.config_manager)
-        )
-
-        # Version endpoint
-        app.include_router(version_router)
-
-        # Dograh integration status + workflow proxy endpoints
-        app.include_router(dograh_router)
-
         # System info endpoints
         system_routes = include_system_routes(
             get_start_time=lambda: self.start_time
         )
         app.include_router(system_routes)
-
-        # Observability: expose /metrics/json and /metrics/prom endpoints
-        if _OBS_METRICS_AVAILABLE and create_metrics_router is not None:
-            app.include_router(create_metrics_router())
-
-        # Agents endpoints
-        if agents_router:
-            app.include_router(agents_router)
-
-        # Avatar endpoints
-        if avatar_api_router:
-            app.include_router(avatar_api_router)
-        if avatar_ws_router:
-            app.include_router(avatar_ws_router)
-        if avatar_selector_router:
-            app.include_router(avatar_selector_router)
 
         # WebSocket endpoint using extracted router
         ws = include_ws_routes(

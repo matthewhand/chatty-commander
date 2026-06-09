@@ -111,13 +111,51 @@ except ImportError:
 
 # Settings router needs to be created with config manager
 settings_router = None
-audio_router = None
 
 
 def _include_optional(app: FastAPI, name: str) -> None:
     r = globals().get(name)
     if r:
         app.include_router(r)
+
+
+def register_shared_routers(app: FastAPI, config_manager: Any = None) -> None:
+    """Register routers shared by both FastAPI app factories.
+
+    Single source of truth for the router set used by both
+    ``server.create_app`` and ``web_mode.WebModeServer._create_app``.
+    Add new shared routers here instead of duplicating the list in each
+    factory.
+
+    Covers the import-guarded routers (avatar ws/api/selector, version,
+    dograh, metrics, agents) plus the config-bound factories (audio,
+    preferences, themes).
+    """
+    for nm in (
+        "avatar_ws_router",
+        "avatar_api_router",
+        "avatar_selector_router",
+        "version_router",
+        "dograh_router",
+        "metrics_router",
+        "agents_router",
+    ):
+        _include_optional(app, nm)
+
+    if include_audio_routes is not None and config_manager:
+        app.include_router(
+            include_audio_routes(get_config_manager=lambda: config_manager)
+        )
+
+    if include_preferences_routes is not None:
+        app.include_router(
+            include_preferences_routes(get_config_manager=lambda: config_manager)
+        )
+
+    if include_theme_routes is not None:
+        app.include_router(
+            include_theme_routes(get_config_manager=lambda: config_manager)
+        )
 
 
 def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
@@ -138,18 +176,12 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
                 "AuthMiddleware unavailable; /api routes are unprotected"
             )
 
-    # Include routers that are available
-    for nm in (
-        "avatar_ws_router",
-        "avatar_api_router",
-        "avatar_selector_router",
-        "version_router",
-        "dograh_router",
-        "metrics_router",
-        "agents_router",
-        "models_router",
-        "command_authoring_router",
-    ):
+    # Routers shared with web_mode.WebModeServer._create_app (single source
+    # of truth lives in register_shared_routers above).
+    register_shared_routers(app, config_manager)
+
+    # Routers exposed only via this factory
+    for nm in ("models_router", "command_authoring_router"):
         _include_optional(app, nm)
 
     # Handle settings router separately since it needs config manager
@@ -159,23 +191,6 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             get_config_manager=lambda: config_manager
         )
         _include_optional(app, "settings_router")
-
-    if include_audio_routes is not None and config_manager:
-        global audio_router
-        audio_router = include_audio_routes(
-            get_config_manager=lambda: config_manager
-        )
-        _include_optional(app, "audio_router")
-
-    if include_preferences_routes is not None:
-        app.include_router(
-            include_preferences_routes(get_config_manager=lambda: config_manager)
-        )
-
-    if include_theme_routes is not None:
-        app.include_router(
-            include_theme_routes(get_config_manager=lambda: config_manager)
-        )
 
     # Add bridge endpoint for tests
     try:
