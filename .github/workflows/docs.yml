@@ -17,14 +17,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-<<      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Install dependencies
         run: pip install mkdocs
       - name: Build site
-        run: mkdocs build --site-dir site
+        # The repo's mkdocs.yml lives in docs/ and its implied docs_dir
+        # (docs/docs) does not exist, so generate a CI config at the repo
+        # root that serves the docs/ tree directly.
+        run: |
+          cat > mkdocs-ci.yml <<'EOF'
+          site_name: Chatty Commander
+          docs_dir: docs
+          EOF
+          mkdocs build -f mkdocs-ci.yml --site-dir site
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:

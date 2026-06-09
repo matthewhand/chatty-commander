@@ -20,8 +20,10 @@ jobs:
           VERSION_RAW="${GITHUB_REF_NAME}"
           VERSION_STRIPPED="${VERSION_RAW#v}"
           echo "version=$VERSION_RAW" >> $GITHUB_OUTPUT
-          if grep -q "^## \[$VERSION_STRIPPED\]" CHANGELOG.md; then
-            sed -n "/^## \\[$VERSION_STRIPPED\\]/,/^## \\[/p" CHANGELOG.md | sed '1d;$d' > RELEASE_NOTES.md || true
+          # The changelog lives under docs/developer/, not the repo root.
+          CHANGELOG="docs/developer/CHANGELOG.md"
+          if [ -f "$CHANGELOG" ] && grep -q "^## \[$VERSION_STRIPPED\]" "$CHANGELOG"; then
+            sed -n "/^## \\[$VERSION_STRIPPED\\]/,/^## \\[/p" "$CHANGELOG" | sed '1d;$d' > RELEASE_NOTES.md || true
           fi
           if [ ! -s RELEASE_NOTES.md ]; then
             printf "## %s\n\nAutomated release.\n" "$VERSION_RAW" > RELEASE_NOTES.md
@@ -45,7 +47,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: linux-amd64
-          - os: ubuntu-22.04-arm64
+          - os: ubuntu-22.04-arm
             arch: linux-arm64
             allow_failure: true
           - os: macos-13
@@ -70,10 +72,19 @@ jobs:
         run: uv add pyinstaller
 
       - name: Build CLI (lite)
+        shell: bash
         env:
           PYINSTALLER_STRIP: "true"
         run: |
           pwd && ls -la packaging/
+          # packaging/run_cli.py was removed in the baseline reset; recreate
+          # the thin entry shim that mirrors the console-script entry point.
+          cat > packaging/run_cli.py <<'EOF'
+          from chatty_commander.cli.cli import cli_main
+
+          if __name__ == "__main__":
+              cli_main()
+          EOF
           uv run pyinstaller --onefile packaging/run_cli.py --name chatty-lite
           ls -lah dist
 
