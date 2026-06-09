@@ -33,66 +33,66 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 - [x] **`_execute_dograh_call` reason-string tests** — DograhError vs generic-Exception reason phrases pinned, plus success-log assertion (`tests/test_command_executor*.py`)
 - [x] **Orchestrator `advisor_sink` actually used** — `DiscordBridgeAdapter` routes messages through it; warns when discord bridge + advisors enabled with no sink ([`src/chatty_commander/app/orchestrator.py:108,243`](src/chatty_commander/app/orchestrator.py))
 
-### FOSS governance & packaging (0/8)
+### FOSS governance & packaging (8/8)
 
-- [ ] **Root `CONTRIBUTING.md`** — exists only at `docs/developer/CONTRIBUTING.md`; add a root file (can be a pointer)
-- [ ] **`CODE_OF_CONDUCT.md`** at root
-- [ ] **`SECURITY.md`** at root (vulnerability reporting policy)
-- [ ] **Root `CHANGELOG.md`** — exists only at `docs/developer/CHANGELOG.md`; add root file or pointer
-- [ ] **Fix CI workflow YAML** ([.github/workflows/ci.yml](.github/workflows/ci.yml))
-  - [ ] Duplicate / mis-indented `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` env entries (lines ~55-57, ~212-213)
-  - [ ] `${{ env.PYTHON_VERSION }}` referenced (lines ~124, ~153) but never defined in any `env:` block
-- [ ] **Fix README broken image** — `README.md:5` references `docs/images/dashboard.png`; the file lives at `docs/screenshots/dashboard.png`
-- [ ] **Version consistency** — `pyproject.toml` declares `0.2.0` but installed metadata reported `0.1.0`; reinstall/retag so published version matches
-- [ ] **Add the dograh block to `.env.example`** — README points users at "the dograh block in `.env.example`" (`DOGRAH_BASE_URL`, `DOGRAH_API_KEY`), but the file has no dograh keys
+- [x] **Root `CONTRIBUTING.md`** — exists only at `docs/developer/CONTRIBUTING.md`; add a root file (can be a pointer)
+- [x] **`CODE_OF_CONDUCT.md`** at root
+- [x] **`SECURITY.md`** at root (vulnerability reporting policy)
+- [x] **Root `CHANGELOG.md`** — exists only at `docs/developer/CHANGELOG.md`; add root file or pointer
+- [x] **Fix CI workflow YAML** ([.github/workflows/ci.yml](.github/workflows/ci.yml))
+  - [x] Duplicate / mis-indented `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` env entries (lines ~55-57, ~212-213)
+  - [x] `${{ env.PYTHON_VERSION }}` referenced (lines ~124, ~153) but never defined in any `env:` block
+- [x] **Fix README broken image** — `README.md:5` references `docs/images/dashboard.png`; the file lives at `docs/screenshots/dashboard.png`
+- [x] **Version consistency** — `pyproject.toml` declares `0.2.0` but installed metadata reported `0.1.0`; reinstall/retag so published version matches
+- [x] **Add the dograh block to `.env.example`** — README points users at "the dograh block in `.env.example`" (`DOGRAH_BASE_URL`, `DOGRAH_API_KEY`), but the file has no dograh keys
 
 ---
 
 ## P1 — Quality
 
-### Web backend & API surface (3/5)
+### Web backend & API surface (5/5)
 
 - [x] **`/api/audio/devices` + `POST /api/audio/device`** served ([`src/chatty_commander/web/routes/audio.py:94`](src/chatty_commander/web/routes/audio.py))
 - [x] **`GET/PUT /api/preferences`** served ([`src/chatty_commander/web/routes/preferences.py`](src/chatty_commander/web/routes/preferences.py))
 - [x] **`GET /api/themes` + `GET/POST /api/theme`** served ([`src/chatty_commander/web/routes/themes.py`](src/chatty_commander/web/routes/themes.py))
-- [ ] **Unify `web_mode._create_app` vs `server.create_app`** — both factories exist and both now wire auth + dograh, but they diverge in router-wiring pattern (explicit `include_router` vs `_include_optional` loop). Consolidate to one; `web_mode.py` is the production path — `server.py` should delegate or be deleted.
-- [ ] **Resolve remaining frontend-called endpoints with no backend** — decide implement vs delete the client methods:
-  - [ ] `/api/backup`, `/api/restore`
-  - [ ] `/api/system/restart`, `/api/system/shutdown`, `/api/system/update`, update checks
-  - [ ] `/api/logs`, `/api/models` (+ load/unload), `/api/command/test`
-  - [ ] `/api/config/export|import|reset|validate`
+- [x] **Unify `web_mode._create_app` vs `server.create_app`** — both factories exist and both now wire auth + dograh, but they diverge in router-wiring pattern (explicit `include_router` vs `_include_optional` loop). Consolidate to one; `web_mode.py` is the production path — `server.py` should delegate or be deleted.
+- [x] **Resolve remaining frontend-called endpoints with no backend** — decide implement vs delete the client methods:
+  - [x] `/api/backup`, `/api/restore`
+  - [x] `/api/system/restart`, `/api/system/shutdown`, `/api/system/update`, update checks
+  - [x] `/api/logs`, `/api/models` (+ load/unload), `/api/command/test`
+  - [x] `/api/config/export|import|reset|validate`
 
-### Dead code — Python (0/4)
+### Dead code — Python (4/4)
 
-- [ ] **Delete the shadow `src/chatty_commander/tools/` package** — the import-resolution footgun that caused the `..tools.X` wrong-package bug (fixed in `69a124d0`). Move the incidental CLI utilities under `advisors/tools/` or `cli/`; verify zero production imports first (only test infra references it today).
-- [ ] **`providers/` package orphaned** — `src/chatty_commander/providers/ollama_provider.py` has no `__init__.py` and zero importers; delete or integrate with `advisors/providers.py`
-- [ ] **`advisors/tools/switch_mode.py` never registered** — defined and tested but never instantiated as an advisor tool (compare `dograh_call`'s registration in `advisors/providers.py`); wire it in or remove
-- [ ] **`app/helpers.py` unused in production** — `ensure_directory_exists` / `format_command_output` / `parse_model_keybindings` only imported by tests; delete or integrate
+- [x] **Delete the shadow `src/chatty_commander/tools/` package** — the import-resolution footgun that caused the `..tools.X` wrong-package bug (fixed in `69a124d0`). Move the incidental CLI utilities under `advisors/tools/` or `cli/`; verify zero production imports first (only test infra references it today).
+- [x] **`providers/` package orphaned** — `src/chatty_commander/providers/ollama_provider.py` has no `__init__.py` and zero importers; delete or integrate with `advisors/providers.py`
+- [x] **`advisors/tools/switch_mode.py` never registered** — defined and tested but never instantiated as an advisor tool (compare `dograh_call`'s registration in `advisors/providers.py`); wire it in or remove
+- [x] **`app/helpers.py` unused in production** — `ensure_directory_exists` / `format_command_output` / `parse_model_keybindings` only imported by tests; delete or integrate
 
-### Dead code — frontend (0/7)
+### Dead code — frontend (5/7)
 
-- [ ] **Delete `LogMessageItem.tsx`** — exported, never imported (`webui/frontend/src/components/LogMessageItem.tsx`)
-- [ ] **Drop `classnames` dependency** — zero imports; styling is DaisyUI/Tailwind (`webui/frontend/package.json:12`)
-- [ ] **`web-vitals` collected but discarded** — `reportWebVitals()` called with no handler (`webui/frontend/src/index.tsx`); add a handler or remove the dependency
-- [ ] **Prune dead `apiService.js` methods** — backup/restore, restart/shutdown/update, logs, models load/unload, config export/import/reset/validate, testCommand remain uncalled (preferences/themes methods are now live against the new backend routes)
+- [x] **Delete `LogMessageItem.tsx`** — exported, never imported (`webui/frontend/src/components/LogMessageItem.tsx`)
+- [x] **Drop `classnames` dependency** — zero imports; styling is DaisyUI/Tailwind (`webui/frontend/package.json:12`)
+- [x] **`web-vitals` collected but discarded** — `reportWebVitals()` called with no handler (`webui/frontend/src/index.tsx`); add a handler or remove the dependency
+- [x] **Prune dead `apiService.js` methods** — backup/restore, restart/shutdown/update, logs, models load/unload, config export/import/reset/validate, testCommand remain uncalled (preferences/themes methods are now live against the new backend routes)
 - [ ] **Audio device "test" handlers are fake** — `handleTestMic`/`handleTestOutput` just set flags and timeout ("Simulate 3s test", `webui/frontend/src/pages/ConfigurationPage.tsx:250-258`); implement against the real audio endpoints or remove the buttons
-- [ ] **Remove stale repro e2e specs** — `webui/frontend/tests/e2e/reproduction.spec.ts`, `repro_ws.spec.ts`; fold useful assertions into the functional suites
+- [x] **Remove stale repro e2e specs** — `webui/frontend/tests/e2e/reproduction.spec.ts`, `repro_ws.spec.ts`; fold useful assertions into the functional suites
 - [ ] **Delete legacy `frontend/web-app/`, `frontend/desktop-app/`, and root `server/` dirs** — old Next.js build artifacts; `webui/frontend/` is the only live UI. Verify no references before deleting.
 
-### Testing (1/3)
+### Testing (2/3)
 
 - [x] **Python suite green** — the pre-reset backlog of 85+ failing tests (config edge cases, command executor, states, metrics) is resolved; full `uv run pytest` passes on `main`
-- [ ] **Frontend unit tests** — `webui/frontend/package.json` has no `test` script at all (only `test:e2e` Playwright). Add Vitest + React Testing Library and cover the providers/components that currently only have e2e coverage.
+- [x] **Frontend unit tests** — `webui/frontend/package.json` has no `test` script at all (only `test:e2e` Playwright). Add Vitest + React Testing Library and cover the providers/components that currently only have e2e coverage.
 - [ ] **Raise Python coverage on thin areas** — web routes sit at 20-38%, `avatar_ws.py` at ~28% per the audit; prioritize routes that now carry auth and preference state
 
-### Documentation (1/6)
+### Documentation (6/6)
 
 - [x] **README "Optional: dograh voice-call integration" section** — compose overlay, `.env` block, seed script (`README.md:23`)
-- [ ] **Fix stale screenshot refs in `docs/user-guide/02_CONFIGURATION.md`** — lines 31/37/47/53 reference `configuration-general/models/llm/services.png` which don't exist
-- [ ] **Remove dead doc references** — `AVATAR_GUI.md` (from `docs/developer/WEBUI_CONNECTIVITY.md:60`), `ARCHITECTURE_OVERVIEW.md` (from `NEW_CONTRIBUTOR_GUIDE.md:36`, `ADAPTERS.md:76`); also prune the removed `/avatar/ws` docs in WEBUI_CONNECTIVITY.md
-- [ ] **Refresh `STRUCTURE.md` / `ARCHITECTURE.md`** — they describe `deploy/k8s/` and `server/workers/` which don't exist; active frontend is `webui/frontend/`
-- [ ] **Refresh `docs/developer/WEBUI_ISSUES.md`** — claims `/api/v1/audio/devices` is missing; audio, preferences, and theme endpoints now exist
-- [ ] **Regenerate `docs/API.md`** — stamped 2026-03-05, truncates at ~line 100, missing all `/api/v1/dograh/*` and the new audio/preferences/themes endpoints
+- [x] **Fix stale screenshot refs in `docs/user-guide/02_CONFIGURATION.md`** — lines 31/37/47/53 reference `configuration-general/models/llm/services.png` which don't exist
+- [x] **Remove dead doc references** — `AVATAR_GUI.md` (from `docs/developer/WEBUI_CONNECTIVITY.md:60`), `ARCHITECTURE_OVERVIEW.md` (from `NEW_CONTRIBUTOR_GUIDE.md:36`, `ADAPTERS.md:76`); also prune the removed `/avatar/ws` docs in WEBUI_CONNECTIVITY.md
+- [x] **Refresh `STRUCTURE.md` / `ARCHITECTURE.md`** — they describe `deploy/k8s/` and `server/workers/` which don't exist; active frontend is `webui/frontend/`
+- [x] **Refresh `docs/developer/WEBUI_ISSUES.md`** — claims `/api/v1/audio/devices` is missing; audio, preferences, and theme endpoints now exist
+- [x] **Regenerate `docs/API.md`** — stamped 2026-03-05, truncates at ~line 100, missing all `/api/v1/dograh/*` and the new audio/preferences/themes endpoints
 
 ### Telephony — dograh end-to-end (user actions) (0/3)
 
@@ -126,8 +126,12 @@ Test voice functionality from the webapp as if running locally: enable the micro
 - [ ] **AuthN/AuthZ depth** — token refresh + revocation, role-based access (admin/user/readonly), API-key auth for service-to-service
 - [ ] **Structured logging** — JSON log format option, request-ID tracing (per-environment log levels already done)
 - [ ] **Standardized error responses** — consistent `{error, code, details, request_id}` shape; circuit-breaker/graceful-degradation for external services (LLM fallback responses already done)
-- [ ] **Container hardening** — non-root user, multi-stage builds, Trivy scanning in CI
-- [ ] **Load testing / performance baselines** — k6 or Locust scripts, p95 latency targets, CI perf regression gate
+- [ ] **Container hardening**
+  - [x] Non-root user + multi-stage Dockerfile build, `.dockerignore`
+  - [ ] Trivy scanning in CI
+- [ ] **Load testing / performance baselines**
+  - [x] k6 smoke script + measured p95 baselines (`scripts/loadtest/`, all thresholds passed: p95 ≈ 3.5-4ms local)
+  - [ ] CI perf regression gate
 
 Dropped as obsolete (verified against the repo): Kubernetes manifests (`deploy/` has no `k8s/` and none is planned), Celery/RQ task queue and Redis caching (no such deps in `pyproject.toml`), Alembic migrations (no DB-backed runtime models), PagerDuty/OpsGenie alerting, the avatar-GUI removal notes (already done — see "Far-from-finished features" for what remains).
 
