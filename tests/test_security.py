@@ -55,11 +55,14 @@ class TestSecurity:
             # Empty paths should be handled gracefully (defaults applied)
             assert "general" in config.config_data
 
-        # Test that save operation doesn't create dangerous files
+        # Test that save operation doesn't create dangerous files.
+        # Confine the write to temp_dir (flattened to a single filename) so a
+        # payload-named file is never created in the repo root or elsewhere.
         if malicious_input and ".." not in malicious_input:
-            # For safe paths, save should work
+            config.config_file = str(
+                temp_dir / malicious_input.replace("/", "_").replace("\\", "_")
+            )
             config.config_data = {"test": "safe"}
-            # Use test utility to ensure no exceptions
             try:
                 config.save_config()
             except Exception:
