@@ -658,6 +658,22 @@ def main():
     web_cfg.update({"host": host, "port": port, "auth_enabled": auth_enabled})
     config.web_server = web_cfg
 
+    # Fail fast when required env vars for explicitly enabled features are
+    # missing (ROADMAP "Secrets validation at startup"). The config wizard is
+    # exempt so users can still run it to fix their setup.
+    if not getattr(args, "config", False):
+        from chatty_commander.app.env_validation import (
+            EnvValidationError,
+            validate_startup_env,
+        )
+
+        try:
+            validate_startup_env(config, log=logger)
+        except EnvValidationError as e:
+            logger.error(str(e))
+            print(str(e), file=sys.stderr)
+            return 1
+
     global ModelManager, StateManager, CommandExecutor
     if ModelManager is None:
         from chatty_commander.app.model_manager import ModelManager as _ModelManager

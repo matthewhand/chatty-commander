@@ -810,6 +810,22 @@ def cli_main():
             return 1
         return 0
 
+    # Fail fast when required env vars for explicitly enabled features are
+    # missing (ROADMAP "Secrets validation at startup"). Pure-utility
+    # subcommands (list/exec, handled above) and the config wizard are exempt.
+    if not getattr(args, "config", False):
+        from chatty_commander.app.env_validation import (
+            EnvValidationError,
+            validate_startup_env,
+        )
+
+        try:
+            validate_startup_env(config, log=logger)
+        except EnvValidationError as e:
+            logger.error(str(e))
+            print(str(e), file=sys.stderr)
+            return 1
+
     # Initialize AI intelligence core for enhanced conversations
     # Skip if in test mode to save resources
     if not getattr(args, "test_mode", False):
