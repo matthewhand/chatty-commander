@@ -143,7 +143,5 @@ so you can verify command phrasing without a microphone at all.
 
 ## Ready to try it yourself?
 
-Continue with the [Installation guide](./01_INSTALLATION.md), then dig into
-[Configuration](./02_CONFIGURATION.md), the
-[Dashboard & WebUI](./03_DASHBOARD_AND_WEBUI.md), and
-[Voice Modes & Commands](./04_VOICE_MODES_AND_COMMANDS.md).
+Continue with the [User Guide](./USER_GUIDE.md) — installation, configuration,
+the dashboard, and voice modes & commands, all in one place.
