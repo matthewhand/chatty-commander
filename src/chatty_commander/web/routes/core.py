@@ -40,6 +40,109 @@ from chatty_commander.utils.security import mask_sensitive_data
 
 logger = logging.getLogger(__name__)
 
+#: Default per-caller budget for POST /api/v1/command (requests per minute).
+DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE = 30.0
+
+#: Env values for CHATCOMM_COMMAND_RATE_LIMIT that disable rate limiting.
+_RATE_LIMIT_DISABLED_VALUES = frozenset({"0", "off", "false", "disabled", "none"})
+
+
+def _resolve_command_rate_limit() -> float | None:
+    """Resolve the command-endpoint rate limit (requests/minute) from the env.
+
+    - ``CHATCOMM_COMMAND_RATE_LIMIT=<n>`` sets the limit explicitly.
+    - ``CHATCOMM_COMMAND_RATE_LIMIT=0|off|false|disabled|none`` disables it.
+    - Unset: defaults to :data:`DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE`, except
+      under pytest (``PYTEST_CURRENT_TEST`` present) where it is disabled so
+      existing tests hammering the endpoint stay deterministic.
+
+    Returns the limit in requests per minute, or ``None`` when disabled.
+    """
+    raw = os.environ.get("CHATCOMM_COMMAND_RATE_LIMIT")
+    if raw is not None:
+        value_str = raw.strip().lower()
+        if value_str in _RATE_LIMIT_DISABLED_VALUES:
+            return None
+        try:
+            value = float(value_str)
+        except ValueError:
+            logger.warning(
+                "Invalid CHATCOMM_COMMAND_RATE_LIMIT %r; using default %s/min",
+                raw,
+                DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE,
+            )
+            return DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE
+        return value if value > 0 else None
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return None
+    return DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE
+
+
+class TokenBucketRateLimiter:
+    """Dependency-free, thread-safe in-memory token bucket, keyed per caller.
+
+    Each key gets a bucket of ``capacity`` tokens (defaults to the per-minute
+    rate, i.e. the full minute budget may be spent as a burst) refilled at
+    ``rate_per_minute / 60`` tokens per second.
+    """
+
+    def __init__(
+        self,
+        rate_per_minute: float,
+        *,
+        burst: float | None = None,
+        time_fn: Callable[[], float] = time.monotonic,
+        max_keys: int = 1024,
+    ) -> None:
+        if rate_per_minute <= 0:
+            raise ValueError("rate_per_minute must be positive")
+        self.rate = rate_per_minute / 60.0
+        self.capacity = float(burst) if burst is not None else max(1.0, rate_per_minute)
+        self._time_fn = time_fn
+        self._max_keys = max_keys
+        self._lock = threading.Lock()
+        # key -> (tokens, last_update_timestamp)
+        self._buckets: dict[str, tuple[float, float]] = {}
+
+    def try_acquire(self, key: str) -> tuple[bool, float]:
+        """Consume one token for ``key``.
+
+        Returns ``(allowed, retry_after_seconds)``; ``retry_after_seconds`` is
+        0.0 when allowed.
+        """
+        now = self._time_fn()
+        with self._lock:
+            tokens, last = self._buckets.get(key, (self.capacity, now))
+            tokens = min(self.capacity, tokens + (now - last) * self.rate)
+            if tokens >= 1.0:
+                self._buckets[key] = (tokens - 1.0, now)
+                self._prune_locked(now)
+                return True, 0.0
+            self._buckets[key] = (tokens, now)
+            return False, (1.0 - tokens) / self.rate
+
+    def _prune_locked(self, now: float) -> None:
+        """Drop fully-refilled (idle) buckets once the table grows too large."""
+        if len(self._buckets) <= self._max_keys:
+            return
+        stale = [
+            key
+            for key, (tokens, last) in self._buckets.items()
+            if tokens + (now - last) * self.rate >= self.capacity
+        ]
+        for key in stale:
+            del self._buckets[key]
+
+
+def _rate_limit_key(request: Request) -> str:
+    """Identify the caller: API key when provided, client IP otherwise."""
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        return f"key:{api_key}"
+    client = request.client
+    return f"ip:{client.host if client else 'unknown'}"
+
+
 ALLOWED_CONFIG_KEYS = frozenset(
     {
         "general",
@@ -390,9 +493,27 @@ def include_core_routes(
         except Exception as err:
             raise HTTPException(status_code=400, detail=str(err)) from err
 
+    # Per-router token bucket for the command endpoint. Resolved once at
+    # router construction; None means rate limiting is disabled (the default
+    # under pytest — see _resolve_command_rate_limit).
+    _command_rate = _resolve_command_rate_limit()
+    command_rate_limiter = (
+        TokenBucketRateLimiter(_command_rate) if _command_rate is not None else None
+    )
+
     @router.post("/api/v1/command", response_model=CommandResponse)
-    async def execute_command(request: CommandRequest):
+    async def execute_command(request: CommandRequest, http_request: Request):
         counters["command_post"] += 1
+        if command_rate_limiter is not None:
+            allowed, retry_after = command_rate_limiter.try_acquire(
+                _rate_limit_key(http_request)
+            )
+            if not allowed:
+                raise HTTPException(
+                    status_code=429,
+                    detail="Rate limit exceeded for command execution",
+                    headers={"Retry-After": str(max(1, int(retry_after + 0.999)))},
+                )
         start_time = time.time()
         try:
             # Delegate to provided executor bridge to ensure consistent integration surface
