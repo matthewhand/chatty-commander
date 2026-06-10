@@ -300,3 +300,52 @@ class TestMaskSensitiveData:
         masked_list = mask_sensitive_data(data_list)
         assert masked_list[0]["api_key"] == "********"
         assert masked_list[1]["other"] == "public"
+
+
+class TestMaskSensitiveDataBypasses:
+    """Attack-shaped tests: key-name variants and container shapes that
+    previously evaded masking (closed PR #626)."""
+
+    def test_key_name_variants_are_masked(self):
+        data = {
+            "Api-Key": "leak1",
+            "apiKey": "leak2",
+            "API KEY": "leak3",
+            "apikey": "leak4",
+            "X-Api-Key": "leak5",
+            "databaseUrl": "postgresql://user:pass@host/db",
+            "DATABASE-URL": "postgresql://user:pass@host/db",
+            "accessToken": "leak6",
+            "Bridge.Token": "leak7",
+        }
+        masked = mask_sensitive_data(data)
+        for key, value in masked.items():
+            assert value == "********", f"{key} leaked: {value!r}"
+
+    def test_non_str_keys_do_not_break_recursion(self):
+        data = {42: {"api_key": "leak"}, None: [{"password": "leak"}]}
+        masked = mask_sensitive_data(data)
+        assert masked[42]["api_key"] == "********"
+        assert masked[None][0]["password"] == "********"
+
+    def test_deeply_nested_lists_and_dicts(self):
+        data = {"outer": [[{"inner": {"Api-Key": "leak"}}]]}
+        masked = mask_sensitive_data(data)
+        assert masked["outer"][0][0]["inner"]["Api-Key"] == "********"
+
+    def test_dict_inside_tuple_is_masked(self):
+        data = {"items": ({"api_key": "leak"}, "ok")}
+        masked = mask_sensitive_data(data)
+        assert masked["items"][0]["api_key"] == "********"
+        assert masked["items"][1] == "ok"
+
+    def test_auth_key_variants(self):
+        data = {"AUTH": "user:pass", "auth": {"password": "leak", "username": "admin"}}
+        masked = mask_sensitive_data(data)
+        assert masked["AUTH"] == "********"
+        assert masked["auth"]["password"] == "********"
+        assert masked["auth"]["username"] == "admin"
+
+    def test_legitimate_keys_untouched(self):
+        data = {"monkey": "see", "donkey_count": 3, "authority": "rbac", "broken": True}
+        assert mask_sensitive_data(data) == data
