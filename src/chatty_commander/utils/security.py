@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import re
 import secrets
 from typing import Any
 
@@ -38,25 +39,41 @@ def constant_time_compare(provided: str | None, expected: str | None) -> bool:
     )
 
 
-def mask_sensitive_data(data: Any) -> Any:
-    """Recursively mask sensitive keys in a dictionary or list."""
-    sensitive_patterns = {
-        "api_key",
-        "api_token",
-        "access_token",
-        "auth_token",
-        "bridge_token",
+# Patterns are matched against keys normalized to lowercase alphanumerics,
+# so "Api-Key", "apiKey", "API KEY" and "api_key" all reduce to "apikey".
+_SENSITIVE_KEY_PATTERNS = frozenset(
+    {
+        "apikey",
+        "apitoken",
+        "accesstoken",
+        "authtoken",
+        "bridgetoken",
         "password",
         "passwd",
         "secret",
-        "database_url",
+        "databaseurl",
         "token",
     }
+)
 
+_KEY_NORMALIZE_RE = re.compile(r"[^a-z0-9]+")
+
+
+def _is_sensitive_key(key: Any) -> bool:
+    normalized = _KEY_NORMALIZE_RE.sub("", str(key).lower())
+    return any(p in normalized for p in _SENSITIVE_KEY_PATTERNS)
+
+
+def mask_sensitive_data(data: Any) -> Any:
+    """Recursively mask sensitive keys in dicts, lists and tuples.
+
+    Keys are matched case-insensitively and separator-insensitively, so
+    variants like "Api-Key", "apiKey" and "API KEY" cannot bypass masking.
+    """
     if isinstance(data, dict):
         masked = {}
         for k, v in data.items():
-            if any(p in str(k).lower() for p in sensitive_patterns):
+            if _is_sensitive_key(k):
                 masked[k] = "********"
             elif str(k).lower() == "auth":
                 # Special case for 'auth' which often contains credentials
@@ -69,4 +86,6 @@ def mask_sensitive_data(data: Any) -> Any:
         return masked
     elif isinstance(data, list):
         return [mask_sensitive_data(item) for item in data]
+    elif isinstance(data, tuple):
+        return tuple(mask_sensitive_data(item) for item in data)
     return data

@@ -776,7 +776,9 @@ class TestWebModeServer:
         response = test_client.put("/api/v1/config", json=new_config)
         assert response.status_code == 500
         data = response.json()
-        assert "detail" in data
+        # Standardized error envelope from web/errors.py
+        assert "error" in data
+        assert "code" in data
 
     def test_get_state_endpoint(self, test_client, web_server):
         response = test_client.get("/api/v1/state")

@@ -130,8 +130,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # microphone=(self) so the Voice Test page can call getUserMedia;
+        # everything else stays denied.
         response.headers["Permissions-Policy"] = (
-            "geolocation=(), microphone=(), camera=()"
+            "geolocation=(), microphone=(self), camera=()"
         )
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
@@ -589,9 +591,36 @@ class WebModeServer:
 
         app.add_middleware(ResponseTimeMiddleware)
 
-        # CORS policy — delegate to shared apply_cors() for consistency
+        # CORS policy — delegate to shared apply_cors() for consistency.
+        # SECURITY: even in no_auth (dev) mode the allowlist stays pinned to
+        # localhost origins. no_auth disables authentication entirely, so a
+        # wildcard origin would let any website the user happens to visit
+        # drive this API from their browser and read the responses
+        # (drive-by attack against the local machine). Override with
+        # CHATTY_CORS_ORIGINS (comma-separated origins) when a non-localhost
+        # origin is genuinely required.
+        import os
+
         from chatty_commander.web.auth import apply_cors
-        apply_cors(app, no_auth=self.no_auth)
+
+        env_origins = os.environ.get("CHATTY_CORS_ORIGINS", "").strip()
+        if env_origins:
+            cors_origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+        elif self.no_auth:
+            # Localhost-only defaults covering the bundled frontend dev
+            # server (vite on :3000) and the API port itself (:8100).
+            cors_origins = [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:8100",
+                "http://127.0.0.1:8100",
+            ]
+        else:
+            cors_origins = ["http://localhost:3000"]
+        # no_auth=False is deliberate: apply_cors(no_auth=True) hardcodes a
+        # wildcard; passing the explicit origin list keeps it restricted
+        # (apply_cors still disables credentials if "*" is supplied via env).
+        apply_cors(app, no_auth=False, origins=cors_origins)
 
         # Core REST via extracted router (status/config/state/command)
         core = include_core_routes(
