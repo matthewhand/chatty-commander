@@ -104,7 +104,7 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 
 ## P2 — Post-launch
 
-### In-browser voice testing (4/5)
+### In-browser voice testing (5/5)
 
 Test voice functionality from the webapp as if running locally: enable the microphone in the browser and watch what the pipeline does with what you say.
 
@@ -112,7 +112,7 @@ Test voice functionality from the webapp as if running locally: enable the micro
 - [x] **Stream browser audio to the backend** — over the existing `/ws` channel or a dedicated `/ws/audio` endpoint, feeding the same wakeword → transcription → command-matching pipeline used locally (reuses P2 WebRTC bridge groundwork below)
 - [x] **Live action feedback panel** — show each pipeline stage as it happens: wake word detected → transcript → matched command → action taken (keypress/URL/system/dograh call) with success/failure and timing
 - [x] **Dry-run mode (default)** — run detection and matching for real but stub action execution, reporting "would have pressed ctrl+shift+x" so remote-browser testing can't fire arbitrary system actions; explicit opt-in to live execution, auth-gated
-- [ ] **E2E test** — Playwright with a prerecorded audio fixture via `--use-fake-device-for-media-stream`, asserting the feedback panel shows the expected command and dry-run action
+- [x] **E2E test** — Playwright with a prerecorded audio fixture via `--use-fake-device-for-media-stream`, asserting the feedback panel shows the expected command and dry-run action
 
 ### WebRTC audio bridge (0/3)
 
@@ -135,16 +135,16 @@ Test voice functionality from the webapp as if running locally: enable the micro
 
 Dropped as obsolete (verified against the repo): Kubernetes manifests (`deploy/` has no `k8s/` and none is planned), Celery/RQ task queue and Redis caching (no such deps in `pyproject.toml`), Alembic migrations (no DB-backed runtime models), PagerDuty/OpsGenie alerting, the avatar-GUI removal notes (already done — see "Far-from-finished features" for what remains).
 
-### Security backlog — topics from closed bot PRs (0/6)
+### Security backlog — topics from closed bot PRs (6/6)
 
 Distinct topics raised by the June 2026 bot-PR flood (PRs #617-#649, closed as stale/duplicate — branches targeted pre-reset code). Each needs verification against current code before acting:
 
-- [ ] **CORS restriction in `--no-auth` mode** (from #624) — check what origins the dev server allows when auth is off
-- [ ] **`sanitize_config_data` dictionary-key bypass** (from #626) — verify key-name masking in `utils/security.py` can't be sidestepped by nesting
-- [ ] **Command-injection review of command execution web path** (from #631/#632/#640) — re-audit `command_executor` shell/system actions reachable via `/api/v1/command`
-- [ ] **Path traversal in models route** (from #641) — confirm the #512-era fix covers `web/routes/models.py` upload/download/delete
-- [ ] **SSRF via DNS rebinding** (from #644) — `utils/url_validator.py` resolves-then-fetches; check TOCTOU between validation and request
-- [ ] **Rate limiting on command execution** (from #639) — decide whether `/api/v1/command` needs per-key throttling
+- [x] **CORS restriction in `--no-auth` mode** (from #624) — check what origins the dev server allows when auth is off
+- [x] **`sanitize_config_data` dictionary-key bypass** (from #626) — verify key-name masking in `utils/security.py` can't be sidestepped by nesting
+- [x] **Command-injection review of command execution web path** (from #631/#632/#640) — re-audit `command_executor` shell/system actions reachable via `/api/v1/command`
+- [x] **Path traversal in models route** (from #641) — confirm the #512-era fix covers `web/routes/models.py` upload/download/delete
+- [x] **SSRF via DNS rebinding** (from #644) — `utils/url_validator.py` resolves-then-fetches; check TOCTOU between validation and request
+- [x] **Rate limiting on command execution** (from #639) — decide whether `/api/v1/command` needs per-key throttling
 
 ### UI consolidation (0/3)
 
