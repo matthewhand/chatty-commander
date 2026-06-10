@@ -40,12 +40,22 @@ from logging.handlers import RotatingFileHandler
 _sys.modules.setdefault("utils", _sys.modules.get("utils", type(_sys)("utils")))
 _sys.modules["utils.logger"] = _sys.modules[__name__]
 
+try:
+    # Request-ID context shared with the web request-ID middleware so JSON log
+    # records emitted inside a request automatically carry its X-Request-ID.
+    from chatty_commander.utils.logging_config import get_request_id
+except Exception:  # pragma: no cover - defensive; logging_config has no heavy deps
+
+    def get_request_id() -> str:
+        return ""
+
 
 class JSONFormatter(logging.Formatter):
     """JSON formatter for log records.
 
     Formats log records as JSON objects with structured data including
-    timestamp, logger name, level, message, and exception information.
+    timestamp, logger name, level, message, request_id (when a request
+    context is active — see RequestIdMiddleware) and exception information.
     """
 
     def format(self, record):
@@ -63,6 +73,9 @@ class JSONFormatter(logging.Formatter):
             "level": record.levelname,
             "message": record.getMessage(),
         }
+        request_id = get_request_id()
+        if request_id:
+            log_entry["request_id"] = request_id
         if record.exc_info:
             log_entry["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_entry)
@@ -132,10 +145,18 @@ def setup_logger(name, log_file=None, level=logging.INFO, config=None, **kwargs)
     - Always construct RotatingFileHandler(log_file, maxBytes=1000000, backupCount=5)
       so patched handler sees the call
     - Attach handler once (avoid duplicates on repeated setup)
+
+    Format selection (opt-in structured logging):
+    - LOG_FORMAT=json in the environment switches output to one JSON object
+      per line (time/name/level/message, plus request_id inside a request).
+    - Any other value (or unset) keeps the existing human-readable format.
     """
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    if os.environ.get("LOG_FORMAT", "").strip().lower() == "json":
+        formatter: logging.Formatter = JSONFormatter()
+    else:
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
 
     logger = logging.getLogger(name)
 
