@@ -59,9 +59,13 @@ COPY config.json config.json.example ./
 # models-* are wakeword model locations referenced by config.json; mount real
 # models over them (see docker-compose.yml volumes).
 RUN mkdir -p /app/logs /app/data /app/models /app/uploads \
-        /app/models-idle /app/models-computer /app/models-chatty && \
+        /app/models-idle /app/models-computer /app/models-chatty \
+        /app/wakewords && \
     chown chatty:chatty /app/logs /app/data /app/models /app/uploads \
-        /app/models-idle /app/models-computer /app/models-chatty
+        /app/models-idle /app/models-computer /app/models-chatty \
+        /app/wakewords && \
+    # First-run default-config generation rewrites config.json in the workdir.
+    chown chatty:chatty /app/config.json
 
 USER chatty
 
