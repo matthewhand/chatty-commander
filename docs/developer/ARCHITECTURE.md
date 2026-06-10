@@ -2,6 +2,29 @@
 
 This document outlines the architectural design and organizational principles of Chatty Commander, a voice-controlled AI assistant system.
 
+## Technology stack
+
+Primary design components, most significant first. Versions reflect `pyproject.toml` and `webui/frontend/package.json`.
+
+| Layer | Component | Role |
+|---|---|---|
+| Language | **Python 3.11+** | Backend: voice pipeline, command execution, web API, CLI (`src/chatty_commander/`) |
+| Language | **TypeScript / JavaScript** | Frontend SPA (`webui/frontend/src/`) |
+| Backend framework | **FastAPI** (+ Uvicorn, Pydantic) | REST API, WebSocket channels, app factories (`web/`) |
+| Frontend framework | **React 18** (+ React Router 6) | Dashboard SPA pages and components |
+| UI styling | **Tailwind CSS 3 + DaisyUI 4** | Styling and the bundled theme system (dark/light/cyberpunk/synthwave) |
+| Frontend build | **Vite 5** | Dev server and production build |
+| Voice / ML | **OpenWakeWord + ONNX Runtime** | Edge wake-word detection driving the state machine |
+| LLM agents | **openai-agents SDK** (OpenAI/Ollama backends) | Advisors and their tools (`advisors/`) |
+| Data fetching | **TanStack React Query + axios** | Frontend API/state synchronisation |
+| Frontend extras | **framer-motion, recharts, lucide-react** | Animations, dashboard charts, icons |
+| Auth & security | **PyJWT + bcrypt** | X-API-Key middleware, token handling |
+| Python testing | **pytest** (+ coverage) | ~950 backend tests (`tests/`) |
+| Frontend testing | **Vitest + Testing Library; Playwright** | Unit tests and e2e/screenshot suites |
+| Tooling | **uv, ruff, mypy** | Environment management, lint, type-checking (all gate CI) |
+| Packaging / ops | **Docker (multi-stage, non-root), GitHub Actions, k6** | Container builds, CI/CD, load-test baselines |
+| Desktop shell | **pywebview + pystray** | Optional GUI/tray mode (partial — see ROADMAP) |
+
 ## High-Level Design
 
 Chatty Commander's architecture is divided into the **Current Implementation** and **Future Potential**. 
