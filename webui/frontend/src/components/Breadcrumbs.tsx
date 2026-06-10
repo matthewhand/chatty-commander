@@ -6,6 +6,7 @@ const pathNameMap: Record<string, string> = {
     '/commands': 'Commands',
     '/commands/authoring': 'Command Editor',
     '/configuration': 'Configuration',
+    '/voice-test': 'Voice Test',
 };
 
 const Breadcrumbs: React.FC = () => {

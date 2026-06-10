@@ -6,6 +6,7 @@ import {
     Terminal as TerminalIcon,
     LogOut as LogoutIcon,
     Wand2,
+    Mic as MicIcon,
     Menu as MenuIcon,
     X as CloseIcon
 } from "lucide-react";
@@ -45,6 +46,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon size={20} /> },
         { label: 'Commands', path: '/commands', icon: <TerminalIcon size={20} /> },
         { label: 'Command Authoring', path: '/commands/authoring', icon: <Wand2 size={20} /> },
+        { label: 'Voice Test', path: '/voice-test', icon: <MicIcon size={20} /> },
         { label: 'Configuration', path: '/configuration', icon: <SettingsIcon size={20} /> },
     ];
 
