@@ -137,13 +137,9 @@ class StateManager:
         self.callbacks.append(callback)
 
     def change_state(
-        """Change State with (self, new_state: str, callback).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self, new_state: str, callback: Callable[[str], None] | None = None
     ) -> None:
+        """Change State with (self, new_state: str, callback)."""
         # Apply conditional logic
         if new_state in self.config.state_models:
             old_state = self.current_state

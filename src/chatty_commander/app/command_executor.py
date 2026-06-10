@@ -416,6 +416,13 @@ class CommandExecutor:
         if not cmd:
             self.report_error(command_name, "missing shell command")
             return False
+
+        from chatty_commander.utils.security import is_safe_command
+        # Apply conditional logic
+        if not is_safe_command(cmd):
+            self.report_error(command_name, "unsafe shell command rejected")
+            return False
+
         try:
         # Attempt operation with error handling
             # Logic flow

@@ -20,8 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import logging
 import secrets
+import shlex
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def constant_time_compare(provided: str | None, expected: str | None) -> bool:
@@ -73,3 +77,45 @@ def mask_sensitive_data(data: Any) -> Any:
         # Logic flow
         return [mask_sensitive_data(item) for item in data]
     return data
+
+
+def is_safe_command(cmd: str) -> bool:
+    """
+    Validates if a shell command is safe to execute.
+
+    Blocks potentially harmful commands like 'sudo' and prevents path traversal
+    in arguments, while allowing most common system utilities for flexibility.
+    """
+    if not cmd or not isinstance(cmd, str):
+        return False
+
+    import os
+
+    try:
+        # 1. Parse command using shlex to respect shell quoting rules.
+        # This handles cases like 'echo "Value is $10"' safely.
+        args = shlex.split(cmd)
+        if not args:
+            return False
+
+        # 2. Extract base command and check against blacklist.
+        # We use os.path.basename to prevent bypasses like '/bin/sudo'.
+        base_cmd = os.path.basename(args[0])
+        forbidden_commands = {
+            "sudo", "su", "rm", "mv", "chmod", "chown", "curl", "wget",
+            "python", "python3", "perl", "bash", "sh", "zsh", "nc", "netcat"
+        }
+        if base_cmd in forbidden_commands:
+            logger.warning(f"Command {base_cmd!r} is forbidden: {cmd}")
+            return False
+
+        # 3. Check all arguments for path traversal patterns.
+        for arg in args[1:]:
+            if ".." in arg:
+                logger.warning(f"Path traversal detected in argument: {arg}")
+                return False
+
+        return True
+    except Exception as e:
+        logger.error(f"Error validating command: {e}")
+        return False

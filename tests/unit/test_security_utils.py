@@ -24,7 +24,7 @@
 
 import pytest
 
-from src.chatty_commander.utils.security import constant_time_compare, mask_sensitive_data
+from src.chatty_commander.utils.security import constant_time_compare, is_safe_command, mask_sensitive_data
 
 
 class TestConstantTimeCompare:
@@ -191,3 +191,37 @@ class TestMaskSensitiveData:
         assert mask_sensitive_data(123) == 123
         assert mask_sensitive_data(None) is None
         assert mask_sensitive_data(True) is True
+
+
+class TestIsSafeCommand:
+    """Tests for is_safe_command function."""
+
+    def test_allowed_commands(self):
+        """Test that common commands return True."""
+        assert is_safe_command("echo hello world") is True
+        assert is_safe_command("ls -la") is True
+        assert is_safe_command("cat file.txt") is True
+        # Shell metacharacters inside quotes should be allowed
+        assert is_safe_command("echo \"Value is $10\"") is True
+        assert is_safe_command("cat My\\ File.txt") is True
+
+    def test_forbidden_commands(self):
+        """Test that explicitly forbidden commands return False."""
+        assert is_safe_command("sudo su") is False
+        assert is_safe_command("/usr/bin/sudo su") is False
+        assert is_safe_command("rm -rf /") is False
+        assert is_safe_command("mv file1 file2") is False
+        assert is_safe_command("curl http://evil.com") is False
+
+    def test_invalid_input(self):
+        """Test that invalid inputs return False."""
+        assert is_safe_command("") is False
+        assert is_safe_command(None) is False  # type: ignore[arg-type]
+        assert is_safe_command(123) is False  # type: ignore[arg-type]
+
+    def test_path_traversal(self):
+        """Test that path traversal in any argument returns False."""
+        assert is_safe_command("ls --config=../secret") is False
+        assert is_safe_command("cat ../../../etc/passwd") is False
+        # Normal arguments should be fine
+        assert is_safe_command("ls -n /etc") is True
