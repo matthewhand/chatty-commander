@@ -125,6 +125,22 @@ time since the last message, amber while reconnecting, red when offline.
 **Tip:** This is the channel that streams state changes and telemetry to the UI in
 real time; if commands seem stale, this card is the first thing to check.
 
+## 9. Test your voice pipeline from the browser
+
+**What you do:** Open **Voice Test** in the sidebar, enable the microphone (or type
+into "Simulate a voice command"), and say a configured phrase like "lights on".
+
+**What you see:** A dry-run banner ("detected commands are reported, not executed"),
+a live input-level meter while the mic streams, and a pipeline-feedback timeline
+showing each stage as it happens: listening → transcript → command match → the
+dry-run action ("would open https://…").
+
+![Voice Test page](../screenshots/tour-09-voice-test.png)
+
+**Tip:** Dry-run is the only mode here — it's safe to poke at from any browser.
+The text-simulation input exercises the exact same matching pipeline as real audio,
+so you can verify command phrasing without a microphone at all.
+
 ## Ready to try it yourself?
 
 Continue with the [Installation guide](./01_INSTALLATION.md), then dig into
