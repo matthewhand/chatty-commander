@@ -34,6 +34,7 @@ const STAGE_LABELS: Record<string, string> = {
   wakeword: "Wake word",
   transcript: "Transcript",
   match: "Command match",
+  action: "Dry-run action",
   dry_run_action: "Dry-run action",
   "dry-run": "Dry-run action",
   error: "Error",
