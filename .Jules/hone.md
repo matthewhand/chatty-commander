@@ -1,0 +1,1 @@
+## 2024-06-10 | [Architectural Audit] | Insight: Implicit form element associations and brittle boolean loading flags lead to UX degradation. | Protocol: Enforce explicit id-htmlFor bindings for all form controls and strictly require deterministic 4-state logic (Loading, Error, Empty, Success) for all async components.

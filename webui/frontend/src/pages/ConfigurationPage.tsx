@@ -125,7 +125,8 @@ const ConfigurationPage: React.FC = () => {
     services: { voiceCommands: true, restApi: true },
   });
   const [modelList, setModelList] = useState<string[]>([]);
-  const [fetchingModels, setFetchingModels] = useState(false);
+  const [fetchModelsState, setFetchModelsState] = useState<'idle' | 'loading' | 'error' | 'success' | 'empty'>('idle');
+  const [fetchModelsError, setFetchModelsError] = useState<string | null>(null);
 
   // Audio state
   const [inputDevice, setInputDevice] = useState("");
@@ -235,15 +236,20 @@ const ConfigurationPage: React.FC = () => {
   }, []);
 
   const handleFetchModels = async () => {
-    setFetchingModels(true);
+    setFetchModelsState('loading');
+    setFetchModelsError(null);
     try {
       const models = await fetchLLMModels(config.llmBaseUrl, config.apiKey || undefined);
       setModelList(models);
       if (models.length === 0) {
-        setModelList(["(no models returned — check endpoint/key)"]);
+        setFetchModelsState('empty');
+      } else {
+        setFetchModelsState('success');
       }
-    } finally {
-      setFetchingModels(false);
+    } catch (err: unknown) {
+      setFetchModelsState('error');
+      setFetchModelsError(err instanceof Error ? err.message : 'Failed to fetch models');
+      setModelList([]);
     }
   };
 
@@ -309,35 +315,37 @@ const ConfigurationPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
+                <div className="label cursor-pointer justify-start gap-4">
                   <input
+                    id="toggle-voice-commands"
                     type="checkbox"
                     className="toggle toggle-info"
                     checked={config.services.voiceCommands}
                     onChange={handleServiceSwitch}
                     name="voiceCommands"
                   />
-                  <div className="flex flex-col">
+                  <label htmlFor="toggle-voice-commands" className="flex flex-col cursor-pointer">
                     <span className="label-text font-medium text-info">Voice Commands (always-on)</span>
                     <span className="label-text-alt text-base-content/60">Listens for audio using ONNX models via openwakeword</span>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </div>
 
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
+                <div className="label cursor-pointer justify-start gap-4">
                   <input
+                    id="toggle-rest-api"
                     type="checkbox"
                     className="toggle toggle-info"
                     checked={config.services.restApi}
                     onChange={handleServiceSwitch}
                     name="restApi"
                   />
-                  <div className="flex flex-col">
+                  <label htmlFor="toggle-rest-api" className="flex flex-col cursor-pointer">
                     <span className="label-text font-medium text-info">REST API</span>
                     <span className="label-text-alt text-base-content/60">Needed for this WebUI functionality</span>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -376,7 +384,7 @@ const ConfigurationPage: React.FC = () => {
                     onChange={(e) => setInputDevice(e.target.value)}
                   >
                     <option value="" disabled>Select device...</option>
-                    {devices?.input.map((dev: string) => (
+                    {devices?.input?.map((dev: string) => (
                       <option key={dev} value={dev}>{dev}</option>
                     ))}
                   </select>
@@ -424,7 +432,7 @@ const ConfigurationPage: React.FC = () => {
                     onChange={(e) => setOutputDevice(e.target.value)}
                   >
                     <option value="" disabled>Select device...</option>
-                    {devices?.output.map((dev: string) => (
+                    {devices?.output?.map((dev: string) => (
                       <option key={dev} value={dev}>{dev}</option>
                     ))}
                   </select>
@@ -627,13 +635,23 @@ const ConfigurationPage: React.FC = () => {
                       type="button"
                       className="btn btn-xs btn-ghost gap-1"
                       onClick={handleFetchModels}
-                      disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
+                      disabled={fetchModelsState === 'loading' || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                       title="Fetch available models from endpoint"
                     >
-                      {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
-                      {fetchingModels ? "Fetching..." : "Fetch list"}
+                      {fetchModelsState === 'loading' ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
+                      {fetchModelsState === 'loading' ? "Fetching..." : "Fetch list"}
                     </button>
                   </label>
+                  {fetchModelsState === 'error' && (
+                    <div className="alert alert-error text-xs mb-2 py-2">
+                      <span>{fetchModelsError}</span>
+                    </div>
+                  )}
+                  {fetchModelsState === 'empty' && (
+                     <div className="alert alert-warning text-xs mb-2 py-2">
+                      <span>No models returned — check endpoint/key</span>
+                    </div>
+                  )}
                   {modelList.length > 0 && !config.envOverrides.model ? (
                     <div className="flex gap-1 items-center">
                       <select

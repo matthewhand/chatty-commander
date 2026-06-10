@@ -387,7 +387,11 @@ const DashboardPage = React.memo(() => {
         <div className="card-body">
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
-          <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1">
+          <div
+            className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1"
+            role="log"
+            aria-live="polite"
+          >
             {recentMessages.length > 0 ? (
               recentMessages.map((msg, i) => (
                 <div key={i} className="text-base-content/80 leading-relaxed">{msg}</div>

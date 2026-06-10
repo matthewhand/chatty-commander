@@ -28,7 +28,7 @@ export function DynamicDropdown({
     whileElementsMounted: autoUpdate,
   });
 
-  // Handle clicking outside to close
+  // Handle clicking outside to close and Escape key
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -41,11 +41,21 @@ export function DynamicDropdown({
       }
     }
 
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+        // Optional: Return focus to the button when closing via keyboard
+        refs.reference.current?.focus();
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [refs]);
+  }, [refs, isOpen]);
 
   return (
     <>
