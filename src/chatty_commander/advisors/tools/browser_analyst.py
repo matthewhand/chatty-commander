@@ -31,7 +31,7 @@ import re
 from urllib.parse import urlparse
 
 from chatty_commander.app.config import Config
-from chatty_commander.utils.url_validator import is_safe_url
+from chatty_commander.utils.url_validator import resolve_safe_url
 
 try:
     from agents import FunctionTool
@@ -86,14 +86,25 @@ def browser_analyst_tool(url: str) -> str:
             logger.warning(f"Domain {hostname} is not in the allowlist.")
             return f"Error: Domain {hostname} is not allowed."
 
-        if not is_safe_url(url):
+        # Validate and PIN the URL to its resolved IP: fetching the pinned
+        # URL closes the DNS-rebinding TOCTOU window (no second DNS lookup
+        # between validation and connect). See utils/url_validator.PinnedURL.
+        pinned = resolve_safe_url(url)
+        if pinned is None:
             logger.warning(f"SSRF blocked: URL resolves to private/internal address: {url}")
             return "Error: URL blocked — resolves to internal address."
 
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
-        with httpx.stream("GET", url, timeout=timeout, follow_redirects=False) as response:
+        with httpx.stream(
+            "GET",
+            pinned.url,
+            headers={"Host": pinned.host_header},
+            extensions={"sni_hostname": pinned.sni_hostname},
+            timeout=timeout,
+            follow_redirects=False,
+        ) as response:
             response.raise_for_status()
             content_pieces = []
             size = 0
