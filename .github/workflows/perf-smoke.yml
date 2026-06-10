@@ -1,0 +1,74 @@
+name: Perf Smoke
+
+# CI perf regression gate (ROADMAP "Production hardening" → load testing).
+# Runs the k6 smoke from scripts/loadtest/ against a freshly started server
+# for ~30s on every PR to main; k6 exits non-zero when any latency/error
+# threshold in scripts/loadtest/k6_smoke.js is breached.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  k6-smoke:
+    runs-on: ubuntu-latest
+    # TODO ratchet: drop continue-on-error once a few runs establish that the
+    # thresholds (tuned against local baselines, p95 ≈ 3.5-4ms) hold on shared
+    # GitHub runners. Until then a noisy-neighbor runner must not block merges.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Start server under test
+        run: |
+          uv run chatty-commander --web --no-auth --port 8100 > server.log 2>&1 &
+          echo $! > server.pid
+
+      - name: Wait for server health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8100/health > /dev/null 2>&1; then
+              echo "Server healthy after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become healthy within 60s" >&2
+          cat server.log
+          exit 1
+
+      # --network=host lets the k6 container reach the server on the runner
+      # (Linux-only, fine on ubuntu-latest). CLI flags override the staged
+      # profile in the script with a short 30s / 5 VU smoke; the thresholds
+      # (p95 latency per endpoint, <1% error rate) still apply and fail the
+      # run when breached.
+      - name: Run k6 smoke (30s, 5 VUs)
+        run: |
+          docker run --rm --network=host \
+            -v "$GITHUB_WORKSPACE/scripts/loadtest:/scripts:ro" \
+            grafana/k6 run \
+            -e BASE_URL=http://localhost:8100 \
+            --duration 30s --vus 5 \
+            /scripts/k6_smoke.js
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat server.log
+
+      - name: Stop server
+        if: always()
+        run: kill "$(cat server.pid)" 2>/dev/null || true

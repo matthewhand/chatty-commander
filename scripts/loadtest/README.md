@@ -36,6 +36,15 @@ docker run --rm --network=host \
 On macOS/Windows use `-e BASE_URL=http://host.docker.internal:8100` and
 drop `--network=host`.
 
+### In CI
+
+`.github/workflows/perf-smoke.yml` runs exactly this Docker invocation
+(shortened to 30s / 5 VUs via CLI flags) against a freshly started server
+on every pull request to `main`, and can be triggered manually via
+workflow dispatch. Threshold breaches fail the k6 run; the job is
+currently `continue-on-error` while runner-noise tolerance of the
+thresholds is established (see the ratchet TODO in the workflow).
+
 ### With a local k6 binary
 
 ```bash

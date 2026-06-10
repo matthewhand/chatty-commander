@@ -214,6 +214,37 @@ jobs:
         run: |
           docker run --rm chatty-commander:latest python -m chatty_commander.cli.main --help
 
+  trivy-scan:
+    runs-on: ubuntu-latest
+    # TODO ratchet: drop continue-on-error once the first runs are triaged.
+    # The scan is non-blocking initially because base-image (python:3.11-slim)
+    # CVEs may have no upstream fix yet on day one; once the baseline is clean
+    # (or accepted findings are recorded in .trivyignore), remove this line so
+    # CRITICAL/HIGH findings fail CI.
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build Docker image for scanning
+        run: docker build -t chatty-commander:scan .
+
+      # Ignore policy:
+      # - `ignore-unfixed: true` skips vulnerabilities that have no released
+      #   fix — we cannot act on them, and they only add noise.
+      # - Findings we consciously accept (with justification + expiry) belong
+      #   in a `.trivyignore` file at the repo root, which Trivy picks up
+      #   automatically. Never ignore a CVE without a comment explaining why
+      #   and when to revisit.
+      - name: Run Trivy image scan (CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: chatty-commander:scan
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+
   notify:
     runs-on: ubuntu-latest
     needs: [test, frontend-build, performance-test, build, docker]
