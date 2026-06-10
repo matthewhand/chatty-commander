@@ -84,6 +84,11 @@ except ImportError:
     version_router = None  # type: ignore[assignment]
 
 try:
+    from .routes.voice_test import register_voice_test_routes
+except ImportError:
+    register_voice_test_routes = None  # type: ignore[assignment]
+
+try:
     from .routes.dograh import router as dograh_router
 except ImportError:
     dograh_router = None  # type: ignore[assignment]
@@ -182,6 +187,20 @@ def register_shared_routers(app: FastAPI, config_manager: Any = None) -> None:
             include_theme_routes(get_config_manager=lambda: config_manager)
         )
 
+    if register_voice_test_routes is not None:
+        register_voice_test_routes(app, config_manager)
+
+    # Standardized {error, code, details, request_id} bodies on /api/* paths
+    # for HTTPException, 422 validation and unhandled exceptions. Registered
+    # here so both app factories get identical error behavior. No-ops on the
+    # minimal FastAPI stub; idempotent across repeat calls.
+    try:
+        from .errors import register_error_handlers
+
+        register_error_handlers(app)
+    except ImportError:
+        pass
+
 
 def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
     # Structural production refusal: never allow the dev auth bypass when
@@ -204,6 +223,18 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             logging.getLogger(__name__).warning(
                 "AuthMiddleware unavailable; /api routes are unprotected"
             )
+
+        # Request-ID middleware (added last so it is outermost): echoes or
+        # generates X-Request-ID and exposes it to log records via contextvar.
+        # web_mode.WebModeServer._create_app wires this separately; it cannot
+        # live in register_shared_routers without double-adding it there.
+        try:
+            from chatty_commander.web.middleware.request_id import RequestIdMiddleware
+
+            if RequestIdMiddleware is not None:
+                app.add_middleware(RequestIdMiddleware)
+        except ImportError:
+            pass
 
     # Routers shared with web_mode.WebModeServer._create_app (single source
     # of truth lives in register_shared_routers above).

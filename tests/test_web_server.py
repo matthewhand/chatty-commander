@@ -476,6 +476,7 @@ class TestServerImportSafety:
                 "agents_router",
                 "models_router",
                 "command_authoring_router",
+                "register_voice_test_routes",
                 "RequestMetricsMiddleware",
             ]
             for name in router_names:

@@ -1005,6 +1005,12 @@ def run_server(
     if uvicorn is None:
         raise ImportError("uvicorn is not available")
 
+    # Fail fast (EnvValidationError) when required env vars for explicitly
+    # enabled features are missing (ROADMAP "Secrets validation at startup").
+    from chatty_commander.app.env_validation import validate_startup_env
+
+    validate_startup_env(config_manager)
+
     app = WebModeServer(
         config_manager, state_manager, model_manager, command_executor, no_auth=no_auth
     ).app
