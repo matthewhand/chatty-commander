@@ -135,6 +135,17 @@ Test voice functionality from the webapp as if running locally: enable the micro
 
 Dropped as obsolete (verified against the repo): Kubernetes manifests (`deploy/` has no `k8s/` and none is planned), Celery/RQ task queue and Redis caching (no such deps in `pyproject.toml`), Alembic migrations (no DB-backed runtime models), PagerDuty/OpsGenie alerting, the avatar-GUI removal notes (already done — see "Far-from-finished features" for what remains).
 
+### Security backlog — topics from closed bot PRs (0/6)
+
+Distinct topics raised by the June 2026 bot-PR flood (PRs #617-#649, closed as stale/duplicate — branches targeted pre-reset code). Each needs verification against current code before acting:
+
+- [ ] **CORS restriction in `--no-auth` mode** (from #624) — check what origins the dev server allows when auth is off
+- [ ] **`sanitize_config_data` dictionary-key bypass** (from #626) — verify key-name masking in `utils/security.py` can't be sidestepped by nesting
+- [ ] **Command-injection review of command execution web path** (from #631/#632/#640) — re-audit `command_executor` shell/system actions reachable via `/api/v1/command`
+- [ ] **Path traversal in models route** (from #641) — confirm the #512-era fix covers `web/routes/models.py` upload/download/delete
+- [ ] **SSRF via DNS rebinding** (from #644) — `utils/url_validator.py` resolves-then-fetches; check TOCTOU between validation and request
+- [ ] **Rate limiting on command execution** (from #639) — decide whether `/api/v1/command` needs per-key throttling
+
 ### UI consolidation (0/3)
 
 - [ ] Decide on direction: CC's React app embedded in dograh's Next.js dashboard, dograh's workflow editor embedded in CC, or a single new shell hosting both
