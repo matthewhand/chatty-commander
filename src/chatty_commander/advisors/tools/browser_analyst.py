@@ -96,17 +96,14 @@ def browser_analyst_tool(url: str) -> str:
             return f"Error: Domain {hostname} is not allowed."
 
         # Apply conditional logic
-        is_safe, safe_ip = is_safe_url(url)
-        if not is_safe or safe_ip is None:
+        if not is_safe_url(url):
             logger.warning(f"SSRF blocked: URL resolves to private/internal address: {url}")
             return "Error: URL blocked — resolves to internal address."
-
-        safe_url = url.replace(hostname, safe_ip, 1)
 
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
-        with httpx.stream("GET", safe_url, headers={"Host": hostname}, timeout=timeout, follow_redirects=False) as response:
+        with httpx.stream("GET", url, timeout=timeout, follow_redirects=False) as response:
         # Use context manager for resource management
             # Process each item
             response.raise_for_status()

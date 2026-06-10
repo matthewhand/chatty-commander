@@ -194,8 +194,7 @@ class OllamaBackend(LLMBackend):
 
             # Build filtered collection
             # Apply conditional logic
-            is_safe, _ = is_safe_url(f"{self.base_url}/api/tags")
-            if not is_safe:
+            if not is_safe_url(f"{self.base_url}/api/tags"):
                 logger.warning(f"Ollama base URL {self.base_url} rejected by security policy.")
                 self._available = False
                 return self._available

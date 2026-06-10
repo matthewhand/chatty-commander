@@ -82,18 +82,15 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         logger.warning(f"Domain {hostname} is not in the allowlist.")
         return AnalystResult(title="Error", summary="Domain not allowed.", url=request.url)
 
-    is_safe, safe_ip = is_safe_url(request.url)
-    if not is_safe or safe_ip is None:
+    if not is_safe_url(request.url):
         logger.warning(f"SSRF blocked: URL resolves to private/internal address: {request.url}")
         return AnalystResult(title="Error", summary="URL blocked: resolves to internal address.", url=request.url)
-
-    safe_url = request.url.replace(hostname, safe_ip, 1)
 
     try:
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
-        with httpx.stream("GET", safe_url, headers={"Host": hostname}, timeout=timeout, follow_redirects=False) as response:
+        with httpx.stream("GET", request.url, timeout=timeout, follow_redirects=False) as response:
         # Use context manager for resource management
             response.raise_for_status()
             content_pieces = []

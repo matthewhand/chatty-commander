@@ -383,8 +383,7 @@ class CommandExecutor:
 
         from chatty_commander.utils.url_validator import is_safe_url
         # Apply conditional logic
-        is_safe, safe_ip = is_safe_url(url)
-        if not is_safe or safe_ip is None:
+        if not is_safe_url(url):
             self.report_error(command_name, "unsafe URL rejected")
             return
 
@@ -396,12 +395,8 @@ class CommandExecutor:
         # Attempt operation with error handling
             # Logic flow
             # Add timeout and disable redirects for security
-            import urllib.parse
-            parsed = urllib.parse.urlparse(url)
-            safe_url = url.replace(parsed.hostname or "", safe_ip, 1)
-
             with httpx.Client() as client:
-                resp = client.get(safe_url, headers={"Host": parsed.hostname or ""}, timeout=10, follow_redirects=False)
+                resp = client.get(url, timeout=10, follow_redirects=False)
             # Apply conditional logic
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
