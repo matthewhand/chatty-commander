@@ -104,14 +104,14 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 
 ## P2 — Post-launch
 
-### In-browser voice testing (0/5)
+### In-browser voice testing (4/5)
 
 Test voice functionality from the webapp as if running locally: enable the microphone in the browser and watch what the pipeline does with what you say.
 
-- [ ] **Microphone capture in the webapp** — `getUserMedia` with explicit permission UX, input-level meter, and start/stop control on a "Voice Test" page (or panel on the Audio Settings page)
-- [ ] **Stream browser audio to the backend** — over the existing `/ws` channel or a dedicated `/ws/audio` endpoint, feeding the same wakeword → transcription → command-matching pipeline used locally (reuses P2 WebRTC bridge groundwork below)
-- [ ] **Live action feedback panel** — show each pipeline stage as it happens: wake word detected → transcript → matched command → action taken (keypress/URL/system/dograh call) with success/failure and timing
-- [ ] **Dry-run mode (default)** — run detection and matching for real but stub action execution, reporting "would have pressed ctrl+shift+x" so remote-browser testing can't fire arbitrary system actions; explicit opt-in to live execution, auth-gated
+- [x] **Microphone capture in the webapp** — `getUserMedia` with explicit permission UX, input-level meter, and start/stop control on a "Voice Test" page (or panel on the Audio Settings page)
+- [x] **Stream browser audio to the backend** — over the existing `/ws` channel or a dedicated `/ws/audio` endpoint, feeding the same wakeword → transcription → command-matching pipeline used locally (reuses P2 WebRTC bridge groundwork below)
+- [x] **Live action feedback panel** — show each pipeline stage as it happens: wake word detected → transcript → matched command → action taken (keypress/URL/system/dograh call) with success/failure and timing
+- [x] **Dry-run mode (default)** — run detection and matching for real but stub action execution, reporting "would have pressed ctrl+shift+x" so remote-browser testing can't fire arbitrary system actions; explicit opt-in to live execution, auth-gated
 - [ ] **E2E test** — Playwright with a prerecorded audio fixture via `--use-fake-device-for-media-stream`, asserting the feedback panel shows the expected command and dry-run action
 
 ### WebRTC audio bridge (0/3)
@@ -120,18 +120,18 @@ Test voice functionality from the webapp as if running locally: enable the micro
 - [ ] Bidirectional state: dograh call state (`ringing`/`in-call`/`ended`) reflected in CC's `StateManager`; CC's `chatty`/`computer` mode published to dograh's session metadata
 - [ ] E2E test: wake-word → dograh call → live audio → call end → CC returns to `idle`
 
-### Production hardening (carried from PRODUCTION_READINESS_ROADMAP) (0/6)
+### Production hardening (carried from PRODUCTION_READINESS_ROADMAP) (5/6)
 
-- [ ] **Secrets validation at startup** — fail fast when required env vars are missing; document all of them in `.env.example`
+- [x] **Secrets validation at startup** — fail fast when required env vars are missing; document all of them in `.env.example`
 - [ ] **AuthN/AuthZ depth** — token refresh + revocation, role-based access (admin/user/readonly), API-key auth for service-to-service
-- [ ] **Structured logging** — JSON log format option, request-ID tracing (per-environment log levels already done)
-- [ ] **Standardized error responses** — consistent `{error, code, details, request_id}` shape; circuit-breaker/graceful-degradation for external services (LLM fallback responses already done)
-- [ ] **Container hardening**
+- [x] **Structured logging** — JSON log format option, request-ID tracing (per-environment log levels already done)
+- [x] **Standardized error responses** — consistent `{error, code, details, request_id}` shape; circuit-breaker/graceful-degradation for external services (LLM fallback responses already done)
+- [x] **Container hardening**
   - [x] Non-root user + multi-stage Dockerfile build, `.dockerignore`
-  - [ ] Trivy scanning in CI
-- [ ] **Load testing / performance baselines**
+  - [x] Trivy scanning in CI
+- [x] **Load testing / performance baselines**
   - [x] k6 smoke script + measured p95 baselines (`scripts/loadtest/`, all thresholds passed: p95 ≈ 3.5-4ms local)
-  - [ ] CI perf regression gate
+  - [x] CI perf regression gate
 
 Dropped as obsolete (verified against the repo): Kubernetes manifests (`deploy/` has no `k8s/` and none is planned), Celery/RQ task queue and Redis caching (no such deps in `pyproject.toml`), Alembic migrations (no DB-backed runtime models), PagerDuty/OpsGenie alerting, the avatar-GUI removal notes (already done — see "Far-from-finished features" for what remains).
 
