@@ -41,13 +41,10 @@ To run the web dashboard locally:
 uv run chatty-commander --web --no-auth   # dev mode; --no-auth is for local use only
 ```
 
-Then follow the **User Guide**:
+Then follow the docs:
 
-0. [Guided Tour (screenshots)](docs/user-guide/00_GUIDED_TOUR.md)
-1. [Installation Guide](docs/user-guide/01_INSTALLATION.md)
-2. [Configuration Guide](docs/user-guide/02_CONFIGURATION.md)
-3. [Dashboard & Web UI](docs/user-guide/03_DASHBOARD_AND_WEBUI.md)
-4. [Voice Modes & Commands](docs/user-guide/04_VOICE_MODES_AND_COMMANDS.md)
+- [Guided Tour (screenshots)](docs/user-guide/00_GUIDED_TOUR.md) — see every page before installing
+- [User Guide](docs/user-guide/USER_GUIDE.md) — installation, configuration, dashboard, voice modes & commands
 
 ## Optional: dograh voice-call integration
 
