@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '../utils/logger';
 
 interface ThemeContextType {
     theme: string;
@@ -26,7 +27,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                 }
             } catch (e) {
                 // Non-fatal: fall back to the default theme, but don't fail silently.
-                console.debug('ThemeProvider: could not load theme from /api/v1/config, using default', e);
+                logger.debug('ThemeProvider: could not load theme from /api/v1/config, using default', e);
             }
             return 'dark'; // Fallback
         },

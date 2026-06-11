@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { logger } from "../utils/logger";
 
 type WebSocketContextType = {
   ws: WebSocket | null;
@@ -42,18 +43,18 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       wsUrl += `?token=${token}`;
     }
 
-    console.log(`WebSocketProvider: Connecting to ${wsUrl} (Attempt ${reconnectAttemptRef.current})`);
+    logger.info(`WebSocketProvider: Connecting to ${wsUrl} (Attempt ${reconnectAttemptRef.current})`);
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-      console.log("WebSocketProvider: Connected");
+      logger.info("WebSocketProvider: Connected");
       setIsConnected(true);
       reconnectAttemptRef.current = 0;
       setReconnectAttempt(0); // Sync display state
     };
 
     socket.onclose = (ev) => {
-      console.log("WebSocketProvider: Disconnected", ev.code, ev.reason);
+      logger.info("WebSocketProvider: Disconnected", ev.code, ev.reason);
       setIsConnected(false);
       setWs(null);
 
@@ -62,7 +63,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       if (reconnectAttemptRef.current < maxReconnectAttempts) {
         const attempt = reconnectAttemptRef.current;
         const delay = Math.min(30000, baseReconnectDelay * Math.pow(1.5, attempt));
-        console.log(`WebSocketProvider: Reconnecting in ${delay}ms...`);
+        logger.debug(`WebSocketProvider: Reconnecting in ${delay}ms...`);
 
         reconnectTimeoutRef.current = setTimeout(() => {
           reconnectAttemptRef.current += 1;
@@ -70,7 +71,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
           connect();
         }, delay);
       } else {
-        console.error("WebSocketProvider: Max reconnect attempts reached");
+        logger.error("WebSocketProvider: Max reconnect attempts reached");
       }
     };
 
@@ -87,7 +88,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     socket.onerror = (error) => {
-      console.error("WebSocketProvider: Error", error);
+      logger.error("WebSocketProvider: Error", error);
     };
 
     setWs(socket);
@@ -101,7 +102,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     connect();
 
     return () => {
-      console.log("WebSocketProvider: Cleanup/Closing socket");
+      logger.debug("WebSocketProvider: Cleanup/Closing socket");
       shouldReconnectRef.current = false;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);

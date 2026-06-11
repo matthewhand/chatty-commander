@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from "react";
 import { authService, User } from "../services/authService";
+import { logger } from "../utils/logger";
 
 interface AuthContextType {
   user: User | null;
@@ -27,14 +28,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       setLoading(false);
     } catch (error) {
-      console.warn("Auth check failed:", error);
+      logger.warn("Auth check failed:", error);
       if (!isMountedRef.current) return;
       // If we failed, specifically in a dev/test environment where the server might be starting up,
       // we should retry a few times for the 'no-auth' check.
       if (retryCount.current < 5) {
         retryCount.current += 1;
         const delay = 1000 * retryCount.current;
-        console.log(`Retrying auth check in ${delay}ms...`);
+        logger.debug(`Retrying auth check in ${delay}ms...`);
         retryTimeoutRef.current = setTimeout(checkAuth, delay);
       } else {
         localStorage.removeItem("auth_token");
@@ -66,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       return true;
     } catch (error) {
-      console.error("Login failed:", error);
+      logger.error("Login failed:", error);
       return false;
     } finally {
       setLoading(false);

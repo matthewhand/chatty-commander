@@ -5,6 +5,7 @@ import React, {
   useState,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useReducedMotionPref } from "../hooks/useReducedMotionPref";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
@@ -30,6 +31,7 @@ const alertClass: Record<ToastType, string> = {
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const reduceMotion = useReducedMotionPref();
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((message: string, type: ToastType) => {
@@ -48,10 +50,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.25 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: 20 }}
+              transition={reduceMotion ? undefined : { duration: 0.25 }}
               className={`alert ${alertClass[toast.type]} shadow-lg`}
             >
               <span>{toast.message}</span>
