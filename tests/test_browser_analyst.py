@@ -4,6 +4,25 @@ import respx
 
 from chatty_commander.advisors.tools.browser_analyst import browser_analyst_tool
 from chatty_commander.app.config import Config
+from chatty_commander.utils.url_validator import PinnedURL
+
+
+@pytest.fixture(autouse=True)
+def stub_resolution(monkeypatch):
+    """Pin URLs to themselves: no real DNS in tests, and the fetched URL
+    stays the hostname URL so respx routes match. The IP-pinning behaviour
+    itself is covered by tests/test_url_validator_rebinding.py."""
+
+    def fake_resolve(url):
+        from urllib.parse import urlparse
+
+        host = urlparse(url).hostname or ""
+        return PinnedURL(url=url, ip="203.0.113.10", host_header=host, sni_hostname=host)
+
+    monkeypatch.setattr(
+        "chatty_commander.advisors.tools.browser_analyst.resolve_safe_url",
+        fake_resolve,
+    )
 
 
 @pytest.fixture(autouse=True)

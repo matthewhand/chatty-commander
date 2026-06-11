@@ -97,13 +97,14 @@ def browser_analyst_tool(url: str) -> str:
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
-        with httpx.stream(
+        # The top-level httpx.stream() helper does not accept request
+        # extensions; sni_hostname (TLS SNI/verification for the IP-pinned
+        # URL) requires going through a Client request.
+        with httpx.Client(timeout=timeout, follow_redirects=False) as client, client.stream(
             "GET",
             pinned.url,
             headers={"Host": pinned.host_header},
             extensions={"sni_hostname": pinned.sni_hostname},
-            timeout=timeout,
-            follow_redirects=False,
         ) as response:
             response.raise_for_status()
             content_pieces = []

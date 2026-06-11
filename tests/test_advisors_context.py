@@ -479,7 +479,8 @@ class TestAdvisorsMemoryDisabled:
         )
         assert r.status_code == 400
         data = r.json()
-        assert "detail" in data
+        # Standardized error envelope (web/errors.py)
+        assert "error" in data and "code" in data
 
 
 # ---------------------------------------------------------------------------

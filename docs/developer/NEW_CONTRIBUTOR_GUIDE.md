@@ -15,8 +15,7 @@ Welcome to ChattyCommander! This guide helps you get started quickly.
 src/chatty_commander/   # Core Python package
 tests/                  # Test suite
 docs/                   # Documentation
-frontend/               # Web UI (React + TypeScript)
-server/                 # Node.js backend workers
+webui/frontend/         # Web UI (React + TypeScript)
 ```
 
 ## Development Workflow

@@ -46,7 +46,9 @@ def test_config_put_increments_metrics_and_applies(client):
 def test_config_put_rejects_disallowed_keys(client):
     r = client.put("/api/v1/config", json={"commands": {"evil": True}})
     assert r.status_code == 422
-    assert "commands" in r.json()["detail"]
+    body = r.json()
+    # Standardized error envelope (web/errors.py): rejected key named in error/details
+    assert "commands" in str(body.get("error", "")) + str(body.get("details", ""))
 
 
 def test_config_put_rejects_mixed_keys(client):
@@ -55,7 +57,8 @@ def test_config_put_rejects_mixed_keys(client):
         json={"ui": {"theme": "dark"}, "__internal__": "hack"},
     )
     assert r.status_code == 422
-    assert "__internal__" in r.json()["detail"]
+    body = r.json()
+    assert "__internal__" in str(body.get("error", "")) + str(body.get("details", ""))
 
 
 # -- command -----------------------------------------------------------------

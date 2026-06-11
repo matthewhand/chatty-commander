@@ -77,7 +77,7 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 - [x] **Prune dead `apiService.js` methods** — backup/restore, restart/shutdown/update, logs, models load/unload, config export/import/reset/validate, testCommand remain uncalled (preferences/themes methods are now live against the new backend routes)
 - [ ] **Audio device "test" handlers are fake** — `handleTestMic`/`handleTestOutput` just set flags and timeout ("Simulate 3s test", `webui/frontend/src/pages/ConfigurationPage.tsx:250-258`); implement against the real audio endpoints or remove the buttons
 - [x] **Remove stale repro e2e specs** — `webui/frontend/tests/e2e/reproduction.spec.ts`, `repro_ws.spec.ts`; fold useful assertions into the functional suites
-- [ ] **Delete legacy `frontend/web-app/`, `frontend/desktop-app/`, and root `server/` dirs** — old Next.js build artifacts; `webui/frontend/` is the only live UI. Verify no references before deleting.
+- [x] **Delete legacy `frontend/web-app/`, `frontend/desktop-app/`, and root `server/` dirs** — old Next.js build artifacts; `webui/frontend/` is the only live UI. Verify no references before deleting.
 
 ### Testing (2/3)
 

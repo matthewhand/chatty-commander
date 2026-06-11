@@ -69,8 +69,8 @@ This organization consolidates what were previously scattered directories:
 - `docker/`, `packaging/` → `deploy/*/`
 - Configuration files → `config/`
 
-The active React frontend lives in `webui/frontend/`. Some legacy directories
-(`frontend/`, `server/`, `workers/`) remain at the top level from earlier
-experiments but are not part of the current application.
+The active React frontend lives in `webui/frontend/`. The legacy top-level
+directories from earlier experiments (`frontend/`, `server/`, `workers/`)
+have been removed; they were never part of the current application.
 
 This reduces top-level complexity while maintaining logical groupings and clear separation of concerns.
