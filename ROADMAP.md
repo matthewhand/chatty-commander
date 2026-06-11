@@ -132,8 +132,8 @@ Test voice functionality from the webapp as if running locally: enable the micro
 
 - [x] **Secrets validation at startup** — fail fast when required env vars are missing; document all of them in `.env.example`
 - [ ] **AuthN/AuthZ depth** — token refresh + revocation, role-based access (admin/user/readonly), API-key auth for service-to-service. **Design ready for review: [`docs/developer/AUTHZ_DESIGN.md`](docs/developer/AUTHZ_DESIGN.md)** (10-phase opt-in plan). Two real gaps surfaced during the survey, fixable independently of the full design:
-  - [ ] **Frontend login is a dead path** — `authService.ts` POSTs `/api/v1/auth/login` + `/api/v1/auth/me` (expects `roles[]`) but no backend route implements them; an auth-enabled deployment cannot log in (today only the no-auth probe works)
-  - [ ] **`web_server.auth_enabled` is disconnected from the middleware** — `config.py` never populates `auth.api_key`; with `auth_enabled=True` and no hand-written key, every `/api` request 401s. Wire a key source (env `CHATTY_API_KEY` + schema) or make the flag honest
+  - [x] **Frontend login is a dead path** (fixed #678) — `authService.ts` POSTs `/api/v1/auth/login` + `/api/v1/auth/me` (expects `roles[]`) but no backend route implements them; an auth-enabled deployment cannot log in (today only the no-auth probe works)
+  - [x] **`web_server.auth_enabled` is disconnected from the middleware** (fixed #678 — CHATTY_API_KEY wired + fail-fast) — `config.py` never populates `auth.api_key`; with `auth_enabled=True` and no hand-written key, every `/api` request 401s. Wire a key source (env `CHATTY_API_KEY` + schema) or make the flag honest
 - [x] **Structured logging** — JSON log format option, request-ID tracing (per-environment log levels already done)
 - [x] **Standardized error responses** — consistent `{error, code, details, request_id}` shape; circuit-breaker/graceful-degradation for external services (LLM fallback responses already done)
 - [x] **Container hardening**
