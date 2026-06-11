@@ -89,6 +89,11 @@ except ImportError:
     register_voice_test_routes = None  # type: ignore[assignment]
 
 try:
+    from .routes.auth import register_auth_routes
+except ImportError:
+    register_auth_routes = None  # type: ignore[assignment]
+
+try:
     from .routes.dograh import router as dograh_router
 except ImportError:
     dograh_router = None  # type: ignore[assignment]
@@ -189,6 +194,11 @@ def register_shared_routers(app: FastAPI, config_manager: Any = None) -> None:
 
     if register_voice_test_routes is not None:
         register_voice_test_routes(app, config_manager)
+
+    # JWT user-login router (/api/v1/auth/*). Self-disables (404) unless
+    # auth.users is configured, so default/no-auth flows are unchanged.
+    if register_auth_routes is not None:
+        register_auth_routes(app, config_manager)
 
     # Standardized {error, code, details, request_id} bodies on /api/* paths
     # for HTTPException, 422 validation and unhandled exceptions. Registered

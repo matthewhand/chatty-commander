@@ -250,6 +250,57 @@ class TestCreateAppAuthMiddleware:
         response = client.get("/api/v1/dograh/status")
         assert response.status_code == 401
 
+    # --- BUG 2: CHATTY_API_KEY env var key source -----------------------
+
+    def test_api_accessible_with_env_key(self, monkeypatch):
+        # An env-supplied CHATTY_API_KEY authenticates even with no config key.
+        monkeypatch.setenv("CHATTY_API_KEY", "env-secret")
+        app = create_app(no_auth=False, config_manager=Mock(spec=[]))
+        client = TestClient(app)
+        ok = client.get("/api/v1/dograh/status", headers={"X-API-Key": "env-secret"})
+        assert ok.status_code == 200
+        bad = client.get("/api/v1/dograh/status", headers={"X-API-Key": "nope"})
+        assert bad.status_code == 401
+
+    def test_env_key_takes_precedence_over_config_key(self, monkeypatch):
+        # CHATTY_API_KEY overrides auth.api_key from config.
+        monkeypatch.setenv("CHATTY_API_KEY", "env-secret")
+        app = create_app(no_auth=False, config_manager=self._config_with_key("config-key"))
+        client = TestClient(app)
+        # The config key no longer works once the env key is set.
+        assert (
+            client.get("/api/v1/dograh/status", headers={"X-API-Key": "config-key"}).status_code
+            == 401
+        )
+        assert (
+            client.get("/api/v1/dograh/status", headers={"X-API-Key": "env-secret"}).status_code
+            == 200
+        )
+
+    def test_config_key_still_works_without_env(self, monkeypatch):
+        # Existing config-key path keeps working when no env var is set.
+        monkeypatch.delenv("CHATTY_API_KEY", raising=False)
+        app = create_app(no_auth=False, config_manager=self._config_with_key("config-key"))
+        client = TestClient(app)
+        assert (
+            client.get("/api/v1/dograh/status", headers={"X-API-Key": "config-key"}).status_code
+            == 200
+        )
+
+    def test_auth_router_exempt_from_api_key_middleware(self, monkeypatch):
+        # BUG 1: /api/v1/auth/* validates credentials itself and must NOT be
+        # gated by the global X-API-Key (the login form has no key). With no
+        # auth.users configured it 404s (feature off) rather than 401-ing.
+        monkeypatch.delenv("CHATTY_API_KEY", raising=False)
+        app = create_app(no_auth=False, config_manager=self._config_with_key("config-key"))
+        client = TestClient(app)
+        # No X-API-Key header: a non-auth /api route 401s, the auth route does not.
+        assert client.get("/api/v1/dograh/status").status_code == 401
+        login = client.post(
+            "/api/v1/auth/login", json={"username": "x", "password": "y"}
+        )
+        assert login.status_code == 404  # not 401: middleware let it through
+
 
 # ---------------------------------------------------------------------------
 # Production refusal of the no_auth dev bypass (CHATTY_ENV=production)
@@ -477,6 +528,7 @@ class TestServerImportSafety:
                 "models_router",
                 "command_authoring_router",
                 "register_voice_test_routes",
+                "register_auth_routes",
                 "RequestMetricsMiddleware",
             ]
             for name in router_names:

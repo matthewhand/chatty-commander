@@ -157,6 +157,23 @@ def run_web_mode(
         f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
     )
 
+    # Fail fast (web-scoped) when web_server.auth_enabled is explicitly on but
+    # no API key is configured — otherwise every /api request would 401. The
+    # --no-auth bypass disables the gate, so reflect that before validating.
+    if no_auth and isinstance(getattr(config, "web_server", None), dict):
+        config.web_server["auth_enabled"] = False
+    from chatty_commander.app.env_validation import (
+        EnvValidationError,
+        validate_startup_env,
+    )
+
+    try:
+        validate_startup_env(config, log=logger, for_web=True)
+    except EnvValidationError as e:
+        logger.error(str(e))
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
     # Create web server instance
     web_server = WebModeServer(
         config,

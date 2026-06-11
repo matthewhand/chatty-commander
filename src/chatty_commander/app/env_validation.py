@@ -18,6 +18,9 @@ Current rules:
   warning only (local OpenAI-compatible servers often need no key).
 - Any command configured with a ``dograh_call`` action → ``DOGRAH_BASE_URL``
   and ``DOGRAH_API_KEY`` are required (see ``integrations/dograh_client.py``).
+- Web auth enabled (``web_server.auth_enabled``) with no API key configured
+  anywhere (``CHATTY_API_KEY`` env or ``auth.api_key`` config) → ``CHATTY_API_KEY``
+  is required. Without it the middleware would silently 401 every request.
 
 All checks are defensive about config shape (tests inject mocks/partial
 configs); anything that is not a real dict is treated as "feature off".
@@ -163,19 +166,83 @@ def _check_dograh(config: Any, env: Mapping[str, str], report: EnvReport) -> Non
             )
 
 
+def _check_web_auth(config: Any, env: Mapping[str, str], report: EnvReport) -> None:
+    """Require an API key when web auth is *explicitly* enabled but none is set.
+
+    The middleware only authenticates when an expected key exists. If a user
+    turns auth on yet configures no key (via ``CHATTY_API_KEY`` or
+    ``auth.api_key``), every ``/api`` request would 401 silently — so we fail
+    fast at startup with an actionable message instead.
+
+    Two invariants keep this safe:
+
+    * **Zero-config boots.** ``web_server.auth_enabled`` defaults to ``True`` in
+      ``Config`` even when the user wrote no config at all, so the bare default
+      must NOT trip this check. We therefore only fire when the user
+      *explicitly* set ``web_server.auth_enabled: true`` in their raw config
+      (``config.config["web_server"]``) — the stock default carries no
+      ``web_server`` block and is left untouched.
+    * **--no-auth bypass.** The dev bypass sets ``auth_enabled=False`` before
+      validating (see CLI entrypoints and ``web_mode.run_web_server``), so it
+      never reaches this check.
+    """
+    # The --no-auth bypass sets auth_enabled=False on the *resolved*
+    # web_server dict (CLI entrypoints + web_mode.run_web_server). Honor that
+    # first so a config file with auth_enabled:true + --no-auth never trips.
+    resolved_web = _as_dict(getattr(config, "web_server", None))
+    if resolved_web.get("auth_enabled") is False:
+        return
+
+    raw = _as_dict(getattr(config, "config", None))
+    raw_web = raw.get("web_server")
+    # Only an *explicit* auth_enabled:true in the user's config triggers the
+    # requirement; the dataclass default must keep the zero-config boot clean.
+    if not (isinstance(raw_web, dict) and raw_web.get("auth_enabled") is True):
+        return
+
+    if _env_set(env, "CHATTY_API_KEY"):
+        return
+
+    auth_cfg = raw.get("auth")
+    if not isinstance(auth_cfg, dict):
+        # Tolerate DummyConfig.auth too.
+        auth_cfg = _as_dict(getattr(config, "auth", None))
+    api_key = auth_cfg.get("api_key") if isinstance(auth_cfg, dict) else None
+    if api_key:
+        return
+
+    report.missing.append(
+        EnvIssue(
+            var="CHATTY_API_KEY",
+            feature="web auth",
+            reason=(
+                "web_server.auth_enabled is true but no API key is configured "
+                "via CHATTY_API_KEY or auth.api_key; the server would reject "
+                "every /api request. Set CHATTY_API_KEY or run with --no-auth"
+            ),
+        )
+    )
+
+
 def collect_env_report(
-    config: Any, env: Mapping[str, str] | None = None
+    config: Any, env: Mapping[str, str] | None = None, *, for_web: bool = False
 ) -> EnvReport:
     """Inspect ``config`` and ``env`` and report missing/recommended env vars.
 
     Pure (no logging, no raising); use :func:`validate_startup_env` at call
     sites that want fail-fast behavior.
+
+    ``for_web`` enables the web-auth check, which is only meaningful when the
+    web server is actually being launched (gui/shell/CLI utility modes must not
+    be gated by a missing API key).
     """
     if env is None:
         env = os.environ
     report = EnvReport()
     _check_advisors(config, env, report)
     _check_dograh(config, env, report)
+    if for_web:
+        _check_web_auth(config, env, report)
     return report
 
 
@@ -183,6 +250,8 @@ def validate_startup_env(
     config: Any,
     env: Mapping[str, str] | None = None,
     log: logging.Logger | None = None,
+    *,
+    for_web: bool = False,
 ) -> EnvReport:
     """Validate env vars for enabled features; fail fast when required ones are missing.
 
@@ -190,8 +259,11 @@ def validate_startup_env(
     :class:`EnvValidationError` (whose message aggregates *all* missing vars)
     if any required variable is absent. Returns the report when everything
     required is present.
+
+    Pass ``for_web=True`` from the web-server launch path to additionally
+    require a web API key when ``web_server.auth_enabled`` is explicitly set.
     """
-    report = collect_env_report(config, env)
+    report = collect_env_report(config, env, for_web=for_web)
     log = log or logger
     for issue in report.warnings:
         log.warning("Optional env var not set: %s", issue)
