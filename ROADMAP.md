@@ -69,13 +69,13 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 - [x] **`advisors/tools/switch_mode.py` never registered** — defined and tested but never instantiated as an advisor tool (compare `dograh_call`'s registration in `advisors/providers.py`); wire it in or remove
 - [x] **`app/helpers.py` unused in production** — `ensure_directory_exists` / `format_command_output` / `parse_model_keybindings` only imported by tests; delete or integrate
 
-### Dead code — frontend (5/7)
+### Dead code — frontend (7/7)
 
 - [x] **Delete `LogMessageItem.tsx`** — exported, never imported (`webui/frontend/src/components/LogMessageItem.tsx`)
 - [x] **Drop `classnames` dependency** — zero imports; styling is DaisyUI/Tailwind (`webui/frontend/package.json:12`)
 - [x] **`web-vitals` collected but discarded** — `reportWebVitals()` called with no handler (`webui/frontend/src/index.tsx`); add a handler or remove the dependency
 - [x] **Prune dead `apiService.js` methods** — backup/restore, restart/shutdown/update, logs, models load/unload, config export/import/reset/validate, testCommand remain uncalled (preferences/themes methods are now live against the new backend routes)
-- [ ] **Audio device "test" handlers are fake** — `handleTestMic`/`handleTestOutput` just set flags and timeout ("Simulate 3s test", `webui/frontend/src/pages/ConfigurationPage.tsx:250-258`); implement against the real audio endpoints or remove the buttons
+- [x] **Audio device "test" handlers are fake** — `handleTestMic`/`handleTestOutput` just set flags and timeout ("Simulate 3s test", `webui/frontend/src/pages/ConfigurationPage.tsx:250-258`); implement against the real audio endpoints or remove the buttons
 - [x] **Remove stale repro e2e specs** — `webui/frontend/tests/e2e/reproduction.spec.ts`, `repro_ws.spec.ts`; fold useful assertions into the functional suites
 - [x] **Delete legacy `frontend/web-app/`, `frontend/desktop-app/`, and root `server/` dirs** — old Next.js build artifacts; `webui/frontend/` is the only live UI. Verify no references before deleting.
 
