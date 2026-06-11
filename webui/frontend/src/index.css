@@ -79,23 +79,26 @@ textarea {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   }
 
-  /* Gradient text utilities */
+  /* Gradient text utilities.
+     DaisyUI 4 stores theme colors as oklch COMPONENTS (e.g. --p: 0.65 0.24 280),
+     so hsl(var(--p)) is invalid and made these headings render transparent.
+     Use oklch(var(--x)) to match how Tailwind/DaisyUI consume the same vars. */
   .text-gradient-primary {
-    background: linear-gradient(135deg, hsl(var(--p)) 0%, hsl(var(--s)) 100%);
+    background: linear-gradient(135deg, oklch(var(--p)) 0%, oklch(var(--s)) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .text-gradient-accent {
-    background: linear-gradient(135deg, hsl(var(--a)) 0%, hsl(var(--p)) 100%);
+    background: linear-gradient(135deg, oklch(var(--a)) 0%, oklch(var(--p)) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .text-gradient-warm {
-    background: linear-gradient(135deg, hsl(var(--wa)) 0%, hsl(var(--er)) 100%);
+    background: linear-gradient(135deg, oklch(var(--wa)) 0%, oklch(var(--er)) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
