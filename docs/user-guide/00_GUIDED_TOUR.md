@@ -1,8 +1,14 @@
 # Guided Tour
 
-A screenshot walkthrough of the full ChattyCommander user story — from logging in to
-authoring and firing your first voice command — so you can preview the product before
-installing anything.
+**ChattyCommander turns spoken wake-words into real actions on your own machine** —
+say a trigger phrase and it fires a keypress, opens a URL, runs a system command, or
+places a voice call. It's local-first (on-device wake-word detection, no cloud account)
+with a web dashboard to build, run, and test your commands.
+
+This is a screenshot walkthrough of the full user story — from logging in, to
+**authoring a command, to watching it match and fire in the dry-run Voice Test page** —
+so you can see exactly what that looks like before installing anything. The payoff is
+steps 4–5 (author a command) and step 9 (speak it and watch the pipeline react).
 
 > All screenshots on this page are generated automatically by
 > [`webui/frontend/tests/e2e/guided_tour.spec.ts`](../../webui/frontend/tests/e2e/guided_tour.spec.ts)
