@@ -1,0 +1,9 @@
+{
+    "themes": [
+        "dark",
+        "light",
+        "cyberpunk",
+        "synthwave"
+    ],
+    "current": "dark"
+}

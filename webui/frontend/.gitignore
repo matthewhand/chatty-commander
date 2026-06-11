@@ -1,0 +1,4 @@
+# Build output (the normal `build/` dir is already ignored at repo root).
+build/
+# Static demo build output — generated, do not commit. Commit SOURCE + fixtures.
+demo-dist/

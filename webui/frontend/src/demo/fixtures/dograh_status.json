@@ -1,0 +1,5 @@
+{
+    "available": false,
+    "reason": "DOGRAH_BASE_URL and DOGRAH_API_KEY must both be set to use the dograh integration. See docker-compose.dograh.yml and the /api/v1/user/api-keys endpoint.",
+    "health": null
+}
