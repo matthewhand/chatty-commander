@@ -72,8 +72,9 @@ def test_login_valid_credentials_returns_parseable_token():
     )
     assert resp.status_code == 200
     body = resp.json()
-    # Shape authService.ts TokenResponse expects.
-    assert set(body) == {"access_token", "token_type", "expires_in"}
+    # authService.ts TokenResponse fields are all present (refresh_token is an
+    # additive Phase-1 field older clients simply ignore — back-compat).
+    assert {"access_token", "token_type", "expires_in"} <= set(body)
     assert body["token_type"] == "bearer"
     assert body["expires_in"] == ACCESS_TOKEN_TTL_SECONDS
 
