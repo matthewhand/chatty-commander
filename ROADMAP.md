@@ -83,7 +83,7 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 
 - [x] **Python suite green** — the pre-reset backlog of 85+ failing tests (config edge cases, command executor, states, metrics) is resolved; full `uv run pytest` passes on `main`
 - [x] **Frontend unit tests** — `webui/frontend/package.json` has no `test` script at all (only `test:e2e` Playwright). Add Vitest + React Testing Library and cover the providers/components that currently only have e2e coverage.
-- [ ] **Raise Python coverage on thin areas** — web routes sit at 20-38%, `avatar_ws.py` at ~28% per the audit; prioritize routes that now carry auth and preference state
+- [x] **Raise Python coverage on thin areas** — done across several waves: ws.py/llm/manager/lifecycle/avatar routes → ~100% (#671), llm·voice·cli surfaces (#682), and voice self_test/enhanced_processor/orchestrator/transcription (#686). Web routes that carry auth/preferences are now well-covered. A latent `sys.modules['numpy']` test-isolation leak surfaced along the way was also fixed (#687).
 
 ### Documentation (6/6)
 

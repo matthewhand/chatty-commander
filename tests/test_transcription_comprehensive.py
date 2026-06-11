@@ -255,22 +255,26 @@ class TestVoiceTranscriber:
         mock_np.frombuffer.return_value = MagicMock()
         mock_np.sqrt.return_value = 100  # Above threshold
         mock_np.mean.return_value = 1000000
-        sys.modules["numpy"] = mock_np
 
-        # Mock time to simulate silence timeout
-        mock_time.time.side_effect = [0, 0.5, 0.6, 1.6]  # Trigger silence timeout
-        mock_time.sleep = MagicMock()
+        # Scope the numpy mock to this test via patch.dict so it is RESTORED on
+        # exit. Assigning sys.modules["numpy"] directly (the previous behaviour)
+        # leaked a MagicMock numpy into every later test, breaking pytest.approx
+        # (its isinstance(val, np.bool_) numpy-detection raises on a MagicMock).
+        with patch.dict(sys.modules, {"numpy": mock_np}):
+            # Mock time to simulate silence timeout
+            mock_time.time.side_effect = [0, 0.5, 0.6, 1.6]  # Trigger silence timeout
+            mock_time.sleep = MagicMock()
 
-        transcriber = VoiceTranscriber(backend="mock")
-        transcriber.silence_timeout = 1.0
+            transcriber = VoiceTranscriber(backend="mock")
+            transcriber.silence_timeout = 1.0
 
-        # Mock stream to return data then empty (silence)
-        mock_stream.read.side_effect = [b"audio_data", b""]
+            # Mock stream to return data then empty (silence)
+            mock_stream.read.side_effect = [b"audio_data", b""]
 
-        result = transcriber._record_audio()
+            result = transcriber._record_audio()
 
-        assert result == b"audio_data"
-        mock_stream.read.assert_called()
+            assert result == b"audio_data"
+            mock_stream.read.assert_called()
 
     @patch("chatty_commander.voice.transcription.AUDIO_DEPS_AVAILABLE", True)
     @patch("chatty_commander.voice.transcription.pyaudio")

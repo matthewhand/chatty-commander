@@ -15,7 +15,9 @@ mock_model_mod = types.ModuleType("openwakeword.model")
 mock_model_mod.Model = MagicMock()
 sys.modules["openwakeword.model"] = mock_model_mod
 sys.modules["pyaudio"] = types.ModuleType("pyaudio")
-sys.modules["numpy"] = types.ModuleType("numpy")
+# NOTE: do NOT mock numpy here. numpy is installed, and replacing it with an
+# empty module at import time leaked globally (never restored), breaking
+# pytest.approx's numpy detection in any later test under random ordering.
 
 import importlib  # noqa: E402
 
