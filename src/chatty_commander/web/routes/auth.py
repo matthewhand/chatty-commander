@@ -58,7 +58,6 @@ remain deferred per the design doc (Phases 2/3).
 from __future__ import annotations
 
 import logging
-import os
 import time
 import uuid
 from collections.abc import Callable
@@ -69,6 +68,12 @@ import jwt
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 
+from ..deps.auth import JWT_ALGORITHM
+from ..deps.auth import bearer_token as _bearer_token
+from ..deps.auth import decode_token as _decode_token
+from ..deps.auth import jwt_secret_for as _jwt_secret
+from ..deps.auth import roles_from as _roles_from
+from ..deps.auth import users_for as _users
 from ..revocation import InMemoryRevocationStore, RevocationStore
 
 logger = logging.getLogger(__name__)
@@ -77,9 +82,12 @@ logger = logging.getLogger(__name__)
 ACCESS_TOKEN_TTL_SECONDS = 15 * 60
 # Refresh-token lifetime (seconds). 14 days per AUTHZ_DESIGN.md §2.
 REFRESH_TOKEN_TTL_SECONDS = 14 * 24 * 60 * 60
-JWT_ALGORITHM = "HS256"
-# Small leeway absorbs minor clock drift on decode (design §7).
-JWT_LEEWAY_SECONDS = 30
+
+# NB: JWT_ALGORITHM and the config/token helpers (_users, _jwt_secret,
+# _decode_token, _bearer_token, _roles_from) are now imported from
+# ``web/deps/auth.py`` so the Phase-1 router and the Phase-2 role dependency
+# share one decode/verify code path (no duplication that could drift).
+# Behavior is identical to before.
 
 
 class LoginRequest(BaseModel):
@@ -110,38 +118,6 @@ class UserResponse(BaseModel):
 
 def _as_dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
-
-
-def _auth_config(config_manager: Any) -> dict[str, Any]:
-    """Return the ``auth`` config block from either Config shape.
-
-    Mirrors the middleware's dual lookup: ``config_manager.auth`` (DummyConfig
-    / test objects) or ``config_manager.config["auth"]`` (real ``Config``).
-    """
-    if config_manager is None:
-        return {}
-    # DummyConfig pattern: a plain ``.auth`` dict.
-    auth_attr = getattr(config_manager, "auth", None)
-    if isinstance(auth_attr, dict):
-        return auth_attr
-    # Real Config pattern: raw JSON under ``.config["auth"]``.
-    cfg = getattr(config_manager, "config", None)
-    if isinstance(cfg, dict):
-        return _as_dict(cfg.get("auth"))
-    return {}
-
-
-def _users(config_manager: Any) -> dict[str, Any]:
-    return _as_dict(_auth_config(config_manager).get("users"))
-
-
-def _jwt_secret(config_manager: Any) -> str | None:
-    """Resolve the JWT signing secret: env preferred, then config."""
-    env_secret = os.environ.get("CHATTY_JWT_SECRET")
-    if env_secret and env_secret.strip():
-        return env_secret
-    secret = _auth_config(config_manager).get("jwt_secret")
-    return secret if isinstance(secret, str) and secret.strip() else None
 
 
 def _verify_password(password: str, password_hash: Any) -> bool:
@@ -178,53 +154,6 @@ def _issue_refresh_token(username: str, secret: str) -> str:
         "exp": now + REFRESH_TOKEN_TTL_SECONDS,
     }
     return jwt.encode(claims, secret, algorithm=JWT_ALGORITHM)
-
-
-def _decode_token(
-    token: str,
-    secret: str,
-    *,
-    expected_type: str,
-    store: RevocationStore,
-) -> dict[str, Any]:
-    """Decode + validate a JWT of ``expected_type``; raises 401 on any problem.
-
-    The error ``detail`` is intentionally coarse ("Invalid token") for
-    signature/format/type problems so we don't leak *which* check failed
-    (design §7). Expiry is reported distinctly because it is non-sensitive and
-    lets the client know to refresh.
-    """
-    try:
-        claims: dict[str, Any] = jwt.decode(
-            token,
-            secret,
-            algorithms=[JWT_ALGORITHM],
-            leeway=JWT_LEEWAY_SECONDS,
-        )
-    except jwt.ExpiredSignatureError as exc:
-        raise HTTPException(status_code=401, detail="Token expired") from exc
-    except jwt.InvalidTokenError as exc:
-        raise HTTPException(status_code=401, detail="Invalid token") from exc
-    if claims.get("type") != expected_type:
-        # Same coarse message as a bad signature: don't reveal it was the type.
-        raise HTTPException(status_code=401, detail="Invalid token")
-    jti = claims.get("jti")
-    if isinstance(jti, str) and store.is_revoked(jti):
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return claims
-
-
-def _bearer_token(authorization: str | None) -> str:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-    scheme, _, token = authorization.partition(" ")
-    if scheme.lower() != "bearer" or not token.strip():
-        raise HTTPException(status_code=401, detail="Malformed Authorization header")
-    return token.strip()
-
-
-def _roles_from(raw: Any) -> list[str]:
-    return [r for r in raw if isinstance(r, str)] if isinstance(raw, list) else []
 
 
 def include_auth_routes(

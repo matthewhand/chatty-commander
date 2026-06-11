@@ -32,11 +32,12 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from chatty_commander.utils.security import mask_sensitive_data
+from chatty_commander.web.deps.auth import require_role
 
 logger = logging.getLogger(__name__)
 
@@ -428,7 +429,14 @@ def include_core_routes(
         config_data["_env_overrides"] = env_overrides
         return config_data
 
-    @router.put("/api/v1/config")
+    @router.put(
+        "/api/v1/config",
+        # Phase-2 RBAC (design §4): config WRITE requires the ``admin`` role.
+        # Additive + opt-in — when user auth is not active (no auth.users /
+        # --no-auth / no JWT secret) this guard is a pass-through and the
+        # endpoint behaves exactly as before.
+        dependencies=[Depends(require_role("admin"))],
+    )
     async def update_config(config_data: dict[str, Any]):
         counters["config_put"] += 1
 
@@ -501,7 +509,14 @@ def include_core_routes(
         TokenBucketRateLimiter(_command_rate) if _command_rate is not None else None
     )
 
-    @router.post("/api/v1/command", response_model=CommandResponse)
+    @router.post(
+        "/api/v1/command",
+        response_model=CommandResponse,
+        # Phase-2 RBAC (design §4): command EXECUTION requires the ``user``
+        # role (readonly is GET-only). Additive + opt-in — pass-through when
+        # user auth is not active, so default / --no-auth flows are unchanged.
+        dependencies=[Depends(require_role("user"))],
+    )
     async def execute_command(request: CommandRequest, http_request: Request):
         counters["command_post"] += 1
         if command_rate_limiter is not None:
