@@ -12,14 +12,11 @@ internal IP afterwards (DNS rebinding). They prove:
 
 import ipaddress
 import socket
-from urllib.parse import urlparse
 
 import pytest
 
 from chatty_commander.utils.url_validator import (
-    PinnedURL,
     is_safe_url,
-    resolve_safe_url,
 )
 
 PUBLIC_V4 = "93.184.216.34"
@@ -86,4 +83,5 @@ class TestRebindingVulnerabilityShape:
         )
 
 
-class TestResolveSafeUrlPinsTheIp
+# Pinning behaviour (resolve_safe_url / PinnedURL) is covered in
+# tests/test_url_validator_rebinding.py.
