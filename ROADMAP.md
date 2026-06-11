@@ -140,7 +140,7 @@ Spike + feasibility: [`docs/developer/WEBRTC_BRIDGE_SPIKE.md`](docs/developer/WE
 - [ ] **AuthN/AuthZ depth** — implementing [`docs/developer/AUTHZ_DESIGN.md`](docs/developer/AUTHZ_DESIGN.md) phase by phase (opt-in; default/`--no-auth` unchanged throughout):
   - [x] **Phase 1 — token refresh + jti revocation** (#690): login also returns a refresh token, `POST /api/v1/auth/refresh` rotates, in-memory self-pruning denylist (sqlite seam left for later), logout revokes
   - [x] **Phase 2 — role-based access** (admin/user/readonly via a `require_role` dependency) (#692) — additive, pass-through when auth inactive; guards PUT /config (admin) + POST /command (user)
-  - [ ] **Phase 3 — scoped service-to-service API keys**
+  - [x] **Phase 3 — scoped service-to-service API keys** (#693) — legacy key stays wildcard; named `auth.service_keys` opt-in; `require_scope` guards POST /state
   - [ ] **Phase 4 — optional persistent (sqlite) revocation store**
   Two gaps surfaced during the survey, both already fixed:
   - [x] **Frontend login is a dead path** (fixed #678) — `authService.ts` POSTs `/api/v1/auth/login` + `/api/v1/auth/me` (expects `roles[]`) but no backend route implements them; an auth-enabled deployment cannot log in (today only the no-auth probe works)
