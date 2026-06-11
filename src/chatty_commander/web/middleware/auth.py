@@ -32,6 +32,7 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from chatty_commander.utils.security import constant_time_compare
+from chatty_commander.web.middleware.service_keys import resolve_service_key_scopes
 
 logger = logging.getLogger(__name__)
 
@@ -131,12 +132,23 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 f"API request to {path}, API key present: {api_key is not None}"
             )
 
-            # Get expected API key from env (preferred) or config.
+            # Get expected legacy single key from env (preferred) or config.
             expected_key = resolve_expected_api_key(self.config_manager)
             logger.debug("Expected API key resolved: present=%s", bool(expected_key))
 
-            # Check if API key is valid
-            if not constant_time_compare(api_key, expected_key):
+            # Phase 3 (design §5): the X-API-Key is valid if it matches the
+            # legacy single key (→ wildcard scope ['*']) OR any *active* named
+            # service key (→ that key's configured scopes). The legacy key is
+            # checked first so its byte-for-byte behavior is unchanged; service
+            # keys are opt-in and only consulted when an `auth.service_keys`
+            # block exists (resolve_service_key_scopes returns None otherwise).
+            scopes: list[str] | None = None
+            if constant_time_compare(api_key, expected_key):
+                scopes = ["*"]
+            else:
+                scopes = resolve_service_key_scopes(self.config_manager, api_key)
+
+            if scopes is None:
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
                 # Return 401 response directly instead of raising exception
                 from fastapi.responses import JSONResponse
@@ -145,6 +157,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     status_code=401, content={"detail": "Invalid or missing API key"}
                 )
 
-            logger.debug("Authentication successful")
+            # Attach the resolved scopes so per-route require_scope dependencies
+            # (web/deps/auth.py) can authorize without re-validating the key.
+            request.state.scopes = scopes
+            logger.debug("Authentication successful (scopes=%s)", scopes)
 
         return await call_next(request)  # type: ignore[no-any-return]

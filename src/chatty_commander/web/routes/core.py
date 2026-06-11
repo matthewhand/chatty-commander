@@ -37,7 +37,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from chatty_commander.utils.security import mask_sensitive_data
-from chatty_commander.web.deps.auth import require_role
+from chatty_commander.web.deps.auth import require_role, require_scope
 
 logger = logging.getLogger(__name__)
 
@@ -490,7 +490,16 @@ def include_core_routes(
             timestamp=get_last_state_change().isoformat(),
         )
 
-    @router.post("/api/v1/state")
+    @router.post(
+        "/api/v1/state",
+        # Phase-3 scopes (design §5): this is a machine-facing state change, so
+        # a service-to-service caller must present an X-API-Key carrying the
+        # ``state:write`` scope (the legacy wildcard key ['*'] satisfies it).
+        # Additive + opt-in — pass-through when the coarse X-API-Key gate did
+        # not run (--no-auth / no key configured), so default flows are
+        # unchanged. A named service key WITHOUT this scope gets 403.
+        dependencies=[Depends(require_scope("state:write"))],
+    )
     async def change_state(request: StateChangeRequest):
         counters["state_post"] += 1
         try:
