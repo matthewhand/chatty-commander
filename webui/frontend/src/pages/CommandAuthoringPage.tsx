@@ -18,6 +18,7 @@ import {
   Code,
   Shield,
 } from 'lucide-react';
+import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 
 // --- TypeScript Interfaces ---
 
@@ -120,6 +121,7 @@ const ActionField: React.FC<{
   onRemove: () => void;
   index: number;
 }> = ({ action, onChange, onRemove, index }) => {
+  const reduceMotion = useReducedMotionPref();
   const handleTypeChange = (type: CommandAction['type']) => {
     onChange({ type } as CommandAction);
   };
@@ -130,9 +132,9 @@ const ActionField: React.FC<{
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
+      initial={reduceMotion ? false : { opacity: 0, x: -20 }}
+      animate={reduceMotion ? undefined : { opacity: 1, x: 0 }}
+      exit={reduceMotion ? undefined : { opacity: 0, x: 20 }}
       className="card bg-base-200/50 border border-base-content/10 p-4 space-y-3"
     >
       <div className="flex justify-between items-center">
@@ -233,6 +235,7 @@ const ActionField: React.FC<{
 // --- Main Page Component ---
 
 export default function CommandAuthoringPage() {
+  const reduceMotion = useReducedMotionPref();
   const [searchParams] = useSearchParams();
   const editName = searchParams.get('edit');
   const isEditing = Boolean(editName);
@@ -463,8 +466,8 @@ export default function CommandAuthoringPage() {
     <div className="space-y-6">
       {/* Header Section */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={reduceMotion ? false : { opacity: 0, y: -20 }}
+        animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
         <div>
@@ -518,9 +521,9 @@ export default function CommandAuthoringPage() {
       <AnimatePresence>
         {error && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={reduceMotion ? false : { opacity: 0, height: 0 }}
+            animate={reduceMotion ? undefined : { opacity: 1, height: 'auto' }}
+            exit={reduceMotion ? undefined : { opacity: 0, height: 0 }}
             className="alert alert-error"
           >
             <AlertCircle size={20} />
@@ -538,8 +541,8 @@ export default function CommandAuthoringPage() {
           id="ai-mode-panel"
           role="tabpanel"
           aria-labelledby="tab-ai-mode"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           className="card glass-card"
         >
           <div className="card-body">
@@ -588,8 +591,8 @@ export default function CommandAuthoringPage() {
       {/* Generated Command Preview */}
       {mode === 'ai' && generatedCommand && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
+          animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
           className="card glass-card border-primary/30"
         >
           <div className="card-body">
@@ -673,8 +676,8 @@ export default function CommandAuthoringPage() {
           id="manual-mode-panel"
           role="tabpanel"
           aria-labelledby="tab-manual-mode"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           className="card glass-card"
         >
           <div className="card-body">
@@ -802,8 +805,8 @@ export default function CommandAuthoringPage() {
       {/* LLM Unavailable Helper */}
       {mode === 'ai' && error?.includes('LLM') && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={reduceMotion ? undefined : { opacity: 1 }}
           className="alert alert-warning"
         >
           <AlertCircle size={20} />
@@ -822,16 +825,16 @@ export default function CommandAuthoringPage() {
         {showConfirmModal && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={reduceMotion ? undefined : { opacity: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0 }}
               className="fixed inset-0 bg-black/50 z-40"
               onClick={() => setShowConfirmModal(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
+              animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9 }}
               className="fixed inset-0 flex items-center justify-center z-50 p-4"
             >
               <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl">

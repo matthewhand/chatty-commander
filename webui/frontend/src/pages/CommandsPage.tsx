@@ -17,6 +17,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 import { DynamicDropdown } from '../components/DynamicDropdown';
+import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 
 // Backend response is a Record<string, CommandConfig>
 interface CommandConfig {
@@ -42,6 +43,7 @@ export default function CommandsPage() {
     document.title = "Commands | ChattyCommander";
   }, []);
 
+  const reduceMotion = useReducedMotionPref();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const [pendingDeleteCommand, setPendingDeleteCommand] = useState<string | null>(null);
@@ -198,8 +200,8 @@ export default function CommandsPage() {
     <div className="space-y-6">
       {/* Header Section */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={reduceMotion ? false : { opacity: 0, y: -20 }}
+        animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
         <div>
@@ -305,9 +307,10 @@ export default function CommandsPage() {
           {filteredCommands.map(([name, config], idx) => (
             <motion.div
               key={name}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.05 }}
+              data-reduced-motion={reduceMotion ? 'true' : 'false'}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
+              animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
+              transition={reduceMotion ? undefined : { delay: idx * 0.05 }}
               className="card glass-card overflow-hidden"
             >
               <div className="border-gradient"></div>
