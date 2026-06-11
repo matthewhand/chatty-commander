@@ -1,0 +1,9 @@
+{
+    "status": 0,
+    "config_get": 1,
+    "config_put": 0,
+    "state_get": 1,
+    "state_post": 0,
+    "command_post": 0,
+    "response_time_avg": 0.0
+}

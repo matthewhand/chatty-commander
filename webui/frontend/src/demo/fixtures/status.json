@@ -1,0 +1,13 @@
+{
+    "status": "running",
+    "current_state": "idle",
+    "active_models": [
+        "hey_chat_tee",
+        "hey_khum_puter",
+        "okay_stop",
+        "lights_on",
+        "lights_off"
+    ],
+    "uptime": "0h 0m 0s",
+    "version": "0.2.0"
+}

@@ -1,0 +1,12 @@
+{
+    "current_state": "idle",
+    "active_models": [
+        "hey_chat_tee",
+        "hey_khum_puter",
+        "okay_stop",
+        "lights_on",
+        "lights_off"
+    ],
+    "last_command": null,
+    "timestamp": "2026-06-11T12:47:11.766134"
+}

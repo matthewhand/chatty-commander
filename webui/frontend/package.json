@@ -21,6 +21,7 @@
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
+    "build:demo": "vite build --mode demo --outDir demo-dist",
     "serve": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

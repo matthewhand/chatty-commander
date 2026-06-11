@@ -1,0 +1,10 @@
+{
+    "status": "healthy",
+    "uptime": "0h 0m 0s",
+    "version": "0.2.0",
+    "database": "not_configured",
+    "memory_usage": "26.9%",
+    "cpu_usage": "11.1%",
+    "commands_executed": 0,
+    "last_health_check": "2026-06-11T12:47:11.924895"
+}
