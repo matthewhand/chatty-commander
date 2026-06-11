@@ -130,14 +130,19 @@ Spike + feasibility: [`docs/developer/WEBRTC_BRIDGE_SPIKE.md`](docs/developer/WE
 - [ ] **Inbound call-state bridge (state-only)** — dograh call state (`ringing`/`in-call`/`ended`) surfaced in CC
   - [x] Poller + `dograh_call_state` `/ws` broadcast + `GET /api/v1/dograh/call-state` (#680, wired-but-dormant)
   - [ ] Confirm the dograh run-state field/vocabulary against a live instance (two constants in `dograh_call_state.py`)
-  - [x] Call `start_dograh_call_poller` when a run becomes active — `POST /api/v1/dograh/call-state/track`/`untrack` (#684); frontend dashboard CallStateBadge consumes the `dograh_call_state` broadcast (#684)
+  - [x] Call `start_dograh_call_poller` when a run becomes active — `POST /api/v1/dograh/call-state/track`/`untrack` (#684) + **auto-start on `initiate_call`** so it lights up without a manual call (#688); frontend dashboard CallStateBadge consumes the `dograh_call_state` broadcast (#684)
   - [ ] Outbound: publish CC's `chatty`/`computer` mode into dograh session metadata (no dograh API for this yet — blocked)
 - [ ] E2E test: wake-word → dograh call → live audio → call end → CC returns to `idle`
 
 ### Production hardening (carried from PRODUCTION_READINESS_ROADMAP) (5/6)
 
 - [x] **Secrets validation at startup** — fail fast when required env vars are missing; document all of them in `.env.example`
-- [ ] **AuthN/AuthZ depth** — token refresh + revocation, role-based access (admin/user/readonly), API-key auth for service-to-service. **Design ready for review: [`docs/developer/AUTHZ_DESIGN.md`](docs/developer/AUTHZ_DESIGN.md)** (10-phase opt-in plan). Two real gaps surfaced during the survey, fixable independently of the full design:
+- [ ] **AuthN/AuthZ depth** — implementing [`docs/developer/AUTHZ_DESIGN.md`](docs/developer/AUTHZ_DESIGN.md) phase by phase (opt-in; default/`--no-auth` unchanged throughout):
+  - [x] **Phase 1 — token refresh + jti revocation** (#690): login also returns a refresh token, `POST /api/v1/auth/refresh` rotates, in-memory self-pruning denylist (sqlite seam left for later), logout revokes
+  - [ ] **Phase 2 — role-based access** (admin/user/readonly via a `require_role` dependency)
+  - [ ] **Phase 3 — scoped service-to-service API keys**
+  - [ ] **Phase 4 — optional persistent (sqlite) revocation store**
+  Two gaps surfaced during the survey, both already fixed:
   - [x] **Frontend login is a dead path** (fixed #678) — `authService.ts` POSTs `/api/v1/auth/login` + `/api/v1/auth/me` (expects `roles[]`) but no backend route implements them; an auth-enabled deployment cannot log in (today only the no-auth probe works)
   - [x] **`web_server.auth_enabled` is disconnected from the middleware** (fixed #678 — CHATTY_API_KEY wired + fail-fast) — `config.py` never populates `auth.api_key`; with `auth_enabled=True` and no hand-written key, every `/api` request 401s. Wire a key source (env `CHATTY_API_KEY` + schema) or make the flag honest
 - [x] **Structured logging** — JSON log format option, request-ID tracing (per-environment log levels already done)
@@ -233,6 +238,12 @@ These exist in the tree and are honest about their state. They are inventory, no
 ---
 
 ## Done (recent)
+
+2026-06-11 (continued):
+
+- ✅ Optional **Edge TTS** backend (keyless, neural; `synthesize_to_file` helper) behind the existing `TTSBackend` interface; pyttsx3 stays default (#689)
+- ✅ dograh call-state poller **auto-starts** on `initiate_call` (#688)
+- ✅ **AuthZ phase 1** — token refresh + jti revocation (#690)
 
 2026-06-10 (this sprint, all on `main`):
 
