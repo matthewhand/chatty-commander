@@ -289,3 +289,70 @@ _HOLDER = DograhCallStateHolder()
 def get_call_state_holder() -> DograhCallStateHolder:
     """Return the process-wide call-state holder."""
     return _HOLDER
+
+
+# --- Process-wide poller-lifecycle registry ------------------------------
+#
+# The poller's lifecycle (start/stop) lives on the WebModeServer instance,
+# but the HTTP route handlers in web/routes/dograh.py are module-level
+# functions with no clean reference to that instance. Mirroring the holder
+# pattern above, web_mode registers small start/stop callables here at
+# startup, and the track/untrack routes reach the poller through this
+# registry. This keeps the route layer decoupled from WebModeServer while
+# reusing the existing module-level-accessor convention.
+#
+# start callable: (workflow_id: int, run_id: int) -> None   (idempotent;
+#   re-track replaces the active poller)
+# stop callable:  () -> Awaitable[None] | None              (safe to call
+#   when nothing is tracked)
+
+StartPoller = Callable[[int, int], Awaitable[None] | None]
+StopPoller = Callable[[], Awaitable[None] | None]
+
+
+class DograhPollerRegistry:
+    """Holds the process-wide start/stop callables for the call-state poller.
+
+    Registered by WebModeServer at startup; consumed by the track/untrack
+    routes. When nothing is registered (e.g. a bare app without a running
+    WebModeServer) ``is_registered()`` is ``False`` and the routes report a
+    clear error rather than silently no-op'ing.
+    """
+
+    def __init__(self) -> None:
+        self._start: StartPoller | None = None
+        self._stop: StopPoller | None = None
+
+    def register(self, *, start: StartPoller, stop: StopPoller) -> None:
+        self._start = start
+        self._stop = stop
+
+    def clear(self) -> None:
+        self._start = None
+        self._stop = None
+
+    def is_registered(self) -> bool:
+        return self._start is not None and self._stop is not None
+
+    async def start(self, workflow_id: int, run_id: int) -> None:
+        if self._start is None:
+            raise RuntimeError("dograh poller lifecycle is not registered")
+        result = self._start(workflow_id, run_id)
+        if asyncio.iscoroutine(result):
+            await result
+
+    async def stop(self) -> None:
+        if self._stop is None:
+            raise RuntimeError("dograh poller lifecycle is not registered")
+        result = self._stop()
+        if asyncio.iscoroutine(result):
+            await result
+
+
+# Module-level singleton mirroring _HOLDER.
+_POLLER_REGISTRY = DograhPollerRegistry()
+
+
+def get_poller_registry() -> DograhPollerRegistry:
+    """Return the process-wide poller-lifecycle registry."""
+    return _POLLER_REGISTRY

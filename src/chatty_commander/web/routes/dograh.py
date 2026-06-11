@@ -13,6 +13,12 @@ Routes:
     GET /api/v1/dograh/workflows  — list of workflow {id, name, status}
     GET /api/v1/dograh/call-state — current cached dograh call state (phase-0
                                     state bridge; read without a WS)
+    POST /api/v1/dograh/call-state/track   — start the call-state poller for
+                                    a {workflow_id, run_id} (503 if dograh
+                                    unconfigured; idempotent / re-track
+                                    replaces)
+    POST /api/v1/dograh/call-state/untrack — stop the call-state poller
+                                    (safe when not tracking)
 """
 
 from __future__ import annotations
@@ -20,7 +26,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -51,6 +57,19 @@ class DograhWorkflow(BaseModel):
     id: int
     name: str
     status: str | None = None
+
+
+class DograhTrackRequest(BaseModel):
+    """Body for POST /api/v1/dograh/call-state/track."""
+
+    workflow_id: int = Field(..., description="dograh workflow id to track")
+    run_id: int = Field(..., description="dograh workflow-run id to track")
+
+
+class DograhTrackResponse(BaseModel):
+    tracking: bool
+    workflow_id: int | None = Field(default=None)
+    run_id: int | None = Field(default=None)
 
 
 class DograhCallStateResponse(BaseModel):
@@ -94,6 +113,92 @@ async def get_dograh_call_state() -> DograhCallStateResponse:
         workflow_id=snapshot.workflow_id,
         run_id=snapshot.run_id,
     )
+
+
+def _assert_dograh_configured() -> None:
+    """Raise 503 unless DOGRAH_BASE_URL/API_KEY are set.
+
+    Reuses the same configuration check the status route relies on:
+    constructing a DograhClient raises DograhError (DograhUnavailableError)
+    when the env vars are missing. We immediately close the probe client —
+    the poller builds its own client server-side once tracking starts.
+    """
+    try:
+        from chatty_commander.integrations.dograh_client import (
+            DograhClient,
+            DograhError,
+        )
+    except ImportError as e:  # pragma: no cover - import guard
+        raise HTTPException(
+            status_code=503, detail=f"dograh integration unavailable: {e}"
+        ) from e
+
+    try:
+        client = DograhClient()
+    except DograhError as e:
+        # Unconfigured (or otherwise unusable) — clear 503 so callers know
+        # tracking can't start until dograh is configured.
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    client.close()
+
+
+def _get_poller_registry():
+    from chatty_commander.integrations.dograh_call_state import (
+        get_poller_registry,
+    )
+
+    registry = get_poller_registry()
+    if not registry.is_registered():
+        # No WebModeServer has registered the poller lifecycle (e.g. a bare
+        # app). Tracking can't be driven, so surface a clear 503 rather than
+        # silently doing nothing.
+        raise HTTPException(
+            status_code=503,
+            detail="dograh call-state poller lifecycle is not available",
+        )
+    return registry
+
+
+@router.post(
+    "/api/v1/dograh/call-state/track",
+    response_model=DograhTrackResponse,
+)
+async def track_dograh_call_state(
+    body: DograhTrackRequest,
+) -> DograhTrackResponse:
+    """Begin tracking a dograh workflow-run's call state.
+
+    Starts the (otherwise dormant) call-state poller for ``{workflow_id,
+    run_id}``: the poller reflects mapped state into the in-memory holder
+    and broadcasts ``dograh_call_state`` over /ws. Idempotent — re-tracking
+    replaces any active poller so only the latest run is followed.
+
+    Returns 503 (clear error) when dograh is not configured or when no
+    server poller lifecycle is registered. Auth-gated like the other
+    /api/v1/dograh routes (the router carries no per-route auth; gating is
+    applied at the app/router level).
+    """
+    _assert_dograh_configured()
+    registry = _get_poller_registry()
+    await registry.start(body.workflow_id, body.run_id)
+    return DograhTrackResponse(
+        tracking=True, workflow_id=body.workflow_id, run_id=body.run_id
+    )
+
+
+@router.post(
+    "/api/v1/dograh/call-state/untrack",
+    response_model=DograhTrackResponse,
+)
+async def untrack_dograh_call_state() -> DograhTrackResponse:
+    """Stop tracking the current dograh workflow-run's call state.
+
+    Safe to call when nothing is being tracked (no-op). Does not require
+    dograh to be configured — stopping a poller never touches the network.
+    """
+    registry = _get_poller_registry()
+    await registry.stop()
+    return DograhTrackResponse(tracking=False)
 
 
 @router.get("/api/v1/dograh/status", response_model=DograhStatus)
