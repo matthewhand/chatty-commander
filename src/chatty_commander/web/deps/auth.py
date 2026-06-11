@@ -73,7 +73,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import jwt
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Request
 
 from ..revocation import InMemoryRevocationStore, RevocationStore
 
@@ -346,5 +346,133 @@ def require_role(minimum: str) -> Callable[..., Principal]:
         if principal.max_rank < needed:
             raise HTTPException(status_code=403, detail="Insufficient role")
         return principal
+
+    return _dep
+
+
+# ── scope-based service-key guard (design §5) ───────────────────────────────
+
+
+def request_scopes(request: Request) -> list[str] | None:
+    """Return the X-API-Key scopes the middleware attached, or ``None``.
+
+    The Phase-3 ``AuthMiddleware`` sets ``request.state.scopes`` to the resolved
+    scope list (``["*"]`` for the legacy wildcard key, or a service key's
+    configured scopes) only when it actively validated an X-API-Key. ``None``
+    means the coarse gate did not run for this request — i.e. ``--no-auth`` mode
+    or no API key configured at all — which is the pass-through signal for
+    :func:`require_scope` (the same degradation rule as :func:`require_role`).
+    """
+    scopes = getattr(request.state, "scopes", None)
+    if isinstance(scopes, list):
+        return [s for s in scopes if isinstance(s, str)]
+    return None
+
+
+def has_scope(scopes: list[str] | None, required: str) -> bool:
+    """True if ``scopes`` grants ``required`` (wildcard ``"*"`` satisfies any)."""
+    if not scopes:
+        return False
+    return "*" in scopes or required in scopes
+
+
+def require_scope(scope: str) -> Callable[..., list[str] | None]:
+    """Build a dependency requiring the X-API-Key to carry ``scope``.
+
+    Additive + opt-in, mirroring :func:`require_role`'s degradation rule:
+
+    * When the coarse X-API-Key gate did **not** run (``--no-auth`` mode, or no
+      API key configured at all), ``request.state.scopes`` is unset and this
+      guard is a **pass-through** — default / ``--no-auth`` flows are unchanged.
+    * When the gate **did** run, the request already presented a valid key. The
+      wildcard legacy key (scopes ``["*"]``) satisfies any required scope; a
+      named service key must list ``scope`` explicitly, else 403.
+
+    Returns the resolved scope list (or ``None`` on the pass-through path) so a
+    route can introspect it if needed.
+    """
+
+    def _dep(request: Request) -> list[str] | None:
+        scopes = request_scopes(request)
+        if scopes is None:
+            # Coarse gate did not run (no_auth / no key config): pass-through.
+            return None
+        if not has_scope(scopes, scope):
+            raise HTTPException(status_code=403, detail="Insufficient scope")
+        return scopes
+
+    return _dep
+
+
+def soft_principal(authorization: str | None) -> Principal:
+    """Resolve a :class:`Principal` *without* hard-failing on a missing token.
+
+    Like :func:`current_principal` but tailored for the role-OR-scope
+    composition: when user auth is inactive it returns :data:`ANONYMOUS`; when
+    auth is active and **no** ``Authorization`` header is present it *still*
+    returns :data:`ANONYMOUS` (so a service-key-only caller is not 401'd before
+    the scope axis is consulted). A header that *is* present but malformed /
+    expired / revoked / wrong-type still raises 401 — a broken token is an
+    error, not a silent fall-through.
+    """
+    ctx = get_auth_context()
+    if not ctx.is_auth_active():
+        return ANONYMOUS
+    secret = jwt_secret_for(ctx.config_manager)
+    if not secret:  # pragma: no cover - is_auth_active already checked this
+        return ANONYMOUS
+    if not authorization:
+        return ANONYMOUS
+    claims = decode_access_token(
+        bearer_token(authorization), secret, store=ctx.revocation_store
+    )
+    sub = claims.get("sub")
+    return Principal(
+        sub=sub if isinstance(sub, str) else None,
+        roles=roles_from(claims.get("roles", [])),
+    )
+
+
+def require_role_or_scope(*, role: str, scope: str) -> Callable[..., None]:
+    """Build a guard satisfied by EITHER a user ``role`` OR a service ``scope``.
+
+    This is the design §5 composition for machine-facing endpoints that should
+    accept both an interactive user (Bearer token carrying ``role``) **and** a
+    service-to-service caller (X-API-Key carrying ``scope``). It is strictly
+    *more permissive* than the previous bare ``require_role(role)`` guard — any
+    request that would have passed before still passes — so it is non-breaking.
+
+    Degradation: if *both* axes are inactive the request is allowed, preserving
+    the default / ``--no-auth`` behavior. Otherwise the request must satisfy at
+    least one *active* axis, else 403. A missing Bearer token does not 401 here
+    (the scope axis may carry the request); a present-but-broken token still
+    401s via :func:`soft_principal`.
+    """
+    if role not in ROLE_RANK:
+        raise ValueError(f"unknown role: {role!r}")
+    needed = ROLE_RANK[role]
+
+    def _dep(
+        request: Request,
+        authorization: str | None = Header(default=None),
+    ) -> None:
+        principal = soft_principal(authorization)
+        scopes = request_scopes(request)
+        role_active = not principal.anonymous
+        scope_active = scopes is not None
+
+        # Both axes inactive → pure pass-through (default / --no-auth), allow.
+        if not role_active and not scope_active:
+            return
+
+        # Otherwise the request must satisfy at least one *active* axis. An
+        # inactive axis cannot satisfy (its mechanism issued no credential), so
+        # e.g. a readonly Bearer user on a key-less deployment is still denied
+        # exactly as require_role("user") would have denied it (non-breaking).
+        if role_active and principal.max_rank >= needed:
+            return
+        if scope_active and has_scope(scopes, scope):
+            return
+        raise HTTPException(status_code=403, detail="Insufficient role or scope")
 
     return _dep

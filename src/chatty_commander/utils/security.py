@@ -48,6 +48,7 @@ _SENSITIVE_KEY_PATTERNS = frozenset(
         "accesstoken",
         "authtoken",
         "bridgetoken",
+        "keyhash",
         "password",
         "passwd",
         "secret",

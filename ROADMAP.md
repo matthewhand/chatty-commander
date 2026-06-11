@@ -139,7 +139,7 @@ Spike + feasibility: [`docs/developer/WEBRTC_BRIDGE_SPIKE.md`](docs/developer/WE
 - [x] **Secrets validation at startup** — fail fast when required env vars are missing; document all of them in `.env.example`
 - [ ] **AuthN/AuthZ depth** — implementing [`docs/developer/AUTHZ_DESIGN.md`](docs/developer/AUTHZ_DESIGN.md) phase by phase (opt-in; default/`--no-auth` unchanged throughout):
   - [x] **Phase 1 — token refresh + jti revocation** (#690): login also returns a refresh token, `POST /api/v1/auth/refresh` rotates, in-memory self-pruning denylist (sqlite seam left for later), logout revokes
-  - [ ] **Phase 2 — role-based access** (admin/user/readonly via a `require_role` dependency)
+  - [x] **Phase 2 — role-based access** (admin/user/readonly via a `require_role` dependency) (#692) — additive, pass-through when auth inactive; guards PUT /config (admin) + POST /command (user)
   - [ ] **Phase 3 — scoped service-to-service API keys**
   - [ ] **Phase 4 — optional persistent (sqlite) revocation store**
   Two gaps surfaced during the survey, both already fixed:
