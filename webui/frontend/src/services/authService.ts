@@ -1,3 +1,5 @@
+import { logger } from "../utils/logger";
+
 export interface TokenResponse {
   access_token: string;
   token_type: string;
@@ -43,11 +45,11 @@ class AuthService {
         }
         // The token was present but rejected by the backend. Log the reason so
         // an invalid/expired token isn't silently masked by the no-auth probe.
-        console.warn(
+        logger.warn(
           `authService: token auth rejected (${response.status} ${response.statusText})`,
         );
       } catch (e) {
-        console.warn("Auth check failed with token", e);
+        logger.warn("Auth check failed with token", e);
       }
     }
 
@@ -60,7 +62,7 @@ class AuthService {
         return { username: 'local_admin', roles: ['admin'], is_active: true, noAuth: true };
       }
     } catch (e) {
-      console.debug("authService: no-auth probe failed", e);
+      logger.debug("authService: no-auth probe failed", e);
     }
 
     throw new Error("Authentication required");
