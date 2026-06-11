@@ -453,6 +453,11 @@ class WebModeServer:
             get_poller_registry().register(
                 start=self._track_dograh_run,
                 stop=self.stop_dograh_call_poller,
+                # Capture the running loop so SYNC callers (command_executor,
+                # advisor tool) can schedule auto-start onto it via
+                # request_start/request_stop. Without a registered loop those
+                # triggers are a safe no-op (pure CLI / no web server).
+                loop=asyncio.get_running_loop(),
             )
 
         @self.app.on_event("shutdown")

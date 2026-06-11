@@ -166,6 +166,11 @@ def _do_call(
         phone_number=phone_number,
         telephony_configuration_id=telephony_configuration_id,
     )
+    # Intentionally NOT wiring get_poller_registry().request_start here: the
+    # CLI is a short-lived process with no running web server / event loop, so
+    # the trigger would be a guaranteed no-op (nothing registered). Auto-start
+    # only matters for long-lived flows (command_executor / advisor tool) where
+    # a web server may have registered its loop.
     print(json.dumps(result, indent=2, default=str))
     return 0
 
