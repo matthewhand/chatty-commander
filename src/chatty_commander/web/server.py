@@ -154,7 +154,9 @@ def ensure_no_auth_allowed(no_auth: bool) -> None:
         )
 
 
-def register_shared_routers(app: FastAPI, config_manager: Any = None) -> None:
+def register_shared_routers(
+    app: FastAPI, config_manager: Any = None, *, no_auth: bool = False
+) -> None:
     """Register routers shared by both FastAPI app factories.
 
     Single source of truth for the router set used by both
@@ -165,6 +167,12 @@ def register_shared_routers(app: FastAPI, config_manager: Any = None) -> None:
     Covers the import-guarded routers (avatar ws/api/selector, version,
     dograh, metrics, agents) plus the config-bound factories (audio,
     preferences, themes).
+
+    ``no_auth`` is threaded through so the Phase-2 role dependency
+    (``web/deps/auth.py``) can apply its degradation rule: role guards are a
+    pass-through (allow) unless user auth is active (users configured AND not
+    ``no_auth`` AND a JWT secret is resolvable). It defaults to ``False`` so
+    existing callers/tests are unaffected.
     """
     for nm in (
         "avatar_ws_router",
@@ -197,8 +205,36 @@ def register_shared_routers(app: FastAPI, config_manager: Any = None) -> None:
 
     # JWT user-login router (/api/v1/auth/*). Self-disables (404) unless
     # auth.users is configured, so default/no-auth flows are unchanged.
+    #
+    # Share ONE revocation store between the /auth/* router (which writes it on
+    # logout/refresh) and the Phase-2 role dependency (which reads it on every
+    # guarded request), then publish {config_manager, no_auth, store} on the
+    # process-wide AuthContext so require_role can see them. The context is
+    # always configured (even when the auth router import is unavailable) so
+    # the degradation rule resolves consistently.
+    shared_revocation_store = None
+    try:
+        from .revocation import InMemoryRevocationStore
+
+        shared_revocation_store = InMemoryRevocationStore()
+    except ImportError:
+        pass
+
     if register_auth_routes is not None:
-        register_auth_routes(app, config_manager)
+        register_auth_routes(
+            app, config_manager, revocation_store=shared_revocation_store
+        )
+
+    try:
+        from .deps.auth import configure_auth_context
+
+        configure_auth_context(
+            config_manager=config_manager,
+            no_auth=no_auth,
+            revocation_store=shared_revocation_store,
+        )
+    except ImportError:
+        pass
 
     # Standardized {error, code, details, request_id} bodies on /api/* paths
     # for HTTPException, 422 validation and unhandled exceptions. Registered
@@ -248,7 +284,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
 
     # Routers shared with web_mode.WebModeServer._create_app (single source
     # of truth lives in register_shared_routers above).
-    register_shared_routers(app, config_manager)
+    register_shared_routers(app, config_manager, no_auth=no_auth)
 
     # Routers exposed only via this factory
     for nm in ("models_router", "command_authoring_router"):
@@ -286,11 +322,16 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             if no_auth:
                 # Dev mode: token required, reject if missing
                 if not x_bridge_token:
-                    _bridge_logger.warning("Bridge request rejected: missing X-Bridge-Token in dev mode")
+                    _bridge_logger.warning(
+                        "Bridge request rejected: missing X-Bridge-Token in dev mode"
+                    )
                     raise HTTPException(
                         status_code=401, detail="Unauthorized bridge request"
                     )
-                return {"ok": True, "reply": {"text": "Bridge response (dev)", "meta": {}}}
+                return {
+                    "ok": True,
+                    "reply": {"text": "Bridge response (dev)", "meta": {}},
+                }
             else:
                 # Production mode: validate token from config
                 expected_token: str | None = None
@@ -312,9 +353,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
                     _bridge_logger.warning(
                         "Bridge request rejected: invalid token provided"
                     )
-                    raise HTTPException(
-                        status_code=401, detail="Invalid bridge token"
-                    )
+                    raise HTTPException(status_code=401, detail="Invalid bridge token")
 
                 return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 

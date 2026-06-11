@@ -672,7 +672,7 @@ class WebModeServer:
         # agents, audio, preferences and themes. The list lives in
         # chatty_commander.web.server.register_shared_routers so this factory
         # and server.create_app cannot drift apart.
-        register_shared_routers(app, self.config_manager)
+        register_shared_routers(app, self.config_manager, no_auth=self.no_auth)
 
         # Voice routing
         voice = include_voice_routes(
