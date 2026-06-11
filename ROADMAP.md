@@ -130,7 +130,7 @@ Spike + feasibility: [`docs/developer/WEBRTC_BRIDGE_SPIKE.md`](docs/developer/WE
 - [ ] **Inbound call-state bridge (state-only)** — dograh call state (`ringing`/`in-call`/`ended`) surfaced in CC
   - [x] Poller + `dograh_call_state` `/ws` broadcast + `GET /api/v1/dograh/call-state` (#680, wired-but-dormant)
   - [ ] Confirm the dograh run-state field/vocabulary against a live instance (two constants in `dograh_call_state.py`)
-  - [ ] Call `start_dograh_call_poller` when a run becomes active; frontend dashboard consumer of the message
+  - [x] Call `start_dograh_call_poller` when a run becomes active — `POST /api/v1/dograh/call-state/track`/`untrack` (#684); frontend dashboard CallStateBadge consumes the `dograh_call_state` broadcast (#684)
   - [ ] Outbound: publish CC's `chatty`/`computer` mode into dograh session metadata (no dograh API for this yet — blocked)
 - [ ] E2E test: wake-word → dograh call → live audio → call end → CC returns to `idle`
 
