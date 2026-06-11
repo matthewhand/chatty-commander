@@ -18,6 +18,13 @@ import {
 } from "lucide-react";
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme } from "../components/ThemeProvider";
+import { runMicTest, playTestTone } from "../utils/audioTest";
+
+// In-browser audio test tuning.
+const MIC_TEST_DURATION_MS = 3000;
+const OUTPUT_TONE_DURATION_MS = 1500;
+/** Minimum peak level (0-100) for the mic test to count as "signal detected". */
+const MIC_SIGNAL_THRESHOLD = 3;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AppConfig {
@@ -130,8 +137,15 @@ const ConfigurationPage: React.FC = () => {
   // Audio state
   const [inputDevice, setInputDevice] = useState("");
   const [outputDevice, setOutputDevice] = useState("");
-  const [isTestingMic, setIsTestingMic] = useState(false);
-  const [isTestingOutput, setIsTestingOutput] = useState(false);
+
+  // In-browser audio test state. The mic test measures real input levels via
+  // getUserMedia + AnalyserNode; the output test plays a generated tone.
+  const [micTestStatus, setMicTestStatus] = useState<"idle" | "testing" | "done" | "error">("idle");
+  const [micLevel, setMicLevel] = useState(0);
+  const [micPeak, setMicPeak] = useState(0);
+  const [micTestError, setMicTestError] = useState<string | null>(null);
+  const [outputTestStatus, setOutputTestStatus] = useState<"idle" | "playing" | "done" | "error">("idle");
+  const [outputTestError, setOutputTestError] = useState<string | null>(null);
 
   // Voice Models State
   const [uploadState, setUploadState] = useState<"idle" | "computer" | "chatty">("idle");
@@ -247,14 +261,45 @@ const ConfigurationPage: React.FC = () => {
     }
   };
 
-  const handleTestMic = () => {
-    setIsTestingMic(true);
-    setTimeout(() => setIsTestingMic(false), 3000); // Simulate 3s test
+  const handleTestMic = async () => {
+    setMicTestStatus("testing");
+    setMicTestError(null);
+    setMicLevel(0);
+    setMicPeak(0);
+    try {
+      const { peakLevel } = await runMicTest({
+        durationMs: MIC_TEST_DURATION_MS,
+        onLevel: (level) => {
+          setMicLevel(level);
+          setMicPeak((prev) => Math.max(prev, level));
+        },
+      });
+      setMicLevel(0);
+      setMicPeak(peakLevel);
+      setMicTestStatus("done");
+    } catch (err) {
+      setMicLevel(0);
+      setMicTestError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Microphone access was denied or is unavailable.",
+      );
+      setMicTestStatus("error");
+    }
   };
 
-  const handleTestOutput = () => {
-    setIsTestingOutput(true);
-    setTimeout(() => setIsTestingOutput(false), 2000); // Simulate 2s sound
+  const handleTestOutput = async () => {
+    setOutputTestStatus("playing");
+    setOutputTestError(null);
+    try {
+      await playTestTone({ durationMs: OUTPUT_TONE_DURATION_MS });
+      setOutputTestStatus("done");
+    } catch (err) {
+      setOutputTestError(
+        err instanceof Error && err.message ? err.message : "Could not play the test tone.",
+      );
+      setOutputTestStatus("error");
+    }
   };
 
   return (
@@ -344,10 +389,14 @@ const ConfigurationPage: React.FC = () => {
 
           {/* Audio Hardware Component */}
           <div className="p-6 border-b border-base-content/10 bg-base-200/30">
-            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-1">
               <HeadphonesIcon className="w-5 h-5 text-accent" />
               Audio Devices
             </h3>
+            <p className="text-xs text-base-content/60 mb-4">
+              Device selections below configure the server and are applied on save. The Test
+              buttons run in your browser on its default microphone and speakers.
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Input Device Card */}
@@ -363,10 +412,11 @@ const ConfigurationPage: React.FC = () => {
                     <button
                       className="btn btn-xs btn-outline btn-primary"
                       onClick={handleTestMic}
-                      disabled={isTestingMic || !inputDevice}
-                      aria-label={isTestingMic ? "Testing microphone device" : "Test microphone device"}
+                      disabled={micTestStatus === "testing"}
+                      aria-label={micTestStatus === "testing" ? "Testing microphone" : "Test microphone"}
+                      data-testid="mic-test-button"
                     >
-                      {isTestingMic ? "Testing..." : "Test"}
+                      {micTestStatus === "testing" ? "Testing..." : "Test"}
                     </button>
                   </div>
 
@@ -381,16 +431,36 @@ const ConfigurationPage: React.FC = () => {
                     ))}
                   </select>
 
-                  {/* Visualizer Area */}
-                  <div className="h-6 bg-base-200 rounded flex items-center px-4 gap-1 overflow-hidden">
-                    {isTestingMic ? (
-                      Array.from({ length: 15 }).map((_, i) => (
+                  {/* Live input level meter / test result */}
+                  <div className="h-6 bg-base-200 rounded flex items-center px-2 overflow-hidden">
+                    {micTestStatus === "testing" ? (
+                      <div
+                        role="meter"
+                        aria-label="Microphone input level"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={micLevel}
+                        data-testid="mic-test-meter"
+                        className="w-full h-3 bg-base-300 rounded-full overflow-hidden"
+                      >
                         <div
-                          key={i}
-                          className="w-full bg-primary rounded-full animate-pulse"
-                          style={{ height: `${Math.max(10, Math.random() * 100)}%`, animationDuration: `${0.2 + Math.random() * 0.5}s` }}
+                          className="h-full bg-primary transition-all duration-75"
+                          style={{ width: `${micLevel}%` }}
                         />
-                      ))
+                      </div>
+                    ) : micTestStatus === "done" ? (
+                      <span
+                        data-testid="mic-test-result"
+                        className={`text-[10px] w-full text-center ${micPeak >= MIC_SIGNAL_THRESHOLD ? "text-success" : "text-warning"}`}
+                      >
+                        {micPeak >= MIC_SIGNAL_THRESHOLD
+                          ? `Signal detected (peak ${micPeak}%)`
+                          : "No signal detected — check your microphone"}
+                      </span>
+                    ) : micTestStatus === "error" ? (
+                      <span data-testid="mic-test-result" className="text-[10px] text-error w-full text-center">
+                        {micTestError}
+                      </span>
                     ) : (
                       <span className="text-[10px] text-base-content/40 italic w-full text-center">Click Test</span>
                     )}
@@ -404,17 +474,18 @@ const ConfigurationPage: React.FC = () => {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h4 className="card-title text-sm text-secondary">
-                        <VolumeUpIcon size={16} className={isTestingOutput ? "animate-bounce" : ""} /> Output Device
+                        <VolumeUpIcon size={16} className={outputTestStatus === "playing" ? "animate-bounce" : ""} /> Output Device
                       </h4>
                       <p className="text-xs opacity-70">Playback endpoint</p>
                     </div>
                     <button
                       className="btn btn-xs btn-outline btn-secondary"
                       onClick={handleTestOutput}
-                      disabled={isTestingOutput || !outputDevice}
-                      aria-label={isTestingOutput ? "Playing output device" : "Test output device"}
+                      disabled={outputTestStatus === "playing"}
+                      aria-label={outputTestStatus === "playing" ? "Playing test tone" : "Play test tone"}
+                      data-testid="output-test-button"
                     >
-                      {isTestingOutput ? "Playing..." : "Test"}
+                      {outputTestStatus === "playing" ? "Playing..." : "Test"}
                     </button>
                   </div>
 
@@ -430,8 +501,20 @@ const ConfigurationPage: React.FC = () => {
                   </select>
 
                   <div className="h-6 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
-                    <span className="text-[10px] text-base-content/40 italic">
-                      {isTestingOutput ? "🔊 Playing test sound..." : "Ready"}
+                    <span
+                      data-testid="output-test-status"
+                      className={`text-[10px] w-full text-center ${
+                        outputTestStatus === "error"
+                          ? "text-error"
+                          : outputTestStatus === "done"
+                            ? "text-success"
+                            : "text-base-content/40 italic"
+                      }`}
+                    >
+                      {outputTestStatus === "playing" && "Playing 440 Hz test tone..."}
+                      {outputTestStatus === "done" && "Test tone played"}
+                      {outputTestStatus === "error" && outputTestError}
+                      {outputTestStatus === "idle" && "Ready"}
                     </span>
                   </div>
                 </div>
