@@ -121,6 +121,45 @@ def map_run_record(run: dict[str, Any]) -> str:
     return map_dograh_state(extract_run_state(run))
 
 
+# --- UNVERIFIED initiate_call RESULT run-id assumptions ------------------
+#
+# The shape of the dict returned by ``DograhClient.initiate_call`` is not
+# known without a live dograh instance. To auto-start the poller right after
+# a call begins we must pull the *run id* out of that result. We probe these
+# candidate locations in order and use the first that yields an int-coercible
+# value. The workflow id is always known (it's the call arg), so only the run
+# id needs extraction.
+#
+# This mirrors the _RUN_STATE_FIELDS pattern above: a single isolated place
+# to correct once the real result shape is confirmed against a live dograh.
+#   * top-level keys: workflow_run_id / run_id / id
+#   * nested:         run.id
+def extract_run_id(result: dict[str, Any]) -> int | None:
+    """Pull the run id from an ``initiate_call`` result dict, if present.
+
+    Returns the first int-coercible value among the assumed candidate
+    locations, or ``None`` if none is present / coercible. Never raises.
+    """
+    if not isinstance(result, dict):
+        return None
+    candidates: list[Any] = [
+        result.get("workflow_run_id"),
+        result.get("run_id"),
+        result.get("id"),
+    ]
+    run = result.get("run")
+    if isinstance(run, dict):
+        candidates.append(run.get("id"))
+    for value in candidates:
+        if value is None:
+            continue
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
 class _RunFetcher(Protocol):
     """Structural type for the bit of DograhClient the poller needs."""
 
@@ -322,14 +361,28 @@ class DograhPollerRegistry:
     def __init__(self) -> None:
         self._start: StartPoller | None = None
         self._stop: StopPoller | None = None
+        # The event loop the start/stop callables belong to. Captured by
+        # web_mode at FastAPI startup (asyncio.get_running_loop()) so that
+        # SYNC callers (command_executor / advisor tool / CLI) — which have
+        # no event-loop handle of their own — can schedule the async
+        # start/stop onto the web server's loop via run_coroutine_threadsafe.
+        self._loop: asyncio.AbstractEventLoop | None = None
 
-    def register(self, *, start: StartPoller, stop: StopPoller) -> None:
+    def register(
+        self,
+        *,
+        start: StartPoller,
+        stop: StopPoller,
+        loop: asyncio.AbstractEventLoop | None = None,
+    ) -> None:
         self._start = start
         self._stop = stop
+        self._loop = loop
 
     def clear(self) -> None:
         self._start = None
         self._stop = None
+        self._loop = None
 
     def is_registered(self) -> bool:
         return self._start is not None and self._stop is not None
@@ -347,6 +400,59 @@ class DograhPollerRegistry:
         result = self._stop()
         if asyncio.iscoroutine(result):
             await result
+
+    # --- SYNC, thread-safe triggers for non-async callers ----------------
+    #
+    # Calls into dograh are initiated from SYNC code (command_executor,
+    # advisor tool, CLI) that has no reference to the web server's event
+    # loop. These helpers bridge sync -> async safely:
+    #
+    #   * If a lifecycle AND its loop are registered (a web server is
+    #     running), schedule the async start/stop on that loop via
+    #     ``asyncio.run_coroutine_threadsafe`` and return immediately —
+    #     never block on the result.
+    #   * If nothing is registered (pure CLI / advisor with no web server),
+    #     it's a safe no-op (debug log).
+    #
+    # They NEVER raise and NEVER block the caller, so wiring them into a
+    # call-initiation path can't crash or hang the call.
+
+    def request_start(self, workflow_id: int, run_id: int) -> None:
+        """Schedule poller start on the registered loop, or no-op.
+
+        Safe to call from any (sync) thread. Returns immediately.
+        """
+        loop = self._loop
+        if not self.is_registered() or loop is None:
+            logger.debug(
+                "dograh request_start: no lifecycle/loop registered; no-op "
+                "(workflow_id=%s run_id=%s)",
+                workflow_id,
+                run_id,
+            )
+            return
+        coro = self.start(workflow_id, run_id)
+        try:
+            asyncio.run_coroutine_threadsafe(coro, loop)
+        except Exception as exc:  # noqa: BLE001 - never crash the call path
+            coro.close()  # don't leak the un-scheduled coroutine
+            logger.debug("dograh request_start scheduling failed: %s", exc)
+
+    def request_stop(self) -> None:
+        """Schedule poller stop on the registered loop, or no-op.
+
+        Safe to call from any (sync) thread. Returns immediately.
+        """
+        loop = self._loop
+        if not self.is_registered() or loop is None:
+            logger.debug("dograh request_stop: no lifecycle/loop registered; no-op")
+            return
+        coro = self.stop()
+        try:
+            asyncio.run_coroutine_threadsafe(coro, loop)
+        except Exception as exc:  # noqa: BLE001 - never crash the call path
+            coro.close()  # don't leak the un-scheduled coroutine
+            logger.debug("dograh request_stop scheduling failed: %s", exc)
 
 
 # Module-level singleton mirroring _HOLDER.

@@ -72,6 +72,21 @@ def dograh_place_call_tool(workflow_id: int, phone_number: str) -> str:
     finally:
         client.close()
 
+    # Auto-start the call-state poller so the dashboard CallStateBadge lights
+    # up without a manual /track. No-op unless a web server has registered its
+    # event loop (e.g. pure advisor with no server); never raises or blocks.
+    try:
+        from chatty_commander.integrations.dograh_call_state import (
+            extract_run_id,
+            get_poller_registry,
+        )
+
+        extracted_run_id = extract_run_id(result if isinstance(result, dict) else {})
+        if extracted_run_id is not None:
+            get_poller_registry().request_start(workflow_id, extracted_run_id)
+    except Exception as exc:  # noqa: BLE001 - never fail a successful call
+        logger.debug("dograh call-state auto-start failed: %s", exc)
+
     run_id = result.get("workflow_run_id") or result.get("id")
     return f"Call queued via dograh: workflow_run_id={run_id}"
 

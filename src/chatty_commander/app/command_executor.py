@@ -372,8 +372,39 @@ class CommandExecutor:
             return False
 
         logging.info(f"dograh_call ok: workflow {workflow_id} result={result}")
+
+        # Auto-start the call-state poller so the dashboard CallStateBadge
+        # lights up without a manual /track. This is a no-op unless a web
+        # server has registered its event loop; it never raises or blocks.
+        self._request_dograh_call_state_start(workflow_id, result)
+
         logging.info(f"Completed execution of command: {command_name}")
         return True
+
+    @staticmethod
+    def _request_dograh_call_state_start(workflow_id: int, result: Any) -> None:
+        """Best-effort auto-start of the dograh call-state poller.
+
+        Extracts the run id from the initiate_call result and asks the
+        process-wide poller registry to start polling. Safe no-op when no
+        web server is running. Never raises (the call already succeeded).
+        """
+        try:
+            from chatty_commander.integrations.dograh_call_state import (
+                extract_run_id,
+                get_poller_registry,
+            )
+
+            run_id = extract_run_id(result if isinstance(result, dict) else {})
+            if run_id is None:
+                logging.debug(
+                    "dograh_call: no run id in initiate_call result; "
+                    "skipping call-state auto-start"
+                )
+                return
+            get_poller_registry().request_start(workflow_id, run_id)
+        except Exception as exc:  # noqa: BLE001 - never crash a successful call
+            logging.debug("dograh call-state auto-start failed: %s", exc)
 
     def _execute_custom_message(self, command_name: str, message: str) -> None:
         """Execute a custom message action."""
