@@ -100,6 +100,14 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 - [ ] **Configure a Twilio/Vonage provider** so `dograh_call` returns success instead of `telephony_not_configured`
 - [ ] **Wire dograh's LLM / STT / TTS providers for self-hosted use** — the OSS image points all three at dograh's hosted cloud. Options: (a) OpenAI keys for all three, simplest; (b) the optional Speaches stack (local Whisper + Kokoro TTS) via `PUT /api/v1/user/configurations/user`. See `webui/frontend/tests/e2e/dograh/dograh_webcall_loopback.spec.ts` and `docs/screenshots/dograh/03-webcall-loopback.png` for the captured "blocked at LLM config" state.
 
+### Deterministic dograh call proof — TTS audio loopback (0/3)
+
+Prove dograh's full audio pipeline (STT → LLM → TTS) works without a human, a phone, or Twilio, by feeding a scripted utterance in and asserting on what comes out. Builds on the existing `smallwebrtc` loopback spec. **Prerequisite: the STT/TTS/LLM providers above must be wired first** — this removes the human and the phone, not the provider requirement.
+
+- [ ] **Generate the input audio** — TTS a fixed utterance (e.g. "I'd like to book an appointment") to a 16-bit PCM WAV fixture, committed under `tests/fixtures/audio/`. Any TTS works (OpenAI, Piper/Kokoro, even `say`); the audio is the test input, not a provider dependency.
+- [ ] **Feed it as the call's microphone** — launch Chromium with `--use-fake-device-for-media-stream --use-file-for-fake-audio-capture=<fixture>.wav` so the `smallwebrtc` call leg "hears" the fixture instead of a live mic (extends `dograh_webcall_loopback.spec.ts`).
+- [ ] **Assert on the response, not exact strings** — read the run transcript via `DograhClient.get_workflow_run(workflow_id, run_id)` and assert the STT picked up the intent (keyword/intent match, since STT is non-deterministic) and the agent produced a TTS reply turn. Optionally capture the outbound WebRTC audio and re-transcribe for a fuller assertion. This turns the today-manual loopback into a CI-gateable check.
+
 ---
 
 ## P2 — Post-launch
