@@ -6,6 +6,7 @@ import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 import { formatTimestamp } from "../utils/formatTime";
 import DograhStatusCard from "../components/DograhStatusCard";
+import CallStateBadge, { DograhCallStatePayload } from "../components/CallStateBadge";
 import type { PerfMetric } from "../components/PerformanceChart";
 
 // Lazy-load the recharts-backed chart so the heavy charting bundle is split out
@@ -96,6 +97,26 @@ const DashboardPage = React.memo(() => {
   const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
   const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
 
+  // Live Dograh call state. Seed from the cached snapshot on mount so the badge
+  // reflects the last known state before any WS frame arrives, then let the
+  // 'dograh_call_state' WS message drive subsequent updates.
+  const [callState, setCallState] = useState<DograhCallStatePayload | null>(null);
+  const { data: seededCallState } = useQuery<DograhCallStatePayload | null>({
+    queryKey: ["dograh", "callState"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/dograh/call-state");
+      if (!res.ok) return null;
+      return (await res.json()) as DograhCallStatePayload;
+    },
+    retry: false,
+  });
+  useEffect(() => {
+    // Only seed while we have not yet received a live WS frame.
+    if (seededCallState) {
+      setCallState((prev) => prev ?? seededCallState);
+    }
+  }, [seededCallState]);
+
   // Update history chart from telemetry
   useEffect(() => {
     if (systemStatus && !isPaused) {
@@ -154,6 +175,14 @@ const DashboardPage = React.memo(() => {
           cpu: msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu,
           memory: msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory,
         }));
+        return;
+      }
+      if (msg.type === "dograh_call_state" && msg.data) {
+        setCallState({
+          state: msg.data.state ?? "unknown",
+          workflow_id: msg.data.workflow_id ?? null,
+          run_id: msg.data.run_id ?? null,
+        });
         return;
       }
       // Fallback for non-JSON or other messages
@@ -289,6 +318,8 @@ const DashboardPage = React.memo(() => {
         </div>
 
         <DograhStatusCard />
+
+        <CallStateBadge call={callState} />
       </div>
 
       {/* Real-time Performance History Chart */}
