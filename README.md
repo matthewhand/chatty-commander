@@ -11,7 +11,7 @@ A local-first voice assistant that turns wake words into actions. Say a trigger 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Wake-word detection | ✅ Stable | OpenWakeWord ONNX models, state-driven loading (`idle`/`chatty`/`computer`) |
-| Voice transcription & TTS | ✅ Stable | Whisper-based transcription with pluggable backends |
+| Voice transcription & TTS | ✅ Stable | Whisper-based transcription with pluggable backends; TTS via offline `pyttsx3` (default) or optional Microsoft Edge neural voices — keyless/free but network-required (`pip install 'chatty-commander[tts-edge]'`, then `backend="edge"`) |
 | Command execution | ✅ Stable | Config-defined actions: keypress, URL, system command, voice call |
 | Web dashboard | ✅ Stable | React + DaisyUI: dashboard, configuration, command authoring, themes, audio settings, and a dry-run Voice Test page |
 | Web API | ✅ Stable | FastAPI with `X-API-Key` auth middleware, WebSocket state push, standardized error envelopes, OpenAPI docs |

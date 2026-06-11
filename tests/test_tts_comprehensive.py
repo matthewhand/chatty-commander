@@ -1,6 +1,6 @@
 """Comprehensive tests for TTS backends and TextToSpeech facade."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -69,8 +69,151 @@ class TestPyttsx3Backend:
             pass
 
 
+def _make_fake_edge_tts():
+    """Return a fake ``edge_tts`` module whose Communicate records args.
+
+    ``Communicate(text, voice)`` records the call; the instance's ``save`` is an
+    :class:`AsyncMock` so it can be awaited without any network.
+    """
+    fake = MagicMock(name="edge_tts")
+    instances: list[MagicMock] = []
+
+    def _communicate(text, voice):
+        inst = MagicMock(name="Communicate")
+        inst.text = text
+        inst.voice = voice
+        inst.save = AsyncMock()
+        instances.append(inst)
+        return inst
+
+    fake.Communicate.side_effect = _communicate
+    fake._instances = instances
+    return fake
+
+
+class TestEdgeTTSBackend:
+    """Tests for EdgeTTSBackend."""
+
+    def test_is_available_true_when_imported(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(tts, "edge_tts", _make_fake_edge_tts())
+        assert tts.EdgeTTSBackend().is_available() is True
+
+    def test_is_available_false_when_missing(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(tts, "edge_tts", None)
+        assert tts.EdgeTTSBackend().is_available() is False
+
+    def test_speak_raises_when_unavailable(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(tts, "edge_tts", None)
+        backend = tts.EdgeTTSBackend()
+        with pytest.raises(RuntimeError):
+            backend.speak("hello")
+
+    def test_speak_synthesizes_and_plays(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake = _make_fake_edge_tts()
+        monkeypatch.setattr(tts, "edge_tts", fake)
+        backend = tts.EdgeTTSBackend(voice="en-GB-RyanNeural")
+        play_mock = MagicMock()
+        monkeypatch.setattr(backend, "_play_file", play_mock)
+
+        backend.speak("hello world")
+
+        fake.Communicate.assert_called_once_with("hello world", "en-GB-RyanNeural")
+        inst = fake._instances[0]
+        inst.save.assert_awaited_once()
+        play_mock.assert_called_once()
+
+    def test_play_file_degrades_gracefully(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No playsound, no player on PATH -> warns instead of raising."""
+        # Force the optional ``playsound`` import to fail.
+        import builtins
+
+        real_import = builtins.__import__
+
+        def _fake_import(name, *args, **kwargs):
+            if name == "playsound":
+                raise ImportError("no playsound")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _fake_import)
+        monkeypatch.setattr(tts.shutil, "which", lambda _exe: None)
+        monkeypatch.setattr(tts, "edge_tts", _make_fake_edge_tts())
+        backend = tts.EdgeTTSBackend()
+        with patch.object(tts, "logger") as logger_mock:
+            backend._play_file("/tmp/does-not-exist.mp3")
+            logger_mock.warning.assert_called_once()
+
+
+class TestSynthesizeToFile:
+    """Tests for the playback-free synthesize_to_file helper."""
+
+    def test_raises_when_edge_tts_missing(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(tts, "edge_tts", None)
+        with pytest.raises(RuntimeError):
+            tts.synthesize_to_file("hi", "/tmp/out.mp3")
+
+    def test_writes_via_mocked_save(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path
+    ) -> None:
+        fake = _make_fake_edge_tts()
+        monkeypatch.setattr(tts, "edge_tts", fake)
+        out = tmp_path / "out.mp3"
+
+        result = tts.synthesize_to_file("hello", out)
+
+        assert result == out
+        fake.Communicate.assert_called_once_with("hello", tts.DEFAULT_EDGE_VOICE)
+        fake._instances[0].save.assert_awaited_once_with(str(out))
+
+    def test_custom_voice(self, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+        fake = _make_fake_edge_tts()
+        monkeypatch.setattr(tts, "edge_tts", fake)
+        out = tmp_path / "out.mp3"
+
+        tts.synthesize_to_file("hello", out, voice="en-GB-RyanNeural")
+
+        fake.Communicate.assert_called_once_with("hello", "en-GB-RyanNeural")
+
+
 class TestTextToSpeech:
     """Tests for TextToSpeech facade."""
+
+    def test_edge_backend_selected_when_available(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(tts, "edge_tts", _make_fake_edge_tts())
+        engine = tts.TextToSpeech(backend="edge")
+        assert isinstance(engine.backend, tts.EdgeTTSBackend)
+        # alias accepted too
+        engine2 = tts.TextToSpeech(backend="edge-tts")
+        assert isinstance(engine2.backend, tts.EdgeTTSBackend)
+
+    def test_edge_voice_passed_through(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(tts, "edge_tts", _make_fake_edge_tts())
+        engine = tts.TextToSpeech(backend="edge", voice="en-GB-RyanNeural")
+        assert isinstance(engine.backend, tts.EdgeTTSBackend)
+        assert engine.backend.voice == "en-GB-RyanNeural"
+
+    def test_edge_falls_back_to_mock_when_unavailable(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(tts, "edge_tts", None)
+        engine = tts.TextToSpeech(backend="edge")
+        assert isinstance(engine.backend, tts.MockTTSBackend)
+
 
     def test_mock_backend(self) -> None:
         """Test creating TextToSpeech with mock backend."""
