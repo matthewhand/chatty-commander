@@ -23,6 +23,7 @@
 """Authentication middleware for FastAPI."""
 
 import logging
+import os
 import posixpath
 import urllib.parse
 from collections.abc import Callable
@@ -33,6 +34,31 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from chatty_commander.utils.security import constant_time_compare
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_expected_api_key(config_manager) -> str | None:
+    """Resolve the expected X-API-Key from env or config.
+
+    Precedence (highest first):
+    1. ``CHATTY_API_KEY`` environment variable (non-blank).
+    2. ``config_manager.auth["api_key"]`` — test/DummyConfig objects.
+    3. ``config_manager.config["auth"]["api_key"]`` — the real ``Config``.
+
+    Returns ``None`` when no key is configured anywhere (the zero-config
+    default), in which case authentication cannot succeed.
+    """
+    env_key = os.environ.get("CHATTY_API_KEY")
+    if env_key and env_key.strip():
+        return env_key
+
+    key: object = None
+    # Check for DummyConfig pattern (test configs)
+    if hasattr(config_manager, "auth"):
+        key = config_manager.auth.get("api_key")
+    # Check for regular Config pattern
+    elif hasattr(config_manager, "config") and config_manager.config:
+        key = config_manager.config.get("auth", {}).get("api_key")
+    return key if isinstance(key, str) else None
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -91,6 +117,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS":
             return await call_next(request)  # type: ignore[no-any-return]
 
+        # The JWT auth router (/api/v1/auth/*) validates user credentials /
+        # bearer tokens itself, so it must NOT require the global X-API-Key
+        # (the unauthenticated login form has no key). It sits under /api/ so
+        # this exemption has to come before the X-API-Key gate below.
+        if path == "/api/v1/auth" or path.startswith("/api/v1/auth/"):
+            return await call_next(request)  # type: ignore[no-any-return]
+
         # Validate API key for protected endpoints
         if path == "/api" or path.startswith("/api/"):
             api_key = request.headers.get("X-API-Key")
@@ -98,22 +131,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 f"API request to {path}, API key present: {api_key is not None}"
             )
 
-            # Get expected API key from config
-            expected_key = None
-
-            # Check for DummyConfig pattern (test configs)
-            if hasattr(self.config_manager, "auth"):
-                expected_key = self.config_manager.auth.get("api_key")
-                logger.debug("Found auth config in DummyConfig: key present=%s", bool(expected_key))
-            # Check for regular Config pattern
-            elif hasattr(self.config_manager, "config") and self.config_manager.config:
-                auth_config = self.config_manager.config.get("auth", {})
-                expected_key = auth_config.get("api_key")
-                logger.debug("Found auth config in regular Config: key present=%s", bool(expected_key))
-            else:
-                logger.debug(
-                    "No auth config found, config_manager type: %s", type(self.config_manager).__name__
-                )
+            # Get expected API key from env (preferred) or config.
+            expected_key = resolve_expected_api_key(self.config_manager)
+            logger.debug("Expected API key resolved: present=%s", bool(expected_key))
 
             # Check if API key is valid
             if not constant_time_compare(api_key, expected_key):

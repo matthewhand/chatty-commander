@@ -1036,9 +1036,15 @@ def run_server(
 
     # Fail fast (EnvValidationError) when required env vars for explicitly
     # enabled features are missing (ROADMAP "Secrets validation at startup").
+    # The --no-auth dev bypass disables the global API-key gate entirely, so
+    # reflect that on the config before validating: otherwise the web-auth
+    # check would demand a key that no_auth makes irrelevant.
+    if no_auth and isinstance(getattr(config_manager, "web_server", None), dict):
+        config_manager.web_server["auth_enabled"] = False
+
     from chatty_commander.app.env_validation import validate_startup_env
 
-    validate_startup_env(config_manager)
+    validate_startup_env(config_manager, for_web=True)
 
     app = WebModeServer(
         config_manager, state_manager, model_manager, command_executor, no_auth=no_auth

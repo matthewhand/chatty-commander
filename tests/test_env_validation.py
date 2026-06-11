@@ -253,3 +253,73 @@ def test_run_server_fails_fast(monkeypatch):
     with pytest.raises(EnvValidationError) as exc_info:
         run_server(config, MagicMock(), MagicMock(), MagicMock())
     assert "OPENAI_API_KEY" in str(exc_info.value)
+
+
+# ── web auth (BUG 2) ──────────────────────────────────────────────────────
+
+
+def _web_cfg(*, raw_web=None, resolved_web=None, auth=None):
+    """Build a Config-shaped object for the web-auth validator.
+
+    ``config`` is the raw parsed JSON; ``web_server`` is the resolved dict the
+    runtime uses. The validator reads both, mirroring the real ``Config``.
+    """
+    raw = {}
+    if raw_web is not None:
+        raw["web_server"] = raw_web
+    if auth is not None:
+        raw["auth"] = auth
+    return SimpleNamespace(
+        advisors={"enabled": False},
+        model_actions={},
+        config=raw,
+        web_server=resolved_web if resolved_web is not None else {},
+    )
+
+
+def test_explicit_web_auth_enabled_without_key_fails_fast():
+    config = _web_cfg(raw_web={"auth_enabled": True}, resolved_web={"auth_enabled": True})
+    report = collect_env_report(config, env={}, for_web=True)
+    assert [i.var for i in report.missing] == ["CHATTY_API_KEY"]
+    with pytest.raises(EnvValidationError) as exc_info:
+        validate_startup_env(config, env={}, for_web=True)
+    assert "CHATTY_API_KEY" in str(exc_info.value)
+
+
+def test_web_auth_check_only_runs_for_web_launch():
+    """gui/shell/CLI utility modes (for_web=False) must NOT require an API key,
+    even when auth_enabled is explicitly true — only the web launch is gated.
+    """
+    config = _web_cfg(raw_web={"auth_enabled": True}, resolved_web={"auth_enabled": True})
+    assert collect_env_report(config, env={}).ok  # default for_web=False
+    validate_startup_env(config, env={})  # must not raise
+
+
+def test_web_auth_enabled_with_env_key_ok():
+    config = _web_cfg(raw_web={"auth_enabled": True}, resolved_web={"auth_enabled": True})
+    assert collect_env_report(config, env={"CHATTY_API_KEY": "k"}, for_web=True).ok
+
+
+def test_web_auth_enabled_with_config_key_ok():
+    config = _web_cfg(
+        raw_web={"auth_enabled": True},
+        resolved_web={"auth_enabled": True},
+        auth={"api_key": "config-key"},
+    )
+    assert collect_env_report(config, env={}, for_web=True).ok
+
+
+def test_default_auth_enabled_does_not_fail_fast():
+    """The stock default (auth_enabled True via dataclass default, no explicit
+    web_server block in raw config) must NOT require a key — zero-config boots.
+    """
+    config = _web_cfg(raw_web=None, resolved_web={"auth_enabled": True})
+    assert collect_env_report(config, env={}, for_web=True).ok
+
+
+def test_no_auth_bypass_skips_web_auth_check():
+    """--no-auth sets resolved auth_enabled=False even if the file says true:
+    the check must not demand a key.
+    """
+    config = _web_cfg(raw_web={"auth_enabled": True}, resolved_web={"auth_enabled": False})
+    assert collect_env_report(config, env={}, for_web=True).ok
