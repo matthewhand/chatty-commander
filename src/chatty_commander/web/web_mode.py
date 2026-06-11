@@ -441,6 +441,19 @@ class WebModeServer:
         async def start_telemetry_loop() -> None:
             self._telemetry_running = True
             self._telemetry_task = asyncio.create_task(self._telemetry_loop())
+            # Expose the dograh poller lifecycle to the module-level routes
+            # (POST /api/v1/dograh/call-state/track|untrack) via the shared
+            # registry, mirroring the get_call_state_holder() accessor. Routes
+            # cannot reach this server instance directly, so we register small
+            # bound callables here. Still dormant: nothing polls until /track.
+            from chatty_commander.integrations.dograh_call_state import (
+                get_poller_registry,
+            )
+
+            get_poller_registry().register(
+                start=self._track_dograh_run,
+                stop=self.stop_dograh_call_poller,
+            )
 
         @self.app.on_event("shutdown")
         async def stop_telemetry_loop() -> None:
@@ -452,6 +465,14 @@ class WebModeServer:
                 except asyncio.CancelledError:
                     pass
             self._telemetry_task = None
+            # Ensure any active call-state poller is torn down and the shared
+            # registry no longer points at this (now-stopped) server.
+            await self.stop_dograh_call_poller()
+            from chatty_commander.integrations.dograh_call_state import (
+                get_poller_registry,
+            )
+
+            get_poller_registry().clear()
 
     async def _telemetry_loop(self) -> None:
         """Background task to broadcast system telemetry.
@@ -1033,6 +1054,25 @@ class WebModeServer:
         poller.start()
         self._dograh_call_poller = poller
         return poller
+
+    async def _track_dograh_run(self, workflow_id: int, run_id: int) -> None:
+        """Start (or replace) the call-state poller for one workflow-run.
+
+        Registered with the module-level poller registry at startup so the
+        POST /api/v1/dograh/call-state/track route can drive it. Constructs
+        a fresh DograhClient from the environment (the route has already
+        verified dograh is configured) and hands it to
+        start_dograh_call_poller. Idempotent in the re-track sense: any
+        existing poller is stopped before the new one starts, so the latest
+        track call wins and only one poller is ever active.
+        """
+        from chatty_commander.integrations.dograh_client import DograhClient
+
+        # Re-track replaces: tear down the previous run's poller first so we
+        # never leak a second polling task or interleave two runs' broadcasts.
+        await self.stop_dograh_call_poller()
+        client = DograhClient()
+        self.start_dograh_call_poller(client, workflow_id, run_id)
 
     async def stop_dograh_call_poller(self) -> None:
         """Cancel any running dograh call-state poller."""
