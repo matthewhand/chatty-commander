@@ -68,6 +68,9 @@ dependencies = [
 
 [project.optional-dependencies]
 audio = ["pyaudio>=0.2.13"]
+# Optional Microsoft Edge neural TTS backend. Cloud based (requires network),
+# keyless and free. Not a core dependency; selected via TextToSpeech(backend="edge").
+tts-edge = ["edge-tts>=6.1.0"]
 
 [project.scripts]
 chatty-commander = "chatty_commander.cli.cli:cli_main"
@@ -227,6 +230,8 @@ module = [
     "transformers.*",
     "command_executor",
     "pyttsx3.*",
+    "edge_tts.*",
+    "playsound.*",
 ]
 ignore_missing_imports = true
 
