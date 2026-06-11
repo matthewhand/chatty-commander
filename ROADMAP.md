@@ -124,8 +124,14 @@ Test voice functionality from the webapp as if running locally: enable the micro
 
 ### WebRTC audio bridge (0/3)
 
+Spike + feasibility: [`docs/developer/WEBRTC_BRIDGE_SPIKE.md`](docs/developer/WEBRTC_BRIDGE_SPIKE.md). **Phase-0 state bridge landed (#680)** — see the nested item below.
+
 - [ ] Bring CC's wake-word detector and dograh's pipecat audio pipeline onto a shared audio stream so a wake-word can interrupt and hand off to an in-progress dograh call
-- [ ] Bidirectional state: dograh call state (`ringing`/`in-call`/`ended`) reflected in CC's `StateManager`; CC's `chatty`/`computer` mode published to dograh's session metadata
+- [ ] **Inbound call-state bridge (state-only)** — dograh call state (`ringing`/`in-call`/`ended`) surfaced in CC
+  - [x] Poller + `dograh_call_state` `/ws` broadcast + `GET /api/v1/dograh/call-state` (#680, wired-but-dormant)
+  - [ ] Confirm the dograh run-state field/vocabulary against a live instance (two constants in `dograh_call_state.py`)
+  - [ ] Call `start_dograh_call_poller` when a run becomes active; frontend dashboard consumer of the message
+  - [ ] Outbound: publish CC's `chatty`/`computer` mode into dograh session metadata (no dograh API for this yet — blocked)
 - [ ] E2E test: wake-word → dograh call → live audio → call end → CC returns to `idle`
 
 ### Production hardening (carried from PRODUCTION_READINESS_ROADMAP) (5/6)
