@@ -13,15 +13,15 @@ A local-first voice assistant that turns wake words into actions. Say a trigger 
 | Wake-word detection | ✅ Stable | OpenWakeWord ONNX models, state-driven loading (`idle`/`chatty`/`computer`) |
 | Voice transcription & TTS | ✅ Stable | Whisper-based transcription with pluggable backends |
 | Command execution | ✅ Stable | Config-defined actions: keypress, URL, system command, voice call |
-| Web dashboard | ✅ Stable | React + DaisyUI: dashboard, configuration, command authoring, themes, audio settings |
-| Web API | ✅ Stable | FastAPI with `X-API-Key` auth middleware, WebSocket state push, OpenAPI docs |
+| Web dashboard | ✅ Stable | React + DaisyUI: dashboard, configuration, command authoring, themes, audio settings, and a dry-run Voice Test page |
+| Web API | ✅ Stable | FastAPI with `X-API-Key` auth middleware, WebSocket state push, standardized error envelopes, OpenAPI docs |
 | CLI | ✅ Stable | `chatty-commander` console script with subcommands (`dograh`, config, modes) |
 | LLM advisors | ✅ Stable | OpenAI/Ollama-backed agents with tools (browser analyst, mode switch, voice call) |
 | dograh voice calls | ✅ Optional | Self-hosted call-workflow engine via compose overlay (see below) |
 | Desktop GUI / avatar | 🚧 Partial | PyQt5 tray + avatar visualization exist but are unfinished — see roadmap |
-| Discord/Slack bridges | 🚧 Partial | Orchestrator adapter is wired; CLI entry points don't construct the advisor sink yet |
+| Discord/Slack bridges | 🚧 Partial | Orchestrator constructs the advisor sink and routes messages; the external bridge client process is not yet maintained in-repo |
 
-Test suite: 850+ Python tests green on `main` (~64% coverage), frontend production build verified in CI.
+Test suite: 1,100+ Python tests green on `main`, plus a frontend unit suite (vitest) and Playwright e2e; production build verified in CI.
 
 ## Getting started
 
