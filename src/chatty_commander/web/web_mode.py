@@ -425,6 +425,12 @@ class WebModeServer:
         self._telemetry_task: asyncio.Task | None = None  # type: ignore[type-arg]
         self._telemetry_running: bool = False
 
+        # Phase-0 dograh call-state bridge (state-only; no shared audio).
+        # Wired-but-dormant: no poller runs until start_dograh_call_poller()
+        # registers an active workflow-run. Kept separate from StateManager
+        # mode (idle/chatty/computer) per WEBRTC_BRIDGE_SPIKE.md "Phase 0".
+        self._dograh_call_poller: Any | None = None
+
         # Initialize FastAPI app and register routes
         self.app = self._create_app()
         # Hook state change broadcasts
@@ -971,6 +977,69 @@ class WebModeServer:
             # e.g. the event loop is closed — fail gracefully rather than
             # propagating into the state manager callback chain.
             logger.debug("state_change broadcast scheduling failed: %s", e)
+
+    # --------------------------
+    # Phase-0 dograh call-state bridge
+    # --------------------------
+    async def _on_dograh_call_state(self, snapshot: Any) -> None:
+        """Update the cached holder and broadcast a dograh_call_state message.
+
+        ``snapshot`` is a ``DograhCallState``. This is the poller's
+        on-change callback: it fires only on transitions, updates the
+        in-memory holder (read by GET /api/v1/dograh/call-state) and fans
+        the change out over the existing /ws broadcast as a dedicated
+        ``dograh_call_state`` message — deliberately NOT a ``state_change``,
+        so CC's mode states stay untouched.
+        """
+        from chatty_commander.integrations.dograh_call_state import (
+            get_call_state_holder,
+        )
+
+        get_call_state_holder().set(snapshot)
+        await self._broadcast_message(
+            WebSocketMessage(
+                type="dograh_call_state",
+                data=snapshot.as_message_data(),
+            )
+        )
+
+    def start_dograh_call_poller(
+        self,
+        client: Any,
+        workflow_id: int,
+        run_id: int,
+        *,
+        interval_seconds: float = 2.0,
+    ) -> Any:
+        """Begin reflecting a dograh workflow-run's call state into CC.
+
+        Wired-but-dormant entry point: nothing polls dograh until this is
+        called with an active run. Returns the started
+        ``DograhCallStatePoller`` (its task is cancellable via ``stop()``).
+        Caller is responsible for only invoking this when dograh is
+        configured and a run is actually active.
+        """
+        from chatty_commander.integrations.dograh_call_state import (
+            DograhCallStatePoller,
+        )
+
+        poller = DograhCallStatePoller(
+            client,
+            workflow_id,
+            run_id,
+            self._on_dograh_call_state,
+            interval_seconds=interval_seconds,
+        )
+        poller.start()
+        self._dograh_call_poller = poller
+        return poller
+
+    async def stop_dograh_call_poller(self) -> None:
+        """Cancel any running dograh call-state poller."""
+        poller = self._dograh_call_poller
+        if poller is not None:
+            await poller.stop()
+            self._dograh_call_poller = None
 
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:

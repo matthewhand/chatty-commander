@@ -540,7 +540,10 @@ class TestServerImportSafety:
             app = server_module.create_app()
             assert isinstance(app, FastAPI)
             route_count = len(app.routes)
-            assert route_count <= 12
+            # dograh_router stays registered here and now carries three
+            # routes (status, workflows, call-state); the phase-0 call-state
+            # read route bumped the baseline from 12 to 13.
+            assert route_count <= 13
         finally:
             for key, value in original_globals.items():
                 setattr(server_module, key, value)
