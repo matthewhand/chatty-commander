@@ -27,6 +27,16 @@ interface CommandConfig {
   message?: string;
 }
 
+// Human-readable summary of what a command actually does, for the card.
+function describeAction(config: CommandConfig): { label: string; detail: string } {
+  if (config.url) return { label: 'Opens URL', detail: config.url };
+  if (config.keys) return { label: 'Presses keys', detail: config.keys };
+  if (config.cmd) return { label: 'Runs command', detail: config.cmd };
+  if (config.message) return { label: 'Sends message', detail: config.message };
+  if (config.action) return { label: 'Action', detail: config.action };
+  return { label: 'No action', detail: 'Not configured' };
+}
+
 export default function CommandsPage() {
   useEffect(() => {
     document.title = "Commands | ChattyCommander";
@@ -303,8 +313,12 @@ export default function CommandsPage() {
               <div className="border-gradient"></div>
               <div className="card-body p-0">
                 {/* Command Header */}
-                <div className="p-6 bg-base-200/50 border-b border-base-content/10 flex justify-between items-start">
-                  <div className="flex gap-1">
+                <div className="p-6 bg-base-200/50 border-b border-base-content/10 flex justify-between items-start gap-3">
+                  <div className="min-w-0 flex items-center gap-3">
+                    <TerminalSquare size={20} className="text-primary shrink-0" />
+                    <h3 className="text-lg font-bold truncate" title={name}>{name}</h3>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
                     <DynamicDropdown
                       buttonContent={
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -330,13 +344,19 @@ export default function CommandsPage() {
                   </div>
                 </div>
 
-                {/* Triggers Section */}
+                {/* Action + Triggers Section */}
                 <div className="p-6 space-y-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-base-content/50 flex items-center gap-2">
-                    <Settings2 size={14} /> Activation Triggers
-                  </h3>
+                  {/* What this command does */}
+                  <div>
+                    <h4 className="text-sm font-semibold uppercase tracking-wider text-base-content/50 flex items-center gap-2 mb-2">
+                      <Settings2 size={14} /> {describeAction(config).label}
+                    </h4>
+                    <p className="text-sm text-base-content/80 font-mono break-all bg-base-200/40 rounded-lg px-3 py-2">
+                      {describeAction(config).detail}
+                    </p>
+                  </div>
 
-                  {/* REST API Badge */}
+                  {/* How it's triggered */}
                   <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success/5">
                     <Globe className="text-success" size={20} />
                     <div className="flex-1">

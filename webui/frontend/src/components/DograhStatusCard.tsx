@@ -76,8 +76,11 @@ const DograhStatusCard = React.memo(() => {
           </div>
           <div className="stat-title">Dograh</div>
           <div className="stat-value text-2xl text-base-content/50">Offline</div>
-          <div className="stat-desc text-xs truncate" title={status?.reason ?? ""}>
-            {status?.reason ?? "not configured"}
+          <div
+            className="stat-desc text-xs whitespace-normal leading-snug max-w-[16rem]"
+            title={status?.reason ?? ""}
+          >
+            Optional voice-call integration — not configured.
           </div>
         </div>
       </div>
