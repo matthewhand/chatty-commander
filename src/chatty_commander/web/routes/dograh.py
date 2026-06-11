@@ -9,8 +9,10 @@ the client — they always proxy through the in-process DograhClient
 which reads its credentials from environment variables.
 
 Routes:
-    GET /api/v1/dograh/status   — availability + filtered dograh /health info
-    GET /api/v1/dograh/workflows — list of workflow {id, name, status}
+    GET /api/v1/dograh/status     — availability + filtered dograh /health info
+    GET /api/v1/dograh/workflows  — list of workflow {id, name, status}
+    GET /api/v1/dograh/call-state — current cached dograh call state (phase-0
+                                    state bridge; read without a WS)
 """
 
 from __future__ import annotations
@@ -51,7 +53,47 @@ class DograhWorkflow(BaseModel):
     status: str | None = None
 
 
+class DograhCallStateResponse(BaseModel):
+    """Current CC-owned dograh *call* state (phase-0 state bridge).
+
+    This is intentionally distinct from CC's StateManager mode
+    (idle/chatty/computer): ``state`` is one of
+    ``ringing``/``in_call``/``ended``/``unknown`` and reflects a dograh
+    workflow-run's lifecycle, not CC's mode.
+    """
+
+    state: str = Field(
+        ..., description="ringing | in_call | ended | unknown"
+    )
+    workflow_id: int | None = Field(default=None)
+    run_id: int | None = Field(default=None)
+
+
 router = APIRouter()
+
+
+@router.get(
+    "/api/v1/dograh/call-state",
+    response_model=DograhCallStateResponse,
+)
+async def get_dograh_call_state() -> DograhCallStateResponse:
+    """Return the latest cached dograh call state.
+
+    Reads the in-memory holder updated by the call-state poller. When no
+    run is being tracked (the default), this is ``unknown`` with null
+    ids — so the endpoint is always safe to call even when dograh is
+    unconfigured. Lets the UI/tests read call state without a WebSocket.
+    """
+    from chatty_commander.integrations.dograh_call_state import (
+        get_call_state_holder,
+    )
+
+    snapshot = get_call_state_holder().get()
+    return DograhCallStateResponse(
+        state=snapshot.state,
+        workflow_id=snapshot.workflow_id,
+        run_id=snapshot.run_id,
+    )
 
 
 @router.get("/api/v1/dograh/status", response_model=DograhStatus)
