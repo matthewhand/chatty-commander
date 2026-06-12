@@ -1,5 +1,5 @@
 import React from "react";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi } from "vitest";
 import ConfigurationPage from "./ConfigurationPage";
@@ -57,8 +57,10 @@ const renderPage = () => {
 };
 
 describe("ConfigurationPage audio device tests", () => {
-  test("test buttons are enabled without a server-side device selection", () => {
+  test("test buttons are enabled without a server-side device selection", async () => {
     renderPage();
+    // Wait for the skeleton to disappear
+    await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading configuration"));
     // The browser test uses the browser's default devices, so it must not
     // depend on the (server-side) device dropdowns having a value.
     expect(screen.getByTestId("mic-test-button")).toBeEnabled();
@@ -76,6 +78,7 @@ describe("ConfigurationPage audio device tests", () => {
     });
 
     renderPage();
+    await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading configuration"));
     fireEvent.click(screen.getByTestId("mic-test-button"));
 
     // While testing: button disabled, real meter rendered.
@@ -99,6 +102,7 @@ describe("ConfigurationPage audio device tests", () => {
   test("mic test reports no signal when the peak is below the threshold", async () => {
     runMicTestMock.mockResolvedValue({ peakLevel: 0 });
     renderPage();
+    await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading configuration"));
 
     fireEvent.click(screen.getByTestId("mic-test-button"));
 
@@ -112,6 +116,7 @@ describe("ConfigurationPage audio device tests", () => {
   test("mic test surfaces permission errors instead of pretending success", async () => {
     runMicTestMock.mockRejectedValue(new Error("Permission denied"));
     renderPage();
+    await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading configuration"));
 
     fireEvent.click(screen.getByTestId("mic-test-button"));
 
@@ -124,6 +129,7 @@ describe("ConfigurationPage audio device tests", () => {
   test("mic test falls back to a generic message for empty errors", async () => {
     runMicTestMock.mockRejectedValue(new Error(""));
     renderPage();
+    await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading configuration"));
 
     fireEvent.click(screen.getByTestId("mic-test-button"));
 
@@ -144,6 +150,7 @@ describe("ConfigurationPage audio device tests", () => {
     );
 
     renderPage();
+    await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading configuration"));
     fireEvent.click(screen.getByTestId("output-test-button"));
 
     expect(screen.getByTestId("output-test-button")).toBeDisabled();
@@ -162,6 +169,7 @@ describe("ConfigurationPage audio device tests", () => {
   test("output test surfaces Web Audio failures", async () => {
     playTestToneMock.mockRejectedValue(new Error("Web Audio is not supported in this browser."));
     renderPage();
+    await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading configuration"));
 
     fireEvent.click(screen.getByTestId("output-test-button"));
 

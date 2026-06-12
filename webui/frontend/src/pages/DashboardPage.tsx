@@ -94,7 +94,7 @@ const DashboardPage = React.memo(() => {
     refetchInterval: 5000,
   });
 
-  const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
+  const [realtimeStatus, setRealtimeStatus] = useState<{ cpu?: string; memory?: string } | null>(null);
   const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
 
   // Live Dograh call state. Seed from the cached snapshot on mount so the badge
@@ -170,7 +170,7 @@ const DashboardPage = React.memo(() => {
     try {
       const msg = JSON.parse(event.data);
       if (msg.type === "telemetry" && msg.data) {
-        setRealtimeStatus((prev: any) => ({
+        setRealtimeStatus((prev) => ({
           ...prev,
           cpu: msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu,
           memory: msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory,

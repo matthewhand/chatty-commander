@@ -84,7 +84,7 @@ test("respects prefers-reduced-motion: reduce on the card cascade", async () => 
   // Wait for cards to render.
   await screen.findByText("take_screenshot");
 
-  const cards = document.querySelectorAll('[data-reduced-motion]');
+  const cards = screen.getAllByTestId('command-card');
   expect(cards.length).toBeGreaterThan(0);
 
   cards.forEach((card) => {
@@ -105,7 +105,7 @@ test("applies the staggered cascade when motion is allowed", async () => {
 
   await screen.findByText("take_screenshot");
 
-  const cards = document.querySelectorAll('[data-reduced-motion]');
+  const cards = screen.getAllByTestId('command-card');
   expect(cards.length).toBeGreaterThan(0);
   cards.forEach((card) => {
     expect(card.getAttribute("data-reduced-motion")).toBe("false");

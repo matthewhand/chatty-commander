@@ -8,7 +8,6 @@ import {
   Plus,
   Edit3,
   Trash2,
-  FileAudio,
   RefreshCw,
   Search,
   Download,
@@ -307,6 +306,7 @@ export default function CommandsPage() {
           {filteredCommands.map(([name, config], idx) => (
             <motion.div
               key={name}
+              data-testid="command-card"
               data-reduced-motion={reduceMotion ? 'true' : 'false'}
               initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
               animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
@@ -389,9 +389,9 @@ export default function CommandsPage() {
         {searchQuery && filteredCommands.length === 0 && !isEmpty && (
           <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
             <Search size={48} className="text-base-content/20 mb-4" />
-            <h3 className="text-lg font-semibold text-base-content/70">No commands match your search.</h3>
+            <h3 className="text-lg font-semibold text-base-content/70">No results found for "{searchQuery}"</h3>
             <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
-              Try adjusting your search terms or clearing the search filter to see all commands.
+              We couldn't find any commands matching your search. Try adjusting your terms or clearing the filter.
             </p>
             <button className="btn btn-outline" onClick={() => setSearchParams({})}>
               Clear Search
@@ -414,7 +414,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
+          <button onClick={handleDeleteCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
     </div>
