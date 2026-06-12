@@ -1,0 +1,1 @@
+## 2024-06-11 | [Architectural Audit] | Insight: Missing focus management and unhandled async loading states cause visual pop-in and block keyboard-only navigation. | Protocol: Enforce explicit state machines (loading/error/empty) for all async data and strictly bind ARIA labels and IDs for dynamic overlays and forms.

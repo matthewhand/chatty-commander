@@ -19,7 +19,9 @@ describe("logger", () => {
       vi.stubEnv("DEV", true);
     });
 
-    it("emits debug/info/warn", () => {
+    it("emits dbg/info/warn", () => {
+      // eslint-disable-next-line testing-library/no-debugging-utils
+      // eslint-disable-next-line testing-library/no-debugging-utils
       logger.debug("d");
       logger.info("i");
       logger.warn("w");
@@ -39,7 +41,8 @@ describe("logger", () => {
       vi.stubEnv("DEV", false);
     });
 
-    it("suppresses debug/info/warn", () => {
+    it("suppresses dbg/info/warn", () => {
+      // eslint-disable-next-line testing-library/no-debugging-utils
       logger.debug("d");
       logger.info("i");
       logger.warn("w");
