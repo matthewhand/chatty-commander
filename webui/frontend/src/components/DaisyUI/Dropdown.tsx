@@ -43,6 +43,14 @@ const Dropdown: React.FC<DropdownProps> = ({
     if (!disabled) setIsOpen(!isOpen);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) setIsOpen(!isOpen);
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsOpen(false);
@@ -67,7 +75,7 @@ const Dropdown: React.FC<DropdownProps> = ({
     <div className={`dropdown ${positionCls} ${alignCls} ${className}`} ref={dropdownRef}>
       <div tabIndex={disabled ? -1 : 0} role="button"
         className={`btn ${sizeCls} ${colorCls} ${disabled ? 'btn-disabled opacity-50' : ''} ${triggerClassName}`}
-        onClick={handleToggle} aria-haspopup="true" aria-expanded={isOpen} aria-label={ariaLabel || 'Toggle dropdown'}>
+        onClick={handleToggle} onKeyDown={handleKeyDown} aria-haspopup="true" aria-expanded={isOpen} aria-label={ariaLabel || 'Toggle dropdown'}>
         {trigger}
         {!hideArrow && <ChevronDown className="h-5 w-5" aria-hidden="true" />}
       </div>

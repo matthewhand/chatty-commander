@@ -420,9 +420,14 @@ const DashboardPage = React.memo(() => {
         <div className="flex justify-center p-8">
           <span className="loading loading-spinner text-primary"></span>
         </div>
+      ) : !agentData || agentData.length === 0 ? (
+        <div className="alert alert-info shadow-sm py-4">
+          <AssessmentIcon size={20} className="text-info" />
+          <span>No agents configured or running. Add agents in the backend configuration.</span>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agentData?.map((agent) => (
+          {agentData.map((agent) => (
             <div key={agent.id} className="card bg-base-100 shadow-xl border border-base-content/10">
               <div className="card-body p-4">
                 <div className="flex justify-between items-center mb-4">
