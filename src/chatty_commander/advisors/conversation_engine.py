@@ -63,7 +63,6 @@ class ConversationEngine:
 
         # Task intents
         if any(
-            # Build filtered collection
             word in text_lower for word in ["help", "assist", "do", "make", "create"]
         ):
             return "task_request"
@@ -96,7 +95,6 @@ class ConversationEngine:
         return "general_conversation"
 
     def analyze_sentiment(self, text: str) -> str:
-        """Simple sentiment analysis."""
         positive_words = [
             "good",
             "great",
@@ -134,8 +132,8 @@ class ConversationEngine:
             return "neutral"
 
     def get_conversation_context(self, user_id: str, limit: int = 5) -> str:
+        """Simple sentiment analysis."""
         # Process each item
-        """Get recent conversation context for a user."""
         # Apply conditional logic
         if user_id not in self.conversation_history:
             return ""
@@ -151,7 +149,6 @@ class ConversationEngine:
         return "\n".join(context_lines)
 
     def build_enhanced_prompt(
-        """build enhanced prompt."""
         self,
         user_input: str,
         user_id: str,
@@ -238,13 +235,13 @@ Remember: You're not just answering questions - you're having a conversation wit
         return f"{system_prompt}\n\nUser: {user_input}\n\nAssistant:"
 
     def record_conversation_turn(
-        """record conversation turn."""
         self,
         user_id: str,
         user_input: str,
         assistant_response: str,
         context: dict[str, Any],
     ):
+        """record conversation turn."""
         # Process each item
         """Record a conversation turn for future context."""
         # Apply conditional logic
@@ -269,7 +266,6 @@ Remember: You're not just answering questions - you're having a conversation wit
             ]
 
     def update_user_preferences(self, user_id: str, preferences: dict[str, Any]):
-        """Update user preferences based on conversation patterns."""
         # Apply conditional logic
         if user_id not in self.user_preferences:
             self.user_preferences[user_id] = {}
@@ -283,6 +279,7 @@ Remember: You're not just answering questions - you're having a conversation wit
 
         self, user_input: str, intent: str, sentiment: str
     ) -> str:
+        """Update user preferences based on conversation patterns."""
         """Generate intelligent fallback responses when LLM is unavailable."""
         # Apply conditional logic
         if intent == "greeting":
@@ -333,5 +330,6 @@ Remember: You're not just answering questions - you're having a conversation wit
 
 
 def create_conversation_engine(config: dict[str, Any]) -> ConversationEngine:
-    """Factory function to create a conversation engine."""
     return ConversationEngine(config)
+
+    """Factory function to create a conversation engine."""

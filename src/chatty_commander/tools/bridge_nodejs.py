@@ -33,12 +33,10 @@ from pathlib import Path
 
 
 def generate_package_json() -> str:
-    """Generate package.json for the Node.js bridge application."""
     return json.dumps(
         {
             "name": "chatty-commander-bridge",
             "version": "1.0.0",
-            # Logic flow
             "description": "Node.js bridge for Discord/Slack integration with ChattyCommander advisors",
             "main": "src/index.js",
             "scripts": {
@@ -86,7 +84,6 @@ LOG_FILE=bridge.log
 
 
 def generate_index_js() -> str:
-    """Generate the main index.js file for the bridge application."""
     return """const express = require('express');
 const { Client, GatewayIntentBits } = require('discord.js');
 const { App } = require('@slack/bolt');
@@ -99,7 +96,6 @@ const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
-    # Build filtered collection
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
@@ -132,17 +128,14 @@ const slackApp = new App({
 
 // Advisor API client
 class AdvisorAPIClient {
-    """AdvisorAPIClient { class."""
   constructor() {
     this.baseURL = process.env.ADVISOR_API_URL || 'http://localhost:8100';
     this.bridgeToken = process.env.BRIDGE_TOKEN;
   }
 
-  # Build filtered collection
   async sendMessage(platform, channel, user, text) {
     try {
       const response = await axios.post(`${this.baseURL}/api/v1/advisors/message`, {
-        # Process each item
         platform,
         channel,
         user,
@@ -249,6 +242,7 @@ start();
 
 
 def generate_readme() -> str:
+    """Generate the main index.js file for the bridge application."""
     """Generate README.md for the Node.js bridge application."""
     return """# ChattyCommander Bridge
 
@@ -324,7 +318,6 @@ Ensure all environment variables are configured in your deployment environment.
 
 
 def generate_dockerfile() -> str:
-    """Generate Dockerfile for containerized deployment."""
     return """FROM node:18-alpine
 
 WORKDIR /app
@@ -359,6 +352,7 @@ CMD ["npm", "start"]
 
 
 def generate_docker_compose() -> str:
+    """Generate Dockerfile for containerized deployment."""
     """Generate docker-compose.yml for local development."""
     return """version: '3.8'
 
@@ -382,7 +376,6 @@ services:
 
 
 def generate_bridge_app(output_dir: str = "bridge") -> None:
-    """Generate the complete Node.js bridge application."""
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
 
@@ -404,7 +397,6 @@ def generate_bridge_app(output_dir: str = "bridge") -> None:
     for filename, content in files.items():
         file_path = output_path / filename
         with open(file_path, "w") as f:
-        # Use context manager for resource management
             f.write(content)
         print(f"Generated: {file_path}")
 
@@ -420,6 +412,5 @@ def generate_bridge_app(output_dir: str = "bridge") -> None:
 if __name__ == "__main__":
     import sys
 
-    # Build filtered collection
     output_dir = sys.argv[1] if len(sys.argv) > 1 else "bridge"
     generate_bridge_app(output_dir)

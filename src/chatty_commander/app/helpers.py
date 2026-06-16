@@ -37,7 +37,6 @@ def ensure_directory_exists(path: str) -> None:
 
 
 def format_command_output(cmd_output: str) -> str:
-    """Format the output of a command for better readability."""
     return cmd_output.strip().replace("\n", " | ")
 
 

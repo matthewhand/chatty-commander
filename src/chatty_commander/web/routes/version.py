@@ -44,22 +44,19 @@ router = APIRouter()
 
 @router.get("/api/v1/version", response_model=VersionInfo)
 async def get_version() -> VersionInfo:
-    """Retrieve operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
     # Base version should come from a single source of truth if available
     # Here we mirror the SystemStatus default to keep tests stable.
     base_version = "0.2.0"
 
     git_sha: str | None = None
     try:  # best-effort; avoid failing when git is unavailable
+        import shutil
         import subprocess
 
+        git_cmd = shutil.which("git") or "git"
         git_sha = (
             subprocess.check_output(
-                ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
+                [git_cmd, "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
             )
             .decode()
             .strip()
@@ -69,3 +66,8 @@ async def get_version() -> VersionInfo:
         git_sha = None
 
     return VersionInfo(version=base_version, git_sha=git_sha)
+
+    """Retrieve operation.
+
+    TODO: Add detailed description and parameters.
+    """

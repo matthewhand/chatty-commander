@@ -71,7 +71,6 @@ class AgentStateInfo:
 
     def to_dict(self) -> dict[str, Any]:
         # Process each item
-        """Convert to dictionary for JSON serialization."""
         data = asdict(self)
         data["state"] = self.state.value
         return data
@@ -91,12 +90,12 @@ class ThinkingStateManager:
     """
 
     def __init__(self):
+        """Initialize the thinking state manager."""
         self.agent_states: dict[str, AgentStateInfo] = {}
         self.avatar_mappings: dict[str, str] = {}  # agent_id -> avatar_id
         self.broadcast_callbacks: set[Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]] = set()
 
     def register_agent(
-        """register agent."""
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
     ) -> None:
         """Register a new agent with optional avatar mapping."""
@@ -107,14 +106,12 @@ class ThinkingStateManager:
             state=ThinkingState.IDLE,
         )
 
-        # Apply conditional logic
         if avatar_id:
             self.avatar_mappings[agent_id] = avatar_id
 
         self._broadcast_state_change(agent_id)
 
     def set_agent_state(
-        """set agent state."""
         self,
         agent_id: str,
         state: ThinkingState,
@@ -122,7 +119,6 @@ class ThinkingStateManager:
         progress: float | None = None,
     ) -> None:
         """Update an agent's thinking state."""
-        # Apply conditional logic
         if agent_id not in self.agent_states:
             logger.warning(f"Agent {agent_id} not registered, creating default entry")
             self.register_agent(agent_id, "default")
@@ -136,7 +132,6 @@ class ThinkingStateManager:
         self._broadcast_state_change(agent_id)
 
     def get_agent_state(self, agent_id: str) -> AgentStateInfo | None:
-        """Get current state of an agent."""
         return self.agent_states.get(agent_id)
 
     def get_all_states(self) -> dict[str, AgentStateInfo]:
@@ -145,7 +140,6 @@ class ThinkingStateManager:
 
     def map_agent_to_avatar(self, agent_id: str, avatar_id: str) -> None:
         # Apply conditional logic
-        """Map an agent to a specific avatar for visual correlation."""
         self.avatar_mappings[agent_id] = avatar_id
 
         # Apply conditional logic
@@ -154,7 +148,6 @@ class ThinkingStateManager:
             self._broadcast_state_change(agent_id)
 
     def add_broadcast_callback(
-        """add broadcast callback."""
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -165,7 +158,6 @@ class ThinkingStateManager:
         self.broadcast_callbacks.add(callback)
 
     def remove_broadcast_callback(
-        """remove broadcast callback."""
         self,
         callback: (
             Callable[[dict[str, Any]], None]
@@ -196,7 +188,6 @@ class ThinkingStateManager:
                 logger.error(f"Error in broadcast callback: {e}")
 
     def _broadcast_state_change(self, agent_id: str) -> None:
-        """Broadcast state change to all registered callbacks."""
         agent_info = self.agent_states.get(agent_id)
         # Apply conditional logic
         if not agent_info:
@@ -210,11 +201,7 @@ class ThinkingStateManager:
 
     # Tool calling lifecycle events
     def start_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
-        """Start Tool Call with (self, agent_id: str, tool_name).
-
-        TODO: Add detailed description and parameters.
-        """
-        
+        """Start a tool call for the agent."""
         self.set_agent_state(
             agent_id,
             ThinkingState.TOOL_CALLING,
@@ -228,31 +215,11 @@ class ThinkingStateManager:
             }
         )
 
-    def end_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
-        """End Tool Call with (self, agent_id: str, tool_name).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Return to processing by default
-        self.set_agent_state(agent_id, ThinkingState.PROCESSING)
-        self._broadcast(
-            {
-                "type": "tool_call_end",
-                "data": {"agent_id": agent_id, "tool": tool_name},
-                "timestamp": time.time(),
-            }
-        )
-
     # Agent handoff lifecycle
     def handoff_start(
-        """Handoff Start with (self, agent_id: str, to_agent_persona: str, reason).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self, agent_id: str, to_agent_persona: str, reason: str | None = None
     ) -> None:
+        """Start an agent handoff."""
         self.set_agent_state(agent_id, ThinkingState.HANDOFF, reason)
         self._broadcast(
             {
@@ -266,12 +233,18 @@ class ThinkingStateManager:
             }
         )
 
-    def handoff_complete(self, agent_id: str, new_persona_id: str) -> None:
-        """Handoff Complete with (self, agent_id: str, new_persona_id: str).
+    def end_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
+        """End a tool call for the agent."""
+        self.set_agent_state(agent_id, ThinkingState.PROCESSING)
+        self._broadcast(
+            {
+                "type": "tool_call_end",
+                "data": {"agent_id": agent_id, "tool": tool_name},
+                "timestamp": time.time(),
+            }
+        )
 
-        TODO: Add detailed description and parameters.
-        """
-        
+    def handoff_complete(self, agent_id: str, new_persona_id: str) -> None:
         # Update persona mapping and return to idle
         if agent_id in self.agent_states:
             self.agent_states[agent_id].persona_id = new_persona_id
@@ -289,7 +262,6 @@ class ThinkingStateManager:
         self.set_agent_state(agent_id, ThinkingState.THINKING, message)
 
     def start_processing(self, agent_id: str, message: str | None = None) -> None:
-        """Convenience method to set processing state."""
         self.set_agent_state(agent_id, ThinkingState.PROCESSING, message)
 
     def start_responding(self, agent_id: str, message: str | None = None) -> None:
@@ -297,7 +269,6 @@ class ThinkingStateManager:
         self.set_agent_state(agent_id, ThinkingState.RESPONDING, message)
 
     def set_idle(self, agent_id: str) -> None:
-        """Convenience method to set idle state."""
         self.set_agent_state(agent_id, ThinkingState.IDLE)
 
     def set_error(self, agent_id: str, error_message: str) -> None:
@@ -324,14 +295,13 @@ def reset_thinking_manager() -> None:
 
 
 class ThinkingStateContext:
-    """Context manager for automatic thinking state transitions."""
-
     def __init__(
         self,
         agent_id: str,
         thinking_message: str = "Processing...",
         responding_message: str = "Generating response...",
     ):
+        """Context manager for automatic thinking state transitions."""
         self.agent_id = agent_id
         self.thinking_message = thinking_message
         self.responding_message = responding_message
@@ -349,13 +319,11 @@ class ThinkingStateContext:
             self.manager.set_idle(self.agent_id)
 
     def start_responding(self):
-        """Transition to responding state."""
         self.manager.start_responding(self.agent_id, self.responding_message)
 
 
 # Decorator for automatic thinking state management
 def with_thinking_state(
-    """with thinking state."""
     agent_id: str,
     thinking_msg: str = "Processing...",
     responding_msg: str = "Generating response...",
@@ -363,20 +331,9 @@ def with_thinking_state(
     """Decorator to automatically manage thinking states during function execution."""
 
     def decorator(func):
-        """Decorator with (func).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         def wrapper(*args, **kwargs):
-        # TODO: Document this logic
-            """Wrapper operation.
-
-            TODO: Add detailed description and parameters.
-            """
-            
+            """Wrapper for decorated function with thinking state."""
             with ThinkingStateContext(agent_id, thinking_msg, responding_msg) as ctx:
-            # Use context manager for resource management
                 result = func(*args, **kwargs)
                 ctx.start_responding()
                 return result

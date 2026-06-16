@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 def _handle_shutdown_signal(signum: int, frame: object) -> None:
-    """Handle SIGTERM/SIGINT with structured logging."""
     sig_name = signal.Signals(signum).name
     timestamp = datetime.now(tz=UTC).isoformat()
     logger.info("Shutdown signal received (%s) at %s", sig_name, timestamp)
@@ -52,7 +51,6 @@ def _atexit_handler() -> None:
 
 
 def register_lifecycle(
-    """register lifecycle."""
     app: FastAPI,
     *,
     get_state_manager: Callable[[], Any],
@@ -65,9 +63,7 @@ def register_lifecycle(
     Notes:
     - Defaults are no-ops to preserve existing behavior.
     - We do not modify or duplicate any callbacks that legacy WebModeServer already registers.
-    - This provides a stable boundary to extend later without impacting current tests.
     """
-
     @app.on_event("startup")
     async def _startup() -> None:  # noqa: D401
         # Register signal handlers for graceful shutdown logging.
@@ -75,7 +71,6 @@ def register_lifecycle(
         signal.signal(signal.SIGINT, _handle_shutdown_signal)
         atexit.register(_atexit_handler)
 
-        # Logic flow
         # Intentionally minimal; invoke optional callback if present.
         if on_startup is not None:
             try:
@@ -86,11 +81,9 @@ def register_lifecycle(
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:  # noqa: D401
-        # Process each item
         timestamp = datetime.now(tz=UTC).isoformat()
         logger.info("Shutting down gracefully... (%s)", timestamp)
 
-        # Logic flow
         # Intentionally minimal; invoke optional callback if present.
         if on_shutdown is not None:
             try:
@@ -98,5 +91,3 @@ def register_lifecycle(
             except Exception:
                 # Keep behavior non-fatal and consistent with legacy tolerance.
                 pass
-
-        logger.info("Shutdown complete at %s", timestamp)

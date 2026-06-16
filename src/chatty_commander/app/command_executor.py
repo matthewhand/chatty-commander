@@ -74,7 +74,6 @@ class CommandExecutor:
     """
     
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
-        """Initialize CommandExecutor with config and managers."""
         self.config: Any = config
         self.model_manager: Any = model_manager
         self.state_manager: Any = state_manager
@@ -96,50 +95,15 @@ class CommandExecutor:
         Raises:
             ValueError: If command_name is invalid
         """
-        # Validate input
-        if not isinstance(command_name, str) or not command_name.strip():
-            raise ValueError(f"Invalid command name: {command_name!r}")
+        # TODO: REFACTOR - Complexity 15, extract sub-functions
 
-        # Track last command for repeat functionality
-        self.last_command = command_name
+        # TODO: REFACTOR - High complexity (validate_command)
+        # Break into: validation, execution, cleanup sub-functions
 
-        # Retrieve command action
-        action = self._get_command_action(command_name)
-        if not action:
-            logging.warning(f"Command not found: {command_name}")
-            return False
-
-        # Execute based on action type (delegated to helpers)
-        return self._execute_action(action)
-
-    def _execute_action(self, action: dict) -> bool:
-        """Execute action based on its type."""
-        action_type = action.get("type")
-
-        if action_type == "keypress":
-            return self._execute_keypress(action.get("keys", ""))
-        elif action_type == "shell":
-            return self._execute_shell(action.get("command", ""))
-        elif action_type == "http":
-            return self._execute_http(
-                action.get("url", ""),
-                action.get("method", "GET")
-            )
-        elif action_type == "message":
-            logging.info(f"Message action: {action.get('text', '')}")
-            return True
-        else:
-            logging.warning(f"Unknown action type: {action_type}")
-            return False
-
-    def _get_command_action(self, command_name: str) -> dict | None:
-        """Retrieve command action from config."""
-        commands = self.config.get("commands", {})
-        command = commands.get(command_name, {})
-        return command.get("action") if command else None
+        # TODO: REFACTOR - Complexity 15, extract sub-functions
 
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Ensure model_actions is accessible
             model_actions = self.config.model_actions
             if model_actions is None:
@@ -165,7 +129,7 @@ class CommandExecutor:
 
         success = False
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Handle both old format and new format with 'action' key
             if "action" in command_action:
                 action_type = command_action["action"]
@@ -241,17 +205,12 @@ class CommandExecutor:
     # TODO: REFACTOR - Complexity 15, extract sub-functions
 
     def validate_command(self, command_name: str) -> bool:
-        """Validate Command with (self, command_name: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         # Apply conditional logic
         if not isinstance(command_name, str) or not command_name.strip():
             return False
 
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Ensure model_actions is accessible
             model_actions = self.config.model_actions
             if model_actions is None:
@@ -269,7 +228,7 @@ class CommandExecutor:
             return False
 
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Apply conditional logic
             if isinstance(command_action, dict):
                 # Validate that the command has a valid action configuration
@@ -330,7 +289,6 @@ class CommandExecutor:
 
     def pre_execute_hook(self, command_name: str) -> None:
         # Process each item
-        """Hook before executing a command."""
         self.last_command = command_name
         # Logic flow
         # Provided for extension points and testing hooks
@@ -341,15 +299,12 @@ class CommandExecutor:
         # Keep this post hook for compatibility with tests that patch it
 
     def _execute_keybinding(self, command_name: str, keys: str | list[str]) -> None:
-        """
-        Executes a keybinding action using pyautogui to simulate keyboard shortcuts.
-        """
         # Validate input exists
         if pyautogui is None:
             self.report_error(command_name, "pyautogui is not installed")
             return
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Support either a list of keys (hotkey/chord) or a single key sequence
             if isinstance(keys, list | tuple):
                 pyautogui.hotkey(*keys)
@@ -372,10 +327,6 @@ class CommandExecutor:
             self.report_error(command_name, str(e))
 
     def _execute_url(self, command_name: str, url: str) -> None:
-        """
-        Sends an HTTP GET request based on the URL mapped to the command with basic error checks.
-        # Use context manager for resource management
-        """
         # Apply conditional logic
         if not url:
             self.report_error(command_name, "missing URL")
@@ -392,7 +343,7 @@ class CommandExecutor:
             self.report_error(command_name, "httpx not available")
             return
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # Logic flow
             # Add timeout and disable redirects for security
             with httpx.Client() as client:
@@ -407,11 +358,6 @@ class CommandExecutor:
             self.report_error(command_name, str(e))
 
     def _execute_shell(self, command_name: str, cmd: str) -> bool:
-        """
-        Executes a shell command safely with timeout and error capture.
-        # Use context manager for resource management
-        Returns True on zero exit status, False otherwise.
-        """
         # Apply conditional logic
         if not cmd:
             self.report_error(command_name, "missing shell command")
@@ -446,13 +392,17 @@ class CommandExecutor:
             return False
 
     def _execute_custom_message(self, command_name: str, message: str) -> None:
+        """
+        Executes a shell command safely with timeout and error capture.
+        # Use context manager for resource management
+        Returns True on zero exit status, False otherwise.
+        """
         """Execute a custom message action."""
         logging.info(f"Custom message from {command_name}: {message}")
         # In a real implementation, this might display a notification or send to a UI
         # For now, just log it
 
     def _execute_voice_chat(self, command_name: str) -> bool:
-        """Executes a voice chat session."""
         # Build filtered collection
         # Process each item
         logging.info(f"Starting voice chat for {command_name}")
@@ -468,7 +418,7 @@ class CommandExecutor:
             return False
 
         try:
-        # Attempt operation with error handling
+            # Attempt operation with error handling
             # 1. Verify component availability
             if (
                 not hasattr(voice_pipeline, "transcriber")
@@ -503,7 +453,6 @@ class CommandExecutor:
             return False
 
     def report_error(self, command_name: str, error_message: str) -> None:
-        """Reports an error to the logging system or an external monitoring service."""
         logging.critical(f"Error in {command_name}: {error_message}")
 
         # Logic flow
@@ -519,3 +468,4 @@ class CommandExecutor:
 
 
 # Example usage intentionally removed to avoid instantiation without required args during static analysis/tests.
+

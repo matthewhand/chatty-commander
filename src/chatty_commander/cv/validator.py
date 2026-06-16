@@ -63,7 +63,6 @@ class ValidationResult:
     details: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for JSON serialization."""
         return {
             "passed": self.passed,
             "confidence": self.confidence,
@@ -95,8 +94,6 @@ class OCRValidationResult(ValidationResult):
 
 @dataclass
 class LayoutValidationResult(ValidationResult):
-    """Result of layout/position validation."""
-
     checked_elements: list[str] = field(default_factory=list)
     found_positions: dict[str, tuple[int, int]] = field(default_factory=dict)
     expected_positions: dict[str, tuple[int, int]] = field(default_factory=dict)
@@ -155,14 +152,6 @@ class ComputerVisionValidator:
         ocr_enabled: bool = True,
         threshold: float = 0.95,
     ) -> None:
-        """Initialize the validator.
-
-        Args:
-            screenshots_dir: Directory containing current screenshots
-            reference_dir: Directory containing reference screenshots
-            ocr_enabled: Whether to enable OCR text extraction
-            threshold: Default SSIM threshold for comparisons
-        """
         self.screenshots_dir = Path(screenshots_dir)
         self.reference_dir = Path(reference_dir) if reference_dir else None
         self.ocr_enabled = ocr_enabled and HAS_OCR
@@ -171,6 +160,14 @@ class ComputerVisionValidator:
         self._cache: dict[str, np.ndarray] = {}
 
     def _load_image(self, path: str | Path) -> np.ndarray:
+        """Initialize the validator.
+
+        Args:
+        screenshots_dir: Directory containing current screenshots
+        reference_dir: Directory containing reference screenshots
+        ocr_enabled: Whether to enable OCR text extraction
+        threshold: Default SSIM threshold for comparisons
+        """
         """Load an image from disk with caching."""
         path_str = str(path)
         if path_str not in self._cache:
@@ -183,12 +180,12 @@ class ComputerVisionValidator:
         return self._cache[path_str]
 
     def _extract_text(self, image: np.ndarray) -> str:
-        """Extract text from image using OCR."""
         if not self.ocr_enabled or pytesseract is None:
             return ""
         return pytesseract.image_to_string(image)
 
     def _preprocess_for_ocr(self, image: np.ndarray) -> np.ndarray:
+        """Extract text from image using OCR."""
         """Preprocess image for better OCR results."""
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -199,6 +196,59 @@ class ComputerVisionValidator:
     # -----------------------------------------------------------------------
     # OCR Validation
     # -----------------------------------------------------------------------
+
+    def validate_text_presence(
+        self,
+        image_path: str | Path,
+        expected_texts: list[str],
+        case_sensitive: bool = False,
+        partial_match: bool = True,
+    ) -> OCRValidationResult:
+        image = self._load_image(image_path)
+        extracted_text = self._extract_text(image)
+
+        if not case_sensitive:
+            extracted_text = extracted_text.lower()
+
+        found_texts = []
+        matched_texts = []
+        missing_texts = []
+
+        for expected in expected_texts:
+            search_text = expected if case_sensitive else expected.lower()
+            if partial_match:
+                found = search_text in extracted_text
+            else:
+                # Exact word match (allowing for OCR errors)
+                found = any(
+                    search_text in extracted_text_word
+                    for extracted_text_word in extracted_text.split()
+                )
+
+            if found:
+                matched_texts.append(expected)
+                found_texts.append(expected)
+            else:
+                missing_texts.append(expected)
+
+        confidence = len(matched_texts) / len(expected_texts) if expected_texts else 1.0
+
+        return OCRValidationResult(
+            passed=len(missing_texts) == 0,
+            confidence=confidence,
+            issues=missing_texts,
+            metrics={
+                "total_expected": len(expected_texts),
+                "matched": len(matched_texts),
+                "missing": len(missing_texts),
+                "extracted_text_length": len(extracted_text),
+            },
+            expected_texts=expected_texts,
+            found_texts=found_texts,
+            matched_texts=matched_texts,
+            missing_texts=missing_texts,
+            details=f"Extracted text (first 200 chars): {extracted_text[:200]}",
+        )
 
     def validate_text_presence(
         self,
@@ -265,14 +315,6 @@ class ComputerVisionValidator:
         )
 
     def extract_all_text(self, image_path: str | Path) -> str:
-        """Extract all text from an image using OCR.
-
-        Args:
-            image_path: Path to the image file
-
-        Returns:
-            Extracted text as string
-        """
         image = self._load_image(image_path)
         return self._extract_text(image)
 
@@ -286,6 +328,14 @@ class ComputerVisionValidator:
         reference_path: str | Path,
         threshold: float | None = None,
     ) -> SSIMComparisonResult:
+        """Extract all text from an image using OCR.
+
+        Args:
+        image_path: Path to the image file
+
+        Returns:
+        Extracted text as string
+        """
         """Compare two screenshots using Structural Similarity Index.
 
         Args:
@@ -313,16 +363,6 @@ class ComputerVisionValidator:
         reference_name: str,
         threshold: float | None = None,
     ) -> SSIMComparisonResult:
-        """Compare a screenshot with its reference version.
-
-        Args:
-            current_path: Path to current screenshot
-            reference_name: Filename of reference screenshot
-            threshold: SSIM threshold
-
-        Returns:
-            SSIMComparisonResult with comparison details
-        """
         if self.reference_dir is None:
             raise ValueError("Reference directory not configured")
 
@@ -339,6 +379,16 @@ class ComputerVisionValidator:
         expected_colors: dict[str, tuple[int, int, int]],
         tolerance: int = 30,
     ) -> ColorValidationResult:
+        """Compare a screenshot with its reference version.
+
+        Args:
+        current_path: Path to current screenshot
+        reference_name: Filename of reference screenshot
+        threshold: SSIM threshold
+
+        Returns:
+        SSIMComparisonResult with comparison details
+        """
         """Validate that expected colors are present in the image.
 
         Args:
@@ -452,20 +502,6 @@ class ComputerVisionValidator:
         image_path: str | Path,
         expected_elements: list[dict[str, Any]],
     ) -> LayoutValidationResult:
-        """Validate element positions in an image.
-
-        Args:
-            image_path: Path to the screenshot
-            expected_elements: List of dicts with:
-                - name: Element identifier
-                - x: Expected X position (optional)
-                - y: Expected Y position (optional)
-                - region: (x, y, w, h) to search in
-                - threshold: Matching threshold
-
-        Returns:
-            LayoutValidationResult with validation details
-        """
         image = self._load_image(image_path)
         height, width = image.shape[:2]
 
@@ -514,6 +550,20 @@ class ComputerVisionValidator:
         expected_colors: dict[str, tuple[int, int, int]] | None = None,
         threshold: float | None = None,
     ) -> ValidationResult:
+        """Validate element positions in an image.
+
+        Args:
+        image_path: Path to the screenshot
+        expected_elements: List of dicts with:
+        - name: Element identifier
+        - x: Expected X position (optional)
+        - y: Expected Y position (optional)
+        - region: (x, y, w, h) to search in
+        - threshold: Matching threshold
+
+        Returns:
+        LayoutValidationResult with validation details
+        """
         """Perform comprehensive validation of a screenshot.
 
         Args:

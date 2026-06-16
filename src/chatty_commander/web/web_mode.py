@@ -174,11 +174,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
     async def dispatch(self, request: Request, call_next):
-        """Dispatch with (self, request: Request, call_next).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         response = await call_next(request)
 
         # Security headers
@@ -206,7 +201,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def get_client_ip(
-    """get client ip."""
     request: Request,
     trusted_proxies: list[str] | None = None,
 ) -> str:
@@ -222,7 +216,6 @@ def get_client_ip(
             If None or empty, only the direct connection IP is used.
 
     Returns:
-        # Logic flow
         The client IP address (or "unknown" if unavailable)
     """
     # Get the direct connection IP
@@ -357,11 +350,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._last_cleanup = time.time()
 
     async def dispatch(self, request: Request, call_next):
-        """Dispatch with (self, request: Request, call_next).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         # Use secure IP extraction to prevent spoofing
         client_ip = get_client_ip(request, self.trusted_proxies)
 
@@ -371,20 +359,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # memory exhaustion from many unique IPs
         if current_time - self._last_cleanup > 60:
             self._last_cleanup = current_time
-            # Logic flow
             for ip in list(self.requests):
                 self.requests[ip] = [
-                    # Logic flow
                     t for t in self.requests[ip] if current_time - t < 60
                 ]
-                # Logic flow
                 if not self.requests[ip]:
                     del self.requests[ip]
         else:
             # Clean only current IP's old requests
             self.requests[client_ip] = [
                 req_time
-                # Logic flow
                 for req_time in self.requests[client_ip]
                 if current_time - req_time < 60
             ]
@@ -392,7 +376,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Compute rate limit headers
         request_count = len(self.requests[client_ip])
         remaining = max(0, self.requests_per_minute - request_count)
-        # Logic flow
         if self.requests[client_ip]:
             oldest = min(self.requests[client_ip])
             reset_time = int(oldest + 60)
@@ -420,7 +403,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         )
 
         response = await call_next(request)
-        # Logic flow
         for header_name, header_value in rate_limit_headers.items():
             response.headers[header_name] = header_value
         return response
@@ -549,39 +531,21 @@ class WebModeServer:
         # Register startup/shutdown handlers for telemetry lifecycle
         @self.app.on_event("startup")
         async def start_telemetry_loop() -> None:
-            """Start Telemetry Loop operation.
-
-            TODO: Add detailed description and parameters.
-            """
-            
             self._telemetry_running = True
             self._telemetry_task = asyncio.create_task(self._telemetry_loop())
 
         @self.app.on_event("shutdown")
         async def stop_telemetry_loop() -> None:
-        # Async function for concurrent execution
-            """Stop Telemetry Loop operation.
-
-            TODO: Add detailed description and parameters.
-            """
-            
             self._telemetry_running = False
-            # Logic flow
             if self._telemetry_task and not self._telemetry_task.done():
                 self._telemetry_task.cancel()
                 try:
-                # Attempt operation with error handling
                     await self._telemetry_task
-                # Handle specific exception case
                 except asyncio.CancelledError:
                     pass
             self._telemetry_task = None
 
     async def _telemetry_loop(self) -> None:
-        """Background task to broadcast system telemetry.
-
-        Runs until _telemetry_running is False or the task is cancelled.
-        """
         # Logic flow
         while self._telemetry_running:
             try:
@@ -612,7 +576,6 @@ class WebModeServer:
 
     @property
     def config(self) -> Config:
-        # Logic flow
         """Access config manager as 'config' for compatibility."""
         return self.config_manager
 
@@ -621,23 +584,18 @@ class WebModeServer:
         return self.command_executor.execute_command(cmd)
 
     def _clear_expired_cache(self) -> None:
-        """Clear expired cache entries to prevent memory leaks."""
         current_time = time.time()
-        # Logic flow
         if current_time - self._last_cache_clear > self._cache_timeout:
             self._command_cache.clear()
             self._state_cache.clear()
             self._last_cache_clear = current_time
 
     def _get_cached_command_result(self, command: str) -> Any | None:
-        # Logic flow
         """Get cached command result if available and not expired."""
         self._clear_expired_cache()
         cache_key = f"cmd:{command}"
-        # Logic flow
         if cache_key in self._command_cache:
             cached_time, result = self._command_cache[cache_key]
-            # Logic flow
             if time.time() - cached_time < self._cache_timeout:
                 return result
             else:
@@ -645,29 +603,23 @@ class WebModeServer:
         return None
 
     def _cache_command_result(self, command: str, result: Any) -> None:
-        # Logic flow
         """Cache command result for future use."""
         cache_key = f"cmd:{command}"
         self._command_cache[cache_key] = (time.time(), result)
 
     def run(self, host: str | None = None, port: int | None = None) -> None:
         """Run the web server."""
-        # Logic flow
         if uvicorn is None:
             raise ImportError("uvicorn is not available")
 
-        # Logic flow
         # Use config values if available
         if host is None and hasattr(self.config_manager, "web_server"):
             host = self.config_manager.web_server.get("host", "0.0.0.0")
-        # Logic flow
         if host is None:
             host = "0.0.0.0"
 
-        # Logic flow
         if port is None and hasattr(self.config_manager, "web_server"):
             port = self.config_manager.web_server.get("port", 8100)
-        # Logic flow
         if port is None:
             port = 8100
 
@@ -770,8 +722,12 @@ class WebModeServer:
         app.include_router(version_router)
 
         # System info endpoints
+        # Pass get_config_manager so that /api/themes, /api/theme, /api/preferences,
+        # /api/backup, /api/restore etc can persist/read from the live config (matching
+        # behavior in audio routes + server.create_app wiring).
         system_routes = include_system_routes(
-            get_start_time=lambda: self.start_time
+            get_start_time=lambda: self.start_time,
+            get_config_manager=lambda: self.config_manager,
         )
         app.include_router(system_routes)
 
@@ -890,18 +846,12 @@ class WebModeServer:
             @app.exception_handler(404)
             async def spa_fallback(request: Request, exc: HTTPException):
             # Async function for concurrent execution
-                """Spa Fallback with (request: Request, exc: HTTPException).
-
-                TODO: Add detailed description and parameters.
-                """
-                
                 # If API or static file request fails, let it 404.
                 # Otherwise, serve index.html for SPA routing.
                 if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
-                     return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
+                    return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
 
                 index_file = frontend_path / "index.html"
-                # Logic flow
                 if index_file.exists():
                     return FileResponse(str(index_file))
                 return HTMLResponse("Not Found", status_code=404)
@@ -933,17 +883,9 @@ class WebModeServer:
         return app
 
     def _register_advisors_routes(self, app: FastAPI) -> None:
-        """Register advisors REST endpoints backed by AdvisorsService."""
-
         @app.get("/api/v1/advisors/personas")
         async def advisor_personas():
-        # Async function for concurrent execution
-            """Advisor Personas operation.
-
-            TODO: Add detailed description and parameters.
-            """
-            
-            # Logic flow
+            """Register advisors REST endpoints backed by AdvisorsService."""
             # Return seed data for testing
             if self.no_auth:
                 return {"personas": [
@@ -951,7 +893,6 @@ class WebModeServer:
                     {"id": "friday", "name": "Friday", "is_default": False, "system_prompt": "You are a witty AI named Friday."},
                     {"id": "hal", "name": "HAL 9000", "is_default": False, "system_prompt": "You are a calm, ominous AI."},
                 ]}
-            # Logic flow
             # Production: use advisors_service if available
             svc = self.advisors_service
             if not svc:
@@ -960,34 +901,24 @@ class WebModeServer:
 
         @app.post("/api/v1/advisors/message", response_model=AdvisorOutbound)
         async def advisor_message(
-        # Async function for concurrent execution
-            """Advisor Message with (message: AdvisorInbound, x_api_key).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             message: AdvisorInbound,
             x_api_key: str | None = Header(None, alias="X-API-Key"),
         ):
+            """Advisor message handler."""
             # Check authentication
             if not self.no_auth:
                 expected_key = None
-                # Logic flow
                 if hasattr(self.config_manager, "auth"):
                     expected_key = self.config_manager.auth.get("api_key")
 
-                # Logic flow
                 if not expected_key or not constant_time_compare(x_api_key, expected_key):
                     raise HTTPException(status_code=401, detail="Unauthorized")
 
-            # Logic flow
             if not self.advisors_service:
                 raise HTTPException(status_code=500, detail="Advisors unavailable")
             try:
-            # Attempt operation with error handling
                 reply = self.advisors_service.handle_message(
                     AdvisorMessage(
-                        # Process each item
                         platform=message.platform,
                         channel=message.channel,
                         user=message.user,
@@ -1003,29 +934,18 @@ class WebModeServer:
                     model=reply.model,
                     api_mode=reply.api_mode,
                 )
-            # Handle specific exception case
             except HTTPException:
                 raise
-            # Handle specific exception case
             except Exception as e:  # noqa: BLE001
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
         @app.post("/api/v1/advisors/context/switch")
         async def switch_persona(context_key: str, persona_id: str):
-        # Async function for concurrent execution
-            """Switch Persona with (context_key: str, persona_id: str).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             svc = self.advisors_service
-            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             try:
-            # Attempt operation with error handling
                 success = svc.switch_persona(context_key, persona_id)
-                # Logic flow
                 if success:
                     return {
                         "success": True,
@@ -1034,7 +954,6 @@ class WebModeServer:
                     }
                 else:
                     raise HTTPException(status_code=400, detail="Invalid persona")
-            # Handle specific exception case
             except Exception as e:
                 raise HTTPException(
                     status_code=400, detail=f"Invalid persona: {str(e)}"
@@ -1042,25 +961,15 @@ class WebModeServer:
 
         @app.delete("/api/v1/advisors/context/{context_key}")
         async def clear_context(context_key: str):
-        # Async function for concurrent execution
-            """Clear Context with (context_key: str).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             svc = self.advisors_service
-            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             try:
-            # Attempt operation with error handling
                 success = svc.clear_context(context_key)
-                # Logic flow
                 if success:
                     return {"success": True, "context_key": context_key}
                 else:
                     raise HTTPException(status_code=404, detail="Context not found")
-            # Handle specific exception case
             except Exception as e:
                 raise HTTPException(
                     status_code=404, detail=f"Context not found: {str(e)}"
@@ -1068,17 +977,10 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
-        # Async function for concurrent execution
-            """Advisors Memory with (platform: str, channel: str, user: str, limit: int).
-
-            TODO: Add detailed description and parameters.
-            """
-            
-            # Process each item
             platform: str, channel: str, user: str, limit: int = 20
         ):
+            """Advisors memory query."""
             svc = self.advisors_service
-            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             # Iterate collection
@@ -1086,65 +988,38 @@ class WebModeServer:
             # Convert dataclasses to serializable dicts
             return [
                 {"role": i.role, "content": i.content, "timestamp": i.timestamp}
-                # Logic flow
                 for i in items
             ]
 
         @app.delete("/api/v1/advisors/memory")
-        # Process each item
         async def advisors_memory_clear(platform: str, channel: str, user: str):
-        # Async function for concurrent execution
-            """Advisors Memory Clear with (platform: str, channel: str, user: str).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             svc = self.advisors_service
-            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
-            # Process each item
             count = svc.memory.clear(platform, channel, user)
             return {"cleared": int(count)}
 
         @app.get("/api/v1/advisors/context/stats", response_model=ContextStats)
         async def advisors_context_stats():
-        # Async function for concurrent execution
-            """Advisors Context Stats operation.
-
-            TODO: Add detailed description and parameters.
-            """
-            
             svc = self.advisors_service
-            # Logic flow
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
             stats = svc.get_context_stats()
             return ContextStats(**stats)
 
     def _register_bridge_routes(self, app: FastAPI) -> None:
-        # Logic flow
-        """Register bridge endpoints for external integrations."""
-
         @app.post("/bridge/event")
         async def bridge_event(
-        # Async function for concurrent execution
-            """Bridge Event with (event, x_bridge_token).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             event: dict[str, Any],
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
-            # Logic flow
+            """Register bridge endpoints for external integrations."""
             # Check for bridge token in header
             expected_token = self.config_manager.web_server.get("bridge_token")
             if not expected_token:
                 logger.warning("Bridge token not configured; rejecting request")
                 raise HTTPException(status_code=401, detail="Bridge not configured")
 
-            # Logic flow
             if not constant_time_compare(x_bridge_token, expected_token):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
@@ -1158,33 +1033,26 @@ class WebModeServer:
         days, remainder = divmod(int(seconds), 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes, seconds_i = divmod(remainder, 60)
-        # Logic flow
         if days > 0:
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
 
     async def _broadcast_message(self, message: WebSocketMessage) -> None:
-        """Broadcast a message to all active WebSocket connections."""
         payload = message.model_dump_json()
-        # Logic flow
         for ws in list(self.active_connections):
             try:
                 await ws.send_text(payload)
-            # Handle specific exception case
             except Exception as e:  # noqa: BLE001
                 logger.debug("broadcast failed to a client: %s", e)
                 try:
                     self.active_connections.discard(ws)
-                # Handle specific exception case
                 except Exception:
                     pass
 
     def _on_state_change(self, old_state: str, new_state: str) -> None:
         self.last_state_change = datetime.now()
         try:
-        # Attempt operation with error handling
             loop = asyncio.get_event_loop()
-        # Handle specific exception case
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1195,7 +1063,6 @@ class WebModeServer:
                     data={
                         "old_state": old_state,
                         "new_state": new_state,
-                        # Process each item
                         "timestamp": self.last_state_change.isoformat(),
                     },
                 )
@@ -1204,17 +1071,10 @@ class WebModeServer:
 
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:
-        """On Command Detected with (self, command: str, confidence: float).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         self.commands_executed += 1
         self.last_command = command
         try:
-        # Attempt operation with error handling
             loop = asyncio.get_event_loop()
-        # Handle specific exception case
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1228,15 +1088,9 @@ class WebModeServer:
         )
 
     def on_system_event(self, event_type: str, details: str | dict[str, Any]) -> None:
-        """On System Event with (self, event_type: str, details).
-
-        TODO: Add detailed description and parameters.
-        """
-        
+        """On system event, broadcast to clients."""
         try:
-        # Attempt operation with error handling
             loop = asyncio.get_event_loop()
-        # Handle specific exception case
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1248,7 +1102,6 @@ class WebModeServer:
 
 
 def create_app(
-    """create app."""
     *,
     config: Config | None = None,
     config_manager: Config | None = None,
@@ -1267,7 +1120,6 @@ def create_app(
 
 
 def run_server(
-    """run server."""
     config_manager: Config,
     state_manager: StateManager,
     model_manager: ModelManager,

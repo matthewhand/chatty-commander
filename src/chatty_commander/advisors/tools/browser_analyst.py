@@ -68,15 +68,6 @@ def _deterministic_fallback(url: str) -> str:
 
 def browser_analyst_tool(url: str) -> str:
     # TODO: HIGH - Refactor browser_analyst_tool (complexity > 10)
-    """
-    Analyze and summarize web content from a given URL.
-
-    Args:
-        url: The URL to analyze and summarize.
-
-    Returns:
-        A concise summary of the web content.
-    """
     if not HTTPX_AVAILABLE:
         return _deterministic_fallback(url)
 

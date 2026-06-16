@@ -33,11 +33,6 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse Args with (argv).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     # Accept unknown options to avoid pytest-provided flags (-q, test paths) breaking parsing
     parser = argparse.ArgumentParser(
         prog="generate-api-docs",
@@ -78,6 +73,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _configure_logging(verbosity: int) -> None:
+    """Parse Args with (argv).
+
+    TODO: Add detailed description and parameters.
+    """
     level = logging.WARNING
     if verbosity == 1:
         level = logging.INFO
@@ -87,11 +86,6 @@ def _configure_logging(verbosity: int) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Main with (argv).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     args = parse_args(argv)
     _configure_logging(args.verbose)
 
@@ -112,3 +106,8 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
+
+    """Main with (argv).
+
+    TODO: Add detailed description and parameters.
+    """

@@ -62,7 +62,6 @@ class AnalystResult:
     url: str
 
 
-     # TODO: HIGH - Refactor summarize_url (complexity > 10)
 def summarize_url(request: AnalystRequest) -> AnalystResult:
     """Fetch, extract, and summarize content with allowlists and timeouts."""
     if not HTTPX_AVAILABLE:
@@ -91,7 +90,6 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
         with httpx.stream("GET", request.url, timeout=timeout, follow_redirects=False) as response:
-        # Use context manager for resource management
             response.raise_for_status()
             content_pieces = []
             size = 0
@@ -99,7 +97,6 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
             for chunk in response.iter_bytes(chunk_size=8192):
                 content_pieces.append(chunk)
                 size += len(chunk)
-                # Logic flow
                 if size > MAX_SIZE:
                     break
             # ⚡ Bolt: Decode exactly once here

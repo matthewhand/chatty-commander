@@ -95,7 +95,6 @@ class EnhancedVoiceProcessor:
         self._initialize_components()
 
     def _initialize_components(self):
-        """Initialize voice processing components."""
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -122,6 +121,7 @@ class EnhancedVoiceProcessor:
             self.logger.error(f"Failed to initialize voice processor: {e}")
 
     def _initialize_noise_reduction(self):
+        """Initialize voice processing components."""
         """Initialize noise reduction component."""
         try:
         # Attempt operation with error handling
@@ -138,7 +138,6 @@ class EnhancedVoiceProcessor:
             self.logger.info("Basic noise reduction enabled")
 
     def _initialize_vad(self):
-        """Initialize voice activity detection."""
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -154,6 +153,7 @@ class EnhancedVoiceProcessor:
             self.logger.info("Energy-based VAD enabled")
 
     def _initialize_transcription(self):
+        """Initialize voice activity detection."""
         """Initialize speech-to-text transcription."""
         try:
         # Attempt operation with error handling
@@ -182,7 +182,6 @@ class EnhancedVoiceProcessor:
                 self.logger.warning("No transcription engine available")
 
     def _initialize_wake_word_detection(self):
-        """Initialize wake word detection."""
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -203,6 +202,7 @@ class EnhancedVoiceProcessor:
             self.logger.info("Simple wake word detection enabled")
 
     def _basic_noise_reduction(self, audio_data: np.ndarray) -> np.ndarray:
+        """Initialize wake word detection."""
         """Basic noise reduction using spectral subtraction."""
         # Simple high-pass filter to remove low-frequency noise
         from scipy import signal
@@ -211,7 +211,6 @@ class EnhancedVoiceProcessor:
         return signal.filtfilt(b, a, audio_data)  # type: ignore[no-any-return]
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
-        """Energy-based voice activity detection."""
         audio_data = np.frombuffer(audio_chunk, dtype=np.int16)
         audio_float = audio_data.astype(np.float32)
         energy = np.dot(audio_float, audio_float) / len(audio_data)
@@ -221,6 +220,7 @@ class EnhancedVoiceProcessor:
         return bool(energy > threshold)  # type: ignore[no-any-return]
 
     def _detect_wake_words(self, text: str) -> list[str]:
+        """Energy-based voice activity detection."""
         """Detect wake words in transcribed text."""
         wake_words = ["hey chatty", "chatty", "hey computer", "computer"]
         detected = []
@@ -236,7 +236,6 @@ class EnhancedVoiceProcessor:
         return detected
 
     def _transcribe_audio(self, audio_data: np.ndarray) -> VoiceResult:
-        """Transcribe audio data to text."""
         start_time = datetime.now()
 
         try:
@@ -307,6 +306,7 @@ class EnhancedVoiceProcessor:
             )
 
     def _process_audio_chunk(self, audio_chunk: bytes) -> VoiceResult | None:
+        """Transcribe audio data to text."""
         """Process a single audio chunk."""
         try:
         # Attempt operation with error handling
@@ -381,7 +381,6 @@ class EnhancedVoiceProcessor:
 
     def start_listening(self):
         # Logic flow
-        """Start listening for voice input."""
         # TODO: Document this logic
         if self.is_listening:
         # TODO: Document this logic
@@ -395,13 +394,9 @@ class EnhancedVoiceProcessor:
         self.logger.info("Enhanced voice processing started")
 
     def stop_listening(self):
-        # Logic flow
         """Stop listening for voice input."""
-        # TODO: Document this logic
         self.is_listening = False
-        # Logic flow
         if self.processing_thread:
-        # TODO: Document this logic
             self.processing_thread.join(timeout=1.0)
 
         self.logger.info("Enhanced voice processing stopped")
@@ -409,14 +404,11 @@ class EnhancedVoiceProcessor:
     def _audio_processing_loop(self):
         """Main audio processing loop."""
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             import pyaudio
 
             # Initialize audio stream
             audio = pyaudio.PyAudio()
             stream = audio.open(
-                # Process each item
                 format=pyaudio.paInt16,
                 channels=1,
                 rate=self.config.sample_rate,
@@ -426,11 +418,8 @@ class EnhancedVoiceProcessor:
 
             self.logger.info("Audio stream opened")
 
-            # Logic flow
             while self.is_listening:
-            # TODO: Document this logic
                 try:
-                # TODO: Document this logic
                     # Read audio chunk
                     audio_chunk = stream.read(
                         self.config.chunk_size, exception_on_overflow=False
@@ -439,21 +428,15 @@ class EnhancedVoiceProcessor:
                     # Process the chunk
                     result = self._process_audio_chunk(audio_chunk)
 
-                    # Logic flow
                     if result and result.confidence >= self.config.confidence_threshold:
-                    # TODO: Document this logic
                         # Call transcription callback
                         if self.on_transcription:
-                        # TODO: Document this logic
                             self.on_transcription(result)
 
-                        # Logic flow
                         # Call wake word callback if detected
                         if result.wake_word_detected and self.on_wake_word:
-                        # TODO: Document this logic
                             self.on_wake_word(result.text)
 
-                # Handle specific exception case
                 except Exception as e:
                     self.logger.error(f"Audio processing error: {e}")
                     continue
@@ -463,15 +446,11 @@ class EnhancedVoiceProcessor:
             stream.close()
             audio.terminate()
 
-        # Handle specific exception case
         except Exception as e:
             self.logger.error(f"Audio processing loop error: {e}")
 
     def process_audio_file(self, file_path: str) -> VoiceResult:
-        """Process an audio file and return transcription."""
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             # Load audio file
             import librosa
 
@@ -479,9 +458,7 @@ class EnhancedVoiceProcessor:
 
             # Apply processing
             if self.noise_reducer and self.config.noise_reduction_enabled:
-            # TODO: Document this logic
                 if callable(self.noise_reducer):
-                # TODO: Document this logic
                     audio_data = self.noise_reducer(audio_data)
                 else:
                     audio_data = self.noise_reducer.reduce_noise(y=audio_data, sr=sr)
@@ -489,7 +466,6 @@ class EnhancedVoiceProcessor:
             # Transcribe
             return self._transcribe_audio(audio_data)
 
-        # Handle specific exception case
         except Exception as e:
             self.logger.error(f"File processing error: {e}")
             return VoiceResult(
@@ -498,7 +474,6 @@ class EnhancedVoiceProcessor:
 
 
 def create_enhanced_voice_processor(config: dict[str, Any]) -> EnhancedVoiceProcessor:
-    """Factory function to create an enhanced voice processor."""
     voice_config = VoiceProcessingConfig(
         sample_rate=config.get("sample_rate", 16000),
         chunk_size=config.get("chunk_size", 1024),
@@ -512,3 +487,5 @@ def create_enhanced_voice_processor(config: dict[str, Any]) -> EnhancedVoiceProc
     )
 
     return EnhancedVoiceProcessor(voice_config)
+
+    """Factory function to create an enhanced voice processor."""

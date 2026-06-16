@@ -46,11 +46,6 @@ class RecurringPrompt:
 
     @staticmethod
     def from_dict(data: dict[str, Any]) -> RecurringPrompt:
-        """From Dict with (data).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         required = [
             "id",
             "name",
@@ -79,17 +74,11 @@ class RecurringPrompt:
         )
 
     def render_prompt(self, runtime_vars: dict[str, Any] | None = None) -> str:
-        """Render Prompt with (self, runtime_vars).
-
-        TODO: Add detailed description and parameters.
-        """
-        
+        """Render the prompt with runtime variables substituted."""
         merged = dict(self.variables)
-        # Apply conditional logic
         if runtime_vars:
             merged.update(runtime_vars)
         rendered = self.prompt
-        # Iterate collection
         for key, value in merged.items():
             rendered = rendered.replace(f"{{{{{key}}}}}", str(value))
         return rendered

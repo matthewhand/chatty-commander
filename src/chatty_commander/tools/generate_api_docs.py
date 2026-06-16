@@ -41,9 +41,10 @@ from .cli import main as _main
 
 
 def main() -> int:
-    """Run the docs generator CLI and return its exit code."""
     return _main(None)
 
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
+
+    """Run the docs generator CLI and return its exit code."""

@@ -63,7 +63,6 @@ class DefaultConfigGenerator:
         """Generate a complete default configuration."""
         logging.info("Generating default configuration...")
 
-        # Logic flow
         # Create wakewords directory if it doesn't exist
         self.wakewords_dir.mkdir(exist_ok=True)
 
@@ -80,14 +79,11 @@ class DefaultConfigGenerator:
 
     def _create_sample_wakewords(self):
         """Create sample wakeword files in the wakewords directory."""
-        # Process each item
         for wakeword_file in self.default_wakewords.keys():
             wakeword_path = self.wakewords_dir / wakeword_file
-            # Apply conditional logic
             if not wakeword_path.exists():
                 # Create a placeholder file (in practice, these would be actual ONNX models)
                 with open(wakeword_path, "w") as f:
-                    # Build filtered collection
                     f.write(f"# Placeholder for {wakeword_file}\n")
                     f.write(
                         "# This should be replaced with an actual ONNX model file\n"
@@ -113,17 +109,14 @@ class DefaultConfigGenerator:
             ],
         }
 
-        # Iterate collection
         for model_dir, wakewords in model_dirs.items():
             dir_path = self.base_dir / model_dir
             dir_path.mkdir(exist_ok=True)
 
-            # Process each item
             for wakeword in wakewords:
                 source = self.wakewords_dir / wakeword
                 target = dir_path / wakeword
 
-                # Logic flow
                 # Remove existing symlink if it exists
                 if target.is_symlink() or target.exists():
                     target.unlink()
@@ -132,7 +125,6 @@ class DefaultConfigGenerator:
                 try:
                     target.symlink_to(source.resolve())
                     logging.info(f"Created symlink: {target} -> {source}")
-                # Handle specific exception case
                 except OSError as e:
                     logging.warning(f"Could not create symlink {target}: {e}")
                     # Fallback: copy the file instead
@@ -142,7 +134,6 @@ class DefaultConfigGenerator:
                     logging.info(f"Copied file instead: {source} -> {target}")
 
     def _create_default_config_json(self):
-        """Create a comprehensive default config.json file."""
         default_config = {
             "keybindings": {
                 "take_screenshot": "alt+print_screen",
@@ -252,39 +243,29 @@ class DefaultConfigGenerator:
         }
 
         with open(self.config_file, "w") as f:
-        # Use context manager for resource management
             json.dump(default_config, f, indent=2)
 
         logging.info(f"Created default config.json at {self.config_file}")
 
     def should_generate_default_config(self):
-        # Validate preconditions
         """Check if default configuration should be generated."""
-        # Check if config.json exists and is valid
         if not self.config_file.exists():
             return True
 
         try:
-        # Attempt operation with error handling
             with open(self.config_file) as f:
                 config = json.load(f)
-                # Logic flow
-                # Check if essential sections exist
                 required_sections = ["commands", "state_models"]
                 if not all(section in config for section in required_sections):
                     return True
-        # Handle specific exception case
         except (OSError, json.JSONDecodeError):
             return True
 
-        # Logic flow
         # Check if model directories are empty
         model_dirs = ["models-idle", "models-computer", "models-chatty"]
         all_empty = True
-        # Process each item
         for model_dir in model_dirs:
             dir_path = self.base_dir / model_dir
-            # Apply conditional logic
             if dir_path.exists() and any(dir_path.iterdir()):
                 all_empty = False
                 break

@@ -27,12 +27,6 @@ from typing import Any
 
 
 def build_openapi_schema() -> dict[str, Any]:
-    """
-    Construct the OpenAPI schema dictionary.
-
-    Note: This extracts the schema content from the previous APIDocumentationGenerator.generate_openapi_spec.
-    It intentionally remains pure (no I/O, no logging) for ease of testing.
-    """
     spec: dict[str, Any] = {
         "openapi": "3.0.3",
         "info": {
@@ -407,12 +401,12 @@ def build_openapi_schema() -> dict[str, Any]:
 
 def generate_markdown_docs() -> str:
     """
-    Return the long-form Markdown documentation string.
+    Construct the OpenAPI schema dictionary.
 
-    This was previously generated dynamically with a timestamp embedded.
-    To preserve that behavior while remaining pure, we only embed the timestamp at call time here.
+    Note: This extracts the schema content from the previous APIDocumentationGenerator.generate_openapi_spec.
+    It intentionally remains pure (no I/O, no logging) for ease of testing.
     """
-    docs = f"""
+    docs = """
 # ChattyCommander API Documentation
 
 *Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
@@ -612,7 +606,9 @@ Error responses include a JSON body with details:
 
 ## Rate Limiting
 
-Currently, no rate limiting is implemented. This may be added in future versions.
+Basic in-memory per-IP rate limiting is implemented via RateLimitMiddleware (default 60 req/min, X-RateLimit-* headers, secure client IP extraction considering trusted proxies). See src/chatty_commander/web/web_mode.py.
+- Not yet Redis-backed or per-endpoint configurable (roadmap item).
+- Suitable for dev/single-instance; production should consider distributed limiting + nginx/ingress rules (see SECURITY.md).
 
 ## Examples
 
@@ -639,7 +635,6 @@ print(f"Command result: {{result['success']}}")
 async def websocket_client():
     uri = "ws://localhost:8100/ws"
     async with websockets.connect(uri) as websocket:
-        # Logic flow
         while True:
             message = await websocket.recv()
             data = json.loads(message)

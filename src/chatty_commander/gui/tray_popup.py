@@ -80,12 +80,6 @@ def _load_settings(config: Any) -> dict[str, Any]:
 
 
 def _icon_image() -> Image.Image | None:
-    """
-    Try to load a tray icon image.
-
-    - Prefer icon.png if present (since PIL cannot rasterize SVG without extra deps).
-    - If only icon.svg exists, skip and allow default OS tray icon.
-    """
     try:
         from PIL import Image  # type: ignore
     # Handle specific exception case
@@ -95,9 +89,7 @@ def _icon_image() -> Image.Image | None:
     icon_path_png = Path("icon.png")
     if icon_path_png.exists():
         try:
-        # Attempt operation with error handling
             return Image.open(icon_path_png)
-        # Handle specific exception case
         except Exception:
             return None
     # If only SVG exists, we skip rasterization here (no cairosvg dependency in core)
@@ -153,14 +145,6 @@ def _open_window(settings: dict[str, Any], logger) -> None:
 
 
 def run_tray_popup(config: Any, logger) -> int:
-    """
-    Start a system tray icon that can open a popup browser window showing
-    config.gui.popup.url.
-
-    Returns:
-        # Apply conditional logic
-        int: 0 on normal exit, 2 if dependencies are missing.
-    """
     if pystray is None:
         logger.error("pystray is not installed; cannot create system tray icon")
         return 2
@@ -168,11 +152,8 @@ def run_tray_popup(config: Any, logger) -> int:
     icon_img = _icon_image()
 
     def on_open(_icon, _item):
-        """On Open with (_icon, _item).
-
-        TODO: Add detailed description and parameters.
-        """
-        
+        """On Open handler."""
+        _icon.stop()
         # open window on a background thread to avoid blocking the tray loop
         settings = _load_settings(config)
         threading.Thread(
@@ -180,11 +161,7 @@ def run_tray_popup(config: Any, logger) -> int:
         ).start()
 
     def on_quit(_icon, _item):
-        """On Quit with (_icon, _item).
-
-        TODO: Add detailed description and parameters.
-        """
-        
+        """On Quit handler."""
         _icon.stop()
 
     menu = Menu(

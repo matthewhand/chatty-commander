@@ -30,26 +30,19 @@ CFG = pathlib.Path("config.json")
 
 
 def main() -> int:
-    """Main operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
+    """Main operation."""
     if not CFG.exists():
         print("config.json not found", file=sys.stderr)
         return 2
     data = json.loads(CFG.read_text())
     commands = set((data.get("commands") or {}).keys())
     missing: list[str] = []
-    # Build filtered collection
     for state, names in (data.get("state_models") or {}).items():
-        # Logic flow
         for name in names or []:
             if name not in commands:
                 missing.append(f"{state}:{name}")
     if missing:
         print("Config validation: MISSING commands referenced in state_models:")
-        # Logic flow
         for m in sorted(missing):
             print(" -", m)
         return 1

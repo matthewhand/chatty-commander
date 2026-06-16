@@ -133,18 +133,6 @@ Output ONLY valid JSON in this format:
 
 
 def _sanitize_user_input(description: str) -> str:
-    """Sanitize user input to prevent prompt injection attacks.
-
-    Removes or escapes potentially harmful characters and patterns that
-    could be used to manipulate the LLM's behavior.
-
-    Args:
-        description: Raw user input
-
-    Returns:
-        # Logic flow
-        Sanitized input safe for embedding in prompts
-    """
     # Remove null bytes
     cleaned = description.replace('\x00', '')
 
@@ -163,6 +151,18 @@ def _sanitize_user_input(description: str) -> str:
 
 
 def _build_prompt(description: str) -> str:
+    """Sanitize user input to prevent prompt injection attacks.
+
+    Removes or escapes potentially harmful characters and patterns that
+    could be used to manipulate the LLM's behavior.
+
+    Args:
+    description: Raw user input
+
+    Returns:
+    # Logic flow
+    Sanitized input safe for embedding in prompts
+    """
     """Build a safe prompt with sanitized user input.
 
     Uses JSON encoding for the user description to prevent prompt injection.
@@ -180,7 +180,6 @@ def _build_prompt(description: str) -> str:
 
 
 def _get_llm_manager() -> LLMManager | None:
-    """Get or create LLM manager instance."""
     if LLMManager is None:
         return None
     try:
@@ -192,6 +191,7 @@ def _get_llm_manager() -> LLMManager | None:
 
 
 def _parse_llm_response(response: str) -> dict[str, Any]:
+    """Get or create LLM manager instance."""
     """Parse and validate LLM response as JSON."""
     # Try to extract JSON from response (handle markdown code blocks)
     cleaned = response.strip()
@@ -216,7 +216,6 @@ def _parse_llm_response(response: str) -> dict[str, Any]:
 
 
 def _validate_command_data(data: dict[str, Any]) -> GeneratedCommandResponse:
-    """Validate parsed command data against response model."""
     required_fields = {"name", "display_name", "wakeword", "actions"}
     missing = required_fields - set(data.keys())
     if missing:
@@ -277,22 +276,6 @@ def _validate_command_data(data: dict[str, Any]) -> GeneratedCommandResponse:
     },
 )
 async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandResponse:
-    """Generate a command configuration from natural language description.
-
-    Uses LLM to parse the description and generate a structured command
-    with appropriate actions. Requires an available LLM backend.
-
-    Args:
-        request: Natural language command description
-
-    Returns:
-        Generated command configuration with name, display_name, wakeword, and actions
-        # Use context manager for resource management
-
-    Raises:
-        # Logic flow
-        HTTPException: 503 if LLM unavailable, 422 if response parsing fails
-    """
     # Check LLM availability
     llm = _get_llm_manager()
     if llm is None or not llm.is_available():

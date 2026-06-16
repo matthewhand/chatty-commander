@@ -43,20 +43,14 @@ except Exception:  # very minimal stub if FastAPI missing (tests won't hit real 
 
         def include_router(self, *a: Any, **k: Any) -> None: ...
         # TODO: Document this logic
+
+        @property
+        def routes(self):
             """Include Router with (self).
 
             TODO: Add detailed description and parameters.
             """
-            
-
-        @property
-        def routes(self):
         # TODO: Document this logic
-            """Routes with (self).
-
-            TODO: Add detailed description and parameters.
-            """
-            
             return []
 
 
@@ -110,6 +104,12 @@ except ImportError:
     models_router = None  # type: ignore[assignment]
 
 try:
+    from .routes.system import include_system_routes
+# Handle specific exception case
+except ImportError:
+    include_system_routes = None  # type: ignore[assignment]
+
+try:
     from .routes.command_authoring import router as command_authoring_router
 # Handle specific exception case
 except ImportError:
@@ -126,20 +126,17 @@ except ImportError:
 # Settings router needs to be created with config manager
 settings_router = None
 audio_router = None
+system_router = None
 
 
 def _include_optional(app: FastAPI, name: str) -> None:
+    """Include optional router from globals if present."""
     r = globals().get(name)
     if r:
         app.include_router(r)
 
 
 def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
-    """Create with (no_auth: bool, config_manager: Any).
-
-    TODO: Add detailed description and parameters.
-    """
-    
     app = FastAPI()
 
     # Include routers that are available
@@ -169,6 +166,15 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
             get_config_manager=lambda: config_manager
         )
         _include_optional(app, "audio_router")
+
+    if include_system_routes is not None:
+        global system_router
+        cfg_getter = (lambda: config_manager) if config_manager is not None else (lambda: type("C", (), {"config": {}})())
+        system_router = include_system_routes(
+            get_start_time=lambda: 0.0,
+            get_config_manager=cfg_getter,
+        )
+        _include_optional(app, "system_router")
 
     # Add bridge endpoint for tests
     try:

@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 def include_ws_routes(
-    """include ws routes."""
     *,
     get_connections: Callable[[], set[WebSocket]],
     set_connections: Callable[[set[WebSocket]], None],
@@ -50,62 +49,44 @@ def include_ws_routes(
       - get_connections / set_connections: manage the shared connection set
       - get_state_snapshot: returns an initial payload describing current state
       - on_message: optional callback to process inbound JSON messages
-
-    Note:
-      Broadcast helpers remain in legacy for now; this router focuses on ingress/egress wiring.
     """
     router = APIRouter()
 
     @router.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket) -> None:
-        """Websocket Endpoint with (websocket: WebSocket).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         await websocket.accept()
         conns = get_connections()
         conns.add(websocket)
         set_connections(conns)
 
         try:
-        # Attempt operation with error handling
             # Send initial snapshot akin to legacy behavior
             snapshot = {
                 "type": "connection_established",
                 "data": get_state_snapshot(),
-                # Process each item
                 "timestamp": datetime.now().isoformat(),
             }
             await websocket.send_text(json.dumps(snapshot))
 
-            # Logic flow
             while True:
                 try:
-                    # Logic flow
                     # Wait for incoming client messages with timeout to allow periodic heartbeats
                     data = await asyncio.wait_for(
                         websocket.receive_text(), timeout=heartbeat_seconds
                     )
                     try:
-                    # Attempt operation with error handling
                         message = json.loads(data)
-                    # Handle specific exception case
                     except Exception:
                         message = {"type": "raw", "data": data}
-                    # Logic flow
                     if on_message:
                         on_message(message)
 
-                    # Logic flow
                     # Respond to ping for client keepalive symmetry
                     if isinstance(message, dict) and message.get("type") == "ping":
                         await websocket.send_text(
                             json.dumps(
                                 {
                                     "type": "pong",
-                                    # Build filtered collection
-                                    # Process each item
                                     "data": {"timestamp": datetime.now().isoformat()},
                                 }
                             )
@@ -116,16 +97,12 @@ def include_ws_routes(
                         json.dumps(
                             {
                                 "type": "heartbeat",
-                                # Build filtered collection
-                                # Process each item
                                 "data": {"timestamp": datetime.now().isoformat()},
                             }
                         )
                     )
-        # Handle specific exception case
         except WebSocketDisconnect:
             logger.info("WebSocket client disconnected")
-        # Handle specific exception case
         except Exception as err:  # noqa: BLE001
             logger.error("WebSocket error: %s", err)
         finally:

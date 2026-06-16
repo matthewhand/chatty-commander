@@ -60,7 +60,6 @@ from chatty_commander.utils.logger import setup_logger  # noqa: E402
 
 
 def run_cli_mode(config, model_manager, state_manager, command_executor, logger):
-    """Run the traditional CLI voice command mode with graceful shutdown."""
     logger.info("Starting CLI voice command mode")
 
     # Load models based on the initial idle state
@@ -69,11 +68,6 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
     shutdown_flag = {"stop": False}
 
     def handle_signal(signum, frame):
-        """Process with (signum, frame).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         shutdown_flag["stop"] = True
 
@@ -97,48 +91,31 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
                 logger.info(f"Transitioning to new state: {new_state}")
                 model_manager.reload_models(new_state)
 
-            # Logic flow
             # Execute the detected command if it's actionable
             if command in config.model_actions:
                 command_executor.execute_command(command)
 
-    # Handle specific exception case
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt received; shutting down")
     finally:
-        # Logic flow
         # Perform any resource cleanup if needed
         try:
             if hasattr(model_manager, "shutdown"):
                 model_manager.shutdown()
-            # Apply conditional logic
             if hasattr(state_manager, "shutdown"):
                 state_manager.shutdown()
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error during shutdown: {e}")
         logger.info("ChattyCommander CLI shutdown complete")
         sys.exit(0)
 
 
-def run_web_mode(
-    """run web mode."""
-    config,
-    model_manager,
-    state_manager,
-    command_executor,
-    logger,
-    *,
-    host: str = "0.0.0.0",
-    port: int = 8100,
-    no_auth: bool = False,
-):
+def run_web_mode(config, logger):
     """Run the web UI mode with FastAPI server and graceful shutdown."""
     import os
 
     try:
         from chatty_commander.web.web_mode import WebModeServer
-    # Handle specific exception case
     except ImportError:
         logger.error(
             "Web mode dependencies not available. Install with: uv add fastapi uvicorn websockets"
@@ -146,8 +123,6 @@ def run_web_mode(
         sys.exit(1)
 
     logger.info(
-        # Build filtered collection
-        # Apply conditional logic
         f"Starting web mode (auth={'disabled' if no_auth else 'enabled'}) on {host}:{port}"
     )
 
@@ -162,19 +137,10 @@ def run_web_mode(
 
     # Setup callbacks for voice command integration
     def on_command_detected(command):
-        """On Command Detected with (command).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         web_server.on_command_detected(command, confidence=1.0)
 
     def on_state_change(old_state, new_state):
-        """On State Change with (old_state, new_state).
-
-        TODO: Add detailed description and parameters.
-        """
-        
+        logger.info(f"State changed from {old_state} to {new_state}")
         web_server._on_state_change(old_state, new_state)
 
     # Register callbacks
@@ -186,20 +152,12 @@ def run_web_mode(
     stop_event = threading.Event()
 
     def handle_signal(signum, frame):
-        """Process with (signum, frame).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         logger.info(f"Received signal {signum}, stopping web server...")
         stop_event.set()
         try:
-        # Attempt operation with error handling
             stopper = getattr(web_server, "stop", None)
-            # Apply conditional logic
             if callable(stopper):
                 stopper()
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Error stopping web server: {e}")
 
@@ -238,7 +196,6 @@ def run_web_mode(
 
 
 def run_gui_mode(
-    """run gui mode."""
     config,
     model_manager,
     state_manager,
@@ -247,6 +204,7 @@ def run_gui_mode(
     display_override: str | None = None,
     no_gui: bool = False,
 ):
+    """run gui mode."""
     """Run the GUI mode with graceful handling in headless environments.
 
     Returns:
@@ -331,7 +289,6 @@ def run_gui_mode(
 
 
 def create_parser():
-    """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(
         description="ChattyCommander - Advanced voice-activated command processing system.\n"
         "This application allows users to control their computer using voice commands, "
@@ -472,10 +429,6 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
 
 
 def run_interactive_shell(
-    # TODO: REFACTOR - Complexity 12, extract sub-functions
-
-    # TODO: REFACTOR - Complexity 12, extract sub-functions
-
     config, model_manager, state_manager, command_executor, logger
 ):
     """Run interactive text-based shell mode with tab completion."""
@@ -489,32 +442,18 @@ def run_interactive_shell(
     model_actions = list(config.model_actions.keys())
 
     def completer(text, state):
-        """Completer with (text, state).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Build filtered collection
-        # Apply conditional logic
         options = [cmd for cmd in commands if cmd.startswith(text)]
-        # Apply conditional logic
         if text.startswith("execute "):
             subtext = text[8:]
             suboptions = [
-                # Build filtered collection
-                # Apply conditional logic
                 f"execute {act}" for act in model_actions if act.startswith(subtext)
             ]
             try:
-            # Attempt operation with error handling
                 return suboptions[state]
-            # Handle specific exception case
             except IndexError:
                 return None
         try:
-        # Attempt operation with error handling
             return options[state]
-        # Handle specific exception case
         except IndexError:
             return None
 
@@ -523,12 +462,9 @@ def run_interactive_shell(
 
     while True:
         try:
-        # Attempt operation with error handling
             input_str = input("> ").strip()
-            # Apply conditional logic
             if not input_str:
                 continue
-            # Apply conditional logic
             if input_str.lower() == "exit":
                 break
             # Apply conditional logic
@@ -571,7 +507,6 @@ def run_interactive_shell(
 
 
 def run_orchestrator_mode(
-    """run orchestrator mode."""
     config, model_manager, state_manager, command_executor, logger, args
 ):
     """Run orchestrator-driven mode; adapters route to the same command sink."""
@@ -615,7 +550,6 @@ def run_orchestrator_mode(
     # TODO: REFACTOR - Complexity 30, extract sub-functions
 
 def main():
-    """Entry point for the ChattyCommander application."""
     parser = create_parser()
     # Parse as the very first action and immediately return argparse exit code for help/usage
     # We must allow --help to exit(0) without doing any setup, to satisfy tests.
@@ -747,11 +681,6 @@ def main():
 
             # Set up AI response handling
             def handle_ai_response(response):
-                """Process with (response).
-
-                TODO: Add detailed description and parameters.
-                """
-                
                 print(f"AI: {response.text}")
                 # Apply conditional logic
                 if response.actions:

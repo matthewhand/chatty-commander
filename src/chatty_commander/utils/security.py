@@ -25,11 +25,6 @@ from typing import Any
 
 
 def constant_time_compare(provided: str | None, expected: str | None) -> bool:
-    """Compare two credential strings in constant time.
-
-    Returns False if either value is None or empty, preventing both
-    timing attacks and NoneType bypass issues.
-    """
     if not provided or not expected:
         return False
     return secrets.compare_digest(
@@ -39,6 +34,11 @@ def constant_time_compare(provided: str | None, expected: str | None) -> bool:
 
 
 def mask_sensitive_data(data: Any) -> Any:
+    """Compare two credential strings in constant time.
+
+    Returns False if either value is None or empty, preventing both
+    timing attacks and NoneType bypass issues.
+    """
     """Recursively mask sensitive keys in a dictionary or list."""
     sensitive_patterns = {
         "api_key",

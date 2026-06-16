@@ -62,7 +62,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # TODO: REFACTOR - Complexity 12, extract sub-functions
 
         # Logic flow
-        """Process request and validate authentication if required."""
         # Skip auth in no_auth mode
         if self.no_auth:
             return await call_next(request)  # type: ignore[no-any-return]
@@ -72,6 +71,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         decoded_path = urllib.parse.unquote(raw_path)
         # Logic flow
         for _ in range(10):
+            """Process request and validate authentication if required."""
             if "%" not in decoded_path:
                 break
             new_decoded = urllib.parse.unquote(decoded_path)

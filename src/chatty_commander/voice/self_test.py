@@ -87,7 +87,6 @@ class VoiceSelfTester:
             self._initialize_tts()
 
     def _initialize_tts(self):
-        """Initialize text-to-speech engine."""
         try:
         # Attempt operation with error handling
         # TODO: Document this logic
@@ -105,10 +104,11 @@ class VoiceSelfTester:
                 for voice in voices:
                 # TODO: Document this logic
                     if (
-                    # TODO: Document this logic
+                        # TODO: Document this logic
                         "female" in voice.name.lower()
                         or "samantha" in voice.name.lower()
                     ):
+                        # TODO: Document this logic
                         self._tts_engine.setProperty("voice", voice.id)  # type: ignore[attr-defined]
                         break
 
@@ -118,7 +118,6 @@ class VoiceSelfTester:
 
     def _get_default_test_phrases(self) -> list[str]:
         # Logic flow
-        """Get default test phrases for voice recognition testing."""
         # TODO: Document this logic
         return [
             # Basic commands
@@ -156,15 +155,15 @@ class VoiceSelfTester:
         """Convert text to audio using TTS."""
         # Logic flow
         if not self._tts_engine:
-        # TODO: Document this logic
+            # TODO: Document this logic
             logger.warning("TTS engine not available")
             return None
 
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+            # Attempt operation with error handling
             # TODO: Document this logic
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                # TODO: Document this logic
                 self._tts_engine.save_to_file(text, tmp_file.name)
                 self._tts_engine.runAndWait()
 
@@ -183,7 +182,6 @@ class VoiceSelfTester:
 
     def test_transcription_accuracy(self, text: str) -> tuple[str, float]:
         # Logic flow
-        """Test transcription accuracy for a given text."""
         # TODO: Document this logic
         # Generate audio from text
         audio_data = self.generate_audio_from_text(text)
@@ -206,9 +204,8 @@ class VoiceSelfTester:
 
         # Logic flow
         if not original_words:
-        # TODO: Document this logic
-            return 1.0 if not transcribed_words else 0.0
             # TODO: Document this logic
+            return 1.0 if not transcribed_words else 0.0
 
         # Simple word overlap calculation
         original_set = set(original_words)
@@ -219,7 +216,7 @@ class VoiceSelfTester:
 
         # Logic flow
         if not union:
-        # TODO: Document this logic
+            # TODO: Document this logic
             return 1.0
 
         return len(intersection) / len(union)
@@ -227,7 +224,6 @@ class VoiceSelfTester:
     def llm_judge_transcription(
         self, original: str, transcribed: str
     ) -> dict[str, Any]:
-        """Use LLM to judge transcription quality and provide feedback."""
         # Logic flow
         if not self.openai_client:
         # TODO: Document this logic
@@ -285,6 +281,7 @@ class VoiceSelfTester:
             }
 
     def run_comprehensive_test(self) -> dict[str, Any]:
+        """Use LLM to judge transcription quality and provide feedback."""
         """Run comprehensive self-test and return detailed results."""
         results: dict[str, Any] = {
             "timestamp": time.time(),
@@ -390,7 +387,6 @@ class VoiceSelfTester:
 
     def _categorize_phrase(self, phrase: str) -> str:
         # Logic flow
-        """Categorize phrase for analysis."""
         # TODO: Document this logic
         phrase_lower = phrase.lower()
 
@@ -402,6 +398,7 @@ class VoiceSelfTester:
             for word in ["function", "class", "import", "def", "async"]
             # TODO: Document this logic
         ):
+            """Categorize phrase for analysis."""
             return "programming"
         # Logic flow
         elif any(
@@ -427,7 +424,6 @@ class VoiceSelfTester:
             return "complex"
 
     def suggest_improvements(self, test_results: dict[str, Any]) -> list[str]:
-        """Analyze test results and suggest specific improvements."""
         suggestions = []
 
         summary = test_results.get("summary", {})
@@ -466,6 +462,7 @@ class VoiceSelfTester:
         return suggestions
 
     def auto_tune_parameters(self, test_results: dict[str, Any]) -> dict[str, Any]:
+        """Analyze test results and suggest specific improvements."""
         """Automatically suggest parameter adjustments based on test results."""
         tuning_recommendations = {
             "transcription_backend": "current",
@@ -528,8 +525,6 @@ def create_self_improvement_loop(
     openai_api_key: str | None = None,
     iterations: int = 5,
 ) -> dict[str, Any]:
-    """Create a self-improvement loop for the voice system."""
-
     tester = VoiceSelfTester(transcriber, openai_api_key)
     improvement_history = []
 
@@ -583,8 +578,6 @@ def create_self_improvement_loop(
 
 # CLI integration for self-testing
 def add_self_test_commands(subparsers):
-    """Add self-test commands to CLI."""
-
     test_parser = subparsers.add_parser(
         "self-test",
         help="Run voice system self-tests and improvements",
@@ -620,9 +613,8 @@ def add_self_test_commands(subparsers):
 
 
 def handle_self_test_command(args):
+    """Add self-test commands to CLI."""
     # TODO: HIGH - Refactor handle_self_test_command (complexity > 10)
-    """Handle self-test CLI commands."""
-
     if not hasattr(args, "test_command") or not args.test_command:
         # Logic flow
         print("No self-test command specified. Use --help for available commands.")
@@ -693,3 +685,5 @@ def handle_self_test_command(args):
         print(
             f"🏆 Benchmark complete: {results['summary']['average_accuracy']:.2%} accuracy"
         )
+
+        """Handle self-test CLI commands."""
