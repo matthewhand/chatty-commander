@@ -50,13 +50,11 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record):
         log_entry = {
-            # Process each item
             "time": self.formatTime(record),
             "name": record.name,
             "level": record.levelname,
             "message": record.getMessage(),
         }
-        # Logic flow
         if record.exc_info:
             # Build filtered collection
             log_entry["exception"] = self.formatException(record.exc_info)

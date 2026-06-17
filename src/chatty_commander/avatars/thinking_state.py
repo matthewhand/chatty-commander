@@ -70,7 +70,6 @@ class AgentStateInfo:
             self.timestamp = time.time()
 
     def to_dict(self) -> dict[str, Any]:
-        # Process each item
         data = asdict(self)
         data["state"] = self.state.value
         return data
@@ -139,10 +138,8 @@ class ThinkingStateManager:
         return self.agent_states.copy()
 
     def map_agent_to_avatar(self, agent_id: str, avatar_id: str) -> None:
-        # Apply conditional logic
         self.avatar_mappings[agent_id] = avatar_id
 
-        # Apply conditional logic
         if agent_id in self.agent_states:
             self.agent_states[agent_id].avatar_id = avatar_id
             self._broadcast_state_change(agent_id)
@@ -169,27 +166,22 @@ class ThinkingStateManager:
 
     def _broadcast(self, message: dict[str, Any]) -> None:
         callbacks = list(self.broadcast_callbacks.copy())
-        # Process each item
         for callback in callbacks:
             try:
-                # Apply conditional logic
                 if inspect.iscoroutinefunction(callback):
                     # If we're in an event loop, schedule the coroutine, else run it
                     try:
                         loop = asyncio.get_running_loop()
                         loop.create_task(callback(message))
-                    # Handle specific exception case
                     except RuntimeError:
                         asyncio.run(callback(message))
                 else:
                     callback(message)
-            # Handle specific exception case
             except Exception as e:
                 logger.error(f"Error in broadcast callback: {e}")
 
     def _broadcast_state_change(self, agent_id: str) -> None:
         agent_info = self.agent_states.get(agent_id)
-        # Apply conditional logic
         if not agent_info:
             return
         message = {

@@ -88,19 +88,15 @@ class AdvisorsService:
         self.provider = provider_builder(base_cfg.get("providers", {}))
         self.context_manager = ContextManager(base_cfg.get("context", {}))
 
-        # Logic flow
         # Check if advisors are enabled
         self.enabled = base_cfg.get("enabled", False)
 
-        # Logic flow
         # Initialize conversation engine for enhanced AI interactions
         self.conversation_engine = create_conversation_engine(base_cfg)
 
-        # Logic flow
         # Initialize LLM Manager for unified provider handling
         from ..llm.manager import get_global_llm_manager
 
-        # Logic flow
         # Use global manager if available or create new one
         self.llm_manager = get_global_llm_manager(
              openai_api_key=base_cfg.get("openai_api_key") or base_cfg.get("api_key"),
@@ -109,9 +105,6 @@ class AdvisorsService:
         )
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
-        # TODO: REFACTOR - High complexity (handle_message)
-        # Break into: validation, execution, cleanup sub-functions
-
         """Process an incoming message and return an advisor response.
 
         Args:
@@ -137,102 +130,100 @@ class AdvisorsService:
             **(message.metadata or {}),
         )
 
-        # Set thinking state for avatar
-        agent_id = f"{message.platform}-{message.channel}-{message.user}"
-        thinking_manager = get_thinking_manager()
-        thinking_manager.register_agent(agent_id, context.persona_id)
-        thinking_manager.start_thinking(agent_id, "Processing your message...")
+        agent_id = self._setup_thinking_state(message, context)
 
         try:
-            # Build prompt using context-aware persona and recent memory
             combined_user_text = self._build_combined_history_text(
                 platform.value, message.channel, message.user, message.text
             )
 
-            # Update to processing state
+            thinking_manager = get_thinking_manager()
             thinking_manager.start_processing(agent_id, "Generating response...")
 
-            # Generate real LLM response
-            try:
-                persona_config = self._resolve_persona_config(context)
+            response, model_name, api_mode = self._generate_llm_response(
+                combined_user_text, message, context, platform
+            )
 
-                # Use conversation engine for enhanced prompt building
-                enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
-                    user_input=combined_user_text,
-                    user_id=f"{message.platform}:{message.channel}:{message.user}",
-                    persona_config=persona_config,
-                    current_mode=getattr(self.config, "current_mode", "chatty"),
-                )
-
-                # Use LLMManager to generate response (prefer manager, fallback to legacy)
-                if hasattr(self, "llm_manager") and self.llm_manager:
-                     response = self.llm_manager.generate_response(
-                        enhanced_prompt,
-                        model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
-                        max_tokens=self.config.get("max_tokens", 150),
-                        temperature=self.config.get("temperature", 0.7)
-                    )
-                     _backend_name = self.llm_manager.get_active_backend_name()
-                     _fallback_names = {"mock", "none", "unknown"}
-                     if _backend_name in _fallback_names:
-                         model_name = getattr(self.provider, "model", _backend_name)
-                         api_mode = getattr(self.provider, "api_mode", "chat")
-                     else:
-                         model_name = _backend_name
-                         api_mode = "chat"
-                else:
-                    # Legacy provider path
-                    response = self.provider.generate(enhanced_prompt)
-                    model_name = getattr(self.provider, "model", "unknown")
-                    api_mode = getattr(self.provider, "api_mode", "unknown")
-
-                # Enhanced directive handling (extracted)
-                response = self._apply_switch_mode_directives(response)
-
-                # Record conversation for future context
-                self.conversation_engine.record_conversation_turn(
-                    user_id=f"{message.platform}:{message.channel}:{message.user}",
-                    user_input=message.text,
-                    assistant_response=response,
-                    context={
-                        "persona_id": context.persona_id,
-                        "platform": message.platform,
-                    },
-                )
-            except Exception as e:
-                # Fallback to echo if LLM fails
-                model_name = "error"
-                api_mode = "error"
-                response = f"[LLM Error] {message.text} ({str(e)})"
-
-            # Update to responding state
             thinking_manager.start_responding(agent_id, "Finalizing response...")
 
-            # Add to memory using tri-key (platform, channel, user)
-            self.memory.add(
-                platform.value, message.channel, message.user, "user", message.text
-            )
-            self.memory.add(
-                platform.value, message.channel, message.user, "assistant", response
+            self._record_exchange(
+                platform.value, message.channel, message.user, message.text, response
             )
 
-            reply = AdvisorReply(
-                reply=response,
-                context_key=context.identity.context_key,
-                persona_id=context.persona_id,
-                model=model_name,
-                api_mode=api_mode,
-            )
+            reply = self._build_advisor_reply(response, context, model_name, api_mode)
 
-            # Return to idle state
             thinking_manager.set_idle(agent_id)
             return reply
 
         except Exception as e:
-            # Logic flow
-            # Set error state if processing fails
+            thinking_manager = get_thinking_manager()
             thinking_manager.set_error(agent_id, f"Error processing message: {str(e)}")
             raise
+
+    def _setup_thinking_state(self, message: AdvisorMessage, context) -> str:
+        """Small helper extracted to reduce handle_message complexity (setup phase)."""
+        agent_id = f"{message.platform}-{message.channel}-{message.user}"
+        thinking_manager = get_thinking_manager()
+        thinking_manager.register_agent(agent_id, context.persona_id)
+        thinking_manager.start_thinking(agent_id, "Processing your message...")
+        return agent_id
+
+    def _resolve_model_and_api(self, backend_name: str) -> tuple[str, str]:
+        """Small helper extracted from _generate_llm_response to reduce duplication and complexity in handle_message (qa rank 2).
+        Returns (model_name, api_mode) handling fallback names.
+        """
+        _fallback_names = {"mock", "none", "unknown"}
+        if backend_name in _fallback_names:
+            model_name = getattr(self.provider, "model", backend_name)
+            api_mode = getattr(self.provider, "api_mode", "chat")
+        else:
+            model_name = backend_name
+            api_mode = "chat"
+        return model_name, api_mode
+
+    def _generate_llm_response(
+        self, combined_user_text: str, message: AdvisorMessage, context, platform
+    ) -> tuple[str, str, str]:
+        """Small helper extracted to reduce handle_message complexity (LLM execution + post)."""
+        try:
+            persona_config = self._resolve_persona_config(context)
+
+            enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
+                user_input=combined_user_text,
+                user_id=f"{message.platform}:{message.channel}:{message.user}",
+                persona_config=persona_config,
+                current_mode=getattr(self.config, "current_mode", "chatty"),
+            )
+
+            if hasattr(self, "llm_manager") and self.llm_manager:
+                response = self.llm_manager.generate_response(
+                    enhanced_prompt,
+                    model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
+                    max_tokens=self.config.get("max_tokens", 150),
+                    temperature=self.config.get("temperature", 0.7),
+                )
+                _backend_name = self.llm_manager.get_active_backend_name()
+                model_name, api_mode = self._resolve_model_and_api(_backend_name)
+            else:
+                response = self.provider.generate(enhanced_prompt)
+                model_name = getattr(self.provider, "model", "unknown")
+                api_mode = getattr(self.provider, "api_mode", "unknown")
+
+            response = self._apply_switch_mode_directives(response)
+
+            self.conversation_engine.record_conversation_turn(
+                user_id=f"{message.platform}:{message.channel}:{message.user}",
+                user_input=message.text,
+                assistant_response=response,
+                context={
+                    "persona_id": context.persona_id,
+                    "platform": message.platform,
+                },
+            )
+            return response, model_name, api_mode
+
+        except Exception as e:
+            return f"[LLM Error] {message.text} ({str(e)})", "error", "error"
 
     def _build_combined_history_text(
         self, platform_value: str, channel: str, user: str, current_text: str
@@ -303,6 +294,25 @@ class AdvisorsService:
             persona_id="analyst",
             model=self.provider.model,
             api_mode=self.provider.api_mode,
+        )
+
+    def _record_exchange(
+        self, platform: str, channel: str, user: str, user_text: str, assistant_text: str
+    ) -> None:
+        """Small pure helper extracted from handle_message to reduce duplication and complexity."""
+        self.memory.add(platform, channel, user, "user", user_text)
+        self.memory.add(platform, channel, user, "assistant", assistant_text)
+
+    def _build_advisor_reply(
+        self, response: str, context, model_name: str, api_mode: str
+    ) -> AdvisorReply:
+        """Small pure helper extracted from handle_message to build the reply dataclass."""
+        return AdvisorReply(
+            reply=response,
+            context_key=context.identity.context_key,
+            persona_id=context.persona_id,
+            model=model_name,
+            api_mode=api_mode,
         )
 
     def switch_persona(self, context_key: str, persona_id: str) -> bool:

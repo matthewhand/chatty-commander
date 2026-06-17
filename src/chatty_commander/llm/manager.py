@@ -90,7 +90,6 @@ class LLMManager:
         # Always initialize mock backend
         self.backends["mock"] = MockLLMBackend()
 
-        # Logic flow
         if self.use_mock:
             logger.info("Using mock LLM backend only")
             return
@@ -100,7 +99,6 @@ class LLMManager:
             self.backends["openai"] = OpenAIBackend(
                 api_key=openai_api_key, base_url=openai_base_url
             )
-        # Handle specific exception case
         except Exception as e:
             logger.debug(f"Failed to initialize OpenAI backend: {e}")
 

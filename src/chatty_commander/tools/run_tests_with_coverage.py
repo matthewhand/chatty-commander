@@ -44,9 +44,10 @@ logger = logging.getLogger(__name__)
 
 class TestRunner:
     """Comprehensive test runner with coverage reporting."""
+    __test__ = False  # prevent pytest collection (has __init__)
 
     def __init__(self, project_root: str | None = None) -> None:
-        # Logic flow
+
         self.project_root = Path(project_root) if project_root else Path.cwd()
         self.test_results: list[tuple[str, bool, str]] = []
 
@@ -58,7 +59,6 @@ class TestRunner:
         timeout: int = 60,
     ) -> tuple[bool, str]:
         try:
-        # Attempt operation with error handling
             logger.info(f"🔄 Running: {description}")
             logger.debug(f"Command: {' '.join(command)}")
 
@@ -73,7 +73,7 @@ class TestRunner:
             success = result.returncode == 0
             output = (result.stdout or "") + (result.stderr or "")
 
-            # Logic flow
+    
             if success:
                 logger.info(f"✅ {description} - PASSED")
             else:
@@ -160,9 +160,9 @@ class TestRunner:
         return all_success
 
     def start_web_server(self) -> subprocess.Popen | None:
-        # Logic flow
+
         try:
-            # Logic flow
+    
             logger.info("🚀 Starting web server for testing...")
             process = subprocess.Popen(
                 ["uv", "run", "python", "main.py", "--web", "--no-auth"],
@@ -172,11 +172,11 @@ class TestRunner:
                 text=True,
             )
 
-            # Logic flow
+    
             # Wait briefly for server to start, but don't stall too long
             time.sleep(1.5)
 
-            # Logic flow
+    
             if process.poll() is None:  # Process is still running
                 logger.info("✅ Web server started successfully")
                 return process
@@ -219,13 +219,13 @@ class TestRunner:
                     server_process.wait()
 
     def run_linting(self) -> bool:
-        # Logic flow
+
         # Check if flake8 is available
         try:
             command = ["uv", "run", "python", "-c", "import flake8"]
             success, _ = self.run_command(command, "Check flake8 availability")
 
-            # Logic flow
+    
             if success:
                 # Run flake8 linting
                 command = [
@@ -245,7 +245,7 @@ class TestRunner:
 
         except Exception as e:
             logger.warning(f"⚠️  Linting check failed: {e}")
-            # Logic flow
+    
             return True  # Don't fail the entire test suite for linting
 
     def generate_coverage_report(self) -> None:
@@ -275,17 +275,17 @@ class TestRunner:
         passed = 0
         total = len(self.test_results)
 
-        # Logic flow
+
         for test_name, success, _ in self.test_results:
             status = "✅ PASS" if success else "❌ FAIL"
             logger.info(f"   {test_name:<25} {status}")
-            # Logic flow
+    
             if success:
                 passed += 1
 
         logger.info(f"\n🎯 Overall Result: {passed}/{total} test suites passed")
 
-        # Logic flow
+
         if passed == total:
             logger.info("🎉 ALL TESTS PASSED! The application is ready for production.")
             return True
@@ -327,12 +327,11 @@ def main(argv: list[str] | None = None) -> int:
     # Extract any additional test paths passed to our CLI module (used by tests)
     extra_paths = []
     if argv:
-        # Logic flow
+
         extra_paths = [arg for arg in argv if not arg.startswith("-")]
 
     if fast_env:
         try:
-        # Attempt operation with error handling
             import importlib
 
             pytest = importlib.import_module("pytest")
@@ -342,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
                 "--cov-report=term-missing",
                 "-q",
             ]
-            # Logic flow
+    
             if extra_paths:
                 args = list(extra_paths) + base_args
             else:
@@ -350,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
             code = int(pytest.main(args))
             return code
         except SystemExit as e:
-            # Logic flow
+    
             return int(e.code) if isinstance(e.code, int) else 1
         except Exception as e:  # noqa: BLE001
             logger.error(f"Fast pytest path failed: {e}")

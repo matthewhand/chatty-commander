@@ -100,3 +100,5 @@ For ONNX model management:
 - Verified: clean `uv run` imports, full TestClient on create_app (no_auth) hits all 12 endpoints @200, persistence exercised (save_config), smoke test passes, both app creators.
 - Follows FastAPI APIRouter patterns, no signature breaks, compatible with existing middleware.
 See routes/audio.py, routes/system.py, web/web_mode.py, web/server.py, tests/smoke/test_core_routes.py, and updated integration tests. All gaps from original table now ✅ and frontend UX improved (no more 404s on these calls).
+
+**Playwright E2E coverage (2026-06-17):** Added browser-driven tests in tests/e2e/test_web_e2e.py: test_state_via_playwright, test_personas_via_playwright, test_commands_via_playwright (using page.evaluate fetch against live inproc server). Complements existing WS/config/themes/prefs. Helps verify dashboard/state, PersonasPage, command flows. TS e2e (dashboard.spec.ts etc) continue with mocks for UI render/UX. Added test_dashboard_spa_renders_via_playwright for full SPA /dashboard load + UI shell render check using playwright navigation + content (exercises React dashboard journey end-to-end with live server).

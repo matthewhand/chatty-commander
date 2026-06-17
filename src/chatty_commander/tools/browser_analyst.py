@@ -33,7 +33,6 @@ from chatty_commander.utils.url_validator import is_safe_url
 try:
     import httpx
     HTTPX_AVAILABLE = True
-# Handle specific exception case
 except ImportError:
     HTTPX_AVAILABLE = False
 
@@ -105,7 +104,6 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
             )
 
         title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
-        # Logic flow
         title = title_match.group(1).strip() if title_match else "No Title"
 
         # Prevent ReDoS by avoiding .*? within tags
@@ -118,7 +116,6 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         summary = body_text[:500]
 
         return AnalystResult(title=title, summary=summary, url=request.url)
-    # Handle specific exception case
     except Exception as e:
         logger.error(f"Error fetching URL {request.url}: {e}")
         return AnalystResult(title="Error", summary=f"Failed to fetch: {e}", url=request.url)

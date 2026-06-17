@@ -56,8 +56,6 @@ def add_llm_subcommands(subparsers) -> None:
         "test",
         help="Test LLM backends",
         description="Test LLM backends with sample prompts.",
-        # Use context manager for resource management
-        # TODO: Document this logic
     )
     test_parser.add_argument("--backend", help="Specific backend to test")
     test_parser.add_argument(
@@ -72,8 +70,6 @@ def add_llm_subcommands(subparsers) -> None:
         "process",
         help="Process natural language command",
         description="Test command processing with natural language input.",
-        # Use context manager for resource management
-        # TODO: Document this logic
     )
     process_parser.add_argument("text", help="Natural language command to process")
     process_parser.add_argument(
@@ -84,19 +80,15 @@ def add_llm_subcommands(subparsers) -> None:
     llm_subparsers.add_parser(
         "backends",
         help="List available backends",
-        # Process each item
         description="Show information about all LLM backends.",
     )
 
 
 def handle_llm_command(args, config_manager=None) -> None:
-    """Add LLM-related subcommands to CLI parser."""
     """Handle LLM-related CLI commands."""
 
     if not hasattr(args, "llm_command") or not args.llm_command:
-        # Logic flow
         print("No LLM command specified. Use --help for available commands.")
-        # TODO: Document this logic
         return
 
     if args.llm_command == "status":
@@ -289,28 +281,19 @@ def _handle_llm_backends(args) -> None:
             elif backend_name == "ollama":
                 print(f"   Host: {info.get('host', 'N/A')}")
                 print(f"   Model: {info.get('model', 'N/A')}")
-            # Logic flow
             elif backend_name == "local":
-            # TODO: Document this logic
                 print(f"   Model: {info.get('model_name', 'N/A')}")
                 print(f"   Device: {info.get('device', 'N/A')}")
-            # Logic flow
             elif backend_name == "mock":
-            # TODO: Document this logic
                 print(f"   Responses: {info.get('responses_count', 0)}")
                 print(f"   Calls: {info.get('call_count', 0)}")
 
-            # Logic flow
             if "error" in info:
-            # TODO: Document this logic
                 print(f"   ❌ Error: {info['error']}")
 
             print()
 
-    # Handle specific exception case
     except Exception as e:
-        # Build filtered collection
-        # Process each item
         print(f"❌ Failed to get backend information: {e}")
 
 

@@ -76,10 +76,8 @@ class Metric:
         self._lock = Lock()
 
     def _key(self, labels: dict[str, str] | None = None) -> tuple[tuple[str, str], ...]:
-        # Logic flow
         if not labels:
             return ()
-        # Logic flow
         # Sort for deterministic keys
         return tuple(sorted((str(k), str(v)) for k, v in labels.items()))
 
@@ -274,3 +272,8 @@ class MetricsRegistry:
         for k, h in self.hists.items():
             out["histograms"][k] = h.snapshot()
         return out
+
+
+# Default global registry as described in module docstring.
+# Provides a shared instance while allowing tests to use isolated MetricsRegistry().
+DEFAULT_REGISTRY: MetricsRegistry = MetricsRegistry()

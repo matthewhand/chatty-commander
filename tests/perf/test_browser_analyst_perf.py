@@ -6,7 +6,12 @@ from chatty_commander.advisors.tools.browser_analyst import browser_analyst_tool
 
 
 @pytest.mark.perf
-def test_browser_analyst_tool_perf(benchmark):
+def test_browser_analyst_tool_perf(request):
+    """Perf test guarded so broad runs (no pytest-benchmark) skip instead of error."""
+    try:
+        benchmark = request.getfixturevalue("benchmark")
+    except Exception:
+        pytest.skip("pytest-benchmark not available (install pytest-benchmark to run perf)")
     mock_response = MagicMock()
     # Simulate a stream that has many chunks.
     # Total size around 1 MB. 1 MB / 8 KB = 125 chunks.

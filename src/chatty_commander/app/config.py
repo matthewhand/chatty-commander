@@ -41,7 +41,7 @@ class Config:
     def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
-        # Logic flow
+
         # Track if the original config was valid (not empty due to errors)
         self._config_was_valid: bool = bool(self.config_data)
         # Expose the raw dict for web handlers/tests that expect it
@@ -121,7 +121,7 @@ class Config:
             self.config_data.get("general", {}).get("inference_framework", "onnx")
         )
 
-        # Logic flow
+
         # Commands for model actions
         default_commands = {}
         if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
@@ -144,7 +144,7 @@ class Config:
         # Build model_actions from commands and keybindings
         self.model_actions: dict[str, Any] = self._build_model_actions()
 
-        # Logic flow
+
         # Additional attributes for config CLI compatibility
         self.listen_for: dict[str, Any] = self.config_data.get("listen_for", {})
         self.modes: dict[str, Any] = self.config_data.get("modes", {})
@@ -160,7 +160,7 @@ class Config:
 
             @property
             def default_state(self) -> str:
-            # TODO: Document this logic
+
                 return self._cfg.default_state
 
             @default_state.setter
@@ -169,7 +169,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-            # TODO: Document this logic
+
                 self._cfg.default_state = v
                 self._cfg.config_data["default_state"] = v
 
@@ -179,7 +179,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-            # TODO: Document this logic
+
                 return bool(
                     self._cfg.config_data.get("general", {}).get("debug_mode", True)
                 )
@@ -190,7 +190,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-            # TODO: Document this logic
+
                 self._cfg._update_general_setting("debug_mode", bool(v))
 
             @property
@@ -199,7 +199,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-            # TODO: Document this logic
+
                 return str(
                     self._cfg.config_data.get("general", {}).get(
                         "inference_framework", "onnx"
@@ -212,7 +212,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-            # TODO: Document this logic
+
                 self._cfg._update_general_setting("inference_framework", v)
 
             @property
@@ -221,7 +221,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-            # TODO: Document this logic
+
                 return bool(
                     self._cfg.config_data.get("general", {}).get("start_on_boot", False)
                 )
@@ -232,7 +232,7 @@ class Config:
 
                 TODO: Add detailed description and parameters.
                 """
-            # TODO: Document this logic
+
                 self._cfg._update_general_setting("start_on_boot", bool(v))
 
             @property
@@ -272,7 +272,7 @@ class Config:
             logger.warning("commands should be a dictionary")
             self.commands = {}
 
-        # Logic flow
+
         # Check for deprecated or invalid configurations
         if "deprecated_field" in self.config_data:
             logger.warning("Found deprecated configuration field: deprecated_field")
@@ -284,15 +284,15 @@ class Config:
             "chat_models_path",
         ]:
             path = getattr(self, path_attr)
-            # Apply conditional logic
+
             if path and not os.path.exists(path):
                 logger.info(f"Model path does not exist: {path}")
 
     def reload_config(self) -> bool:
-        # Apply conditional logic
+
         try:
             new_config = self._load_config()
-            # Apply conditional logic
+
             if new_config != self.config_data:
                 self.config_data = new_config
                 self.config = new_config
@@ -303,11 +303,21 @@ class Config:
                 logger.info("Configuration reloaded successfully")
                 return True
             return False
-        # Handle specific exception case
+
         except Exception as e:
             logger.error(f"Failed to reload configuration: {e}")
             return False
 
+    def save_config(self) -> bool:
+        """Save current config_data to the config file for persistence."""
+        try:
+            with open(self.config_file, "w", encoding="utf-8") as f:
+                json.dump(self.config_data, f, indent=2)
+            logger.info("Configuration saved successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save configuration: {e}")
+            return False
 
     # ------------------------------------------------------------------
     # Helpers
@@ -322,10 +332,10 @@ class Config:
                 "CHATTY_BRIDGE_TOKEN"
             ]
 
-        # Apply conditional logic
+
         if os.environ.get("CHATBOT_ENDPOINT"):
             self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
-        # Apply conditional logic
+
         if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
 
@@ -338,15 +348,15 @@ class Config:
                 "1",
             )
 
-        # Apply conditional logic
+
         if os.environ.get("CHATCOMM_DEFAULT_STATE"):
             self.default_state = os.environ["CHATCOMM_DEFAULT_STATE"]
 
-        # Apply conditional logic
+
         if os.environ.get("CHATCOMM_INFERENCE_FRAMEWORK"):
             self.inference_framework = os.environ["CHATCOMM_INFERENCE_FRAMEWORK"]
 
-        # Apply conditional logic
+
         if os.environ.get("CHATCOMM_START_ON_BOOT"):
             boot_val = os.environ["CHATCOMM_START_ON_BOOT"].lower()
             self.start_on_boot = boot_val in ("true", "yes", "1")
@@ -379,24 +389,24 @@ class Config:
         if value is not None:
             try:
                 parsed = int(value)
-                # Apply conditional logic
+    
                 if parsed <= 0:
                     raise ValueError
                 return parsed
-            # Handle specific exception case
+    
             except ValueError:
                 logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
         return fallback
 
     def _load_config(self) -> dict[str, Any]:
-        # Apply conditional logic
+
         if not isinstance(self.config_file, str):
              raise TypeError("config_file must be a string")
         try:
-        # Attempt operation with error handling
+
             with open(self.config_file, encoding="utf-8") as f:
                 config_data = json.load(f)
-                # Logic flow
+        
                 # Ensure we always return a dictionary, even if JSON contains null or other non-dict values
                 if not isinstance(config_data, dict):
                     logger.warning(
@@ -406,13 +416,13 @@ class Config:
                     )
                     return {}
                 return config_data
-        # Handle specific exception case
+
         except (FileNotFoundError, PermissionError, OSError):
             logger.warning(
                 "Error loading config file %s. Using defaults.", self.config_file
             )
-            return {}
-        # Handle specific exception case
+            return {"general": {}}
+
         except json.JSONDecodeError:
             logger.error(
                 "Config file %s is not valid JSON. Using defaults.", self.config_file
@@ -429,7 +439,7 @@ class Config:
                 return default
             return val.strip().lower() in {"1", "true", "yes"}
 
-        # Logic flow
+
         # Set debug mode in config data only if original config was valid
         if self._config_was_valid:
             if self.config_data.get("general") is None:
@@ -461,20 +471,20 @@ class Config:
         keybindings = self.config_data.get("keybindings", {}) or {}
         # Iterate collection
         for name, cfg in commands_cfg.items():
-            # Apply conditional logic
+
             if not isinstance(cfg, dict):
                 continue
             action_type = cfg.get("action")
-            # Apply conditional logic
+
             if action_type == "keypress":
                 keys = cfg.get("keys")
-                # Apply conditional logic
+    
                 if isinstance(keys, str):
                    mapped = keybindings.get(keys, keys)
-                   # Apply conditional logic
+       
                    if mapped:
                        actions[name] = {"keypress": mapped}
-            # Apply conditional logic
+
             elif action_type == "url":
                 url = cfg.get("url", "")
                 url = url.replace(
@@ -484,11 +494,11 @@ class Config:
                     "{chatbot_endpoint}", self.api_endpoints.get("chatbot_endpoint", "")
                 )
                 actions[name] = {"url": url}
-            # Apply conditional logic
+
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
                 actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
-            # Apply conditional logic
+
             elif action_type == "voice_chat":
                 # Voice chat action - pass through the entire config
                 actions[name] = {"action": "voice_chat"}
@@ -560,16 +570,16 @@ class Config:
         if not self.check_for_updates:
             return None
         try:
-        # Attempt operation with error handling
+
             result = subprocess.run(
                 ["git", "rev-parse", "--git-dir"],
                 capture_output=True,
                 text=True,
                 check=False,
             )
-            # Apply conditional logic
+
             if result.returncode != 0:
-                # Process each item
+
                 logging.warning("Not in a git repository, cannot check for updates")
                 return None
             subprocess.run(["git", "fetch", "origin"], capture_output=True, check=True)
@@ -580,11 +590,11 @@ class Config:
                 check=True,
             )
             update_count = int((result.stdout or "0").strip())
-            # Apply conditional logic
+
             if update_count > 0:
                 result = subprocess.run(
                     # Build filtered collection
-                    # Process each item
+    
                     ["git", "log", "origin/main", "-1", "--pretty=format:%s"],
                     capture_output=True,
                     text=True,
@@ -598,7 +608,7 @@ class Config:
                 }
             else:
                 return {"updates_available": False, "update_count": 0}
-        # Handle specific exception case
+
         except Exception as e:  # pragma: no cover
             # Build filtered collection
             logging.error(f"Failed to check for updates: {e}")

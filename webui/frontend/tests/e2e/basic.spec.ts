@@ -4,7 +4,7 @@ test("basic page load", async ({ page }) => {
   await page.goto("/");
   // Should redirect to dashboard (with no auth)
   await expect(page).toHaveURL(/dashboard/);
-  await expect(page.locator("h2:has-text('Dashboard')")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 });
 
 test("navigation works", async ({ page }) => {
@@ -13,11 +13,11 @@ test("navigation works", async ({ page }) => {
   await expect(page).toHaveURL(/dashboard/);
 
   // Navigate to Configuration
-  await page.click("text=Configuration");
+  await page.getByRole('link', { name: 'Configuration' }).click();
   await expect(page).toHaveURL(/configuration/);
 
   // Navigate back to Dashboard
-  await page.click("text=Dashboard");
+  await page.getByRole('link', { name: 'Dashboard' }).click();
   await expect(page).toHaveURL(/dashboard/);
 });
 

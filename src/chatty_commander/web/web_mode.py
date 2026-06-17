@@ -44,7 +44,7 @@ from typing import Any
 
 try:
     import uvicorn
-# Handle specific exception case
+
 except ImportError:
     uvicorn = None  # type: ignore[assignment]
 
@@ -72,7 +72,7 @@ try:
         configure_logging,
     )
     _LOGGING_CONFIG_AVAILABLE = True
-# Handle specific exception case
+
 except Exception:  # pragma: no cover
     RequestIdMiddleware = None  # type: ignore[assignment,misc]
     configure_logging = None  # type: ignore[assignment]
@@ -83,14 +83,14 @@ try:
         create_metrics_router,
     )
     _OBS_METRICS_AVAILABLE = True
-# Handle specific exception case
+
 except Exception:  # pragma: no cover - optional dependency path
     RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
     create_metrics_router = None  # type: ignore[assignment]
     _OBS_METRICS_AVAILABLE = False
 try:
     from chatty_commander.web.routes.audio import include_audio_routes
-# Handle specific exception case
+
 except ImportError:
     include_audio_routes = None  # type: ignore[assignment]
 from chatty_commander.web.routes.version import router as version_router
@@ -100,13 +100,13 @@ from chatty_commander.web.routes.ws import include_ws_routes
 # Avatar routes (optional)
 try:
     from chatty_commander.web.routes.avatar_api import router as avatar_api_router
-# Handle specific exception case
+
 except ImportError:
     avatar_api_router = None  # type: ignore[assignment]
 
 try:
     from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
-# Handle specific exception case
+
 except ImportError:
     avatar_ws_router = None  # type: ignore[assignment]
 
@@ -114,13 +114,13 @@ try:
     from chatty_commander.web.routes.avatar_selector import (
         router as avatar_selector_router,
     )
-# Handle specific exception case
+
 except ImportError:
     avatar_selector_router = None  # type: ignore[assignment]
 
 try:
     from .routes.agents import router as agents_router
-# Handle specific exception case
+
 except ImportError:
     agents_router = None  # type: ignore[assignment]
 
@@ -192,7 +192,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "frame-ancestors 'none'"
         )
 
-        # Logic flow
+
         # Remove server header for security
         if "server" in response.headers:
             del response.headers["server"]
@@ -233,16 +233,16 @@ def get_client_ip(
 
     try:
         direct_addr = ip_address(direct_ip)
-    # Handle specific exception case
+    
     except ValueError:
-        # Process each item
+
         return direct_ip  # Invalid IP format, fall back to direct
 
     is_trusted_proxy = False
     for proxy in trusted_proxies:
         try:
-        # Attempt operation with error handling
-            # Logic flow
+        
+    
             if "/" in proxy:
                 # CIDR range (e.g., "10.0.0.0/8")
                 network = ip_network(proxy, strict=False)
@@ -254,7 +254,7 @@ def get_client_ip(
                 if direct_addr == ip_address(proxy):
                     is_trusted_proxy = True
                     break
-        # Handle specific exception case
+        
         except ValueError:
             continue  # Skip invalid proxy definitions
 
@@ -273,29 +273,29 @@ def get_client_ip(
         for ip_str in reversed(ips):
             try:
                 ip_addr = ip_address(ip_str)
-                # Logic flow
+        
                 # Check if this IP is NOT a trusted proxy
                 is_proxy = False
                 for proxy in trusted_proxies:
                     try:
-                    # Attempt operation with error handling
-                        # Logic flow
+                    
+                
                         if "/" in proxy:
                             if ip_addr in ip_network(proxy, strict=False):
                                 is_proxy = True
                                 break
                         else:
-                            # Logic flow
+                    
                             if ip_addr == ip_address(proxy):
                                 is_proxy = True
                                 break
-                    # Handle specific exception case
+                    
                     except ValueError:
                         continue
-                # Logic flow
+        
                 if not is_proxy:
                     return ip_str
-            # Handle specific exception case
+            
             except ValueError:
                 continue  # Skip invalid IPs
 
@@ -303,30 +303,30 @@ def get_client_ip(
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
         try:
-        # Attempt operation with error handling
+        
             ip_addr = ip_address(real_ip)
             # Verify it's not a trusted proxy IP
             is_proxy = False
             for proxy in trusted_proxies:
                 try:
-                # Attempt operation with error handling
-                    # Logic flow
+                
+            
                     if "/" in proxy:
                         if ip_addr in ip_network(proxy, strict=False):
                             is_proxy = True
                             break
                     else:
-                        # Logic flow
+                
                         if ip_addr == ip_address(proxy):
                             is_proxy = True
                             break
-                # Handle specific exception case
+                
                 except ValueError:
                     continue
-            # Logic flow
+    
             if not is_proxy:
                 return real_ip
-        # Handle specific exception case
+        
         except ValueError:
             pass
 
@@ -508,7 +508,7 @@ class WebModeServer:
         # Optional advisors service (enabled via config)
         try:
             self.advisors_service = AdvisorsService(config=config_manager)  # type: ignore[arg-type]
-        # Handle specific exception case
+        
         except Exception as e:  # noqa: BLE001
             logger.debug(
                 "AdvisorsService init failed; continuing without advisors: %s", e
@@ -527,7 +527,7 @@ class WebModeServer:
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
-        # Logic flow
+
         # Register startup/shutdown handlers for telemetry lifecycle
         @self.app.on_event("startup")
         async def start_telemetry_loop() -> None:
@@ -546,7 +546,7 @@ class WebModeServer:
             self._telemetry_task = None
 
     async def _telemetry_loop(self) -> None:
-        # Logic flow
+
         while self._telemetry_running:
             try:
                 import psutil
@@ -560,15 +560,15 @@ class WebModeServer:
                         data={
                             "cpu": cpu,
                             "memory": memory,
-                            # Process each item
+                    
                             "timestamp": datetime.now().isoformat(),
                         },
                     )
                 )
-            # Handle specific exception case
+            
             except asyncio.CancelledError:
                 raise  # Allow cancellation to propagate
-            # Handle specific exception case
+            
             except Exception as e:  # noqa: BLE001
                 logger.debug("Telemetry loop error: %s", e)
 
@@ -639,7 +639,7 @@ class WebModeServer:
             description="Voice command automation system with web interface",
             # Use context manager for resource management
             version="0.2.0",
-            # Logic flow
+    
             docs_url="/docs" if self.no_auth else None,
             redoc_url="/redoc" if self.no_auth else None,
         )
@@ -664,12 +664,12 @@ class WebModeServer:
             AuthMiddleware, config_manager=self.config_manager, no_auth=self.no_auth
         )
 
-        # Logic flow
+
         # Get trusted proxies from config (for secure IP extraction behind proxies)
         trusted_proxies: list[str] = []
         if hasattr(self.config_manager, "web_server"):
             trusted_proxies = self.config_manager.web_server.get("trusted_proxies", [])
-        # Logic flow
+
         if not trusted_proxies:
             # Default: trust common private proxy ranges for Docker/Kubernetes
             trusted_proxies = [
@@ -688,7 +688,7 @@ class WebModeServer:
 
         app.add_middleware(ResponseTimeMiddleware)
 
-        # Logic flow
+
         # CORS policy — delegate to shared apply_cors() for consistency
         from chatty_commander.web.auth import apply_cors
         apply_cors(app, no_auth=self.no_auth)
@@ -742,10 +742,10 @@ class WebModeServer:
         # Avatar endpoints
         if avatar_api_router:
             app.include_router(avatar_api_router)
-        # Logic flow
+
         if avatar_ws_router:
             app.include_router(avatar_ws_router)
-        # Logic flow
+
         if avatar_selector_router:
             app.include_router(avatar_selector_router)
 
@@ -757,11 +757,11 @@ class WebModeServer:
                 "current_state": self.state_manager.current_state,
                 "active_models": (
                     self.state_manager.get_active_models()
-                    # Logic flow
+            
                     if hasattr(self.state_manager, "get_active_models")
                     else []
                 ),
-                # Process each item
+        
                 "timestamp": self.last_state_change.isoformat(),
             },
             on_message=None,
@@ -769,11 +769,11 @@ class WebModeServer:
         )
         app.include_router(ws)
 
-        # Logic flow
+
         # Advisors endpoints (if service available)
         self._register_advisors_routes(app)
 
-        # Logic flow
+
         # Bridge endpoints for external integrations
         self._register_bridge_routes(app)
 
@@ -781,15 +781,15 @@ class WebModeServer:
         frontend_path = Path("webui/frontend/dist")
         if not frontend_path.exists():
             frontend_path = Path("webui/frontend/build")
-        # Logic flow
+
         if not frontend_path.exists():
             logger.info("Frontend build not found. Automagically building the frontend UI...")
             try:
-            # Attempt operation with error handling
+            
                 import subprocess
                 import sys
 
-                # Logic flow
+        
                 # Check if npm is available
                 subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
@@ -799,23 +799,23 @@ class WebModeServer:
                 logger.info("Building frontend assets...")
                 subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
 
-                # Logic flow
+        
                 if Path("webui/frontend/dist").exists():
                     frontend_path = Path("webui/frontend/dist")
-                # Logic flow
+        
                 elif Path("webui/frontend/build").exists():
                     frontend_path = Path("webui/frontend/build")
-            # Handle specific exception case
+            
             except FileNotFoundError:
                 logger.error("Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/.")
-            # Handle specific exception case
+            
             except Exception as e:
                 logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
 
-        # Logic flow
+
         if frontend_path.exists():
             static_assets = frontend_path / "assets"
-            # Logic flow
+    
             if static_assets.exists():
                 app.mount(
                     "/assets", StaticFiles(directory=str(static_assets)), name="assets"
@@ -839,7 +839,7 @@ class WebModeServer:
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
 
-        # Logic flow
+
         # SPA Catch-all: serve index.html for any non-API routes
         # This allows React Router to handle deep linking (e.g. /dashboard)
         if frontend_path.exists():
@@ -861,7 +861,7 @@ class WebModeServer:
         avatar_path = Path("src/chatty_commander/webui/avatar")
         if avatar_path.exists():
             try:
-            # Attempt operation with error handling
+            
                 app.mount(
                     "/avatar-ui", StaticFiles(directory=str(avatar_path)), name="avatar"
                 )
@@ -876,7 +876,7 @@ class WebModeServer:
                         "<h1>Avatar UI</h1><p>Avatar UI not found. Ensure index.html exists under src/chatty_commander/webui/avatar/</p>"
                     )
 
-            # Handle specific exception case
+            
             except Exception as e:  # noqa: BLE001
                 logger.warning("Failed to mount avatar UI static files: %s", e)
 

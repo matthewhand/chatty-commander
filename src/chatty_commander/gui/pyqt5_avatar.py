@@ -50,7 +50,6 @@ try:
     )
 
     PYQT5_AVAILABLE = True
-# Handle specific exception case
 except ImportError:
     PYQT5_AVAILABLE = False
 
@@ -117,7 +116,6 @@ class TransparentBrowser(QMainWindow):
         self._setup_system_tray()
 
     def _setup_window(self):
-        # Logic flow
         # Window flags for frameless, transparent, always on top
         self.setWindowFlags(
             Qt.FramelessWindowHint
@@ -162,7 +160,6 @@ class TransparentBrowser(QMainWindow):
         url = self.config.get(
             "url", "file:///src/chatty_commander/webui/avatar/index.html"
         )
-        # Apply conditional logic
         if url.startswith("file://") and not url.startswith("file:///"):
             # Convert relative file paths to absolute
             file_path = url[7:]  # Remove 'file://'
@@ -202,7 +199,6 @@ class TransparentBrowser(QMainWindow):
     def _setup_system_tray(self):
         """Inject CSS to make web page background transparent."""
         """Setup system tray icon and menu."""
-        # Apply conditional logic
         if not QSystemTrayIcon.isSystemTrayAvailable():
             logger.warning("System tray is not available")
             return
@@ -259,7 +255,6 @@ class TransparentBrowser(QMainWindow):
             Path(__file__).parent.parent / "assets" / "icon.png",
         ]
 
-        # Process each item
         for path in possible_paths:
             if path.exists():
                 return path
@@ -267,14 +262,12 @@ class TransparentBrowser(QMainWindow):
         return None
 
     def _tray_icon_activated(self, reason):
-        # Apply conditional logic
         if reason == QSystemTrayIcon.DoubleClick:
             self.toggle_visibility()
 
     def toggle_visibility(self):
         """Handle tray icon activation."""
         """Toggle window visibility."""
-        # Apply conditional logic
         if self.isVisible():
             self.hide()
             self.show_action.setText("Show Avatar")
@@ -285,22 +278,18 @@ class TransparentBrowser(QMainWindow):
             self.show_action.setText("Hide Avatar")
 
     def reload_page(self):
-        # Apply conditional logic
         if self.web_view:
             self.web_view.reload()
 
     def quit_application(self):
         """Reload the web page."""
         """Quit the application."""
-        # Apply conditional logic
         if self.tray_icon:
             self.tray_icon.hide()
         self.window_closed.emit()
         QApplication.quit()
 
     def mousePressEvent(self, event):
-        # Process each item
-        # Apply conditional logic
         if event.button() == Qt.LeftButton:
             self._drag_position = event.globalPos() - self.frameGeometry().topLeft()
             event.accept()
@@ -338,7 +327,6 @@ def _load_settings() -> dict[str, Any]:
         if isinstance(avatar_config, dict):
             return avatar_config
 
-    # Handle specific exception case
     except Exception as e:
         logger.warning(f"Failed to load configuration: {e}")
 
@@ -363,7 +351,6 @@ def run_pyqt5_avatar() -> bool:
         return False
 
     try:
-        # Logic flow
         # Create QApplication if it doesn't exist
         app = QApplication.instance()
         if app is None:
@@ -383,7 +370,6 @@ def run_pyqt5_avatar() -> bool:
         # Run the application
         return app.exec_() == 0  # type: ignore[no-any-return]
 
-    # Handle specific exception case
     except Exception as e:
         logger.error(f"Failed to start PyQt5 avatar browser: {e}")
         return False
@@ -394,11 +380,3 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     success = run_pyqt5_avatar()
     sys.exit(0 if success else 1)
-
-    """
-    Run the PyQt5-based transparent avatar browser.
-
-    Returns:
-    # Handle error condition
-    bool: True if successful, False if failed or PyQt5 not available
-    """

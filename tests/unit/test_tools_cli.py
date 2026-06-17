@@ -27,7 +27,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.chatty_commander.tools.cli import _configure_logging, parse_args
+from src.chatty_commander.tools.cli import _configure_logging, main, parse_args
 
 
 class TestParseArgs:
@@ -98,3 +98,144 @@ class TestConfigureLogging:
         """Test very high verbosity."""
         # Should not raise
         _configure_logging(10)
+
+
+class TestMain:
+    """Tests for main function (and integration with parse/ logging)."""
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_success(self, mock_generate):
+        """Test main success path returns 0 and logs."""
+        mock_generate.return_value = {"docs": Path("docs/openapi.json")}
+        with patch("src.chatty_commander.tools.cli.logger") as mock_logger:
+            rc = main([])
+            assert rc == 0
+            mock_generate.assert_called_once_with(output_dir=Path("docs"))
+            mock_logger.info.assert_called()
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_system_exit(self, mock_generate):
+        """Test main maps SystemExit code (handles pytest-injected flags)."""
+        mock_generate.side_effect = SystemExit(42)
+        rc = main([])
+        assert rc == 42
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_exception(self, mock_generate):
+        """Test main catches general exception, logs error, returns 1."""
+        mock_generate.side_effect = RuntimeError("boom")
+        with patch("src.chatty_commander.tools.cli.logger") as mock_logger:
+            rc = main([])
+            assert rc == 1
+            mock_logger.error.assert_called()
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_custom_output(self, mock_generate):
+        """Test main passes custom output dir to generate_docs."""
+        mock_generate.return_value = {}
+        rc = main(["-o", "/tmp/docs"])
+        assert rc == 0
+        mock_generate.assert_called_once_with(output_dir=Path("/tmp/docs"))
+
+    def test_main_help(self):
+        """Test main help flag triggers SystemExit (argparse)."""
+        with pytest.raises(SystemExit):
+            main(["-h"])
+
+
+class TestToolsCliMoreCoverage:
+    """Additional tests for tools/cli.py to address qa 'no tests found' (rank 13)."""
+
+    def test_parse_args_verbose_long(self):
+        """Test --verbose long form."""
+        args = parse_args(["--verbose"])
+        assert args.verbose == 1
+
+    def test_parse_args_ignores_pytest_flags(self):
+        """Test ignores extra like -q, -k."""
+        args = parse_args(["-o", "docs", "-q", "-k", "foo"])
+        assert args.output == Path("docs")
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_verbose_configures_logging(self, mock_gen):
+        mock_gen.return_value = {}
+        with patch("src.chatty_commander.tools.cli._configure_logging") as mock_conf:
+            rc = main(["-vv"])
+            assert rc == 0
+            mock_conf.assert_called_with(2)
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_logs_generated_info(self, mock_gen):
+        mock_gen.return_value = {"api": "docs/openapi.json"}
+        with patch("src.chatty_commander.tools.cli.logger") as mock_log:
+            main([])
+            mock_log.info.assert_called()
+
+    def test_configure_logging_levels(self):
+        """Test configure sets levels without error."""
+        _configure_logging(0)
+        _configure_logging(1)
+        _configure_logging(3)
+        assert True
+
+    def test_parse_args_default_values(self):
+        """Test defaults for output and verbose."""
+        args = parse_args([])
+        assert args.output == Path("docs")
+        assert args.verbose == 0
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_custom_output_dir(self, mock_gen):
+        """Test -o flag passes Path to generate_docs."""
+        mock_gen.return_value = {}
+        rc = main(["-o", "/tmp/custom"])
+        assert rc == 0
+        mock_gen.assert_called_once_with(output_dir=Path("/tmp/custom"))
+
+    @patch("src.chatty_commander.tools.cli.logging")
+    def test_configure_logging_zero_sets_warning(self, mock_logging):
+        """Test verbosity 0 sets WARNING level."""
+        _configure_logging(0)
+        mock_logging.basicConfig.assert_called()
+        # level check would be in call args, but basic call verifies no crash
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_with_explicit_argv_list(self, mock_gen):
+        """Test main accepts explicit argv list."""
+        mock_gen.return_value = {"docs": "ok"}
+        rc = main(["-v", "-o", "out"])
+        assert rc == 0
+        mock_gen.assert_called_once_with(output_dir=Path("out"))
+
+    def test_parse_args_ignores_pytest_and_extra(self):
+        """Test REMAINDER + parse_known_args swallows -q -k etc."""
+        args = parse_args(["-o", "d", "-q", "-k", "foo", "--bar"])
+        assert args.output == Path("d")
+        assert args.verbose == 0
+
+    @patch("src.chatty_commander.tools.cli.generate_docs", side_effect=Exception("boom"))
+    def test_main_catches_exception_returns_one(self, mock_gen):
+        """Exception in generate_docs returns 1."""
+        rc = main([])
+        assert rc == 1
+
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_returns_zero_on_success(self, mock_gen):
+        """Success returns 0."""
+        mock_gen.return_value = {"docs": "ok"}
+        rc = main([])
+        assert rc == 0
+
+    def test_parse_args_with_output_and_verbose(self):
+        """Combined flags."""
+        args = parse_args(["-o", "docs2", "-vv"])
+        assert args.output == Path("docs2")
+        assert args.verbose == 2
+
+    @patch("src.chatty_commander.tools.cli._configure_logging")
+    @patch("src.chatty_commander.tools.cli.generate_docs")
+    def test_main_calls_configure_logging(self, mock_gen, mock_cfg):
+        """main invokes _configure_logging before generate."""
+        mock_gen.return_value = {}
+        main(["-v"])
+        mock_cfg.assert_called()

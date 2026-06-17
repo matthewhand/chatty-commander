@@ -56,66 +56,53 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/",
         }
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # TODO: REFACTOR - Complexity 12, extract sub-functions
-
-        # TODO: REFACTOR - Complexity 12, extract sub-functions
-
-        # Logic flow
-        # Skip auth in no_auth mode
-        if self.no_auth:
-            return await call_next(request)  # type: ignore[no-any-return]
-
-        # Decode path to prevent URL-encoded or double-encoded path traversal bypasses
-        raw_path = request.url.path
+    def _decode_and_normalize_path(self, raw_path: str) -> str:
+        """Decode URL-encoded path (up to 10 levels) and normalize to prevent traversal bypasses (small helper extracted from dispatch)."""
         decoded_path = urllib.parse.unquote(raw_path)
-        # Logic flow
         for _ in range(10):
-            """Process request and validate authentication if required."""
             if "%" not in decoded_path:
                 break
             new_decoded = urllib.parse.unquote(decoded_path)
-            # Logic flow
             if new_decoded == decoded_path:
                 break
             decoded_path = new_decoded
-        raw_path = decoded_path
-
-        # Normalize path to prevent path traversal bypasses
-        # Use exact match or explicit trailing slash check to prevent partial path matching
-        path = posixpath.normpath(raw_path)
+        path = posixpath.normpath(decoded_path)
         if path.startswith("//"):
             path = "/" + path.lstrip("/")
+        return path
 
-        # Logic flow
-        # Skip auth for public endpoints
+    def _is_public_endpoint(self, path: str) -> bool:
+        """Check if path matches public endpoints (exact or prefix) or OPTIONS (small helper extracted from dispatch)."""
         if (
             any(path == endpoint or path.startswith(endpoint + "/") for endpoint in self.public_endpoints)
             or path in self.public_exact_endpoints
         ):
+            return True
+        return False
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        if self.no_auth:
             return await call_next(request)  # type: ignore[no-any-return]
 
-        # Skip auth for OPTIONS requests (CORS preflight)
+        path = self._decode_and_normalize_path(request.url.path)
+
+        if self._is_public_endpoint(path):
+            return await call_next(request)  # type: ignore[no-any-return]
+
         if request.method == "OPTIONS":
             return await call_next(request)  # type: ignore[no-any-return]
 
-        # Validate API key for protected endpoints
         if path == "/api" or path.startswith("/api/"):
             api_key = request.headers.get("X-API-Key")
             logger.debug(
                 f"API request to {path}, API key present: {api_key is not None}"
             )
 
-            # Get expected API key from config
             expected_key = None
 
-            # Logic flow
-            # Check for DummyConfig pattern (test configs)
             if hasattr(self.config_manager, "auth"):
                 expected_key = self.config_manager.auth.get("api_key")
                 logger.debug("Found auth config in DummyConfig: key present=%s", bool(expected_key))
-            # Logic flow
-            # Check for regular Config pattern
             elif hasattr(self.config_manager, "config") and self.config_manager.config:
                 auth_config = self.config_manager.config.get("auth", {})
                 expected_key = auth_config.get("api_key")
@@ -125,11 +112,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     "No auth config found, config_manager type: %s", type(self.config_manager).__name__
                 )
 
-            # Logic flow
-            # Check if API key is valid
             if not constant_time_compare(api_key, expected_key):
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
-                # Return 401 response directly instead of raising exception
                 from fastapi.responses import JSONResponse
 
                 return JSONResponse(

@@ -73,13 +73,11 @@ class OpenAIBackend(LLMBackend):
         self._initialize_client()
 
     def _initialize_client(self):
-        # Apply conditional logic
         if not self.api_key:
             logger.debug("No OpenAI API key provided")
             return
 
         try:
-        # Attempt operation with error handling
             import openai
 
             self._client = openai.OpenAI(
@@ -89,12 +87,10 @@ class OpenAIBackend(LLMBackend):
                 max_retries=0  # We handle retries manually
             )
             logger.info(f"Initialized OpenAI client with base URL: {self.base_url}")
-        # Handle specific exception case
         except ImportError:
             logger.warning(
                 "OpenAI library not available. Install with: pip install openai"
             )
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e}")
 
@@ -369,17 +365,12 @@ class LocalTransformersBackend(LLMBackend):
 
             return response.strip()  # type: ignore[no-any-return]
 
-        # Handle specific exception case
         except Exception as e:
-            # Build filtered collection
-            # Process each item
             logger.error(f"Local transformers generation failed: {e}")
             raise
 
     def get_backend_info(self) -> dict[str, Any]:
-        # Process each item
         return {
-            # Process each item
             "backend": "local_transformers",
             "available": self.is_available(),
             "model_name": self.model_name,

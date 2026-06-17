@@ -32,7 +32,7 @@ def build_openapi_schema() -> dict[str, Any]:
         "info": {
             "title": "ChattyCommander API",
             "description": "Voice command automation system with web interface",
-            # Use context manager for resource management
+
             "version": "0.2.0",
             "contact": {
                 "name": "ChattyCommander",
@@ -93,7 +93,7 @@ def build_openapi_schema() -> dict[str, Any]:
                 },
                 "put": {
                     "summary": "Update configuration",
-                    # Logic flow
+
                     "description": "Updates the system configuration. Requires restart for some changes to take effect.",
                     "tags": ["Configuration"],
                     "requestBody": {
@@ -161,8 +161,8 @@ def build_openapi_schema() -> dict[str, Any]:
                     },
                     "responses": {
                         "200": {"description": "State changed successfully"},
-                        # Build filtered collection
-                        # Validate preconditions
+
+
                         "400": {"description": "Invalid state specified"},
                     },
                 },
@@ -170,7 +170,7 @@ def build_openapi_schema() -> dict[str, Any]:
             "/api/v1/command": {
                 "post": {
                     "summary": "Execute command",
-                    # Logic flow
+
                     "description": "Executes a voice command programmatically. Useful for testing and automation.",
                     "tags": ["Commands"],
                     "requestBody": {
@@ -237,7 +237,7 @@ def build_openapi_schema() -> dict[str, Any]:
                                             "status": {"type": "string"},
                                             "timestamp": {
                                                 "type": "string",
-                                                # Process each item
+        
                                                 "format": "date-time",
                                             },
                                             "uptime": {"type": "string"},
@@ -270,7 +270,7 @@ def build_openapi_schema() -> dict[str, Any]:
                                             "version": {"type": "string"},
                                             "git_sha": {
                                                 "type": ["string", "null"],
-                                                # Logic flow
+                            
                                                 "description": "Short git SHA if available",
                                             },
                                         },
@@ -285,7 +285,7 @@ def build_openapi_schema() -> dict[str, Any]:
             "/ws": {
                 "get": {
                     "summary": "WebSocket connection",
-                    # Logic flow
+
                     "description": "Establishes a WebSocket connection for real-time updates including state changes, command detections, and system events.",
                     "tags": ["WebSocket"],
                     "responses": {
@@ -316,7 +316,7 @@ def build_openapi_schema() -> dict[str, Any]:
                         },
                         "uptime": {
                             "type": "string",
-                            # Process each item
+
                             "description": "System uptime in human-readable format",
                         },
                         "version": {
@@ -379,7 +379,7 @@ def build_openapi_schema() -> dict[str, Any]:
                         },
                         "timestamp": {
                             "type": "string",
-                            # Process each item
+
                             "format": "date-time",
                             "description": "Timestamp of last state change",
                         },
@@ -658,7 +658,7 @@ fetch('http://localhost:8100/api/v1/command', {{
   headers: {{
     'Content-Type': 'application/json',
   }},
-  # Build filtered collection
+
   body: JSON.stringify({{command: 'lights_on'}})
 }})
 .then(response => response.json())

@@ -155,11 +155,9 @@ def include_system_routes(
                 default=default,
                 required=required,
             )
-            # Logic flow
             for name, (desc, default, required) in _ENV_VAR_CATALOG.items()
         ] + [
             EnvVarInfo(name=name, set=(name in os.environ), description=desc, default=None, required=False)
-            # Logic flow
             for name, desc in _ENV_VAR_DESCRIPTIONS.items()
         ]
 
@@ -172,9 +170,7 @@ def include_system_routes(
             disk_used_gb=None,
             disk_percent=None,
             python_version=sys.version,
-            # Process each item
             platform=platform.platform(),
-            # Process each item
             architecture=platform.machine(),
             pid=os.getpid(),
             uptime_seconds=uptime_seconds,

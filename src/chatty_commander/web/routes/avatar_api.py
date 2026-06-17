@@ -73,7 +73,6 @@ def _infer_category(name: str) -> str:
     """Resolve and return the default directory containing avatar animations."""
     lower = name.lower()
     for cat, hints in _CATEGORY_HINTS.items():
-        # Logic flow
         for h in hints:
             if h in lower:
                 return cat
@@ -83,7 +82,6 @@ def _infer_category(name: str) -> str:
 @router.get("/avatar/animations")
 async def list_animations(
     dir: str | None = Query(
-        # Logic flow
         default=None, description="Directory to scan for animations (optional)"
     ),
 ) -> dict[str, Any]:
@@ -94,7 +92,6 @@ async def list_animations(
     try:
         base_dir = _default_animations_dir().resolve()
 
-        # Logic flow
         if dir:
             # Resolve the requested path and ensure it's within base_dir
             root = (base_dir / dir).resolve()
@@ -105,27 +102,22 @@ async def list_animations(
         else:
             root = base_dir
 
-        # Logic flow
         if not root.exists() or not root.is_dir():
             raise HTTPException(
                 status_code=404, detail=f"Animations directory not found: {root}"
             )
 
         results: list[dict[str, Any]] = []
-        # Logic flow
         for p in sorted(root.rglob("*")):
             if not p.is_file():
                 continue
             ext = p.suffix.lower()
-            # Logic flow
             if ext not in _ALLOWED_EXTS:
                 continue
             rel = p.relative_to(root)
             name = p.stem
             try:
-            # Attempt operation with error handling
                 size = p.stat().st_size
-            # Handle specific exception case
             except Exception:
                 size = None
             results.append(
@@ -138,10 +130,8 @@ async def list_animations(
                 }
             )
         return {"root": str(root), "count": len(results), "animations": results}
-    # Handle specific exception case
     except HTTPException:
         raise
-    # Handle specific exception case
     except Exception as e:  # pragma: no cover - unexpected
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -169,7 +159,6 @@ async def launch_avatar() -> dict[str, Any]:
             start_new_session=True,  # Detach from parent process
         )
 
-        # Logic flow
         # Don't wait for the process to complete, just check if it started
         await asyncio.sleep(0.1)  # Give it a moment to start
 
@@ -190,7 +179,6 @@ async def launch_avatar() -> dict[str, Any]:
                 status_code=500, detail=f"Avatar failed to start: {error_msg}"
             )
 
-    # Handle specific exception case
     except Exception as e:
         logger.error(f"Failed to launch avatar: {e}")
         raise HTTPException(

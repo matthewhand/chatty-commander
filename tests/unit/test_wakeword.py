@@ -190,3 +190,5 @@ class TestMockWakeWordDetectorEdgeCases:
         detector.start_listening()
         detector.trigger_wake_word("hey_jarvis", 0.0)
         callback.assert_called_once_with("hey_jarvis", 0.0)
+
+

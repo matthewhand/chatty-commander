@@ -184,7 +184,6 @@ def validate_handoff_triggers(triggers: list[str]) -> list[str]:
 
     validated_triggers = []
     for trigger in triggers:
-        # Logic flow
         if not isinstance(trigger, str):
             raise HTTPException(
                 status_code=400, detail="Each handoff trigger must be a string"
@@ -283,10 +282,8 @@ def sanitize_config_data(config_data: dict[str, Any]) -> dict[str, Any]:
     ]
 
     for key in config_data.keys():
-        # Logic flow
         if isinstance(key, str):
             key_lower = key.lower()
-            # Logic flow
             if any(dangerous in key_lower for dangerous in dangerous_keys):
                 raise HTTPException(
                     status_code=400,

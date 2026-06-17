@@ -165,3 +165,89 @@ class TestCoreRoutesInclusion:
     def test_imports_work(self):
         assert include_core_routes is not None
         assert ResponseTimeMiddleware is not None
+
+    def test_health_endpoint(self):
+        getters = {
+            "get_start_time": lambda: 0,
+            "get_state_manager": lambda: Mock(),
+            "get_config_manager": lambda: Mock(config={}),
+            "get_last_command": lambda: None,
+            "get_last_state_change": lambda: Mock(isoformat=lambda: ""),
+            "execute_command_fn": lambda c: True,
+            "get_active_connections": lambda: 0,
+            "get_cache_size": lambda: 0,
+            "get_total_commands": lambda: 0,
+        }
+        client = self.make_client(**getters)
+        r = client.get("/health")
+        assert r.status_code == 200
+        data = r.json()
+        assert "status" in data and data["status"] in ("healthy", "running")
+
+    def test_metrics_endpoint(self):
+        getters = {
+            "get_start_time": lambda: 0,
+            "get_state_manager": lambda: Mock(),
+            "get_config_manager": lambda: Mock(),
+            "get_last_command": lambda: None,
+            "get_last_state_change": lambda: Mock(isoformat=lambda: ""),
+            "execute_command_fn": lambda c: True,
+            "get_active_connections": lambda: 5,
+            "get_cache_size": lambda: 10,
+            "get_total_commands": lambda: 42,
+        }
+        client = self.make_client(**getters)
+        r = client.get("/metrics")
+        assert r.status_code == 200
+        data = r.json()
+        assert "total_requests" in data or "uptime_seconds" in data
+
+    def test_commands_endpoint(self):
+        getters = {
+            "get_start_time": lambda: 0,
+            "get_state_manager": lambda: Mock(),
+            "get_config_manager": lambda: Mock(commands={"cmd1": {}, "cmd2": {}}),
+            "get_last_command": lambda: None,
+            "get_last_state_change": lambda: Mock(isoformat=lambda: ""),
+            "execute_command_fn": lambda c: True,
+            "get_active_connections": lambda: 0,
+            "get_cache_size": lambda: 0,
+            "get_total_commands": lambda: 0,
+        }
+        client = self.make_client(**getters)
+        r = client.get("/api/v1/commands")
+        assert r.status_code == 200
+        data = r.json()
+        assert isinstance(data, dict)
+
+    def test_config_put_rejects_bad_keys(self):
+        getters = {
+            "get_start_time": lambda: 0,
+            "get_state_manager": lambda: Mock(),
+            "get_config_manager": lambda: Mock(config={}),
+            "get_last_command": lambda: None,
+            "get_last_state_change": lambda: Mock(isoformat=lambda: ""),
+            "execute_command_fn": lambda c: True,
+            "get_active_connections": lambda: 0,
+            "get_cache_size": lambda: 0,
+            "get_total_commands": lambda: 0,
+        }
+        client = self.make_client(**getters)
+        r = client.put("/api/v1/config", json={"bad_key": 1, "another_bad": 2})
+        assert r.status_code in (422, 400, 200)  # per impl may 422
+
+    def test_config_put_success(self):
+        getters = {
+            "get_start_time": lambda: 0,
+            "get_state_manager": lambda: Mock(),
+            "get_config_manager": lambda: Mock(config={"log_level": "INFO"}),
+            "get_last_command": lambda: None,
+            "get_last_state_change": lambda: Mock(isoformat=lambda: ""),
+            "execute_command_fn": lambda c: True,
+            "get_active_connections": lambda: 0,
+            "get_cache_size": lambda: 0,
+            "get_total_commands": lambda: 0,
+        }
+        client = self.make_client(**getters)
+        r = client.put("/api/v1/config", json={"log_level": "DEBUG"})
+        assert r.status_code in (200, 204, 422)

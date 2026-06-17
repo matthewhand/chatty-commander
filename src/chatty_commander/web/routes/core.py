@@ -330,10 +330,8 @@ def include_core_routes(
     @router.get("/api/v1/commands")
     async def get_commands():  # type: ignore[no-redef]
         try:
-        # Attempt operation with error handling
             cfg_mgr = get_config_manager()
             return getattr(cfg_mgr, "commands", {}) or {}
-        # Handle specific exception case
         except Exception as exc:
             logger.warning("Failed to retrieve commands config: %s", exc)
             return {}
@@ -344,25 +342,20 @@ def include_core_routes(
 
         TODO: Add detailed description and parameters.
         """
-        # Process each item
         uptime_seconds = time.time() - get_start_time()
         total_requests = sum(counters.values())
 
         active_connections = 0
-        # Logic flow
         if get_active_connections:
             try:
                 active_connections = get_active_connections()
-            # Handle specific exception case
             except Exception:
                 pass
 
         cache_size = 0
-        # Logic flow
         if get_cache_size:
             try:
                 cache_size = get_cache_size()
-            # Handle specific exception case
             except Exception:
                 pass
 
@@ -373,7 +366,6 @@ def include_core_routes(
         # Get average response time from middleware instance (avoids global state)
         avg_duration = (
             response_time_middleware.get_average_ms()
-            # Logic flow
             if response_time_middleware is not None
             else 0.0
         )

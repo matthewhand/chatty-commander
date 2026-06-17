@@ -145,7 +145,6 @@ try:
         """Middleware that assigns a UUID request ID to each incoming request.
 
         The ID is:
-        # Logic flow
         - Read from the X-Request-ID header if present (allows tracing across services).
         - Generated as a new UUID4 otherwise.
         - Stored in a ContextVar so all log records emitted during the request

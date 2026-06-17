@@ -58,7 +58,6 @@ class AvatarWSConnectionManager:
 
     def _ensure_manager(self):
         mgr = get_thinking_manager()
-        # Logic flow
         if mgr is not self._registered_manager:
             # remove from old, if any
             try:
@@ -66,13 +65,13 @@ class AvatarWSConnectionManager:
                     self._registered_manager.remove_broadcast_callback(
                         self.broadcast_state_change
                     )
-            # Handle specific exception case
+
             except Exception:
                 pass
             try:
-            # Attempt operation with error handling
+
                 mgr.add_broadcast_callback(self.broadcast_state_change)
-            # Handle specific exception case
+
             except Exception:
                 pass
             self._registered_manager = mgr
@@ -95,17 +94,17 @@ class AvatarWSConnectionManager:
             data[agent_id] = d
         snapshot = {"type": "agent_states_snapshot", "data": data}
         try:
-        # Attempt operation with error handling
+
             await websocket.send_text(json.dumps(snapshot))
-        # Handle specific exception case
+
         except Exception as e:
             logger.error(f"Failed to send snapshot to avatar client: {e}")
 
     def disconnect(self, websocket: WebSocket):
         try:
-        # Attempt operation with error handling
+
             self.active_connections.remove(websocket)
-        # Handle specific exception case
+
         except ValueError:
             pass
 
@@ -119,16 +118,15 @@ class AvatarWSConnectionManager:
         # Optionally enrich with theme based on persona_id
         try:
             data = message.get("data") if isinstance(message, dict) else None
-            # Logic flow
             persona_id = data.get("persona_id") if isinstance(data, dict) else None
             if self.theme_resolver and persona_id:
                 try:
-                # Attempt operation with error handling
+    
                     data["theme"] = self.theme_resolver(persona_id)  # type: ignore[index]
-                # Handle specific exception case
+    
                 except Exception:
                     pass
-        # Handle specific exception case
+
         except Exception:
             pass
 
@@ -175,7 +173,6 @@ class AvatarAudioQueue:
 
     @property
     def is_speaking(self) -> bool:
-        # Logic flow
         return (
             self._current_play_task is not None and not self._current_play_task.done()
         )
@@ -199,7 +196,7 @@ class AvatarAudioQueue:
             try:
                 self._current_play_task = asyncio.create_task(self._play_audio(audio))
                 await self._current_play_task
-            # Handle specific exception case
+
             except asyncio.CancelledError:
                 end = {
                     "type": "avatar_audio_end",
@@ -219,19 +216,17 @@ class AvatarAudioQueue:
         self._processor_task = None
 
     def _ensure_processor(self) -> None:
-        # Logic flow
         if self._processor_task is None or self._processor_task.done():
             try:
                 loop = asyncio.get_running_loop()
                 self._processor_task = loop.create_task(self._process())
-            # Handle specific exception case
+
             except RuntimeError:
                 asyncio.run(self._process())
 
     async def enqueue(
         self, agent_id: str, message: str, audio: bytes | None = None
     ) -> None:
-        # Logic flow
         await self.queue.put((agent_id, message, audio))
         self._ensure_processor()
 
@@ -284,16 +279,14 @@ async def interrupt_avatar_queue(
 async def avatar_ws_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
-        # Logic flow
         while True:
             data = await websocket.receive_text()
             # Basic protocol: expect JSON messages with type and data
             try:
                 msg = json.loads(data)
-            # Handle specific exception case
+
             except json.JSONDecodeError:
                 continue
-            # Logic flow
             # Handle control messages if needed (e.g., avatar ready)
             msg_type = msg.get("type")
             if msg_type == "avatar_ready":
@@ -303,7 +296,7 @@ async def avatar_ws_endpoint(websocket: WebSocket):
             # Future: map avatar_id to agent_id etc
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    # Handle specific exception case
+
     except Exception as e:
         logger.error(f"Avatar WS error: {e}")
         manager.disconnect(websocket)

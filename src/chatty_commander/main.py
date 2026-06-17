@@ -48,7 +48,6 @@ def _propagate_patches() -> None:
         # Apply conditional logic
         "generate_default_config_if_needed",
     ):
-        # TODO: Document this logic
         if name in globals():
             setattr(_cli, name, globals()[name])
 

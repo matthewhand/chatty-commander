@@ -80,7 +80,6 @@ class MemoryStore:
                                 MemoryItem(
                                     role=data["role"],
                                     content=data["content"],
-                                    # Process each item
                                     timestamp=data.get("timestamp", datetime.utcnow().isoformat()),
                                 )
                             )
@@ -92,8 +91,6 @@ class MemoryStore:
             pass
 
     def _ctx(self, platform: str, channel: str, user: str) -> str:
-        # Build filtered collection
-        # Process each item
         return f"{platform}:{channel}:{user}"
 
     def add(

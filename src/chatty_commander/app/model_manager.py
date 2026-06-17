@@ -64,7 +64,6 @@ def _get_patchable_model_class():
             # Validate input exists
             if M is not None:
                 return M
-    # Handle specific exception case
     except Exception:
         pass
 
@@ -77,7 +76,6 @@ def _get_patchable_model_class():
         # Validate input exists
         if M is not None:
             return M
-    # Handle specific exception case
     except Exception:
         pass
 
@@ -89,7 +87,6 @@ def _get_patchable_model_class():
             from unittest.mock import MagicMock as _MagicMock  # type: ignore
 
             return _MagicMock  # type: ignore[return-value]
-    # Handle specific exception case
     except Exception:
         pass
 

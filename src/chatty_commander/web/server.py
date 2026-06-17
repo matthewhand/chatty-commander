@@ -29,7 +29,7 @@ from chatty_commander.utils.security import constant_time_compare
 
 try:
     from fastapi import FastAPI
-# Handle specific exception case
+
 except Exception:  # very minimal stub if FastAPI missing (tests won't hit real HTTP)
 
     class FastAPI:  # type: ignore
@@ -39,10 +39,8 @@ except Exception:  # very minimal stub if FastAPI missing (tests won't hit real 
         """
         
         def __init__(self, *a: Any, **k: Any) -> None: ...
-        # TODO: Document this logic
 
         def include_router(self, *a: Any, **k: Any) -> None: ...
-        # TODO: Document this logic
 
         @property
         def routes(self):
@@ -50,68 +48,67 @@ except Exception:  # very minimal stub if FastAPI missing (tests won't hit real 
 
             TODO: Add detailed description and parameters.
             """
-        # TODO: Document this logic
             return []
 
 
 # Import all available routers
 try:
     from .routes.avatar_ws import router as avatar_ws_router
-# Handle specific exception case
+
 except ImportError:
     avatar_ws_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_api import router as avatar_api_router
-# Handle specific exception case
+
 except ImportError:
     avatar_api_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_selector import router as avatar_selector_router
-# Handle specific exception case
+
 except ImportError:
     avatar_selector_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_settings import include_avatar_settings_routes
-# Handle specific exception case
+
 except ImportError:
     include_avatar_settings_routes = None  # type: ignore[assignment]
 
 try:
     from .routes.audio import include_audio_routes
-# Handle specific exception case
+
 except ImportError:
     include_audio_routes = None  # type: ignore[assignment]
 
 try:
     from .routes.version import router as version_router
-# Handle specific exception case
+
 except ImportError:
     version_router = None  # type: ignore[assignment]
 
 try:
     from .routes.agents import router as agents_router
-# Handle specific exception case
+
 except ImportError:
     agents_router = None  # type: ignore[assignment]
 
 try:
     from .routes.models import router as models_router
-# Handle specific exception case
+
 except ImportError:
     models_router = None  # type: ignore[assignment]
 
 try:
     from .routes.system import include_system_routes
-# Handle specific exception case
+
 except ImportError:
     include_system_routes = None  # type: ignore[assignment]
 
 try:
     from .routes.command_authoring import router as command_authoring_router
-# Handle specific exception case
+
 except ImportError:
     command_authoring_router = None  # type: ignore[assignment]
 
@@ -119,7 +116,7 @@ try:
     from ..obs.metrics import create_metrics_router
 
     metrics_router = create_metrics_router()
-# Handle specific exception case
+
 except ImportError:
     metrics_router = None  # type: ignore[assignment]
 
@@ -180,7 +177,6 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
     try:
         from fastapi import Header, HTTPException
 
-        # Logic flow
         # Logger for security events on bridge endpoint
         _bridge_logger = logging.getLogger("chatty_commander.bridge")
 
@@ -189,7 +185,6 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         # Async function for concurrent execution
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
-            # Logic flow
             """Bridge event endpoint for external integrations (e.g., Discord).
 
             Security behavior:
@@ -202,7 +197,6 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
               # Use context manager for resource management
               and a warning is logged (secure-by-default).
             """
-            # Logic flow
             if no_auth:
                 # Dev mode: token required, reject if missing
                 if not x_bridge_token:
@@ -217,7 +211,6 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
                 if config_manager and hasattr(config_manager, "web_server"):
                     expected_token = config_manager.web_server.get("bridge_token")
 
-                # Logic flow
                 # Secure-by-default: reject if token not configured
                 if not expected_token:
                     _bridge_logger.warning(
@@ -239,7 +232,7 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
 
                 return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 
-    # Handle specific exception case
+    
     except ImportError:
         pass
 

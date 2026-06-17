@@ -62,7 +62,7 @@ try:
     from agents import Agent  # type: ignore
 
     AGENTS_AVAILABLE = True
-# Handle specific exception case
+
 except Exception:  # pragma: no cover - import guard
     Agent = None  # type: ignore
     AGENTS_AVAILABLE = False
@@ -74,7 +74,7 @@ logger = logging.getLogger(__name__)
 def _filter_kwargs_for_callable(fn: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
     try:
         signature = inspect.signature(fn)
-    # Handle specific exception case
+
     except (TypeError, ValueError):
         return kwargs
     if any(
@@ -138,7 +138,7 @@ class LLMProvider(ABC):
             # Simple test generation
             test_response = self.generate("Test")
             return bool(test_response and len(test_response) > 0)
-        # Handle specific exception case
+
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             return False
@@ -149,7 +149,7 @@ class CompletionProvider(LLMProvider):
 
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
-        # Apply conditional logic
+
         if not AGENTS_AVAILABLE:
             raise ImportError(
                 "openai-agents SDK not available. Install with: pip install openai-agents"
@@ -159,7 +159,6 @@ class CompletionProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
-        # Logic flow
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
@@ -167,14 +166,13 @@ class CompletionProvider(LLMProvider):
                     browser_analyst_tool_instance,
                 )
 
-                # Apply conditional logic
+        
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
-            # Handle specific exception case
+    
             except ImportError:
                 pass
 
-        # Logic flow
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []
@@ -192,7 +190,6 @@ class CompletionProvider(LLMProvider):
                 "instructions", "You are a helpful AI assistant."
             ),
         }
-        # Process each item
         filtered_kwargs = _filter_kwargs_for_callable(Agent.__init__, agent_kwargs)
         self.agent = Agent(**filtered_kwargs)
 
@@ -230,7 +227,7 @@ class ResponsesProvider(LLMProvider):
 
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
-        # Apply conditional logic
+
         if not AGENTS_AVAILABLE:
             raise ImportError(
                 "openai-agents SDK not available. Install with: pip install openai-agents"
@@ -240,7 +237,6 @@ class ResponsesProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
-        # Logic flow
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
@@ -248,14 +244,13 @@ class ResponsesProvider(LLMProvider):
                     browser_analyst_tool_instance,
                 )
 
-                # Apply conditional logic
+        
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
-            # Handle specific exception case
+    
             except ImportError:
                 pass
 
-        # Logic flow
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []
@@ -275,7 +270,6 @@ class ResponsesProvider(LLMProvider):
                 # Use context manager for resource management
             ),
         }
-        # Process each item
         filtered_kwargs = _filter_kwargs_for_callable(Agent.__init__, agent_kwargs)
         self.agent = Agent(**filtered_kwargs)
 
@@ -324,10 +318,10 @@ class FallbackProvider(LLMProvider):
     def _create_provider(self, config: dict[str, Any]) -> LLMProvider:
         api_mode = config.get("llm_api_mode", config.get("api_mode", "completion"))
 
-        # Apply conditional logic
+
         if api_mode == "completion":
             return CompletionProvider(config)
-        # Apply conditional logic
+
         elif api_mode == "responses":
             return ResponsesProvider(config)
         else:
@@ -336,15 +330,14 @@ class FallbackProvider(LLMProvider):
     def generate(self, prompt: str, **kwargs) -> str:
         """Create provider based on API mode."""
         """Try providers in sequence until one succeeds."""
-        # Process each item
         for i, provider in enumerate(self.providers):
             try:
                 logger.info(f"Trying provider {i + 1}/{len(self.providers)}")
                 return provider.generate(prompt, **kwargs)
-            # Handle specific exception case
+    
             except Exception as e:
                 logger.warning(f"Provider {i + 1} failed: {e}")
-                # Apply conditional logic
+        
                 if i == len(self.providers) - 1:
                     # Last provider failed
                     return f"Error: All providers failed. Last error: {e}"
@@ -352,8 +345,6 @@ class FallbackProvider(LLMProvider):
         return "Error: No providers available"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        # Process each item
-        # Process each item
         for i, provider in enumerate(self.providers):
             """Try providers in sequence for streaming."""
             try:
@@ -363,18 +354,15 @@ class FallbackProvider(LLMProvider):
                     f"Trying provider {i + 1}/{len(self.providers)} for streaming"
                 )
                 return provider.generate_stream(prompt, **kwargs)
-            # Handle specific exception case
+    
             except Exception as e:
                 # Build filtered collection
-                # Process each item
                 logger.warning(f"Provider {i + 1} failed for streaming: {e}")
-                # Apply conditional logic
+        
                 if i == len(self.providers) - 1:
                     # Build filtered collection
-                    # Process each item
                     return f"Error: All providers failed for streaming. Last error: {e}"
 
-        # Process each item
         return "Error: No providers available for streaming"
 
     def health_check(self) -> bool:

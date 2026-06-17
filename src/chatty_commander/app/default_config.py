@@ -219,7 +219,6 @@ class DefaultConfigGenerator:
             "audio_settings": {
                 "mic_chunk_size": 1024,
                 "sample_rate": 16000,
-                # Process each item
                 "audio_format": "int16",
             },
             "general_settings": {
@@ -227,12 +226,10 @@ class DefaultConfigGenerator:
                 "default_state": "idle",
                 "inference_framework": "onnx",
                 "start_on_boot": False,
-                # Process each item
                 "check_for_updates": True,
             },
             "logging": {
                 "level": "INFO",
-                # Process each item
                 "format": "plain",
                 "handlers": ["console", "file"],
                 "file": "logs/chattycommander.log",

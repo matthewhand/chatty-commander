@@ -26,7 +26,7 @@ import atexit
 import logging
 import signal
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 def _handle_shutdown_signal(signum: int, frame: object) -> None:
     sig_name = signal.Signals(signum).name
-    timestamp = datetime.now(tz=UTC).isoformat()
+    timestamp = datetime.now(tz=timezone.utc).isoformat()
     logger.info("Shutdown signal received (%s) at %s", sig_name, timestamp)
     logger.info("Shutting down gracefully...")
     # Re-raise the default handler so the process actually exits.
@@ -46,7 +46,7 @@ def _handle_shutdown_signal(signum: int, frame: object) -> None:
 
 def _atexit_handler() -> None:
     """Log shutdown completion via atexit."""
-    timestamp = datetime.now(tz=UTC).isoformat()
+    timestamp = datetime.now(tz=timezone.utc).isoformat()
     logger.info("Shutdown complete at %s", timestamp)
 
 
@@ -81,7 +81,7 @@ def register_lifecycle(
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:  # noqa: D401
-        timestamp = datetime.now(tz=UTC).isoformat()
+        timestamp = datetime.now(tz=timezone.utc).isoformat()
         logger.info("Shutting down gracefully... (%s)", timestamp)
 
         # Intentionally minimal; invoke optional callback if present.

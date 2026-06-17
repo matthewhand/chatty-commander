@@ -38,20 +38,17 @@ from typing import Any
 # Optional deps that may not be present in CI/headless environments
 try:  # pragma: no cover - exercised via tests with patching
     import pyautogui
-# Handle specific exception case
 except Exception:  # pragma: no cover - catch Xlib.error.DisplayConnectionError and similar
     pyautogui = None  # type: ignore[assignment]
 
 try:  # pragma: no cover - optional
     import httpx
-# Handle specific exception case
 except Exception:  # pragma: no cover - optional
     httpx = None  # type: ignore[assignment]
 
 # Allow tests to patch legacy shim module attributes if present
 try:  # pragma: no cover
     from command_executor import pyautogui as _shim_pg
-# Handle specific exception case
 except Exception:  # pragma: no cover - optional
     _shim_pg = None
 if _shim_pg is not None:  # pragma: no cover - optional
@@ -59,7 +56,6 @@ if _shim_pg is not None:  # pragma: no cover - optional
 
 try:  # pragma: no cover
     from command_executor import requests as _shim_requests
-# Handle specific exception case
 except Exception:  # pragma: no cover - optional
     _shim_requests = None
 if _shim_requests is not None:  # pragma: no cover - optional
@@ -68,16 +64,45 @@ if _shim_requests is not None:  # pragma: no cover - optional
 
 
 class CommandExecutor:
-    """CommandExecutor class.
-
-    TODO: Add class description.
-    """
+    """CommandExecutor handles execution of configured commands (keypress, shell, url, etc.)."""
     
     def __init__(self, config: Any, model_manager: Any, state_manager: Any) -> None:
         self.config: Any = config
         self.model_manager: Any = model_manager
         self.state_manager: Any = state_manager
         self.last_command: str | None = None
+
+    def _get_command_action(self, command_name: str) -> Any:
+        """Get command action from config, with validation.
+        Extracted from execute_command to reduce complexity (addresses qa rank 3 _get_command_action).
+        Preserves all error raising and behavior.
+        """
+        try:
+            model_actions = self.config.model_actions
+            if model_actions is None:
+                raise ValueError("Missing model_actions config")
+            if not hasattr(model_actions, "get"):
+                raise ValueError("Config model_actions not accessible")
+        except (AttributeError, TypeError) as err:
+            raise ValueError("Config model_actions not accessible") from err
+        return model_actions.get(command_name)
+
+    def _get_action_safely(self, command_name: str) -> Any | None:
+        """Safe fetch of command action (returns None on bad/missing config or action).
+
+        Small helper extracted from validate_command (qa rank 4 complexity hotspot)
+        to reduce duplication with _get_command_action while preserving exact
+        tolerant behavior (no raises, just False path in validate).
+        """
+        try:
+            model_actions = self.config.model_actions
+            if model_actions is None:
+                return None
+            if not hasattr(model_actions, "get"):
+                return None
+            return model_actions.get(command_name)
+        except (AttributeError, TypeError):
+            return None
 
     def execute_command(self, command_name: str) -> bool:
         """
@@ -95,280 +120,219 @@ class CommandExecutor:
         Raises:
             ValueError: If command_name is invalid
         """
-        # TODO: REFACTOR - Complexity 15, extract sub-functions
-
-        # TODO: REFACTOR - High complexity (validate_command)
-        # Break into: validation, execution, cleanup sub-functions
-
-        # TODO: REFACTOR - Complexity 15, extract sub-functions
-
-        try:
-            # Attempt operation with error handling
-            # Ensure model_actions is accessible
-            model_actions = self.config.model_actions
-            if model_actions is None:
-                raise ValueError("Missing model_actions config")
-            # Apply conditional logic
-            if not hasattr(model_actions, "get"):
-                raise ValueError("Config model_actions not accessible")
-        # Handle specific exception case
-        except (AttributeError, TypeError) as err:
-            raise ValueError("Config model_actions not accessible") from err
-
-        command_action = model_actions.get(command_name)
-        # Validate input exists
+        command_action = self._get_command_action(command_name)
         if command_action is None:
             return False
 
         self.pre_execute_hook(command_name)
 
-        # Logic flow
-        # Set default DISPLAY if not set (X11 environments)
         if "DISPLAY" not in os.environ:
             os.environ["DISPLAY"] = ":0"
 
         success = False
         try:
-            # Attempt operation with error handling
-            # Handle both old format and new format with 'action' key
             if "action" in command_action:
-                action_type = command_action["action"]
-                # Apply conditional logic
-                if not isinstance(action_type, str):
-                    raise TypeError(
-                        f"Action type must be string, got {type(action_type)}"
-                    )
-                # Apply conditional logic
-                if action_type == "keypress":
-                    keys = command_action.get("keys", "")
-                    self._execute_keybinding(command_name, keys)
-                    success = True
-                # Apply conditional logic
-                elif action_type == "url":
-                    url = command_action.get("url", "")
-                    self._execute_url(command_name, url)
-                    success = True
-                # Apply conditional logic
-                elif action_type == "shell":
-                    cmd = command_action.get("cmd", "")
-                    success = self._execute_shell(command_name, cmd)
-                # Apply conditional logic
-                elif action_type == "custom_message":
-                    message = command_action.get("message", "")
-                    self._execute_custom_message(command_name, message)
-                    success = True
-                # Apply conditional logic
-                elif action_type == "voice_chat":
-                    success = self._execute_voice_chat(command_name)
-                else:
-                    raise ValueError(
-                        f"Command '{command_name}' has an invalid action type '{action_type}'. "
-                        f"Valid actions are: 'keypress', 'url', 'shell', 'custom_message', 'voice_chat'"
-                    )
+                success = self._execute_new_format(command_name, command_action)
             else:
-                # Handle old format (direct keys)
-                if "keypress" in command_action:
-                    keys = command_action["keypress"]
-                    self._execute_keybinding(command_name, keys)  # tests can patch this
-                    success = True
-                # Apply conditional logic
-                elif "url" in command_action:
-                    url = command_action.get("url", "")
-                    self._execute_url(command_name, url)
-                    success = True
-                # Apply conditional logic
-                elif "shell" in command_action:
-                    cmd = command_action.get("shell", "")
-                    success = self._execute_shell(command_name, cmd)
-                else:
-                    raise ValueError(
-                        f"Command '{command_name}' has an invalid type. "
-                        f"No valid action ('keypress', 'url', 'shell') found in configuration."
-                    )
+                success = self._execute_old_format(command_name, command_action)
         except (ValueError, TypeError) as e:
-            # Re-raise ValueError and TypeError exceptions - tests expect them
             logging.error(f"Error executing command '{command_name}': {e}")
             raise
         except Exception as e:
-            # Log other exceptions but don't re-raise - handle gracefully
             logging.error(f"Error executing command '{command_name}': {e}")
             success = False
         finally:
             self.post_execute_hook(command_name)
         return success
 
-    # TODO: REFACTOR - Complexity 15, extract sub-functions
+    def _execute_new_format(self, command_name: str, command_action: dict) -> bool:
+        """Dispatch for the modern {'action': '...', ...} format."""
+        action_type = command_action["action"]
+        if not isinstance(action_type, str):
+            raise TypeError(f"Action type must be string, got {type(action_type)}")
+        if action_type == "keypress":
+            keys = command_action.get("keys", "")
+            self._execute_keybinding(command_name, keys)
+            return True
+        elif action_type == "url":
+            url = command_action.get("url", "")
+            self._execute_url(command_name, url)
+            return True
+        elif action_type == "shell":
+            cmd = command_action.get("cmd", "")
+            return self._execute_shell(command_name, cmd)
+        elif action_type == "custom_message":
+            message = command_action.get("message", "")
+            return self._execute_custom_message_action(command_name, message)
+        elif action_type == "voice_chat":
+            return self._execute_voice_chat_action(command_name)
+        else:
+            raise ValueError(
+                f"Command '{command_name}' has an invalid action type '{action_type}'. "
+                f"Valid actions are: 'keypress', 'url', 'shell', 'custom_message', 'voice_chat'"
+            )
 
-    # TODO: REFACTOR - High complexity (validate_command)
-    # Break into: validation, execution, cleanup sub-functions
+    def _execute_custom_message_action(self, command_name: str, message: str) -> bool:
+        """Small helper extracted from _execute_new_format (qa rank3 complexity hotspot)."""
+        self._execute_custom_message(command_name, message)
+        return True
 
-    # TODO: REFACTOR - Complexity 15, extract sub-functions
+    def _execute_voice_chat_action(self, command_name: str) -> bool:
+        """Small helper extracted from _execute_new_format (qa rank3 complexity hotspot)."""
+        return self._execute_voice_chat(command_name)
+
+    def _execute_old_format(self, command_name: str, command_action: dict) -> bool:
+        """Dispatch for the legacy direct-key format (e.g. {'keypress': ...})."""
+        if "keypress" in command_action:
+            keys = command_action["keypress"]
+            self._execute_keybinding(command_name, keys)
+            return True
+        elif "url" in command_action:
+            url = command_action.get("url", "")
+            self._execute_url(command_name, url)
+            return True
+        elif "shell" in command_action:
+            cmd = command_action.get("shell", "")
+            return self._execute_shell(command_name, cmd)
+        else:
+            raise ValueError(
+                f"Command '{command_name}' has an invalid type. "
+                f"No valid action ('keypress', 'url', 'shell') found in configuration."
+            )
+
+    def _is_valid_action_type(self, action_type: Any) -> bool:
+        """Return True if the action type string is one of the supported values."""
+        if not isinstance(action_type, str):
+            return False
+        return action_type in [
+            "keypress",
+            "url",
+            "shell",
+            "custom_message",
+            "voice_chat",
+        ]
+
+    def _validate_action_fields(self, command_action: dict, action_type: str) -> bool:
+        """Return True if all required fields for the action type are present."""
+        if action_type == "keypress":
+            return "keys" in command_action
+        if action_type == "url":
+            return "url" in command_action
+        if action_type == "shell":
+            return "cmd" in command_action
+        # custom_message and voice_chat require no additional mandatory fields
+        return True
+
+    def _validate_new_format_action(self, command_action: dict) -> bool:
+        """Validate new-format {'action': ..., ...} command_action dict."""
+        action_type = command_action.get("action")
+        if not self._is_valid_action_type(action_type):
+            return False
+        return self._validate_action_fields(command_action, action_type)
+
+    def _validate_old_format_action(self, command_action: dict) -> bool:
+        """Validate legacy direct-key format (contains at least one of keypress/url/shell)."""
+        return any(key in command_action for key in ["keypress", "url", "shell"])
+
+    def _validate_non_dict_action(self, command_action: Any) -> bool:
+        """Handle mock/non-dict action objects (return True only for valid action_type via .get)."""
+        if hasattr(command_action, "get"):
+            action_type = command_action.get("action")
+            if self._is_valid_action_type(action_type):
+                return True
+        return False
 
     def validate_command(self, command_name: str) -> bool:
-        # Apply conditional logic
         if not isinstance(command_name, str) or not command_name.strip():
             return False
 
-        try:
-            # Attempt operation with error handling
-            # Ensure model_actions is accessible
-            model_actions = self.config.model_actions
-            if model_actions is None:
-                return False
-            # Apply conditional logic
-            if not hasattr(model_actions, "get"):
-                return False
-            command_action = model_actions.get(command_name)
-        # Handle specific exception case
-        except (AttributeError, TypeError):
-            return False
-
-        # Apply conditional logic
+        command_action = self._get_action_safely(command_name)
         if not command_action:
             return False
 
         try:
-            # Attempt operation with error handling
-            # Apply conditional logic
             if isinstance(command_action, dict):
-                # Validate that the command has a valid action configuration
                 if "action" in command_action:
-                    # New format validation
-                    action_type = command_action.get("action")
-                    if not isinstance(action_type, str):
-                        return False
-                    # Build filtered collection
-                    # Apply conditional logic
-                    if action_type not in [
-                        "keypress",
-                        "url",
-                        "shell",
-                        "custom_message",
-                        "voice_chat",
-                    ]:
-                        return False
-                    # Logic flow
-                    # Check required fields for each action type
-                    if action_type == "keypress" and "keys" not in command_action:
-                        return False
-                    # Apply conditional logic
-                    if action_type == "url" and "url" not in command_action:
-                        return False
-                    # Apply conditional logic
-                    if action_type == "shell" and "cmd" not in command_action:
+                    if not self._validate_new_format_action(command_action):
                         return False
                 else:
-                    # Old format validation
-                    if not any(
-                        # Build filtered collection
-                        key in command_action for key in ["keypress", "url", "shell"]
-                    ):
+                    if not self._validate_old_format_action(command_action):
                         return False
             else:
-                # For mocks or non-dict, attempt basic check
-                if hasattr(command_action, "get"):
-                    action_type = command_action.get("action")
-                    # Build filtered collection
-                    # Apply conditional logic
-                    if isinstance(action_type, str) and action_type in [
-                        "keypress",
-                        "url",
-                        "shell",
-                        "custom_message",
-                        "voice_chat",
-                    ]:
-                        # Logic flow
-                        # Assume valid if action type matches, skip field checks for mocks
-                        return True
-                return False
-        # Handle specific exception case
+                if not self._validate_non_dict_action(command_action):
+                    return False
         except (AttributeError, TypeError, KeyError):
             return False
 
         return True
 
     def pre_execute_hook(self, command_name: str) -> None:
-        # Process each item
         self.last_command = command_name
-        # Logic flow
         # Provided for extension points and testing hooks
 
     def post_execute_hook(self, command_name: str) -> None:
         """Hook after executing a command."""
-        # Logic flow
         # Keep this post hook for compatibility with tests that patch it
 
     def _execute_keybinding(self, command_name: str, keys: str | list[str]) -> None:
-        # Validate input exists
         if pyautogui is None:
             self.report_error(command_name, "pyautogui is not installed")
             return
         try:
-            # Attempt operation with error handling
-            # Support either a list of keys (hotkey/chord) or a single key sequence
-            if isinstance(keys, list | tuple):
-                pyautogui.hotkey(*keys)
-            # Apply conditional logic
-            elif isinstance(keys, str) and "+" in keys:
-                # Parse plus-separated key combinations (e.g., 'ctrl+alt+t')
-                key_parts = [part.strip() for part in keys.split("+")]
-                pyautogui.hotkey(*key_parts)
-            else:
-                # For simple cases, press is less invasive than typewrite
-                pyautogui.press(keys)
-            # Build filtered collection
+            self._perform_key_action(keys)
             logging.info(f"Executed keybinding for {command_name}")
             logging.info(f"Completed execution of command: {command_name}")
-        # Handle specific exception case
         except Exception as e:  # pragma: no cover - patched in tests
-            # Build filtered collection
-            # Process each item
             logging.error(f"Failed to execute keybinding for {command_name}: {e}")
             self.report_error(command_name, str(e))
 
+    def _perform_key_action(self, keys: str | list[str]) -> None:
+        """Pure helper extracted from _execute_keybinding.
+
+        Handles list/tuple (hotkey), '+'-separated strings (e.g. ctrl+alt+t), or simple key press.
+        Extracted to reduce complexity in the keybinding executor (addresses qa listed
+        command_executor complexity hotspots) while preserving exact behavior.
+        """
+        if isinstance(keys, list | tuple):
+            pyautogui.hotkey(*keys)
+        elif isinstance(keys, str) and "+" in keys:
+            key_parts = [part.strip() for part in keys.split("+")]
+            pyautogui.hotkey(*key_parts)
+        else:
+            pyautogui.press(keys)
+
     def _execute_url(self, command_name: str, url: str) -> None:
-        # Apply conditional logic
         if not url:
             self.report_error(command_name, "missing URL")
             return
 
         from chatty_commander.utils.url_validator import is_safe_url
-        # Apply conditional logic
         if not is_safe_url(url):
             self.report_error(command_name, "unsafe URL rejected")
             return
 
-        # Validate input exists
         if httpx is None:  # pragma: no cover - optional
             self.report_error(command_name, "httpx not available")
             return
         try:
-            # Attempt operation with error handling
-            # Logic flow
             # Add timeout and disable redirects for security
             with httpx.Client() as client:
                 resp = client.get(url, timeout=10, follow_redirects=False)
-            # Apply conditional logic
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
             else:
                 logging.info(f"Completed execution of command: {command_name}")
-        # Handle specific exception case
         except Exception as e:  # pragma: no cover - patched in tests
             self.report_error(command_name, str(e))
 
     def _execute_shell(self, command_name: str, cmd: str) -> bool:
-        # Apply conditional logic
         if not cmd:
             self.report_error(command_name, "missing shell command")
             return False
         try:
-        # Attempt operation with error handling
-            # Logic flow
             # Prefer shlex.split for safer execution without shell=True
-            args = shlex.split(cmd)
-            result = subprocess.run(args, capture_output=True, text=True, timeout=15)
-            # Apply conditional logic
+            args = self._split_shell_cmd(cmd)
+            result = self._run_shell_subprocess(args)
             if result.returncode != 0:
                 msg = f"shell exit {result.returncode}; stderr: {result.stderr.strip()[:500]}"
                 logging.error(msg)
@@ -379,32 +343,31 @@ class CommandExecutor:
                 logging.info(f"shell ok: {out[:500]}")
                 logging.info(f"Completed execution of command: {command_name}")
                 return True
-        # Handle specific exception case
         except subprocess.TimeoutExpired:
             msg = "shell command timed out"
             logging.error(msg)
             self.report_error(command_name, msg)
             return False
-        # Handle specific exception case
         except Exception as e:
             logging.error(f"shell execution failed: {e}")
             self.report_error(command_name, str(e))
             return False
 
+    def _split_shell_cmd(self, cmd: str):
+        """Small helper extracted from _execute_shell to reduce complexity (qa top after pipeline re-inspect)."""
+        return shlex.split(cmd)
+
+    def _run_shell_subprocess(self, args):
+        """Small helper extracted from _execute_shell to reduce complexity (qa top after pipeline re-inspect)."""
+        return subprocess.run(args, capture_output=True, text=True, timeout=15)
+
     def _execute_custom_message(self, command_name: str, message: str) -> None:
-        """
-        Executes a shell command safely with timeout and error capture.
-        # Use context manager for resource management
-        Returns True on zero exit status, False otherwise.
-        """
         """Execute a custom message action."""
         logging.info(f"Custom message from {command_name}: {message}")
         # In a real implementation, this might display a notification or send to a UI
         # For now, just log it
 
     def _execute_voice_chat(self, command_name: str) -> bool:
-        # Build filtered collection
-        # Process each item
         logging.info(f"Starting voice chat for {command_name}")
 
         # Access components from config as expected by integration tests
@@ -412,13 +375,11 @@ class CommandExecutor:
         llm_manager = getattr(self.config, "llm_manager", None)
         voice_pipeline = getattr(self.config, "voice_pipeline", None)
 
-        # Apply conditional logic
         if not llm_manager or not voice_pipeline:
             self.report_error(command_name, "voice chat components not available")
             return False
 
         try:
-            # Attempt operation with error handling
             # 1. Verify component availability
             if (
                 not hasattr(voice_pipeline, "transcriber")
@@ -431,7 +392,6 @@ class CommandExecutor:
             # 2. Transcribe
             user_input = voice_pipeline.transcriber.record_and_transcribe()
             if not user_input:
-                # Process each item
                 logging.warning("No input received for voice chat")
                 return False
 
@@ -445,7 +405,6 @@ class CommandExecutor:
             logging.info("Completed voice chat session")
             return True
 
-        # Handle specific exception case
         except Exception as e:
             msg = f"voice chat failed: {e}"
             logging.error(msg)
@@ -455,15 +414,12 @@ class CommandExecutor:
     def report_error(self, command_name: str, error_message: str) -> None:
         logging.critical(f"Error in {command_name}: {error_message}")
 
-        # Logic flow
         # Also report to the utils logger for test compatibility
         try:
             from chatty_commander.utils.logger import report_error as utils_report_error
 
             utils_report_error(error_message, context=command_name)
-        # Handle specific exception case
         except ImportError:
-            # Apply conditional logic
             pass  # Fallback if utils logger not available
 
 

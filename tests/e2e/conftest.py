@@ -24,10 +24,12 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import time
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -63,63 +65,110 @@ def e2e_server() -> Generator[str, None, None]:
     
     base_url = f"http://127.0.0.1:{port}"
     
-    # Start server in no_auth mode for testing
-    # Using the CLI web mode with --no-auth
-    process = subprocess.Popen(
-        [sys.executable, "-m", "chatty_commander", "web", "--port", str(port), "--no-auth"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd="/home/matthewh/chatty-commander"
-    )
+    handles = {"process": None, "server": None, "thread": None, "kind": None}
     
-    # Wait for server to be ready
-    max_retries = 30
+    # Start server in-process using the app directly (faster/more reliable than CLI subprocess for e2e)
+    try:
+        from chatty_commander.web.web_mode import create_app as _create_web_app
+        import uvicorn
+        from threading import Thread
+        app = _create_web_app(no_auth=True)
+        config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning", access_log=False)
+        server = uvicorn.Server(config)
+        thread = Thread(target=server.run, daemon=True)
+        thread.start()
+        handles["server"] = server
+        handles["thread"] = thread
+        handles["kind"] = "inproc"
+    except Exception:
+        # Fallback to subprocess (original behavior)
+        project_root = str(Path(__file__).resolve().parents[2])
+        env = os.environ.copy()
+        env["PYTHONPATH"] = "src" + (":" + env.get("PYTHONPATH", "") if env.get("PYTHONPATH") else "")
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "chatty_commander", "web", "--port", str(port), "--no-auth"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=project_root,
+            env=env
+        )
+        handles["process"] = proc
+        handles["kind"] = "subprocess"
+    
+    # Wait for server to be ready (web init can be slow due to model/llm loads)
+    max_retries = 90
+    last_err = None
     for i in range(max_retries):
         try:
             import urllib.request
-            urllib.request.urlopen(f"{base_url}/version", timeout=1)
+            urllib.request.urlopen(f"{base_url}/health", timeout=2)
             break
-        except Exception:
+        except Exception as e:
+            last_err = e
             if i == max_retries - 1:
-                process.terminate()
-                raise RuntimeError(f"Server failed to start on {base_url}")
-            time.sleep(0.5)
+                if handles["kind"] == "subprocess" and handles["process"]:
+                    try:
+                        handles["process"].terminate()
+                        out, err = handles["process"].communicate(timeout=3)
+                        diag = (err or out or b"").decode("utf-8", errors="replace")[-900:]
+                    except Exception:
+                        diag = "<no-diag>"
+                else:
+                    diag = "inproc-uvicorn (no extra diag)"
+                raise RuntimeError(f"Server failed to start on {base_url} after {max_retries} tries. Last: {last_err}. Diag tail:\n{diag}") from e
+            time.sleep(0.7)
     
     yield base_url
     
     # Cleanup
-    process.terminate()
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        process.kill()
+    if handles["kind"] == "subprocess" and handles["process"]:
+        handles["process"].terminate()
+        try:
+            handles["process"].wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            handles["process"].kill()
+    elif handles["server"]:
+        try:
+            handles["server"].should_exit = True
+            if handles["thread"]:
+                handles["thread"].join(timeout=6)
+        except Exception:
+            pass
 
 
 @pytest.fixture
 def page(page: Page, e2e_server: str) -> Page:
-    """Configure page with base URL."""
+    """Configure page with base URL (with domcontentloaded wait for stability)."""
     page.goto(e2e_server)
+    page.wait_for_load_state("domcontentloaded")
+    page.wait_for_selector("body", timeout=8000)
     return page
 
 
 @pytest.fixture
 def version_page(page: Page, e2e_server: str) -> Page:
-    """Navigate to version endpoint."""
+    """Navigate to version endpoint (with domcontentloaded wait for stability)."""
     page.goto(f"{e2e_server}/version")
+    page.wait_for_load_state("domcontentloaded")
+    page.wait_for_selector("body", timeout=8000)
     return page
 
 
 @pytest.fixture
 def agents_page(page: Page, e2e_server: str) -> Page:
-    """Navigate to agents endpoint."""
+    """Navigate to agents endpoint (with domcontentloaded wait for stability)."""
     page.goto(f"{e2e_server}/agents")
+    page.wait_for_load_state("domcontentloaded")
+    page.wait_for_selector("body", timeout=8000)
     return page
 
 
 @pytest.fixture
 def metrics_page(page: Page, e2e_server: str) -> Page:
-    """Navigate to metrics endpoint."""
+    """Navigate to metrics endpoint (with domcontentloaded wait for stability)."""
     page.goto(f"{e2e_server}/metrics")
+    page.wait_for_load_state("domcontentloaded")
+    page.wait_for_selector("body", timeout=8000)
     return page
 
 
@@ -294,17 +343,13 @@ def screenshot_helper():
 
 @pytest.fixture
 def live_server():
-    """Start the actual application server for HTTP-based E2E tests.
+    """Start the actual application server for HTTP-based E2E tests (in-process preferred).
     
-    This fixture starts the FastAPI app using the CLI and waits for it
-    to be ready before yielding the base URL.
+    Uses the same robust pattern as e2e_server for speed and reliability.
     """
-    import subprocess
-    import time
     import socket
-    import requests
+    import time
     
-    # Find available port
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
@@ -312,37 +357,77 @@ def live_server():
     
     base_url = f"http://127.0.0.1:{port}"
     
-    # Start the server
-    process = subprocess.Popen(
-        [sys.executable, "-m", "chatty_commander", "--mode", "web", 
-         "--port", str(port), "--no-auth"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd="/home/matthewh/chatty-commander"
-    )
+    handles = {"process": None, "server": None, "thread": None, "kind": None}
     
-    # Wait for server to be ready
-    max_retries = 30
+    try:
+        from chatty_commander.web.web_mode import create_app as _create_web_app
+        import uvicorn
+        from threading import Thread
+        import requests  # for polling
+        
+        app = _create_web_app(no_auth=True)
+        config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning", access_log=False)
+        server = uvicorn.Server(config)
+        thread = Thread(target=server.run, daemon=True)
+        thread.start()
+        handles["server"] = server
+        handles["thread"] = thread
+        handles["kind"] = "inproc"
+    except Exception:
+        # Fallback to subprocess (legacy CLI form)
+        import subprocess
+        project_root = str(Path(__file__).resolve().parents[2])
+        env = os.environ.copy()
+        env["PYTHONPATH"] = "src" + (":" + env.get("PYTHONPATH", "") if env.get("PYTHONPATH") else "")
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "chatty_commander", "web",
+             "--port", str(port), "--no-auth"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=project_root,
+            env=env
+        )
+        handles["process"] = proc
+        handles["kind"] = "subprocess"
+    
+    max_retries = 60
+    last_err = None
     for i in range(max_retries):
         try:
-            response = requests.get(f"{base_url}/health", timeout=1)
-            if response.status_code == 200:
+            import requests
+            resp = requests.get(f"{base_url}/health", timeout=2)
+            if resp.status_code == 200:
                 break
-        except Exception:
-            pass
-        time.sleep(0.5)
-    else:
-        process.terminate()
-        raise RuntimeError(f"Server failed to start on {base_url}")
+        except Exception as e:
+            last_err = e
+            if i == max_retries - 1:
+                if handles["kind"] == "subprocess" and handles["process"]:
+                    try:
+                        handles["process"].terminate()
+                        out, err = handles["process"].communicate(timeout=3)
+                        diag = (err or out or b"").decode("utf-8", errors="replace")[-800:]
+                    except Exception:
+                        diag = "<no-diag>"
+                else:
+                    diag = "inproc"
+                raise RuntimeError(f"Server failed to start on {base_url} after retries. Last: {last_err}. Diag: {diag}") from e
+            time.sleep(0.6)
     
     yield base_url
     
-    # Cleanup
-    process.terminate()
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        process.kill()
+    if handles["kind"] == "subprocess" and handles["process"]:
+        handles["process"].terminate()
+        try:
+            handles["process"].wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            handles["process"].kill()
+    elif handles["server"]:
+        try:
+            handles["server"].should_exit = True
+            if handles["thread"]:
+                handles["thread"].join(timeout=5)
+        except Exception:
+            pass
 
 
 # Auto-capture screenshot on test failure

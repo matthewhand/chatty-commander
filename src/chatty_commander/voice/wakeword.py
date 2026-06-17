@@ -39,7 +39,6 @@ try:
     import pyaudio
 
     VOICE_DEPS_AVAILABLE = True
-# Handle specific exception case
 except ImportError:
     openwakeword = None  # type: ignore[assignment]
     pyaudio = None  # type: ignore[assignment]
@@ -60,9 +59,7 @@ class WakeWordDetector:
         sample_rate: int = 16000,
         channels: int = 1,
     ):
-        # Logic flow
         if not VOICE_DEPS_AVAILABLE:
-        # TODO: Document this logic
             raise ImportError(
                 "Voice dependencies not available. Install with: "
                 "uv sync --group voice  # or pip install openwakeword pyaudio numpy"
@@ -90,12 +87,9 @@ class WakeWordDetector:
 
     def _initialize_model(self):
         try:
-        # Attempt operation with error handling
-        # TODO: Document this logic
             # Initialize with default models
             self._model = openwakeword.Model()
             logger.info(f"Initialized wake word model with words: {self.wake_words}")
-            # TODO: Document this logic
         except Exception as e:
             logger.warning(f"Failed to initialize wake word model: {e}")
             logger.info("Falling back to mock wake word detector")
@@ -227,8 +221,6 @@ class WakeWordDetector:
             return []
 
     def is_listening(self) -> bool:
-        # Logic flow
-        # TODO: Document this logic
         return bool(self._running and self._thread and self._thread.is_alive())
 
 

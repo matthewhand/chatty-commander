@@ -49,7 +49,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--output",
         type=Path,
         default=Path("docs"),
-        # Logic flow
         help="Output directory for docs (defaults to ./docs).",
     )
     parser.add_argument(
@@ -57,7 +56,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--verbose",
         action="count",
         default=0,
-        # Apply conditional logic
         help="Increase verbosity (can be specified multiple times).",
     )
     # Accept and ignore any extra args (e.g., pytest passes -k, -q, test paths)
@@ -73,10 +71,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _configure_logging(verbosity: int) -> None:
-    """Parse Args with (argv).
-
-    TODO: Add detailed description and parameters.
-    """
+    """Configure logging level based on verbosity count from args."""
     level = logging.WARNING
     if verbosity == 1:
         level = logging.INFO
@@ -91,14 +86,12 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         result = generate_docs(output_dir=args.output)
-        # Logic flow
         logger.info("Generated docs: %s", {k: str(v) for k, v in result.items()})
         return 0
     except SystemExit as e:
         # When invoked via runpy/run_module, pytest may inject flags causing argparse/SystemExit.
         # Our parser swallows unknowns; if a SystemExit still bubbles, map non-int to 1.
         return int(e.code) if isinstance(e.code, int) else 1
-    # Handle specific exception case
     except Exception as e:  # noqa: BLE001
         logger.error("Failed to generate docs: %s", e)
         return 1
@@ -106,8 +99,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
-
-    """Main with (argv).
-
-    TODO: Add detailed description and parameters.
-    """

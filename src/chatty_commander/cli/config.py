@@ -79,19 +79,8 @@ class ConfigCLI:
     # Mutators used by tests
 
     def set_model_action(self, model_name: str, action: str) -> None:
-        """Save Config with (self).
-
-        TODO: Add detailed description and parameters.
-        """
-        """Update with (self, model_name: str, action: str).
-
-        TODO: Add detailed description and parameters.
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Build filtered collection
-        # Process each item
-        self.config.state_models[state] = [m.strip() for m in models_str.split(",")]
+        """Set a model action mapping and persist."""
+        self.config.model_actions[model_name] = action
         self.save_config()
 
     def set_listen_for(self, key: str, value: str) -> None:

@@ -80,7 +80,7 @@ def _format_size(size_bytes: int) -> str:
     size: float = float(size_bytes)
     # Build filtered collection
     for unit in ["B", "KB", "MB", "GB"]:
-        # Logic flow
+
         if size < 1024:
             return f"{size:.1f} {unit}"
         size /= 1024
@@ -94,7 +94,7 @@ def _get_model_dirs() -> list[Path]:
     dirs = []
     for dir_name in DEFAULT_MODEL_DIRS:
         path = Path(dir_name)
-        # Logic flow
+
         if path.exists() and path.is_dir():
             dirs.append(path)
     return dirs
@@ -109,10 +109,10 @@ def _scan_model_files() -> list[ModelFileInfo]:
         dir_name = model_dir.name
         if "idle" in dir_name:
             state = "idle"
-        # Logic flow
+
         elif "computer" in dir_name:
             state = "computer"
-        # Logic flow
+
         elif "chatty" in dir_name:
             state = "chatty"
         else:
@@ -169,7 +169,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         else:
             target_dir = Path(upload_dir)
 
-        # Logic flow
+
         # Create directory if it doesn't exist
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -195,7 +195,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 detail="Invalid filename: path escapes target directory"
             ) from None
 
-        # Logic flow
+
         # Check if file already exists
         if file_path.exists():
             raise HTTPException(

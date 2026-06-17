@@ -28,11 +28,8 @@ from typing import Any
 
 @dataclass
 class RecurringPrompt:
-    """RecurringPrompt class.
+    """Recurring prompt configuration for scheduled advisor tasks."""
 
-    TODO: Add class description.
-    """
-    
     id: str
     name: str
     description: str
@@ -55,9 +52,7 @@ class RecurringPrompt:
             "context",
             "prompt",
         ]
-        # Process each item
         for key in required:
-            # Apply conditional logic
             if key not in data:
                 raise ValueError(f"Missing required field: {key}")
         return RecurringPrompt(

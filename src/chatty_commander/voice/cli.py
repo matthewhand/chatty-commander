@@ -52,8 +52,6 @@ def add_voice_subcommands(subparsers) -> None:
         "test",
         help="Test voice pipeline",
         description="Test voice pipeline with mock components or real hardware.",
-        # Use context manager for resource management
-        # TODO: Document this logic
     )
     test_parser.add_argument("--mock", action="store_true", help="Use mock components")
     test_parser.add_argument(
@@ -113,11 +111,9 @@ def add_voice_subcommands(subparsers) -> None:
 def handle_voice_command(
     args, config_manager=None, command_executor=None, state_manager=None
 ) -> None:
-    """Add voice-related subcommands to CLI parser."""
+    """Handle voice-related CLI commands."""
     if not hasattr(args, "voice_command") or not args.voice_command:
-        # Logic flow
         print("No voice command specified. Use --help for available commands.")
-        # TODO: Document this logic
         return
 
     elif args.voice_command == "status":
@@ -126,12 +122,9 @@ def handle_voice_command(
         _handle_voice_transcribe(args)
     elif args.voice_command == "self-test":
         try:
-            # Attempt operation with error handling
-            # TODO: Document this logic
             from .self_test import handle_self_test_command
 
             handle_self_test_command(args)
-        # Handle specific exception case
         except ImportError:
             print(
                 "❌ Self-test not available. Install with: pip install pyttsx3 openai"
@@ -206,7 +199,6 @@ def _handle_voice_test(
 
         # Test pipeline creation
         try:
-        # TODO: Document this logic
             pipeline = VoicePipeline(use_mock=True)
             status = pipeline.get_status()
 
@@ -216,7 +208,6 @@ def _handle_voice_test(
             print(f"   Sample rate: {status['transcriber_info']['sample_rate']} Hz")
             print(f"   Channels: {status['transcriber_info']['channels']}")
 
-        # Handle specific exception case
         except Exception as e:
             print(f"❌ Pipeline test failed: {e}")
 
@@ -265,7 +256,6 @@ def demo_voice_integration(config_manager=None, command_executor=None) -> None:
     print("=" * 50)
 
     try:
-        # Logic flow
         # Create pipeline with mock components for demo
         pipeline = VoicePipeline(
             config_manager=config_manager,

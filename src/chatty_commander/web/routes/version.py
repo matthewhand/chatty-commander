@@ -27,14 +27,10 @@ from pydantic import BaseModel, Field
 
 
 class VersionInfo(BaseModel):
-    """VersionInfo class.
+    """Application version information including semantic version and optional git SHA."""
 
-    TODO: Add class description.
-    """
-    
     version: str = Field(..., description="Application semantic version")
     git_sha: str | None = Field(
-        # Logic flow
         default=None, description="Short git commit SHA if available"
     )
 
@@ -66,8 +62,3 @@ async def get_version() -> VersionInfo:
         git_sha = None
 
     return VersionInfo(version=base_version, git_sha=git_sha)
-
-    """Retrieve operation.
-
-    TODO: Add detailed description and parameters.
-    """

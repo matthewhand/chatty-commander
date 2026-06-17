@@ -36,7 +36,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 try:
     from chatty_commander.llm.manager import LLMManager as _LLMManager
-# Handle specific exception case
 except ImportError:
     _LLMManager = None  # type: ignore[misc, assignment]
 
@@ -50,9 +49,7 @@ def _get_llm_manager() -> Any:
     global _llm_manager
     if _llm_manager is None and _LLMManager is not None:
         try:
-        # Attempt operation with error handling
             _llm_manager = _LLMManager()
-        # Handle specific exception case
         except Exception as exc:
             logger.debug("LLMManager init failed: %s", exc)
     return _llm_manager
@@ -121,27 +118,22 @@ def _load_store() -> None:
             _STORE.clear()
             _TEAM.clear()
 
-            # Logic flow
             for agent_dict in data.get("agents", []):
                 agent = AgentBlueprint(**agent_dict)
                 _STORE[agent.id] = agent
-                # Logic flow
                 if agent.team_role:
                     _TEAM.setdefault(agent.team_role, []).append(agent.id)
-    # Handle specific exception case
     except Exception as e:
         logger.warning("Error loading agent store from %s: %s", _STORE_PATH, e)
 
 def _save_store() -> None:
     try:
         _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        # Logic flow
         agents = [asdict(agent) for agent in _STORE.values()]
         data = {"agents": agents}
         with _STORE_PATH.open("w", encoding="utf-8") as f:
         # Use context manager for resource management
             json.dump(data, f, indent=2)
-    # Handle specific exception case
     except Exception as e:
         logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
 
