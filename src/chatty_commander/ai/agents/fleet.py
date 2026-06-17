@@ -89,7 +89,6 @@ class AgentInstance:
             self.message_queue = asyncio.Queue()
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for serialization."""
         return {
             "agent_id": self.agent_id,
             "name": self.name,
@@ -107,6 +106,7 @@ class AgentInstance:
         }
 
     def is_available(self) -> bool:
+        """Convert to dictionary for serialization."""
         """Check if agent is available to accept new tasks."""
         return (
             self.status == AgentStatus.READY
@@ -116,8 +116,6 @@ class AgentInstance:
 
 @dataclass
 class AgentFleetConfig:
-    """Configuration for launching an agent fleet."""
-
     # Default agent configuration
     default_model: str = "gpt-4"
     default_temperature: float = 0.7
@@ -188,7 +186,6 @@ class AgentFleet:
         )
 
     def __len__(self) -> int:
-        """Return number of agents in the fleet."""
         return len(self.agents)
 
     def __contains__(self, agent_id: str) -> bool:
@@ -196,7 +193,6 @@ class AgentFleet:
         return agent_id in self.agents
 
     async def start(self) -> None:
-        """Start the fleet manager."""
         if self._running:
             logger.warning("AgentFleet is already running")
             return
@@ -346,6 +342,10 @@ class AgentFleet:
         Returns:
             List of launched AgentInstance objects
         """
+        if not self._running:
+            logger.warning("AgentFleet is not running")
+            return []
+
         # Import here to avoid circular dependencies
         import json
         from pathlib import Path
@@ -490,13 +490,6 @@ class AgentFleet:
         result: str,
         agent_id: str | None = None,
     ) -> None:
-        """Mark a task as complete.
-
-        Args:
-            task_id: The task identifier
-            result: The task result
-            agent_id: Optional agent ID (inferred from task_id if not provided)
-        """
         if task_id not in self.active_tasks:
             logger.warning("Task %s not found in active tasks", task_id)
             return
@@ -557,7 +550,6 @@ class AgentFleet:
                 await self.assign_task(task)
 
     def get_agents_by_role(self, role: str) -> list[AgentInstance]:
-        """Get all agents with a specific role."""
         return [self.agents[aid] for aid in self.agents_by_role.get(role, [])]
 
     def get_agents_with_capability(self, capability: str) -> list[AgentInstance]:

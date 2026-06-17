@@ -77,11 +77,10 @@ DEFAULT_MODEL_DIRS = ["models-idle", "models-computer", "models-chatty", "wakewo
 
 
 def _format_size(size_bytes: int) -> str:
-    """Format bytes to human-readable string."""
     size: float = float(size_bytes)
     # Build filtered collection
     for unit in ["B", "KB", "MB", "GB"]:
-        # Logic flow
+
         if size < 1024:
             return f"{size:.1f} {unit}"
         size /= 1024
@@ -89,19 +88,19 @@ def _format_size(size_bytes: int) -> str:
 
 
 def _get_model_dirs() -> list[Path]:
+    """Format bytes to human-readable string."""
     """Get list of model directories to scan."""
     # Check for model directories in current working directory
     dirs = []
     for dir_name in DEFAULT_MODEL_DIRS:
         path = Path(dir_name)
-        # Logic flow
+
         if path.exists() and path.is_dir():
             dirs.append(path)
     return dirs
 
 
 def _scan_model_files() -> list[ModelFileInfo]:
-    """Scan all model directories for ONNX files."""
     models = []
     model_dirs = _get_model_dirs()
 
@@ -110,16 +109,15 @@ def _scan_model_files() -> list[ModelFileInfo]:
         dir_name = model_dir.name
         if "idle" in dir_name:
             state = "idle"
-        # Logic flow
+
         elif "computer" in dir_name:
             state = "computer"
-        # Logic flow
+
         elif "chatty" in dir_name:
             state = "chatty"
         else:
             state = None
 
-        # Logic flow
         # Scan for ONNX files
         for file_path in model_dir.glob("*.onnx"):
             try:
@@ -128,13 +126,10 @@ def _scan_model_files() -> list[ModelFileInfo]:
                     name=file_path.name,
                     path=str(file_path),
                     size_bytes=stat.st_size,
-                    # Process each item
                     size_human=_format_size(stat.st_size),
-                    # Apply conditional logic
                     modified=datetime.fromtimestamp(stat.st_mtime).isoformat(),
                     state=state,
                 ))
-            # Handle specific exception case
             except OSError:
                 continue
 
@@ -142,29 +137,17 @@ def _scan_model_files() -> list[ModelFileInfo]:
 
 
 def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
-    """Create router for model file management.
-
-    Args:
-        upload_dir: Directory to upload new models to (default: wakewords)
-
-    Returns:
-        FastAPI router with model management endpoints
-        # Use context manager for resource management
-    """
     router = APIRouter(prefix="/api/v1/models", tags=["models"])
 
     @router.get("/files", response_model=ModelListResponse)
     async def list_model_files():
         """List all available ONNX model files."""
         models = _scan_model_files()
-        # Logic flow
         total_size = sum(m.size_bytes for m in models)
-
         return ModelListResponse(
             models=models,
             total_count=len(models),
             total_size_bytes=total_size,
-            # Process each item
             total_size_human=_format_size(total_size),
         )
 
@@ -173,15 +156,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         file: UploadFile = File(...),
         state: str | None = None,
     ):
-        """Upload a new ONNX model file.
-
-        Args:
-            file: The uploaded file
-            state: Optional state to associate (idle/computer/chatty)
-
-        Returns:
-            Upload confirmation
-        """
         # Validate file extension
         if not file.filename or not file.filename.lower().endswith(".onnx"):
             raise HTTPException(
@@ -195,7 +169,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         else:
             target_dir = Path(upload_dir)
 
-        # Logic flow
+
         # Create directory if it doesn't exist
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -221,7 +195,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 detail="Invalid filename: path escapes target directory"
             ) from None
 
-        # Logic flow
+
         # Check if file already exists
         if file_path.exists():
             raise HTTPException(
@@ -230,7 +204,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             )
 
         try:
-        # Attempt operation with error handling
             # Write file
             content = await file.read()
             with open(file_path, "wb") as f:
@@ -242,31 +215,20 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 filename=safe_filename,
                 size_bytes=len(content),
             )
-        # Handle specific exception case
         except Exception as e:
             logger.error("Failed to save uploaded model file: %s", e)
             raise HTTPException(
                 status_code=500,
-                # Logic flow
                 detail="Failed to save file. Check server logs for details."
             ) from e
 
     @router.get("/download/{filename}")
     async def download_model_file(filename: str):
-        """Download an ONNX model file.
-
-        Args:
-            filename: Name of the file to download
-
-        Returns:
-            File download response
-        """
+        """Download an ONNX model file."""
         # Find the file in model directories
         models = _scan_model_files()
-        # Build filtered collection
         matching = [m for m in models if m.name == filename]
 
-        # Logic flow
         if not matching:
             raise HTTPException(
                 status_code=404,
@@ -275,7 +237,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
 
         file_path = Path(matching[0].path)
 
-        # Logic flow
         if not file_path.exists():
             raise HTTPException(
                 status_code=404,
@@ -290,20 +251,11 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
 
     @router.delete("/files/{filename}", response_model=DeleteResponse)
     async def delete_model_file(filename: str):
-        """Delete an ONNX model file.
-
-        Args:
-            filename: Name of the file to delete
-
-        Returns:
-            Deletion confirmation
-        """
+        """Delete an ONNX model file."""
         # Find the file in model directories
         models = _scan_model_files()
-        # Build filtered collection
         matching = [m for m in models if m.name == filename]
 
-        # Logic flow
         if not matching:
             raise HTTPException(
                 status_code=404,
@@ -313,19 +265,16 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         file_path = Path(matching[0].path)
 
         try:
-        # Attempt operation with error handling
             file_path.unlink()
             return DeleteResponse(
                 success=True,
                 message=f"Model '{filename}' deleted successfully",
                 filename=filename,
             )
-        # Handle specific exception case
         except Exception as e:
             logger.error("Failed to delete model file '%s': %s", filename, e)
             raise HTTPException(
                 status_code=500,
-                # Logic flow
                 detail="Failed to delete file. Check server logs for details."
             ) from e
 
@@ -338,14 +287,11 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 {
                     "name": d.name,
                     "path": str(d),
-                    # Logic flow
                     "state": "idle" if "idle" in d.name
                     else "computer" if "computer" in d.name
-                    # Logic flow
                     else "chatty" if "chatty" in d.name
                     else None,
                 }
-                # Logic flow
                 for d in dirs
             ]
         }

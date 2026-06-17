@@ -500,3 +500,251 @@ class TestIntelligenceCore:
                     except AttributeError:
                         # Method might not be implemented yet
                         pass
+
+
+class TestIntentDetection:
+    """Comprehensive tests for intent detection logic."""
+
+    @pytest.fixture
+    def core(self, mock_config):
+        """Create IntelligenceCore instance for intent testing."""
+        with patch(
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            with patch("chatty_commander.ai.intelligence_core.AdvisorsService"):
+                with patch("chatty_commander.ai.intelligence_core.StateManager"):
+                    return IntelligenceCore(mock_config)
+
+    def test_analyze_intent_mode_switch_exact_matches(self, core):
+        """Test mode switching intent detection with exact matches."""
+        test_cases = [
+            "switch to computer mode",
+            "change to chatty mode",
+            "go to idle",
+            "switch mode to computer",
+            "change to idle mode",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "mode_switch", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_mode_switch_variations(self, core):
+        """Test mode switching intent detection with various wordings."""
+        test_cases = [
+            "I want to switch mode",
+            "can you change the mode",
+            "go to computer",
+            "switch to chatty",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "mode_switch", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_screenshot_exact_matches(self, core):
+        """Test screenshot intent detection with exact matches."""
+        test_cases = [
+            "take a screenshot",
+            "capture screen",
+            "screenshot please",
+            "take screenshot",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "screenshot", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_screenshot_variations(self, core):
+        """Test screenshot intent detection with variations."""
+        test_cases = [
+            "capture the screen",
+            "take a picture of the screen",
+            "screen capture",
+            "screenshot current window",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "screenshot", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_lights_on(self, core):
+        """Test lights on intent detection."""
+        test_cases = [
+            "lights on",
+            "turn on lights",
+            "turn on the lights",
+            "turn the lights on",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "lights_on", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_lights_off(self, core):
+        """Test lights off intent detection."""
+        test_cases = [
+            "lights off",
+            "turn off lights",
+            "turn off the lights",
+            "turn the lights off",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "lights_off", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_questions(self, core):
+        """Test question intent detection."""
+        test_cases = [
+            "what time is it",
+            "how do I do this",
+            "why is the sky blue",
+            "when did that happen",
+            "where is my file",
+            "who are you",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "question", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_greetings(self, core):
+        """Test greeting intent detection."""
+        test_cases = [
+            "hello",
+            "hi there",
+            "hey",
+            "good morning",
+            "good afternoon",
+            "good evening",
+            "hi",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "greeting", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_task_request(self, core):
+        """Test task request intent detection."""
+        test_cases = [
+            "help me",
+            "can you assist",
+            "do this",
+            "create a file",
+            "make a copy",
+            "assist me with",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "task_request", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_conversation_default(self, core):
+        """Test that unmatched intents default to conversation."""
+        test_cases = [
+            "tell me a story",
+            "that's interesting",
+            "really",
+            "cool",
+            "thanks",
+            "okay",
+        ]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "conversation", f"Failed for: {text!r} -> {result!r}"
+
+    def test_analyze_intent_case_insensitive(self, core):
+        """Test case insensitive matching."""
+        test_cases = [
+            ("HELLO", "greeting"),
+            ("Take Screenshot", "screenshot"),
+            ("WHAT time is it", "question"),
+            ("Turn ON the LIGHTS", "lights_on"),
+        ]
+        for text, expected in test_cases:
+            result = core._analyze_intent(text)
+            assert result == expected, f"Failed for: {text!r} -> {result!r}, expected {expected!r}"
+
+    def test_analyze_intent_empty_string(self, core):
+        """Test empty string handling."""
+        result = core._analyze_intent("")
+        assert result == "conversation"
+
+    def test_analyze_intent_none(self, core):
+        """Test None input handling."""
+        result = core._analyze_intent(None)
+        assert result == "conversation"
+
+    def test_analyze_intent_whitespace_only(self, core):
+        """Test whitespace-only input handling."""
+        test_cases = ["  ", "   ", "\t", "\n", " \t\n "]
+        for text in test_cases:
+            result = core._analyze_intent(text)
+            assert result == "conversation"
+
+    def test_analyze_intent_special_characters(self, core):
+        """Test input with special characters."""
+        result = core._analyze_intent("hello!!! how are you???")
+        assert result == "greeting"
+
+
+class TestActionExtraction:
+    """Tests for action extraction from AI responses."""
+
+    @pytest.fixture
+    def core(self, mock_config):
+        """Create IntelligenceCore instance for action testing."""
+        with patch(
+            "chatty_commander.ai.intelligence_core.create_enhanced_voice_processor"
+        ):
+            with patch("chatty_commander.ai.intelligence_core.AdvisorsService"):
+                with patch("chatty_commander.ai.intelligence_core.StateManager"):
+                    return IntelligenceCore(mock_config)
+
+    def test_extract_actions_mode_switch(self, core):
+        """Test extraction of mode switch actions."""
+        response_text = "I will SWITCH_MODE:computer for you"
+        actions = core._extract_actions(response_text)
+        assert len(actions) >= 1
+        mode_switch_actions = [a for a in actions if a["type"] == "mode_switch"]
+        assert len(mode_switch_actions) >= 1
+        assert mode_switch_actions[0]["target_mode"] == "computer"
+
+    def test_extract_actions_mode_switch_multiple(self, core):
+        """Test extraction of multiple mode switch actions."""
+        response_text = "SWITCH_MODE:computer and then SWITCH_MODE:idle"
+        actions = core._extract_actions(response_text)
+        mode_switch_actions = [a for a in actions if a["type"] == "mode_switch"]
+        assert len(mode_switch_actions) >= 2
+
+    def test_extract_actions_screenshot(self, core):
+        """Test extraction of screenshot actions."""
+        response_text = "I will take a screenshot for you"
+        actions = core._extract_actions(response_text)
+        screenshot_actions = [a for a in actions if a["type"] == "screenshot"]
+        assert len(screenshot_actions) >= 1
+
+    def test_extract_actions_lights_on(self, core):
+        """Test extraction of lights on actions."""
+        response_text = "I will turn the lights on"
+        actions = core._extract_actions(response_text)
+        lights_actions = [a for a in actions if a["type"] in ["lights_on", "lights_off"]]
+        assert len(lights_actions) >= 1
+
+    def test_extract_actions_mode_switched(self, core):
+        """Test extraction of mode switched confirmation."""
+        response_text = "✓ Switched to computer mode"
+        actions = core._extract_actions(response_text)
+        mode_switched_actions = [a for a in actions if a["type"] == "mode_switched"]
+        assert len(mode_switched_actions) >= 1
+
+    def test_extract_actions_empty_response(self, core):
+        """Test extraction from empty response."""
+        actions = core._extract_actions("")
+        assert actions == []
+
+    def test_extract_actions_no_special_commands(self, core):
+        """Test extraction from response without special commands."""
+        response_text = "Hello, I'm here to help you."
+        actions = core._extract_actions(response_text)
+        # May extract actions based on text patterns
+        assert isinstance(actions, list)
+
+    def test_extract_actions_case_insensitive(self, core):
+        """Test case insensitive action extraction."""
+        response_text = "TAKE A SCREENSHOT"
+        actions = core._extract_actions(response_text)
+        screenshot_actions = [a for a in actions if a["type"] == "screenshot"]
+        assert len(screenshot_actions) >= 1

@@ -32,7 +32,6 @@ from chatty_commander.ai.agents.fleet import (
     AgentInstance,
 )
 from chatty_commander.ai.agents.launcher import (
-    FleetLauncher,
     LaunchConfig,
 )
 
@@ -40,6 +39,5 @@ __all__ = [
     "AgentFleet",
     "AgentFleetConfig",
     "AgentInstance",
-    "FleetLauncher",
     "LaunchConfig",
 ]

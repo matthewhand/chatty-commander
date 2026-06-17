@@ -64,14 +64,11 @@ class MemoryStore:
 
     def _load_from_disk(self) -> None:
         """Load memory from the persistence file."""
-        # Apply conditional logic
         if not os.path.exists(self._path):
             return
 
         try:
-        # Attempt operation with error handling
             with open(self._path, encoding="utf-8") as f:
-                # Process each item
                 for line in f:
                     try:
                         data = json.loads(line)
@@ -83,7 +80,6 @@ class MemoryStore:
                                 MemoryItem(
                                     role=data["role"],
                                     content=data["content"],
-                                    # Process each item
                                     timestamp=data.get("timestamp", datetime.utcnow().isoformat()),
                                 )
                             )
@@ -95,35 +91,23 @@ class MemoryStore:
             pass
 
     def _ctx(self, platform: str, channel: str, user: str) -> str:
-        # Build filtered collection
-        # Process each item
         return f"{platform}:{channel}:{user}"
 
     def add(
-        # Process each item
-        """Add with (self, platform: str, channel: str, user: str, role: str, content: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Process each item
         self, platform: str, channel: str, user: str, role: str, content: str
     ) -> None:
-        # Process each item
+        """Add memory item for context."""
         key = self._ctx(platform, channel, user)
         q = self._store.setdefault(key, deque(maxlen=self._max))
-        # Process each item
         ts = datetime.utcnow().isoformat()
         q.append(
             MemoryItem(
                 role=role, content=content, timestamp=ts
             )
         )
-        # Apply conditional logic
         if self._persist:
             try:
                 with open(self._path, "a", encoding="utf-8") as f:
-                # Use context manager for resource management
                     f.write(
                         json.dumps(
                             {
@@ -140,34 +124,19 @@ class MemoryStore:
                 pass
 
     def get(
-        # Process each item
-        """Get with (self, platform: str, channel: str, user: str, limit: int).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Process each item
         self, platform: str, channel: str, user: str, limit: int = 20
     ) -> list[MemoryItem]:
-        # Process each item
+        """Get recent memory items for context."""
         key = self._ctx(platform, channel, user)
         items = list(self._store.get(key, deque()))
-        # Apply conditional logic
         if limit <= 0:
             return []
         return items[-limit:]
 
     def clear(self, platform: str, channel: str, user: str) -> int:
-        # Process each item
-        """Clear with (self, platform: str, channel: str, user: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Process each item
+        """Clear memory for a context."""
         key = self._ctx(platform, channel, user)
         count = len(self._store.get(key, []))
-        # Apply conditional logic
         if key in self._store:
             del self._store[key]
         return count

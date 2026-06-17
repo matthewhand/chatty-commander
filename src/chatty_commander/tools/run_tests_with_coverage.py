@@ -44,9 +44,10 @@ logger = logging.getLogger(__name__)
 
 class TestRunner:
     """Comprehensive test runner with coverage reporting."""
+    __test__ = False  # prevent pytest collection (has __init__)
 
     def __init__(self, project_root: str | None = None) -> None:
-        # Logic flow
+
         self.project_root = Path(project_root) if project_root else Path.cwd()
         self.test_results: list[tuple[str, bool, str]] = []
 
@@ -57,9 +58,7 @@ class TestRunner:
         cwd: Path | None = None,
         timeout: int = 60,
     ) -> tuple[bool, str]:
-        """Run a command and return success status and output. Default timeout reduced to 60s to prevent stalls in CI."""
         try:
-        # Attempt operation with error handling
             logger.info(f"🔄 Running: {description}")
             logger.debug(f"Command: {' '.join(command)}")
 
@@ -74,7 +73,7 @@ class TestRunner:
             success = result.returncode == 0
             output = (result.stdout or "") + (result.stderr or "")
 
-            # Logic flow
+    
             if success:
                 logger.info(f"✅ {description} - PASSED")
             else:
@@ -94,30 +93,25 @@ class TestRunner:
             return False, str(e)
 
     def check_dependencies(self) -> bool:
-        # Logic flow
         """Check if required dependencies are installed."""
         logger.info("🔍 Checking dependencies...")
 
-        # Logic flow
         # Check if uv is available
         success, _ = self.run_command(["uv", "--version"], "UV package manager check")
         if not success:
             logger.error("❌ UV package manager not found. Please install uv first.")
             return False
 
-        # Logic flow
         # Check if pytest-cov is installed
         success, _ = self.run_command(
             ["uv", "run", "python", "-c", "import pytest_cov"],
             "pytest-cov availability",
         )
-        # Logic flow
         if not success:
             logger.warning("⚠️  pytest-cov not found. Installing...")
             install_success, _ = self.run_command(
                 ["uv", "add", "pytest-cov"], "Install pytest-cov"
             )
-            # Logic flow
             if not install_success:
                 logger.error("❌ Failed to install pytest-cov")
                 return False
@@ -142,7 +136,6 @@ class TestRunner:
 
         success, output = self.run_command(
             command, "Unit tests with coverage", timeout=120
-            # Use context manager for resource management
         )
         self.test_results.append(("Unit Tests", success, output))
         return success
@@ -155,7 +148,6 @@ class TestRunner:
         ]
 
         all_success = True
-        # Logic flow
         for test_file in integration_files:
             if (self.project_root / test_file).exists():
                 command = ["uv", "run", "pytest", test_file, "-v"]
@@ -168,10 +160,9 @@ class TestRunner:
         return all_success
 
     def start_web_server(self) -> subprocess.Popen | None:
-        # Logic flow
-        """Start the web server for testing."""
+
         try:
-            # Logic flow
+    
             logger.info("🚀 Starting web server for testing...")
             process = subprocess.Popen(
                 ["uv", "run", "python", "main.py", "--web", "--no-auth"],
@@ -181,11 +172,11 @@ class TestRunner:
                 text=True,
             )
 
-            # Logic flow
+    
             # Wait briefly for server to start, but don't stall too long
             time.sleep(1.5)
 
-            # Logic flow
+    
             if process.poll() is None:  # Process is still running
                 logger.info("✅ Web server started successfully")
                 return process
@@ -208,8 +199,6 @@ class TestRunner:
             return False
 
         try:
-        # Attempt operation with error handling
-            # Run web mode tests
             # Run web mode tests using pytest on the correct file path in repo tests/
             command = ["uv", "run", "pytest", "tests/test_web_mode.py", "-q"]
             success, output = self.run_command(
@@ -224,21 +213,19 @@ class TestRunner:
                 logger.info("🛑 Stopping web server...")
                 server_process.terminate()
                 try:
-                # Attempt operation with error handling
                     server_process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     server_process.kill()
                     server_process.wait()
 
     def run_linting(self) -> bool:
-        """Run code quality checks."""
-        # Logic flow
+
         # Check if flake8 is available
         try:
             command = ["uv", "run", "python", "-c", "import flake8"]
             success, _ = self.run_command(command, "Check flake8 availability")
 
-            # Logic flow
+    
             if success:
                 # Run flake8 linting
                 command = [
@@ -258,13 +245,12 @@ class TestRunner:
 
         except Exception as e:
             logger.warning(f"⚠️  Linting check failed: {e}")
-            # Logic flow
+    
             return True  # Don't fail the entire test suite for linting
 
     def generate_coverage_report(self) -> None:
         """Generate and display coverage summary."""
         coverage_file = self.project_root / "htmlcov" / "index.html"
-        # Logic flow
         if coverage_file.exists():
             logger.info(f"📊 Coverage report generated: {coverage_file}")
             logger.info("   Open the HTML file in a browser to view detailed coverage")
@@ -273,10 +259,8 @@ class TestRunner:
         try:
             command = ["uv", "run", "coverage", "report", "--show-missing"]
             success, output = self.run_command(command, "Coverage summary", timeout=30)
-            # Logic flow
             if success:
                 logger.info("📈 Coverage Summary:")
-                # Logic flow
                 for line in output.split("\n")[-10:]:  # Last 10 lines
                     if line.strip():
                         logger.info(f"   {line}")
@@ -284,7 +268,6 @@ class TestRunner:
             logger.info("ℹ️  Coverage summary not available")
 
     def print_final_summary(self) -> bool:
-        """Print final test summary and return overall success."""
         logger.info("\n" + "=" * 60)
         logger.info("📊 COMPREHENSIVE TEST SUMMARY")
         logger.info("=" * 60)
@@ -292,17 +275,17 @@ class TestRunner:
         passed = 0
         total = len(self.test_results)
 
-        # Logic flow
+
         for test_name, success, _ in self.test_results:
             status = "✅ PASS" if success else "❌ FAIL"
             logger.info(f"   {test_name:<25} {status}")
-            # Logic flow
+    
             if success:
                 passed += 1
 
         logger.info(f"\n🎯 Overall Result: {passed}/{total} test suites passed")
 
-        # Logic flow
+
         if passed == total:
             logger.info("🎉 ALL TESTS PASSED! The application is ready for production.")
             return True
@@ -335,12 +318,6 @@ class TestRunner:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Main execution function with fast path for test environments.
-
-    If pytest is monkeypatched (tests insert MagicMock in sys.modules) or if
-    CC_FAST=1 is set, run a fast path that directly invokes pytest.main and
-    returns its exit code. Otherwise run the comprehensive suite.
-    """
     # Detect pytest monkeypatch
     pytest_mod = sys.modules.get("pytest")
     fast_env = (pytest_mod is not None and hasattr(pytest_mod, "main")) or (
@@ -350,12 +327,11 @@ def main(argv: list[str] | None = None) -> int:
     # Extract any additional test paths passed to our CLI module (used by tests)
     extra_paths = []
     if argv:
-        # Logic flow
+
         extra_paths = [arg for arg in argv if not arg.startswith("-")]
 
     if fast_env:
         try:
-        # Attempt operation with error handling
             import importlib
 
             pytest = importlib.import_module("pytest")
@@ -365,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
                 "--cov-report=term-missing",
                 "-q",
             ]
-            # Logic flow
+    
             if extra_paths:
                 args = list(extra_paths) + base_args
             else:
@@ -373,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
             code = int(pytest.main(args))
             return code
         except SystemExit as e:
-            # Logic flow
+    
             return int(e.code) if isinstance(e.code, int) else 1
         except Exception as e:  # noqa: BLE001
             logger.error(f"Fast pytest path failed: {e}")

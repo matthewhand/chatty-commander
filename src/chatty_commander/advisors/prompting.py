@@ -42,13 +42,12 @@ DEFAULT_PERSONAS: dict[str, str] = {
 
 
 def resolve_persona(
+    name: str | None, personas_cfg: dict[str, str] | None = None
+) -> Persona:
     """Resolve Persona with (name, personas_cfg).
 
     TODO: Add detailed description and parameters.
     """
-    
-    name: str | None, personas_cfg: dict[str, str] | None = None
-) -> Persona:
     personas_cfg = personas_cfg or {}
     name = name or "default"
     if name == "default":
@@ -62,10 +61,6 @@ def resolve_persona(
 
 
 def build_prompt(persona: Persona, user_text: str) -> str:
-    """Create a deterministic prompt envelope; stubbed for tests.
-
-    Real implementation would format for a given provider model.
-    """
     return f"[system:{persona.name}] {persona.system}\n[user] {user_text}"
 
 

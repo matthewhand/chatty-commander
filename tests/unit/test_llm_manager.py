@@ -143,3 +143,107 @@ class TestLLMManagerEdgeCases:
         manager = LLMManager(use_mock=True)
         response = manager.generate_response("Hello", temperature=0.5, max_tokens=50)
         assert isinstance(response, str)
+
+
+class TestLLMManagerMoreCoverage:
+    """Additional tests to improve coverage for LLMManager (addressing qa 'no tests found' for llm/manager.py)."""
+
+    def test_switch_backend_success(self):
+        """Test successful switch to mock backend."""
+        manager = LLMManager(use_mock=True)
+        assert manager.switch_backend("mock") is True
+        assert manager.get_active_backend_name() == "mock"
+
+    def test_switch_backend_invalid(self):
+        """Test switch to non-existent backend fails gracefully."""
+        manager = LLMManager(use_mock=True)
+        assert manager.switch_backend("nonexistent") is False
+
+    def test_get_backend_info_active(self):
+        """Test get_backend_info for active backend."""
+        manager = LLMManager(use_mock=True)
+        info = manager.get_backend_info()
+        assert isinstance(info, dict)
+
+    def test_refresh_backends(self):
+        """Test refresh_backends resets and reselects."""
+        manager = LLMManager(use_mock=True)
+        manager.refresh_backends()
+        assert manager.is_available() is True
+
+    def test_test_backend_method(self):
+        """Test the test_backend method."""
+        manager = LLMManager(use_mock=True)
+        result = manager.test_backend("mock", "test prompt")
+        assert "success" in result or "error" in result
+
+    def test_generate_response_no_backend_raises(self):
+        """Test generate raises if no backend."""
+        manager = LLMManager(use_mock=True)
+        manager.active_backend = None
+        with pytest.raises(RuntimeError):
+            manager.generate_response("hi")
+
+    def test_get_all_backends_info_structure(self):
+        """Test get_all_backends_info returns dict including active key."""
+        manager = LLMManager(use_mock=True)
+        info = manager.get_all_backends_info()
+        assert isinstance(info, dict)
+        assert "active" in info
+        assert "mock" in info
+
+    def test_switch_backend_to_mock(self):
+        """Test switch_backend to a valid available backend."""
+        manager = LLMManager(use_mock=True)
+        ok = manager.switch_backend("mock")
+        assert ok is True
+        assert manager.get_active_backend_name() == "mock"
+
+    def test_test_backend_returns_dict_for_mock(self):
+        """Test test_backend returns result dict for mock."""
+        manager = LLMManager(use_mock=True)
+        res = manager.test_backend("mock", "ping")
+        assert isinstance(res, dict)
+        assert "success" in res or "error" in res or "response" in res
+
+    def test_is_available_true_for_mock(self):
+        """Test is_available returns True when backend selected."""
+        manager = LLMManager(use_mock=True)
+        assert manager.is_available() is True
+
+    def test_backends_dict_contains_mock(self):
+        """Test that backends always includes the mock backend after init."""
+        manager = LLMManager(use_mock=True)
+        assert "mock" in manager.backends
+        assert manager.backends["mock"] is not None
+
+    def test_generate_response_with_mock_always_succeeds(self):
+        """Test basic generate_response succeeds under mock (no real LLM needed)."""
+        manager = LLMManager(use_mock=True)
+        response = manager.generate_response("unit test prompt")
+        assert isinstance(response, str)
+        assert len(response) > 0
+
+    def test_switch_to_invalid_backend_returns_false(self):
+        """Switch to bad name returns False."""
+        manager = LLMManager(use_mock=True)
+        assert manager.switch_backend("invalid") is False
+
+    def test_get_backend_info_nonexistent_returns_error(self):
+        """get_backend_info for bad name has error."""
+        manager = LLMManager(use_mock=True)
+        info = manager.get_backend_info("nonexistent")
+        assert "error" in info
+
+    def test_test_backend_returns_dict(self):
+        """test_backend returns dict with success or error."""
+        manager = LLMManager(use_mock=True)
+        res = manager.test_backend("mock", "ping")
+        assert isinstance(res, dict)
+        assert "success" in res or "error" in res or "response" in res
+
+    def test_refresh_backends_keeps_available(self):
+        """refresh_backends keeps manager available."""
+        manager = LLMManager(use_mock=True)
+        manager.refresh_backends()
+        assert manager.is_available() is True

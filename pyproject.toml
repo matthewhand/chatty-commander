@@ -279,6 +279,7 @@ markers = [
     "optimization: marks tests as optimization tests",
     "ml: marks tests as machine learning tests",
     "performance: marks tests as performance tests",
+    "perf: marks tests as performance tests (short alias)",
     "security: marks tests as security tests",
 ]
 norecursedirs = [

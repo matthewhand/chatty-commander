@@ -198,6 +198,8 @@ class TestHandleLlmStatus:
         assert "Dependencies" in captured.out or "LLM Manager" in captured.out
 
 
+
+
 class TestHandleLlmTest:
     """Tests for _handle_llm_test function."""
 
@@ -245,3 +247,171 @@ class TestEdgeCases:
         args = Namespace(text=long_text, mock=True)
         # Should handle long text
         _handle_llm_process(args)
+
+
+class TestLLMCommandDispatch:
+    """Additional tests for handle_llm_command dispatch and handlers (to address qa 'no tests found' for llm/cli.py)."""
+
+    def test_handle_llm_command_no_llm_command_prints_guidance(self, capsys):
+        """Missing llm_command prints guidance."""
+        args = Namespace(llm_command=None)
+        handle_llm_command(args)
+        captured = capsys.readouterr()
+        assert "No LLM command specified" in captured.out
+
+    def test_handle_llm_command_status_dispatches(self):
+        """status dispatches to _handle_llm_status."""
+        args = Namespace(llm_command="status")
+        with patch("src.chatty_commander.llm.cli._handle_llm_status") as mock_h:
+            handle_llm_command(args)
+            mock_h.assert_called_once_with(args)
+
+    def test_handle_llm_command_test_dispatches(self):
+        """test dispatches to _handle_llm_test."""
+        args = Namespace(llm_command="test", backend=None, prompt="hi", mock=True)
+        with patch("src.chatty_commander.llm.cli._handle_llm_test") as mock_h:
+            handle_llm_command(args)
+            mock_h.assert_called_once_with(args)
+
+    def test_handle_llm_command_process_dispatches(self):
+        """process dispatches to _handle_llm_process."""
+        args = Namespace(llm_command="process", text="do something", mock=True)
+        with patch("src.chatty_commander.llm.cli._handle_llm_process") as mock_h:
+            handle_llm_command(args, config_manager=None)
+            mock_h.assert_called_once_with(args, None)
+
+    def test_handle_llm_command_backends_dispatches(self):
+        """backends dispatches to _handle_llm_backends."""
+        args = Namespace(llm_command="backends")
+        with patch("src.chatty_commander.llm.cli._handle_llm_backends") as mock_h:
+            handle_llm_command(args)
+            mock_h.assert_called_once_with(args)
+
+    def test_handle_llm_command_unknown_prints(self, capsys):
+        """unknown command prints message."""
+        args = Namespace(llm_command="foo")
+        handle_llm_command(args)
+        captured = capsys.readouterr()
+        assert "Unknown LLM command" in captured.out
+
+    def test_handle_llm_status_prints_status(self, capsys):
+        """_handle_llm_status prints status header and backend info."""
+        args = Namespace()
+        with patch("src.chatty_commander.llm.cli.LLMManager") as mock_mgr:
+            inst = Mock()
+            inst.get_active_backend_name.return_value = "mock"
+            inst.is_available.return_value = True
+            inst.get_all_backends_info.return_value = {"mock": {"available": True}, "active": "mock"}
+            mock_mgr.return_value = inst
+            from src.chatty_commander.llm.cli import _handle_llm_status
+            _handle_llm_status(args)
+            out = capsys.readouterr().out
+            assert "LLM System Status" in out
+            assert "mock" in out.lower() or "Available" in out
+
+    def test_handle_llm_test_specific_backend(self, capsys):
+        """_handle_llm_test with backend arg calls test_backend."""
+        args = Namespace(backend="mock", prompt="hi", mock=True)
+        with patch("src.chatty_commander.llm.cli.LLMManager") as mock_mgr:
+            inst = Mock()
+            inst.test_backend.return_value = {"success": True, "response": "hi", "response_time": 0.1}
+            inst.get_backend_info.return_value = {"name": "mock"}
+            mock_mgr.return_value = inst
+            from src.chatty_commander.llm.cli import _handle_llm_test
+            _handle_llm_test(args)
+            out = capsys.readouterr().out
+            assert "Testing backend" in out or "Success" in out
+
+    def test_handle_llm_process_runs(self, capsys):
+        """_handle_llm_process runs with mock and prints result."""
+        args = Namespace(text="hello", mock=True)
+        with patch("src.chatty_commander.llm.cli.LLMManager") as mock_mgr, \
+             patch("src.chatty_commander.llm.cli.CommandProcessor") as mock_proc:
+            proc = Mock()
+            proc.get_processor_status.return_value = {"available_commands": ["hi"]}
+            proc.process_command.return_value = ("hi", 0.9, "matched")
+            proc.explain_command.return_value = {"description": "say hi"}
+            mock_proc.return_value = proc
+            inst = Mock()
+            mock_mgr.return_value = inst
+            from src.chatty_commander.llm.cli import _handle_llm_process
+            _handle_llm_process(args)
+            out = capsys.readouterr().out
+            assert "Processing command" in out
+            assert "Matched command" in out or "hi" in out
+
+    def test_handle_llm_backends_prints(self, capsys):
+        """_handle_llm_backends prints backends info."""
+        args = Namespace()
+        with patch("src.chatty_commander.llm.cli.LLMManager") as mock_mgr:
+            inst = Mock()
+            inst.get_all_backends_info.return_value = {"mock": {"available": True}}
+            mock_mgr.return_value = inst
+            from src.chatty_commander.llm.cli import _handle_llm_backends
+            _handle_llm_backends(args)
+            out = capsys.readouterr().out
+            assert "Backends" in out or "mock" in out.lower() or "Available" in out
+
+    def test_handle_llm_test_error_path(self, capsys):
+        """_handle_llm_test handles exception and prints failed."""
+        args = Namespace(backend=None, prompt="hi", mock=True)
+        with patch("src.chatty_commander.llm.cli.LLMManager", side_effect=Exception("boom")):
+            from src.chatty_commander.llm.cli import _handle_llm_test
+            _handle_llm_test(args)
+            out = capsys.readouterr().out
+            assert "LLM test failed" in out or "boom" in out
+
+    def test_add_llm_subcommands_process_args(self):
+        """Process subcommand parses text and mock flag."""
+        from argparse import ArgumentParser
+        parser = ArgumentParser()
+        subparsers = parser.add_subparsers(dest="llm_command")
+        add_llm_subcommands(subparsers)
+        args = parser.parse_args(["llm", "process", "do it", "--mock"])
+        assert args.llm_command == "process"
+        assert args.text == "do it"
+        assert args.mock is True
+
+    def test_handle_llm_process_no_match(self, capsys):
+        """Process with no match prints no command."""
+        args = Namespace(text="unknown foo", mock=True)
+        with patch("src.chatty_commander.llm.cli.LLMManager") as mock_mgr, \
+             patch("src.chatty_commander.llm.cli.CommandProcessor") as mock_proc:
+            proc = Mock()
+            proc.get_processor_status.return_value = {"available_commands": []}
+            proc.process_command.return_value = (None, 0.0, "no match")
+            mock_proc.return_value = proc
+            mock_mgr.return_value = Mock()
+            from src.chatty_commander.llm.cli import _handle_llm_process
+            _handle_llm_process(args)
+            out = capsys.readouterr().out
+            assert "No command matched" in out or "no match" in out.lower()
+
+    def test_handle_llm_status_env_var_display(self, capsys):
+        """Status prints masked env for keys."""
+        args = Namespace()
+        with patch("src.chatty_commander.llm.cli.LLMManager") as mock_mgr, \
+             patch("os.getenv") as mock_getenv:
+            inst = Mock()
+            inst.get_active_backend_name.return_value = "mock"
+            inst.is_available.return_value = True
+            inst.get_all_backends_info.return_value = {"mock": {"available": True}}
+            mock_mgr.return_value = inst
+            mock_getenv.side_effect = lambda v: "sk-12345678" if "KEY" in v else None
+            from src.chatty_commander.llm.cli import _handle_llm_status
+            _handle_llm_status(args)
+            out = capsys.readouterr().out
+            assert "OPENAI_API_KEY: sk-1..." in out or "Not set" in out
+
+    def test_handle_llm_test_with_specific_backend_calls_test(self, capsys):
+        """Test with backend calls test_backend and prints."""
+        args = Namespace(backend="mock", prompt="test", mock=True)
+        with patch("src.chatty_commander.llm.cli.LLMManager") as mock_mgr:
+            inst = Mock()
+            inst.test_backend.return_value = {"success": True, "response": "ok", "response_time": 0.01}
+            inst.get_backend_info.return_value = {"name": "mock"}
+            mock_mgr.return_value = inst
+            from src.chatty_commander.llm.cli import _handle_llm_test
+            _handle_llm_test(args)
+            out = capsys.readouterr().out
+            assert "Testing backend" in out or "Success" in out

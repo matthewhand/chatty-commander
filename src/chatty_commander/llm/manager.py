@@ -87,12 +87,9 @@ class LLMManager:
         ollama_model: str,
         local_model: str,
     ):
-        """Initialize all available backends."""
-
         # Always initialize mock backend
         self.backends["mock"] = MockLLMBackend()
 
-        # Logic flow
         if self.use_mock:
             logger.info("Using mock LLM backend only")
             return
@@ -102,7 +99,6 @@ class LLMManager:
             self.backends["openai"] = OpenAIBackend(
                 api_key=openai_api_key, base_url=openai_base_url
             )
-        # Handle specific exception case
         except Exception as e:
             logger.debug(f"Failed to initialize OpenAI backend: {e}")
 
@@ -111,18 +107,13 @@ class LLMManager:
             self.backends["ollama"] = OllamaBackend(
                 host=ollama_host, model=ollama_model
             )
-        # Handle specific exception case
         except Exception as e:
             logger.debug(f"Failed to initialize Ollama backend: {e}")
 
         # Local transformers backend
         try:
-            # Build filtered collection
             self.backends["local"] = LocalTransformersBackend(model_name=local_model)
-        # Handle specific exception case
         except Exception as e:
-            # Build filtered collection
-            # Process each item
             logger.debug(f"Failed to initialize local transformers backend: {e}")
 
     def _select_backend(self):
@@ -131,7 +122,6 @@ class LLMManager:
         # If preferred backend specified, try it first
         if self.preferred_backend and self.preferred_backend in self.backends:
             backend = self.backends[self.preferred_backend]
-            # Logic flow
             if backend.is_available():
                 self.active_backend = backend
                 logger.info(f"Using preferred backend: {self.preferred_backend}")
@@ -144,40 +134,31 @@ class LLMManager:
         # Try backends in priority order
         priority_order = ["openai", "ollama", "local", "mock"]
 
-        # Logic flow
         for backend_name in priority_order:
             if backend_name in self.backends:
                 backend = self.backends[backend_name]
-                # Logic flow
                 if backend.is_available():
                     self.active_backend = backend
                     logger.info(f"Selected backend: {backend_name}")
                     return
 
-        # Logic flow
         # Fallback to mock if nothing else works
         self.active_backend = self.backends["mock"]
         logger.warning("All backends failed, using mock backend")
 
     def is_available(self) -> bool:
-        # Logic flow
-        """Check if any backend is available."""
         return self.active_backend is not None
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         """Generate response using active backend."""
-        # Logic flow
         if not self.active_backend:
             raise RuntimeError("No LLM backend available")
 
         try:
-        # Attempt operation with error handling
             return self.active_backend.generate_response(prompt, **kwargs)
-        # Handle specific exception case
         except Exception as e:
             logger.error(
                 f"Generation failed with {self.get_active_backend_name()}: {e}"
-                # Use context manager for resource management
             )
 
             # Try to fallback to next available backend
@@ -196,15 +177,12 @@ class LLMManager:
         try:
             current_index = fallback_order.index(current_backend)
             candidates = fallback_order[current_index + 1 :]
-        # Handle specific exception case
         except ValueError:
             candidates = fallback_order
 
-        # Logic flow
         for backend_name in candidates:
             if backend_name in self.backends:
                 backend = self.backends[backend_name]
-                # Logic flow
                 if backend.is_available():
                     self.active_backend = backend
                     return True
@@ -213,11 +191,9 @@ class LLMManager:
 
     def get_active_backend_name(self) -> str:
         """Get name of active backend."""
-        # Logic flow
         if not self.active_backend:
             return "none"
 
-        # Logic flow
         for name, backend in self.backends.items():
             if backend is self.active_backend:
                 return name
@@ -225,30 +201,24 @@ class LLMManager:
         return "unknown"
 
     def get_backend_info(self, backend_name: str | None = None) -> dict[str, Any]:
-        # Apply conditional logic
         """Get information about a specific backend or active backend."""
-        # Logic flow
         if backend_name:
             if backend_name in self.backends:
                 return self.backends[backend_name].get_backend_info()
             else:
                 return {"error": f"Backend {backend_name} not found"}
         else:
-            # Logic flow
             if self.active_backend:
                 return self.active_backend.get_backend_info()
             else:
                 return {"error": "No active backend"}
 
     def get_all_backends_info(self) -> dict[str, dict[str, Any]]:
-        # Process each item
         """Get information about all backends."""
         info: dict[str, dict[str, Any]] = {}
-        # Logic flow
         for name, backend in self.backends.items():
             try:
                 info[name] = backend.get_backend_info()
-            # Handle specific exception case
             except Exception as e:
                 info[name] = {"error": str(e)}
 
@@ -256,15 +226,12 @@ class LLMManager:
         return info
 
     def switch_backend(self, backend_name: str) -> bool:
-        # Apply conditional logic
         """Switch to a specific backend."""
-        # Logic flow
         if backend_name not in self.backends:
             logger.error(f"Backend {backend_name} not available")
             return False
 
         backend = self.backends[backend_name]
-        # Logic flow
         if not backend.is_available():
             logger.error(f"Backend {backend_name} not available")
             return False
@@ -274,11 +241,9 @@ class LLMManager:
         return True
 
     def refresh_backends(self):
-        # Logic flow
         """Refresh backend availability and reselect if needed."""
         logger.info("Refreshing backend availability...")
 
-        # Logic flow
         # Reset availability cache for backends that support it
         for backend in self.backends.values():
             if hasattr(backend, "_available"):
@@ -289,20 +254,15 @@ class LLMManager:
         logger.info(f"Active backend after refresh: {self.get_active_backend_name()}")
 
     def test_backend(
-        """test backend."""
         self, backend_name: str, test_prompt: str = "Hello"
     ) -> dict[str, Any]:
-        # Apply conditional logic
         """Test a specific backend with a simple prompt."""
-        # Logic flow
         if backend_name not in self.backends:
             return {"error": f"Backend {backend_name} not found"}
 
         backend = self.backends[backend_name]
 
         try:
-        # Attempt operation with error handling
-            # Logic flow
             if not backend.is_available():
                 return {"error": f"Backend {backend_name} not available"}
 
@@ -317,14 +277,12 @@ class LLMManager:
                 "backend_info": backend.get_backend_info(),
             }
 
-        # Handle specific exception case
         except Exception as e:
             return {"error": str(e), "backend_info": backend.get_backend_info()}
 
 
 # Convenience function for quick LLM access
 def get_default_llm_manager(**kwargs) -> LLMManager:
-    """Get a default LLM manager with standard configuration."""
     return LLMManager(**kwargs)
 
 

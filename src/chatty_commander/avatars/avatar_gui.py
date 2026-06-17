@@ -50,7 +50,6 @@ from pathlib import Path
 
 try:
     import webview
-# Handle specific exception case
 except Exception:  # pragma: no cover
     webview = None  # type: ignore[assignment]
 
@@ -91,13 +90,11 @@ def run_avatar_gui(debug: bool = True) -> int | None:
         )
         webview.start(debug=debug, gui=None, http_server=False)
         return 0
-    # Handle specific exception case
     except Exception as e:
         print(
             f"WARNING: Transparent/frameless not supported or failed ({e}); retrying without it..."
         )
         try:
-        # Attempt operation with error handling
             webview.create_window(
                 title="Chatty Commander Avatar",
                 url=url,
@@ -109,7 +106,6 @@ def run_avatar_gui(debug: bool = True) -> int | None:
             )
             webview.start(debug=debug, gui=None, http_server=False)
             return 0
-        # Handle specific exception case
         except Exception as e2:
             print(f"ERROR: Failed to open avatar window: {e2}")
             return 2

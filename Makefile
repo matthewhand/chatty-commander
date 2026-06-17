@@ -70,7 +70,9 @@ migrate:
 
 # Security audit
 audit:
-	uv run pip-audit || echo "pip-audit not installed, run: uv add pip-audit"
+	uv run --group security pip-audit || echo "pip-audit not installed, run: uv run --group security pip-audit"
+	uv run --group security bandit -r src/chatty_commander/ -f txt --severity-level medium || true
+	uv run --group security safety check --json || true
 
 # Dependency updates
 update-deps:

@@ -33,7 +33,6 @@ from chatty_commander.utils.url_validator import is_safe_url
 try:
     import httpx
     HTTPX_AVAILABLE = True
-# Handle specific exception case
 except ImportError:
     HTTPX_AVAILABLE = False
 
@@ -62,7 +61,6 @@ class AnalystResult:
     url: str
 
 
-     # TODO: HIGH - Refactor summarize_url (complexity > 10)
 def summarize_url(request: AnalystRequest) -> AnalystResult:
     """Fetch, extract, and summarize content with allowlists and timeouts."""
     if not HTTPX_AVAILABLE:
@@ -91,7 +89,6 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
         with httpx.stream("GET", request.url, timeout=timeout, follow_redirects=False) as response:
-        # Use context manager for resource management
             response.raise_for_status()
             content_pieces = []
             size = 0
@@ -99,7 +96,6 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
             for chunk in response.iter_bytes(chunk_size=8192):
                 content_pieces.append(chunk)
                 size += len(chunk)
-                # Logic flow
                 if size > MAX_SIZE:
                     break
             # ⚡ Bolt: Decode exactly once here
@@ -108,7 +104,6 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
             )
 
         title_match = re.search(r'<title[^>]*>(.*?)</title>', text, re.IGNORECASE | re.DOTALL)
-        # Logic flow
         title = title_match.group(1).strip() if title_match else "No Title"
 
         # Prevent ReDoS by avoiding .*? within tags
@@ -121,7 +116,6 @@ def summarize_url(request: AnalystRequest) -> AnalystResult:
         summary = body_text[:500]
 
         return AnalystResult(title=title, summary=summary, url=request.url)
-    # Handle specific exception case
     except Exception as e:
         logger.error(f"Error fetching URL {request.url}: {e}")
         return AnalystResult(title="Error", summary=f"Failed to fetch: {e}", url=request.url)

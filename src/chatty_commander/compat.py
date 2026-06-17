@@ -60,7 +60,6 @@ ALIASES: dict[str, str] = {
 
 
 def load(name: str) -> ModuleType:
-    """Import and return the module for ``name`` honouring the alias table."""
     target = ALIASES.get(name, name)
     if target != name:
         warnings.warn(
@@ -72,13 +71,12 @@ def load(name: str) -> ModuleType:
 
 
 def expose(namespace: dict[str, Any], name: str) -> ModuleType:
+    """Import and return the module for ``name`` honouring the alias table."""
     """Populate ``namespace`` with the public symbols from the target module."""
     module = load(name)
     public: Iterable[str]
     public = getattr(module, "__all__", None) or [
-        # Apply conditional logic
         attr for attr in dir(module) if not attr.startswith("_")
-        # TODO: Document this logic
     ]
     for attr in public:
         namespace[attr] = getattr(module, attr)

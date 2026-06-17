@@ -62,7 +62,7 @@ try:
     from agents import Agent  # type: ignore
 
     AGENTS_AVAILABLE = True
-# Handle specific exception case
+
 except Exception:  # pragma: no cover - import guard
     Agent = None  # type: ignore
     AGENTS_AVAILABLE = False
@@ -74,7 +74,7 @@ logger = logging.getLogger(__name__)
 def _filter_kwargs_for_callable(fn: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
     try:
         signature = inspect.signature(fn)
-    # Handle specific exception case
+
     except (TypeError, ValueError):
         return kwargs
     if any(
@@ -124,22 +124,21 @@ class LLMProvider(ABC):
 
     @abstractmethod
     def generate(self, prompt: str, **kwargs) -> str:
-        """Generate a response from the LLM."""
         pass
 
     @abstractmethod
     def generate_stream(self, prompt: str, **kwargs) -> str:
+        """Generate a response from the LLM."""
         """Generate a streaming response from the LLM."""
         pass
 
     def health_check(self) -> bool:
         # Validate preconditions
-        """Check if the provider is healthy and accessible."""
         try:
             # Simple test generation
             test_response = self.generate("Test")
             return bool(test_response and len(test_response) > 0)
-        # Handle specific exception case
+
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             return False
@@ -150,7 +149,7 @@ class CompletionProvider(LLMProvider):
 
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
-        # Apply conditional logic
+
         if not AGENTS_AVAILABLE:
             raise ImportError(
                 "openai-agents SDK not available. Install with: pip install openai-agents"
@@ -160,7 +159,6 @@ class CompletionProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
-        # Logic flow
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
@@ -168,14 +166,13 @@ class CompletionProvider(LLMProvider):
                     browser_analyst_tool_instance,
                 )
 
-                # Apply conditional logic
+        
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
-            # Handle specific exception case
+    
             except ImportError:
                 pass
 
-        # Logic flow
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []
@@ -193,23 +190,18 @@ class CompletionProvider(LLMProvider):
                 "instructions", "You are a helpful AI assistant."
             ),
         }
-        # Process each item
         filtered_kwargs = _filter_kwargs_for_callable(Agent.__init__, agent_kwargs)
         self.agent = Agent(**filtered_kwargs)
 
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate completion response via Agent.chat()."""
-        # Iterate with index
         for attempt in range(self.max_retries):
             try:
-                # Logic flow
                 # Agent.chat returns a string (implementation dependent). Keep kwargs for future expansion.
                 response = self.agent.chat(prompt)  # type: ignore[attr-defined]
                 return str(response).strip() if response is not None else ""
-            # Handle specific exception case
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
-                # Apply conditional logic
                 if attempt == self.max_retries - 1:
                     raise
                 time.sleep(2**attempt)  # Exponential backoff
@@ -222,11 +214,9 @@ class CompletionProvider(LLMProvider):
         If streaming isn't supported by the agent, fall back to a single chat call.
         """
         try:
-        # Attempt operation with error handling
             # Minimal behavior: return full text. Streaming can be added when Agent supports it in-tree.
             response = self.agent.chat(prompt)  # type: ignore[attr-defined]
             return str(response).strip() if response is not None else ""
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Streaming generation failed: {e}")
             return "Error: Failed to generate streaming response"
@@ -237,7 +227,7 @@ class ResponsesProvider(LLMProvider):
 
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
-        # Apply conditional logic
+
         if not AGENTS_AVAILABLE:
             raise ImportError(
                 "openai-agents SDK not available. Install with: pip install openai-agents"
@@ -247,7 +237,6 @@ class ResponsesProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
-        # Logic flow
         # Add browser analyst tool if enabled
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
@@ -255,14 +244,13 @@ class ResponsesProvider(LLMProvider):
                     browser_analyst_tool_instance,
                 )
 
-                # Apply conditional logic
+        
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
-            # Handle specific exception case
+    
             except ImportError:
                 pass
 
-        # Logic flow
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []
@@ -282,22 +270,17 @@ class ResponsesProvider(LLMProvider):
                 # Use context manager for resource management
             ),
         }
-        # Process each item
         filtered_kwargs = _filter_kwargs_for_callable(Agent.__init__, agent_kwargs)
         self.agent = Agent(**filtered_kwargs)
 
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate response using Agent.chat()."""
-        # Iterate with index
         for attempt in range(self.max_retries):
             try:
                 response = self.agent.chat(prompt)  # type: ignore[attr-defined]
-                # Validate input exists
                 return str(response).strip() if response is not None else ""
-            # Handle specific exception case
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
-                # Apply conditional logic
                 if attempt == self.max_retries - 1:
                     raise
                 time.sleep(2**attempt)  # Exponential backoff
@@ -307,11 +290,8 @@ class ResponsesProvider(LLMProvider):
     def generate_stream(self, prompt: str, **kwargs) -> str:
         """Generate streaming response using Agent.chat() as a fallback."""
         try:
-        # Attempt operation with error handling
             response = self.agent.chat(prompt)  # type: ignore[attr-defined]
-            # Validate input exists
             return str(response).strip() if response is not None else ""
-        # Handle specific exception case
         except Exception as e:
             logger.error(f"Streaming generation failed: {e}")
             return "Error: Failed to generate streaming response"
@@ -336,29 +316,28 @@ class FallbackProvider(LLMProvider):
             self.providers.append(self._create_provider(fallback_config))
 
     def _create_provider(self, config: dict[str, Any]) -> LLMProvider:
-        """Create provider based on API mode."""
         api_mode = config.get("llm_api_mode", config.get("api_mode", "completion"))
 
-        # Apply conditional logic
+
         if api_mode == "completion":
             return CompletionProvider(config)
-        # Apply conditional logic
+
         elif api_mode == "responses":
             return ResponsesProvider(config)
         else:
             raise ValueError(f"Unknown API mode: {api_mode}")
 
     def generate(self, prompt: str, **kwargs) -> str:
+        """Create provider based on API mode."""
         """Try providers in sequence until one succeeds."""
-        # Process each item
         for i, provider in enumerate(self.providers):
             try:
                 logger.info(f"Trying provider {i + 1}/{len(self.providers)}")
                 return provider.generate(prompt, **kwargs)
-            # Handle specific exception case
+    
             except Exception as e:
                 logger.warning(f"Provider {i + 1} failed: {e}")
-                # Apply conditional logic
+        
                 if i == len(self.providers) - 1:
                     # Last provider failed
                     return f"Error: All providers failed. Last error: {e}"
@@ -366,10 +345,8 @@ class FallbackProvider(LLMProvider):
         return "Error: No providers available"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        # Process each item
-        """Try providers in sequence for streaming."""
-        # Process each item
         for i, provider in enumerate(self.providers):
+            """Try providers in sequence for streaming."""
             try:
                 logger.info(
                     # Build filtered collection
@@ -377,40 +354,33 @@ class FallbackProvider(LLMProvider):
                     f"Trying provider {i + 1}/{len(self.providers)} for streaming"
                 )
                 return provider.generate_stream(prompt, **kwargs)
-            # Handle specific exception case
+    
             except Exception as e:
                 # Build filtered collection
-                # Process each item
                 logger.warning(f"Provider {i + 1} failed for streaming: {e}")
-                # Apply conditional logic
+        
                 if i == len(self.providers) - 1:
                     # Build filtered collection
-                    # Process each item
                     return f"Error: All providers failed for streaming. Last error: {e}"
 
-        # Process each item
         return "Error: No providers available for streaming"
 
     def health_check(self) -> bool:
-        # Validate preconditions
         """Check if any provider is healthy."""
-        # Process each item
         for provider in self.providers:
-            # Validate preconditions
             if provider.health_check():
                 return True
         return False
 
 
 def build_provider(config: dict[str, Any]) -> LLMProvider:
-    """
-    Build the appropriate LLM provider based on configuration.
+    """Build the appropriate LLM provider based on configuration.
 
     Args:
-        config: Provider configuration dictionary
+    config: Provider configuration dictionary
 
     Returns:
-        Configured LLM provider instance
+    Configured LLM provider instance
     """
     api_mode = config.get("llm_api_mode", config.get("api_mode", "completion"))
 
@@ -432,45 +402,24 @@ class StubCompletionProvider(LLMProvider):
     """Stub provider for testing."""
 
     def generate(self, prompt: str, **kwargs) -> str:
-        """Generate with (self, prompt: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        """Generate Stream with (self, prompt: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        return f"advisor:{self.model}/{self.api_mode} {prompt}"
+        return self.generate(prompt, **kwargs)
 
 
 class StubResponsesProvider(LLMProvider):
     """Stub provider for testing."""
 
     def generate(self, prompt: str, **kwargs) -> str:
-        """Generate with (self, prompt: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        """Generate Stream with (self, prompt: str).
-
-        TODO: Add detailed description and parameters.
-        """
-        
-        return f"advisor:{self.model}/{self.api_mode} {prompt}"
+        return self.generate(prompt, **kwargs)
 
 
 def build_provider_safe(config: dict[str, Any]) -> LLMProvider:
-    """
-    Build provider with fallback to stubs if openai-agents SDK is not available or no API key is provided.
+    """Build provider with fallback to stubs if openai-agents SDK is not available or no API key is provided.
 
     Args:
         config: Provider configuration dictionary
@@ -485,7 +434,6 @@ def build_provider_safe(config: dict[str, Any]) -> LLMProvider:
     # Check if API key is available
     if "api_key" in config:
         api_key = config.get("api_key")
-    # Build filtered collection
     elif "provider" in config and "api_key" in config.get("provider", {}):
         api_key = config.get("provider", {}).get("api_key")
     else:
@@ -496,7 +444,6 @@ def build_provider_safe(config: dict[str, Any]) -> LLMProvider:
 
     try:
         return build_provider(config)
-    # Handle specific exception case
     except Exception as exc:
         logger.warning("Provider initialization failed, using stub: %s", exc)
         return _build_stub_provider(config)

@@ -42,7 +42,7 @@ import threading
 import time
 import tracemalloc
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from unittest.mock import MagicMock, Mock, patch, side_effect
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 

@@ -132,6 +132,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Frontend test envs (no secrets but reduce noise; .env* already broadly ignored)
+webui/frontend/.env*
+webui/frontend/.env.*
+
 # Spyder project settings
 .spyderproject
 .spyproject

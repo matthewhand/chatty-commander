@@ -48,35 +48,20 @@ def _propagate_patches() -> None:
         # Apply conditional logic
         "generate_default_config_if_needed",
     ):
-        # Logic flow
         if name in globals():
-        # TODO: Document this logic
             setattr(_cli, name, globals()[name])
 
 
 def create_parser(*args: Any, **kwargs: Any) -> Any:  # pragma: no cover - thin shim
-    """Create operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
     return _cli.create_parser(*args, **kwargs)
 
 
-def run_orchestrator_mode(
-    """Run Orchestrator Mode operation.
-
-    TODO: Add detailed description and parameters.
-    """
-    
-    *args: Any, **kwargs: Any
-) -> Any:  # pragma: no cover - thin shim
+def run_orchestrator_mode(*args: Any, **kwargs: Any) -> Any:  # pragma: no cover - thin shim
     _propagate_patches()
     return _cli.run_orchestrator_mode(*args, **kwargs)
 
 
 def main(*args: Any, **kwargs: Any) -> Any:
-    """Entry point preserving legacy patch points before delegating to CLI main."""
     _propagate_patches()
     return _cli.cli_main(*args, **kwargs)
 
@@ -96,3 +81,5 @@ __all__ = [
 if __name__ == "__main__":
     import sys
     sys.exit(main())
+
+    """Entry point preserving legacy patch points before delegating to CLI main."""

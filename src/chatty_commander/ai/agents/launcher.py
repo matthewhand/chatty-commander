@@ -78,14 +78,6 @@ class LaunchConfig:
 
 
 def create_fleet_from_config(config: LaunchConfig) -> tuple[AgentFleet, list[AgentInstance]]:
-    """Create and launch an agent fleet from configuration.
-
-    Args:
-        config: Launch configuration
-
-    Returns:
-        Tuple of (fleet, launched_agents)
-    """
     fleet_config = AgentFleetConfig(
         default_model=config.default_model,
         default_temperature=config.default_temperature,
@@ -117,6 +109,14 @@ def launch_preset_fleet(
     count: int = 3,
     **kwargs: Any,
 ) -> tuple[AgentFleet, list[AgentInstance]]:
+    """Create and launch an agent fleet from configuration.
+
+    Args:
+    config: Launch configuration
+
+    Returns:
+    Tuple of (fleet, launched_agents)
+    """
     """Launch a preset fleet configuration.
 
     Args:
@@ -165,17 +165,6 @@ async def launch_fleet_async(
     from_blueprints: bool = False,
     blueprint_ids: list[str] | None = None,
 ) -> tuple[AgentFleet, list[AgentInstance]]:
-    """Launch a fleet of agents asynchronously.
-
-    Args:
-        config: Explicit launch configuration, or None
-        preset: Preset fleet name, or None
-        from_blueprints: Whether to load from stored blueprints
-        blueprint_ids: Specific blueprint IDs to launch, or None for all
-
-    Returns:
-        Tuple of (fleet, launched_agents)
-    """
     if config and preset:
         raise ValueError("Cannot specify both config and preset")
 
@@ -228,18 +217,6 @@ def launch_fleet(
     blueprint_ids: list[str] | None = None,
     blocking: bool = True,
 ) -> tuple[AgentFleet, list[AgentInstance]]:
-    """Launch a fleet of agents synchronously.
-
-    Args:
-        config: Explicit launch configuration, or None
-        preset: Preset fleet name, or None
-        from_blueprints: Whether to load from stored blueprints
-        blueprint_ids: Specific blueprint IDs to launch, or None for all
-        blocking: Whether to block until fleet is stopped
-
-    Returns:
-        Tuple of (fleet, launched_agents)
-    """
     async def _main():
         return await launch_fleet_async(
             config=config,
@@ -263,7 +240,6 @@ def launch_fleet(
 # CLI Interface
 
 def create_cli_parser() -> argparse.ArgumentParser:
-    """Create the CLI argument parser for fleet operations."""
     parser = argparse.ArgumentParser(
         description="ChattyCommander Agent Fleet Manager - Launch and manage AI agent fleets"
     )
@@ -388,7 +364,6 @@ def run_cli() -> int:
     try:
         if args.command == "launch":
             config = LaunchConfig(
-                preset=args.preset,
                 count=args.count,
                 model=args.model,
                 temperature=args.temperature,
