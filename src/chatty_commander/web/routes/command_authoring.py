@@ -50,18 +50,34 @@ class CommandAction(BaseModel):
     )
     keys: str | None = Field(
         default=None,
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         description="Keyboard shortcut for keypress actions (e.g., 'ctrl+alt+t')",
     )
     url: str | None = Field(
         default=None,
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         description="URL for url actions",
     )
     cmd: str | None = Field(
         default=None,
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         description="Shell command for shell actions",
     )
     message: str | None = Field(
         default=None,
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         description="Message text for custom_message actions",
     )
 
@@ -82,6 +98,10 @@ class GeneratedCommandResponse(BaseModel):
 
     name: str = Field(
         ...,
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         description="Snake_case command identifier",
     )
     display_name: str = Field(
@@ -90,6 +110,10 @@ class GeneratedCommandResponse(BaseModel):
     )
     wakeword: str = Field(
         ...,
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         description="Voice trigger phrase for the command",
     )
     actions: list[CommandAction] = Field(
@@ -114,6 +138,10 @@ Output ONLY valid JSON in this format:
   "display_name": "Human Readable Name",
   "wakeword": "voice trigger phrase",
   "actions": [
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     {{"type": "action_type", ...action_specific_fields}}
   ]
 }}
@@ -125,6 +153,7 @@ Output ONLY valid JSON in this format:
 
 
 def _sanitize_user_input(description: str) -> str:
+<<<<<<< HEAD
     """Sanitize user input to prevent prompt injection attacks.
 
     Removes or escapes potentially harmful characters and patterns that
@@ -136,6 +165,8 @@ def _sanitize_user_input(description: str) -> str:
     Returns:
         Sanitized input safe for embedding in prompts
     """
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     # Remove null bytes
     cleaned = description.replace('\x00', '')
 
@@ -154,6 +185,18 @@ def _sanitize_user_input(description: str) -> str:
 
 
 def _build_prompt(description: str) -> str:
+    """Sanitize user input to prevent prompt injection attacks.
+
+    Removes or escapes potentially harmful characters and patterns that
+    could be used to manipulate the LLM's behavior.
+
+    Args:
+    description: Raw user input
+
+    Returns:
+
+    Sanitized input safe for embedding in prompts
+    """
     """Build a safe prompt with sanitized user input.
 
     Uses JSON encoding for the user description to prevent prompt injection.
@@ -163,6 +206,10 @@ def _build_prompt(description: str) -> str:
         description: Raw user description
 
     Returns:
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         Safe prompt string ready for LLM generation
     """
     sanitized = _sanitize_user_input(description)
@@ -170,7 +217,6 @@ def _build_prompt(description: str) -> str:
 
 
 def _get_llm_manager() -> LLMManager | None:
-    """Get or create LLM manager instance."""
     if LLMManager is None:
         return None
     try:
@@ -181,6 +227,7 @@ def _get_llm_manager() -> LLMManager | None:
 
 
 def _parse_llm_response(response: str) -> dict[str, Any]:
+    """Get or create LLM manager instance."""
     """Parse and validate LLM response as JSON."""
     # Try to extract JSON from response (handle markdown code blocks)
     cleaned = response.strip()
@@ -204,7 +251,6 @@ def _parse_llm_response(response: str) -> dict[str, Any]:
 
 
 def _validate_command_data(data: dict[str, Any]) -> GeneratedCommandResponse:
-    """Validate parsed command data against response model."""
     required_fields = {"name", "display_name", "wakeword", "actions"}
     missing = required_fields - set(data.keys())
     if missing:
@@ -216,19 +262,37 @@ def _validate_command_data(data: dict[str, Any]) -> GeneratedCommandResponse:
         raise ValueError("'actions' must be a list")
 
     for i, action in enumerate(actions):
+<<<<<<< HEAD
         if not isinstance(action, dict):
             raise ValueError(f"Action {i} must be an object")
         action_type = action.get("type")
+=======
+
+        if not isinstance(action, dict):
+            raise ValueError(f"Action {i} must be an object")
+        action_type = action.get("type")
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if action_type not in {"keypress", "url", "shell", "custom_message"}:
             raise ValueError(f"Invalid action type '{action_type}' at index {i}")
 
         # Validate action-specific fields
         if action_type == "keypress" and not action.get("keys"):
             raise ValueError(f"keypress action at index {i} requires 'keys' field")
+<<<<<<< HEAD
         if action_type == "url" and not action.get("url"):
             raise ValueError(f"url action at index {i} requires 'url' field")
         if action_type == "shell" and not action.get("cmd"):
             raise ValueError(f"shell action at index {i} requires 'cmd' field")
+=======
+
+        if action_type == "url" and not action.get("url"):
+            raise ValueError(f"url action at index {i} requires 'url' field")
+
+        if action_type == "shell" and not action.get("cmd"):
+            raise ValueError(f"shell action at index {i} requires 'cmd' field")
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if action_type == "custom_message" and not action.get("message"):
             raise ValueError(
                 f"custom_message action at index {i} requires 'message' field"
@@ -260,6 +324,7 @@ def _validate_command_data(data: dict[str, Any]) -> GeneratedCommandResponse:
     },
 )
 async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandResponse:
+<<<<<<< HEAD
     """Generate a command configuration from natural language description.
 
     Uses LLM to parse the description and generate a structured command
@@ -274,6 +339,8 @@ async def generate_command(request: GenerateCommandRequest) -> GeneratedCommandR
     Raises:
         HTTPException: 503 if LLM unavailable, 422 if response parsing fails
     """
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     # Check LLM availability
     llm = _get_llm_manager()
     if llm is None or not llm.is_available():

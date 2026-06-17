@@ -76,12 +76,6 @@ def _load_settings(config: Any) -> dict[str, Any]:
 
 
 def _icon_image() -> Image.Image | None:
-    """
-    Try to load a tray icon image.
-
-    - Prefer icon.png if present (since PIL cannot rasterize SVG without extra deps).
-    - If only icon.svg exists, skip and allow default OS tray icon.
-    """
     try:
         from PIL import Image  # type: ignore
     except Exception:
@@ -144,6 +138,7 @@ def _open_window(settings: dict[str, Any], logger) -> None:
 
 
 def run_tray_popup(config: Any, logger) -> int:
+<<<<<<< HEAD
     """
     Start a system tray icon that can open a popup browser window showing
     config.gui.popup.url.
@@ -151,17 +146,25 @@ def run_tray_popup(config: Any, logger) -> int:
     Returns:
         int: 0 on normal exit, 2 if dependencies are missing.
     """
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     if pystray is None:
         logger.error("pystray is not installed; cannot create system tray icon")
         return 2
 
     icon_img = _icon_image()
 
+<<<<<<< HEAD
     # Track the single webview worker thread so we can avoid spawning a second
     # window while one is open and join it on shutdown instead of leaking it.
     window_thread: dict[str, threading.Thread | None] = {"t": None}
 
     def on_open(_icon, _item):
+=======
+    def on_open(_icon, _item):
+        """On Open handler."""
+        _icon.stop()
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # open window on a background thread to avoid blocking the tray loop
         existing = window_thread["t"]
         if existing is not None and existing.is_alive():
@@ -175,6 +178,10 @@ def run_tray_popup(config: Any, logger) -> int:
         t.start()
 
     def on_quit(_icon, _item):
+<<<<<<< HEAD
+=======
+        """On Quit handler."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         _icon.stop()
         # Best-effort graceful shutdown of the webview worker thread.
         t = window_thread["t"]

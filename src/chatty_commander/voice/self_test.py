@@ -84,7 +84,6 @@ class VoiceSelfTester:
             self._initialize_tts()
 
     def _initialize_tts(self):
-        """Initialize text-to-speech engine."""
         try:
             self._tts_engine = pyttsx3.init()
             # Configure for clear speech
@@ -108,7 +107,10 @@ class VoiceSelfTester:
             self._tts_engine = None
 
     def _get_default_test_phrases(self) -> list[str]:
+<<<<<<< HEAD
         """Get default test phrases for voice recognition testing."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return [
             # Basic commands
             "hello world",
@@ -145,13 +147,24 @@ class VoiceSelfTester:
 
         tmp_path: str | None = None
         try:
+<<<<<<< HEAD
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
                 tmp_path = tmp_file.name
+=======
+            # Attempt operation with error handling
+            
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 self._tts_engine.save_to_file(text, tmp_file.name)
                 self._tts_engine.runAndWait()
 
                 # Read the generated audio file
                 with open(tmp_file.name, "rb") as f:
+<<<<<<< HEAD
+=======
+                
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                     audio_data = f.read()
 
                 return audio_data
@@ -168,7 +181,10 @@ class VoiceSelfTester:
                     pass
 
     def test_transcription_accuracy(self, text: str) -> tuple[str, float]:
+<<<<<<< HEAD
         """Test transcription accuracy for a given text."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Generate audio from text
         audio_data = self.generate_audio_from_text(text)
         if not audio_data:
@@ -205,7 +221,10 @@ class VoiceSelfTester:
     def llm_judge_transcription(
         self, original: str, transcribed: str
     ) -> dict[str, Any]:
+<<<<<<< HEAD
         """Use LLM to judge transcription quality and provide feedback."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not self.openai_client:
             return {
                 "score": self._calculate_accuracy(original, transcribed),
@@ -254,6 +273,7 @@ class VoiceSelfTester:
             }
 
     def run_comprehensive_test(self) -> dict[str, Any]:
+        """Use LLM to judge transcription quality and provide feedback."""
         """Run comprehensive self-test and return detailed results."""
         results: dict[str, Any] = {
             "timestamp": time.time(),
@@ -269,6 +289,11 @@ class VoiceSelfTester:
 
         logger.info(
             f"Starting comprehensive voice self-test with {len(self.test_phrases)} phrases"
+<<<<<<< HEAD
+=======
+            # Use context manager for resource management
+            
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         )
 
         category_scores: dict[str, list[float]] = {}
@@ -308,6 +333,10 @@ class VoiceSelfTester:
 
         # Calculate summary statistics
         all_scores = [r["llm_score"] for r in results["individual_results"]]
+<<<<<<< HEAD
+=======
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         results["summary"]["average_accuracy"] = (
             sum(all_scores) / len(all_scores) if all_scores else 0.0
         )
@@ -342,7 +371,10 @@ class VoiceSelfTester:
         return results
 
     def _categorize_phrase(self, phrase: str) -> str:
+<<<<<<< HEAD
         """Categorize phrase for analysis."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         phrase_lower = phrase.lower()
 
         if any(
@@ -365,7 +397,6 @@ class VoiceSelfTester:
             return "complex"
 
     def suggest_improvements(self, test_results: dict[str, Any]) -> list[str]:
-        """Analyze test results and suggest specific improvements."""
         suggestions = []
 
         summary = test_results.get("summary", {})
@@ -391,11 +422,16 @@ class VoiceSelfTester:
         # Extract LLM suggestions
         llm_suggestions = summary.get("improvement_suggestions", [])
         for item in llm_suggestions[:3]:  # Top 3 most frequent
+<<<<<<< HEAD
+=======
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             suggestions.append(f"Frequent issue: {item['suggestion']}")
 
         return suggestions
 
     def auto_tune_parameters(self, test_results: dict[str, Any]) -> dict[str, Any]:
+        """Analyze test results and suggest specific improvements."""
         """Automatically suggest parameter adjustments based on test results."""
         tuning_recommendations = {
             "transcription_backend": "current",
@@ -409,6 +445,10 @@ class VoiceSelfTester:
 
         # Suggest backend changes
         if avg_accuracy < 0.8:
+<<<<<<< HEAD
+=======
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             tuning_recommendations["transcription_backend"] = (
                 "whisper_api"  # Higher quality
             )
@@ -446,8 +486,6 @@ def create_self_improvement_loop(
     openai_api_key: str | None = None,
     iterations: int = 5,
 ) -> dict[str, Any]:
-    """Create a self-improvement loop for the voice system."""
-
     tester = VoiceSelfTester(transcriber, openai_api_key)
     improvement_history = []
 
@@ -497,8 +535,6 @@ def create_self_improvement_loop(
 
 # CLI integration for self-testing
 def add_self_test_commands(subparsers):
-    """Add self-test commands to CLI."""
-
     test_parser = subparsers.add_parser(
         "self-test",
         help="Run voice system self-tests and improvements",
@@ -533,9 +569,69 @@ def add_self_test_commands(subparsers):
     )
 
 
+<<<<<<< HEAD
 def handle_self_test_command(args):
     """Handle self-test CLI commands."""
+=======
+def _handle_self_test_run(args):
+    """Handle 'run' subcommand for self-test (extracted from handle_self_test_command to reduce complexity)."""
+    print("🧪 Running voice self-test...")
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
+    tester = VoiceSelfTester(
+        openai_api_key=getattr(args, "openai_key", None),
+        test_phrases=getattr(args, "phrases", None),
+    )
+
+    results = tester.run_comprehensive_test()
+
+    print("📊 Test Results:")
+    print(f"   Average accuracy: {results['summary']['average_accuracy']:.2%}")
+    print(f"   Best category: {results['summary']['best_category']}")
+    print(f"   Worst category: {results['summary']['worst_category']}")
+
+    suggestions = tester.suggest_improvements(results)
+    if suggestions:
+        print("\n💡 Improvement suggestions:")
+        for suggestion in suggestions[:5]:  # Top 5
+            print(f"   • {suggestion}")
+
+
+def _handle_self_test_improve(args):
+    """Handle 'improve' subcommand (extracted from handle_self_test_command)."""
+    print("🔄 Running self-improvement loop...")
+
+    transcriber = VoiceTranscriber(backend="whisper_local")
+
+    results = create_self_improvement_loop(
+        transcriber=transcriber,
+        openai_api_key=getattr(args, "openai_key", None),
+        iterations=getattr(args, "iterations", 3),
+    )
+
+    print("📈 Improvement Results:")
+    print(f"   Final accuracy: {results['final_accuracy']:.2%}")
+    print(f"   Accuracy trend: {[f'{a:.1%}' for a in results['accuracy_trend']]}")
+
+def _handle_self_test_benchmark(args):
+    """Handle 'benchmark' subcommand (extracted from handle_self_test_command)."""
+    print("📏 Running comprehensive benchmark...")
+
+    tester = VoiceSelfTester(openai_api_key=getattr(args, "openai_key", None))
+    results = tester.run_comprehensive_test()
+
+    if hasattr(args, "save_results") and args.save_results:
+        with open(args.save_results, "w") as f:
+            json.dump(results, f, indent=2)
+        print(f"💾 Detailed results saved to {args.save_results}")
+
+    print(
+        f"🏆 Benchmark complete: {results['summary']['average_accuracy']:.2%} accuracy"
+    )
+
+
+def handle_self_test_command(args):
+    """Add self-test commands to CLI."""
     if not hasattr(args, "test_command") or not args.test_command:
         print("No self-test command specified. Use --help for available commands.")
         return
@@ -546,6 +642,7 @@ def handle_self_test_command(args):
         return
 
     if args.test_command == "run":
+<<<<<<< HEAD
         print("🧪 Running voice self-test...")
 
         tester = VoiceSelfTester(
@@ -581,12 +678,18 @@ def handle_self_test_command(args):
         print(f"   Final accuracy: {results['final_accuracy']:.2%}")
         print(f"   Accuracy trend: {[f'{a:.1%}' for a in results['accuracy_trend']]}")
 
+=======
+        _handle_self_test_run(args)
+    elif args.test_command == "improve":
+        _handle_self_test_improve(args)
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     elif args.test_command == "benchmark":
-        print("📏 Running comprehensive benchmark...")
+        _handle_self_test_benchmark(args)
+    else:
+        print(f"Unknown self-test command: {args.test_command}")
 
-        tester = VoiceSelfTester(openai_api_key=getattr(args, "openai_key", None))
-        results = tester.run_comprehensive_test()
 
+<<<<<<< HEAD
         if hasattr(args, "save_results") and args.save_results:
             with open(args.save_results, "w") as f:
                 json.dump(results, f, indent=2)
@@ -595,3 +698,5 @@ def handle_self_test_command(args):
         print(
             f"🏆 Benchmark complete: {results['summary']['average_accuracy']:.2%} accuracy"
         )
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16

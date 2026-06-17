@@ -28,6 +28,11 @@ from typing import Any
 
 @dataclass
 class RecurringPrompt:
+<<<<<<< HEAD
+=======
+    """Recurring prompt configuration for scheduled advisor tasks."""
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     id: str
     name: str
     description: str
@@ -67,6 +72,10 @@ class RecurringPrompt:
         )
 
     def render_prompt(self, runtime_vars: dict[str, Any] | None = None) -> str:
+<<<<<<< HEAD
+=======
+        """Render the prompt with runtime variables substituted."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         merged = dict(self.variables)
         if runtime_vars:
             merged.update(runtime_vars)

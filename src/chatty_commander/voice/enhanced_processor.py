@@ -96,7 +96,6 @@ class EnhancedVoiceProcessor:
         self._initialize_components()
 
     def _initialize_components(self):
-        """Initialize voice processing components."""
         try:
             # Initialize noise reduction
             if self.config.noise_reduction_enabled:
@@ -131,7 +130,6 @@ class EnhancedVoiceProcessor:
             self.logger.info("Basic noise reduction enabled")
 
     def _initialize_vad(self):
-        """Initialize voice activity detection."""
         try:
             # Try to use webrtcvad if available
             import webrtcvad
@@ -173,7 +171,6 @@ class EnhancedVoiceProcessor:
                 self.logger.warning("No transcription engine available")
 
     def _initialize_wake_word_detection(self):
-        """Initialize wake word detection."""
         try:
             # Try to use porcupine for wake word detection
             import importlib.util
@@ -197,7 +194,6 @@ class EnhancedVoiceProcessor:
         return signal.filtfilt(b, a, audio_data)  # type: ignore[no-any-return]
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
-        """Energy-based voice activity detection."""
         audio_data = np.frombuffer(audio_chunk, dtype=np.int16)
         audio_float = audio_data.astype(np.float32)
         energy = np.dot(audio_float, audio_float) / len(audio_data)
@@ -219,7 +215,6 @@ class EnhancedVoiceProcessor:
         return detected
 
     def _transcribe_audio(self, audio_data: np.ndarray) -> VoiceResult:
-        """Transcribe audio data to text."""
         start_time = datetime.now()
 
         try:
@@ -277,12 +272,59 @@ class EnhancedVoiceProcessor:
                 text="", confidence=0.0, duration=0.0, timestamp=start_time
             )
 
+    def _apply_noise_reduction(self, audio_data: np.ndarray) -> np.ndarray:
+        """Small helper extracted to reduce complexity of _process_audio_chunk."""
+        if self.noise_reducer and self.config.noise_reduction_enabled:
+            if callable(self.noise_reducer):
+                return self.noise_reducer(audio_data)
+            else:
+                return self.noise_reducer.reduce_noise(y=audio_data, sr=self.config.sample_rate)
+        return audio_data
+
+    def _detect_speech(self, audio_chunk: bytes) -> bool:
+        """Small helper extracted to reduce complexity of _process_audio_chunk."""
+        if self.vad_enabled:
+            if callable(self.vad):
+                return self.vad(audio_chunk)
+            else:
+                return self.vad.is_speech(audio_chunk, self.config.sample_rate)
+        return True  # assume speech if no VAD
+
+    def _handle_speech_events(self, speech_detected: bool) -> bool:
+        """Small helper extracted to reduce complexity of _process_audio_chunk.
+        Returns True if should transcribe now (silence timeout reached).
+        """
+        if speech_detected:
+            self.silence_counter = 0
+            if not self.speech_detected:
+                self.speech_detected = True
+                if self.on_speech_start:
+                    self.on_speech_start()
+            return False
+        else:
+            self.silence_counter += 1
+            timeout_samples = (
+                self.config.silence_timeout * self.config.sample_rate / self.config.chunk_size
+            )
+            if self.silence_counter > timeout_samples:
+                if self.speech_detected:
+                    self.speech_detected = False
+                    if self.on_speech_end:
+                        self.on_speech_end()
+                    return True
+            return False
+
     def _process_audio_chunk(self, audio_chunk: bytes) -> VoiceResult | None:
         """Process a single audio chunk."""
         try:
+<<<<<<< HEAD
             # Convert to numpy array
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             audio_data = np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32)
+            audio_data = self._apply_noise_reduction(audio_data)
 
+<<<<<<< HEAD
             # Apply noise reduction
             if self.noise_reducer and self.config.noise_reduction_enabled:
                 if callable(self.noise_reducer):
@@ -324,6 +366,13 @@ class EnhancedVoiceProcessor:
 
                             # Transcribe accumulated audio
                             return self._transcribe_audio(audio_data)
+=======
+            speech_detected = self._detect_speech(audio_chunk)
+            should_transcribe = self._handle_speech_events(speech_detected)
+
+            if should_transcribe:
+                return self._transcribe_audio(audio_data)
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
             return None
 
@@ -332,7 +381,10 @@ class EnhancedVoiceProcessor:
             return None
 
     def start_listening(self):
+<<<<<<< HEAD
         """Start listening for voice input."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self.is_listening:
             return
 
@@ -400,7 +452,6 @@ class EnhancedVoiceProcessor:
             self.logger.error(f"Audio processing loop error: {e}")
 
     def process_audio_file(self, file_path: str) -> VoiceResult:
-        """Process an audio file and return transcription."""
         try:
             # Load audio file
             import librosa
@@ -425,7 +476,6 @@ class EnhancedVoiceProcessor:
 
 
 def create_enhanced_voice_processor(config: dict[str, Any]) -> EnhancedVoiceProcessor:
-    """Factory function to create an enhanced voice processor."""
     voice_config = VoiceProcessingConfig(
         sample_rate=config.get("sample_rate", 16000),
         chunk_size=config.get("chunk_size", 1024),
@@ -439,3 +489,5 @@ def create_enhanced_voice_processor(config: dict[str, Any]) -> EnhancedVoiceProc
     )
 
     return EnhancedVoiceProcessor(voice_config)
+
+    """Factory function to create an enhanced voice processor."""

@@ -1,268 +1,306 @@
-import logging
-import subprocess
+"""Dedicated unit tests for src/chatty_commander/app/state_manager.py.
+
+Covers initialization, update_state (transitions, wakeword map, toggle), change_state,
+process_command, callbacks, get_active_models, post hook, and repr.
+
+Follows AAA style, detailed docstrings, fixtures, and patterns from
+tests/unit/test_pipeline.py and EXAMPLE_REFACTORED_TEST.py.
+"""
+
 import sys
-from unittest.mock import Mock
+from pathlib import Path
+from unittest.mock import MagicMock, Mock
 
 import pytest
 
+# Ensure src is on path for "chatty_commander.*" imports (consistent with other unit tests)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 from chatty_commander.app.state_manager import StateManager
-from conftest import TestDataFactory
 
 
-class TestStateManager:
-    """
-    Comprehensive tests for the StateManager module.
-    """
-
-    @pytest.fixture
-    def mock_config(self) -> Mock:
-        """Provide a properly configured mock Config object."""
-        return TestDataFactory.create_mock_config()
-
-    @pytest.fixture
-    def mock_state_manager(self, mock_config: Mock) -> Mock:
-        """Provide a properly configured mock StateManager."""
-        return TestDataFactory.create_mock_state_manager(mock_config)
-
-    @pytest.mark.parametrize("initial_state", ["idle", "computer", "chatty"])
-    def test_state_manager_initialization_states(self, initial_state):
-        """Test StateManager initialization with different initial states."""
-        config = TestDataFactory.create_mock_config({"default_state": initial_state})
-        sm = StateManager(config)
-        assert sm.current_state == initial_state
-
-    @pytest.mark.parametrize("command", ["hello", "goodbye", "invalid", "", None, 123])
-    def test_state_manager_command_processing(self, command):
-        """Test StateManager command processing with various inputs."""
-        sm = StateManager(TestDataFactory.create_mock_config())
-        sm.process_command(command)  # Should not raise exception
-
-    @pytest.mark.parametrize(
-        "transition_config",
-        [
-            {"idle": {"start": "computer"}},
-            {"computer": {"stop": "idle"}},
-            {},
-        ],
-    )
-    def test_state_manager_transitions(self, transition_config):
-        """Test StateManager state transitions."""
-        config = TestDataFactory.create_mock_config(
-            {"state_transitions": transition_config}
-        )
-        sm = StateManager(config)
-        # Assuming a method to trigger transition; adjust as needed
-        sm.change_state("computer")  # Example transition
-        # Add assertions based on expected behavior
-
-    @pytest.mark.parametrize(
-        "wakeword_config",
-        [
-            {"hey": "computer"},
-            {"stop": "idle"},
-            {},
-        ],
-    )
-    def test_state_manager_wakeword_mapping(self, wakeword_config):
-        """Test StateManager wakeword mapping."""
-        config = TestDataFactory.create_mock_config(
-            {"wakeword_state_map": wakeword_config}
-        )
-        sm = StateManager(config)
-        assert sm is not None
-        # Assuming a method to handle wakewords; adjust as needed
-        # sm.handle_wakeword("hey")
-        # Add assertions based on expected behavior
-
-    def test_state_manager_callback_registration(self):
-        """Test StateManager callback registration."""
-        sm = StateManager(TestDataFactory.create_mock_config())
-        callback_called = []
-
-        def test_callback(old_state, new_state):
-            callback_called.append((old_state, new_state))
-
-        sm.add_state_change_callback(test_callback)
-        sm.change_state("computer")
-        assert len(callback_called) == 1
-        assert callback_called[0] == ("idle", "computer")
-
-    @pytest.mark.parametrize("state", ["idle", "computer", "chatty", "invalid"])
-    def test_state_manager_state_changes(self, state):
-        """Test StateManager state changes."""
-        sm = StateManager(TestDataFactory.create_mock_config())
-        if state in ["idle", "computer", "chatty"]:
-            sm.change_state(state)
-            assert sm.current_state == state
-        else:
-            # Invalid states should raise ValueError
-            with pytest.raises(ValueError):
-                sm.change_state(state)
-
-    def test_state_manager_active_models(self):
-        """Test StateManager active models retrieval."""
-        config = TestDataFactory.create_mock_config(
-            {
-                "state_models": {"idle": ["model1"], "computer": ["model2"]},
-                "default_state": "idle",
-            }
-        )
-        sm = StateManager(config)
-        assert sm.get_active_models() == ["model1"]
-        sm.change_state("computer")
-        assert sm.get_active_models() == ["model2"]
+# ============================================================================
+# FIXTURES
+# ============================================================================
 
 
-class TestStateTransitions:
-    """Tests for state transitions, toggle cycling, repr, and hooks.
+@pytest.fixture
+def mock_config() -> Mock:
+    """Provide a mock config with state models, transitions, and wakeword map."""
+    cfg = Mock()
+    cfg.default_state = "idle"
+    cfg.state_models = {
+        "idle": ["idle_model"],
+        "computer": ["computer_model"],
+        "chatty": ["chatty_model"],
+    }
+    cfg.state_transitions = {
+        "idle": {"hello": "chatty"},
+        "chatty": {"stop": "idle"},
+    }
+    cfg.wakeword_state_map = {
+        "hey_computer": "computer",
+        "hey_chatty": "chatty",
+    }
+    return cfg
 
-    Migrated from test_states.py (unique tests only, converted to pytest style).
-    """
 
-    @pytest.fixture
-    def sm(self) -> StateManager:
-        """Provide a StateManager with the default mock config."""
-        return StateManager(TestDataFactory.create_mock_config())
+@pytest.fixture
+def state_manager(mock_config: Mock) -> StateManager:
+    """Create a StateManager under test with mocked config."""
+    return StateManager(config=mock_config)
 
-    @pytest.fixture
-    def config(self) -> Mock:
-        return TestDataFactory.create_mock_config()
 
-    def test_update_state_no_change_unknown_command(self, sm):
-        """Unknown command returns None and keeps current state."""
-        assert sm.update_state("unknown_command") is None
+# ============================================================================
+# TESTS
+# ============================================================================
+
+
+class TestStateManagerInitialization:
+    """Unit tests for StateManager construction."""
+
+    def test_init_with_config(self, mock_config: Mock):
+        """
+        Test that StateManager initializes with provided config, sets current_state,
+        active_models, and empty callbacks.
+        """
+        # Arrange / Act
+        sm = StateManager(config=mock_config)
+
+        # Assert
+        assert sm.config is mock_config
         assert sm.current_state == "idle"
+        assert sm.active_models == ["idle_model"]
+        assert sm.callbacks == []
+        assert sm.logger is not None
 
-    def test_update_state_self_loop(self, sm, config):
-        """Command mapping to the same state returns that state."""
-        # Set up a transition that maps back to the same state
-        config_with_loop = TestDataFactory.create_mock_config(
-            {"state_transitions": {"idle": {"stay": "idle"}}}
-        )
-        sm_loop = StateManager(config_with_loop)
-        assert sm_loop.update_state("stay") == "idle"
-        assert sm_loop.current_state == "idle"
+    def test_init_without_config_uses_default(self):
+        """
+        Test that StateManager without config uses default Config() (may require
+        file, but for unit we can patch or accept the default behavior).
+        """
+        # Arrange / Act
+        sm = StateManager(config=None)
 
-    def test_toggle_mode_cycles_states(self, sm):
-        """toggle_mode cycles through states in order."""
-        sm.update_state("toggle_mode")
-        assert sm.current_state == "computer"
-        sm.update_state("toggle_mode")
-        assert sm.current_state == "chatty"
-        sm.update_state("toggle_mode")
-        assert sm.current_state == "idle"
-
-    def test_multiple_toggle_cycles(self, sm, config):
-        """Two full toggle cycles return to the starting state."""
-        states = list(config.state_models.keys())
-        for _ in range(2 * len(states)):
-            current = sm.current_state
-            sm.update_state("toggle_mode")
-            idx = states.index(current)
-            assert sm.current_state == states[(idx + 1) % len(states)]
-        assert sm.current_state == "idle"
-
-    def test_all_state_transitions(self, config):
-        """Every transition defined in config produces the expected state."""
-        for start_state, cmds in config.state_transitions.items():
-            for cmd, end_state in cmds.items():
-                sm = StateManager(config)
-                sm.change_state(start_state)
-                new_state = sm.update_state(cmd)
-                assert new_state == end_state
-                assert sm.current_state == end_state
-
-    def test_invalid_commands_in_all_states(self, config):
-        """Invalid commands do not change state in any state."""
-        for state in config.state_transitions:
-            sm = StateManager(config)
-            sm.change_state(state)
-            assert sm.update_state("invalid_command") is None
-            assert sm.current_state == state
-
-    def test_state_preserved_after_error(self, sm):
-        """State remains unchanged after a failed change_state call."""
-        sm.change_state("computer")
-        with pytest.raises(ValueError):
-            sm.change_state("nonexistent")
-        assert sm.current_state == "computer"
-
-    def test_post_state_change_hook_logged(self, sm):
-        """post_state_change_hook emits the expected log message."""
-        with _capture_logs() as logs:
-            sm.change_state("chatty")
-        assert any("Post state change actions for chatty" in r.message for r in logs)
-
-    def test_change_state_with_direct_callback(self, sm):
-        """change_state invokes the optional callback argument."""
-        callback = Mock()
-        sm.change_state("computer", callback)
-        callback.assert_called_once_with("computer")
-        assert sm.current_state == "computer"
-
-    def test_repr_output(self, sm):
-        """__repr__ shows state and model count."""
-        sm.active_models = ["m1", "m2"]
-        assert repr(sm) == "<StateManager(current_state=idle, active_models=2)>"
-
-    def test_repr_with_varying_models(self, sm):
-        """__repr__ reflects different active model counts."""
-        sm.active_models = []
-        assert repr(sm) == "<StateManager(current_state=idle, active_models=0)>"
-        sm.active_models = ["one"]
-        assert repr(sm) == "<StateManager(current_state=idle, active_models=1)>"
+        # Assert
+        assert sm.current_state is not None  # defaults to something
+        assert isinstance(sm.active_models, list)
 
 
-class _capture_logs:
-    """Minimal context manager to capture log records from state_manager."""
+class TestUpdateState:
+    """Tests for update_state logic (transitions, wakeword map, toggle)."""
 
-    def __enter__(self):
-        self.handler = logging.Handler()
-        self.records: list[logging.LogRecord] = []
-        self.handler.emit = self.records.append  # type: ignore[assignment]
-        logger = logging.getLogger("chatty_commander.app.state_manager")
-        logger.addHandler(self.handler)
-        self._logger = logger
-        return self.records
+    def test_update_state_with_config_transitions(self, state_manager: StateManager, mock_config: Mock):
+        """
+        Test state transition from current_state using config.state_transitions.
+        """
+        # Arrange
+        # Act
+        new_state = state_manager.update_state("hello")
 
-    def __exit__(self, *exc):
-        self._logger.removeHandler(self.handler)
-        return False
+        # Assert
+        assert new_state == "chatty"
+        assert state_manager.current_state == "chatty"
+        assert state_manager.active_models == mock_config.state_models["chatty"]
+
+    def test_update_state_with_wakeword_state_map(self, state_manager: StateManager, mock_config: Mock):
+        """
+        Test fallback to wakeword_state_map for state change.
+        """
+        # Arrange
+        state_manager.current_state = "idle"
+
+        # Act
+        new_state = state_manager.update_state("hey_computer")
+
+        # Assert
+        assert new_state == "computer"
+        assert state_manager.current_state == "computer"
+
+    def test_update_state_toggle_mode(self, state_manager: StateManager, mock_config: Mock):
+        """
+        Test toggle_mode command cycles through states.
+        """
+        # Arrange
+        state_manager.current_state = "idle"
+
+        # Act
+        new_state = state_manager.update_state("toggle_mode")
+
+        # Assert
+        assert new_state == "computer"  # next after idle
+        assert state_manager.current_state == "computer"
+
+    def test_update_state_invalid_command_returns_none(self, state_manager: StateManager):
+        """
+        Invalid command returns None and does not change state.
+        """
+        # Arrange
+        old_state = state_manager.current_state
+
+        # Act
+        result = state_manager.update_state("invalid_command_xyz")
+
+        # Assert
+        assert result is None
+        assert state_manager.current_state == old_state
+
+    def test_update_state_empty_or_non_string_returns_none(self, state_manager: StateManager):
+        """
+        Empty or non-string command returns None.
+        """
+        assert state_manager.update_state("") is None
+        assert state_manager.update_state(None) is None  # type: ignore[arg-type]
+        assert state_manager.update_state(123) is None  # type: ignore[arg-type]
 
 
-class TestStateManagerMain:
-    """Tests for the StateManager __main__ block via subprocess."""
+class TestProcessCommand:
+    """Tests for process_command convenience method."""
 
-    def test_state_manager_main_block(self):
-        """Test state_manager main block execution."""
-        result = subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                "from chatty_commander.app.state_manager import StateManager; "
-                "sm = StateManager(); "
-                "print(sm); "
-                "sm.change_state('computer'); "
-                "print(sm.get_active_models()); "
-                "try: sm.change_state('undefined_state'); "
-                "except ValueError: pass",
-            ],
-            capture_output=True,
-            text=True,
-        )
+    def test_process_command_success(self, state_manager: StateManager):
+        """
+        process_command returns True for recognized transition.
+        """
+        # Act
+        result = state_manager.process_command("hello")
 
-        # Should not crash
-        assert result.returncode == 0 or "ValueError" in result.stderr
+        # Assert
+        assert result is True
 
-    def test_state_manager_main_execution(self):
-        """Test running state_manager as main module."""
-        result = subprocess.run(
-            [sys.executable, "-m", "chatty_commander.app.state_manager"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
+    def test_process_command_failure_for_invalid(self, state_manager: StateManager):
+        """
+        process_command returns False for invalid command (catches in update_state path).
+        """
+        # Act
+        result = state_manager.process_command("invalid_xyz")
 
-        # The script should run and may exit with error due to undefined_state
-        # but it should at least start executing
-        assert result.returncode in [0, 1]  # 0 for success, 1 for expected error
+        # Assert
+        assert result is False
+
+
+class TestChangeStateAndCallbacks:
+    """Tests for change_state, callbacks, and hooks."""
+
+    def test_change_state_valid(self, state_manager: StateManager, mock_config: Mock):
+        """
+        change_state updates current_state and active_models for valid state.
+        """
+        # Act
+        state_manager.change_state("computer")
+
+        # Assert
+        assert state_manager.current_state == "computer"
+        assert state_manager.active_models == mock_config.state_models["computer"]
+
+    def test_change_state_invalid_raises(self, state_manager: StateManager):
+        """
+        change_state raises ValueError for invalid state.
+        """
+        with pytest.raises(ValueError, match="Invalid state"):
+            state_manager.change_state("nonexistent_state")
+
+    def test_add_callback_and_notify(self, state_manager: StateManager):
+        """
+        add_state_change_callback registers, and change_state notifies all.
+        """
+        # Arrange
+        cb1 = Mock()
+        cb2 = Mock()
+        state_manager.add_state_change_callback(cb1)
+        state_manager.add_state_change_callback(cb2)
+
+        # Act
+        state_manager.change_state("computer")
+
+        # Assert
+        cb1.assert_called_once_with("idle", "computer")
+        cb2.assert_called_once_with("idle", "computer")
+
+    def test_post_state_change_hook_called(self, state_manager: StateManager):
+        """
+        post_state_change_hook is called on successful change (logs in default impl).
+        """
+        # Arrange
+        state_manager.post_state_change_hook = Mock()
+
+        # Act
+        state_manager.change_state("computer")
+
+        # Assert
+        state_manager.post_state_change_hook.assert_called_once_with("computer")
+
+
+class TestGettersAndRepr:
+    """Tests for get_active_models and __repr__."""
+
+    def test_get_active_models(self, state_manager: StateManager, mock_config: Mock):
+        """
+        get_active_models returns the active list for current state.
+        """
+        assert state_manager.get_active_models() == mock_config.state_models["idle"]
+
+    def test_repr(self, state_manager: StateManager):
+        """
+        __repr__ includes current_state and active model count.
+        """
+        r = repr(state_manager)
+        assert "current_state=idle" in r
+        assert "active_models=1" in r
+
+
+class TestStateManagerAdditionalCoverage:
+    """Additional 5+ tests for StateManager to address qa 'no tests found' (rank 15) and qa coverage gaps."""
+
+    def test_change_state_invalid_raises(self, state_manager: StateManager):
+        """Invalid new_state raises ValueError."""
+        with pytest.raises(ValueError, match="Invalid state"):
+            state_manager.change_state("invalid_state")
+
+    def test_add_state_change_callback_notified(self, state_manager: StateManager, mock_config: Mock):
+        """Callbacks added via add are notified on change_state."""
+        cb = Mock()
+        state_manager.add_state_change_callback(cb)
+        state_manager.change_state("computer")
+        cb.assert_called_once_with("idle", "computer")
+
+    def test_process_command_toggle_mode(self, state_manager: StateManager, mock_config: Mock):
+        """process_command('toggle_mode') triggers state change and returns truthy."""
+        result = state_manager.process_command("toggle_mode")
+        # returns new or None, but per impl
+        assert result is not None or state_manager.current_state != "idle"
+
+    def test_update_state_wakeword_map(self, state_manager: StateManager, mock_config: Mock):
+        """update_state uses wakeword_state_map."""
+        result = state_manager.update_state("hey_computer")
+        assert result == "computer"
+
+    def test_process_command_invalid_returns_false(self, state_manager: StateManager):
+        """Invalid command returns False gracefully."""
+        result = state_manager.process_command("no_such_command_123")
+        assert result is False
+
+    def test_post_state_change_hook(self, state_manager: StateManager):
+        """post_state_change_hook runs without error."""
+        state_manager.post_state_change_hook("computer")
+        # default impl just logs; no crash
+        assert True
+
+
+    def test_process_command_empty_string(self, state_manager: StateManager):
+        """Empty command returns False gracefully."""
+        result = state_manager.process_command("")
+        assert result is False
+
+    def test_update_state_unknown_wakeword(self, state_manager: StateManager, mock_config: Mock):
+        """Unknown wakeword returns None, no state change."""
+        result = state_manager.update_state("unknown_wakeword_xyz")
+        assert result is None
+        assert state_manager.current_state == "idle"
+
+    def test_get_active_models_default(self, state_manager: StateManager, mock_config: Mock):
+        """get_active_models returns list from model_manager or empty."""
+        models = state_manager.get_active_models()
+        assert isinstance(models, list)

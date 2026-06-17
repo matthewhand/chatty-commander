@@ -96,7 +96,10 @@ class TransparentBrowser(QMainWindow):
         self._setup_system_tray()
 
     def _setup_window(self):
+<<<<<<< HEAD
         """Configure the main window properties."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Window flags for frameless, transparent, always on top
         self.setWindowFlags(
             Qt.FramelessWindowHint
@@ -121,6 +124,7 @@ class TransparentBrowser(QMainWindow):
         self._drag_position = None
 
     def _setup_web_view(self):
+        """Configure the main window properties."""
         """Setup the web engine view."""
         self.web_view = QWebEngineView()
 
@@ -136,12 +140,19 @@ class TransparentBrowser(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
+<<<<<<< HEAD
         # Load the avatar page. The default points at the bundled avatar UI
         # resolved relative to this installation rather than an absolute
         # "/src/..." path, which is not portable across installations.
         base_path = Path(__file__).resolve().parent.parent.parent.parent
         default_index = base_path / "src" / "chatty_commander" / "webui" / "avatar" / "index.html"
         url = self.config.get("url", default_index.as_uri())
+=======
+        # Load the avatar page
+        url = self.config.get(
+            "url", "file:///src/chatty_commander/webui/avatar/index.html"
+        )
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if url.startswith("file://") and not url.startswith("file:///"):
             # Convert relative file paths to absolute
             file_path = url[7:]  # Remove 'file://'
@@ -167,7 +178,6 @@ class TransparentBrowser(QMainWindow):
         self.web_view.loadFinished.connect(self._inject_transparency_css)  # type: ignore[attr-defined]
 
     def _inject_transparency_css(self):
-        """Inject CSS to make web page background transparent."""
         css_code = """
         document.body.style.backgroundColor = 'transparent';
         document.documentElement.style.backgroundColor = 'transparent';
@@ -189,6 +199,7 @@ class TransparentBrowser(QMainWindow):
         self.web_view.page().runJavaScript(css_code)  # type: ignore[attr-defined]
 
     def _setup_system_tray(self):
+        """Inject CSS to make web page background transparent."""
         """Setup system tray icon and menu."""
         if not QSystemTrayIcon.isSystemTrayAvailable():
             logger.warning("System tray is not available")
@@ -239,7 +250,6 @@ class TransparentBrowser(QMainWindow):
         self.tray_icon.show()  # type: ignore[attr-defined]
 
     def _get_icon_path(self) -> Path | None:
-        """Get the path to the application icon."""
         # Try different icon locations
         possible_paths = [
             Path(__file__).parent.parent.parent.parent / "icon.svg",
@@ -254,11 +264,15 @@ class TransparentBrowser(QMainWindow):
         return None
 
     def _tray_icon_activated(self, reason):
+<<<<<<< HEAD
         """Handle tray icon activation."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if reason == QSystemTrayIcon.DoubleClick:
             self.toggle_visibility()
 
     def toggle_visibility(self):
+        """Handle tray icon activation."""
         """Toggle window visibility."""
         if self.isVisible():
             self.hide()
@@ -270,11 +284,15 @@ class TransparentBrowser(QMainWindow):
             self.show_action.setText("Hide Avatar")
 
     def reload_page(self):
+<<<<<<< HEAD
         """Reload the web page."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self.web_view:
             self.web_view.reload()
 
     def quit_application(self):
+        """Reload the web page."""
         """Quit the application."""
         if self.tray_icon:
             self.tray_icon.hide()
@@ -282,7 +300,10 @@ class TransparentBrowser(QMainWindow):
         QApplication.quit()
 
     def mousePressEvent(self, event):
+<<<<<<< HEAD
         """Handle mouse press for window dragging."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if event.button() == Qt.LeftButton:
             self._drag_position = event.globalPos() - self.frameGeometry().topLeft()
             event.accept()
@@ -305,7 +326,6 @@ class TransparentBrowser(QMainWindow):
 
 
 def _load_settings() -> dict[str, Any]:
-    """Load PyQt5 avatar settings from configuration."""
     try:
         from chatty_commander.app.config import Config
 
@@ -347,12 +367,15 @@ def _load_settings() -> dict[str, Any]:
 
 
 def run_pyqt5_avatar() -> bool:
+<<<<<<< HEAD
     """
     Run the PyQt5-based transparent avatar browser.
 
     Returns:
         bool: True if successful, False if failed or PyQt5 not available
     """
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     if not PYQT5_AVAILABLE:
         logger.warning(
             "PyQt5 is not available. Install with: pip install PyQt5 PyQtWebEngine"

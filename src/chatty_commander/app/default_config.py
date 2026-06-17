@@ -127,7 +127,6 @@ class DefaultConfigGenerator:
                     logging.info(f"Copied file instead: {source} -> {target}")
 
     def _create_default_config_json(self):
-        """Create a comprehensive default config.json file."""
         default_config = {
             "keybindings": {
                 "take_screenshot": "alt+print_screen",
@@ -238,14 +237,16 @@ class DefaultConfigGenerator:
 
     def should_generate_default_config(self):
         """Check if default configuration should be generated."""
-        # Check if config.json exists and is valid
         if not self.config_file.exists():
             return True
 
         try:
             with open(self.config_file) as f:
                 config = json.load(f)
+<<<<<<< HEAD
                 # Check if essential sections exist
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 required_sections = ["commands", "state_models"]
                 if not all(section in config for section in required_sections):
                     return True

@@ -39,7 +39,11 @@ class LLMBackend(ABC):
 
     @abstractmethod
     def is_available(self) -> bool:
+<<<<<<< HEAD
         """Check if backend is available and ready."""
+=======
+        # Validate preconditions
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         pass
 
     @abstractmethod
@@ -76,9 +80,12 @@ class OpenAIBackend(LLMBackend):
         self._initialize_client()
 
     def _initialize_client(self):
+<<<<<<< HEAD
         """Initialize OpenAI client."""
         # A fresh client means the previous availability result is stale.
         self._available_cache = None
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not self.api_key:
             logger.debug("No OpenAI API key provided")
             return
@@ -101,7 +108,11 @@ class OpenAIBackend(LLMBackend):
             logger.error(f"Failed to initialize OpenAI client: {e}")
 
     def is_available(self) -> bool:
+<<<<<<< HEAD
         """Check if OpenAI backend is available (result cached after first probe)."""
+=======
+        """Check if OpenAI backend is available."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not self._client:
             return False
         if self._available_cache is not None:
@@ -114,7 +125,11 @@ class OpenAIBackend(LLMBackend):
                 messages=[{"role": "user", "content": "test"}],
                 max_tokens=1,
             )
+<<<<<<< HEAD
             self._available_cache = True
+=======
+            return True
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             logger.debug(f"OpenAI availability check failed: {e}")
             self._available_cache = False
@@ -152,7 +167,10 @@ class OpenAIBackend(LLMBackend):
         raise RuntimeError(f"OpenAI generation failed after {self.max_retries} retries: {last_error}")
 
     def get_backend_info(self) -> dict[str, Any]:
+<<<<<<< HEAD
         """Get OpenAI backend information."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return {
             "backend": "openai",
             "available": self.is_available(),
@@ -224,7 +242,10 @@ class OllamaBackend(LLMBackend):
         return self._available
 
     def _try_pull_model(self):
+<<<<<<< HEAD
         """Try to pull the model if not available."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         try:
             import httpx
 
@@ -285,7 +306,10 @@ class OllamaBackend(LLMBackend):
             raise
 
     def get_backend_info(self) -> dict[str, Any]:
+<<<<<<< HEAD
         """Get Ollama backend information."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return {
             "backend": "ollama",
             "available": self.is_available(),
@@ -313,7 +337,10 @@ class LocalTransformersBackend(LLMBackend):
         self._initialize_model()
 
     def _initialize_model(self):
+<<<<<<< HEAD
         """Initialize local transformers model."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         try:
             import torch
             from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -389,7 +416,10 @@ class LocalTransformersBackend(LLMBackend):
             raise
 
     def get_backend_info(self) -> dict[str, Any]:
+<<<<<<< HEAD
         """Get local transformers backend information."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return {
             "backend": "local_transformers",
             "available": self.is_available(),
@@ -415,12 +445,20 @@ class MockLLMBackend(LLMBackend):
         return True
 
     def generate_response(self, prompt: str, **kwargs) -> str:
+<<<<<<< HEAD
+=======
+        """Generate response using mock."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         response = self.responses[self.call_count % len(self.responses)]
         self.call_count += 1
         logger.debug(f"Mock LLM response: '{response}'")
         return response
 
     def get_backend_info(self) -> dict[str, Any]:
+<<<<<<< HEAD
+=======
+        """Retrieve backend info."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return {
             "backend": "mock",
             "available": True,

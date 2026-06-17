@@ -30,6 +30,10 @@ from chatty_commander.utils.security import constant_time_compare
 
 try:
     from fastapi import FastAPI
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except Exception:  # very minimal stub if FastAPI missing (tests won't hit real HTTP)
 
     class FastAPI:  # type: ignore
@@ -39,32 +43,59 @@ except Exception:  # very minimal stub if FastAPI missing (tests won't hit real 
 
         @property
         def routes(self):
+<<<<<<< HEAD
+=======
+            """Include Router with (self).
+
+            TODO: Add detailed description and parameters.
+            """
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             return []
 
 
 # Import all available routers
 try:
     from .routes.avatar_ws import router as avatar_ws_router
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     avatar_ws_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_api import router as avatar_api_router
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     avatar_api_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_selector import router as avatar_selector_router
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     avatar_selector_router = None  # type: ignore[assignment]
 
 try:
     from .routes.avatar_settings import include_avatar_settings_routes
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     include_avatar_settings_routes = None  # type: ignore[assignment]
 
 try:
     from .routes.audio import include_audio_routes
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     include_audio_routes = None  # type: ignore[assignment]
 
@@ -80,6 +111,10 @@ except ImportError:
 
 try:
     from .routes.version import router as version_router
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     version_router = None  # type: ignore[assignment]
 
@@ -100,16 +135,34 @@ except ImportError:
 
 try:
     from .routes.agents import router as agents_router
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     agents_router = None  # type: ignore[assignment]
 
 try:
     from .routes.models import router as models_router
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     models_router = None  # type: ignore[assignment]
 
 try:
+    from .routes.system import include_system_routes
+
+except ImportError:
+    include_system_routes = None  # type: ignore[assignment]
+
+try:
     from .routes.command_authoring import router as command_authoring_router
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     command_authoring_router = None  # type: ignore[assignment]
 
@@ -117,19 +170,30 @@ try:
     from ..obs.metrics import create_metrics_router
 
     metrics_router = create_metrics_router()
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     metrics_router = None  # type: ignore[assignment]
 
 # Settings router needs to be created with config manager
 settings_router = None
+<<<<<<< HEAD
+=======
+audio_router = None
+system_router = None
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
 
 def _include_optional(app: FastAPI, name: str) -> None:
+    """Include optional router from globals if present."""
     r = globals().get(name)
     if r:
         app.include_router(r)
 
 
+<<<<<<< HEAD
 def ensure_no_auth_allowed(no_auth: bool) -> None:
     """Refuse the development auth bypass in production environments.
 
@@ -152,6 +216,10 @@ def ensure_no_auth_allowed(no_auth: bool) -> None:
             "no_auth=True is a development bypass and refuses to run with "
             "CHATTY_ENV=production"
         )
+=======
+def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
+    app = FastAPI()
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
 
 def register_shared_routers(
@@ -298,6 +366,25 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
         )
         _include_optional(app, "settings_router")
 
+<<<<<<< HEAD
+=======
+    if include_audio_routes is not None and config_manager:
+        global audio_router
+        audio_router = include_audio_routes(
+            get_config_manager=lambda: config_manager
+        )
+        _include_optional(app, "audio_router")
+
+    if include_system_routes is not None:
+        global system_router
+        cfg_getter = (lambda: config_manager) if config_manager is not None else (lambda: type("C", (), {"config": {}})())
+        system_router = include_system_routes(
+            get_start_time=lambda: 0.0,
+            get_config_manager=cfg_getter,
+        )
+        _include_optional(app, "system_router")
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     # Add bridge endpoint for tests
     try:
         from fastapi import Header, HTTPException
@@ -357,6 +444,10 @@ def create_app(no_auth: bool = False, config_manager: Any = None) -> FastAPI:
 
                 return {"ok": True, "reply": {"text": "Bridge response", "meta": {}}}
 
+<<<<<<< HEAD
+=======
+    
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     except ImportError:
         pass
 

@@ -117,6 +117,10 @@ class StateManager:
     def change_state(
         self, new_state: str, callback: Callable[[str], None] | None = None
     ) -> None:
+<<<<<<< HEAD
+=======
+        """Change to a new state, update active models, notify callbacks."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if new_state in self.config.state_models:
             old_state = self.current_state
             self.current_state = new_state
@@ -136,6 +140,10 @@ class StateManager:
         return self.active_models
 
     def post_state_change_hook(self, new_state: str) -> None:
+<<<<<<< HEAD
+=======
+        """Post State Change Hook with (self, new_state: str)."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         self.logger.debug(f"Post state change actions for {new_state} executed.")
 
     def __repr__(self) -> str:

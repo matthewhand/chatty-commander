@@ -48,6 +48,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised via fallback
 
 
 def _get_patchable_model_class():
+<<<<<<< HEAD
     """
     Return the Model class to instantiate.
     Priority order so tests can monkeypatch root-level 'model_manager.Model':
@@ -56,6 +57,8 @@ def _get_patchable_model_class():
       3) If running under pytest, MagicMock
       4) Local fallback Model defined in this module
     """
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     # 1) Already-imported shim module in sys.modules
     try:
         import sys as _sys
@@ -96,7 +99,6 @@ def _get_patchable_model_class():
 
 class ModelManager:
     def __init__(self, config: Any, mock_models: bool = False) -> None:
-        """Initialize with configuration and preload models."""
         logging.basicConfig(level=logging.INFO)
         self.config: Any = config
         self.mock_models = mock_models
@@ -111,10 +113,10 @@ class ModelManager:
     def reload_models(
         self, state: str | None = None
     ) -> dict[str, Model] | dict[str, dict[str, Model]]:
-        """
-        Reload models from configured directories.
+        """Reload models from configured directories.
         If state is provided, only that state's models are loaded.
         Returns the loaded models mapping.
+<<<<<<< HEAD
         """
         if self.mock_models:
              # Just Mock
@@ -127,6 +129,25 @@ class ModelManager:
              self.active_models = dummy
              return self.models
 
+=======
+
+        Test expectations:
+          - If Model(...) raises, the model must NOT be added
+          - Tests may monkeypatch model_manager.Model; ensure we call that symbol here
+        """
+        if self.mock_models:
+            # Just Mock
+            dummy = {"mock_model": Model("mock_path")}
+            self.models["general"] = dummy
+            self.models["system"] = {"mock_system": Model("mock_path")}
+            self.models["chat"] = {"mock_chat": Model("mock_path")}
+            if state:
+                self.active_models = dummy
+                return dummy
+            self.active_models = dummy
+            return self.models
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if state is None:
             self.models["general"] = self.load_model_set(
                 self.config.general_models_path
@@ -152,13 +173,7 @@ class ModelManager:
         return {}
 
     def load_model_set(self, path: str) -> dict[str, Model]:
-        """
-        Load all .onnx models from the given path.
-
-        Test expectations:
-          - If Model(...) raises, the model must NOT be added
-          - Tests may monkeypatch model_manager.Model; ensure we call that symbol here
-        """
+        """Load all .onnx models from the given path."""
         model_set: dict[str, Model] = {}
         if not os.path.exists(path):
             logging.error(f"Model directory {path} does not exist.")
@@ -197,18 +212,29 @@ class ModelManager:
         return model_set
 
     async def async_listen_for_commands(self) -> str | None:
+<<<<<<< HEAD
         """Asynchronously simulate listening for voice commands."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         await asyncio.sleep(0.1)
         if self.active_models and random.random() < 0.05:
             return random.choice(list(self.active_models.keys()))
         return None
 
     def listen_for_commands(self) -> str | None:
+<<<<<<< HEAD
         """Synchronous wrapper for async_listen_for_commands."""
         return asyncio.run(self.async_listen_for_commands())
 
     def get_models(self, state: str) -> dict[str, Model]:
         """Retrieve models for the given state."""
+=======
+        """Asynchronously simulate listening for voice commands."""
+        return asyncio.run(self.async_listen_for_commands())
+
+    def get_models(self, state: str) -> dict[str, Model]:
+        """Synchronous wrapper for async_listen_for_commands. Retrieve models for the given state."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return self.models.get(state, {})
 
     def __repr__(self) -> str:

@@ -240,3 +240,86 @@ class TestConversationEngineRobustness:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# ============================================================================
+# ADDITIONAL ADVISORS SERVICE COVERAGE (handle_message branches, helpers, config)
+# ============================================================================
+
+
+class TestAdvisorsServiceAdditional:
+    """Extend service coverage beyond basic error/LLM and pipeline (per task focus)."""
+
+    def test_service_init_from_plain_dict_and_mock_provider(self):
+        # Arrange
+        config = {"enabled": True, "providers": {}, "context": {}}
+        with patch("chatty_commander.advisors.service.build_provider_safe") as mb, \
+             patch("chatty_commander.llm.manager.get_global_llm_manager", return_value=None), \
+             patch("chatty_commander.advisors.service.ContextManager", return_value=Mock()):
+            mb.return_value = Mock(model="m", api_mode="chat", generate=Mock(return_value="hi"))
+            # Act
+            svc = AdvisorsService(config)
+            # Assert
+            assert svc.enabled is True
+            assert hasattr(svc, "memory")
+            assert hasattr(svc, "context_manager")
+
+    def test_handle_message_disabled_raises(self):
+        # Arrange
+        config = {"enabled": False}
+        with patch("chatty_commander.advisors.service.build_provider_safe") as mb, \
+             patch("chatty_commander.llm.manager.get_global_llm_manager", return_value=None):
+            mb.return_value = Mock()
+            svc = AdvisorsService(config)
+            msg = _make_message()
+            # Act / Assert
+            with pytest.raises(RuntimeError, match="not enabled"):
+                svc.handle_message(msg)
+
+    def test_handle_summarize_command_path(self):
+        # Arrange - test the command dispatch branch without full tool (avoid internal import + context side effects)
+        config = {"enabled": True, "providers": {}}
+        with patch("chatty_commander.advisors.service.build_provider_safe") as mb, \
+             patch("chatty_commander.llm.manager.get_global_llm_manager", return_value=None), \
+             patch("chatty_commander.advisors.service.ContextManager", return_value=Mock()):
+            mb.return_value = Mock(model="analyst", api_mode="x")
+            svc = AdvisorsService(config)
+            # Directly exercise helper existence / basic path that doesn't trigger full handle
+            assert hasattr(svc, "_handle_summarize_command")
+            # Act/Assert basic enabled check
+            assert svc.enabled is True
+
+    def test_switch_persona_and_clear_and_stats(self):
+        # Arrange
+        config = {"enabled": True, "context": {"personas": {}}}
+        with patch("chatty_commander.advisors.service.build_provider_safe") as mb, \
+             patch("chatty_commander.llm.manager.get_global_llm_manager", return_value=None), \
+             patch("chatty_commander.advisors.service.ContextManager") as mock_cm:
+            mock_cm.return_value.switch_persona.return_value = True
+            mock_cm.return_value.clear_context.return_value = True
+            mock_cm.return_value.get_stats.return_value = {"total_contexts": 0}
+            mb.return_value = Mock()
+            svc = AdvisorsService(config)
+            # Act - these delegate and should be callable without full context setup
+            switched = svc.switch_persona("ctx1", "p1")
+            cleared = svc.clear_context("ctx1")
+            stats = svc.get_context_stats()
+            # Assert
+            assert switched is True
+            assert cleared is True
+            assert isinstance(stats, dict)
+
+    def test_build_combined_and_resolve_persona_helpers(self):
+        # Arrange - direct access to pure helpers
+        config = {"enabled": True, "providers": {}, "personas": {"p": "You are p."}}
+        with patch("chatty_commander.advisors.service.build_provider_safe") as mb, \
+             patch("chatty_commander.llm.manager.get_global_llm_manager", return_value=None), \
+             patch("chatty_commander.advisors.service.ContextManager", return_value=Mock()):
+            mb.return_value = Mock()
+            svc = AdvisorsService(config)
+            # Act
+            combined = svc._build_combined_history_text("plat", "ch", "usr", "current q")
+            persona = svc._resolve_persona_config(Mock(persona_id="p"))
+            # Assert
+            assert "current q" in combined
+            assert isinstance(persona, dict)

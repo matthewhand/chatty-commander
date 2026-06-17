@@ -27,17 +27,15 @@ from typing import Any
 
 
 def build_openapi_schema() -> dict[str, Any]:
-    """
-    Construct the OpenAPI schema dictionary.
-
-    Note: This extracts the schema content from the previous APIDocumentationGenerator.generate_openapi_spec.
-    It intentionally remains pure (no I/O, no logging) for ease of testing.
-    """
     spec: dict[str, Any] = {
         "openapi": "3.0.3",
         "info": {
             "title": "ChattyCommander API",
             "description": "Voice command automation system with web interface",
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
             "version": "0.2.0",
             "contact": {
                 "name": "ChattyCommander",
@@ -98,6 +96,10 @@ def build_openapi_schema() -> dict[str, Any]:
                 },
                 "put": {
                     "summary": "Update configuration",
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
                     "description": "Updates the system configuration. Requires restart for some changes to take effect.",
                     "tags": ["Configuration"],
                     "requestBody": {
@@ -165,6 +167,11 @@ def build_openapi_schema() -> dict[str, Any]:
                     },
                     "responses": {
                         "200": {"description": "State changed successfully"},
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
                         "400": {"description": "Invalid state specified"},
                     },
                 },
@@ -172,6 +179,10 @@ def build_openapi_schema() -> dict[str, Any]:
             "/api/v1/command": {
                 "post": {
                     "summary": "Execute command",
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
                     "description": "Executes a voice command programmatically. Useful for testing and automation.",
                     "tags": ["Commands"],
                     "requestBody": {
@@ -237,6 +248,10 @@ def build_openapi_schema() -> dict[str, Any]:
                                             "status": {"type": "string"},
                                             "timestamp": {
                                                 "type": "string",
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
                                                 "format": "date-time",
                                             },
                                             "uptime": {"type": "string"},
@@ -269,6 +284,10 @@ def build_openapi_schema() -> dict[str, Any]:
                                             "version": {"type": "string"},
                                             "git_sha": {
                                                 "type": ["string", "null"],
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+                            
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
                                                 "description": "Short git SHA if available",
                                             },
                                         },
@@ -283,6 +302,10 @@ def build_openapi_schema() -> dict[str, Any]:
             "/ws": {
                 "get": {
                     "summary": "WebSocket connection",
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
                     "description": "Establishes a WebSocket connection for real-time updates including state changes, command detections, and system events.",
                     "tags": ["WebSocket"],
                     "responses": {
@@ -313,6 +336,10 @@ def build_openapi_schema() -> dict[str, Any]:
                         },
                         "uptime": {
                             "type": "string",
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
                             "description": "System uptime in human-readable format",
                         },
                         "version": {
@@ -375,6 +402,10 @@ def build_openapi_schema() -> dict[str, Any]:
                         },
                         "timestamp": {
                             "type": "string",
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
                             "format": "date-time",
                             "description": "Timestamp of last state change",
                         },
@@ -396,12 +427,12 @@ def build_openapi_schema() -> dict[str, Any]:
 
 def generate_markdown_docs() -> str:
     """
-    Return the long-form Markdown documentation string.
+    Construct the OpenAPI schema dictionary.
 
-    This was previously generated dynamically with a timestamp embedded.
-    To preserve that behavior while remaining pure, we only embed the timestamp at call time here.
+    Note: This extracts the schema content from the previous APIDocumentationGenerator.generate_openapi_spec.
+    It intentionally remains pure (no I/O, no logging) for ease of testing.
     """
-    docs = f"""
+    docs = """
 # ChattyCommander API Documentation
 
 *Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
@@ -601,7 +632,9 @@ Error responses include a JSON body with details:
 
 ## Rate Limiting
 
-Currently, no rate limiting is implemented. This may be added in future versions.
+Basic in-memory per-IP rate limiting is implemented via RateLimitMiddleware (default 60 req/min, X-RateLimit-* headers, secure client IP extraction considering trusted proxies). See src/chatty_commander/web/web_mode.py.
+- Not yet Redis-backed or per-endpoint configurable (roadmap item).
+- Suitable for dev/single-instance; production should consider distributed limiting + nginx/ingress rules (see SECURITY.md).
 
 ## Examples
 
@@ -651,6 +684,10 @@ fetch('http://localhost:8100/api/v1/command', {{
   headers: {{
     'Content-Type': 'application/json',
   }},
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/builder.py
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/builder.py
   body: JSON.stringify({{command: 'lights_on'}})
 }})
 .then(response => response.json())

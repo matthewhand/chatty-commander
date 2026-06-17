@@ -46,7 +46,6 @@ def _get_provider_builder():
 @dataclass
 class AdvisorMessage:
     """Incoming message for advisor processing."""
-
     platform: str
     channel: str
     user: str
@@ -99,6 +98,7 @@ class AdvisorsService:
         # Initialize LLM Manager for unified provider handling
         from ..llm.manager import get_global_llm_manager
 
+<<<<<<< HEAD
         self.llm_manager = get_global_llm_manager()
 
     @contextmanager
@@ -194,6 +194,14 @@ class AdvisorsService:
             finally:
                 thinking_manager.end_tool_call(agent_id, tool_name="browser_analyst")
         return None
+=======
+        # Use global manager if available or create new one
+        self.llm_manager = get_global_llm_manager(
+             openai_api_key=base_cfg.get("openai_api_key") or base_cfg.get("api_key"),
+             ollama_host=base_cfg.get("ollama_host"),
+             use_mock=False
+        )
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
     def handle_message(self, message: AdvisorMessage) -> AdvisorReply:
         """Process an incoming message and return an advisor response.
@@ -207,6 +215,13 @@ class AdvisorsService:
         if not self.enabled:
             raise RuntimeError("Advisors are not enabled")
 
+<<<<<<< HEAD
+=======
+        # Handle special commands
+        if message.text.startswith("summarize "):
+            return self._handle_summarize_command(message)
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Get or create context for this identity
         try:
             platform = PlatformType(message.platform.lower())
@@ -223,6 +238,7 @@ class AdvisorsService:
             **(message.metadata or {}),
         )
 
+<<<<<<< HEAD
         agent_id = f"{message.platform}-{message.channel}-{message.user}"
 
         try:
@@ -382,12 +398,161 @@ class AdvisorsService:
 
         except Exception as e:
             # Set error state if processing fails
+=======
+        agent_id = self._setup_thinking_state(message, context)
+
+        try:
+            combined_user_text = self._build_combined_history_text(
+                platform.value, message.channel, message.user, message.text
+            )
+
+            thinking_manager = get_thinking_manager()
+            thinking_manager.start_processing(agent_id, "Generating response...")
+
+            response, model_name, api_mode = self._generate_llm_response(
+                combined_user_text, message, context, platform
+            )
+
+            thinking_manager.start_responding(agent_id, "Finalizing response...")
+
+            self._record_exchange(
+                platform.value, message.channel, message.user, message.text, response
+            )
+
+            reply = self._build_advisor_reply(response, context, model_name, api_mode)
+
+            thinking_manager.set_idle(agent_id)
+            return reply
+
+        except Exception as e:
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             thinking_manager = get_thinking_manager()
             thinking_manager.set_error(agent_id, f"Error processing message: {str(e)}")
             raise
 
+    def _setup_thinking_state(self, message: AdvisorMessage, context) -> str:
+        """Small helper extracted to reduce handle_message complexity (setup phase)."""
+        agent_id = f"{message.platform}-{message.channel}-{message.user}"
+        thinking_manager = get_thinking_manager()
+        thinking_manager.register_agent(agent_id, context.persona_id)
+        thinking_manager.start_thinking(agent_id, "Processing your message...")
+        return agent_id
+
+    def _resolve_model_and_api(self, backend_name: str) -> tuple[str, str]:
+        """Small helper extracted from _generate_llm_response to reduce duplication and complexity in handle_message (qa rank 2).
+        Returns (model_name, api_mode) handling fallback names.
+        """
+        _fallback_names = {"mock", "none", "unknown"}
+        if backend_name in _fallback_names:
+            model_name = getattr(self.provider, "model", backend_name)
+            api_mode = getattr(self.provider, "api_mode", "chat")
+        else:
+            model_name = backend_name
+            api_mode = "chat"
+        return model_name, api_mode
+
+    def _generate_llm_response(
+        self, combined_user_text: str, message: AdvisorMessage, context, platform
+    ) -> tuple[str, str, str]:
+        """Small helper extracted to reduce handle_message complexity (LLM execution + post)."""
+        try:
+            persona_config = self._resolve_persona_config(context)
+
+            enhanced_prompt = self.conversation_engine.build_enhanced_prompt(
+                user_input=combined_user_text,
+                user_id=f"{message.platform}:{message.channel}:{message.user}",
+                persona_config=persona_config,
+                current_mode=getattr(self.config, "current_mode", "chatty"),
+            )
+
+            if hasattr(self, "llm_manager") and self.llm_manager:
+                response = self.llm_manager.generate_response(
+                    enhanced_prompt,
+                    model=getattr(self.llm_manager.active_backend, "model", "gpt-3.5-turbo"),
+                    max_tokens=self.config.get("max_tokens", 150),
+                    temperature=self.config.get("temperature", 0.7),
+                )
+                _backend_name = self.llm_manager.get_active_backend_name()
+                model_name, api_mode = self._resolve_model_and_api(_backend_name)
+            else:
+                response = self.provider.generate(enhanced_prompt)
+                model_name = getattr(self.provider, "model", "unknown")
+                api_mode = getattr(self.provider, "api_mode", "unknown")
+
+            response = self._apply_switch_mode_directives(response)
+
+            self.conversation_engine.record_conversation_turn(
+                user_id=f"{message.platform}:{message.channel}:{message.user}",
+                user_input=message.text,
+                assistant_response=response,
+                context={
+                    "persona_id": context.persona_id,
+                    "platform": message.platform,
+                },
+            )
+            return response, model_name, api_mode
+
+        except Exception as e:
+            return f"[LLM Error] {message.text} ({str(e)})", "error", "error"
+
+    def _build_combined_history_text(
+        self, platform_value: str, channel: str, user: str, current_text: str
+    ) -> str:
+        """Pure helper extracted from handle_message() to reduce complexity.
+
+        Fetches recent memory and builds combined history+current user text.
+        """
+        memory_items = self.memory.get(platform_value, channel, user)
+        history_text = (
+            "\n".join([f"{mi.role}: {mi.content}" for mi in memory_items])
+            if memory_items
+            else ""
+        )
+        return f"{history_text}\n{current_text}" if history_text else current_text
+
+    def _resolve_persona_config(self, context) -> dict:
+        """Pure helper extracted from handle_message() to reduce complexity.
+
+        Resolves persona config with support for str shorthand and context fallback.
+        """
+        personas_dict = self.config.get("personas", {}) or self.config.get(
+            "context", {}
+        ).get("personas", {})
+        persona_config = personas_dict.get(context.persona_id, {})
+        if isinstance(persona_config, str):
+            persona_config = {
+                "prompt": persona_config,
+                "name": context.persona_id,
+            }
+        return persona_config
+
+    def _apply_switch_mode_directives(self, response: str) -> str:
+        """Helper extracted from handle_message() to reduce complexity.
+
+        Handles SWITCH_MODE: directives by delegating to StateManager (side-effecting).
+        Preserves original error handling and response mutation behavior.
+        """
+        if not (isinstance(response, str) and "SWITCH_MODE:" in response):
+            return response
+        lines = response.split("\n")
+        for line in lines:
+            if line.strip().startswith("SWITCH_MODE:"):
+                _, target = line.strip().split(":", 1)
+                try:
+                    from ..app.state_manager import StateManager
+
+                    sm = StateManager()
+                    sm.change_state(target.strip())
+                    response = response.replace(
+                        line, f"✓ Switched to {target.strip()} mode"
+                    )
+                except Exception as e:
+                    response = response.replace(
+                        line, f"✗ Mode switch failed: {e}"
+                    )
+        return response
+
     def _handle_summarize_command(self, message: AdvisorMessage) -> AdvisorReply:
-        """Handle the summarize command."""
         from .tools.browser_analyst import browser_analyst_tool
 
         url = message.text[10:].strip()  # Remove "summarize " and surrounding whitespace
@@ -407,6 +572,25 @@ class AdvisorsService:
             persona_id="analyst",
             model=self.provider.model,
             api_mode=self.provider.api_mode,
+        )
+
+    def _record_exchange(
+        self, platform: str, channel: str, user: str, user_text: str, assistant_text: str
+    ) -> None:
+        """Small pure helper extracted from handle_message to reduce duplication and complexity."""
+        self.memory.add(platform, channel, user, "user", user_text)
+        self.memory.add(platform, channel, user, "assistant", assistant_text)
+
+    def _build_advisor_reply(
+        self, response: str, context, model_name: str, api_mode: str
+    ) -> AdvisorReply:
+        """Small pure helper extracted from handle_message to build the reply dataclass."""
+        return AdvisorReply(
+            reply=response,
+            context_key=context.identity.context_key,
+            persona_id=context.persona_id,
+            model=model_name,
+            api_mode=api_mode,
         )
 
     def switch_persona(self, context_key: str, persona_id: str) -> bool:

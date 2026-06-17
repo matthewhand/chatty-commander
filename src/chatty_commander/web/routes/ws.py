@@ -49,9 +49,6 @@ def include_ws_routes(
       - get_connections / set_connections: manage the shared connection set
       - get_state_snapshot: returns an initial payload describing current state
       - on_message: optional callback to process inbound JSON messages
-
-    Note:
-      Broadcast helpers remain in legacy for now; this router focuses on ingress/egress wiring.
     """
     router = APIRouter()
 

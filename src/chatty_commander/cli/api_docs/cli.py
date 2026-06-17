@@ -71,6 +71,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _configure_logging(verbosity: int) -> None:
+    """Configure logging level based on verbosity count from args."""
     level = logging.WARNING
     if verbosity == 1:
         level = logging.INFO

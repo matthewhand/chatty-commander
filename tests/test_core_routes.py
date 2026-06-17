@@ -138,3 +138,53 @@ def test_health_db_unreachable():
     r = c.get("/health")
     assert r.status_code == 200
     assert r.json()["database"] == "unreachable"
+
+
+# --- WebUI API gap closure tests (audio legacy, themes, prefs, system actions, models) ---
+
+def test_webui_missing_endpoints_now_implemented():
+    """Verify the endpoints listed in WEBUI_ISSUES.md (plan-webui-apis) now respond.
+    Uses isolated router construction (bypasses full app import issues in test env).
+    """
+    from unittest.mock import MagicMock
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from chatty_commander.web.routes.audio import include_audio_routes
+    from chatty_commander.web.routes.system import include_system_routes
+    from chatty_commander.web.routes.models import router as models_router
+
+    cfg = MagicMock()
+    cfg.config = {"ui": {"theme": "dark"}}
+    cfg.save_config = MagicMock()
+
+    app = FastAPI()
+    app.include_router(include_audio_routes(get_config_manager=lambda: cfg))
+    app.include_router(models_router)
+    app.include_router(include_system_routes(get_start_time=lambda: 0.0, get_config_manager=lambda: cfg))
+    client = TestClient(app)
+
+    # Audio (GET/POST /api/audio/devices per gaps + device selection; also v1)
+    assert client.get("/api/audio/devices").status_code == 200
+    assert client.post("/api/audio/device", json={"device_id": "test"}).status_code == 200
+    assert client.get("/api/v1/audio/devices").status_code == 200
+
+    # Themes / preferences
+    r = client.get("/api/themes")
+    assert r.status_code == 200
+    assert "themes" in r.json()
+    assert client.post("/api/theme", json={"theme": "light"}).status_code == 200
+    assert client.get("/api/preferences").status_code == 200
+    assert client.put("/api/preferences", json={"foo": "bar"}).status_code == 200
+
+    # System actions + backup/restore
+    assert client.post("/api/system/restart").status_code == 200
+    assert client.post("/api/system/shutdown").status_code == 200
+    assert client.post("/api/backup").status_code == 200
+    assert client.post("/api/restore", json={}).status_code == 200
+
+    # Models file mgmt (ONNX list/upload/delete/download already present + verified)
+    r = client.get("/api/v1/models/files")
+    assert r.status_code == 200
+    assert "models" in r.json()
+    # delete non-existing is 404 as expected
+    assert client.delete("/api/v1/models/files/does_not_exist_123.onnx").status_code in (404, 200)

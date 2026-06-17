@@ -61,7 +61,6 @@ _CATEGORY_HINTS = {
 
 
 def _default_animations_dir() -> Path:
-    """Resolve and return the default directory containing avatar animations."""
     # Default to the avatar webui directory; callers can override via query param.
     here = Path(__file__).resolve()
     # src/chatty_commander/web/routes/avatar_api.py -> up to src/chatty_commander
@@ -71,6 +70,7 @@ def _default_animations_dir() -> Path:
 
 
 def _infer_category(name: str) -> str:
+    """Resolve and return the default directory containing avatar animations."""
     lower = name.lower()
     for cat, hints in _CATEGORY_HINTS.items():
         for h in hints:
@@ -85,6 +85,13 @@ async def list_animations(
         default=None, description="Directory to scan for animations (optional)"
     ),
 ) -> dict[str, Any]:
+<<<<<<< HEAD
+=======
+    """List Animations with (dir).
+
+    TODO: Add detailed description and parameters.
+    """
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     try:
         base_dir = _default_animations_dir().resolve()
 
@@ -134,7 +141,6 @@ async def list_animations(
 
 @router.post("/avatar/launch")
 async def launch_avatar() -> dict[str, Any]:
-    """Launch the PyQt5 avatar in a separate process."""
     try:
         # Get the current Python executable and project root
         python_exe = sys.executable
@@ -179,3 +185,5 @@ async def launch_avatar() -> dict[str, Any]:
         raise HTTPException(
             status_code=500, detail=f"Failed to launch avatar: {str(e)}"
         ) from e
+
+    """Launch the PyQt5 avatar in a separate process."""

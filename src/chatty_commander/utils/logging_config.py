@@ -52,7 +52,6 @@ _request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 
 
 def get_request_id() -> str:
-    """Return the current request ID, or empty string if not in a request context."""
     return _request_id_var.get()
 
 
@@ -156,6 +155,7 @@ try:
         async def dispatch(
             self, request: Request, call_next: Callable[[Request], Any]
         ) -> Response:
+            """Dispatch the request, assigning and propagating a request ID."""
             request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
             token = _request_id_var.set(request_id)
             try:

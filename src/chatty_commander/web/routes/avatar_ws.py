@@ -60,12 +60,24 @@ class AvatarWSConnectionManager:
                     self._registered_manager.remove_broadcast_callback(
                         self.broadcast_state_change
                     )
+<<<<<<< HEAD
             except Exception as e:
                 logger.warning(f"Failed to remove broadcast callback: {e}")
             try:
                 mgr.add_broadcast_callback(self.broadcast_state_change)
             except Exception as e:
                 logger.warning(f"Failed to register broadcast callback: {e}")
+=======
+
+            except Exception:
+                pass
+            try:
+
+                mgr.add_broadcast_callback(self.broadcast_state_change)
+
+            except Exception:
+                pass
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             self._registered_manager = mgr
         return mgr
 
@@ -81,17 +93,29 @@ class AvatarWSConnectionManager:
             if self.theme_resolver and d.get("persona_id"):
                 try:
                     d["theme"] = self.theme_resolver(d["persona_id"])  # type: ignore[arg-type]
+<<<<<<< HEAD
                 except Exception as e:
                     logger.warning(f"Theme resolver failed for snapshot: {e}")
             data[agent_id] = d
         snapshot = {"type": "agent_states_snapshot", "data": data}
         try:
             await websocket.send_text(json.dumps(snapshot))
+=======
+                except Exception:
+                    pass
+            data[agent_id] = d
+        snapshot = {"type": "agent_states_snapshot", "data": data}
+        try:
+
+            await websocket.send_text(json.dumps(snapshot))
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             logger.error(f"Failed to send snapshot to avatar client: {e}")
 
     def disconnect(self, websocket: WebSocket):
         try:
+<<<<<<< HEAD
             self.active_connections.remove(websocket)
         except ValueError:
             pass
@@ -99,6 +123,15 @@ class AvatarWSConnectionManager:
     async def send_personal_message(
         self, message: dict[str, Any], websocket: WebSocket
     ):
+=======
+
+            self.active_connections.remove(websocket)
+
+        except ValueError:
+            pass
+
+    async def send_personal_message(self, message: dict[str, Any], websocket: WebSocket):
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         try:
             await websocket.send_text(json.dumps(message))
         except Exception as e:
@@ -111,6 +144,7 @@ class AvatarWSConnectionManager:
             persona_id = data.get("persona_id") if isinstance(data, dict) else None
             if self.theme_resolver and persona_id:
                 try:
+<<<<<<< HEAD
                     data["theme"] = self.theme_resolver(persona_id)  # type: ignore[index]
                 except Exception:
                     pass
@@ -118,6 +152,19 @@ class AvatarWSConnectionManager:
             pass
 
         async def _broadcast():
+=======
+    
+                    data["theme"] = self.theme_resolver(persona_id)  # type: ignore[index]
+    
+                except Exception:
+                    pass
+
+        except Exception:
+            pass
+
+        # Schedule broadcast (simple inline to avoid broken nested def)
+        async def _do_broadcast():
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             dead: list[WebSocket] = []
             for connection in list(self.active_connections):
                 try:
@@ -126,15 +173,16 @@ class AvatarWSConnectionManager:
                     dead.append(connection)
             for d in dead:
                 self.disconnect(d)
-
-        # Schedule or run the coroutine safely depending on context
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(_broadcast())
+            loop.create_task(_do_broadcast())
         except RuntimeError:
-            # Not in an event loop; run synchronously to avoid un-awaited coroutine warnings
             try:
+<<<<<<< HEAD
                 asyncio.run(_broadcast())
+=======
+                asyncio.run(_do_broadcast())
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except Exception as e:  # pragma: no cover
                 logger.error(f"Broadcast failed: {e}")
 
@@ -162,11 +210,15 @@ class AvatarAudioQueue:
 
     @property
     def is_speaking(self) -> bool:
+<<<<<<< HEAD
         """Return ``True`` if audio is currently being played."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return (
             self._current_play_task is not None and not self._current_play_task.done()
         )
 
+<<<<<<< HEAD
     # Real speaker output is not implemented; playback is simulated by sleeping
     # for an estimated duration so queue/interrupt sequencing can be exercised.
     # Callers can check this flag instead of assuming audio is actually heard.
@@ -186,6 +238,9 @@ class AvatarAudioQueue:
                 "AvatarAudioQueue received audio but real playback is not "
                 "implemented; simulating duration only (no sound is emitted)."
             )
+=======
+    async def _play_audio(self, audio: bytes | None) -> None:
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if audio:
             # Rough heuristic: 1000 bytes ~= 1 second
             await asyncio.sleep(max(len(audio) / 1000.0, 0))
@@ -193,6 +248,10 @@ class AvatarAudioQueue:
             await asyncio.sleep(0)
 
     async def _process(self) -> None:
+<<<<<<< HEAD
+=======
+        """Process queued avatar messages (placeholder playback)."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         while not self.queue.empty():
             agent_id, message, audio = await self.queue.get()
             start = {
@@ -203,6 +262,10 @@ class AvatarAudioQueue:
             try:
                 self._current_play_task = asyncio.create_task(self._play_audio(audio))
                 await self._current_play_task
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except asyncio.CancelledError:
                 end = {
                     "type": "avatar_audio_end",
@@ -233,13 +296,20 @@ class AvatarAudioQueue:
             try:
                 loop = asyncio.get_running_loop()
                 self._processor_task = loop.create_task(self._process())
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except RuntimeError:
                 asyncio.run(self._process())
 
     async def enqueue(
         self, agent_id: str, message: str, audio: bytes | None = None
     ) -> None:
+<<<<<<< HEAD
         """Add a message to the queue for playback."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         await self.queue.put((agent_id, message, audio))
         self._ensure_processor()
 
@@ -277,13 +347,13 @@ audio_queue = AvatarAudioQueue(manager)
 async def queue_avatar_message(
     agent_id: str, message: str, audio: bytes | None = None
 ) -> None:
-    """Public helper to queue avatar speech."""
     await audio_queue.enqueue(agent_id, message, audio)
 
 
 async def interrupt_avatar_queue(
     agent_id: str, message: str, audio: bytes | None = None
 ) -> None:
+    """Public helper to queue avatar speech."""
     """Public helper to interrupt current avatar speech with a priority message."""
     await audio_queue.interrupt(agent_id, message, audio)
 
@@ -297,6 +367,10 @@ async def avatar_ws_endpoint(websocket: WebSocket):
             # Basic protocol: expect JSON messages with type and data
             try:
                 msg = json.loads(data)
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except json.JSONDecodeError:
                 continue
             # Handle control messages if needed (e.g., avatar ready)
@@ -308,6 +382,7 @@ async def avatar_ws_endpoint(websocket: WebSocket):
             # Future: map avatar_id to agent_id etc
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+<<<<<<< HEAD
     except Exception as e:
         logger.error(f"Avatar WS error: {e}")
         manager.disconnect(websocket)
@@ -318,3 +393,14 @@ async def avatar_ws_endpoint(websocket: WebSocket):
             await websocket.close()
         except Exception:
             pass
+=======
+
+    except Exception as e:
+        logger.error(f"Avatar WS error: {e}")
+        manager.disconnect(websocket)
+
+    """Avatar Ws Endpoint with (websocket: WebSocket).
+
+    TODO: Add detailed description and parameters.
+    """
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16

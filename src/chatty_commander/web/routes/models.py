@@ -77,9 +77,12 @@ DEFAULT_MODEL_DIRS = ["models-idle", "models-computer", "models-chatty", "wakewo
 
 
 def _format_size(size_bytes: int) -> str:
-    """Format bytes to human-readable string."""
     size: float = float(size_bytes)
     for unit in ["B", "KB", "MB", "GB"]:
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if size < 1024:
             return f"{size:.1f} {unit}"
         size /= 1024
@@ -87,18 +90,22 @@ def _format_size(size_bytes: int) -> str:
 
 
 def _get_model_dirs() -> list[Path]:
+    """Format bytes to human-readable string."""
     """Get list of model directories to scan."""
     # Check for model directories in current working directory
     dirs = []
     for dir_name in DEFAULT_MODEL_DIRS:
         path = Path(dir_name)
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if path.exists() and path.is_dir():
             dirs.append(path)
     return dirs
 
 
 def _scan_model_files() -> list[ModelFileInfo]:
-    """Scan all model directories for ONNX files."""
     models = []
     model_dirs = _get_model_dirs()
 
@@ -107,8 +114,15 @@ def _scan_model_files() -> list[ModelFileInfo]:
         dir_name = model_dir.name
         if "idle" in dir_name:
             state = "idle"
+<<<<<<< HEAD
         elif "computer" in dir_name:
             state = "computer"
+=======
+
+        elif "computer" in dir_name:
+            state = "computer"
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         elif "chatty" in dir_name:
             state = "chatty"
         else:
@@ -133,6 +147,7 @@ def _scan_model_files() -> list[ModelFileInfo]:
 
 
 def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
+<<<<<<< HEAD
     """Create router for model file management.
 
     Args:
@@ -141,6 +156,8 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
     Returns:
         FastAPI router with model management endpoints
     """
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     router = APIRouter(prefix="/api/v1/models", tags=["models"])
 
     @router.get("/files", response_model=ModelListResponse)
@@ -148,7 +165,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         """List all available ONNX model files."""
         models = _scan_model_files()
         total_size = sum(m.size_bytes for m in models)
-
         return ModelListResponse(
             models=models,
             total_count=len(models),
@@ -161,15 +177,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         file: UploadFile = File(...),
         state: str | None = None,
     ):
-        """Upload a new ONNX model file.
-
-        Args:
-            file: The uploaded file
-            state: Optional state to associate (idle/computer/chatty)
-
-        Returns:
-            Upload confirmation
-        """
         # Validate file extension
         if not file.filename or not file.filename.lower().endswith(".onnx"):
             raise HTTPException(
@@ -183,6 +190,10 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         else:
             target_dir = Path(upload_dir)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Create directory if it doesn't exist
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -207,6 +218,10 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 detail="Invalid filename: path escapes target directory"
             ) from None
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Check if file already exists
         if file_path.exists():
             raise HTTPException(
@@ -235,14 +250,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
 
     @router.get("/download/{filename}")
     async def download_model_file(filename: str):
-        """Download an ONNX model file.
-
-        Args:
-            filename: Name of the file to download
-
-        Returns:
-            File download response
-        """
+        """Download an ONNX model file."""
         # Find the file in model directories
         models = _scan_model_files()
         matching = [m for m in models if m.name == filename]
@@ -269,14 +277,7 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
 
     @router.delete("/files/{filename}", response_model=DeleteResponse)
     async def delete_model_file(filename: str):
-        """Delete an ONNX model file.
-
-        Args:
-            filename: Name of the file to delete
-
-        Returns:
-            Deletion confirmation
-        """
+        """Delete an ONNX model file."""
         # Find the file in model directories
         models = _scan_model_files()
         matching = [m for m in models if m.name == filename]

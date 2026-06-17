@@ -86,8 +86,6 @@ class LLMManager:
         ollama_model: str,
         local_model: str,
     ):
-        """Initialize all available backends."""
-
         # Always initialize mock backend
         self.backends["mock"] = MockLLMBackend()
 
@@ -148,7 +146,10 @@ class LLMManager:
         logger.warning("All backends failed, using mock backend")
 
     def is_available(self) -> bool:
+<<<<<<< HEAD
         """Check if any backend is available."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return self.active_backend is not None
 
     def generate_response(self, prompt: str, **kwargs) -> str:
@@ -292,7 +293,6 @@ class LLMManager:
 
 # Convenience function for quick LLM access
 def get_default_llm_manager(**kwargs) -> LLMManager:
-    """Get a default LLM manager with standard configuration."""
     return LLMManager(**kwargs)
 
 

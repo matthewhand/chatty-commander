@@ -33,14 +33,6 @@ logger = logging.getLogger(__name__)
 
 
 def generate_docs(output_dir: Path | None = None) -> dict[str, Path]:
-    """
-    Orchestrate API documentation generation.
-
-    - Builds OpenAPI schema (pure)
-    - Generates Markdown docs (pure)
-    - Writes artifacts to disk under docs/ (or provided output_dir)
-    - Returns mapping of artifact names to their output paths
-    """
     project_root = Path.cwd()
     docs_dir = Path(output_dir) if output_dir else (project_root / "docs")
     ensure_dir(docs_dir)
@@ -91,3 +83,12 @@ When the server is running, you can access interactive API documentation at:
         "markdown": markdown_file,
         "index": index_file,
     }
+
+    """
+    Orchestrate API documentation generation.
+
+    - Builds OpenAPI schema (pure)
+    - Generates Markdown docs (pure)
+    - Writes artifacts to disk under docs/ (or provided output_dir)
+    - Returns mapping of artifact names to their output paths
+    """

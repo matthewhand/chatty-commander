@@ -221,7 +221,6 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
         self._lock = threading.Lock()
 
     def get_average_ms(self) -> float:
-        """Return the current rolling average response time in milliseconds."""
         with self._lock:
             return (
                 sum(self._response_times) / len(self._response_times)
@@ -229,9 +228,13 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
                 else 0.0
             )
 
+<<<<<<< HEAD
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Any]
     ) -> Any:
+=======
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         start_time = time.time()
         response = await call_next(request)
         duration_ms = (time.time() - start_time) * 1000.0
@@ -269,11 +272,10 @@ def include_core_routes(
     get_total_commands: Callable[[], int] | None = None,
     response_time_middleware: ResponseTimeMiddleware | None = None,
 ) -> APIRouter:
-    """
-    Provide core REST routes as an APIRouter. This module is pure routing; it pulls
-    required data/functionality through callables to avoid tight coupling.
+    """Provide core REST routes as an APIRouter.
 
-    The signatures match what legacy web_mode currently exposes.
+    This module is pure routing; it pulls required data/functionality through
+    callables to avoid tight coupling.
     """
     router = APIRouter()
 
@@ -285,8 +287,22 @@ def include_core_routes(
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
 
+    # Basic in-memory metrics counters (per-router instance)
+    counters = {
+        "status": 0,
+        "config_get": 0,
+        "config_put": 0,
+        "state_get": 0,
+        "state_post": 0,
+        "command_post": 0,
+    }
+
     @router.get("/api/v1/status", response_model=SystemStatus)
     async def get_status():
+<<<<<<< HEAD
+=======
+        """Return current system status."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
         sm = get_state_manager()
@@ -323,19 +339,53 @@ def include_core_routes(
 
         cfg_mgr = get_config_manager()
         cfg = getattr(cfg_mgr, "config", {})
+<<<<<<< HEAD
         # Look for database_url in general_settings or root
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         db_url = cfg.get("database_url") or cfg.get("general_settings", {}).get(
             "database_url"
         )
 
         if db_url:
-
             def _check_db():
+<<<<<<< HEAD
+=======
+                global _ENGINE_CACHE_HITS, _ENGINE_CACHE_MISSES
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 try:
                     from sqlalchemy import create_engine, text
                     from sqlalchemy.pool import NullPool
 
+<<<<<<< HEAD
                     engine = create_engine(db_url, poolclass=NullPool)
+=======
+                    with _ENGINES_LOCK:
+                        now = time.time()
+                        cached = _ENGINES.get(db_url)
+                        # Check TTL expiration
+                        if cached and (now - cached[1]) > _ENGINE_TTL_SECONDS:
+                            # Expired - dispose and remove
+                            cached[0].dispose()
+                            del _ENGINES[db_url]
+                            cached = None
+
+                        if cached:
+                            _ENGINE_CACHE_HITS += 1
+                            engine = cached[0]
+                        else:
+                            _ENGINE_CACHE_MISSES += 1
+                            # Evict oldest if at capacity
+                            if len(_ENGINES) >= _MAX_ENGINES:
+                                oldest_url = min(
+                                    _ENGINES.keys(), key=lambda k: _ENGINES[k][1]
+                                )
+                                _ENGINES[oldest_url][0].dispose()
+                                del _ENGINES[oldest_url]
+                            engine = create_engine(db_url, poolclass=NullPool)
+                            _ENGINES[db_url] = (engine, now)
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                     with engine.connect() as conn:
                         conn.execute(text("SELECT 1")).scalar()
                     engine.dispose()
@@ -371,7 +421,14 @@ def include_core_routes(
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
+<<<<<<< HEAD
         """Get application metrics and performance data."""
+=======
+        """Retrieve operation.
+
+        TODO: Add detailed description and parameters.
+        """
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         uptime_seconds = time.time() - get_start_time()
         total_requests = sum(counters.values())
 
@@ -411,23 +468,32 @@ def include_core_routes(
 
     @router.get("/api/v1/config")
     async def get_config():
+<<<<<<< HEAD
+=======
+        """Retrieve current configuration (masked)."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["config_get"] += 1
-        cfg_mgr = get_config_manager()
-        config_data = dict(getattr(cfg_mgr, "config", {}))
-
-        # Mask sensitive data before returning
-        config_data = mask_sensitive_data(config_data)
-
-        # Expose which fields are overridden by the environment
-        env_overrides = {
-            "api_key": bool(os.environ.get("OPENAI_API_KEY")),
-            "base_url": bool(
-                os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")
-            ),
-            "model": bool(os.environ.get("OPENAI_MODEL")),
-        }
-        config_data["_env_overrides"] = env_overrides
-        return config_data
+        try:
+            cfg_mgr = get_config_manager()
+            cfg = getattr(cfg_mgr, "config", {})
+            if isinstance(cfg, dict):
+                config_data = dict(cfg)
+                # Mask sensitive data before returning
+                config_data = mask_sensitive_data(config_data)
+                # Expose which fields are overridden by the environment
+                env_overrides = {
+                    "api_key": bool(os.environ.get("OPENAI_API_KEY")),
+                    "base_url": bool(
+                        os.environ.get("OPENAI_BASE_URL")
+                        or os.environ.get("OPENAI_API_BASE")
+                    ),
+                    "model": bool(os.environ.get("OPENAI_MODEL")),
+                }
+                config_data["_env_overrides"] = env_overrides
+                return config_data
+            return {}
+        except Exception as err:
+            raise HTTPException(status_code=500, detail=str(err)) from err
 
     @router.put(
         "/api/v1/config",
@@ -438,6 +504,10 @@ def include_core_routes(
         dependencies=[Depends(require_role("admin"))],
     )
     async def update_config(config_data: dict[str, Any]):
+<<<<<<< HEAD
+=======
+        """Update configuration with allowed keys only."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["config_put"] += 1
 
         rejected_keys = sorted(set(config_data) - ALLOWED_CONFIG_KEYS)
@@ -469,16 +539,12 @@ def include_core_routes(
         except Exception as err:
             raise HTTPException(status_code=500, detail=str(err)) from err
 
-    @router.get("/api/v1/commands")  # type: ignore[no-redef]  # noqa: F811
-    async def get_commands_config():
-        """Get the configured commands."""
-        counters["config_get"] += 1
-        cfg_mgr = get_config_manager()
-        # Return the 'commands' dictionary directly from the config
-        return getattr(cfg_mgr, "commands", {})
-
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
+<<<<<<< HEAD
+=======
+        """Get current state info."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["state_get"] += 1
         sm = get_state_manager()
         return StateInfo(
@@ -501,6 +567,10 @@ def include_core_routes(
         dependencies=[Depends(require_scope("state:write"))],
     )
     async def change_state(request: StateChangeRequest):
+<<<<<<< HEAD
+=======
+        """Change the application state."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["state_post"] += 1
         try:
             sm = get_state_manager()
@@ -510,6 +580,7 @@ def include_core_routes(
         except Exception as err:
             raise HTTPException(status_code=400, detail=str(err)) from err
 
+<<<<<<< HEAD
     # Per-router token bucket for the command endpoint. Resolved once at
     # router construction; None means rate limiting is disabled (the default
     # under pytest — see _resolve_command_rate_limit).
@@ -527,6 +598,11 @@ def include_core_routes(
         dependencies=[Depends(require_role("user"))],
     )
     async def execute_command(request: CommandRequest, http_request: Request):
+=======
+    @router.post("/api/v1/command", response_model=CommandResponse)
+    async def execute_command(request: CommandRequest):
+        """Execute a command via the provided executor."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["command_post"] += 1
         if command_rate_limiter is not None:
             allowed, retry_after = command_rate_limiter.try_acquire(
@@ -565,20 +641,11 @@ def include_core_routes(
                 execution_time=execution_time,
             )
 
-    # Basic in-memory metrics counters (per-router instance)
-    counters = {
-        "status": 0,
-        "config_get": 0,
-        "config_put": 0,
-        "state_get": 0,
-        "state_post": 0,
-        "command_post": 0,
-    }
-
     @router.get(
         "/api/v1/health", operation_id="health_check_core", response_model=HealthStatus
     )
     async def health_check_core():
+<<<<<<< HEAD
         counters["status"] += 1
         return await health_check()
 
@@ -594,4 +661,10 @@ def include_core_routes(
         metrics_dict["response_time_avg"] = round(avg_duration, 2)
         return metrics_dict
 
+=======
+        """Health check alias for metrics/status."""
+        counters["status"] += 1
+        return await health_check()
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     return router

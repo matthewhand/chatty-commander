@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 def add_voice_subcommands(subparsers) -> None:
-    """Add voice-related subcommands to CLI parser."""
     # Voice command group
     voice_parser = subparsers.add_parser(
         "voice",
@@ -112,6 +111,7 @@ def add_voice_subcommands(subparsers) -> None:
 def handle_voice_command(
     args, config_manager=None, command_executor=None, state_manager=None
 ) -> None:
+    """Handle voice-related CLI commands."""
     if not hasattr(args, "voice_command") or not args.voice_command:
         print("No voice command specified. Use --help for available commands.")
         return
@@ -138,7 +138,6 @@ def handle_voice_command(
 def _handle_voice_test(
     args, config_manager=None, command_executor=None, state_manager=None
 ) -> None:
-    """Handle voice test command."""
     print("🎤 Starting voice pipeline test...")
 
     try:
@@ -185,22 +184,27 @@ def _handle_voice_test(
             time.sleep(2)
             print("\n🧪 Testing text command processing...")
             pipeline.process_text_command("hello there")
-
         else:
             print("🎯 Say a wake word followed by a command...")
             print("   Example: 'Hey Jarvis, hello world'")
 
+<<<<<<< HEAD
         # Wait for specified duration
         time.sleep(args.duration)
+=======
+            # Wait for specified duration
+            time.sleep(args.duration)
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
-        # Stop pipeline
-        pipeline.stop()
-        print("✅ Voice pipeline test completed")
+            # Stop pipeline
+            pipeline.stop()
+            print("✅ Voice pipeline test completed")
 
     except Exception as e:
         print(f"❌ Voice test failed: {e}")
         logger.error(f"Voice test error: {e}")
 
+<<<<<<< HEAD
 
 def _handle_voice_status(args) -> None:
     """Handle voice status command."""
@@ -224,6 +228,8 @@ def _handle_voice_status(args) -> None:
             else:
                 print(f"❌ {name}: Not installed")
 
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Test pipeline creation
         try:
             pipeline = VoicePipeline(use_mock=True)
@@ -243,7 +249,6 @@ def _handle_voice_status(args) -> None:
 
 
 def _handle_voice_transcribe(args) -> None:
-    """Handle voice transcribe command."""
     print(f"🎤 Testing transcription with {args.backend} backend...")
 
     try:
@@ -280,7 +285,6 @@ def _handle_voice_transcribe(args) -> None:
 
 # Example usage function for integration testing
 def demo_voice_integration(config_manager=None, command_executor=None) -> None:
-    """Demo function showing voice integration capabilities."""
     print("🎤 ChattyCommander Voice Integration Demo")
     print("=" * 50)
 

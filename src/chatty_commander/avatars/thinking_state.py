@@ -71,7 +71,10 @@ class AgentStateInfo:
             self.timestamp = time.time()
 
     def to_dict(self) -> dict[str, Any]:
+<<<<<<< HEAD
         """Convert to dictionary for JSON serialization."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         data = asdict(self)
         data["state"] = self.state.value
         return data
@@ -91,6 +94,7 @@ class ThinkingStateManager:
     """
 
     def __init__(self):
+        """Initialize the thinking state manager."""
         self.agent_states: dict[str, AgentStateInfo] = {}
         self.avatar_mappings: dict[str, str] = {}  # agent_id -> avatar_id
         self.broadcast_callbacks: set[Callable[[dict[str, Any]], None] | Callable[[dict[str, Any]], Awaitable[None]]] = set()
@@ -111,8 +115,13 @@ class ThinkingStateManager:
                 state=ThinkingState.IDLE,
             )
 
+<<<<<<< HEAD
             if avatar_id:
                 self.avatar_mappings[agent_id] = avatar_id
+=======
+        if avatar_id:
+            self.avatar_mappings[agent_id] = avatar_id
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
         self._broadcast_state_change(agent_id)
 
@@ -138,9 +147,13 @@ class ThinkingStateManager:
         self._broadcast_state_change(agent_id)
 
     def get_agent_state(self, agent_id: str) -> AgentStateInfo | None:
+<<<<<<< HEAD
         """Get current state of an agent."""
         with self._lock:
             return self.agent_states.get(agent_id)
+=======
+        return self.agent_states.get(agent_id)
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
     def get_all_states(self) -> dict[str, AgentStateInfo]:
         """Get all agent states."""
@@ -148,6 +161,7 @@ class ThinkingStateManager:
             return self.agent_states.copy()
 
     def map_agent_to_avatar(self, agent_id: str, avatar_id: str) -> None:
+<<<<<<< HEAD
         """Map an agent to a specific avatar for visual correlation."""
         with self._lock:
             self.avatar_mappings[agent_id] = avatar_id
@@ -156,6 +170,12 @@ class ThinkingStateManager:
                 self.agent_states[agent_id].avatar_id = avatar_id
 
         if mapped:
+=======
+        self.avatar_mappings[agent_id] = avatar_id
+
+        if agent_id in self.agent_states:
+            self.agent_states[agent_id].avatar_id = avatar_id
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             self._broadcast_state_change(agent_id)
 
     def add_broadcast_callback(
@@ -181,10 +201,14 @@ class ThinkingStateManager:
             self.broadcast_callbacks.discard(callback)
 
     def _broadcast(self, message: dict[str, Any]) -> None:
+<<<<<<< HEAD
         # Snapshot callbacks under the lock, then invoke them outside it so a
         # callback may safely re-enter the manager without deadlocking.
         with self._lock:
             callbacks = list(self.broadcast_callbacks)
+=======
+        callbacks = list(self.broadcast_callbacks.copy())
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         for callback in callbacks:
             try:
                 if inspect.iscoroutinefunction(callback):
@@ -200,6 +224,7 @@ class ThinkingStateManager:
                 logger.error(f"Error in broadcast callback: {e}")
 
     def _broadcast_state_change(self, agent_id: str) -> None:
+<<<<<<< HEAD
         """Broadcast state change to all registered callbacks."""
         with self._lock:
             agent_info = self.agent_states.get(agent_id)
@@ -210,10 +235,24 @@ class ThinkingStateManager:
                 "data": agent_info.to_dict(),
                 "timestamp": time.time(),
             }
+=======
+        agent_info = self.agent_states.get(agent_id)
+        if not agent_info:
+            return
+        message = {
+            "type": "agent_state_change",
+            "data": agent_info.to_dict(),
+            "timestamp": time.time(),
+        }
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         self._broadcast(message)
 
     # Tool calling lifecycle events
     def start_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
+<<<<<<< HEAD
+=======
+        """Start a tool call for the agent."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         self.set_agent_state(
             agent_id,
             ThinkingState.TOOL_CALLING,
@@ -227,6 +266,7 @@ class ThinkingStateManager:
             }
         )
 
+<<<<<<< HEAD
     def end_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
         # Return to processing by default
         self.set_agent_state(agent_id, ThinkingState.PROCESSING)
@@ -238,10 +278,13 @@ class ThinkingStateManager:
             }
         )
 
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     # Agent handoff lifecycle
     def handoff_start(
         self, agent_id: str, to_agent_persona: str, reason: str | None = None
     ) -> None:
+        """Start an agent handoff."""
         self.set_agent_state(agent_id, ThinkingState.HANDOFF, reason)
         self._broadcast(
             {
@@ -255,6 +298,20 @@ class ThinkingStateManager:
             }
         )
 
+<<<<<<< HEAD
+=======
+    def end_tool_call(self, agent_id: str, tool_name: str | None = None) -> None:
+        """End a tool call for the agent."""
+        self.set_agent_state(agent_id, ThinkingState.PROCESSING)
+        self._broadcast(
+            {
+                "type": "tool_call_end",
+                "data": {"agent_id": agent_id, "tool": tool_name},
+                "timestamp": time.time(),
+            }
+        )
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     def handoff_complete(self, agent_id: str, new_persona_id: str) -> None:
         # Update persona mapping and return to idle
         with self._lock:
@@ -274,7 +331,6 @@ class ThinkingStateManager:
         self.set_agent_state(agent_id, ThinkingState.THINKING, message)
 
     def start_processing(self, agent_id: str, message: str | None = None) -> None:
-        """Convenience method to set processing state."""
         self.set_agent_state(agent_id, ThinkingState.PROCESSING, message)
 
     def start_responding(self, agent_id: str, message: str | None = None) -> None:
@@ -282,7 +338,6 @@ class ThinkingStateManager:
         self.set_agent_state(agent_id, ThinkingState.RESPONDING, message)
 
     def set_idle(self, agent_id: str) -> None:
-        """Convenience method to set idle state."""
         self.set_agent_state(agent_id, ThinkingState.IDLE)
 
     def set_error(self, agent_id: str, error_message: str) -> None:
@@ -309,14 +364,13 @@ def reset_thinking_manager() -> None:
 
 
 class ThinkingStateContext:
-    """Context manager for automatic thinking state transitions."""
-
     def __init__(
         self,
         agent_id: str,
         thinking_message: str = "Processing...",
         responding_message: str = "Generating response...",
     ):
+        """Context manager for automatic thinking state transitions."""
         self.agent_id = agent_id
         self.thinking_message = thinking_message
         self.responding_message = responding_message
@@ -333,7 +387,6 @@ class ThinkingStateContext:
             self.manager.set_idle(self.agent_id)
 
     def start_responding(self):
-        """Transition to responding state."""
         self.manager.start_responding(self.agent_id, self.responding_message)
 
 
@@ -346,8 +399,13 @@ def with_thinking_state(
     """Decorator to automatically manage thinking states during function execution."""
 
     def decorator(func):
+<<<<<<< HEAD
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+=======
+        def wrapper(*args, **kwargs):
+            """Wrapper for decorated function with thinking state."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             with ThinkingStateContext(agent_id, thinking_msg, responding_msg) as ctx:
                 result = func(*args, **kwargs)
                 ctx.start_responding()

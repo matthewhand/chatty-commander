@@ -138,6 +138,7 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
         def allowed(label: str) -> bool:
             return (not labels) or (label in labels)
 
+<<<<<<< HEAD
         allowed_labels = labels or _ALL_LABELS
 
         # Prefer an LLM-backed classification when a backend is available; the
@@ -153,5 +154,14 @@ async def choose_animation(req: AnimationChooseRequest) -> Any:
 
         # Deterministic keyword-hint fallback (also used when no LLM is present).
         return _hint_classify(text, allowed)
+=======
+        # Hint-based deterministic classifier (placeholder for LLM)
+        for label, keywords in _HINTS.items():
+            if not allowed(label):
+                continue
+            if any(k in text for k in keywords):
+                return AnimationChooseResponse(label=label, confidence=0.8)
+        return AnimationChooseResponse(label="neutral", confidence=0.5)
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

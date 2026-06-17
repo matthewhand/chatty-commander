@@ -44,6 +44,10 @@ from typing import Any
 
 try:
     import uvicorn
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except ImportError:
     uvicorn = None  # type: ignore[assignment]
 
@@ -71,6 +75,10 @@ try:
         configure_logging,
     )
     _LOGGING_CONFIG_AVAILABLE = True
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except Exception:  # pragma: no cover
     RequestIdMiddleware = None  # type: ignore[assignment,misc]
     configure_logging = None  # type: ignore[assignment]
@@ -78,9 +86,14 @@ except Exception:  # pragma: no cover
 try:
     from chatty_commander.obs.metrics import RequestMetricsMiddleware
     _OBS_METRICS_AVAILABLE = True
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except Exception:  # pragma: no cover - optional dependency path
     RequestMetricsMiddleware = None  # type: ignore[assignment,misc]
     _OBS_METRICS_AVAILABLE = False
+<<<<<<< HEAD
 from chatty_commander.web.routes.voice import include_voice_routes
 from chatty_commander.web.routes.ws import include_ws_routes
 
@@ -89,6 +102,43 @@ from chatty_commander.web.routes.ws import include_ws_routes
 # ensure_no_auth_allowed is the shared production guard for the dev auth
 # bypass (refuses no_auth=True when CHATTY_ENV=production).
 from chatty_commander.web.server import ensure_no_auth_allowed, register_shared_routers
+=======
+try:
+    from chatty_commander.web.routes.audio import include_audio_routes
+
+except ImportError:
+    include_audio_routes = None  # type: ignore[assignment]
+from chatty_commander.web.routes.version import router as version_router
+from chatty_commander.web.routes.voice import include_voice_routes
+from chatty_commander.web.routes.ws import include_ws_routes
+
+# Avatar routes (optional)
+try:
+    from chatty_commander.web.routes.avatar_api import router as avatar_api_router
+
+except ImportError:
+    avatar_api_router = None  # type: ignore[assignment]
+
+try:
+    from chatty_commander.web.routes.avatar_ws import router as avatar_ws_router
+
+except ImportError:
+    avatar_ws_router = None  # type: ignore[assignment]
+
+try:
+    from chatty_commander.web.routes.avatar_selector import (
+        router as avatar_selector_router,
+    )
+
+except ImportError:
+    avatar_selector_router = None  # type: ignore[assignment]
+
+try:
+    from .routes.agents import router as agents_router
+
+except ImportError:
+    agents_router = None  # type: ignore[assignment]
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -144,6 +194,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "frame-ancestors 'none'"
         )
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Remove server header for security
         if "server" in response.headers:
             del response.headers["server"]
@@ -184,12 +238,23 @@ def get_client_ip(
 
     try:
         direct_addr = ip_address(direct_ip)
+<<<<<<< HEAD
     except ValueError:
+=======
+    
+    except ValueError:
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return direct_ip  # Invalid IP format, fall back to direct
 
     is_trusted_proxy = False
     for proxy in trusted_proxies:
         try:
+<<<<<<< HEAD
+=======
+        
+    
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if "/" in proxy:
                 # CIDR range (e.g., "10.0.0.0/8")
                 network = ip_network(proxy, strict=False)
@@ -201,6 +266,10 @@ def get_client_ip(
                 if direct_addr == ip_address(proxy):
                     is_trusted_proxy = True
                     break
+<<<<<<< HEAD
+=======
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except ValueError:
             continue  # Skip invalid proxy definitions
 
@@ -219,15 +288,25 @@ def get_client_ip(
         for ip_str in reversed(ips):
             try:
                 ip_addr = ip_address(ip_str)
+<<<<<<< HEAD
+=======
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 # Check if this IP is NOT a trusted proxy
                 is_proxy = False
                 for proxy in trusted_proxies:
                     try:
+<<<<<<< HEAD
+=======
+                    
+                
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                         if "/" in proxy:
                             if ip_addr in ip_network(proxy, strict=False):
                                 is_proxy = True
                                 break
                         else:
+<<<<<<< HEAD
                             if ip_addr == ip_address(proxy):
                                 is_proxy = True
                                 break
@@ -235,6 +314,19 @@ def get_client_ip(
                         continue
                 if not is_proxy:
                     return ip_str
+=======
+                    
+                            if ip_addr == ip_address(proxy):
+                                is_proxy = True
+                                break
+                    
+                    except ValueError:
+                        continue
+        
+                if not is_proxy:
+                    return ip_str
+            
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except ValueError:
                 continue  # Skip invalid IPs
 
@@ -242,16 +334,26 @@ def get_client_ip(
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
         try:
+<<<<<<< HEAD
+=======
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             ip_addr = ip_address(real_ip)
             # Verify it's not a trusted proxy IP
             is_proxy = False
             for proxy in trusted_proxies:
                 try:
+<<<<<<< HEAD
+=======
+                
+            
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                     if "/" in proxy:
                         if ip_addr in ip_network(proxy, strict=False):
                             is_proxy = True
                             break
                     else:
+<<<<<<< HEAD
                         if ip_addr == ip_address(proxy):
                             is_proxy = True
                             break
@@ -259,6 +361,19 @@ def get_client_ip(
                     continue
             if not is_proxy:
                 return real_ip
+=======
+                
+                        if ip_addr == ip_address(proxy):
+                            is_proxy = True
+                            break
+                
+                except ValueError:
+                    continue
+    
+            if not is_proxy:
+                return real_ip
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except ValueError:
             pass
 
@@ -412,6 +527,10 @@ class WebModeServer:
         # Optional advisors service (enabled via config)
         try:
             self.advisors_service = AdvisorsService(config=config_manager)  # type: ignore[arg-type]
+<<<<<<< HEAD
+=======
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:  # noqa: BLE001
             logger.debug(
                 "AdvisorsService init failed; continuing without advisors: %s", e
@@ -436,6 +555,10 @@ class WebModeServer:
         # Hook state change broadcasts
         self.state_manager.add_state_change_callback(self._on_state_change)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Register startup/shutdown handlers for telemetry lifecycle
         @self.app.on_event("startup")
         async def start_telemetry_loop() -> None:
@@ -480,10 +603,12 @@ class WebModeServer:
             get_poller_registry().clear()
 
     async def _telemetry_loop(self) -> None:
-        """Background task to broadcast system telemetry.
 
+<<<<<<< HEAD
         Runs until _telemetry_running is False or the task is cancelled.
         """
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         while self._telemetry_running:
             try:
                 import psutil
@@ -497,12 +622,23 @@ class WebModeServer:
                         data={
                             "cpu": cpu,
                             "memory": memory,
+<<<<<<< HEAD
+=======
+                    
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                             "timestamp": datetime.now().isoformat(),
                         },
                     )
                 )
+<<<<<<< HEAD
             except asyncio.CancelledError:
                 raise  # Allow cancellation to propagate
+=======
+            
+            except asyncio.CancelledError:
+                raise  # Allow cancellation to propagate
+            
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except Exception as e:  # noqa: BLE001
                 logger.debug("Telemetry loop error: %s", e)
 
@@ -518,7 +654,6 @@ class WebModeServer:
         return self.command_executor.execute_command(cmd)
 
     def _clear_expired_cache(self) -> None:
-        """Clear expired cache entries to prevent memory leaks."""
         current_time = time.time()
         if current_time - self._last_cache_clear > self._cache_timeout:
             self._command_cache.clear()
@@ -577,6 +712,10 @@ class WebModeServer:
             title="ChattyCommander API",
             description="Voice command automation system with web interface",
             version="0.2.0",
+<<<<<<< HEAD
+=======
+    
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             docs_url="/docs" if self.no_auth else None,
             redoc_url="/redoc" if self.no_auth else None,
         )
@@ -601,10 +740,18 @@ class WebModeServer:
             AuthMiddleware, config_manager=self.config_manager, no_auth=self.no_auth
         )
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Get trusted proxies from config (for secure IP extraction behind proxies)
         trusted_proxies: list[str] = []
         if hasattr(self.config_manager, "web_server"):
             trusted_proxies = self.config_manager.web_server.get("trusted_proxies", [])
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not trusted_proxies:
             # Default: trust common private proxy ranges for Docker/Kubernetes
             trusted_proxies = [
@@ -623,6 +770,7 @@ class WebModeServer:
 
         app.add_middleware(ResponseTimeMiddleware)
 
+<<<<<<< HEAD
         # CORS policy — delegate to shared apply_cors() for consistency.
         # SECURITY: even in no_auth (dev) mode the allowlist stays pinned to
         # localhost origins. no_auth disables authentication entirely, so a
@@ -633,6 +781,10 @@ class WebModeServer:
         # origin is genuinely required.
         import os
 
+=======
+
+        # CORS policy — delegate to shared apply_cors() for consistency
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         from chatty_commander.web.auth import apply_cors
 
         env_origins = os.environ.get("CHATTY_CORS_ORIGINS", "").strip()
@@ -681,11 +833,36 @@ class WebModeServer:
         app.include_router(voice)
 
         # System info endpoints
+        # Pass get_config_manager so that /api/themes, /api/theme, /api/preferences,
+        # /api/backup, /api/restore etc can persist/read from the live config (matching
+        # behavior in audio routes + server.create_app wiring).
         system_routes = include_system_routes(
-            get_start_time=lambda: self.start_time
+            get_start_time=lambda: self.start_time,
+            get_config_manager=lambda: self.config_manager,
         )
         app.include_router(system_routes)
 
+<<<<<<< HEAD
+=======
+        # Observability: expose /metrics/json and /metrics/prom endpoints
+        if _OBS_METRICS_AVAILABLE and create_metrics_router is not None:
+            app.include_router(create_metrics_router())
+
+        # Agents endpoints
+        if agents_router:
+            app.include_router(agents_router)
+
+        # Avatar endpoints
+        if avatar_api_router:
+            app.include_router(avatar_api_router)
+
+        if avatar_ws_router:
+            app.include_router(avatar_ws_router)
+
+        if avatar_selector_router:
+            app.include_router(avatar_selector_router)
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # WebSocket endpoint using extracted router
         ws = include_ws_routes(
             get_connections=lambda: self.active_connections,
@@ -694,9 +871,17 @@ class WebModeServer:
                 "current_state": self.state_manager.current_state,
                 "active_models": (
                     self.state_manager.get_active_models()
+<<<<<<< HEAD
                     if hasattr(self.state_manager, "get_active_models")
                     else []
                 ),
+=======
+            
+                    if hasattr(self.state_manager, "get_active_models")
+                    else []
+                ),
+        
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 "timestamp": self.last_state_change.isoformat(),
             },
             on_message=None,
@@ -704,9 +889,17 @@ class WebModeServer:
         )
         app.include_router(ws)
 
+<<<<<<< HEAD
         # Advisors endpoints (if service available)
         self._register_advisors_routes(app)
 
+=======
+
+        # Advisors endpoints (if service available)
+        self._register_advisors_routes(app)
+
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Bridge endpoints for external integrations
         self._register_bridge_routes(app)
 
@@ -717,6 +910,7 @@ class WebModeServer:
         frontend_path = Path("webui/frontend/dist")
         if not frontend_path.exists():
             frontend_path = Path("webui/frontend/build")
+<<<<<<< HEAD
         if not frontend_path.exists():
             logger.warning(
                 "Frontend build not found at webui/frontend/dist or "
@@ -726,6 +920,43 @@ class WebModeServer:
 
         if frontend_path.exists():
             static_assets = frontend_path / "assets"
+=======
+
+        if not frontend_path.exists():
+            logger.info("Frontend build not found. Automagically building the frontend UI...")
+            try:
+            
+                import subprocess
+                import sys
+
+        
+                # Check if npm is available
+                subprocess.run(["npm", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+                logger.info("Installing frontend dependencies...")
+                subprocess.run(["npm", "install", "--no-audit", "--no-fund", "--legacy-peer-deps"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
+
+                logger.info("Building frontend assets...")
+                subprocess.run(["npm", "run", "build"], cwd="webui/frontend", stdout=sys.stdout, stderr=sys.stderr, check=True)
+
+        
+                if Path("webui/frontend/dist").exists():
+                    frontend_path = Path("webui/frontend/dist")
+        
+                elif Path("webui/frontend/build").exists():
+                    frontend_path = Path("webui/frontend/build")
+            
+            except FileNotFoundError:
+                logger.error("Could not find 'npm' executable. Please install Node.js and run 'npm run build' manually in webui/frontend/.")
+            
+            except Exception as e:
+                logger.error(f"Automagic frontend build failed: {e}. Please run 'npm run build' manually in webui/frontend/.")
+
+
+        if frontend_path.exists():
+            static_assets = frontend_path / "assets"
+    
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if static_assets.exists():
                 app.mount(
                     "/assets", StaticFiles(directory=str(static_assets)), name="assets"
@@ -748,16 +979,28 @@ class WebModeServer:
                     "<h1>ChattyCommander</h1><p>Frontend not built. Run <code>npm run build</code> in webui/frontend/</p>"
                 )
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # SPA Catch-all: serve index.html for any non-API routes
         # This allows React Router to handle deep linking (e.g. /dashboard)
         if frontend_path.exists():
             @app.exception_handler(404)
             async def spa_fallback(request: Request, exc: HTTPException):
+<<<<<<< HEAD
                 # If API or static file request fails, let it 404.
                 # Otherwise, serve index.html for SPA routing.
                 if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
                     # Genuine 404 for API/static paths — do not serve the SPA shell.
                     return HTMLResponse("Not Found", status_code=404)
+=======
+            # Async function for concurrent execution
+                # If API or static file request fails, let it 404.
+                # Otherwise, serve index.html for SPA routing.
+                if request.url.path.startswith("/api") or request.url.path.startswith("/assets"):
+                    return await app.exception_handler_default(request, exc) if hasattr(app, "exception_handler_default") else HTMLResponse("Not Found", status_code=404)
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
                 index_file = frontend_path / "index.html"
                 if index_file.exists():
@@ -769,6 +1012,10 @@ class WebModeServer:
         avatar_path = Path("src/chatty_commander/webui/avatar")
         if avatar_path.exists():
             try:
+<<<<<<< HEAD
+=======
+            
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 app.mount(
                     "/avatar-ui", StaticFiles(directory=str(avatar_path)), name="avatar"
                 )
@@ -782,20 +1029,34 @@ class WebModeServer:
                         "<h1>Avatar UI</h1><p>Avatar UI not found. Ensure index.html exists under src/chatty_commander/webui/avatar/</p>"
                     )
 
+<<<<<<< HEAD
+=======
+            
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except Exception as e:  # noqa: BLE001
                 logger.warning("Failed to mount avatar UI static files: %s", e)
 
         return app
 
     def _register_advisors_routes(self, app: FastAPI) -> None:
-        """Register advisors REST endpoints backed by AdvisorsService."""
-
         @app.get("/api/v1/advisors/personas")
         async def advisor_personas():
+<<<<<<< HEAD
             # Consult the advisors service consistently in every mode. Personas
             # come from configuration via AdvisorsService.get_personas(); when no
             # advisors service is wired up we return an empty list rather than
             # fabricating seed data.
+=======
+            """Register advisors REST endpoints backed by AdvisorsService."""
+            # Return seed data for testing
+            if self.no_auth:
+                return {"personas": [
+                    {"id": "jarvis", "name": "Jarvis", "is_default": True, "system_prompt": "You are a helpful AI assistant named Jarvis."},
+                    {"id": "friday", "name": "Friday", "is_default": False, "system_prompt": "You are a witty AI named Friday."},
+                    {"id": "hal", "name": "HAL 9000", "is_default": False, "system_prompt": "You are a calm, ominous AI."},
+                ]}
+            # Production: use advisors_service if available
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             svc = self.advisors_service
             if not svc:
                 return {"personas": []}
@@ -812,6 +1073,7 @@ class WebModeServer:
             message: AdvisorInbound,
             x_api_key: str | None = Header(None, alias="X-API-Key"),
         ):
+            """Advisor message handler."""
             # Check authentication
             if not self.no_auth:
                 expected_key = None
@@ -884,11 +1146,16 @@ class WebModeServer:
 
         @app.get("/api/v1/advisors/memory")
         async def advisors_memory(
+<<<<<<< HEAD
             platform: str,
             channel: str,
             user: str,
             limit: int = Query(default=20, ge=1, le=100),
+=======
+            platform: str, channel: str, user: str, limit: int = 20
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         ):
+            """Advisors memory query."""
             svc = self.advisors_service
             if not svc or not getattr(svc, "enabled", False):
                 raise HTTPException(status_code=400, detail="Advisors not enabled")
@@ -916,25 +1183,37 @@ class WebModeServer:
             return ContextStats(**stats)
 
     def _register_bridge_routes(self, app: FastAPI) -> None:
+<<<<<<< HEAD
         """Register bridge endpoints for external integrations."""
 
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         @app.post("/bridge/event")
         async def bridge_event(
             event: dict[str, Any],
             x_bridge_token: str | None = Header(None, alias="X-Bridge-Token"),
         ):
+<<<<<<< HEAD
             # Check for bridge token in header. Guard against a config_manager
             # that lacks the web_server attribute (e.g. minimal/stub configs).
             expected_token = None
             if hasattr(self.config_manager, "web_server"):
                 expected_token = self.config_manager.web_server.get("bridge_token")
+=======
+            """Register bridge endpoints for external integrations."""
+            # Check for bridge token in header
+            expected_token = self.config_manager.web_server.get("bridge_token")
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if not expected_token:
                 logger.warning("Bridge token not configured; rejecting request")
                 raise HTTPException(status_code=401, detail="Bridge not configured")
 
+<<<<<<< HEAD
             if not x_bridge_token:
                 raise HTTPException(status_code=401, detail="Missing bridge token")
 
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if not constant_time_compare(x_bridge_token, expected_token):
                 raise HTTPException(status_code=401, detail="Invalid bridge token")
 
@@ -953,7 +1232,6 @@ class WebModeServer:
         return f"{hours}h {minutes}m {seconds_i}s"
 
     async def _broadcast_message(self, message: WebSocketMessage) -> None:
-        """Broadcast a message to all active WebSocket connections."""
         payload = message.model_dump_json()
         for ws in list(self.active_connections):
             try:
@@ -969,6 +1247,7 @@ class WebModeServer:
         self.last_state_change = datetime.now()
         try:
             loop = asyncio.get_event_loop()
+<<<<<<< HEAD
             loop.create_task(
                 self._broadcast_message(
                     WebSocketMessage(
@@ -996,6 +1275,20 @@ class WebModeServer:
                             },
                         )
                     )
+=======
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.create_task(
+            self._broadcast_message(
+                WebSocketMessage(
+                    type="state_change",
+                    data={
+                        "old_state": old_state,
+                        "new_state": new_state,
+                        "timestamp": self.last_state_change.isoformat(),
+                    },
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 )
             except Exception as e:  # noqa: BLE001
                 logger.debug("state_change broadcast scheduling failed: %s", e)
@@ -1105,6 +1398,10 @@ class WebModeServer:
         )
 
     def on_system_event(self, event_type: str, details: str | dict[str, Any]) -> None:
+<<<<<<< HEAD
+=======
+        """On system event, broadcast to clients."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:

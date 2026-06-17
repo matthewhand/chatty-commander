@@ -88,7 +88,6 @@ class ConversationEngine:
         return "general_conversation"
 
     def analyze_sentiment(self, text: str) -> str:
-        """Simple sentiment analysis."""
         positive_words = [
             "good",
             "great",
@@ -122,7 +121,11 @@ class ConversationEngine:
             return "neutral"
 
     def get_conversation_context(self, user_id: str, limit: int = 5) -> str:
+<<<<<<< HEAD
         """Get recent conversation context for a user."""
+=======
+        """Simple sentiment analysis."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if user_id not in self.conversation_history:
             return ""
 
@@ -224,6 +227,10 @@ Remember: You're not just answering questions - you're having a conversation wit
         assistant_response: str,
         context: dict[str, Any],
     ):
+<<<<<<< HEAD
+=======
+        """record conversation turn."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         """Record a conversation turn for future context."""
         if user_id not in self.conversation_history:
             self.conversation_history[user_id] = []
@@ -246,12 +253,16 @@ Remember: You're not just answering questions - you're having a conversation wit
             ]
 
     def update_user_preferences(self, user_id: str, preferences: dict[str, Any]):
+<<<<<<< HEAD
         """Update user preferences based on conversation patterns."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if user_id not in self.user_preferences:
             self.user_preferences[user_id] = {}
 
         self.user_preferences[user_id].update(preferences)
 
+<<<<<<< HEAD
     def get_smart_fallback_response(
         self, user_input: str, intent: str, sentiment: str
     ) -> str:
@@ -262,6 +273,14 @@ Remember: You're not just answering questions - you're having a conversation wit
         elif intent == "farewell":
             return "Goodbye! It was wonderful chatting with you. I hope to talk again soon!"
 
+=======
+    def _get_fallback_for_intent(self, user_input: str, intent: str) -> str | None:
+        """Small pure helper extracted from get_smart_fallback_response (per explicit TODO REFACTOR Complexity 11)."""
+        if intent == "greeting":
+            return "Hello! I'm Chatty, your AI assistant. I'm excited to chat with you! While my full AI capabilities are still loading, I'm here to help however I can."
+        elif intent == "farewell":
+            return "Goodbye! It was wonderful chatting with you. I hope to talk again soon!"
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         elif intent == "mode_switch":
             if "computer" in user_input.lower():
                 return "I'll switch you to computer mode for system tasks. SWITCH_MODE:computer"
@@ -269,6 +288,7 @@ Remember: You're not just answering questions - you're having a conversation wit
                 return "Switching to idle mode for voice commands. SWITCH_MODE:idle"
             else:
                 return "I can help you switch modes! Try saying 'switch to computer mode' or 'switch to idle mode'."
+<<<<<<< HEAD
 
         elif intent == "question":
             return f"That's a great question about '{user_input}'. I'd love to give you a detailed answer, but I need my full AI backend configured to provide the intelligent response you deserve. In the meantime, I'm here to chat!"
@@ -276,19 +296,54 @@ Remember: You're not just answering questions - you're having a conversation wit
         elif intent == "task_request":
             return "I'm designed to help with all sorts of tasks! Once my AI backend is fully configured, I'll be able to assist with complex requests, provide detailed guidance, and even help with creative projects."
 
+=======
+        elif intent == "question":
+            return f"That's a great question about '{user_input}'. I'd love to give you a detailed answer, but I need my full AI backend configured to provide the intelligent response you deserve. In the meantime, I'm here to chat!"
+        elif intent == "task_request":
+            return "I'm designed to help with all sorts of tasks! Once my AI backend is fully configured, I'll be able to assist with complex requests, provide detailed guidance, and even help with creative projects."
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         elif intent == "information_seeking":
             return "I love sharing knowledge! While I'm waiting for my full AI capabilities to come online, I can tell you that I'm designed to be your intelligent companion for voice conversations, system control, and creative assistance."
+        return None
 
+<<<<<<< HEAD
         elif sentiment == "negative":
             return "I can sense you might be frustrated, and I understand. I'm still getting my full capabilities online, but I'm here to help however I can right now. What's on your mind?"
 
+=======
+    def _get_fallback_for_sentiment(self, user_input: str, sentiment: str) -> str | None:
+        """Small pure helper extracted from get_smart_fallback_response (per explicit TODO REFACTOR Complexity 11)."""
+        if sentiment == "negative":
+            return "I can sense you might be frustrated, and I understand. I'm still getting my full capabilities online, but I'm here to help however I can right now. What's on your mind?"
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         elif sentiment == "positive":
             return "I love your positive energy! It makes me excited to chat with you. Once my full AI backend is configured, we'll be able to have even more engaging conversations!"
+        return None
 
+<<<<<<< HEAD
         else:
             return f"I hear you saying '{user_input}' and I want to give you a thoughtful response. I'm an AI assistant designed for natural conversation, but I need my backend configured to show you my full potential. What would you like to know about me?"
+=======
+    def get_smart_fallback_response(
+        self, user_input: str, intent: str, sentiment: str
+    ) -> str:
+        """Generate intelligent fallback responses when LLM is unavailable."""
+        # Try intent-based first (extracted helper)
+        fb = self._get_fallback_for_intent(user_input, intent)
+        if fb is not None:
+            return fb
+
+        # Then sentiment-based (extracted helper)
+        fb = self._get_fallback_for_sentiment(user_input, sentiment)
+        if fb is not None:
+            return fb
+
+        # Default fallback
+        return f"I hear you saying '{user_input}' and I want to give you a thoughtful response. I'm an AI assistant designed for natural conversation, but I need my backend configured to show you my full potential. What would you like to know about me?"
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
 
 def create_conversation_engine(config: dict[str, Any]) -> ConversationEngine:
-    """Factory function to create a conversation engine."""
     return ConversationEngine(config)
+
+    """Factory function to create a conversation engine."""

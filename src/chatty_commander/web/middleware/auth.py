@@ -83,6 +83,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/",
         }
 
+<<<<<<< HEAD
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request and validate authentication if required."""
         # Skip auth in no_auth mode
@@ -91,6 +92,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Decode path to prevent URL-encoded or double-encoded path traversal bypasses
         raw_path = request.url.path
+=======
+    def _decode_and_normalize_path(self, raw_path: str) -> str:
+        """Decode URL-encoded path (up to 10 levels) and normalize to prevent traversal bypasses (small helper extracted from dispatch)."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         decoded_path = urllib.parse.unquote(raw_path)
         for _ in range(10):
             if "%" not in decoded_path:
@@ -99,25 +104,37 @@ class AuthMiddleware(BaseHTTPMiddleware):
             if new_decoded == decoded_path:
                 break
             decoded_path = new_decoded
-        raw_path = decoded_path
-
-        # Normalize path to prevent path traversal bypasses
-        # Use exact match or explicit trailing slash check to prevent partial path matching
-        path = posixpath.normpath(raw_path)
+        path = posixpath.normpath(decoded_path)
         if path.startswith("//"):
             path = "/" + path.lstrip("/")
+        return path
 
+<<<<<<< HEAD
         # Skip auth for public endpoints
+=======
+    def _is_public_endpoint(self, path: str) -> bool:
+        """Check if path matches public endpoints (exact or prefix) or OPTIONS (small helper extracted from dispatch)."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if (
             any(path == endpoint or path.startswith(endpoint + "/") for endpoint in self.public_endpoints)
             or path in self.public_exact_endpoints
         ):
+            return True
+        return False
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        if self.no_auth:
             return await call_next(request)  # type: ignore[no-any-return]
 
-        # Skip auth for OPTIONS requests (CORS preflight)
+        path = self._decode_and_normalize_path(request.url.path)
+
+        if self._is_public_endpoint(path):
+            return await call_next(request)  # type: ignore[no-any-return]
+
         if request.method == "OPTIONS":
             return await call_next(request)  # type: ignore[no-any-return]
 
+<<<<<<< HEAD
         # The JWT auth router (/api/v1/auth/*) validates user credentials /
         # bearer tokens itself, so it must NOT require the global X-API-Key
         # (the unauthenticated login form has no key). It sits under /api/ so
@@ -126,12 +143,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)  # type: ignore[no-any-return]
 
         # Validate API key for protected endpoints
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if path == "/api" or path.startswith("/api/"):
             api_key = request.headers.get("X-API-Key")
             logger.debug(
                 f"API request to {path}, API key present: {api_key is not None}"
             )
 
+<<<<<<< HEAD
             # Get expected legacy single key from env (preferred) or config.
             expected_key = resolve_expected_api_key(self.config_manager)
             logger.debug("Expected API key resolved: present=%s", bool(expected_key))
@@ -145,12 +165,26 @@ class AuthMiddleware(BaseHTTPMiddleware):
             scopes: list[str] | None = None
             if constant_time_compare(api_key, expected_key):
                 scopes = ["*"]
+=======
+            expected_key = None
+
+            if hasattr(self.config_manager, "auth"):
+                expected_key = self.config_manager.auth.get("api_key")
+                logger.debug("Found auth config in DummyConfig: key present=%s", bool(expected_key))
+            elif hasattr(self.config_manager, "config") and self.config_manager.config:
+                auth_config = self.config_manager.config.get("auth", {})
+                expected_key = auth_config.get("api_key")
+                logger.debug("Found auth config in regular Config: key present=%s", bool(expected_key))
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             else:
                 scopes = resolve_service_key_scopes(self.config_manager, api_key)
 
+<<<<<<< HEAD
             if scopes is None:
+=======
+            if not constant_time_compare(api_key, expected_key):
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
-                # Return 401 response directly instead of raising exception
                 from fastapi.responses import JSONResponse
 
                 return JSONResponse(

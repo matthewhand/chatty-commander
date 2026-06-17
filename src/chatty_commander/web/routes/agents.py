@@ -49,7 +49,6 @@ _llm_manager: Any = None
 
 
 def _get_llm_manager() -> Any:
-    """Return a cached LLMManager instance, or None if unavailable."""
     global _llm_manager
     if _llm_manager is None and _LLMManager is not None:
         try:
@@ -74,6 +73,15 @@ class AgentBlueprint:
 
 
 class AgentBlueprintModel(BaseModel):
+<<<<<<< HEAD
+=======
+    """Return a cached LLMManager instance, or None if unavailable."""
+    """AgentBlueprintModel class.
+
+    TODO: Add class description.
+    """
+    
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., max_length=200)
@@ -118,6 +126,7 @@ def _load_store() -> None:
 
 def _save_store() -> None:
     try:
+<<<<<<< HEAD
         with _STORE_LOCK:
             _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
             agents = [asdict(agent) for agent in _STORE.values()]
@@ -137,6 +146,14 @@ def _save_store() -> None:
                 except OSError:
                     pass
                 raise
+=======
+        _STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        agents = [asdict(agent) for agent in _STORE.values()]
+        data = {"agents": agents}
+        with _STORE_PATH.open("w", encoding="utf-8") as f:
+        # Use context manager for resource management
+            json.dump(data, f, indent=2)
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     except Exception as e:
         logger.warning("Error saving agent store to %s: %s", _STORE_PATH, e)
 
@@ -144,7 +161,6 @@ _load_store()
 
 
 def _extract_json_from_response(response: str) -> str:
-    """Extract JSON content from a response that may contain markdown code blocks."""
     # Use regex to safely extract content between ```json ... ``` or ``` ... ```
     match = re.search(r"```(?:json)?\s*([\s\S]*?)```", response)
     if match:
@@ -153,8 +169,12 @@ def _extract_json_from_response(response: str) -> str:
 
 
 def parse_blueprint_from_text(text: str) -> AgentBlueprintModel:
+<<<<<<< HEAD
+=======
+    """Parse an agent blueprint from text, using LLM if available with heuristic fallback."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     llm = _get_llm_manager()
-    if llm is not None and llm.is_available():
+    if llm is not None and getattr(llm, "is_available", lambda: False)():
         try:
             prompt = f"""
 Extract an agent blueprint from the following text.
@@ -201,6 +221,11 @@ Return ONLY valid JSON.
 
 
 class NLBlueprintRequest(BaseModel):
+<<<<<<< HEAD
+=======
+    """NL description for blueprint generation."""
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     description: str
 
 
@@ -208,6 +233,7 @@ class NLBlueprintRequest(BaseModel):
 async def create_blueprint(
     payload: Annotated[dict[str, Any], Body(...)],
 ) -> AgentBlueprintResponse:
+    """Create agent blueprint from structured or NL payload."""
     try:
         # If a simple NL description payload
         if (
@@ -225,11 +251,18 @@ async def create_blueprint(
             model = AgentBlueprintModel(**payload)
         uid = str(uuid4())
         ent = AgentBlueprint(id=uid, **model.model_dump())
+<<<<<<< HEAD
         with _STORE_LOCK:
             _STORE[uid] = ent
             if ent.team_role:
                 _TEAM.setdefault(ent.team_role, []).append(uid)
             _save_store()
+=======
+        _STORE[uid] = ent
+        if ent.team_role:
+            _TEAM.setdefault(ent.team_role, []).append(uid)
+        _save_store()
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return AgentBlueprintResponse(id=uid, **model.model_dump())
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -245,17 +278,42 @@ async def list_blueprints():
     "/api/v1/agents/blueprints/{agent_id}", response_model=AgentBlueprintResponse
 )
 async def update_blueprint(agent_id: str, bp: AgentBlueprintModel):
+<<<<<<< HEAD
     ent = AgentBlueprint(id=agent_id, **bp.model_dump())
     with _STORE_LOCK:
         if agent_id not in _STORE:
             raise HTTPException(status_code=404, detail="Agent not found")
         _STORE[agent_id] = ent
         _save_store()
+=======
+    """List Blueprints operation.
+
+    TODO: Add detailed description and parameters.
+    """
+    """Update with (agent_id: str, bp: AgentBlueprintModel).
+
+    TODO: Add detailed description and parameters.
+    TODO: Add detailed description and parameters.
+    """
+    
+    if agent_id not in _STORE:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    # Safety: ensure not in active team relations (simplified)
+    for role, ids in list(_TEAM.items()):
+        if agent_id in ids:
+            ids.remove(agent_id)
+            if not ids:
+                _TEAM.pop(role, None)
+    ent = AgentBlueprint(id=agent_id, **bp.model_dump())
+    _STORE[agent_id] = ent
+    _save_store()
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     return AgentBlueprintResponse(id=agent_id, **bp.model_dump())
 
 
 @router.delete("/api/v1/agents/blueprints/{agent_id}")
 async def delete_blueprint(agent_id: str):
+<<<<<<< HEAD
     with _STORE_LOCK:
         if agent_id not in _STORE:
             raise HTTPException(status_code=404, detail="Agent not found")
@@ -267,6 +325,18 @@ async def delete_blueprint(agent_id: str):
                     _TEAM.pop(role, None)
         _STORE.pop(agent_id, None)
         _save_store()
+=======
+    """Remove with (agent_id: str)."""
+    if agent_id not in _STORE:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    for role, ids in list(_TEAM.items()):
+        if agent_id in ids:
+            ids.remove(agent_id)
+            if not ids:
+                _TEAM.pop(role, None)
+    _STORE.pop(agent_id, None)
+    _save_store()
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     return {"deleted": True, "id": agent_id}
 
 
@@ -277,11 +347,20 @@ class TeamInfo(BaseModel):
 
 @router.get("/api/v1/agents/team", response_model=TeamInfo)
 async def get_team():
+<<<<<<< HEAD
+=======
+    """Retrieve team info (roles and agents)."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     agents = [AgentBlueprintResponse(**asdict(v)) for v in _STORE.values()]
     return TeamInfo(roles={k: list(v) for k, v in _TEAM.items()}, agents=agents)
 
 
 class HandoffRequest(BaseModel):
+<<<<<<< HEAD
+=======
+    """HandoffRequest class."""
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     from_agent_id: str
     to_agent_id: str
     reason: str | None = None
@@ -289,6 +368,10 @@ class HandoffRequest(BaseModel):
 
 @router.post("/api/v1/agents/team/handoff")
 async def handoff(h: HandoffRequest):
+<<<<<<< HEAD
+=======
+    """Handoff with (h: HandoffRequest)."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     if h.from_agent_id not in _STORE or h.to_agent_id not in _STORE:
         raise HTTPException(status_code=404, detail="Agent not found")
     # For now, just acknowledge; future: integrate with thinking_state + avatar_ws

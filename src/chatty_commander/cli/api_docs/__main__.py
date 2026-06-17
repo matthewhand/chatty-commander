@@ -26,7 +26,18 @@ from __future__ import annotations
 
 import sys
 
+<<<<<<< HEAD:src/chatty_commander/cli/api_docs/__main__.py
 from .cli import main
+=======
+from .cli import main as _main
+
+
+def main() -> int:
+    return _main(None)
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/generate_api_docs.py
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
+
+    """Run the docs generator CLI and return its exit code."""

@@ -61,6 +61,7 @@ def _deterministic_fallback(url: str) -> str:
         return f"Web page at {url}: This appears to be a general web page with content related to the URL's domain."
 
 def browser_analyst_tool(url: str) -> str:
+<<<<<<< HEAD
     """
     Analyze and summarize web content from a given URL.
 
@@ -70,6 +71,8 @@ def browser_analyst_tool(url: str) -> str:
     Returns:
         A concise summary of the web content.
     """
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     if not HTTPX_AVAILABLE:
         return _deterministic_fallback(url)
 
@@ -86,17 +89,22 @@ def browser_analyst_tool(url: str) -> str:
             logger.warning(f"Domain {hostname} is not in the allowlist.")
             return f"Error: Domain {hostname} is not allowed."
 
+<<<<<<< HEAD
         # Validate and PIN the URL to its resolved IP: fetching the pinned
         # URL closes the DNS-rebinding TOCTOU window (no second DNS lookup
         # between validation and connect). See utils/url_validator.PinnedURL.
         pinned = resolve_safe_url(url)
         if pinned is None:
+=======
+        if not is_safe_url(url):
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             logger.warning(f"SSRF blocked: URL resolves to private/internal address: {url}")
             return "Error: URL blocked — resolves to internal address."
 
         # Prevent DoS via memory exhaustion with a 2MB limit
         MAX_SIZE = 2 * 1024 * 1024
         text = ""
+<<<<<<< HEAD
         # The top-level httpx.stream() helper does not accept request
         # extensions; sni_hostname (TLS SNI/verification for the IP-pinned
         # URL) requires going through a Client request.
@@ -106,6 +114,9 @@ def browser_analyst_tool(url: str) -> str:
             headers={"Host": pinned.host_header},
             extensions={"sni_hostname": pinned.sni_hostname},
         ) as response:
+=======
+        with httpx.stream("GET", url, timeout=timeout, follow_redirects=False) as response:
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             response.raise_for_status()
             content_pieces = []
             size = 0

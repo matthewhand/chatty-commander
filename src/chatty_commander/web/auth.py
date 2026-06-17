@@ -30,12 +30,6 @@ from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 
 
 def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
-    """
-    Toggle docs/re-doc endpoints based on no_auth.
-
-    If no_auth is True, ensure docs are exposed at /docs and /redoc.
-    Otherwise, leave existing configuration as-is (do not force-disable).
-    """
     if not no_auth:
         return
 
@@ -44,6 +38,10 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
     if app.docs_url is None:
         @app.get("/docs", include_in_schema=False)
         async def custom_swagger_ui_html():
+<<<<<<< HEAD
+=======
+            """Custom Swagger UI html for no-auth mode."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             return get_swagger_ui_html(
                 openapi_url=app.openapi_url or "/openapi.json",
                 title=app.title + " - Swagger UI",
@@ -54,6 +52,10 @@ def enable_no_auth_docs(app: FastAPI, *, no_auth: bool) -> None:
 
         @app.get("/redoc", include_in_schema=False)
         async def redoc_html():
+<<<<<<< HEAD
+=======
+            """Custom ReDoc html for no-auth mode."""
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             return get_redoc_html(
                 openapi_url=app.openapi_url or "/openapi.json",
                 title=app.title + " - ReDoc",

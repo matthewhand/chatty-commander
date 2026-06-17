@@ -86,6 +86,7 @@ def _get_avatar_cfg(cfg_mgr: Any) -> dict[str, Any]:
 def include_avatar_settings_routes(
     *, get_config_manager: Callable[[], Any]
 ) -> APIRouter:
+    """Include avatar settings REST routes."""
     router = APIRouter()
 
     @router.get("/avatar/config", response_model=AvatarConfigModel)

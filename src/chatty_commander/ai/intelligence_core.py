@@ -71,7 +71,6 @@ class IntelligenceCore:
         self._initialize_voice_processing()
 
     def _initialize_voice_processing(self):
-        """Initialize enhanced voice processing."""
         try:
             voice_config = {
                 "sample_rate": 16000,
@@ -130,7 +129,6 @@ class IntelligenceCore:
                 self.on_error(f"Voice processing error: {e}")
 
     def _handle_wake_word(self, wake_word: str):
-        """Handle wake word detection."""
         self.logger.info(f"Wake word detected: {wake_word}")
 
         # Determine target mode based on wake word
@@ -143,7 +141,10 @@ class IntelligenceCore:
 
         target_mode = mode_map.get(wake_word.lower(), "chatty")
 
+<<<<<<< HEAD
         # Switch mode if needed
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self.state_manager.current_state != target_mode:
             try:
                 self.state_manager.change_state(target_mode)
@@ -228,7 +229,6 @@ class IntelligenceCore:
             )
 
     def _analyze_intent(self, text: str) -> str:
-        """Analyze user intent from text."""
         text_lower = text.lower()
 
         # Mode switching
@@ -244,16 +244,38 @@ class IntelligenceCore:
         ):
             return "screenshot"
 
+<<<<<<< HEAD
         if any(word in text_lower for word in ["lights on", "turn on lights"]):
             return "lights_on"
 
         if any(word in text_lower for word in ["lights off", "turn off lights"]):
+=======
+        if any(
+            word in text_lower
+            for word in ["lights on", "turn on lights", "turn on the lights"]
+        ):
+            return "lights_on"
+
+        if any(
+            word in text_lower
+            for word in ["lights off", "turn off lights", "turn off the lights"]
+        ):
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             return "lights_off"
 
         # Questions
         if text.startswith(("what", "how", "why", "when", "where", "who")):
             return "question"
 
+<<<<<<< HEAD
+=======
+        # Tasks (check before greetings to avoid "help" matching in "hello")
+        if any(
+            word in text_lower for word in ["help me", "assist", "do", "make", "create"]
+        ):
+            return "task_request"
+
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Greetings
         if any(word in text_lower for word in ["hello", "hi", "hey", "good morning"]):
             return "greeting"
@@ -267,7 +289,6 @@ class IntelligenceCore:
         return "conversation"
 
     def _extract_actions(self, response_text: str) -> list[dict[str, Any]]:
-        """Extract actionable commands from AI response."""
         actions = []
 
         # Look for mode switch commands
@@ -304,7 +325,10 @@ class IntelligenceCore:
         return actions
 
     def _execute_actions(self, actions: list[dict[str, Any]]):
+<<<<<<< HEAD
         """Execute extracted actions."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         for action in actions:
             try:
                 action_type = action.get("type")
@@ -350,7 +374,10 @@ class IntelligenceCore:
         return self.process_input(text, input_type="text")
 
     def process_voice_file(self, file_path: str) -> AIResponse:
+<<<<<<< HEAD
         """Process an audio file."""
+=======
+>>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not self.voice_processor:
             return AIResponse(
                 text="Voice processing not available",
@@ -389,7 +416,6 @@ class IntelligenceCore:
         self.logger.info(f"Changed persona to {persona_id}")
 
     def get_conversation_stats(self) -> dict[str, Any]:
-        """Get statistics about current conversation."""
         return {
             "active_persona": self.active_persona,
             "current_mode": self.state_manager.current_state,
