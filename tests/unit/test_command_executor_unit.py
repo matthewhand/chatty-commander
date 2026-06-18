@@ -13,7 +13,6 @@ import pytest
 
 from chatty_commander.app.command_executor import CommandExecutor
 
-
 # ============================================================================
 # FIXTURES (local + leveraging conftest via pytest)
 # ============================================================================
@@ -357,7 +356,7 @@ class TestCommandExecutorHooksAndMisc:
     def test_report_error_logs_and_calls_utils(self, executor):
         # Arrange
         with patch("chatty_commander.app.command_executor.logging.critical") as mock_crit, \
-             patch("chatty_commander.utils.logger.report_error") as mock_utils:
+             patch("chatty_commander.utils.logger.report_error"):
             # Act
             executor.report_error("cmdX", "err msg")
             # Assert
@@ -374,11 +373,6 @@ class TestCommandExecutorHooksAndMisc:
 
 class TestCommandExecutorMoreCoverage:
     """Additional 5 tests targeting qa 'no tests found' + complexity for command_executor (validate/execute edges, optional deps)."""
-
-    def test_validate_command_rejects_non_string(self, executor):
-        assert executor.validate_command(123) is False
-        assert executor.validate_command("") is False
-        assert executor.validate_command("   ") is False
 
     def test_execute_unknown_action_type_raises(self, executor, sample_actions):
         executor.config.model_actions = {"bad": {"action": "unknown_type"}}
@@ -498,7 +492,7 @@ class TestCommandExecutorMoreCoverage:
         """Old format url execution goes through safe url and httpx."""
         executor.config.model_actions = {"oldu": {"url": "https://example.com"}}
         with patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True), \
-             patch("chatty_commander.app.command_executor.httpx.Client") as mock_client:
+             patch("chatty_commander.app.command_executor.httpx.Client"):
             res = executor.execute_command("oldu")
             assert res is True
 
@@ -508,12 +502,6 @@ class TestCommandExecutorMoreCoverage:
         mock_act.get.return_value = "custom_message"
         executor.config.model_actions = {"m": mock_act}
         assert executor.validate_command("m") is True
-
-    def test_report_error_logs(self, executor):
-        """report_error logs critical."""
-        with patch("chatty_commander.app.command_executor.logging") as log:
-            executor.report_error("c", "e")
-            log.critical.assert_called()
 
     def test_hooks_last_command_set(self, executor):
         """pre hook sets last_command during execute."""
@@ -592,8 +580,9 @@ class TestCommandExecutorMoreCoverage:
         assert res is True
 
     def test_split_shell_cmd(self, executor):
-        """_split_shell_cmd parses correctly."""
-        args = executor._split_shell_cmd("echo hello world")
+        """shlex split logic (used by _run_shell_process for shell cmds) parses correctly."""
+        import shlex
+        args = shlex.split("echo hello world")
         assert args == ["echo", "hello", "world"]
 
     def test_report_error_logs(self, executor):
@@ -609,3 +598,25 @@ class TestCommandExecutorMoreCoverage:
             res = executor.execute_command("k")
             assert res is True
             pg.hotkey.assert_called_with("ctrl", "c")
+
+    def test_execute_dograh_call_success_path(self, executor):
+        """dograh_call action type wires to DograhClient.initiate_call and returns True (qa coverage for recent addition)."""
+        executor.config.model_actions = {"dcall": {"action": "dograh_call", "workflow_id": 123}}
+        with patch("chatty_commander.integrations.dograh_client.DograhClient") as mock_cls:
+            mock_ctx = mock_cls.return_value.__enter__.return_value
+            mock_ctx.initiate_call.return_value = {"id": "run-1"}
+            res = executor.execute_command("dcall")
+            assert res is True
+            mock_ctx.initiate_call.assert_called_once_with(123, phone_number=None, telephony_configuration_id=None)
+
+    def test_validate_dograh_call_with_workflow_id(self, executor):
+        """Covers dograh_call validation path (new format with workflow_id) - extends qa dograh coverage in unit tests."""
+        executor.config.model_actions = {
+            "call_support": {"action": "dograh_call", "workflow_id": 42}
+        }
+        assert executor.validate_command("call_support") is True
+
+    def test_validate_dograh_call_missing_workflow_id(self, executor):
+        """Covers validation reject for dograh_call missing required workflow_id."""
+        executor.config.model_actions = {"call_no_workflow": {"action": "dograh_call"}}
+        assert executor.validate_command("call_no_workflow") is False

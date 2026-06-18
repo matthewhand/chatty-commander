@@ -11,15 +11,15 @@ Follows AAA style with detailed docstrings, local fixtures, and Mock/patch.
 No real network/LLM/thinking side effects.
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 from chatty_commander.advisors.service import (
-    AdvisorsService,
     AdvisorMessage,
     AdvisorReply,
+    AdvisorsService,
 )
-
 
 # ============================================================================
 # FIXTURES

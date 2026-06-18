@@ -1,5 +1,9 @@
 # ChattyCommander
 
+**Vision:** A reliable, local-first, extensible voice automation platform. Speak a wake word → reliable actions (keypresses, URLs, shells, or voice calls). First-class web UI for everything. Self-hostable, pluggable backends, LLM advisors for power users.
+
+See [docs/developer/ARCHITECTURE.md](docs/developer/ARCHITECTURE.md) (Vision front-and-center + honest current state + [Archived/Legacy Architectures](docs/developer/ARCHITECTURE.md#legacy-and-archived-architectures) section) and the [Roadmap](ROADMAP.md).
+
 A local-first voice assistant that turns wake words into actions. Say a trigger word, and ChattyCommander fires keypresses, opens URLs, runs system commands, or places a voice call — with a FastAPI backend, a React web dashboard, a CLI, and optional LLM "advisor" agents.
 
 ![Dashboard Preview](docs/screenshots/dashboard.png)

@@ -22,7 +22,7 @@
 
 """Tests for LLM manager module."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -247,3 +247,34 @@ class TestLLMManagerMoreCoverage:
         manager = LLMManager(use_mock=True)
         manager.refresh_backends()
         assert manager.is_available() is True
+
+    def test_get_all_backends_info_has_active_key(self):
+        """get_all_backends_info includes 'active'."""
+        manager = LLMManager(use_mock=True)
+        info = manager.get_all_backends_info()
+        assert isinstance(info, dict)
+        assert "active" in info
+        assert info["active"] == "mock"
+
+    def test_generate_response_accepts_kwargs(self):
+        """generate_response passes kwargs to backend."""
+        manager = LLMManager(use_mock=True)
+        # mock backend ignores, but call succeeds
+        res = manager.generate_response("hi", temperature=0.1)
+        assert isinstance(res, str)
+
+    def test_switch_backend_unavailable_returns_false(self):
+        """switch to unavailable name returns False."""
+        manager = LLMManager(use_mock=True)
+        # patch to make mock unavailable temporarily
+        orig = manager.backends["mock"].is_available
+        manager.backends["mock"].is_available = lambda: False
+        ok = manager.switch_backend("mock")
+        manager.backends["mock"].is_available = orig
+        assert ok is False
+
+    def test_test_backend_handles_missing(self):
+        """test_backend for bad backend returns error dict."""
+        manager = LLMManager(use_mock=True)
+        res = manager.test_backend("no-such")
+        assert "error" in res

@@ -13,7 +13,7 @@ and run_* functions so tests remain fast and isolated (no real audio/web/gui).
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -25,7 +25,6 @@ if str(SRC_DIR) not in sys.path:
 
 # Import the module under test (lazy globals are set inside cli_main)
 import chatty_commander.cli.cli as cli_module
-
 
 # ============================================================================
 # FIXTURES
@@ -186,7 +185,7 @@ class LocalTestCliMainEarlyPaths:
         """
         # Arrange
         with patch.object(sys, "argv", ["chatty_commander"]), \
-             patch.object(cli_module, "run_interactive_shell") as mock_shell, \
+             patch.object(cli_module, "run_interactive_shell"), \
              patch.object(cli_module, "Config") as mock_cfg, \
              patch.object(cli_module, "setup_logger") as mock_log:
 
@@ -194,7 +193,7 @@ class LocalTestCliMainEarlyPaths:
             mock_log.return_value = MagicMock()
 
             # Act
-            rc = cli_module.cli_main()
+            cli_module.cli_main()
 
             # Assert
             # It should have reached the setup and called (or prepared) interactive path

@@ -26,7 +26,7 @@ Comprehensive tests for web mode module.
 Tests FastAPI app creation, Pydantic models, and WebSocket functionality.
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient

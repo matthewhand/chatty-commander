@@ -71,8 +71,7 @@ def load(name: str) -> ModuleType:
 
 
 def expose(namespace: dict[str, Any], name: str) -> ModuleType:
-    """Import and return the module for ``name`` honouring the alias table."""
-    """Populate ``namespace`` with the public symbols from the target module."""
+    """Populate ``namespace`` with the public symbols from the target module (honouring ALIASES for legacy names)."""
     module = load(name)
     public: Iterable[str]
     public = getattr(module, "__all__", None) or [

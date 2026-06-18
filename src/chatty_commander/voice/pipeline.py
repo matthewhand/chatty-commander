@@ -89,14 +89,11 @@ class VoicePipeline:
         logger.info("Voice pipeline initialized")
 
     def add_command_callback(self, callback: Callable[[str, str], None]) -> None:
-<<<<<<< HEAD
         """Add callback for processed voice commands.
 
         Args:
             callback: Function called with (command_name, transcription) when command processed
         """
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         self._callbacks.append(callback)
 
     def remove_command_callback(self, callback: Callable[[str, str], None]) -> None:
@@ -105,10 +102,7 @@ class VoicePipeline:
             self._callbacks.remove(callback)
 
     def start(self) -> None:
-<<<<<<< HEAD
         """Start the voice pipeline."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self._listening:
             logger.warning("Voice pipeline already running")
             return
@@ -119,15 +113,7 @@ class VoicePipeline:
             logger.info("Voice pipeline started - listening for wake words")
 
             # Update state if state manager available
-<<<<<<< HEAD
-            if self.state_manager:
-                try:
-                    self.state_manager.change_state("voice_listening")
-                except Exception as e:
-                    logger.debug(f"Could not update state: {e}")
-=======
             self._try_change_state("voice_listening")
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
         except Exception as e:
             logger.error(f"Failed to start voice pipeline: {e}")
@@ -142,24 +128,13 @@ class VoicePipeline:
             logger.info("Voice pipeline stopped")
 
             # Update state if state manager available
-<<<<<<< HEAD
-            if self.state_manager:
-                try:
-                    self.state_manager.change_state("idle")
-                except Exception as e:
-                    logger.debug(f"Could not update state: {e}")
-=======
             self._try_change_state("idle")
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
         except Exception as e:
             logger.error(f"Error stopping voice pipeline: {e}")
 
     def _on_wake_word_detected(self, wake_word: str, confidence: float) -> None:
-<<<<<<< HEAD
         """Handle wake word detection."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self._processing:
             logger.debug("Already processing voice command, ignoring wake word")
             return
@@ -224,23 +199,14 @@ class VoicePipeline:
         logger.info(f"No matching command found for: '{transcription}'")
         self._notify_callbacks("", transcription)
         if self.voice_only and self.tts.is_available():
-            self.tts.speak(transcription)
+            self.tts.speak("Sorry, I didn't understand that")
 
     def _process_voice_command(self, wake_word: str) -> None:
         """Process voice command after wake word detection."""
         self._processing = True
 
         try:
-<<<<<<< HEAD
-            # Update state
-            if self.state_manager:
-                try:
-                    self.state_manager.change_state("voice_recording")
-                except Exception as e:
-                    logger.warning(f"Could not update state to voice_recording: {e}")
-=======
             self._safe_change_state("voice_recording")
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
             logger.info("Recording voice command...")
             transcription = self.transcriber.record_and_transcribe()
@@ -251,133 +217,35 @@ class VoicePipeline:
 
             logger.info(f"Transcribed: '{transcription}'")
 
-<<<<<<< HEAD
-            # Update state
-            if self.state_manager:
-                try:
-                    self.state_manager.change_state("voice_processing")
-                except Exception as e:
-                    logger.warning(f"Could not update state to voice_processing: {e}")
-=======
             self._safe_change_state("voice_processing")
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
             command_name = self._match_command(transcription)
 
             if command_name:
-<<<<<<< HEAD
-                logger.info(f"Matched command: {command_name}")
-                success = self._execute_command(command_name)
-
-                if success:
-                    logger.info(f"Successfully executed command: {command_name}")
-                    # Notify callbacks
-                    self._notify_callbacks(command_name, transcription)
-                    if self.voice_only and self.tts.is_available():
-                        self.tts.speak(command_name)
-                else:
-                    logger.warning(f"Failed to execute command: {command_name}")
-                    if self.voice_only and self.tts.is_available():
-                        self.tts.speak(f"Failed to execute {command_name}")
-            else:
-                logger.info(f"No matching command found for: '{transcription}'")
-                # Still notify callbacks with empty command name
-                self._notify_callbacks("", transcription)
-                if self.voice_only and self.tts.is_available():
-                    # Give clear no-match feedback rather than echoing the
-                    # (possibly mis-transcribed) text back at the user. The raw
-                    # transcription is logged above for operator debugging.
-                    self.tts.speak("Sorry, I didn't understand that")
-=======
                 self._handle_matched_command(command_name, transcription)
             else:
                 self._handle_unmatched_transcription(transcription)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
         except Exception as e:
             logger.error(f"Error processing voice command: {e}")
         finally:
             self._processing = False
-<<<<<<< HEAD
-            # Return to listening state
-            if self.state_manager:
-                try:
-                    self.state_manager.change_state("voice_listening")
-                except Exception as e:
-                    logger.warning(f"Could not update state to voice_listening: {e}")
-
-    def _match_command(self, transcription: str) -> str | None:
-        """Match transcription to available commands."""
-=======
             self._safe_change_state("voice_listening")
 
     def _match_command(self, transcription: str) -> str | None:
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+        """Match transcription to available commands."""
         if not self.config_manager:
             logger.debug("No config manager available for command matching")
             return None
 
         try:
-<<<<<<< HEAD
-            # Get available commands from config
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             model_actions = getattr(self.config_manager, "model_actions", {})
             if not model_actions:
                 logger.debug("No model actions available")
                 return None
 
-<<<<<<< HEAD
-            # Keyword matching with word-boundary awareness. Substring matching is
-            # avoided because a command named "play" would otherwise match words
-            # like "replay", "display" or "player" and misdispatch commands.
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             transcription_lower = transcription.lower()
-            tokens = re.findall(r"[a-z0-9']+", transcription_lower)
-            token_set = set(tokens)
 
-<<<<<<< HEAD
-            def _matches_phrase(phrase: str) -> bool:
-                """Return True if ``phrase`` appears as a whole word/phrase."""
-                phrase = phrase.lower().strip()
-                if not phrase:
-                    return False
-                phrase_tokens = re.findall(r"[a-z0-9']+", phrase)
-                if not phrase_tokens:
-                    return False
-                # Single-word commands: require an exact token match.
-                if len(phrase_tokens) == 1:
-                    return phrase_tokens[0] in token_set
-                # Multi-word commands: require the token sequence to appear
-                # contiguously within the transcription tokens.
-                n = len(phrase_tokens)
-                for i in range(len(tokens) - n + 1):
-                    if tokens[i : i + n] == phrase_tokens:
-                        return True
-                return False
-
-            # Direct name match first (whole-word, not substring)
-            for command_name in model_actions.keys():
-                if _matches_phrase(str(command_name)):
-                    return str(command_name)  # type: ignore[no-any-return]
-
-            # Keyword-based matching
-            command_keywords = {
-                "hello": ["hello", "hi", "hey", "greet"],
-                "lights": ["lights", "light", "lamp", "illumination"],
-                "music": ["music", "song", "play", "audio"],
-                "weather": ["weather", "temperature", "forecast"],
-                "time": ["time", "clock", "hour"],
-                "timer": ["timer", "alarm", "remind"],
-            }
-
-            for command_name, keywords in command_keywords.items():
-                if command_name in model_actions:
-                    for keyword in keywords:
-                        if _matches_phrase(keyword):
-                            return command_name
-=======
             # Direct name match first (delegated to extracted pure helper)
             match = self._find_direct_name_match(transcription_lower, model_actions)
             if match:
@@ -387,7 +255,6 @@ class VoicePipeline:
             match = self._match_by_keywords(transcription_lower, model_actions)
             if match:
                 return match
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
             return None
 
@@ -395,17 +262,43 @@ class VoicePipeline:
             logger.error(f"Error matching command: {e}")
             return None
 
+    @staticmethod
+    def _matches_phrase(phrase: str, tokens: list[str]) -> bool:
+        """Return True if ``phrase`` appears as a whole word/phrase in ``tokens``.
+
+        Word-boundary aware matching (not naive substring) so that a command
+        named "play" does not match words like "replay"/"display"/"player", and
+        an underscore-joined command name like "play_music" matches the spoken
+        phrase "play music". Single-word phrases require an exact token; multi-
+        word phrases require the token sequence to appear contiguously.
+        """
+        phrase = phrase.lower().strip()
+        if not phrase:
+            return False
+        phrase_tokens = re.findall(r"[a-z0-9']+", phrase)
+        if not phrase_tokens:
+            return False
+        if len(phrase_tokens) == 1:
+            return phrase_tokens[0] in tokens
+        n = len(phrase_tokens)
+        for i in range(len(tokens) - n + 1):
+            if tokens[i : i + n] == phrase_tokens:
+                return True
+        return False
+
     def _match_by_keywords(self, transcription_lower: str, model_actions: dict) -> str | None:
         """Keyword-based matching extracted from _match_command.
 
         Reduces length/complexity of the main matcher while preserving behavior.
         Only considers keywords for commands that exist in current model_actions.
+        Uses word-boundary matching so keywords match whole words only.
         """
+        tokens = re.findall(r"[a-z0-9']+", transcription_lower)
         command_keywords = self._get_keyword_map()
         for command_name, keywords in command_keywords.items():
             if command_name in model_actions:
                 for keyword in keywords:
-                    if keyword in transcription_lower:
+                    if self._matches_phrase(keyword, tokens):
                         return command_name
         return None
 
@@ -421,41 +314,36 @@ class VoicePipeline:
             "hello": ["hello", "hi", "hey", "greet"],
             "lights": ["lights", "light", "lamp", "illumination"],
             "music": ["music", "song", "play", "audio"],
+            "play_music": ["music", "song", "play", "audio"],
             "weather": ["weather", "temperature", "forecast"],
             "time": ["time", "clock", "hour"],
             "timer": ["timer", "alarm", "remind"],
         }
 
     def _find_direct_name_match(self, transcription_lower: str, model_actions: dict) -> str | None:
-        """Direct name substring match extracted from _match_command.
+        """Direct name (whole-word/phrase) match extracted from _match_command.
 
-        Pure helper to further clean the matcher (addresses qa #1 pipeline complexity
-        by continued small extraction, preserving exact prior behavior).
+        Pure helper. Matches command names against the transcription with
+        word-boundary awareness (via :meth:`_matches_phrase`) rather than naive
+        substring containment, so underscore-joined names like "play_music"
+        match the spoken phrase "play music now" while "play" does not match
+        "replay".
         """
+        tokens = re.findall(r"[a-z0-9']+", transcription_lower)
         for command_name in model_actions.keys():
-            if command_name.lower() in transcription_lower:
+            if self._matches_phrase(str(command_name), tokens):
                 return str(command_name)
         return None
 
     def _execute_command(self, command_name: str) -> bool:
-<<<<<<< HEAD
         """Execute a matched command."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not self.command_executor:
             logger.debug("No command executor available")
             return False
 
         try:
-<<<<<<< HEAD
-            # Execute command through existing command executor
-            result = self.command_executor.execute_command(command_name)
-            return result is not False  # Consider None as success
-
-=======
             result = self.command_executor.execute_command(command_name)
             return result is not False
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             logger.error(f"Error executing command '{command_name}': {e}")
             return False
@@ -469,37 +357,13 @@ class VoicePipeline:
                 logger.error(f"Error in voice command callback: {e}")
 
     def trigger_mock_wake_word(self, wake_word: str = "hey_jarvis") -> None:
-<<<<<<< HEAD
         """Trigger mock wake word detection (for testing)."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if hasattr(self.wake_detector, "trigger_wake_word"):
             self.wake_detector.trigger_wake_word(wake_word)
         else:
             logger.warning("Mock wake word trigger not available")
 
     def process_text_command(self, text: str) -> str | None:
-<<<<<<< HEAD
-        """Process text as if it were a voice command (for testing)."""
-        command_name = self._match_command(text)
-        if command_name:
-            success = self._execute_command(command_name)
-            if success:
-                self._notify_callbacks(command_name, text)
-                if self.voice_only and self.tts.is_available():
-                    self.tts.speak(command_name)
-                return command_name
-            if self.voice_only and self.tts.is_available():
-                self.tts.speak(f"Failed to execute {command_name}")
-        else:
-            logger.info(f"No matching command found for: '{text}'")
-            if self.voice_only and self.tts.is_available():
-                self.tts.speak("Sorry, I didn't understand that")
-        return None
-
-    def get_status(self) -> dict[str, Any]:
-        """Get pipeline status information."""
-=======
         """Process a text command directly (bypassing wake word).
 
         Reuses the same matched/unmatched handlers as the voice wake path
@@ -515,23 +379,27 @@ class VoicePipeline:
             self._handle_unmatched_transcription(text)
         return None
 
+    def _get_wake_detector_available(self) -> bool:
+        """Small extracted helper from get_status (continuing voice/pipeline qa #1 complexity reduction)."""
+        if hasattr(self.wake_detector, "is_listening"):
+            return bool(self.wake_detector.is_listening())
+        return True
+
+    def _get_available_wake_words(self) -> list[str]:
+        """Small extracted helper from get_status (continuing voice/pipeline qa #1 complexity reduction)."""
+        if hasattr(self.wake_detector, "get_available_models"):
+            models = self.wake_detector.get_available_models()
+            return list(models) if models else []
+        return []
+
     def get_status(self) -> dict[str, Any]:
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return {
             "listening": self._listening,
             "processing": self._processing,
-            "wake_detector_available": (
-                self.wake_detector.is_listening()
-                if hasattr(self.wake_detector, "is_listening")
-                else True
-            ),
+            "wake_detector_available": self._get_wake_detector_available(),
             "transcriber_available": self.transcriber.is_available(),
             "transcriber_info": self.transcriber.get_backend_info(),
-            "available_wake_words": (
-                self.wake_detector.get_available_models()
-                if hasattr(self.wake_detector, "get_available_models")
-                else []
-            ),
+            "available_wake_words": self._get_available_wake_words(),
         }
 
     def is_listening(self) -> bool:

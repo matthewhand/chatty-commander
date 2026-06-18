@@ -19,11 +19,22 @@ sys.modules["pyaudio"] = types.ModuleType("pyaudio")
 # empty module at import time leaked globally (never restored), breaking
 # pytest.approx's numpy detection in any later test under random ordering.
 
-import importlib  # noqa: E402
+# Force-enable voice deps for this module's tests WITHOUT importlib.reload.
+# reload() re-executes the module and creates new class objects, which desyncs
+# already-imported consumers (e.g. voice.pipeline holds the pre-reload
+# MockWakeWordDetector), breaking isinstance checks under full-suite ordering.
+# Mutating attributes in place keeps class identity stable.
+import numpy as _np_real  # noqa: E402
 
-import chatty_commander.voice.wakeword  # noqa: E402
+import chatty_commander.voice.wakeword as _ww  # noqa: E402
 
-importlib.reload(chatty_commander.voice.wakeword)
+_ww.VOICE_DEPS_AVAILABLE = True
+if _ww.openwakeword is None:
+    _ww.openwakeword = sys.modules["openwakeword"]
+if _ww.pyaudio is None:
+    _ww.pyaudio = sys.modules["pyaudio"]
+if _ww.np is None:
+    _ww.np = _np_real
 
 from chatty_commander.voice.wakeword import (  # noqa: E402 - imported after sys.modules patching
     VOICE_DEPS_AVAILABLE,

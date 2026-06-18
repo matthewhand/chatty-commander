@@ -27,11 +27,7 @@ from pydantic import BaseModel, Field
 
 
 class VersionInfo(BaseModel):
-<<<<<<< HEAD
-=======
     """Application version information including semantic version and optional git SHA."""
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     version: str = Field(..., description="Application semantic version")
     git_sha: str | None = Field(
         default=None, description="Short git commit SHA if available"
@@ -43,17 +39,11 @@ router = APIRouter()
 
 @router.get("/api/v1/version", response_model=VersionInfo)
 async def get_version() -> VersionInfo:
-<<<<<<< HEAD
     # Single source of truth: package metadata (pyproject.toml version)
     # surfaced via chatty_commander.__version__.
     from chatty_commander import __version__
 
     base_version = __version__
-=======
-    # Base version should come from a single source of truth if available
-    # Here we mirror the SystemStatus default to keep tests stable.
-    base_version = "0.2.0"
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
     git_sha: str | None = None
     try:  # best-effort; avoid failing when git is unavailable

@@ -109,7 +109,6 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
         sys.exit(0)
 
 
-<<<<<<< HEAD
 def run_web_mode(
     config,
     model_manager,
@@ -121,9 +120,6 @@ def run_web_mode(
     port: int = 8100,
     no_auth: bool = False,
 ):
-=======
-def run_web_mode(config, logger):
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     """Run the web UI mode with FastAPI server and graceful shutdown."""
     import os
 
@@ -170,10 +166,6 @@ def run_web_mode(config, logger):
         web_server.on_command_detected(command, confidence=1.0)
 
     def on_state_change(old_state, new_state):
-<<<<<<< HEAD
-=======
-        logger.info(f"State changed from {old_state} to {new_state}")
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         web_server._on_state_change(old_state, new_state)
 
     # Register callbacks
@@ -203,13 +195,7 @@ def run_web_mode(config, logger):
         host = env_host
     if env_port:
         try:
-<<<<<<< HEAD
             port = int(env_port)
-=======
-
-            port = int(env_port)
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except ValueError:
             logger.warning("Invalid CHATCOMM_PORT '%s'; using %s", env_port, port)
     env_log_level = os.getenv("CHATCOMM_LOG_LEVEL")
@@ -229,21 +215,10 @@ def run_web_mode(config, logger):
         web_server.run(host=host, port=port)
     finally:
         try:
-<<<<<<< HEAD
             if hasattr(model_manager, "shutdown"):
                 model_manager.shutdown()
             if hasattr(state_manager, "shutdown"):
                 state_manager.shutdown()
-=======
-
-
-            if hasattr(model_manager, "shutdown"):
-                model_manager.shutdown()
-
-            if hasattr(state_manager, "shutdown"):
-                state_manager.shutdown()
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             logger.error(f"Error during web mode shutdown: {e}")
         logger.info("Web mode shutdown complete")
@@ -262,19 +237,11 @@ def run_gui_mode(
     """Run the GUI mode with graceful handling in headless environments.
 
     Returns:
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         int: 0 if skipped or exited cleanly; non-zero if GUI could not start due to missing deps.
     """
     import os
 
     if no_gui:
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         logger.info("--no-gui specified; skipping GUI launch")
         return 0
 
@@ -298,19 +265,11 @@ def run_gui_mode(
             logger.info("Starting Avatar GUI (TalkingHead)")
             rc = run_avatar_gui()
             return 0 if rc is None else int(rc)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             logger.warning(
                 f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI"
             )
             try:
-<<<<<<< HEAD
-=======
-    
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 # Try PyQt5-based transparent browser avatar
                 from chatty_commander.gui.pyqt5_avatar import (
                     run_pyqt5_avatar,  # type: ignore
@@ -318,10 +277,6 @@ def run_gui_mode(
                 logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
                 rc = run_pyqt5_avatar()
                 return 0 if rc is None else int(rc)
-<<<<<<< HEAD
-=======
-    
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except Exception as e2:
                 logger.warning(
                     f"PyQt5 Avatar GUI unavailable ({e2}); falling back to tray popup GUI"
@@ -334,29 +289,17 @@ def run_gui_mode(
                 logger.info("Starting GUI tray popup mode")
                 rc = run_tray_popup(config, logger)
                 return 0 if rc is None else int(rc)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     except Exception as e:
         logger.warning(
             f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
         )
         try:
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             # Legacy GUI fallback; gui module may not define main()
             from chatty_commander.gui import main as gui_main  # type: ignore[attr-defined]  # noqa: I001
 
             logger.info("Starting legacy tkinter GUI mode")
             rc = gui_main()
             return 0 if rc is None else int(rc)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception:
             logger.error("GUI dependencies not available. Install with: uv add tkinter")
             return 2
@@ -366,16 +309,8 @@ def create_parser():
     parser = argparse.ArgumentParser(
         description="ChattyCommander - Advanced voice-activated command processing system.\n"
         "This application allows users to control their computer using voice commands, "
-<<<<<<< HEAD
         "with support for multiple modes including CLI, web UI, GUI, and configuration wizard.\n"
         "It integrates machine learning models for command detection and state management.",
-=======
-
-        "with support for multiple modes including CLI, web UI, GUI, and configuration wizard.\n"
-
-        "It integrates machine learning models for command detection and state management.",
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -412,10 +347,6 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--web",
         action="store_true",
         help="Start the web UI server using FastAPI backend. Requires FastAPI and Uvicorn. "
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         "Serves a React-based frontend if built.",
     )
     mode_group.add_argument(
@@ -431,10 +362,6 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     mode_group.add_argument(
         "--shell",
         action="store_true",
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         help="Start interactive shell mode for text-based command input and execution.",
     )
 
@@ -442,10 +369,6 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     parser.add_argument(
         "--orchestrate",
         action="store_true",
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         help="Use the mode orchestrator to unify adapters (text, web, gui, wakeword, cv, discord bridge).",
     )
     parser.add_argument(
@@ -472,10 +395,6 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     parser.add_argument(
         "--no-auth",
         action="store_true",
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         help="Disable authentication for web mode (INSECURE - use only for local development).",
     )
 
@@ -483,10 +402,6 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--host",
         type=str,
         default=None,
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         help="Specify the host interface for the web server (default: 0.0.0.0).",
     )
 
@@ -494,10 +409,6 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--port",
         type=int,
         default=None,
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         help="Specify the port for the web server. Only used in web mode.",
     )
 
@@ -505,10 +416,6 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         help="Set the logging level for the application (default: INFO).",
     )
 
@@ -516,20 +423,12 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
     parser.add_argument(
         "--no-gui",
         action="store_true",
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         help="Avoid launching the GUI even if --gui is provided; useful in CI/headless.",
     )
     parser.add_argument(
         "--display",
         type=str,
         default=None,
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         help="Override DISPLAY value for GUI mode (e.g., :0).",
     )
 
@@ -582,26 +481,14 @@ def run_interactive_shell(
                 continue
             if input_str.lower() == "exit":
                 break
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if input_str.lower() == "help":
                 print(
                     "Available commands: help, exit, state, models, execute <command>"
                 )
                 continue
-<<<<<<< HEAD
             if input_str.lower() == "state":
                 print(f"Current state: {state_manager.current_state}")
                 continue
-=======
-
-            if input_str.lower() == "state":
-                print(f"Current state: {state_manager.current_state}")
-                continue
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if input_str.lower() == "models":
                 # get_models(state) requires a state arg; list every loaded model
                 # across all states (mirrors the interactive shell in cli.py).
@@ -612,15 +499,8 @@ def run_interactive_shell(
                 ]
                 print("Loaded models: " + ", ".join(all_models))
                 continue
-<<<<<<< HEAD
             if input_str.startswith("execute "):
                 command = input_str[8:].strip()
-=======
-
-            if input_str.startswith("execute "):
-                command = input_str[8:].strip()
-    
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 if command in config.model_actions:
                     command_executor.execute_command(command)
                     print(f"Executed: {command}")
@@ -633,15 +513,8 @@ def run_interactive_shell(
             if new_state:
                 logger.info(f"Transitioning to new state: {new_state}")
                 model_manager.reload_models(new_state)
-<<<<<<< HEAD
             if input_str in config.model_actions:
                 command_executor.execute_command(input_str)
-=======
-
-            if input_str in config.model_actions:
-                command_executor.execute_command(input_str)
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except EOFError:
             break
     logger.info("Exiting interactive shell")
@@ -682,17 +555,12 @@ def run_orchestrator_mode(
         try:
             while True:
                 signal.pause()
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except KeyboardInterrupt:
             pass
     orchestrator.stop()
     return 0
 
 
-<<<<<<< HEAD
 def main():
     """Entry point for the ChattyCommander application."""
     # `list` and `exec` are pure-utility subcommands fully implemented in
@@ -704,33 +572,6 @@ def main():
 
         return cli_main()
 
-=======
-def _initialize_managers(config, test_mode=False):
-    """Small helper extracted from main() to reduce complexity (addresses explicit TODO: REFACTOR - Complexity 30)."""
-    global ModelManager, StateManager, CommandExecutor
-    if ModelManager is None:
-        from chatty_commander.app.model_manager import ModelManager as _ModelManager
-
-        ModelManager = _ModelManager
-    if StateManager is None:
-        from chatty_commander.app.state_manager import StateManager as _StateManager
-
-        StateManager = _StateManager
-    if CommandExecutor is None:
-        from chatty_commander.app.command_executor import (
-            CommandExecutor as _CommandExecutor,
-        )
-
-        CommandExecutor = _CommandExecutor
-
-    model_manager = ModelManager(config, mock_models=test_mode)
-    state_manager = StateManager()
-    command_executor = CommandExecutor(config, model_manager, state_manager)
-    return model_manager, state_manager, command_executor
-
-
-def main():
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     parser = create_parser()
     # Parse as the very first action and immediately return argparse exit code for help/usage
     # We must allow --help to exit(0) without doing any setup, to satisfy tests.
@@ -765,10 +606,6 @@ def main():
         interactive_mode = True
     elif "--help" in sys.argv or "-h" in sys.argv:
         print("ChattyCommander - Voice Command System")
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         print("Use --help for available options")
         # Align with tests expecting SystemExit on main invocation path.
         raise SystemExit(0)
@@ -783,17 +620,9 @@ def main():
     global generate_default_config_if_needed
     if generate_default_config_if_needed is None:  # Resolve lazily unless patched
         from chatty_commander.app.default_config import (
-<<<<<<< HEAD
             generate_default_config_if_needed as _gdfin,
         )
 
-=======
-
-            generate_default_config_if_needed as _gdfin,
-        )
-
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         generate_default_config_if_needed = _gdfin
 
     if generate_default_config_if_needed():
@@ -817,29 +646,15 @@ def main():
     if web_cfg:
         config.web_server = web_cfg
         try:
-<<<<<<< HEAD
             config.config["web_server"] = web_cfg
-=======
-
-            config.config["web_server"] = web_cfg
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception:
             pass
     # Apply runtime advisors enable if requested
     if getattr(args, "advisors", False):
         try:
-<<<<<<< HEAD
             if not hasattr(config, "advisors"):
                 config.advisors = {}
             config.advisors["enabled"] = True
-=======
-
-            if not hasattr(config, "advisors"):
-                config.advisors = {}
-            config.advisors["enabled"] = True
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception:
             pass
 
@@ -859,7 +674,6 @@ def main():
     web_cfg.update({"host": host, "port": port, "auth_enabled": auth_enabled})
     config.web_server = web_cfg
 
-<<<<<<< HEAD
     # Fail fast when required env vars for explicitly enabled features are
     # missing (ROADMAP "Secrets validation at startup"). The config wizard is
     # exempt so users can still run it to fix their setup.
@@ -895,11 +709,6 @@ def main():
     model_manager = ModelManager(config, mock_models=getattr(args, "test_mode", False))
     state_manager = StateManager()
     command_executor = CommandExecutor(config, model_manager, state_manager)
-=======
-    model_manager, state_manager, command_executor = _initialize_managers(
-        config, getattr(args, "test_mode", False)
-    )
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
     # Initialize AI intelligence core for enhanced conversations
     # Skip if in test mode to save resources
@@ -912,10 +721,6 @@ def main():
             # Set up AI response handling
             def handle_ai_response(response):
                 print(f"AI: {response.text}")
-<<<<<<< HEAD
-=======
-    
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 if response.actions:
                     print(f"Actions: {response.actions}")
 
@@ -927,10 +732,6 @@ def main():
             print("🎤 Enhanced voice processing available")
             print("💬 Intelligent conversation engine ready")
 
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             print(f"[WARN] AI Intelligence Core initialization failed: {e}")
             ai_core = None
@@ -977,10 +778,6 @@ def main():
             display_override=args.display,
             no_gui=args.no_gui,
         )
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if isinstance(rc, int) and rc != 0:
             # Non-zero means GUI could not start; exit without stack trace
             return rc

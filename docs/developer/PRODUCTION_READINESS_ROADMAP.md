@@ -1,13 +1,7 @@
 # Production Readiness Roadmap (moved)
 
-<<<<<<< HEAD
 This document has been consolidated into the single canonical roadmap at the
 repository root: [`ROADMAP.md`](../../ROADMAP.md).
-=======
-**Current Version:** 0.2.0 (Beta)  
-**Target:** 1.0.0 Production Release  
-**Last Updated:** 2026-06-16 (Phase 1 Security + syntax rot elimination + WebUI + test expansion)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
 - Still-relevant open items were carried over (see "P2 — Production hardening
   (carried from PRODUCTION_READINESS_ROADMAP)" and the P0/P1 sections there).
@@ -15,19 +9,12 @@ repository root: [`ROADMAP.md`](../../ROADMAP.md).
   migrations, PagerDuty alerting, the already-completed avatar-GUI removal
   notes) were dropped after verification against the current tree.
 
-<<<<<<< HEAD
 This file is kept only so existing links don't break. Please update any
 references to point at [`ROADMAP.md`](../../ROADMAP.md).
-=======
-ChattyCommander is currently at version 0.2.0 with solid foundations:
-- 95 Python source files (~18K lines)
-- 221 tests collected
-- CI/CD pipeline with GitHub Actions
-- Docker support with Redis, PostgreSQL, Nginx
-- Security features (JWT, rate limiting, security headers)
-- Monitoring (health checks, Prometheus metrics)
 
-This document outlines the work required to achieve production readiness.
+---
+
+**Historical note (archived content):** The previous version of this file described the state around 0.2.0 beta with foundations in security, syntax cleanup, WebUI wiring, and test expansion. For current status see the root ROADMAP.md. Legacy architectural discussions have moved to the ARCHITECTURE.md "Legacy and Archived Architectures" section.
 
 ---
 
@@ -356,4 +343,5 @@ ChattyCommander has a solid foundation but requires focused effort in security, 
 - Add circuit breakers
 - Improve error messages
 - Complete API documentation
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
+(See [ARCHITECTURE.md](ARCHITECTURE.md) for Vision, honest ✅🟡🔲 assessment of built vs remaining, and the Archived/Legacy Architectures section.)

@@ -85,10 +85,7 @@ class MemoryStore:
     def add(
         self, platform: str, channel: str, user: str, role: str, content: str
     ) -> None:
-<<<<<<< HEAD
-=======
         """Add memory item for context."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         key = self._ctx(platform, channel, user)
         q = self._store.setdefault(key, deque(maxlen=self._max))
         ts = datetime.utcnow().isoformat()
@@ -117,10 +114,7 @@ class MemoryStore:
     def get(
         self, platform: str, channel: str, user: str, limit: int = 20
     ) -> list[MemoryItem]:
-<<<<<<< HEAD
-=======
         """Get recent memory items for context."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         key = self._ctx(platform, channel, user)
         items = list(self._store.get(key, deque()))
         if limit <= 0:
@@ -128,10 +122,7 @@ class MemoryStore:
         return items[-limit:]
 
     def clear(self, platform: str, channel: str, user: str) -> int:
-<<<<<<< HEAD
-=======
         """Clear memory for a context."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         key = self._ctx(platform, channel, user)
         count = len(self._store.get(key, []))
         if key in self._store:

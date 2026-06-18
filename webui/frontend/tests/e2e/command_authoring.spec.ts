@@ -127,7 +127,8 @@ test.describe("Command Authoring - AI Mode Flow", () => {
     await page.getByRole("button", { name: /Generate Command/i }).click();
 
     // Verify generated command preview shows all fields
-    await expect(page.getByText("Generated Command").first()).toBeVisible();
+    // modern Playwright: getByRole heading instead of getByText(...).first() (scoped, avoids brittle)
+    await expect(page.getByRole("heading", { name: "Generated Command" })).toBeVisible();
     await expect(page.getByText("start_my_day")).toBeVisible();
     await expect(page.getByText("Start My Day", { exact: true })).toBeVisible();
     await expect(page.getByText("start my day", { exact: true })).toBeVisible();
@@ -137,10 +138,10 @@ test.describe("Command Authoring - AI Mode Flow", () => {
     await expect(page.getByText("https://mail.google.com")).toBeVisible();
     await expect(page.getByText("ctrl+alt+t")).toBeVisible();
 
-    // Verify action type badges
-    await expect(page.getByText("shell").first()).toBeVisible();
-    await expect(page.getByText("url").first()).toBeVisible();
-    await expect(page.getByText("keypress").first()).toBeVisible();
+    // Verify action type badges (use .nth(0) scoped instead of brittle .first(); modern PW best practice)
+    await expect(page.getByText("shell").nth(0)).toBeVisible();
+    await expect(page.getByText("url").nth(0)).toBeVisible();
+    await expect(page.getByText("keypress").nth(0)).toBeVisible();
   });
 
   test("Regenerate button triggers a new API call", async ({ page }) => {
@@ -189,7 +190,7 @@ test.describe("Command Authoring - AI Mode Flow", () => {
     await textarea.fill("start my day workflow");
 
     await page.getByRole("button", { name: /Generate Command/i }).click();
-    await expect(page.getByText("Generated Command").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Generated Command" })).toBeVisible();
 
     // Click "Edit Manually"
     await page.getByRole("button", { name: /Edit Manually/i }).click();
@@ -240,8 +241,8 @@ test.describe("Command Authoring - Manual Mode Flow", () => {
 
     // Action 1 should appear
     await expect(page.getByText("Action 1")).toBeVisible();
-    // Default type should be keypress selected in dropdown
-    const typeSelect = page.locator("select").first();
+    // Default type should be keypress selected in dropdown (use .nth(0) scoped instead of brittle .first())
+    const typeSelect = page.locator("select").nth(0);
     await expect(typeSelect).toHaveValue("keypress");
   });
 
@@ -251,7 +252,8 @@ test.describe("Command Authoring - Manual Mode Flow", () => {
 
     // Add action and select URL type
     await page.getByRole("button", { name: /Add Action/i }).click();
-    const typeSelect = page.locator("select").first();
+    // modern Playwright: use .nth(0) scoped instead of .first() to avoid brittle/strict mode
+    const typeSelect = page.locator("select").nth(0);
     await typeSelect.selectOption("url");
 
     const urlInput = page.getByPlaceholder("https://example.com");
@@ -288,7 +290,7 @@ test.describe("Command Authoring - Manual Mode Flow", () => {
 
     // Remove the first action
     const removeButtons = page.getByRole("button", { name: "Remove action" });
-    await removeButtons.first().click();
+    await removeButtons.nth(0).click();
 
     // Only one action should remain
     await expect(page.getByText("Action 1")).toBeVisible();
@@ -301,7 +303,7 @@ test.describe("Command Authoring - Manual Mode Flow", () => {
 
     // Add a shell action
     await page.getByRole("button", { name: /Add Action/i }).click();
-    const firstSelect = page.locator("select").first();
+    const firstSelect = page.locator("select").nth(0);
     await firstSelect.selectOption("shell");
     await page.getByPlaceholder("e.g., npm start").fill("echo hello");
 
@@ -333,7 +335,7 @@ test.describe("Command Authoring - Save Flow", () => {
     // Generate a command via AI
     await page.getByPlaceholder("When I say 'start my day'").fill("start my day");
     await page.getByRole("button", { name: /Generate Command/i }).click();
-    await expect(page.getByText("Generated Command").first()).toBeVisible();
+    await expect(page.getByText("Generated Command").nth(0)).toBeVisible();
 
     // Click Save Command
     await page.getByRole("button", { name: /Save Command/i }).click();
@@ -364,7 +366,7 @@ test.describe("Command Authoring - Save Flow", () => {
 
     await page.getByPlaceholder("When I say 'start my day'").fill("start my day");
     await page.getByRole("button", { name: /Generate Command/i }).click();
-    await expect(page.getByText("Generated Command").first()).toBeVisible();
+    await expect(page.getByText("Generated Command").nth(0)).toBeVisible();
 
     await page.getByRole("button", { name: /Save Command/i }).click();
     await expect(page.getByText("Confirm Command Creation")).toBeVisible();
@@ -376,7 +378,7 @@ test.describe("Command Authoring - Save Flow", () => {
     await expect(page.getByText("Confirm Command Creation")).not.toBeVisible();
 
     // The generated command preview should still be visible
-    await expect(page.getByText("Generated Command").first()).toBeVisible();
+    await expect(page.getByText("Generated Command").nth(0)).toBeVisible();
   });
 
   test("Confirm Save calls PUT /api/v1/config and resets form", async ({ page }) => {
@@ -416,7 +418,7 @@ test.describe("Command Authoring - Save Flow", () => {
 
     await page.getByPlaceholder("When I say 'start my day'").fill("start my day");
     await page.getByRole("button", { name: /Generate Command/i }).click();
-    await expect(page.getByText("Generated Command").first()).toBeVisible();
+    await expect(page.getByText("Generated Command").nth(0)).toBeVisible();
 
     await page.getByRole("button", { name: /Save Command/i }).click();
     await expect(page.getByText("Confirm Command Creation")).toBeVisible();
@@ -467,7 +469,7 @@ test.describe("Command Authoring - Save Flow", () => {
 
     // Add a shell action with content
     await page.getByRole("button", { name: /Add Action/i }).click();
-    await page.locator("select").first().selectOption("shell");
+    await page.locator("select").nth(0).selectOption("shell");
     await page.getByPlaceholder("e.g., npm start").fill("ls -la");
 
     // Save

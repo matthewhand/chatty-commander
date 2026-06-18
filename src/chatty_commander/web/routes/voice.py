@@ -42,23 +42,11 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
     @router.get("/api/voice/status", response_model=VoiceStatus)
     async def get_voice_status():
-<<<<<<< HEAD
-=======
         """Retrieve voice pipeline status."""
-        if not state["running"]:
-            state["running"] = True
-            return {"status": "started", "message": "Voice pipeline started"}
-        return {"status": "already_running", "message": "Voice pipeline is already running"}
-
-    @router.post("/api/voice/stop")
-    async def stop_voice():
-        """Stop voice pipeline (mock state)."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         config_manager = get_config_manager()
         config = getattr(config_manager, "config", {})
         wake_words = config.get("wake_words", ["hey_jarvis", "alexa"])
         backend = config.get("voice", {}).get("backend", "default")
-        state["running"] = False
         return VoiceStatus(
             running=state["running"],
             wake_words=wake_words,
@@ -67,30 +55,24 @@ def include_voice_routes(*, get_config_manager: Callable) -> APIRouter:
 
     @router.post("/api/voice/start")
     async def start_voice():
-<<<<<<< HEAD
-        if not state["running"]:
-            state["running"] = True
-            return {"status": "started", "message": "Voice pipeline started"}
-        return {"status": "already_running", "message": "Voice pipeline is already running"}
+        """Start voice pipeline (mock state)."""
+        if state["running"]:
+            return {
+                "status": "already_running",
+                "message": "Voice pipeline is already running",
+            }
+        state["running"] = True
+        return {"status": "started", "message": "Voice pipeline started"}
 
     @router.post("/api/voice/stop")
     async def stop_voice():
-        if state["running"]:
-            state["running"] = False
-            return {"status": "stopped", "message": "Voice pipeline stopped"}
-        return {"status": "already_stopped", "message": "Voice pipeline is not running"}
-=======
-        """Start voice pipeline (mock state)."""
-        config_manager = get_config_manager()
-        config = getattr(config_manager, "config", {})
-        wake_words = config.get("wake_words", ["hey_jarvis", "alexa"])
-        backend = config.get("voice", {}).get("backend", "default")
-        state["running"] = True
-        return VoiceStatus(
-            running=state["running"],
-            wake_words=wake_words,
-            backend=backend,
-        )
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+        """Stop voice pipeline (mock state)."""
+        if not state["running"]:
+            return {
+                "status": "already_stopped",
+                "message": "Voice pipeline is not running",
+            }
+        state["running"] = False
+        return {"status": "stopped", "message": "Voice pipeline stopped"}
 
     return router

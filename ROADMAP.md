@@ -1,5 +1,7 @@
 # ChattyCommander Roadmap
 
+**Front and center:** See our [Vision](https://github.com/matthewhand/chatty-commander/blob/main/docs/developer/ARCHITECTURE.md#vision) in ARCHITECTURE.md (plus honest assessment of what is built vs. what remains, and Archived/Legacy Architectures section).
+
 **The single canonical roadmap.** Goal: take this repo to a publishable FOSS product.
 `docs/developer/PRODUCTION_READINESS_ROADMAP.md` is now a pointer to this file; its still-relevant items were merged below and obsolete ones dropped.
 

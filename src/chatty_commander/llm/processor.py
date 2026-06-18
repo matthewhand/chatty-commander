@@ -182,10 +182,7 @@ class CommandProcessor:
             return None, 0.0, f"LLM error: {e}"
 
     def _build_interpretation_prompt(self, user_input: str) -> str:
-<<<<<<< HEAD
         """Build prompt for LLM command interpretation."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         available_commands = list(self._available_commands.keys())
 
         prompt = f"""You are a voice assistant command interpreter.
@@ -218,7 +215,6 @@ Response:"""
     ) -> tuple[str | None, float, str]:
         """Parse LLM response to extract command information."""
         try:
-<<<<<<< HEAD
             # Try to extract JSON from response. Use a non-greedy match so a
             # response containing multiple JSON objects does not produce an
             # invalid span (e.g. '{"a":1} and {"b":2}'). If the first match
@@ -236,11 +232,6 @@ Response:"""
                     continue
 
             if data is None:
-=======
-            # Try to extract JSON from response
-            json_match = re.search(r"\{.*\}", response, re.DOTALL)
-            if not json_match:
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 return None, 0.0, "No JSON found in LLM response"
 
             command = data.get("command")
@@ -310,10 +301,7 @@ Response:"""
         return unique_suggestions[:limit]
 
     def explain_command(self, command_name: str) -> dict[str, Any]:
-<<<<<<< HEAD
         """Get explanation of what a command does."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if command_name not in self._available_commands:
             return {"error": f"Command '{command_name}' not found"}
 

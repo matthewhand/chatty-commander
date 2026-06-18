@@ -182,7 +182,7 @@ class ComputerVisionValidator:
     def _extract_text(self, image: np.ndarray) -> str:
         if not self.ocr_enabled or pytesseract is None:
             return ""
-        return pytesseract.image_to_string(image)
+        return str(pytesseract.image_to_string(image))
 
     def _preprocess_for_ocr(self, image: np.ndarray) -> np.ndarray:
         """Extract text from image using OCR."""
@@ -191,64 +191,12 @@ class ComputerVisionValidator:
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         # Apply thresholding
         _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        return thresh
+        thresh_arr: np.ndarray = thresh
+        return thresh_arr
 
     # -----------------------------------------------------------------------
     # OCR Validation
     # -----------------------------------------------------------------------
-
-    def validate_text_presence(
-        self,
-        image_path: str | Path,
-        expected_texts: list[str],
-        case_sensitive: bool = False,
-        partial_match: bool = True,
-    ) -> OCRValidationResult:
-        image = self._load_image(image_path)
-        extracted_text = self._extract_text(image)
-
-        if not case_sensitive:
-            extracted_text = extracted_text.lower()
-
-        found_texts = []
-        matched_texts = []
-        missing_texts = []
-
-        for expected in expected_texts:
-            search_text = expected if case_sensitive else expected.lower()
-            if partial_match:
-                found = search_text in extracted_text
-            else:
-                # Exact word match (allowing for OCR errors)
-                found = any(
-                    search_text in extracted_text_word
-                    for extracted_text_word in extracted_text.split()
-                )
-
-            if found:
-                matched_texts.append(expected)
-                found_texts.append(expected)
-            else:
-                missing_texts.append(expected)
-
-        confidence = len(matched_texts) / len(expected_texts) if expected_texts else 1.0
-
-        return OCRValidationResult(
-            passed=len(missing_texts) == 0,
-            confidence=confidence,
-            issues=missing_texts,
-            metrics={
-                "total_expected": len(expected_texts),
-                "matched": len(matched_texts),
-                "missing": len(missing_texts),
-                "extracted_text_length": len(extracted_text),
-            },
-            expected_texts=expected_texts,
-            found_texts=found_texts,
-            matched_texts=matched_texts,
-            missing_texts=missing_texts,
-            details=f"Extracted text (first 200 chars): {extracted_text[:200]}",
-        )
 
     def validate_text_presence(
         self,
@@ -351,7 +299,7 @@ class ComputerVisionValidator:
 
         threshold = threshold if threshold is not None else self.threshold
 
-        return self._comparator.compare(
+        return self._comparator.compare_ssim(
             current_img,
             reference_img,
             threshold=threshold,
@@ -426,7 +374,8 @@ class ComputerVisionValidator:
             if min_distance <= tolerance:
                 # Find the actual color that matched
                 closest_idx = np.argmin(distances)
-                actual_color = tuple(int(v) for v in pixels[closest_idx])
+                px = pixels[closest_idx]
+                actual_color: tuple[int, int, int] = (int(px[0]), int(px[1]), int(px[2]))
                 found_colors[color_name] = actual_color
             else:
                 missing_colors.append(color_name)
@@ -483,10 +432,11 @@ class ComputerVisionValidator:
         labels = kmeans.labels_
         counts = np.bincount(labels)
 
-        colors = []
+        colors: list[tuple[tuple[int, int, int], float]] = []
         for i, count in enumerate(counts):
-            rgb = tuple(int(v) for v in kmeans.cluster_centers_[i])
-            percentage = (count / len(pixels)) * 100
+            center = kmeans.cluster_centers_[i]
+            rgb: tuple[int, int, int] = (int(center[0]), int(center[1]), int(center[2]))
+            percentage = float((count / len(pixels)) * 100)
             colors.append((rgb, percentage))
 
         # Sort by frequency
@@ -509,7 +459,7 @@ class ComputerVisionValidator:
         found_positions: dict[str, tuple[int, int]] = {}
         expected_positions: dict[str, tuple[int, int]] = {}
         position_deviations: dict[str, float] = {}
-        issues = []
+        issues: list[str] = []
 
         # This is a simplified implementation
         # A full implementation would use template matching or feature detection
@@ -575,7 +525,7 @@ class ComputerVisionValidator:
         Returns:
             Combined ValidationResult
         """
-        results = []
+        results: list[ValidationResult] = []
 
         # OCR validation
         if expected_texts:
@@ -634,7 +584,7 @@ class ComputerVisionValidator:
             Dict mapping filenames to ValidationResults
         """
         directory = Path(directory)
-        results = {}
+        results: dict[str, ValidationResult] = {}
 
         if not directory.exists():
             return results
@@ -656,8 +606,8 @@ class ComputerVisionValidator:
                         results[filename] = ValidationResult(
                             passed=comparison.passed,
                             confidence=comparison.ssim,
-                            issues=[f"SSIM: {comparison.ssim:.4f}"
-                                    if not comparison.passed else []],
+                            issues=([] if comparison.passed
+                                    else [f"SSIM: {comparison.ssim:.4f}"]),
                             metrics={
                                 "ssim": comparison.ssim,
                                 "threshold": threshold,

@@ -62,10 +62,6 @@ try:
     from agents import Agent  # type: ignore
 
     AGENTS_AVAILABLE = True
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 except Exception:  # pragma: no cover - import guard
     Agent = None  # type: ignore
     AGENTS_AVAILABLE = False
@@ -76,10 +72,6 @@ logger = logging.getLogger(__name__)
 def _filter_kwargs_for_callable(fn: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
     try:
         signature = inspect.signature(fn)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     except (TypeError, ValueError):
         return kwargs
     if any(
@@ -127,28 +119,20 @@ class LLMProvider(ABC):
 
     @abstractmethod
     def generate(self, prompt: str, **kwargs) -> str:
-        pass
+        """Generate a response from the LLM."""
+        ...
 
     @abstractmethod
     def generate_stream(self, prompt: str, **kwargs) -> str:
-        """Generate a response from the LLM."""
         """Generate a streaming response from the LLM."""
-        pass
+        ...
 
     def health_check(self) -> bool:
-<<<<<<< HEAD
         """Check if the provider is healthy and accessible."""
-=======
-        # Validate preconditions
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         try:
             # Simple test generation
             test_response = self.generate("Test")
             return bool(test_response and len(test_response) > 0)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             return False
@@ -159,10 +143,6 @@ class CompletionProvider(LLMProvider):
 
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not AGENTS_AVAILABLE:
             raise ImportError(
                 "openai-agents SDK not available. Install with: pip install openai-agents"
@@ -172,23 +152,18 @@ class CompletionProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
-<<<<<<< HEAD
         # Add browser analyst tool if enabled.
         # NB: the canonical implementation lives in
         # chatty_commander.advisors.tools.browser_analyst (package-relative
         # `.tools`; a `..tools` import would have resolved to a now-deleted
         # chatty_commander.tools shadow package that did not export the
         # FunctionTool instance).
-=======
-        # Add browser analyst tool if enabled
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
                 from .tools.browser_analyst import (
                     browser_analyst_tool_instance,
                 )
 
-<<<<<<< HEAD
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
             except ImportError:
@@ -216,15 +191,6 @@ class CompletionProvider(LLMProvider):
             except ImportError:
                 pass
 
-=======
-        
-                if browser_analyst_tool_instance:
-                    tools.append(browser_analyst_tool_instance)
-    
-            except ImportError:
-                pass
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []
@@ -279,10 +245,6 @@ class ResponsesProvider(LLMProvider):
 
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not AGENTS_AVAILABLE:
             raise ImportError(
                 "openai-agents SDK not available. Install with: pip install openai-agents"
@@ -292,23 +254,18 @@ class ResponsesProvider(LLMProvider):
         tools_config = config.get("tools", {})
         tools = []
 
-<<<<<<< HEAD
         # Add browser analyst tool if enabled.
         # NB: the canonical implementation lives in
         # chatty_commander.advisors.tools.browser_analyst (package-relative
         # `.tools`; a `..tools` import would have resolved to a now-deleted
         # chatty_commander.tools shadow package that did not export the
         # FunctionTool instance).
-=======
-        # Add browser analyst tool if enabled
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if tools_config.get("browser_analyst", {}).get("enabled", True):
             try:
                 from .tools.browser_analyst import (
                     browser_analyst_tool_instance,
                 )
 
-<<<<<<< HEAD
                 if browser_analyst_tool_instance:
                     tools.append(browser_analyst_tool_instance)
             except ImportError:
@@ -336,15 +293,6 @@ class ResponsesProvider(LLMProvider):
             except ImportError:
                 pass
 
-=======
-        
-                if browser_analyst_tool_instance:
-                    tools.append(browser_analyst_tool_instance)
-    
-            except ImportError:
-                pass
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # MCP and handoffs configuration (placeholder for future implementation)
         mcp_servers: list[Any] = []
         handoffs: list[Any] = []
@@ -411,15 +359,8 @@ class FallbackProvider(LLMProvider):
     def _create_provider(self, config: dict[str, Any]) -> LLMProvider:
         api_mode = config.get("llm_api_mode", config.get("api_mode", "completion"))
 
-<<<<<<< HEAD
         if api_mode == "completion":
             return CompletionProvider(config)
-=======
-
-        if api_mode == "completion":
-            return CompletionProvider(config)
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         elif api_mode == "responses":
             return ResponsesProvider(config)
         else:
@@ -432,15 +373,8 @@ class FallbackProvider(LLMProvider):
             try:
                 logger.info(f"Trying provider {i + 1}/{len(self.providers)}")
                 return provider.generate(prompt, **kwargs)
-<<<<<<< HEAD
             except Exception as e:
                 logger.warning(f"Provider {i + 1} failed: {e}")
-=======
-    
-            except Exception as e:
-                logger.warning(f"Provider {i + 1} failed: {e}")
-        
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 if i == len(self.providers) - 1:
                     # Last provider failed
                     return f"Error: All providers failed. Last error: {e}"
@@ -448,30 +382,16 @@ class FallbackProvider(LLMProvider):
         return "Error: No providers available"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-<<<<<<< HEAD
         """Try providers in sequence for streaming."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         for i, provider in enumerate(self.providers):
-            """Try providers in sequence for streaming."""
             try:
                 logger.info(
                     f"Trying provider {i + 1}/{len(self.providers)} for streaming"
                 )
                 return provider.generate_stream(prompt, **kwargs)
-<<<<<<< HEAD
             except Exception as e:
                 logger.warning(f"Provider {i + 1} failed for streaming: {e}")
                 if i == len(self.providers) - 1:
-=======
-    
-            except Exception as e:
-                # Build filtered collection
-                logger.warning(f"Provider {i + 1} failed for streaming: {e}")
-        
-                if i == len(self.providers) - 1:
-                    # Build filtered collection
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                     return f"Error: All providers failed for streaming. Last error: {e}"
 
         return "Error: No providers available for streaming"
@@ -516,11 +436,7 @@ class StubCompletionProvider(LLMProvider):
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-<<<<<<< HEAD
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
-=======
-        return self.generate(prompt, **kwargs)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
 
 class StubResponsesProvider(LLMProvider):
@@ -530,11 +446,7 @@ class StubResponsesProvider(LLMProvider):
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
 
     def generate_stream(self, prompt: str, **kwargs) -> str:
-<<<<<<< HEAD
         return f"advisor:{self.model}/{self.api_mode} {prompt}"
-=======
-        return self.generate(prompt, **kwargs)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
 
 def build_provider_safe(config: dict[str, Any]) -> LLMProvider:

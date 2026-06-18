@@ -34,7 +34,6 @@ def constant_time_compare(provided: str | None, expected: str | None) -> bool:
     )
 
 
-<<<<<<< HEAD
 # Patterns are matched against keys normalized to lowercase alphanumerics,
 # so "Api-Key", "apiKey", "API KEY" and "api_key" all reduce to "apikey".
 _SENSITIVE_KEY_PATTERNS = frozenset(
@@ -45,26 +44,16 @@ _SENSITIVE_KEY_PATTERNS = frozenset(
         "authtoken",
         "bridgetoken",
         "keyhash",
-=======
-def mask_sensitive_data(data: Any) -> Any:
-    """Compare two credential strings in constant time.
-
-    Returns False if either value is None or empty, preventing both
-    timing attacks and NoneType bypass issues.
-    """
-    """Recursively mask sensitive keys in a dictionary or list."""
-    sensitive_patterns = {
-        "api_key",
-        "api_token",
-        "access_token",
-        "auth_token",
-        "bridge_token",
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         "password",
         "passwd",
         "secret",
         "databaseurl",
         "token",
+        "api_key",
+        "api_token",
+        "access_token",
+        "auth_token",
+        "bridge_token",
     }
 )
 

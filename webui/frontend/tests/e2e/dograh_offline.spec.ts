@@ -1,4 +1,4 @@
-import { test, Page } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from 'url';
@@ -56,7 +56,8 @@ test.describe("Dograh degraded UI", () => {
   test("dashboard-dograh-offline", async ({ page }) => {
     await mockOfflineDashboardAPIs(page);
     await page.goto("/");
-    await page.waitForSelector('[data-testid="dograh-status-card"][data-dograh-state="unavailable"]');
+    // modern Playwright: use getByTestId + expect (auto-wait) instead of brittle waitForSelector
+    await expect(page.getByTestId("dograh-status-card")).toHaveAttribute("data-dograh-state", "unavailable");
     await page.waitForLoadState("networkidle");
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "dashboard-dograh-offline.png"),

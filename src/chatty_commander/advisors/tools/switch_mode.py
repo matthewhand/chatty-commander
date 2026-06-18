@@ -36,7 +36,6 @@ def switch_mode(mode: str) -> str:
         return "SWITCH_MODE:invalid"
     return f"SWITCH_MODE:{mode}"
 
-<<<<<<< HEAD
 
 # FunctionTool instance for the openai-agents SDK, mirroring dograh_call.
 # AdvisorsService.handle_message intercepts the returned "SWITCH_MODE:<mode>"
@@ -63,10 +62,4 @@ if AGENTS_AVAILABLE:
         },
         on_invoke_tool=switch_mode,  # type: ignore[arg-type]
     )
-=======
-    """Tool: Request a mode switch.
 
-    Returns a structured directive that orchestration layers can intercept.
-    Example return: "SWITCH_MODE:idle"
-    """
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16

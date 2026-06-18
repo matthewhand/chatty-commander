@@ -143,10 +143,7 @@ class TTSBackend(ABC):
     @abstractmethod
     def is_available(self) -> bool:  # pragma: no cover - interface
         """Return ``True`` if the backend can synthesize speech."""
-<<<<<<< HEAD
-=======
-        pass
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+        pass  # pragma: no cover - interface
 
 
 class Pyttsx3Backend(TTSBackend):
@@ -258,7 +255,6 @@ class MockTTSBackend(TTSBackend):
 class TextToSpeech:
     """Facade that selects an appropriate :class:`TTSBackend`."""
 
-<<<<<<< HEAD
     def __init__(
         self,
         backend: str = "pyttsx3",
@@ -266,9 +262,6 @@ class TextToSpeech:
         voice: str = DEFAULT_EDGE_VOICE,
         **kwargs,
     ) -> None:
-=======
-    def __init__(self, backend: str = "pyttsx3", **kwargs) -> None:
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if backend == "pyttsx3":
             self.backend: TTSBackend = Pyttsx3Backend()
             if not self.backend.is_available():
@@ -293,11 +286,7 @@ class TextToSpeech:
     def is_available(self) -> bool:
         return self.backend.is_available()
 
-<<<<<<< HEAD
     def get_backend_info(self) -> dict[str, str | bool]:
-=======
-    def get_backend_info(self) -> dict:
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return {
             "backend_type": type(self.backend).__name__,
             "is_available": self.backend.is_available(),

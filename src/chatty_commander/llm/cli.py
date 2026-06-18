@@ -339,9 +339,3 @@ def demo_llm_integration(config_manager=None) -> None:
     except Exception as e:
         print(f"❌ Demo failed: {e}")
         logger.error(f"LLM demo error: {e}")
-
-
-def demo_llm_integration() -> None:
-    """Demo function showing LLM integration capabilities."""
-    # placeholder to satisfy any callers; minimal
-    pass

@@ -45,22 +45,12 @@ class AudioDevices(BaseModel):
 class AudioDeviceRequest(BaseModel):
     device_id: str
 
-<<<<<<< HEAD
-=======
-def include_audio_routes(
-    *,
-    get_config_manager: Any,
-) -> APIRouter:
-    """Include Audio Routes operation.
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
-
 def _list_audio_devices() -> AudioDevices:
     """Enumerate audio devices via pyaudio, degrading gracefully.
 
     Returns empty device lists with ``available=False`` when pyaudio is not
     installed or device enumeration fails (e.g. headless CI containers).
     """
-<<<<<<< HEAD
     try:
         import pyaudio
     except ImportError:
@@ -96,8 +86,6 @@ def include_audio_routes(
     *,
     get_config_manager: Any,
 ) -> APIRouter:
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     router = APIRouter()
 
     # Registered on both the legacy/v1 path (used by ConfigurationPage.tsx)
@@ -105,41 +93,11 @@ def include_audio_routes(
     @router.get("/api/audio/devices", response_model=AudioDevices)
     @router.get("/api/v1/audio/devices", response_model=AudioDevices)
     async def get_audio_devices():
-<<<<<<< HEAD
         return _list_audio_devices()
-=======
-        try:
-            import pyaudio
-            p = pyaudio.PyAudio()
-            input_devices = []
-            output_devices = []
-            try:
-                info = p.get_host_api_info_by_index(0)
-                numdevices = info.get("deviceCount") or 0
-                for i in range(0, numdevices):
-                    device_info = p.get_device_info_by_host_api_device_index(0, i)
-                    if (device_info.get("maxInputChannels") or 0) > 0:
-                        input_devices.append(device_info.get("name"))
-                    if (device_info.get("maxOutputChannels") or 0) > 0:
-                        output_devices.append(device_info.get("name"))
-            finally:
-                p.terminate()
-            return AudioDevices(input=input_devices, output=output_devices)
-        except ImportError:
-            # Fallback for environments without PyAudio or audio hardware (e.g., CI/Container)
-            return AudioDevices(
-                input=["Mock Microphone 1", "Mock Microphone 2"],
-                output=["Mock Speaker 1", "Mock Speaker 2"]
-            )
-        except Exception as e:
-            logger.warning(f"Failed to list audio devices: {e}")
-            return AudioDevices()
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
     @router.post("/api/audio/device")
     @router.post("/api/v1/audio/device")
     async def set_audio_device(request: AudioDeviceRequest):
-<<<<<<< HEAD
         device_id = request.device_id.strip()
         if not device_id:
             raise HTTPException(
@@ -159,18 +117,6 @@ def include_audio_routes(
                 if hasattr(cfg_mgr, "save_config"):
                     cfg_mgr.save_config()
                 persisted = True
-=======
-        try:
-            cfg_mgr = get_config_manager()
-            logger.info(f"Setting audio device to: {request.device_id}")
-            if hasattr(cfg_mgr, "config"):
-                if "audio" not in cfg_mgr.config:
-                    cfg_mgr.config["audio"] = {}
-                cfg_mgr.config["audio"]["device"] = request.device_id
-                if hasattr(cfg_mgr, "save_config"):
-                    cfg_mgr.save_config()
-            return {"success": True, "device": request.device_id}
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             # Degrade gracefully: the selection is kept in module state above.
             logger.warning(f"Failed to persist audio device selection: {e}")

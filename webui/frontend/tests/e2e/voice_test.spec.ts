@@ -193,5 +193,11 @@ test.describe("Voice Test page", () => {
     expect(ti).toBeGreaterThanOrEqual(0);
     expect(mi).toBeGreaterThan(ti);
     expect(ai).toBeGreaterThan(mi);
+
+    // Small addition: 2 Playwright request asserts for wired endpoints used in voice/dry-run flow (commands for match, per WEBUI expand e2e)
+    const cmdResp = await page.request.get("/api/v1/commands");
+    expect(cmdResp.ok()).toBeTruthy();
+    const cmdData = await cmdResp.json();
+    expect(Array.isArray(cmdData) || (cmdData && typeof cmdData === "object")).toBe(true);
   });
 });

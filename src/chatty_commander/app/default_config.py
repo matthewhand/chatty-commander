@@ -243,10 +243,7 @@ class DefaultConfigGenerator:
         try:
             with open(self.config_file) as f:
                 config = json.load(f)
-<<<<<<< HEAD
                 # Check if essential sections exist
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 required_sections = ["commands", "state_models"]
                 if not all(section in config for section in required_sections):
                     return True

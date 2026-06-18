@@ -23,7 +23,7 @@ chatty-commander/
 │   └── wakewords/         # Wake word detection models
 ├── src/chatty_commander/   # Main Python package
 │   └── [core modules]     # Application logic, FastAPI server, APIs
-├── docs/                   # Documentation
+├── docs/                   # Documentation (start with developer/ARCHITECTURE.md for Vision + current state + legacy architectures; see ROADMAP.md)
 ├── tests/                  # Test suites
 ├── scripts/                # Utility scripts
 └── [project files]        # README, LICENSE, .env.example, etc.

@@ -1,7 +1,7 @@
 
 # ChattyCommander API Documentation
 
-*Last updated 2026-06-10*
+*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
 
 ## Overview
 
@@ -33,13 +33,13 @@ Returns the current system status including active state and loaded models.
 
 **Response Example:**
 ```json
-{
+{{
   "status": "running",
   "current_state": "idle",
   "active_models": ["hey_chat_tee", "hey_khum_puter"],
   "uptime": "2h 15m 30s",
   "version": "0.2.0"
-}
+}}
 ```
 
 ### Configuration Management
@@ -50,20 +50,20 @@ Retrieves the current system configuration.
 
 **Response Example:**
 ```json
-{
+{{
   "general_models_path": "./models-idle",
   "system_models_path": "./models-computer",
   "chat_models_path": "./models-chatty",
-  "model_actions": {
-    "lights_on": {
+  "model_actions": {{
+    "lights_on": {{
       "url": "http://192.168.1.100/api/lights/on"
-    },
-    "screenshot": {
+    }},
+    "screenshot": {{
       "keypress": "cmd+shift+4"
-    }
-  },
+    }}
+  }},
   "default_state": "idle"
-}
+}}
 ```
 
 #### PUT /api/v1/config
@@ -80,12 +80,12 @@ Returns the current operational state.
 
 **Response Example:**
 ```json
-{
+{{
   "current_state": "idle",
   "active_models": ["hey_chat_tee", "hey_khum_puter"],
   "last_command": "hey_chat_tee",
   "timestamp": "2024-01-15T10:30:00Z"
-}
+}}
 ```
 
 #### POST /api/v1/state
@@ -94,9 +94,9 @@ Manually changes the system state.
 
 **Request Body:**
 ```json
-{
+{{
   "state": "computer"
-}
+}}
 ```
 
 **Valid states:** `idle`, `computer`, `chatty`
@@ -109,119 +109,21 @@ Executes a voice command programmatically.
 
 **Request Body:**
 ```json
-{
+{{
   "command": "lights_on",
-  "parameters": {
+  "parameters": {{
     "brightness": 80
-  }
-}
+  }}
+}}
 ```
 
 **Response Example:**
 ```json
-{
+{{
   "success": true,
   "message": "Command executed successfully",
   "execution_time": 150
-}
-```
-
-### Audio Devices
-
-#### GET /api/audio/devices
-
-Lists available audio input and output devices. Also available at `/api/v1/audio/devices`. Returns `available: false` with empty lists when no audio backend is installed (e.g. headless servers).
-
-**Response Example:**
-```json
-{
-  "input": ["Built-in Microphone"],
-  "output": ["Built-in Speakers"],
-  "available": true
-}
-```
-
-#### POST /api/audio/device
-
-Selects the active audio device. Also available at `/api/v1/audio/device`.
-
-**Request Body:**
-```json
-{
-  "device_id": "Built-in Microphone"
-}
-```
-
-### Preferences
-
-#### GET /api/preferences
-
-Returns saved user preferences (theme, notifications, language, auto_start, telemetry), with defaults filled in.
-
-#### PUT /api/preferences
-
-Updates user preferences. Known keys are type-validated; extra keys are preserved.
-
-**Request Body Example:**
-```json
-{
-  "theme": "dark",
-  "notifications": true
-}
-```
-
-### Themes
-
-#### GET /api/themes
-
-Lists the UI themes the frontend can render and the currently selected one.
-
-**Response Example:**
-```json
-{
-  "themes": ["dark", "light", "cyberpunk", "synthwave"],
-  "current": "dark"
-}
-```
-
-#### GET /api/theme
-
-Returns the currently selected UI theme.
-
-#### POST /api/theme
-
-Selects a UI theme and persists it under `ui.theme` in the configuration. Returns `400` for unknown theme names.
-
-**Request Body:**
-```json
-{
-  "theme": "light"
-}
-```
-
-### Dograh Voice Calls
-
-#### GET /api/v1/dograh/status
-
-Probes whether the configured dograh stack is reachable. Returns `available: false` with a generic `reason` when `DOGRAH_BASE_URL` / `DOGRAH_API_KEY` are missing or the service is down.
-
-**Response Example:**
-```json
-{
-  "available": true,
-  "health": {"status": "ok"}
-}
-```
-
-#### GET /api/v1/dograh/workflows
-
-Lists workflows proxied from dograh. Returns an empty list when dograh is unconfigured or unreachable so the UI degrades gracefully.
-
-**Response Example:**
-```json
-[
-  {"id": 1, "name": "Outbound greeting", "status": "active"}
-]
+}}
 ```
 
 ## WebSocket Interface
@@ -240,38 +142,38 @@ The WebSocket sends JSON messages with the following types:
 
 #### State Change
 ```json
-{
+{{
   "type": "state_change",
-  "data": {
+  "data": {{
     "old_state": "idle",
     "new_state": "computer",
     "timestamp": "2024-01-15T10:30:00Z"
-  }
-}
+  }}
+}}
 ```
 
 #### Command Detection
 ```json
-{
+{{
   "type": "command_detected",
-  "data": {
+  "data": {{
     "command": "hey_chat_tee",
     "confidence": 0.95,
     "timestamp": "2024-01-15T10:30:00Z"
-  }
-}
+  }}
+}}
 ```
 
 #### System Event
 ```json
-{
+{{
   "type": "system_event",
-  "data": {
+  "data": {{
     "event": "model_loaded",
     "details": "Loaded 5 models for computer state",
     "timestamp": "2024-01-15T10:30:00Z"
-  }
-}
+  }}
+}}
 ```
 
 ## Error Handling
@@ -287,16 +189,18 @@ The API uses standard HTTP status codes:
 Error responses include a JSON body with details:
 
 ```json
-{
+{{
   "error": "Invalid command",
   "details": "Command 'invalid_command' not found in configuration",
   "timestamp": "2024-01-15T10:30:00Z"
-}
+}}
 ```
 
 ## Rate Limiting
 
-Currently, no rate limiting is implemented. This may be added in future versions.
+Basic in-memory per-IP rate limiting is implemented via RateLimitMiddleware (default 60 req/min, X-RateLimit-* headers, secure client IP extraction considering trusted proxies). See src/chatty_commander/web/web_mode.py.
+- Not yet Redis-backed or per-endpoint configurable (roadmap item).
+- Suitable for dev/single-instance; production should consider distributed limiting + nginx/ingress rules (see SECURITY.md).
 
 ## Examples
 
@@ -311,13 +215,13 @@ import json
 # Basic API usage
 response = requests.get('http://localhost:8100/api/v1/status')
 status = response.json()
-print(f"System status: {status['status']}")
+print(f"System status: {{status['status']}}")
 
 # Execute a command
-command_data = {"command": "lights_on"}
+command_data = {{"command": "lights_on"}}
 response = requests.post('http://localhost:8100/api/v1/command', json=command_data)
 result = response.json()
-print(f"Command result: {result['success']}")
+print(f"Command result: {{result['success']}}")
 
 # WebSocket client
 async def websocket_client():
@@ -326,7 +230,7 @@ async def websocket_client():
         while True:
             message = await websocket.recv()
             data = json.loads(message)
-            print(f"Received: {data['type']} - {data['data']}")
+            print(f"Received: {{data['type']}} - {{data['data']}}")
 
 # Run WebSocket client
 # asyncio.run(websocket_client())
@@ -341,22 +245,22 @@ fetch('http://localhost:8100/api/v1/status')
   .then(data => console.log('Status:', data));
 
 // Execute command
-fetch('http://localhost:8100/api/v1/command', {
+fetch('http://localhost:8100/api/v1/command', {{
   method: 'POST',
-  headers: {
+  headers: {{
     'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({command: 'lights_on'})
-})
+  }},
+  body: JSON.stringify({{command: 'lights_on'}})
+}})
 .then(response => response.json())
 .then(data => console.log('Command result:', data));
 
 // WebSocket connection
 const ws = new WebSocket('ws://localhost:8100/ws');
-ws.onmessage = function(event) {
+ws.onmessage = function(event) {{
   const data = JSON.parse(event.data);
   console.log('WebSocket message:', data);
-};
+}};
 ```
 
 ## Troubleshooting

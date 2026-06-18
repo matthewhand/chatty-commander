@@ -129,6 +129,17 @@ class TestCommandExecutor:
         with pytest.raises(ValueError, match="Missing model_actions"):
             executor.execute_command("some_cmd")
 
+    def test_validate_command_dograh_call(self, executor):
+        """Covers dograh_call validation path via public validate_command (new format with/without workflow_id)."""
+        executor.config.model_actions = {
+            "dg": {"action": "dograh_call", "workflow_id": 42}
+        }
+        assert executor.validate_command("dg") is True
+        executor.config.model_actions = {
+            "dg": {"action": "dograh_call"}
+        }
+        assert executor.validate_command("dg") is False
+
 
 # ---------------------------------------------------------------------------
 # Shell execution edge-case tests (caplog-based logging assertions)

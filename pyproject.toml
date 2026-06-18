@@ -167,7 +167,9 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/**/*" = ["B011"]
+# E402: tests commonly stub sys.modules / set sys.path before importing the unit
+#       under test. B017: chaos/e2e tests intentionally assert broad failures.
+"tests/**/*" = ["B011", "E402", "B017"]
 
 [tool.black]
 line-length = 88
@@ -232,6 +234,9 @@ module = [
     "pyttsx3.*",
     "edge_tts.*",
     "playsound.*",
+    "pytesseract.*",
+    "sklearn.*",
+    "skimage.*",
 ]
 ignore_missing_imports = true
 

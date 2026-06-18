@@ -58,6 +58,13 @@ test.describe("Commands Page CRUD", () => {
     await expect(page.getByRole("heading", { name: "open_browser" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "say_hello" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "volume_up" })).toBeVisible();
+
+    // +2 expects: search input + scoped action badge (modern getBy + .card:has-text, expands commands UI coverage per WEBUI_ISSUES)
+    await expect(page.getByPlaceholder("Search commands...")).toBeVisible();
+    await expect(page.locator('.card:has-text("take_screenshot")').getByText("shell")).toBeVisible();
+
+    // small addition: +1 expect for New Command link (expands commands page UI coverage for authoring flow per ROADMAP/WEBUI_ISSUES)
+    await expect(page.getByRole("link", { name: "New Command" })).toBeVisible();
   });
 
   test("refresh button triggers API refetch", async ({ page }) => {

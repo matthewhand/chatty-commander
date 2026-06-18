@@ -188,23 +188,16 @@ def _handle_voice_test(
             print("🎯 Say a wake word followed by a command...")
             print("   Example: 'Hey Jarvis, hello world'")
 
-<<<<<<< HEAD
         # Wait for specified duration
         time.sleep(args.duration)
-=======
-            # Wait for specified duration
-            time.sleep(args.duration)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
-            # Stop pipeline
-            pipeline.stop()
-            print("✅ Voice pipeline test completed")
+        # Stop pipeline
+        pipeline.stop()
+        print("✅ Voice pipeline test completed")
 
     except Exception as e:
         print(f"❌ Voice test failed: {e}")
         logger.error(f"Voice test error: {e}")
-
-<<<<<<< HEAD
 
 def _handle_voice_status(args) -> None:
     """Handle voice status command."""
@@ -228,8 +221,6 @@ def _handle_voice_status(args) -> None:
             else:
                 print(f"❌ {name}: Not installed")
 
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Test pipeline creation
         try:
             pipeline = VoicePipeline(use_mock=True)

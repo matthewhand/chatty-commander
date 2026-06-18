@@ -66,18 +66,11 @@ class ContextIdentity:
 
     @property
     def context_key(self) -> str:
-<<<<<<< HEAD
         """Generate a unique context key for this identity."""
         return f"{self.platform.value}:{self.channel}:{self.user_id}"
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
-=======
-        return f"{self.platform.value}:{self.channel}:{self.user_id}"
-
-    def to_dict(self) -> dict[str, Any]:
-        """Generate a unique context key for this identity."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         data = asdict(self)
         data["platform"] = self.platform.value
         return data
@@ -101,20 +94,11 @@ class ContextState:
     last_activity: float | None = None
 
     def __post_init__(self):
-<<<<<<< HEAD
-=======
-        if self.last_activity is None:
-            self.last_activity = time.time()
-        # Validate input exists
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self.last_activity is None:
             self.last_activity = time.time()
 
     def to_dict(self) -> dict[str, Any]:
-<<<<<<< HEAD
         """Convert to dictionary for serialization."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         data = asdict(self)
         data["identity"] = self.identity.to_dict()
         return data
@@ -166,12 +150,8 @@ class ContextManager:
         username: str | None = None,
         **kwargs,
     ) -> ContextState:
-<<<<<<< HEAD
         """
         Get existing context or create new one for the given identity.
-=======
-        """Get existing context or create new one for the given identity.
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
         Args:
             platform: The platform type (Discord, Slack, etc.)
@@ -228,7 +208,6 @@ class ContextManager:
         return self.contexts[context_key]
 
     def switch_persona(self, context_key: str, persona_id: str) -> bool:
-<<<<<<< HEAD
         """
         Switch the persona for a specific context.
 
@@ -239,8 +218,6 @@ class ContextManager:
         Returns:
             True if switch successful, False if persona not found
         """
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if context_key not in self.contexts:
             return False
 
@@ -275,12 +252,8 @@ class ContextManager:
         return list(self.contexts.values())
 
     def clear_context(self, context_key: str) -> bool:
-<<<<<<< HEAD
         """
         Clear a specific context.
-=======
-        """Clear a specific context.
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
         Args:
             context_key: The context to clear
@@ -288,18 +261,10 @@ class ContextManager:
         Returns:
             True if context was cleared, False if not found
         """
-<<<<<<< HEAD
-        if context_key in self.contexts:
-            del self.contexts[context_key]
-
-            if self.persistence_enabled:
-                self._save_contexts()
-=======
         if context_key not in self.contexts:
             return False
 
         del self.contexts[context_key]
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
         if self.persistence_enabled:
             self._save_contexts()
@@ -307,7 +272,6 @@ class ContextManager:
         return True
 
     def clear_inactive_contexts(self, max_age_hours: float = 24.0) -> int:
-<<<<<<< HEAD
         """
         Clear contexts that haven't been active for the specified time.
 
@@ -317,18 +281,11 @@ class ContextManager:
         Returns:
             Number of contexts cleared
         """
-=======
-        """Clear contexts inactive longer than max_age_hours."""
         import time
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         current_time = time.time()
         max_age_seconds = max_age_hours * 3600
         to_clear = []
-<<<<<<< HEAD
-        for context_key, context in self.contexts.items():
-=======
         for context_key, context in list(self.contexts.items()):
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             # last_activity is set in __post_init__, guaranteed non-None after initialization
             if context.last_activity is None:
                 continue
@@ -343,7 +300,6 @@ class ContextManager:
 
         return len(to_clear)
 
-<<<<<<< HEAD
     def _resolve_persona_for_context(self, identity: ContextIdentity) -> str:
         """
         Resolve which persona to use for a given context.
@@ -351,11 +307,6 @@ class ContextManager:
         This can be extended to implement more sophisticated persona
         selection logic based on platform, channel, user, etc.
         """
-=======
-        return len(to_clear)
-
-    def _resolve_persona_for_context(self, identity: ContextIdentity) -> str:
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Simple logic: use platform-specific persona if available
         platform_persona = f"{identity.platform.value}_default"
 
@@ -370,12 +321,6 @@ class ContextManager:
         return self.default_persona
 
     def _load_contexts(self) -> None:
-        """
-        Resolve which persona to use for a given context.
-
-        This can be extended to implement more sophisticated persona
-        selection logic based on platform, channel, user, etc.
-        """
         """Load contexts from persistence file."""
         if not self.persistence_path.exists():
             return
@@ -410,7 +355,6 @@ class ContextManager:
         for context_key, context in self.contexts.items():
             data[context_key] = context.to_dict()
 
-<<<<<<< HEAD
         fd, tmp_path = tempfile.mkstemp(
             dir=str(self.persistence_path.parent),
             prefix=self.persistence_path.name,
@@ -426,10 +370,6 @@ class ContextManager:
             except OSError:
                 pass
             raise
-=======
-        with open(self.persistence_path, "w") as f:
-            json.dump(data, f, indent=2)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
     def get_stats(self) -> dict[str, Any]:
         """Get statistics about current contexts."""

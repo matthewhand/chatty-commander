@@ -149,10 +149,7 @@ class HistogramBuckets:
     )  # seconds
 
     def clamp(self, value: float) -> float:
-<<<<<<< HEAD
-=======
         """Clamp value to valid range for buckets."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return max(0.0, float(value))
 
 
@@ -253,13 +250,9 @@ class MetricsRegistry:
                 self.gauges[name] = m
             return m
 
-<<<<<<< HEAD
     def histogram(
         self, name: str, description: str = "", buckets: HistogramBuckets | None = None
     ) -> Histogram:
-=======
-    def histogram(self, name: str, description: str = "", buckets: "HistogramBuckets | None" = None) -> "Histogram":
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         with self._lock:
             m = self.hists.get(name)
             if m is None:
@@ -282,7 +275,6 @@ class MetricsRegistry:
         return out
 
 
-<<<<<<< HEAD
 # Global default registry (opt-in usage)
 DEFAULT_REGISTRY = MetricsRegistry()
 
@@ -409,8 +401,3 @@ def _quote(v: str) -> str:
 
 def _lbl(labels: dict[str, str]) -> str:
     return ",".join(f"{k}={_quote(v)}" for k, v in labels.items())
-=======
-# Default global registry as described in module docstring.
-# Provides a shared instance while allowing tests to use isolated MetricsRegistry().
-DEFAULT_REGISTRY: MetricsRegistry = MetricsRegistry()
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16

@@ -276,18 +276,20 @@ class EnhancedVoiceProcessor:
         """Small helper extracted to reduce complexity of _process_audio_chunk."""
         if self.noise_reducer and self.config.noise_reduction_enabled:
             if callable(self.noise_reducer):
-                return self.noise_reducer(audio_data)
+                return np.asarray(self.noise_reducer(audio_data))
             else:
-                return self.noise_reducer.reduce_noise(y=audio_data, sr=self.config.sample_rate)
+                return np.asarray(
+                    self.noise_reducer.reduce_noise(y=audio_data, sr=self.config.sample_rate)
+                )
         return audio_data
 
     def _detect_speech(self, audio_chunk: bytes) -> bool:
         """Small helper extracted to reduce complexity of _process_audio_chunk."""
         if self.vad_enabled:
             if callable(self.vad):
-                return self.vad(audio_chunk)
+                return bool(self.vad(audio_chunk))
             else:
-                return self.vad.is_speech(audio_chunk, self.config.sample_rate)
+                return bool(self.vad.is_speech(audio_chunk, self.config.sample_rate))
         return True  # assume speech if no VAD
 
     def _handle_speech_events(self, speech_detected: bool) -> bool:
@@ -317,62 +319,14 @@ class EnhancedVoiceProcessor:
     def _process_audio_chunk(self, audio_chunk: bytes) -> VoiceResult | None:
         """Process a single audio chunk."""
         try:
-<<<<<<< HEAD
-            # Convert to numpy array
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             audio_data = np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32)
             audio_data = self._apply_noise_reduction(audio_data)
 
-<<<<<<< HEAD
-            # Apply noise reduction
-            if self.noise_reducer and self.config.noise_reduction_enabled:
-                if callable(self.noise_reducer):
-                    audio_data = self.noise_reducer(audio_data)
-                else:
-                    # Using noisereduce library
-                    audio_data = self.noise_reducer.reduce_noise(
-                        y=audio_data, sr=self.config.sample_rate
-                    )
-
-            # Voice activity detection
-            if self.vad_enabled and self.vad is not None:
-                if callable(self.vad):
-                    speech_detected = self.vad(audio_chunk)
-                else:
-                    # Using webrtcvad
-                    speech_detected = self.vad.is_speech(
-                        audio_chunk, self.config.sample_rate
-                    )
-
-                if speech_detected:
-                    self.silence_counter = 0
-                    if not self.speech_detected:
-                        self.speech_detected = True
-                        if self.on_speech_start:
-                            self.on_speech_start()
-                else:
-                    self.silence_counter += 1
-                    if (
-                        self.silence_counter
-                        > self.config.silence_timeout
-                        * self.config.sample_rate
-                        / self.config.chunk_size
-                    ):
-                        if self.speech_detected:
-                            self.speech_detected = False
-                            if self.on_speech_end:
-                                self.on_speech_end()
-
-                            # Transcribe accumulated audio
-                            return self._transcribe_audio(audio_data)
-=======
             speech_detected = self._detect_speech(audio_chunk)
             should_transcribe = self._handle_speech_events(speech_detected)
 
             if should_transcribe:
                 return self._transcribe_audio(audio_data)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
             return None
 
@@ -381,10 +335,7 @@ class EnhancedVoiceProcessor:
             return None
 
     def start_listening(self):
-<<<<<<< HEAD
         """Start listening for voice input."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self.is_listening:
             return
 

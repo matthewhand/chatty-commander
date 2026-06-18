@@ -5,7 +5,6 @@ rate limit / security middleware helpers, advisor registration paths.
 Uses conftest mocks + AAA. Avoids spinning real servers/uvi.
 """
 
-from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -14,21 +13,16 @@ from pydantic import ValidationError
 
 # Direct import works via pytest pythonpath=src + uv
 from chatty_commander.web.web_mode import (
-    AdvisorInbound,
-    AdvisorOutbound,
     CommandRequest,
     CommandResponse,
     ContextStats,
-    SecurityHeadersMiddleware,
+    RateLimitMiddleware,
     StateChangeRequest,
-    StateInfo,
     SystemStatus,
     WebModeServer,
     WebSocketMessage,
     get_client_ip,
-    RateLimitMiddleware,
 )
-
 
 # ============================================================================
 # PYDANTIC MODEL TESTS (lightweight, no server needed)
@@ -126,7 +120,7 @@ class TestGetClientIpAndRateLimit:
         request = Mock()
         request.client.host = "127.0.0.1"
         request.headers = {}
-        call_next = AsyncMock(return_value=Mock(headers={}))
+        AsyncMock(return_value=Mock(headers={}))
         # Act (sync wrapper around async for unit)
         # We just ensure no crash on construction + dispatch call path exercised via await in real
         assert mw.requests_per_minute == 10

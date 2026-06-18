@@ -26,7 +26,6 @@ from __future__ import annotations
 
 from typing import Any
 
-<<<<<<< HEAD:src/chatty_commander/config_cli.py
 from chatty_commander.cli.config import ConfigCLI
 
 
@@ -38,22 +37,4 @@ def handle_config_cli(args: Any) -> int:
 
 
 __all__ = ["ConfigCLI", "handle_config_cli"]
-=======
 
-def ensure_dir(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
-
-
-def write_json(path: Path, data: dict[str, Any]) -> None:
-    """Write a JSON file with pretty formatting."""
-    ensure_dir(path.parent)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-
-
-def write_text(path: Path, data: str) -> None:
-    """Write a text file."""
-    ensure_dir(path.parent)
-    with path.open("w", encoding="utf-8") as f:
-        f.write(data)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/tools/fs_ops.py

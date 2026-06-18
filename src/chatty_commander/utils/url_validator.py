@@ -133,34 +133,4 @@ def is_safe_url(url: str) -> bool:
     untrusted URLs should use :func:`resolve_safe_url` and connect to the
     pinned IP instead of re-fetching the hostname URL.
     """
-<<<<<<< HEAD
     return resolve_safe_url(url) is not None
-=======
-    try:
-        parsed = urlparse(url)
-        if parsed.scheme not in _ALLOWED_SCHEMES:
-            return False
-        hostname = parsed.hostname
-        if not hostname:
-            return False
-
-        # Resolve all addresses (IPv4 + IPv6)
-        try:
-            addr_infos = socket.getaddrinfo(hostname, None)
-        except socket.gaierror:
-            return False
-
-        if not addr_infos:
-            return False
-
-        # ALL resolved addresses must be safe
-        for _family, _type, _proto, _canonname, sockaddr in addr_infos:
-            ip_str = sockaddr[0]
-            assert isinstance(ip_str, str)  # sockaddr[0] is always an IP string
-            if _is_restricted(ip_str):
-                return False
-
-        return True
-    except Exception:
-        return False
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
