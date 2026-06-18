@@ -5,23 +5,67 @@ import { logger } from '../utils/logger';
 interface ThemeContextType {
     theme: string;
     setTheme: (theme: string) => void;
+    /** Themes available to the in-app theme switcher. */
+    availableThemes: readonly string[];
 }
+
+/** DaisyUI themes enabled in tailwind.config.js. */
+export const AVAILABLE_THEMES = ['light', 'dark', 'cyberpunk', 'synthwave'] as const;
+
+const STORAGE_KEY = 'chatty.theme';
+const DEFAULT_THEME = 'dark';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setTheme] = useState<string>('dark'); // Default to dark
+function readStoredTheme(): string | null {
+    try {
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        if (stored && (AVAILABLE_THEMES as readonly string[]).includes(stored)) {
+            return stored;
+        }
+    } catch (e) {
+        // localStorage may be unavailable (private mode, SSR); degrade quietly.
+        logger.debug('ThemeProvider: could not read theme from localStorage', e);
+    }
+    return null;
+}
 
-    // Fetch initial theme from backend configuration
+function persistTheme(theme: string): void {
+    try {
+        window.localStorage.setItem(STORAGE_KEY, theme);
+    } catch (e) {
+        logger.debug('ThemeProvider: could not persist theme to localStorage', e);
+    }
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+    // Prefer a previously persisted choice so a refresh keeps the theme even
+    // before (or without) the backend config round-trip.
+    const [theme, setThemeState] = useState<string>(() => readStoredTheme() ?? DEFAULT_THEME);
+    // Tracks whether the user explicitly picked a theme this session. Once they
+    // have, we don't let a slower /api/v1/config response stomp their choice.
+    const [userOverride, setUserOverride] = useState<boolean>(() => readStoredTheme() !== null);
+
+    const setTheme = (next: string) => {
+        setThemeState(next);
+        setUserOverride(true);
+        persistTheme(next);
+    };
+
+    // Fetch initial theme from backend configuration (only honored when the user
+    // has not already chosen/persisted a theme locally).
     useQuery({
         queryKey: ['configTheme'],
         queryFn: async () => {
             try {
-                const res = await fetch("/api/v1/config");
+                const res = await fetch('/api/v1/config');
                 if (res.ok) {
                     const data = await res.json();
                     if (data.ui?.theme) {
-                        setTheme(data.ui.theme);
+                        if (!userOverride) {
+                            setThemeState(data.ui.theme);
+                            persistTheme(data.ui.theme);
+                        }
                         return data.ui.theme;
                     }
                 }
@@ -29,7 +73,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                 // Non-fatal: fall back to the default theme, but don't fail silently.
                 logger.debug('ThemeProvider: could not load theme from /api/v1/config, using default', e);
             }
-            return 'dark'; // Fallback
+            return DEFAULT_THEME; // Fallback
         },
         staleTime: Infinity, // Only fetch once on mount
     });
@@ -40,7 +84,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [theme]);
 
     return (
-        <ThemeContext.Provider value={{ theme, setTheme }}>
+        <ThemeContext.Provider value={{ theme, setTheme, availableThemes: AVAILABLE_THEMES }}>
             {children}
         </ThemeContext.Provider>
     );

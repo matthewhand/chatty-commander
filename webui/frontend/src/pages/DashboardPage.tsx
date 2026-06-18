@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from "react";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap, Mic, X } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 import { formatTimestamp } from "../utils/formatTime";
@@ -17,6 +17,11 @@ const MAX_MESSAGES = 100;
 const MAX_RECENT_MESSAGES = 15;
 const MAX_HISTORY_ITEMS = 20;
 
+// Telemetry arrives roughly every 5s; treat the WS as "stale" once we've gone
+// more than ~2 intervals without any frame, even if it's technically connected.
+const TELEMETRY_INTERVAL_SECONDS = 5;
+const STALE_THRESHOLD_SECONDS = TELEMETRY_INTERVAL_SECONDS * 2;
+
 const DashboardPage = React.memo(() => {
   useEffect(() => {
     document.title = "Dashboard | ChattyCommander";
@@ -24,14 +29,28 @@ const DashboardPage = React.memo(() => {
 
   const { ws, isConnected, reconnectAttempt, lastMessageTime } = useWebSocket();
   const isReconnecting = !isConnected && reconnectAttempt > 0;
-  const [messages, setMessages] = useState<string[]>([]);
+  // Log entries carry a monotonic id (a counter) alongside their text so rows
+  // can be keyed stably even as the ring buffer scrolls and timestamps repeat.
+  const [messages, setMessages] = useState<{ id: number; text: string }[]>([]);
+  const msgCounter = useRef(0);
+  const appendMessage = useCallback((text: string) => {
+    setMessages((prev) => {
+      const entry = { id: msgCounter.current++, text };
+      return prev.length >= MAX_MESSAGES ? [...prev.slice(1), entry] : [...prev, entry];
+    });
+  }, []);
   const [lastMsgAgo, setLastMsgAgo] = useState<string>("No messages yet");
+  const [lastMsgSeconds, setLastMsgSeconds] = useState<number | null>(null);
 
   // Update "last message ago" display every second
   useEffect(() => {
-    if (!lastMessageTime) return;
+    if (!lastMessageTime) {
+      setLastMsgSeconds(null);
+      return;
+    }
     const update = () => {
       const seconds = Math.round((Date.now() - lastMessageTime) / 1000);
+      setLastMsgSeconds(seconds);
       if (seconds < 60) {
         setLastMsgAgo(`${seconds}s ago`);
       } else {
@@ -44,6 +63,11 @@ const DashboardPage = React.memo(() => {
     return () => clearInterval(id);
   }, [lastMessageTime]);
 
+  // A connected socket whose last frame is older than the staleness threshold is
+  // "stale" — surfaced as a warning so a green card doesn't mislead.
+  const isStale =
+    isConnected && lastMsgSeconds !== null && lastMsgSeconds > STALE_THRESHOLD_SECONDS;
+
   // Memoize the recent messages slice to avoid inline allocation during frequent re-renders.
   const recentMessages = useMemo(() => {
     return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
@@ -53,6 +77,13 @@ const DashboardPage = React.memo(() => {
   const [isSending, setIsSending] = useState(false);
   const [history, setHistory] = useState<PerfMetric[]>([]);
   const [isPaused, setIsPaused] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+
+  // Current state-machine mode (idle/computer/chatty). Seeded from
+  // GET /api/v1/status and then driven live by the `state_change` WS frame.
+  // Mic-active is not currently surfaced by the backend, so we show it as
+  // "unknown" rather than inventing a value.
+  const [currentMode, setCurrentMode] = useState<string | null>(null);
 
   const handleSendCommand = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,13 +95,13 @@ const DashboardPage = React.memo(() => {
 
     // Optimistically add to log
     const ts = formatTimestamp(new Date());
-    setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${ts}] > Executing: ${cmd}`] : [...prev, `[${ts}] > Executing: ${cmd}`]);
+    appendMessage(`[${ts}] > Executing: ${cmd}`);
 
     try {
       await apiService.executeCommand(cmd);
     } catch (err: any) {
       const errTs = formatTimestamp(new Date());
-      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${errTs}] Error: ${err.message}`] : [...prev, `[${errTs}] Error: ${err.message}`]);
+      appendMessage(`[${errTs}] Error: ${err.message}`);
     } finally {
       setIsSending(false);
     }
@@ -116,6 +147,23 @@ const DashboardPage = React.memo(() => {
       setCallState((prev) => prev ?? seededCallState);
     }
   }, [seededCallState]);
+
+  // Seed the current state-machine mode from the status endpoint so the Voice
+  // card reflects the last known mode before any `state_change` WS frame.
+  const { data: seededStatus } = useQuery<{ current_state?: string } | null>({
+    queryKey: ["systemStatusState"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/status");
+      if (!res.ok) return null;
+      return (await res.json()) as { current_state?: string };
+    },
+    retry: false,
+  });
+  useEffect(() => {
+    if (seededStatus?.current_state) {
+      setCurrentMode((prev) => prev ?? seededStatus.current_state ?? null);
+    }
+  }, [seededStatus]);
 
   // Update history chart from telemetry
   useEffect(() => {
@@ -177,6 +225,13 @@ const DashboardPage = React.memo(() => {
         }));
         return;
       }
+      if (msg.type === "state_change" && msg.data) {
+        const next = msg.data.new_state ?? msg.data.current_state;
+        if (typeof next === "string") {
+          setCurrentMode(next);
+        }
+        return;
+      }
       if (msg.type === "dograh_call_state" && msg.data) {
         setCallState({
           state: msg.data.state ?? "unknown",
@@ -188,14 +243,14 @@ const DashboardPage = React.memo(() => {
       // Fallback for non-JSON or other messages
       if (msg.data && typeof msg.data === "string") {
         const wsTs = formatTimestamp(new Date());
-        setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${wsTs}] ${msg.data as string}`] : [...prev, `[${wsTs}] ${msg.data as string}`]);
+        appendMessage(`[${wsTs}] ${msg.data as string}`);
       }
     } catch {
       // Plain text message
       const wsTs = formatTimestamp(new Date());
-      setMessages((prev) => prev.length >= MAX_MESSAGES ? [...prev.slice(1), `[${wsTs}] ${event.data as string}`] : [...prev, `[${wsTs}] ${event.data as string}`]);
+      appendMessage(`[${wsTs}] ${event.data as string}`);
     }
-  }, []); // setRealtimeStatus and setMessages are stable; no external deps
+  }, [appendMessage]); // setRealtimeStatus is stable; appendMessage is memoized
 
   useEffect(() => {
     if (!ws) return;
@@ -234,12 +289,81 @@ const DashboardPage = React.memo(() => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-        Dashboard
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          Dashboard
+        </h2>
+        {/* Header-level freshness indicator. */}
+        <div
+          className={`flex items-center gap-1.5 text-xs font-medium ${
+            !isConnected ? "text-error" : isStale ? "text-warning" : "text-success"
+          }`}
+          aria-live="polite"
+          data-testid="freshness-indicator"
+        >
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${
+              !isConnected
+                ? "bg-error"
+                : isStale
+                  ? "bg-warning"
+                  : "bg-success animate-pulse"
+            }`}
+            aria-hidden="true"
+          />
+          <span>
+            {!isConnected
+              ? "offline"
+              : isStale
+                ? `stale · updated ${lastMsgAgo}`
+                : lastMsgSeconds !== null
+                  ? `live · updated ${lastMsgAgo}`
+                  : "live"}
+          </span>
+        </div>
+      </div>
+
+      {/* Dismissible welcome hero — compact so it doesn't push telemetry below the fold. */}
+      {!welcomeDismissed && (
+        <div className="alert bg-base-200 border border-base-content/10 py-2" role="status">
+          <Mic size={18} className="text-primary" aria-hidden="true" />
+          <span className="text-sm">
+            Welcome to ChattyCommander — your voice assistant control center. Monitor status, watch the live log, and run commands below.
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs btn-square"
+            onClick={() => setWelcomeDismissed(true)}
+            aria-label="Dismiss welcome message"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        {/* Voice / Listening — "is my voice assistant working right now?" */}
+        <div
+          className="stats shadow bg-base-100 border border-primary/30"
+          data-testid="voice-status-card"
+          data-voice-mode={currentMode ?? "unknown"}
+        >
+          <div className="stat">
+            <div className="stat-figure text-primary">
+              <Mic size={32} />
+            </div>
+            <div className="stat-title">Voice Assistant</div>
+            <div className="stat-value text-primary text-2xl capitalize">
+              {currentMode ?? "unknown"}
+            </div>
+            <div className="stat-desc">
+              {/* Mic-active state is not reported by the backend; show it honestly. */}
+              Mic: <span className="font-medium">unknown</span> · current mode
+            </div>
+          </div>
+        </div>
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
@@ -277,10 +401,24 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-info">
-              <div className="radial-progress text-info" style={{ "--value": parseFloat(systemStatus?.cpu || "0") } as any} role="progressbar">{parseInt(systemStatus?.cpu || "0")}%</div>
+              <div
+                className="radial-progress text-info"
+                style={{ "--value": Math.round(parseFloat(systemStatus?.cpu || "0")) } as any}
+                role="progressbar"
+                aria-label="CPU load"
+                aria-valuenow={Math.round(parseFloat(systemStatus?.cpu || "0"))}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                {Math.round(parseFloat(systemStatus?.cpu || "0"))}%
+              </div>
             </div>
             <div className="stat-title">CPU Load</div>
-            <div className="stat-value text-info text-2xl">{systemStatus?.cpu || "N/A"}</div>
+            <div className="stat-value text-info text-2xl">
+              {systemStatus?.cpu != null && systemStatus?.cpu !== "N/A"
+                ? `${Math.round(parseFloat(systemStatus.cpu))}%`
+                : "N/A"}
+            </div>
             <div className="stat-desc">Processor usage</div>
           </div>
         </div>
@@ -288,31 +426,54 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-warning">
-              <div className="radial-progress text-warning" style={{ "--value": parseFloat(systemStatus?.memory || "0") } as any} role="progressbar">{parseInt(systemStatus?.memory || "0")}%</div>
+              <div
+                className="radial-progress text-warning"
+                style={{ "--value": Math.round(parseFloat(systemStatus?.memory || "0")) } as any}
+                role="progressbar"
+                aria-label="Memory usage"
+                aria-valuenow={Math.round(parseFloat(systemStatus?.memory || "0"))}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                {Math.round(parseFloat(systemStatus?.memory || "0"))}%
+              </div>
             </div>
             <div className="stat-title">Memory</div>
-            <div className="stat-value text-warning text-2xl">{systemStatus?.memory || "N/A"}</div>
+            <div className="stat-value text-warning text-2xl">
+              {systemStatus?.memory != null && systemStatus?.memory !== "N/A"
+                ? `${Math.round(parseFloat(systemStatus.memory))}%`
+                : "N/A"}
+            </div>
             <div className="stat-desc">RAM usage</div>
           </div>
         </div>
 
-        <div className="stats shadow bg-base-100 border border-base-content/10">
+        <div
+          className={`stats shadow bg-base-100 border ${isStale ? "border-warning/40" : "border-base-content/10"}`}
+          data-testid="websocket-card"
+          data-ws-state={!isConnected ? (isReconnecting ? "reconnecting" : "offline") : isStale ? "stale" : "connected"}
+        >
           <div className="stat">
             <div className="stat-figure">
               {isConnected ?
-                <Wifi size={32} className="text-success" /> :
+                (isStale ?
+                  <Wifi size={32} className="text-warning" /> :
+                  <Wifi size={32} className="text-success" />) :
                 isReconnecting ?
                   <Wifi size={32} className="text-warning animate-pulse" /> :
                   <WifiOff size={32} className="text-error" />
               }
             </div>
             <div className="stat-title">WebSocket</div>
-            <div className={`stat-value text-2xl ${isConnected ? 'text-success' : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}`}>
-              {isConnected ? "Connected" : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
+            <div className={`stat-value text-2xl ${isConnected ? (isStale ? 'text-warning' : 'text-success') : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}`}>
+              {isConnected ? (isStale ? "Stale" : "Connected") : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
             </div>
             <div className="stat-desc flex items-center gap-1">
-              <Zap size={14} className="text-accent" />
-              <span>Last msg: {lastMsgAgo}</span>
+              <Zap size={14} className={isStale ? "text-warning" : "text-accent"} />
+              <span>
+                {isStale ? "No data — last msg: " : "Last msg: "}
+                {lastMsgAgo}
+              </span>
             </div>
           </div>
         </div>
@@ -371,10 +532,17 @@ const DashboardPage = React.memo(() => {
         <div className="card-body">
           <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
 
-          <div className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1">
+          <div
+            role="log"
+            aria-live="polite"
+            aria-label="Real-time command log"
+            className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1"
+          >
             {recentMessages.length > 0 ? (
-              recentMessages.map((msg, i) => (
-                <div key={i} className="text-base-content/80 leading-relaxed">{msg}</div>
+              recentMessages.map((msg) => (
+                // Key on the stable monotonic id rather than the array index,
+                // which shifts as the ring buffer scrolls.
+                <div key={msg.id} className="text-base-content/80 leading-relaxed">{msg.text}</div>
               ))
             ) : (
               <div className="p-4 text-base-content/50 italic text-center pt-24">
@@ -383,6 +551,8 @@ const DashboardPage = React.memo(() => {
             )}
           </div>
 
+          {/* Command execution is a REST call, so it works even when the WS
+              live feed is down — only disable while a request is in flight. */}
           <form onSubmit={handleSendCommand} className="mt-4 flex gap-2">
             <input
               type="text"
@@ -391,17 +561,22 @@ const DashboardPage = React.memo(() => {
               className="input input-bordered w-full focus:input-primary"
               value={commandInput}
               onChange={(e) => setCommandInput(e.target.value)}
-              disabled={isSending || !isConnected}
+              disabled={isSending}
             />
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={!commandInput.trim() || isSending || !isConnected}
+              disabled={!commandInput.trim() || isSending}
             >
               {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
               Execute
             </button>
           </form>
+          {!isConnected && (
+            <p className="mt-2 text-xs text-base-content/60">
+              Live updates are offline, but commands still run via the API.
+            </p>
+          )}
         </div>
       </div>
 
@@ -411,7 +586,7 @@ const DashboardPage = React.memo(() => {
       </h3>
 
       {agentsError && (
-        <div className="alert alert-error shadow-lg">
+        <div className="alert alert-error shadow-lg" role="alert">
           <span>{(agentsErrObj as Error)?.message || "Failed to fetch agent status."}</span>
         </div>
       )}
@@ -433,7 +608,7 @@ const DashboardPage = React.memo(() => {
                 </div>
 
                 {agent.error && (
-                  <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg">
+                  <div className="alert alert-error shadow-sm text-xs py-2 my-2 rounded-lg" role="alert">
                     <span>{agent.error}</span>
                   </div>
                 )}

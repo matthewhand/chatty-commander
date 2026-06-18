@@ -94,6 +94,53 @@ describe("AuthService", () => {
     );
   });
 
+  test("classifies a 401 as a credentials failure", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: "Unauthorized",
+    } as Response);
+
+    await expect(authService.login("wrong", "creds")).rejects.toMatchObject({
+      kind: "credentials",
+    });
+    expect(authService.lastLoginErrorKind).toBe("credentials");
+  });
+
+  test("classifies a 5xx as a network/reachability failure", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      statusText: "Service Unavailable",
+    } as Response);
+
+    await expect(authService.login("user", "pass")).rejects.toMatchObject({
+      kind: "network",
+    });
+    expect(authService.lastLoginErrorKind).toBe("network");
+  });
+
+  test("classifies a fetch rejection as a network failure", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("Failed to fetch"));
+
+    await expect(authService.login("user", "pass")).rejects.toMatchObject({
+      kind: "network",
+    });
+    expect(authService.lastLoginErrorKind).toBe("network");
+  });
+
+  test("clears the last error kind on a successful login", async () => {
+    authService.lastLoginErrorKind = "credentials";
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ access_token: "t", token_type: "bearer", expires_in: 1 }),
+    } as Response);
+
+    await authService.login("user", "pass");
+
+    expect(authService.lastLoginErrorKind).toBeNull();
+  });
+
   test("getCurrentUser falls back to no-auth probe when token is rejected", async () => {
     // Token present but rejected (401); the no-auth /config probe then succeeds,
     // so we get a local admin session rather than a hard failure.

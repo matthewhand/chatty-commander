@@ -82,7 +82,7 @@ async function mockDashboardAPIs(page: Page, overrides?: {
 // ---------------------------------------------------------------------------
 
 test.describe("Dashboard - Stats Cards", () => {
-  test("renders all 6 stat cards with correct data from /health", async ({ page }) => {
+  test("renders the stat cards with correct data from /health", async ({ page }) => {
     await mockDashboardAPIs(page);
     await page.goto("/dashboard");
 
@@ -100,13 +100,13 @@ test.describe("Dashboard - Stats Cards", () => {
     await expect(page.getByText("Commands", { exact: true }).nth(0)).toBeVisible();
     await expect(page.getByText("42", { exact: true }).nth(0)).toBeVisible();
 
-    // CPU Load
+    // CPU Load (CPU/Memory now show unified Math.round() percentages)
     await expect(page.getByText("CPU Load", { exact: true }).nth(0)).toBeVisible();
-    await expect(page.getByText("23.5", { exact: true }).nth(0)).toBeVisible();
+    await expect(page.getByText("24%", { exact: true }).nth(0)).toBeVisible();
 
     // Memory
     await expect(page.getByText("Memory", { exact: true }).nth(0)).toBeVisible();
-    await expect(page.getByText("61.2", { exact: true }).nth(0)).toBeVisible();
+    await expect(page.getByText("61%", { exact: true }).nth(0)).toBeVisible();
 
     // WebSocket
     await expect(page.getByText("WebSocket", { exact: true }).nth(0)).toBeVisible();

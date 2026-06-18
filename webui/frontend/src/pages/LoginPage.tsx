@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { Mic as MicIcon } from "lucide-react";
+import { authService } from "../services/authService";
+import { Mic as MicIcon, Eye, EyeOff } from "lucide-react";
 
 const LoginPage: React.FC = () => {
   useEffect(() => {
@@ -11,7 +12,19 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // After a failed login the password input is briefly disabled (loading), so
+  // we can't focus it synchronously inside the handler — the DOM hasn't
+  // re-enabled it yet. Defer focus to an effect that runs once the error is
+  // shown and the field is interactive again.
+  useEffect(() => {
+    if (error && !loading) {
+      passwordRef.current?.focus();
+    }
+  }, [error, loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +33,16 @@ const LoginPage: React.FC = () => {
     const success = await login(username, password);
     setLoading(false);
     if (!success) {
-      setError("Invalid username or password");
+      // The useAuth hook only returns a boolean, so recover the reason from the
+      // service to show actionable copy instead of one generic message.
+      const message =
+        authService.lastLoginErrorKind === "network"
+          ? "Can't reach the server. Please try again."
+          : "Invalid username or password";
+      setError(message);
+      // Clear the password so a screen-reader user (and everyone else) can
+      // immediately retry; focus returns to it via the effect above.
+      setPassword("");
     }
   };
 
@@ -40,7 +62,7 @@ const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="w-full space-y-4">
             <div className="form-control w-full">
-              <label className="label cursor-pointer" htmlFor="username">
+              <label className="label" htmlFor="username">
                 <span className="label-text">Username</span>
               </label>
               <input
@@ -50,28 +72,54 @@ const LoginPage: React.FC = () => {
                 className="input input-bordered w-full input-primary"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
                 autoFocus
                 required
+                disabled={loading}
+                aria-invalid={!!error}
+                aria-describedby={error ? "login-error" : undefined}
               />
             </div>
 
             <div className="form-control w-full">
-              <label className="label cursor-pointer" htmlFor="password">
+              <label className="label" htmlFor="password">
                 <span className="label-text">Password</span>
               </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Enter password"
-                className="input input-bordered w-full input-primary"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative w-full">
+                <input
+                  id="password"
+                  ref={passwordRef}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter password"
+                  className="input input-bordered w-full input-primary pr-12"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  disabled={loading}
+                  aria-invalid={!!error}
+                  aria-describedby={error ? "login-error" : undefined}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm btn-circle absolute right-1 top-1/2 -translate-y-1/2"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  disabled={loading}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             {error && (
-              <div className="alert alert-error shadow-lg py-2">
+              <div
+                id="login-error"
+                role="alert"
+                aria-live="assertive"
+                className="alert alert-error shadow-lg py-2"
+              >
                 <span>{error}</span>
               </div>
             )}
@@ -80,6 +128,7 @@ const LoginPage: React.FC = () => {
               type="submit"
               className="btn btn-primary w-full"
               disabled={loading}
+              aria-busy={loading}
             >
               {loading && <span className="loading loading-spinner"></span>}
               {loading ? "Logging in..." : "Login"}
@@ -91,9 +140,7 @@ const LoginPage: React.FC = () => {
           <div className="alert alert-info shadow-sm text-left text-xs">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <div>
-              <span>Auth configured via CLI. No reset function.</span>
-              <br />
-              <span className="opacity-75">Use --no-auth to disable.</span>
+              <span>Credentials are managed by your administrator.</span>
             </div>
           </div>
         </div>
