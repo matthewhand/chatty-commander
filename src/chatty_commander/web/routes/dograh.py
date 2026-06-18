@@ -201,13 +201,15 @@ async def untrack_dograh_call_state() -> DograhTrackResponse:
     return DograhTrackResponse(tracking=False)
 
 
-@router.get("/api/v1/dograh/status", response_model=DograhStatus)
-async def get_dograh_status() -> DograhStatus:
+def compute_dograh_status() -> DograhStatus:
     """Probe whether the configured dograh stack is reachable.
 
-    Returns ``available=False`` with a reason when DOGRAH_BASE_URL /
-    DOGRAH_API_KEY are missing or the service is down. The CC web UI
-    uses this to render a connectivity badge.
+    Pure, synchronous helper shared by the REST route (GET
+    /api/v1/dograh/status) and the /ws ``dograh_status`` push so both
+    surfaces report exactly the same payload shape. Returns
+    ``available=False`` with a reason when DOGRAH_BASE_URL / DOGRAH_API_KEY
+    are missing or the service is down — never raises, so callers can use
+    it to degrade gracefully (no dograh configured → honest offline status).
     """
     try:
         from chatty_commander.integrations.dograh_client import (
@@ -237,6 +239,18 @@ async def get_dograh_status() -> DograhStatus:
     if isinstance(payload, dict):
         health = {k: payload[k] for k in _HEALTH_ALLOWED_KEYS if k in payload}
     return DograhStatus(available=True, health=health)
+
+
+@router.get("/api/v1/dograh/status", response_model=DograhStatus)
+async def get_dograh_status() -> DograhStatus:
+    """Probe whether the configured dograh stack is reachable.
+
+    Returns ``available=False`` with a reason when DOGRAH_BASE_URL /
+    DOGRAH_API_KEY are missing or the service is down. The CC web UI
+    uses this for the initial render of its connectivity badge; live
+    updates after connect arrive over /ws as ``dograh_status`` messages.
+    """
+    return compute_dograh_status()
 
 
 @router.get(

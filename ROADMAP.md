@@ -143,7 +143,7 @@ Spike + feasibility: [`docs/developer/WEBRTC_BRIDGE_SPIKE.md`](docs/developer/WE
   - [x] **Phase 1 — token refresh + jti revocation** (#690): login also returns a refresh token, `POST /api/v1/auth/refresh` rotates, in-memory self-pruning denylist (sqlite seam left for later), logout revokes
   - [x] **Phase 2 — role-based access** (admin/user/readonly via a `require_role` dependency) (#692) — additive, pass-through when auth inactive; guards PUT /config (admin) + POST /command (user)
   - [x] **Phase 3 — scoped service-to-service API keys** (#693) — legacy key stays wildcard; named `auth.service_keys` opt-in; `require_scope` guards POST /state
-  - [ ] **Phase 4 — optional persistent (sqlite) revocation store**
+  - [x] **Phase 4 — optional persistent (sqlite) revocation store** — `SqliteRevocationStore` in `web/revocation.py` (sqlite denylist, self-pruning by `exp`, survives restart); selected via `auth.revocation_store: "memory" | "sqlite"` (default `memory`) wired in `web/server.py`
   Two gaps surfaced during the survey, both already fixed:
   - [x] **Frontend login is a dead path** (fixed #678) — `authService.ts` POSTs `/api/v1/auth/login` + `/api/v1/auth/me` (expects `roles[]`) but no backend route implements them; an auth-enabled deployment cannot log in (today only the no-auth probe works)
   - [x] **`web_server.auth_enabled` is disconnected from the middleware** (fixed #678 — CHATTY_API_KEY wired + fail-fast) — `config.py` never populates `auth.api_key`; with `auth_enabled=True` and no hand-written key, every `/api` request 401s. Wire a key source (env `CHATTY_API_KEY` + schema) or make the flag honest
@@ -173,7 +173,7 @@ Distinct topics raised by the June 2026 bot-PR flood (PRs #617-#649, closed as s
 
 - [ ] Decide on direction: CC's React app embedded in dograh's Next.js dashboard, dograh's workflow editor embedded in CC, or a single new shell hosting both
 - [ ] Single sign-on between the two services (CC uses session cookies, dograh uses X-API-Key + JWT)
-- [ ] Migrate the dograh status card from polling React Query to WebSocket push on CC's existing `/ws` channel
+- [x] Migrate the dograh status card from polling React Query to WebSocket push on CC's existing `/ws` channel — `/ws` pushes a `dograh_status` frame (same `{available, reason, health}` shape as `GET /api/v1/dograh/status`) on connect (via `include_ws_routes(get_initial_messages=...)` → `WebModeServer._initial_ws_messages`) and on call-tracking start (`broadcast_dograh_status`); `DograhStatusCard.tsx` subscribes to it and dropped its `refetchInterval` (REST kept for initial-load fallback). Tests: `tests/unit/test_websocket_routes.py::TestWebSocketInitialMessages`, `tests/e2e/test_web_mode.py::...test_websocket_pushes_dograh_status_on_connect`, `webui/frontend/src/components/DograhStatusCard.test.tsx`
 
 ---
 

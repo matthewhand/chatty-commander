@@ -219,11 +219,27 @@ def register_shared_routers(
     # process-wide AuthContext so require_role can see them. The context is
     # always configured (even when the auth router import is unavailable) so
     # the degradation rule resolves consistently.
-    shared_revocation_store = None
+    # Store backend is selected by ``auth.revocation_store`` ("memory" |
+    # "sqlite"), defaulting to "memory" so existing behavior is unchanged
+    # (AUTHZ_DESIGN.md §3 / Phase 4). "sqlite" persists revocations across
+    # process restarts; an optional ``auth.revocation_store_path`` overrides the
+    # database file. Import stays guarded so the minimal FastAPI stub degrades.
+    shared_revocation_store: Any = None
     try:
-        from .revocation import InMemoryRevocationStore
+        from .deps.auth import auth_config
+        from .revocation import InMemoryRevocationStore, SqliteRevocationStore
 
-        shared_revocation_store = InMemoryRevocationStore()
+        _auth_cfg = auth_config(config_manager)
+        _store_kind = str(_auth_cfg.get("revocation_store", "memory")).lower()
+        if _store_kind == "sqlite":
+            _store_path = _auth_cfg.get("revocation_store_path")
+            shared_revocation_store = (
+                SqliteRevocationStore(str(_store_path))
+                if isinstance(_store_path, str) and _store_path.strip()
+                else SqliteRevocationStore()
+            )
+        else:
+            shared_revocation_store = InMemoryRevocationStore()
     except ImportError:
         pass
 

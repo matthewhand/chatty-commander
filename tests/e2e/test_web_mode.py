@@ -164,6 +164,35 @@ class TestWebSocket:
             # WebSocket may not be available
             pytest.skip("WebSocket not available")
 
+    def test_websocket_pushes_dograh_status_on_connect(self, test_client, monkeypatch):
+        """A `dograh_status` frame is pushed on /ws connect (push-driven card).
+
+        With dograh unconfigured (no DOGRAH_* env), the snapshot degrades
+        gracefully to ``available=False`` rather than 500-ing. We force the
+        unconfigured path so the test never touches the network.
+        """
+        import json
+
+        monkeypatch.delenv("DOGRAH_BASE_URL", raising=False)
+        monkeypatch.delenv("DOGRAH_API_KEY", raising=False)
+
+        with test_client.websocket_connect("/ws") as websocket:
+            # Drain frames until we see the dograh_status push (the very first
+            # frame is the connection_established snapshot).
+            seen_types = []
+            dograh_msg = None
+            for _ in range(5):
+                msg = json.loads(websocket.receive_text())
+                seen_types.append(msg.get("type"))
+                if msg.get("type") == "dograh_status":
+                    dograh_msg = msg
+                    break
+
+            assert dograh_msg is not None, f"no dograh_status frame; saw {seen_types}"
+            assert dograh_msg["data"]["available"] is False
+            # Shape matches the REST endpoint (available/reason/health keys).
+            assert set(dograh_msg["data"]) >= {"available", "reason", "health"}
+
 
 class TestWebModeIntegration:
     """Integration tests for web mode."""

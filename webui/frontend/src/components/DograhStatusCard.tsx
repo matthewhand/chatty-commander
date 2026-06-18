@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PhoneCall, AlertTriangle, PhoneOff } from "lucide-react";
+import { useWebSocket } from "./WebSocketProvider";
 
 interface DograhStatusResponse {
   available: boolean;
@@ -19,7 +20,15 @@ interface DograhWorkflow {
 }
 
 const DograhStatusCard = React.memo(() => {
-  const { data: status, isLoading: statusLoading } = useQuery<DograhStatusResponse>({
+  const { ws } = useWebSocket();
+
+  // Push-driven status. Seeded once from the REST endpoint for the initial
+  // load (so the card renders before any WS frame arrives, and as a fallback
+  // when the socket isn't connected yet); thereafter the server pushes a
+  // `dograh_status` frame on /ws connect and whenever availability changes.
+  const [pushedStatus, setPushedStatus] = useState<DograhStatusResponse | null>(null);
+
+  const { data: seededStatus, isLoading: statusLoading } = useQuery<DograhStatusResponse>({
     queryKey: ["dograh", "status"],
     queryFn: async () => {
       const res = await fetch("/api/v1/dograh/status");
@@ -28,9 +37,34 @@ const DograhStatusCard = React.memo(() => {
       }
       return (await res.json()) as DograhStatusResponse;
     },
-    refetchInterval: 15_000,
     retry: false,
   });
+
+  // Subscribe the card to `dograh_status` pushes on the shared /ws channel.
+  useEffect(() => {
+    if (!ws) return;
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "dograh_status" && msg.data) {
+          setPushedStatus({
+            available: msg.data.available ?? false,
+            reason: msg.data.reason ?? null,
+            health: msg.data.health ?? null,
+          });
+        }
+      } catch {
+        // Non-JSON / unrelated frame — ignore.
+      }
+    };
+    ws.addEventListener("message", handleMessage);
+    return () => {
+      ws.removeEventListener("message", handleMessage);
+    };
+  }, [ws]);
+
+  // Pushed state wins once present; otherwise fall back to the seeded fetch.
+  const status = pushedStatus ?? seededStatus;
 
   const { data: workflows } = useQuery<DograhWorkflow[]>({
     queryKey: ["dograh", "workflows"],
@@ -40,11 +74,10 @@ const DograhStatusCard = React.memo(() => {
       return (await res.json()) as DograhWorkflow[];
     },
     enabled: status?.available === true,
-    refetchInterval: 30_000,
     retry: false,
   });
 
-  if (statusLoading) {
+  if (statusLoading && !status) {
     return (
       <div
         className="stats shadow bg-base-100 border border-base-content/10"

@@ -20,25 +20,36 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Token revocation denylist (AUTHZ_DESIGN.md §3, Phase 1).
+"""Token revocation denylist (AUTHZ_DESIGN.md §3, Phases 1 & 4).
 
 JWTs are stateless, so logout and refresh-token rotation need a server-side
 denylist keyed by the token's ``jti``. This module defines the tiny
-:class:`RevocationStore` protocol the verify paths consult and a self-pruning
-:class:`InMemoryRevocationStore` default.
+:class:`RevocationStore` protocol the verify paths consult and two
+implementations:
 
-The protocol is the seam for a future persistent store (e.g. a sqlite-backed
-implementation that survives process restarts). That persistent variant is
-explicitly deferred per the design doc (§3 / Phase 4) — only the in-memory
-default is built here; nothing else needs to change to swap it in later.
+- :class:`InMemoryRevocationStore` (default) — a self-pruning, process-local
+  ``{jti: exp}`` dict. Revocations are lost on restart, which only loses
+  *early* revocations (tokens expire on their own) — acceptable for the
+  local-first threat model (§3).
+- :class:`SqliteRevocationStore` (Phase 4, opt-in) — a sqlite-backed denylist
+  for users who want revocations to survive a process restart. Same
+  self-pruning contract; selected via ``auth.revocation_store: "sqlite"``.
+
+Both satisfy the same :class:`RevocationStore` protocol, so the store can be
+swapped in :mod:`chatty_commander.web.server` without touching the verify paths.
 """
 
 from __future__ import annotations
 
+import sqlite3
 import threading
 import time
 from collections.abc import Callable
 from typing import Protocol, runtime_checkable
+
+# Default on-disk location for the sqlite store, relative to cwd. Kept small and
+# hidden so it sits alongside other ``.chatty`` runtime state.
+DEFAULT_SQLITE_PATH = ".chatty/revocations.sqlite3"
 
 
 @runtime_checkable
@@ -109,3 +120,91 @@ class InMemoryRevocationStore:
     def __len__(self) -> int:  # pragma: no cover - trivial, aids testing
         with self._lock:
             return len(self._revoked)
+
+
+class SqliteRevocationStore:
+    """Persistent jti denylist backed by sqlite, with pruning by ``exp``.
+
+    Stores ``(jti, exp)`` rows in a single table keyed on ``jti``. Unlike
+    :class:`InMemoryRevocationStore`, revocations survive a process restart:
+    point a fresh instance at the same database file and previously-revoked
+    (still-valid) tokens remain revoked.
+
+    Self-pruning mirrors the in-memory store: :meth:`revoke` upserts then
+    deletes every row past its ``exp`` and :meth:`is_revoked` treats an expired
+    row as not-revoked (deleting it), so the table never grows beyond the set of
+    *currently-valid* revoked tokens.
+
+    Thread safety: a single connection opened with ``check_same_thread=False``
+    is guarded by a lock, so the store is safe to share across the request
+    threads that consult it. Pass ``path=":memory:"`` for an ephemeral in-memory
+    database (used by tests); any other path is created (with parent dirs) on
+    first use.
+    """
+
+    def __init__(
+        self,
+        path: str = DEFAULT_SQLITE_PATH,
+        *,
+        time_fn: Callable[[], float] = time.time,
+    ) -> None:
+        self._time_fn = time_fn
+        self._lock = threading.Lock()
+        if path != ":memory:":
+            import os
+
+            parent = os.path.dirname(path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+        # One shared connection guarded by ``self._lock``; ``:memory:`` databases
+        # are per-connection, so we must keep this handle alive for its lifetime.
+        self._conn = sqlite3.connect(path, check_same_thread=False)
+        with self._lock:
+            self._conn.execute(
+                "CREATE TABLE IF NOT EXISTS revoked_tokens "
+                "(jti TEXT PRIMARY KEY, exp INTEGER NOT NULL)"
+            )
+            self._conn.commit()
+
+    def revoke(self, jti: str, exp: int) -> None:
+        if not jti:
+            return
+        now = int(self._time_fn())
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO revoked_tokens (jti, exp) VALUES (?, ?) "
+                "ON CONFLICT(jti) DO UPDATE SET exp=excluded.exp",
+                (jti, int(exp)),
+            )
+            self._prune_locked(now)
+            self._conn.commit()
+
+    def is_revoked(self, jti: str) -> bool:
+        if not jti:
+            return False
+        now = int(self._time_fn())
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT exp FROM revoked_tokens WHERE jti = ?", (jti,)
+            ).fetchone()
+            if row is None:
+                return False
+            if int(row[0]) <= now:
+                # Token would have expired anyway; drop and treat as not revoked.
+                self._conn.execute("DELETE FROM revoked_tokens WHERE jti = ?", (jti,))
+                self._conn.commit()
+                return False
+            return True
+
+    def _prune_locked(self, now: int) -> None:
+        """Drop rows whose token has already expired (caller holds the lock)."""
+        self._conn.execute("DELETE FROM revoked_tokens WHERE exp <= ?", (now,))
+
+    def __len__(self) -> int:  # pragma: no cover - trivial, aids testing
+        with self._lock:
+            row = self._conn.execute("SELECT COUNT(*) FROM revoked_tokens").fetchone()
+            return int(row[0]) if row else 0
+
+    def close(self) -> None:  # pragma: no cover - trivial, aids cleanup
+        with self._lock:
+            self._conn.close()
