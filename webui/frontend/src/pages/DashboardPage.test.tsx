@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi } from "vitest";
 import DashboardPage from "./DashboardPage";
@@ -45,6 +45,9 @@ beforeEach(() => {
         total: 1,
       });
     }
+    if (url.includes("/api/v1/status")) {
+      return jsonResponse({ status: "running", current_state: "idle", active_models: [], uptime: "1h" });
+    }
     if (url.includes("/dograh/")) {
       return jsonResponse({ available: false, reason: "not configured", health: null });
     }
@@ -75,8 +78,9 @@ describe("DashboardPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("1h 2m")).toBeInTheDocument(); // uptime
     expect(screen.getByText("42")).toBeInTheDocument(); // commands executed
-    expect(screen.getByText("12.5")).toBeInTheDocument(); // cpu
-    expect(screen.getByText("33.1")).toBeInTheDocument(); // memory
+    // CPU/Memory are rounded to whole-percent to match the radial ring label.
+    expect(screen.getAllByText("13%").length).toBeGreaterThan(0); // cpu (12.5 → 13%)
+    expect(screen.getAllByText("33%").length).toBeGreaterThan(0); // memory (33.1 → 33%)
     expect(document.title).toBe("Dashboard | ChattyCommander");
   });
 
@@ -94,5 +98,21 @@ describe("DashboardPage", () => {
     expect(
       screen.getByPlaceholderText("Type a command to execute..."),
     ).not.toBeDisabled();
+  });
+
+  test("surfaces a voice/listening status card seeded from the status endpoint", async () => {
+    renderDashboard();
+    const card = await screen.findByTestId("voice-status-card");
+    // current_state defaults to "idle" from the stubbed /api/v1/status payload.
+    await waitFor(() => expect(card).toHaveAttribute("data-voice-mode", "idle"));
+    // Mic-active isn't reported by the backend, so it's shown honestly.
+    expect(card.textContent?.toLowerCase()).toContain("unknown");
+  });
+
+  test("real-time log is an aria-live log region", async () => {
+    renderDashboard();
+    await screen.findByText("Healthy");
+    const log = screen.getByRole("log", { name: "Real-time command log" });
+    expect(log).toHaveAttribute("aria-live", "polite");
   });
 });

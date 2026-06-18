@@ -27,6 +27,7 @@ function renderWithProviders(ui: React.ReactElement) {
 
 beforeEach(() => {
   document.documentElement.removeAttribute("data-theme");
+  window.localStorage.clear();
 });
 
 describe("ThemeProvider", () => {
@@ -73,6 +74,54 @@ describe("ThemeProvider", () => {
     await waitFor(() => {
       expect(document.documentElement.getAttribute("data-theme")).toBe("light");
     });
+  });
+
+  test("setTheme persists the chosen theme to localStorage", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    }) as any;
+
+    renderWithProviders(<ThemeProbe />);
+
+    fireEvent.click(screen.getByRole("button", { name: /set light/i }));
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem("chatty.theme")).toBe("light");
+    });
+  });
+
+  test("restores a persisted theme from localStorage on load", async () => {
+    window.localStorage.setItem("chatty.theme", "synthwave");
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    }) as any;
+
+    renderWithProviders(<ThemeProbe />);
+
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("synthwave");
+    await waitFor(() => {
+      expect(document.documentElement.getAttribute("data-theme")).toBe(
+        "synthwave",
+      );
+    });
+  });
+
+  test("a locally persisted theme is not overwritten by the backend config", async () => {
+    window.localStorage.setItem("chatty.theme", "cyberpunk");
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ui: { theme: "light" } }),
+    }) as any;
+
+    renderWithProviders(<ThemeProbe />);
+
+    // The backend response resolves, but the user's local choice wins.
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+    });
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("cyberpunk");
   });
 
   test("useTheme throws when used outside a ThemeProvider", () => {

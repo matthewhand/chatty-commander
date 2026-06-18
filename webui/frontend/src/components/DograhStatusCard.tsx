@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { PhoneCall, AlertTriangle, PhoneOff } from "lucide-react";
+import { PhoneCall, AlertTriangle, PhoneOff, ExternalLink } from "lucide-react";
 import { useWebSocket } from "./WebSocketProvider";
 
 interface DograhStatusResponse {
@@ -97,23 +97,37 @@ const DograhStatusCard = React.memo(() => {
   }
 
   if (!status?.available) {
+    // Not-configured is an optional, neutral state — not a failure. Use an
+    // info treatment (not error red) and offer a clear "Set up / Learn more"
+    // affordance so users understand it's available to enable, not broken.
     return (
       <div
-        className="stats shadow bg-base-100 border border-base-content/10"
+        className="stats shadow bg-base-100 border border-info/30"
         data-testid="dograh-status-card"
         data-dograh-state="unavailable"
       >
         <div className="stat">
-          <div className="stat-figure text-base-content/40">
+          <div className="stat-figure text-info/60">
             <PhoneOff size={32} />
           </div>
           <div className="stat-title">Dograh</div>
-          <div className="stat-value text-2xl text-base-content/50">Offline</div>
+          <div className="stat-value text-2xl text-info/80">Offline</div>
           <div
             className="stat-desc text-xs whitespace-normal leading-snug max-w-[16rem]"
             title={status?.reason ?? ""}
           >
             Optional voice-call integration — not configured.
+          </div>
+          <div className="stat-actions mt-1">
+            <a
+              href="https://github.com/dograh/dograh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-xs btn-info btn-outline gap-1"
+            >
+              <ExternalLink size={12} />
+              Set up · Learn more
+            </a>
           </div>
         </div>
       </div>

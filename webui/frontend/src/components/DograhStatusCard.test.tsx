@@ -67,6 +67,18 @@ describe("DograhStatusCard", () => {
     expect(screen.getByText("Offline")).toBeInTheDocument();
   });
 
+  test("not-configured uses a neutral info treatment (not error red) with a set-up affordance", async () => {
+    renderCard();
+    const card = await screen.findByTestId("dograh-status-card");
+    // Neutral/info, never an error treatment.
+    expect(card.className).not.toMatch(/error/);
+    expect(card.className).toMatch(/info/);
+    // A "Set up / Learn more" affordance distinguishes it from a real failure.
+    const link = screen.getByRole("link", { name: /set up.*learn more/i });
+    expect(link).toHaveAttribute("href");
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
   test("renders online from a pushed `dograh_status` WS frame", async () => {
     renderCard();
     // Wait for the seeded (offline) render so we know the listener is attached.
