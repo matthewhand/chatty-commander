@@ -47,21 +47,57 @@ export function DynamicDropdown({
     };
   }, [refs]);
 
+  const menuId = React.useId();
+
+  // Handle keyboard interaction (Escape to close, Arrows for navigation)
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      setIsOpen(false);
+      refs.reference.current?.focus();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const focusableElements = refs.floating.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusableElements || focusableElements.length === 0) return;
+
+      const elementsArray = Array.from(focusableElements);
+      const currentIndex = elementsArray.indexOf(document.activeElement as HTMLElement);
+
+      let nextIndex = 0;
+      if (event.key === 'ArrowDown') {
+        nextIndex = currentIndex < elementsArray.length - 1 ? currentIndex + 1 : 0;
+      } else {
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : elementsArray.length - 1;
+      }
+
+      elementsArray[nextIndex].focus();
+    }
+  };
+
   return (
     <>
       <button
         ref={refs.setReference}
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' && !isOpen) {
+            e.preventDefault();
+            setIsOpen(true);
+          }
+        }}
         className={buttonClassName}
         aria-expanded={isOpen}
         aria-haspopup="true"
         aria-label={ariaLabel}
+        aria-controls={isOpen ? menuId : undefined}
       >
         {buttonContent}
       </button>
 
       {isOpen && (
         <div
+          id={menuId}
           ref={refs.setFloating}
           style={{
             position: strategy,
@@ -70,8 +106,14 @@ export function DynamicDropdown({
             zIndex: 50,
           }}
           className={menuClassName}
-          onClick={() => setIsOpen(false)} // close on item click
+          onClick={() => {
+            setIsOpen(false);
+            refs.reference.current?.focus();
+          }}
+          onKeyDown={handleKeyDown}
+          role="menu"
         >
+          {/* We trap focus inside by listening to Arrow keys, which is common for menus */}
           {children}
         </div>
       )}

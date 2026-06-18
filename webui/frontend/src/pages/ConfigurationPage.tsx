@@ -172,7 +172,7 @@ const ConfigurationPage: React.FC = () => {
   });
 
   // Load config on mount
-  const { data: remoteConfig } = useQuery({
+  const { data: remoteConfig, isLoading: isConfigLoading, isError: isConfigError } = useQuery({
     queryKey: ["config"],
     queryFn: loadConfig,
   });
@@ -302,6 +302,24 @@ const ConfigurationPage: React.FC = () => {
     }
   };
 
+  if (isConfigLoading) {
+    return (
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading configuration">
+        <div className="h-10 w-48 skeleton rounded-lg"></div>
+        <div className="card bg-base-100 shadow-xl border border-base-content/10 h-80 skeleton rounded-box"></div>
+      </div>
+    );
+  }
+
+  if (isConfigError) {
+    return (
+      <div className="alert alert-error shadow-lg my-6">
+        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span>Failed to load configuration. Please ensure the backend is running.</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
@@ -354,8 +372,9 @@ const ConfigurationPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
+                <label className="label cursor-pointer justify-start gap-4" htmlFor="config-service-voice">
                   <input
+                    id="config-service-voice"
                     type="checkbox"
                     className="toggle toggle-info"
                     checked={config.services.voiceCommands}
@@ -370,8 +389,9 @@ const ConfigurationPage: React.FC = () => {
               </div>
 
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-4">
+                <label className="label cursor-pointer justify-start gap-4" htmlFor="config-service-rest">
                   <input
+                    id="config-service-rest"
                     type="checkbox"
                     className="toggle toggle-info"
                     checked={config.services.restApi}
