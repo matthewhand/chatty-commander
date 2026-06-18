@@ -40,6 +40,7 @@ def include_ws_routes(
     set_connections: Callable[[set[WebSocket]], None],
     get_state_snapshot: Callable[[], dict[str, Any]],
     on_message: Callable[[dict[str, Any]], Any] | None = None,
+    get_initial_messages: Callable[[], list[dict[str, Any]]] | None = None,
     heartbeat_seconds: float = 30.0,
 ) -> APIRouter:
     """
@@ -49,6 +50,11 @@ def include_ws_routes(
       - get_connections / set_connections: manage the shared connection set
       - get_state_snapshot: returns an initial payload describing current state
       - on_message: optional callback to process inbound JSON messages
+      - get_initial_messages: optional callback returning extra typed messages
+        ({"type", "data", ...}) to push once on connect, after the
+        ``connection_established`` snapshot — e.g. an initial ``dograh_status``
+        push so push-driven cards render immediately without polling. Must
+        never raise; a failure is logged and the connection proceeds.
     """
     router = APIRouter()
 
@@ -67,6 +73,22 @@ def include_ws_routes(
                 "timestamp": datetime.now().isoformat(),
             }
             await websocket.send_text(json.dumps(snapshot))
+
+            # Optional extra initial frames (e.g. dograh_status) so
+            # push-driven cards render immediately on connect rather than
+            # waiting for the first change event. Never let a producer
+            # failure abort the connection.
+            if get_initial_messages is not None:
+                try:
+                    initial_messages = get_initial_messages()
+                except Exception as err:  # noqa: BLE001
+                    logger.debug("get_initial_messages failed: %s", err)
+                    initial_messages = []
+                for message in initial_messages or []:
+                    try:
+                        await websocket.send_text(json.dumps(message))
+                    except Exception as err:  # noqa: BLE001
+                        logger.debug("initial WS message send failed: %s", err)
 
             while True:
                 try:

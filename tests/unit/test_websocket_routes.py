@@ -488,6 +488,69 @@ class TestWebSocketStateSnapshot:
             assert message["data"] is None
 
 
+class TestWebSocketInitialMessages:
+    """Tests for the optional get_initial_messages push (e.g. dograh_status)."""
+
+    async def test_initial_dograh_status_pushed_on_connect(self):
+        """A `dograh_status` frame is pushed right after connection_established."""
+        connections = set()
+
+        def get_initial_messages():
+            return [
+                {
+                    "type": "dograh_status",
+                    "data": {"available": False, "reason": "not configured", "health": None},
+                }
+            ]
+
+        router = include_ws_routes(
+            get_connections=lambda: connections,
+            set_connections=lambda c: connections.update(c),
+            get_state_snapshot=lambda: {"status": "active"},
+            get_initial_messages=get_initial_messages,
+            heartbeat_seconds=1.0,
+        )
+
+        client = TestClient(router)
+
+        with client.websocket_connect("/ws") as websocket:
+            # First frame is the standard connection snapshot.
+            first = json.loads(websocket.receive_text())
+            assert first["type"] == "connection_established"
+
+            # Second frame is the pushed dograh_status snapshot.
+            second = json.loads(websocket.receive_text())
+            assert second["type"] == "dograh_status"
+            assert second["data"]["available"] is False
+            assert second["data"]["reason"] == "not configured"
+            assert second["data"]["health"] is None
+
+    async def test_initial_messages_producer_failure_does_not_abort(self):
+        """A raising get_initial_messages is swallowed; connection still works."""
+        connections = set()
+
+        def boom():
+            raise RuntimeError("status probe blew up")
+
+        router = include_ws_routes(
+            get_connections=lambda: connections,
+            set_connections=lambda c: connections.update(c),
+            get_state_snapshot=lambda: {},
+            get_initial_messages=boom,
+            heartbeat_seconds=1.0,
+        )
+
+        client = TestClient(router)
+
+        with client.websocket_connect("/ws") as websocket:
+            # connection_established still arrives despite the producer error.
+            first = json.loads(websocket.receive_text())
+            assert first["type"] == "connection_established"
+            # Connection remains usable (ping/pong).
+            websocket.send_text(json.dumps({"type": "ping"}))
+            assert json.loads(websocket.receive_text())["type"] == "pong"
+
+
 class TestWebSocketRouteConfiguration:
     """Tests for WebSocket route configuration."""
 

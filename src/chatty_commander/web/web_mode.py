@@ -664,6 +664,7 @@ class WebModeServer:
                 "timestamp": self.last_state_change.isoformat(),
             },
             on_message=None,
+            get_initial_messages=self._initial_ws_messages,
             heartbeat_seconds=30.0,
         )
         app.include_router(ws)
@@ -969,6 +970,49 @@ class WebModeServer:
             # e.g. the event loop is closed — fail gracefully rather than
             # propagating into the state manager callback chain.
             logger.debug("state_change broadcast scheduling failed: %s", e)
+
+    # --------------------------
+    # dograh availability status (push-driven UI card)
+    # --------------------------
+    def _dograh_status_message(self) -> WebSocketMessage:
+        """Build the ``dograh_status`` WS message from the live probe.
+
+        Reuses ``compute_dograh_status`` so the /ws push and the REST
+        endpoint (GET /api/v1/dograh/status) always carry the identical
+        payload shape. Degrades gracefully: an unconfigured / unreachable
+        dograh yields ``available=False`` rather than raising.
+        """
+        from chatty_commander.web.routes.dograh import compute_dograh_status
+
+        try:
+            status = compute_dograh_status()
+            data = status.model_dump()
+        except Exception as err:  # noqa: BLE001 - never break the WS handshake
+            logger.debug("dograh status probe failed: %s", err)
+            data = {"available": False, "reason": "unreachable", "health": None}
+        return WebSocketMessage(type="dograh_status", data=data)
+
+    def _initial_ws_messages(self) -> list[dict[str, Any]]:
+        """Extra frames pushed once on each /ws connect.
+
+        Currently just an initial ``dograh_status`` snapshot so the
+        dashboard's dograh card renders from pushed state immediately,
+        without polling. Never raises (the ws router also guards this).
+        """
+        try:
+            return [self._dograh_status_message().model_dump()]
+        except Exception as err:  # noqa: BLE001
+            logger.debug("building initial WS messages failed: %s", err)
+            return []
+
+    async def broadcast_dograh_status(self) -> None:
+        """Fan the current dograh availability status out over /ws.
+
+        Event-driven entry point: call when dograh availability is known to
+        have (potentially) changed — e.g. when a call begins tracking — so
+        connected dograh cards update without polling.
+        """
+        await self._broadcast_message(self._dograh_status_message())
 
     # --------------------------
     # Phase-0 dograh call-state bridge
