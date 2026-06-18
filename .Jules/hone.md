@@ -1,0 +1,2 @@
+## 2024-05-24 | [Architectural Audit] | Insight: Modal focus trapping and semantics | Protocol: Ensure all custom modals use role="dialog", aria-modal="true", trap focus, and handle Escape keys for true accessibility.
+## 2024-05-24 | [Architectural Audit] | Insight: Asynchronous states missing empty states | Protocol: Ensure all network components render explicit Loading, Error, and Empty states alongside their Success state to maintain UI determinism.

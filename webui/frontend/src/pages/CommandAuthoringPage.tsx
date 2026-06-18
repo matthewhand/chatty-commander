@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -255,6 +256,19 @@ export default function CommandAuthoringPage() {
     actions: [],
   });
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const confirmModalRef = useFocusTrap(showConfirmModal);
+
+  useEffect(() => {
+    if (showConfirmModal) {
+      const handler = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          setShowConfirmModal(false);
+        }
+      };
+      document.addEventListener("keydown", handler);
+      return () => document.removeEventListener("keydown", handler);
+    }
+  }, [showConfirmModal]);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -701,9 +715,11 @@ export default function CommandAuthoringPage() {
                     setManualCommand((prev) => ({ ...prev, name: e.target.value }))
                   }
                   onBlur={(e) => validateField('name', e.target.value)}
+                  aria-invalid={!!formErrors.name}
+                  aria-describedby={formErrors.name ? "cmd-name-error" : undefined}
                 />
                 {formErrors.name && (
-                  <span className="text-error text-xs mt-1">{formErrors.name}</span>
+                  <span id="cmd-name-error" className="text-error text-xs mt-1">{formErrors.name}</span>
                 )}
               </div>
 
@@ -721,9 +737,11 @@ export default function CommandAuthoringPage() {
                     setManualCommand((prev) => ({ ...prev, display_name: e.target.value }))
                   }
                   onBlur={(e) => validateField('display_name', e.target.value)}
+                  aria-invalid={!!formErrors.display_name}
+                  aria-describedby={formErrors.display_name ? "cmd-display-name-error" : undefined}
                 />
                 {formErrors.display_name && (
-                  <span className="text-error text-xs mt-1">{formErrors.display_name}</span>
+                  <span id="cmd-display-name-error" className="text-error text-xs mt-1">{formErrors.display_name}</span>
                 )}
               </div>
 
@@ -741,9 +759,11 @@ export default function CommandAuthoringPage() {
                     setManualCommand((prev) => ({ ...prev, wakeword: e.target.value }))
                   }
                   onBlur={(e) => validateField('wakeword', e.target.value)}
+                  aria-invalid={!!formErrors.wakeword}
+                  aria-describedby={formErrors.wakeword ? "cmd-wakeword-error" : undefined}
                 />
                 {formErrors.wakeword && (
-                  <span className="text-error text-xs mt-1">{formErrors.wakeword}</span>
+                  <span id="cmd-wakeword-error" className="text-error text-xs mt-1">{formErrors.wakeword}</span>
                 )}
               </div>
             </div>
@@ -832,6 +852,10 @@ export default function CommandAuthoringPage() {
               onClick={() => setShowConfirmModal(false)}
             />
             <motion.div
+              ref={confirmModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="confirm-modal-title"
               initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
               animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
               exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9 }}
@@ -841,7 +865,7 @@ export default function CommandAuthoringPage() {
                 <div className="card-body">
                   <div className="flex items-center gap-3 text-warning mb-4">
                     <Shield size={28} />
-                    <h3 className="text-xl font-bold">Confirm Command Creation</h3>
+                    <h3 id="confirm-modal-title" className="text-xl font-bold">Confirm Command Creation</h3>
                   </div>
 
                   <div className="alert alert-warning mb-4">

@@ -55,6 +55,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               exit={reduceMotion ? undefined : { opacity: 0, y: 20 }}
               transition={reduceMotion ? undefined : { duration: 0.25 }}
               className={`alert ${alertClass[toast.type]} shadow-lg`}
+              role={toast.type === 'error' || toast.type === 'warning' ? 'alert' : 'status'}
+              aria-live={toast.type === 'error' || toast.type === 'warning' ? 'assertive' : 'polite'}
             >
               <span>{toast.message}</span>
             </motion.div>
