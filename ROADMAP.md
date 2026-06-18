@@ -98,11 +98,15 @@ Progress counts in each section header count top-level checkboxes only; nesting 
 
 ### Telephony — dograh end-to-end (user actions) (0/3)
 
+> ⛔ **Blocked on external resources (cannot be completed in-repo).** Requires a live dograh deployment plus a real Twilio/Vonage account + provider credentials. These are operator actions, not code.
+
 - [ ] **Author a real telephony workflow in dograh's UI** and document the steps
 - [ ] **Configure a Twilio/Vonage provider** so `dograh_call` returns success instead of `telephony_not_configured`
 - [ ] **Wire dograh's LLM / STT / TTS providers for self-hosted use** — the OSS image points all three at dograh's hosted cloud. Options: (a) OpenAI keys for all three, simplest; (b) the optional Speaches stack (local Whisper + Kokoro TTS) via `PUT /api/v1/user/configurations/user`. See `webui/frontend/tests/e2e/dograh/dograh_webcall_loopback.spec.ts` and `docs/screenshots/dograh/03-webcall-loopback.png` for the captured "blocked at LLM config" state.
 
 ### Deterministic dograh call proof — TTS audio loopback (0/3)
+
+> ⛔ **Partially blocked.** The audio fixture + fake-mic Chromium wiring are codeable, but a green assertion needs a dograh instance with LLM/STT/TTS providers configured — which depends on the blocked telephony setup above.
 
 Prove dograh's full audio pipeline (STT → LLM → TTS) works without a human, a phone, or Twilio, by feeding a scripted utterance in and asserting on what comes out. Builds on the existing `smallwebrtc` loopback spec. **Prerequisite: the STT/TTS/LLM providers above must be wired first** — this removes the human and the phone, not the provider requirement.
 
@@ -125,6 +129,8 @@ Test voice functionality from the webapp as if running locally: enable the micro
 - [x] **E2E test** — Playwright with a prerecorded audio fixture via `--use-fake-device-for-media-stream`, asserting the feedback panel shows the expected command and dry-run action
 
 ### WebRTC audio bridge (0/3)
+
+> ⛔ **Blocked on a live dograh instance** (shared audio stream, run-state vocabulary confirmation) and, for the outbound mode→dograh metadata item, on a dograh API that does not yet exist.
 
 Spike + feasibility: [`docs/developer/WEBRTC_BRIDGE_SPIKE.md`](docs/developer/WEBRTC_BRIDGE_SPIKE.md). **Phase-0 state bridge landed (#680)** — see the nested item below.
 
@@ -170,6 +176,8 @@ Distinct topics raised by the June 2026 bot-PR flood (PRs #617-#649, closed as s
 - [x] **Rate limiting on command execution** (from #639) — decide whether `/api/v1/command` needs per-key throttling
 
 ### UI consolidation (0/3)
+
+> ⛔ **Blocked on a cross-product decision + dograh's Next.js app.** Embedding CC's React app in dograh's dashboard (or vice-versa) and SSO between the two services are architectural choices for the maintainer, not self-contained code tasks.
 
 - [ ] Decide on direction: CC's React app embedded in dograh's Next.js dashboard, dograh's workflow editor embedded in CC, or a single new shell hosting both
 - [ ] Single sign-on between the two services (CC uses session cookies, dograh uses X-API-Key + JWT)
@@ -236,6 +244,61 @@ These exist in the tree and are honest about their state. They are inventory, no
   git push origin --delete dependabot/pip/onnx-1.19.0
   git push origin --delete feat/fix-final-tests
   ```
+
+---
+
+## UX & polish backlog (from 2026-06-18 UI/UX audit)
+
+Synthesised from a per-page + cross-cutting critique of `webui/frontend` (every
+page, the layout shell, theming, accessibility and the end-to-end workflows).
+Deduplicated and prioritised. P0 = broken or blocks use; P1 = clear quality gap;
+P2 = polish.
+
+### P0 — broken / blocking (0/8)
+
+- [ ] **`ScrollToTop` never works** — it listens on `window` scroll, but the scroll container is `<main class="overflow-y-auto">` inside an `h-screen overflow-hidden` shell, so the window never scrolls; attach the listener + `scrollTo` to `<main>` ([`ScrollToTop.tsx`](webui/frontend/src/components/ScrollToTop.tsx), [`MainLayout.tsx`](webui/frontend/src/components/MainLayout.tsx))
+- [ ] **Live-region a11y is absent app-wide** — toasts, dashboard/login error alerts, the real-time command log and WebSocket status all update silently; screen-reader users get no feedback. Wrap `ToastProvider` in `role=region aria-live=polite` (assertive for errors) + dismiss button; add `role=alert` to error alerts and `role=log aria-live=polite` to the command log ([`ToastProvider.tsx`](webui/frontend/src/components/ToastProvider.tsx), `DashboardPage.tsx`, `LoginPage.tsx`)
+- [ ] **Modals are not real dialogs** — the Command-Authoring confirm modal and the mobile sidebar are hand-rolled `motion.div`s with no `role=dialog`/`aria-modal`, no focus trap, no Escape-to-close, no focus return; keyboard/SR users are stranded ([`CommandAuthoringPage.tsx`](webui/frontend/src/pages/CommandAuthoringPage.tsx), [`MainLayout.tsx`](webui/frontend/src/components/MainLayout.tsx))
+- [ ] **Theme changes don't persist** — `setTheme` mutates the live DOM but is never written back to config/`localStorage`, so a refresh reverts it; also no theme switcher in the layout shell ([`ThemeProvider.tsx`](webui/frontend/src/components/ThemeProvider.tsx))
+- [ ] **Session/auth expiry is unhandled** — `useAuth` only checks on mount; a token expiring mid-session yields silent 401s with no redirect to `/login` and the WS stops after 10 retries with no re-auth prompt. Centralise 401 handling (clear token + redirect + toast) ([`useAuth.tsx`](webui/frontend/src/hooks/useAuth.tsx), [`WebSocketProvider.tsx`](webui/frontend/src/components/WebSocketProvider.tsx))
+- [ ] **No first-run/onboarding** — a fresh user lands on an empty dashboard ("Waiting for commands…") with no guidance toward Commands → New Command → Voice Test; add a dismissible onboarding callout ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
+- [ ] **Authoring can silently clobber commands** — `saveCommand` read-modify-writes the whole config with no name-collision check, so a new author can overwrite a built-in; edit-mode rename also orphans the old key. Warn/block on collision; lock or handle rename ([`CommandAuthoringPage.tsx`](webui/frontend/src/pages/CommandAuthoringPage.tsx))
+- [ ] **No global error boundary** — a thrown render error white-screens the whole app; wrap routed pages in an ErrorBoundary with a branded fallback + route-loading skeleton ([`MainLayout.tsx`](webui/frontend/src/components/MainLayout.tsx))
+
+### P1 — quality (0/19)
+
+- [ ] **CSS theme-token inconsistency** — dozens of rules use `hsl(var(--x))` (the exact bug that made gradient headings transparent, already fixed for `.text-gradient-*` via `oklch`); migrate all `hsl(var(--x))` → `oklch(...)`, and drive glassmorphism/scrollbar/dropdown backgrounds from DaisyUI tokens instead of hardcoded dark `rgba(...)` so non-dark themes render correctly ([`index.css`](webui/frontend/src/index.css))
+- [ ] **Active-nav defined twice, conflictingly** — `MainLayout` sets inline `border-l-4 bg-primary/20` while `index.css .menu li>a.active` sets a different gradient/border; pick one source of truth and ensure a non-color cue + adequate contrast on neon themes ([`MainLayout.tsx`](webui/frontend/src/components/MainLayout.tsx), `index.css`)
+- [ ] **No persistent app header** — page title, breadcrumb and global status/theme/account controls live inside scrolling `<main>` and scroll away; add a sticky desktop header with a standard page-header slot ([`MainLayout.tsx`](webui/frontend/src/components/MainLayout.tsx), [`Breadcrumbs.tsx`](webui/frontend/src/components/Breadcrumbs.tsx))
+- [ ] **Login polish** — error not announced/focused, password not cleared or refocused on failure, no show/hide password toggle, no `autoComplete` hints, and the helper text leaks internal CLI flags (`--no-auth`) to end users; also network-down vs bad-credentials are indistinguishable ([`LoginPage.tsx`](webui/frontend/src/pages/LoginPage.tsx), [`authService.ts`](webui/frontend/src/services/authService.ts))
+- [ ] **Dashboard has no "is my voice assistant working right now?" signal** — add a primary Voice/Listening status card (mic active + state-machine mode: idle/computer/chatty) above the stats grid ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
+- [ ] **WebSocket card shows stale-but-green** — `lastMsgAgo` can read "120m ago" while styled "Connected"; downgrade to a warning tint past a staleness threshold; add a header-level "live · updated Xs ago" freshness stamp ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
+- [ ] **PerformanceChart is unreadable** — X-axis is `hide`, no visible legend, series distinguished by colour only; show sparse time ticks + a `<Legend />` and a "last N min" caption ([`PerformanceChart.tsx`](webui/frontend/src/components/PerformanceChart.tsx))
+- [ ] **Radial CPU/Memory gauges lack `aria-value*`** and round differently from the adjacent numeric value; add `aria-valuenow/min/max` + `aria-label`, unify rounding ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
+- [ ] **Dograh-offline reads as failure** — the not-configured state is styled identically to a real error; use a neutral/info treatment with a "Set up" affordance, distinct from error ([`DograhStatusCard.tsx`](webui/frontend/src/components/DograhStatusCard.tsx))
+- [ ] **Commands list doesn't scale** — 2-up tall cards waste space and don't scan; each repeats an identical fake "REST API Trigger" block; no sort/pagination; type isn't badged; edit/delete buried in a kebab. Switch to a dense table/list with per-type badge+icon, sort, surfaced edit/delete, and a page-level trigger note ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx))
+- [ ] **Commands uses `window.alert()`** for delete/import failures (jarring, bypasses the toast system) and the advertised Ctrl+K shortcut has no handler; route errors through `useToast`, wire Ctrl/Cmd+K to focus search ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx))
+- [ ] **Import JSON silently replaces the whole command set** with no confirm/diff (both Commands import and Authoring save); add a confirm step showing added/removed/changed counts ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx), `CommandAuthoringPage.tsx`)
+- [ ] **Authoring has no danger warnings, test, or examples** — no heuristic warning on risky shell (`rm -rf`, `curl|sh`) or non-https URLs, no per-action dry-run/preview, no format examples/help for keypress/url/shell; add inline danger badges, a Test affordance, and per-type helper text ([`CommandAuthoringPage.tsx`](webui/frontend/src/pages/CommandAuthoringPage.tsx))
+- [ ] **Authoring is a dead-end** — on save it resets in place with no success toast/confirmation and no navigation to the new command; AI-mode and Manual-mode have asymmetric fields/validation. Navigate to `/commands` (or toast + "View command") on success; unify the two modes ([`CommandAuthoringPage.tsx`](webui/frontend/src/pages/CommandAuthoringPage.tsx))
+- [ ] **Configuration has no dirty-state or unsaved-changes guard** — Save is always enabled, success/failure feedback is a tiny grey glyph (and `persistConfig` doesn't check `res.ok`); add dirty tracking, a Discard button, a `beforeunload`/route-leave guard, and a real toast on save ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))
+- [ ] **Configuration lacks structure & help** — one long scrolling card; group into tabs (General / Audio / Voice Models / LLM) with a sticky Save bar; add tooltips for technical options (target state, inference framework, wake-word model states); confirm before deleting a voice model; label the device `<select>`s ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))
+- [ ] **Voice Test can't select a mic and gives false confidence** — no device picker, "streaming" wording shows even when the recorder failed or the WS is down, wake-word detection has no distinct feedback, and there's no transcript panel; add a device `<select>`, gate "streaming" on real recorder+WS state, a distinct wake-word affordance, and a transcript surface ([`VoiceTestPage.tsx`](webui/frontend/src/pages/VoiceTestPage.tsx))
+- [ ] **Author → test journey has no connective tissue** — nothing links a new command to Voice Test and back; add a "Test this command" action on command cards and an "Edit commands" link on Voice Test ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx), [`VoiceTestPage.tsx`](webui/frontend/src/pages/VoiceTestPage.tsx))
+- [ ] **DynamicDropdown menu lacks keyboard semantics** — no `role=menu`/`menuitem`, no Escape, no arrow-key roving focus; add them ([`DynamicDropdown.tsx`](webui/frontend/src/components/DynamicDropdown.tsx))
+
+### P2 — polish (0/10)
+
+- [ ] **Stale screenshots** — `docs/screenshots/*.png` show UI not in the current code (a 4-step authoring stepper, a Theme Preview panel, a "Voice Pipeline" toggle, star "RELIABILITY" ratings); regenerate the screenshots and reconcile any genuinely-missing controls ([`tests/e2e/guided_tour.spec.ts`](webui/frontend/tests/e2e/guided_tour.spec.ts))
+- [ ] **Inconsistent control sizing** across pages (`select`/`select-sm`/`select-xs`, mixed toolbar button heights); standardise a size scale ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), `CommandsPage.tsx`)
+- [ ] **Dashboard hero pushes telemetry below the fold** — make the welcome hero compact/dismissible or move it below the stats grid ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
+- [ ] **Command-log rows keyed by array index** on a rolling window (key collisions); key on a stable id ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
+- [ ] **Two parallel notification systems** (framer-motion toasts vs CSS `.alert`) with different motion/placement; unify on one ([`ToastProvider.tsx`](webui/frontend/src/components/ToastProvider.tsx), `index.css`)
+- [ ] **Brand identity is thin & inconsistent** — "Chatty / Voice Commander" (sidebar) vs "Chatty Commander" (login/mobile), no logo mark; design one logo lockup used everywhere ([`MainLayout.tsx`](webui/frontend/src/components/MainLayout.tsx), `LoginPage.tsx`)
+- [ ] **`index.css` is borrowed** ("Open Hivemind — Modern UI Styles" header) and overrides DaisyUI element defaults broadly; re-home it and prefer component classes over blanket `.card/.btn/.table` overrides ([`index.css`](webui/frontend/src/index.css))
+- [ ] **Motion isn't reduced-motion-aware** — focus/hover `translateY`, card lift/glow, row translate, progress pulse, unbounded list-stagger delay all animate unconditionally; gate behind `prefers-reduced-motion` and cap the stagger ([`index.css`](webui/frontend/src/index.css), `CommandsPage.tsx`)
+- [ ] **Breadcrumb "Home › Dashboard" duplication** and missing deep-route labels; dedupe Home and complete `pathNameMap` ([`Breadcrumbs.tsx`](webui/frontend/src/components/Breadcrumbs.tsx))
+- [ ] **Theme set is small & samey** — only `light, dark, cyberpunk, synthwave` (3 are neon/purple); curate an intentional set incl. a neutral high-contrast option, verified against the CSS-token fixes above ([`tailwind.config.js`](webui/frontend/tailwind.config.js))
 
 ---
 
