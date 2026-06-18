@@ -85,13 +85,6 @@ async def list_animations(
         default=None, description="Directory to scan for animations (optional)"
     ),
 ) -> dict[str, Any]:
-<<<<<<< HEAD
-=======
-    """List Animations with (dir).
-
-    TODO: Add detailed description and parameters.
-    """
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     try:
         base_dir = _default_animations_dir().resolve()
 

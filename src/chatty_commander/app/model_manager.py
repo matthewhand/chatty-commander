@@ -48,7 +48,6 @@ except ModuleNotFoundError:  # pragma: no cover - exercised via fallback
 
 
 def _get_patchable_model_class():
-<<<<<<< HEAD
     """
     Return the Model class to instantiate.
     Priority order so tests can monkeypatch root-level 'model_manager.Model':
@@ -57,8 +56,6 @@ def _get_patchable_model_class():
       3) If running under pytest, MagicMock
       4) Local fallback Model defined in this module
     """
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     # 1) Already-imported shim module in sys.modules
     try:
         import sys as _sys
@@ -116,21 +113,6 @@ class ModelManager:
         """Reload models from configured directories.
         If state is provided, only that state's models are loaded.
         Returns the loaded models mapping.
-<<<<<<< HEAD
-        """
-        if self.mock_models:
-             # Just Mock
-             dummy = self.models["general"] = {"mock_model": Model("mock_path")}
-             self.models["system"] = {"mock_system": Model("mock_path")}
-             self.models["chat"] = {"mock_chat": Model("mock_path")}
-             if state:
-                 self.active_models = dummy
-                 return dummy
-             self.active_models = dummy
-             return self.models
-
-=======
-
         Test expectations:
           - If Model(...) raises, the model must NOT be added
           - Tests may monkeypatch model_manager.Model; ensure we call that symbol here
@@ -147,7 +129,6 @@ class ModelManager:
             self.active_models = dummy
             return self.models
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if state is None:
             self.models["general"] = self.load_model_set(
                 self.config.general_models_path
@@ -212,29 +193,18 @@ class ModelManager:
         return model_set
 
     async def async_listen_for_commands(self) -> str | None:
-<<<<<<< HEAD
         """Asynchronously simulate listening for voice commands."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         await asyncio.sleep(0.1)
         if self.active_models and random.random() < 0.05:
             return random.choice(list(self.active_models.keys()))
         return None
 
     def listen_for_commands(self) -> str | None:
-<<<<<<< HEAD
         """Synchronous wrapper for async_listen_for_commands."""
         return asyncio.run(self.async_listen_for_commands())
 
     def get_models(self, state: str) -> dict[str, Model]:
         """Retrieve models for the given state."""
-=======
-        """Asynchronously simulate listening for voice commands."""
-        return asyncio.run(self.async_listen_for_commands())
-
-    def get_models(self, state: str) -> dict[str, Model]:
-        """Synchronous wrapper for async_listen_for_commands. Retrieve models for the given state."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return self.models.get(state, {})
 
     def __repr__(self) -> str:

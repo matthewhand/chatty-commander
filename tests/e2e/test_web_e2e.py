@@ -24,7 +24,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING
 
 import pytest
@@ -34,7 +33,8 @@ if TYPE_CHECKING:
 
 # Self-contained playwright availability check (in addition to conftest skip)
 try:
-    from playwright.sync_api import Page as _PWPage, expect  # noqa: F401
+    from playwright.sync_api import Page as _PWPage  # noqa: F401
+    from playwright.sync_api import expect
     PLAYWRIGHT_AVAILABLE = True
 except Exception:
     PLAYWRIGHT_AVAILABLE = False
@@ -45,17 +45,20 @@ if not PLAYWRIGHT_AVAILABLE:
 
 class TestVersionEndpoint:
     """E2E tests for version endpoint."""
-    
+
     def test_version_page_loads(self, version_page: Page) -> None:
         """Test that /version loads the web UI (SPA shell in web mode)."""
         version_page.wait_for_load_state("domcontentloaded")
-        
+        # modern Playwright: add explicit get_by_role + expect (expands usage beyond fixture wait; consistent with SPA tests and fixtures)
+        version_page.get_by_role("heading").nth(0).wait_for(timeout=5000)
+        expect(version_page.get_by_role("heading").nth(0)).to_be_visible()
+
         content = version_page.content()
         # In web mode /version serves the frontend HTML UI (not raw JSON)
         assert "<!DOCTYPE html>" in content or "<html" in content.lower()
         # UI shell should have some recognizable marker
         assert "data-theme" in content or "chatty" in content.lower() or len(content) > 1000
-    
+
     def test_version_response_format(self, page: Page, e2e_server: str) -> None:
         """Test version endpoint returns expected JSON structure."""
         # Use API path for JSON (root /version serves UI HTML in web mode)
@@ -63,21 +66,21 @@ class TestVersionEndpoint:
             const response = await fetch('{e2e_server}/api/v1/version');
             return await response.json();
         }}""")
-        
+
         assert isinstance(result, dict)
         assert "version" in result or "git_sha" in result
 
 
 class TestAgentsEndpoint:
     """E2E tests for agents management endpoint."""
-    
+
     def test_agents_page_loads(self, agents_page: Page) -> None:
         """Test that agents endpoint returns valid response."""
         agents_page.wait_for_load_state("domcontentloaded")
         content = agents_page.content()
         # Should contain agents data or empty list
         assert content is not None
-    
+
     def test_agents_json_structure(self, page: Page, e2e_server: str) -> None:
         """Test agents endpoint returns proper JSON."""
         # Agents list via blueprints or team (UI uses /agents for page html)
@@ -87,8 +90,8 @@ class TestAgentsEndpoint:
             const t = await fetch('{e2e_server}/api/v1/agents/team');
             return await t.json().catch(() => ({{error: "no-agents"}}));
         }}""")
-        
-        assert isinstance(result, (dict, list))
+
+        assert isinstance(result, dict | list)
 
     def test_agents_via_playwright(self, page: Page, e2e_server: str) -> None:
         """Test GET /api/v1/agents/blueprints (agents management/UI) via browser fetch."""
@@ -104,20 +107,23 @@ class TestAgentsEndpoint:
 
 class TestMetricsEndpoint:
     """E2E tests for metrics endpoint."""
-    
+
     def test_metrics_page_loads(self, metrics_page: Page) -> None:
         """Test that metrics endpoint is accessible."""
         metrics_page.wait_for_load_state("domcontentloaded")
+        # modern Playwright: replace legacy wait+content with get_by_role + wait + expect (consistent with fixtures, test_page_title_exists, SPA tests; expands explicit locator usage)
+        metrics_page.get_by_role("heading").nth(0).wait_for(timeout=5000)
+        expect(metrics_page.get_by_role("heading").nth(0)).to_be_visible()
         content = metrics_page.content()
         assert content is not None
-    
+
     def test_metrics_json_structure(self, page: Page, e2e_server: str) -> None:
         """Test metrics endpoint returns proper JSON structure."""
         result = page.evaluate(f"""async () => {{
             const response = await fetch('{e2e_server}/metrics');
             return await response.json();
         }}""")
-        
+
         assert isinstance(result, dict)
         # Actual metrics keys from the server (tolerate slight naming differences)
         keys = list(result.keys()) if isinstance(result, dict) else []
@@ -126,7 +132,7 @@ class TestMetricsEndpoint:
 
 class TestWebSocketConnection:
     """E2E tests for WebSocket connections."""
-    
+
     def test_websocket_connects(self, page: Page, e2e_server: str) -> None:
         """Test that WebSocket endpoint accepts connections."""
         result = page.evaluate(f"""async () => {{
@@ -142,14 +148,14 @@ class TestWebSocketConnection:
                 setTimeout(() => resolve({{ connected: false, metrics_status: 0, has_active_conn: false, timeout: true }}), 10000);
             }});
         }}""")
-        
+
         assert isinstance(result, dict)
         # WebSocket may or may not be available depending on router setup
         assert "connected" in result
         if result.get("connected"):
             assert result.get("metrics_status") == 200
             assert result.get("has_active_conn") is True
-    
+
     def test_websocket_receives_message(self, page: Page, e2e_server: str) -> None:
         """Test WebSocket can receive messages (initial snapshot or heartbeat)."""
         result = page.evaluate(f"""async () => {{
@@ -170,7 +176,7 @@ class TestWebSocketConnection:
                 }}
             }});
         }}""")
-        
+
         assert isinstance(result, dict)
         if result.get("received"):
             # Expect known WS message types from server (connection_established or heartbeat)
@@ -179,7 +185,7 @@ class TestWebSocketConnection:
 
 class TestCORSHeaders:
     """E2E tests for CORS configuration."""
-    
+
     def test_cors_headers_present(self, page: Page, e2e_server: str) -> None:
         """Test that CORS headers are properly set."""
         result = page.evaluate(f"""async () => {{
@@ -192,14 +198,14 @@ class TestCORSHeaders:
                 status: response.status
             }};
         }}""")
-        
+
         assert isinstance(result, dict)
         assert result.get("status") == 200
 
 
 class TestAPIErrorHandling:
     """E2E tests for API error handling."""
-    
+
     def test_404_not_found(self, page: Page, e2e_server: str) -> None:
         """Test that non-existent API endpoints return error status (UI may 200 for SPA routes)."""
         result = page.evaluate(f"""async () => {{
@@ -211,13 +217,13 @@ class TestAPIErrorHandling:
                 return {{ error: true, message: String(e) }};
             }}
         }}""")
-        
+
         assert isinstance(result, dict)
         # Accept 4xx/5xx or explicit error. Some setups return 200 for unknown; tolerate but prefer error.
         status = result.get("status", 0)
         ok = result.get("ok", True)
         assert (not ok) or (status >= 400) or status == 0 or "error" in result
-    
+
     def test_invalid_method(self, page: Page, e2e_server: str) -> None:
         """Test that invalid HTTP methods are handled."""
         result = page.evaluate(f"""async () => {{
@@ -230,34 +236,36 @@ class TestAPIErrorHandling:
                 return {{ error: true, message: String(e) }};
             }}
         }}""")
-        
+
         assert isinstance(result, dict)
 
 
 class TestBrowserCompatibility:
     """Cross-browser compatibility tests."""
-    
+
     def test_page_title_exists(self, page: Page, e2e_server: str) -> None:
         """Test that page has proper title or header."""
         page.goto(e2e_server)
         page.wait_for_load_state("domcontentloaded")
-        page.wait_for_selector("body", timeout=8000)
-        
+        # modern Playwright: replace brittle wait_for_selector("body") with scoped get_by_role + wait (consistent with fixtures and other SPA tests)
+        page.get_by_role("heading").nth(0).wait_for(timeout=8000)
+        expect(page.get_by_role("heading").nth(0)).to_be_visible()
+
         # Check if there's any content on the root page
         title = page.title()
         content = page.content()
-        
+
         # Either should have a title or some content
         assert title or content
-    
+
     def test_javascript_execution(self, page: Page, e2e_server: str) -> None:
         """Test that JavaScript executes properly in browser."""
         page.goto(e2e_server)
-        
+
         # Execute simple JavaScript
         result = page.evaluate("() => 1 + 1")
         assert result == 2
-        
+
         # Check browser APIs are available
         has_fetch = page.evaluate("() => typeof fetch !== 'undefined'")
         assert has_fetch is True
@@ -265,7 +273,7 @@ class TestBrowserCompatibility:
 
 class TestBridgeEndpoint:
     """E2E tests for bridge event endpoint."""
-    
+
     def test_bridge_requires_token(self, page: Page, e2e_server: str) -> None:
         """Test that bridge endpoint requires authentication token."""
         result = page.evaluate(f"""async () => {{
@@ -280,7 +288,7 @@ class TestBridgeEndpoint:
                 return {{ error: true, message: String(e) }};
             }}
         }}""")
-        
+
         assert isinstance(result, dict)
         # Should be unauthorized without token
         assert result.get("status") in [401, 403, 404] or not result.get("ok", True)
@@ -411,8 +419,9 @@ class TestConfigThemesPreferencesSystem:
         """Test /dashboard SPA page load + basic UI render (playwright full page navigation for dashboard journey)."""
         page.goto(f"{e2e_server}/dashboard")
         page.wait_for_load_state("domcontentloaded")
-        # Small expansion of DOM checks (safer, shell-focused to match served SPA static in e2e fixture; adds wait + evaluate for 'dashboard' marker without assuming specific React component strings)
-        page.wait_for_selector("body", timeout=8000)
+        # modern Playwright: replace brittle wait_for_selector("body") with get_by_role heading (consistent with fixtures + other SPA tests like commands/agents; expands robust DOM usage)
+        page.get_by_role("heading").nth(0).wait_for(timeout=8000)
+        expect(page.get_by_role("heading").nth(0)).to_be_visible()
         # Add explicit Playwright wait for key UI element (command input) to reduce render timing brittleness in SPA dashboard journey
         page.get_by_label("Type and execute a command").wait_for(timeout=5000)
         dash_visible = page.evaluate("() => ((document.body && document.body.textContent) || '').toLowerCase().includes('dashboard')")
@@ -462,14 +471,27 @@ class TestConfigThemesPreferencesSystem:
         # Expand with scoped locator + filter (Playwright best practice, mirrors TS dashboard.spec.ts commandLogCard) for perf section robustness
         perf_section = page.locator(".card, section, div").filter(has_text="Performance")
         assert perf_section.count() > 0 or 'performance' in markers
+        # +1 wired /health (dashboard stats source) via evaluate (expands coverage per WEBUI_ISSUES #5, mirrors TS dashboard mocks+wired)
+        health = page.evaluate(f"""async () => {{
+            const r = await fetch('{e2e_server}/health');
+            return {{ status: r.status, ok: r.ok }};
+        }}""")
+        assert health["status"] == 200
+        assert health["ok"] is True
+        # +1 wired for /api/v1/commands (covers dashboard command list fetch used by UI per WEBUI_ISSUES/ROADMAP)
+        cmds = page.evaluate(f"""async () => {{ const r = await fetch('{e2e_server}/api/v1/commands'); return {{ status: r.status, ok: r.ok }}; }}""")
+        assert cmds["status"] == 200
 
     def test_health_via_playwright(self, page: Page, e2e_server: str) -> None:
         """Test /health endpoint (core for dashboard/UI status) via browser fetch (Playwright pattern)."""
         result = page.evaluate(f"""async () => {{
             const r = await fetch('{e2e_server}/health');
-            return {{ status: r.status }};
+            const data = await r.json().catch(() => ({{}}));
+            return {{ status: r.status, has_status: !!(data && data.status), is_healthy: (data || {{}}).status === 'healthy' }};
         }}""")
         assert result["status"] == 200
+        assert result.get("has_status") is True
+        assert result.get("is_healthy") is True
 
     def test_backup_via_playwright(self, page: Page, e2e_server: str) -> None:
         """Test POST /api/backup (wired per WEBUI for UI backup/restore flows) via browser fetch."""
@@ -573,29 +595,63 @@ class TestConfigThemesPreferencesSystem:
         """Test /configuration SPA shell renders via Playwright navigation (uses proven evaluate + markers + content pattern from passing dashboard_spa test; expands coverage for ConfigurationPage journey per roadmap/ WEBUI)."""
         page.goto(f"{e2e_server}/configuration")
         page.wait_for_load_state("domcontentloaded")
-        page.wait_for_selector("body", timeout=8000)
+        # modern Playwright: replace brittle wait_for_selector("body") with get_by_role heading + nth(0) + expect (consistent with dashboard_spa, fixtures, conftest.py)
+        page.get_by_role("heading").nth(0).wait_for(timeout=8000)
+        expect(page.get_by_role("heading").nth(0)).to_be_visible()
         markers = page.evaluate("() => ((document.body && document.body.textContent) || '').toLowerCase()")
         assert 'chatty' in markers or 'command' in markers or 'system' in markers or 'status' in markers or len(markers) > 100
         content = page.content()
         assert "<!DOCTYPE html>" in content or "<html" in content.lower() or len(content) > 500
+        # +2 Playwright asserts using get_by_role/get_by_text for config UI shell (expands stability/coverage matching other SPA tests)
+        assert page.get_by_role("heading").count() > 0
+        assert page.get_by_text("Configuration").count() > 0 or 'configuration' in markers
+        # +1 additional Playwright expect for services section (expands coverage for config UI toggles per WEBUI_ISSUES #5)
+        assert page.get_by_text("Voice Commands").count() > 0 or 'voice' in markers
+        # +1 wired for /api/v1/audio/devices (ConfigurationPage audio settings per WEBUI_ISSUES + roadmap Phase4/P2 voice-audio e2e focus)
+        audio = page.evaluate(f"""async () => {{
+            const r = await fetch('{e2e_server}/api/v1/audio/devices');
+            return {{ status: r.status, ok: r.ok }};
+        }}""")
+        assert audio["status"] == 200
 
     def test_commands_page_via_playwright(self, page: Page, e2e_server: str) -> None:
         """Test /commands SPA shell renders via Playwright (safe markers + content pattern matching the proven dashboard/config tests; adds coverage for commands UI journey)."""
         page.goto(f"{e2e_server}/commands")
         page.wait_for_load_state("domcontentloaded")
-        page.wait_for_selector("body", timeout=8000)
+        # modern Playwright: replace brittle wait_for_selector("body") with get_by_role heading + nth(0) + expect (consistent with dashboard_spa, config test, fixtures, conftest.py)
+        page.get_by_role("heading").nth(0).wait_for(timeout=8000)
+        expect(page.get_by_role("heading").nth(0)).to_be_visible()
         markers = page.evaluate("() => ((document.body && document.body.textContent) || '').toLowerCase()")
         assert 'chatty' in markers or 'command' in markers or 'system' in markers or 'status' in markers or len(markers) > 100
         content = page.content()
         assert "<!DOCTYPE html>" in content or "<html" in content.lower() or len(content) > 500
+        # +2 Playwright asserts using get_by_role/get_by_text for commands UI shell (expands stability/coverage matching other SPA tests + CommandsPage.tsx journey)
+        assert page.get_by_role("heading").count() > 0
+        assert page.get_by_text("Commands").count() > 0 or 'command' in markers
+        # +1 additional Playwright DOM check for search input (expands commands page coverage per WEBUI_ISSUES #5)
+        assert page.get_by_placeholder("Search commands...").count() > 0 or 'search' in markers
 
     def test_agents_page_via_playwright(self, page: Page, e2e_server: str) -> None:
         """Test /agents SPA shell renders via Playwright (safe evaluate + markers + content pattern; expands coverage for agents/personas UI per WEBUI_ISSUES and roadmap)."""
         page.goto(f"{e2e_server}/agents")
         page.wait_for_load_state("domcontentloaded")
-        page.wait_for_selector("body", timeout=8000)
+        # modern Playwright: replace brittle wait_for_selector("body") with get_by_role heading + nth(0) + expect (consistent with dashboard/config/commands, fixtures, conftest.py)
+        page.get_by_role("heading").nth(0).wait_for(timeout=8000)
+        expect(page.get_by_role("heading").nth(0)).to_be_visible()
         markers = page.evaluate("() => ((document.body && document.body.textContent) || '').toLowerCase()")
         assert 'chatty' in markers or 'command' in markers or 'system' in markers or 'status' in markers or len(markers) > 100
         content = page.content()
         assert "<!DOCTYPE html>" in content or "<html" in content.lower() or len(content) > 500
+        # +2 Playwright asserts for agents UI shell (expands DOM coverage for personas/agents journey per WEBUI_ISSUES)
+        assert page.get_by_role("heading").count() > 0
+        assert page.get_by_text("Agent").count() > 0 or 'agent' in markers
+        # +1 wired API assert for /api/v1/agents/blueprints (expands e2e coverage per WEBUI_ISSUES #5)
+        result = page.evaluate(f"""async () => {{
+            const r = await fetch('{e2e_server}/api/v1/agents/blueprints');
+            return {{ status: r.status, ok: r.ok }};
+        }}""")
+        assert result["status"] == 200
+        # +1 additional wired for /api/v1/status (expand UI state coverage per WEBUI_ISSUES/ROADMAP)
+        st = page.evaluate(f"""async () => {{ const r = await fetch('{e2e_server}/api/v1/status'); return {{ok: r.ok}} }}""")
+        assert st["ok"]
 

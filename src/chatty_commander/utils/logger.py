@@ -59,7 +59,6 @@ class JSONFormatter(logging.Formatter):
     """
 
     def format(self, record):
-<<<<<<< HEAD
         """Format a log record as a JSON string.
 
         Args:
@@ -68,20 +67,15 @@ class JSONFormatter(logging.Formatter):
         Returns:
             str: JSON-formatted log entry
         """
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         log_entry = {
             "time": self.formatTime(record),
             "name": record.name,
             "level": record.levelname,
             "message": record.getMessage(),
         }
-<<<<<<< HEAD
         request_id = get_request_id()
         if request_id:
             log_entry["request_id"] = request_id
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if record.exc_info:
             log_entry["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_entry)
@@ -117,15 +111,11 @@ class HTTPLogHandler(logging.Handler):
             self._url_safe = False
 
     def emit(self, record):
-<<<<<<< HEAD
         """Send a log record to the HTTP endpoint.
 
         Args:
             record: The log record to send
         """
-=======
-        """Send a log record to the HTTP endpoint."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self._requests is None or not self._url_safe:
             return
         try:

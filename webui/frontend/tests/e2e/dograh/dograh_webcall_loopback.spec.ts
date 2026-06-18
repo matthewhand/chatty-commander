@@ -118,7 +118,7 @@ test.describe("Dograh smallwebrtc loopback", () => {
     // Best-effort: if there's a Start/Join/Connect button, press it.
     const startButton = page
       .getByRole("button", { name: /start|join|connect|begin call/i })
-      .first();
+      .nth(0);
     if (await startButton.isVisible().catch(() => false)) {
       await startButton.click();
     }
@@ -149,7 +149,7 @@ test.describe("Dograh smallwebrtc loopback", () => {
     // what happened. But we DO fail if neither happened.
     expect(
       signalingMessages.length > 0 ||
-        (await page.locator("body").textContent())?.includes("Call")
+        (await page.getByText('Call', { exact: false }).textContent())?.includes("Call")
     ).toBeTruthy();
   });
 });

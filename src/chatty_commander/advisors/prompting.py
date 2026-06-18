@@ -39,13 +39,6 @@ DEFAULT_PERSONAS: dict[str, str] = {
 def resolve_persona(
     name: str | None, personas_cfg: dict[str, str] | None = None
 ) -> Persona:
-<<<<<<< HEAD
-=======
-    """Resolve Persona with (name, personas_cfg).
-
-    TODO: Add detailed description and parameters.
-    """
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     personas_cfg = personas_cfg or {}
     name = name or "default"
     if name == "default":

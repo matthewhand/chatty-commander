@@ -49,8 +49,5 @@ def get_prompt_template(model: str, persona_name: str, api_mode: str) -> str:
 
 
 def render_with_template(template: str, *, system: str, text: str) -> str:
-<<<<<<< HEAD
-=======
     """Render a template string with system and user text."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     return template.format(system=system, text=text)

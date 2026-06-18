@@ -55,13 +55,9 @@ def create_parser(*args: Any, **kwargs: Any) -> Any:  # pragma: no cover - thin 
     return _cli.create_parser(*args, **kwargs)
 
 
-<<<<<<< HEAD
 def run_orchestrator_mode(
     *args: Any, **kwargs: Any
 ) -> Any:  # pragma: no cover - thin shim
-=======
-def run_orchestrator_mode(*args: Any, **kwargs: Any) -> Any:  # pragma: no cover - thin shim
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     _propagate_patches()
     return _cli.run_orchestrator_mode(*args, **kwargs)
 

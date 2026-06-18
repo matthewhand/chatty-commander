@@ -44,12 +44,9 @@ class Config:
     def __init__(self, config_file: str = "config.json") -> None:
         self.config_file = config_file
         self.config_data: dict[str, Any] = self._load_config()
-<<<<<<< HEAD
-=======
 
         # Track if the original config was valid (not empty due to errors)
         self._config_was_valid: bool = bool(self.config_data)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Expose the raw dict for web handlers/tests that expect it
         self.config: dict[str, Any] = self.config_data
 
@@ -117,9 +114,6 @@ class Config:
             self.config_data.get("general", {}).get("inference_framework", "onnx")
         )
 
-<<<<<<< HEAD
-=======
-
         # Commands for model actions
         default_commands = {}
         if not self.config_file or "commands" not in self.config_data:  # Use defaults if file missing or commands missing
@@ -133,7 +127,6 @@ class Config:
                 "submit": {"action": "keypress", "keys": "submit"},
             }
         self.commands: dict[str, Any] = self.config_data.get("commands", default_commands)  # type: ignore[no-redef]
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
         # Start on boot setting
         self.start_on_boot: bool = bool(
@@ -143,10 +136,6 @@ class Config:
         # Build model_actions from commands and keybindings
         self.model_actions: dict[str, Any] = self._build_model_actions()
 
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Additional attributes for config CLI compatibility
         self.listen_for: dict[str, Any] = self.config_data.get("listen_for", {})
         self.modes: dict[str, Any] = self.config_data.get("modes", {})
@@ -162,61 +151,25 @@ class Config:
 
             @property
             def default_state(self) -> str:
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 return self._cfg.default_state
 
             @default_state.setter
             def default_state(self, v: str) -> None:
-<<<<<<< HEAD
-=======
-                """Default State with (self).
-
-                TODO: Add detailed description and parameters.
-                """
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 self._cfg.default_state = v
                 self._cfg.config_data["default_state"] = v
 
             @property
             def debug_mode(self) -> bool:
-<<<<<<< HEAD
-=======
-                """Default State with (self, v: str).
-
-                TODO: Add detailed description and parameters.
-                """
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 return bool(
                     self._cfg.config_data.get("general", {}).get("debug_mode", True)
                 )
 
             @debug_mode.setter
             def debug_mode(self, v: bool) -> None:
-<<<<<<< HEAD
-=======
-                """Debug Mode with (self).
-
-                TODO: Add detailed description and parameters.
-                """
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 self._cfg._update_general_setting("debug_mode", bool(v))
 
             @property
             def inference_framework(self) -> str:
-<<<<<<< HEAD
-=======
-                """Debug Mode with (self, v: bool).
-
-                TODO: Add detailed description and parameters.
-                """
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 return str(
                     self._cfg.config_data.get("general", {}).get(
                         "inference_framework", "onnx"
@@ -225,48 +178,20 @@ class Config:
 
             @inference_framework.setter
             def inference_framework(self, v: str) -> None:
-<<<<<<< HEAD
-=======
-                """Inference Framework with (self).
-
-                TODO: Add detailed description and parameters.
-                """
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 self._cfg._update_general_setting("inference_framework", v)
 
             @property
             def start_on_boot(self) -> bool:
-<<<<<<< HEAD
-=======
-                """Inference Framework with (self, v: str).
-
-                TODO: Add detailed description and parameters.
-                """
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 return bool(
                     self._cfg.config_data.get("general", {}).get("start_on_boot", False)
                 )
 
             @start_on_boot.setter
             def start_on_boot(self, v: bool) -> None:
-<<<<<<< HEAD
-=======
-                """Start On Boot with (self).
-
-                TODO: Add detailed description and parameters.
-                """
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 self._cfg._update_general_setting("start_on_boot", bool(v))
 
             @property
             def check_for_updates(self) -> bool:
-<<<<<<< HEAD
-=======
-                """Check For Updates with (self)."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 return bool(
                     self._cfg.config_data.get("general", {}).get(
                         "check_for_updates", True
@@ -275,10 +200,6 @@ class Config:
 
             @check_for_updates.setter
             def check_for_updates(self, v: bool) -> None:
-<<<<<<< HEAD
-=======
-                """Start On Boot with (self, v: bool)."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 self._cfg._update_general_setting("check_for_updates", bool(v))
 
         self.general_settings = _GeneralSettings(self)
@@ -289,10 +210,7 @@ class Config:
         self._load_general_settings()
 
     def _validate_config(self) -> None:
-<<<<<<< HEAD
         """Validate configuration data and log warnings for potential issues."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Validate state models
         if not isinstance(self.state_models, dict):
             logger.warning("state_models should be a dictionary")
@@ -308,10 +226,6 @@ class Config:
             logger.warning("commands should be a dictionary")
             self.commands = {}
 
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Check for deprecated or invalid configurations
         if "deprecated_field" in self.config_data:
             logger.warning("Found deprecated configuration field: deprecated_field")
@@ -323,24 +237,13 @@ class Config:
             "chat_models_path",
         ]:
             path = getattr(self, path_attr)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if path and not os.path.exists(path):
                 logger.info(f"Model path does not exist: {path}")
 
     def reload_config(self) -> bool:
-<<<<<<< HEAD
         """Reload configuration from file. Returns True if successful."""
         try:
             new_config = self._load_config()
-=======
-
-        try:
-            new_config = self._load_config()
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if new_config != self.config_data:
                 self.config_data = new_config
                 self.config = new_config
@@ -375,23 +278,8 @@ class Config:
                 logger.info("Configuration reloaded successfully")
                 return True
             return False
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except Exception as e:
             logger.error(f"Failed to reload configuration: {e}")
-            return False
-
-    def save_config(self) -> bool:
-        """Save current config_data to the config file for persistence."""
-        try:
-            with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump(self.config_data, f, indent=2)
-            logger.info("Configuration saved successfully")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to save configuration: {e}")
             return False
 
     # ------------------------------------------------------------------
@@ -407,15 +295,8 @@ class Config:
                 "CHATTY_BRIDGE_TOKEN"
             ]
 
-<<<<<<< HEAD
         if os.environ.get("CHATBOT_ENDPOINT"):
             self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
-=======
-
-        if os.environ.get("CHATBOT_ENDPOINT"):
-            self.api_endpoints["chatbot_endpoint"] = os.environ["CHATBOT_ENDPOINT"]
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if os.environ.get("HOME_ASSISTANT_ENDPOINT"):
             self.api_endpoints["home_assistant"] = os.environ["HOME_ASSISTANT_ENDPOINT"]
 
@@ -428,24 +309,12 @@ class Config:
                 "1",
             )
 
-<<<<<<< HEAD
         if os.environ.get("CHATCOMM_DEFAULT_STATE"):
             self.default_state = os.environ["CHATCOMM_DEFAULT_STATE"]
 
         if os.environ.get("CHATCOMM_INFERENCE_FRAMEWORK"):
             self.inference_framework = os.environ["CHATCOMM_INFERENCE_FRAMEWORK"]
 
-=======
-
-        if os.environ.get("CHATCOMM_DEFAULT_STATE"):
-            self.default_state = os.environ["CHATCOMM_DEFAULT_STATE"]
-
-
-        if os.environ.get("CHATCOMM_INFERENCE_FRAMEWORK"):
-            self.inference_framework = os.environ["CHATCOMM_INFERENCE_FRAMEWORK"]
-
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if os.environ.get("CHATCOMM_START_ON_BOOT"):
             boot_val = os.environ["CHATCOMM_START_ON_BOOT"].lower()
             self.start_on_boot = boot_val in ("true", "yes", "1")
@@ -476,38 +345,25 @@ class Config:
         if value is not None:
             try:
                 parsed = int(value)
-<<<<<<< HEAD
                 if parsed <= 0:
                     raise ValueError
                 return parsed
-=======
-    
+
+
                 if parsed <= 0:
                     raise ValueError
                 return parsed
-    
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             except ValueError:
                 logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
         return fallback
 
     def _load_config(self) -> dict[str, Any]:
-<<<<<<< HEAD
         if not isinstance(self.config_file, str):
              raise TypeError("config_file must be a string")
         try:
             with open(self.config_file, encoding="utf-8") as f:
                 config_data = json.load(f)
-=======
 
-        if not isinstance(self.config_file, str):
-             raise TypeError("config_file must be a string")
-        try:
-
-            with open(self.config_file, encoding="utf-8") as f:
-                config_data = json.load(f)
-        
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 # Ensure we always return a dictionary, even if JSON contains null or other non-dict values
                 if not isinstance(config_data, dict):
                     logger.warning(
@@ -517,20 +373,15 @@ class Config:
                     )
                     return {}
                 return config_data
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except (FileNotFoundError, PermissionError, OSError):
             logger.warning(
                 "Error loading config file %s. Using defaults.", self.config_file
             )
-<<<<<<< HEAD
+
             return {}
-=======
+
             return {"general": {}}
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         except json.JSONDecodeError:
             logger.error(
                 "Config file %s is not valid JSON. Using defaults.", self.config_file
@@ -541,21 +392,21 @@ class Config:
         general_settings = self.config_data.get("general_settings", {})
 
         def _env_bool(name: str, default: bool) -> bool:
-<<<<<<< HEAD
-=======
+
+
             """Load general settings, applying environment variable overrides."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
             val = os.getenv(name)
             if val is None:
                 return default
             return val.strip().lower() in {"1", "true", "yes"}
 
-<<<<<<< HEAD
+
         # Set debug mode in config data
         self.config_data.setdefault("general", {})["debug_mode"] = _env_bool(
             "CHATCOMM_DEBUG", general_settings.get("debug_mode", True)
         )
-=======
+
 
         # Set debug mode in config data only if original config was valid
         if self._config_was_valid:
@@ -564,7 +415,7 @@ class Config:
             self.config_data["general"]["debug_mode"] = _env_bool(
                 "CHATCOMM_DEBUG", general_settings.get("debug_mode", True)
             )
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
         self.default_state = os.getenv(
             "CHATCOMM_DEFAULT_STATE",
             general_settings.get("default_state", self.config_data.get("default_state", "idle"))
@@ -588,7 +439,7 @@ class Config:
         commands_cfg = self.commands if isinstance(self.commands, dict) else {}
         keybindings = self.config_data.get("keybindings", {}) or {}
         for name, cfg in commands_cfg.items():
-<<<<<<< HEAD
+
             if not isinstance(cfg, dict):
                 continue
             action_type = cfg.get("action")
@@ -598,7 +449,7 @@ class Config:
                    mapped = keybindings.get(keys, keys)
                    if mapped:
                        actions[name] = {"keypress": mapped}
-=======
+
 
             if not isinstance(cfg, dict):
                 continue
@@ -606,14 +457,14 @@ class Config:
 
             if action_type == "keypress":
                 keys = cfg.get("keys")
-    
+
                 if isinstance(keys, str):
                    mapped = keybindings.get(keys, keys)
-       
+
                    if mapped:
                        actions[name] = {"keypress": mapped}
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
             elif action_type == "url":
                 url = cfg.get("url", "")
                 url = url.replace(
@@ -623,17 +474,17 @@ class Config:
                     "{chatbot_endpoint}", self.api_endpoints.get("chatbot_endpoint", "")
                 )
                 actions[name] = {"url": url}
-<<<<<<< HEAD
-            elif action_type == "custom_message":
-                msg = cfg.get("message", "")
-                actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
-=======
 
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
                 actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
+            elif action_type == "custom_message":
+                msg = cfg.get("message", "")
+                actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
+
+
             elif action_type == "voice_chat":
                 # Voice chat action - pass through the entire config
                 actions[name] = {"action": "voice_chat"}
@@ -646,16 +497,8 @@ class Config:
 
     @debug_mode.setter
     def debug_mode(self, value: bool) -> None:
-<<<<<<< HEAD
+
         self.config_data.setdefault("general", {})["debug_mode"] = bool(value)
-
-    @property
-    def voice_only(self) -> bool:
-        return self._voice_only
-
-    @voice_only.setter
-    def voice_only(self, value: Any) -> None:
-        self._voice_only = bool(value)
 
     # ------------------------------------------------------------------
     # Public API
@@ -694,12 +537,6 @@ class Config:
         except (TypeError, ValueError, OSError) as e:
             logger.error(f"Could not save config file: {e}")
 
-    def validate(self) -> None:
-=======
-        if "general" not in self.config_data:
-            self.config_data["general"] = {}
-        self.config_data["general"]["debug_mode"] = bool(value)
-
     @property
     def voice_only(self) -> bool:
         """Voice Only with (self)."""
@@ -716,33 +553,16 @@ class Config:
         # already done in __init__ and reload, but keep for API
         self._validate_config()
 
-    def _enable_start_on_boot(self) -> None:
-        """Enable start on boot functionality."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
-        if not self.model_actions:
-            raise ValueError("Model actions configuration is empty.")
-        for path in [
-            self.general_models_path,
-            self.system_models_path,
-            self.chat_models_path,
-        ]:
-            if not os.path.exists(path):
-                logging.warning(f"Model directory {path} does not exist.")
-            elif not os.listdir(path):
-                logging.warning(f"Model directory {path} is empty.")
-
     def set_start_on_boot(self, enabled: bool) -> None:
-<<<<<<< HEAD
-=======
         """Update with (self, enabled: bool)."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
         self._update_general_setting("start_on_boot", bool(enabled))
         self.start_on_boot = bool(enabled)
         if enabled:
             self._enable_start_on_boot()
         else:
             self._disable_start_on_boot()
-<<<<<<< HEAD
+
 
     def _enable_start_on_boot(self) -> None:
         """Enable start-on-boot at the OS level.
@@ -764,10 +584,6 @@ class Config:
             "implemented for this platform; no autostart entry was removed."
         )
 
-    def set_check_for_updates(self, enabled: bool) -> None:
-        self._update_general_setting("check_for_updates", bool(enabled))
-        self.check_for_updates = bool(enabled)
-
     def _update_general_setting(self, key: str, value: Any) -> None:
         if "general" not in self.config_data:
             self.config_data["general"] = {}
@@ -778,39 +594,13 @@ class Config:
         if not self.check_for_updates:
             return None
         try:
-=======
-        pass
-
-    def _disable_start_on_boot(self) -> None:
-        pass
-
-    def set_check_for_updates(self, enabled: bool) -> None:
-        """Disable start on boot functionality."""
-        """Update with (self, enabled: bool).
-
-        TODO: Add detailed description and parameters.
-        TODO: Add detailed description and parameters.
-        """
-        
-        # Validate preconditions
-        if not self.check_for_updates:
-            return None
-        try:
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             result = subprocess.run(
                 ["git", "rev-parse", "--git-dir"],
                 capture_output=True,
                 text=True,
                 check=False,
             )
-<<<<<<< HEAD
             if result.returncode != 0:
-=======
-
-            if result.returncode != 0:
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                 logging.warning("Not in a git repository, cannot check for updates")
                 return None
             subprocess.run(["git", "fetch", "origin"], capture_output=True, check=True)
@@ -821,16 +611,8 @@ class Config:
                 check=True,
             )
             update_count = int((result.stdout or "0").strip())
-<<<<<<< HEAD
             if update_count > 0:
                 result = subprocess.run(
-=======
-
-            if update_count > 0:
-                result = subprocess.run(
-                    # Build filtered collection
-    
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
                     ["git", "log", "origin/main", "-1", "--pretty=format:%s"],
                     capture_output=True,
                     text=True,
@@ -844,48 +626,42 @@ class Config:
                 }
             else:
                 return {"updates_available": False, "update_count": 0}
-<<<<<<< HEAD
         except Exception as e:  # pragma: no cover
-=======
-
-        except Exception as e:  # pragma: no cover
-            # Build filtered collection
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             logging.error(f"Failed to check for updates: {e}")
             return None
 
+    def set_check_for_updates(self, enabled: bool) -> None:
+        self._update_general_setting("check_for_updates", bool(enabled))
+        self.check_for_updates = bool(enabled)
+
     @classmethod
-<<<<<<< HEAD
     def load(cls, config_file: str = "config.json") -> Config:
-=======
-    def load(cls, config_file: str = "config.json") -> "Config":
         """Load config from file (convenience)."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return cls(config_file)
 
     @classmethod
     def from_dict(
         cls, data: dict[str, Any], config_file: str = "config.json"
-    ) -> "Config":
+    ) -> Config:
         """Create a Config instance from a dictionary (for tests/web reloads)."""
         instance = cls.__new__(cls)
         instance.config_file = config_file
-<<<<<<< HEAD
+
         instance.config_data = data.copy()
         # Mirror __init__: web handlers/tests expect `.config` as the raw dict.
         instance.config = instance.config_data
-=======
+
         instance.config_data = (data or {}).copy()
         instance.config = instance.config_data
         instance._config_was_valid = bool(instance.config_data)
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
 
         # Core values (mirrors __init__ population)
         instance.default_state = instance.config_data.get("default_state", "idle")
         instance.general_models_path = instance.config_data.get(
             "general_models_path", instance.config_data.get("general", {}).get("models_path", "models-idle")
         )
-<<<<<<< HEAD
+
         # system/chat model paths were omitted here (only general was set), so
         # ModelManager built from a from_dict() Config couldn't find them.
         instance.system_models_path = instance.config_data.get(
@@ -894,11 +670,11 @@ class Config:
         instance.chat_models_path = instance.config_data.get(
             "chat_models_path", "models-chatty"
         )
-=======
+
         instance.system_models_path = instance.config_data.get("system_models_path", "models-computer")
         instance.chat_models_path = instance.config_data.get("chat_models_path", "models-chatty")
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
         instance.state_models = instance.config_data.get("state_models", {})
         instance.api_endpoints = instance.config_data.get(
             "api_endpoints",
@@ -925,10 +701,10 @@ class Config:
         instance.audio_format = instance.config_data.get("general", {}).get(
             "audio_format", "int16"
         )
-<<<<<<< HEAD
-=======
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
+
+
         instance.check_for_updates = bool(
             instance.config_data.get("general", {}).get("check_for_updates", True)
         )
@@ -938,10 +714,10 @@ class Config:
         instance.start_on_boot = bool(
             instance.config_data.get("general", {}).get("start_on_boot", False)
         )
-<<<<<<< HEAD
-=======
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
+
+
         instance.listen_for = instance.config_data.get("listen_for", {})
         instance.modes = instance.config_data.get("modes", {})
 
@@ -955,11 +731,11 @@ class Config:
         return instance
 
     def to_dict(self) -> dict[str, Any]:
-<<<<<<< HEAD
+
         """Convert the config back to a dictionary for serialization."""
-=======
+
         """Serialize current config state (for persistence/web)."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
+
         result = self.config_data.copy()
         result["model_actions"] = self.model_actions
         result["state_models"] = self.state_models

@@ -191,7 +191,8 @@ test.describe("Documentation Screenshots", () => {
 
     // Wait for dashboard to fully load
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-    await expect(page.locator(".stat-value", { hasText: "Healthy" })).toBeVisible();
+    // modernized brittle .stat-value to getByText({exact:true}).nth(0) (consistent with dashboard.spec and other e2e)
+    await expect(page.getByText("Healthy", { exact: true }).nth(0)).toBeVisible();
     await page.waitForLoadState('networkidle');
 
     await page.screenshot({
@@ -205,8 +206,7 @@ test.describe("Documentation Screenshots", () => {
 
     // In --no-auth mode, login redirects to dashboard
     // So we check what actually renders
-    const loginHeading = page.getByRole("heading", { name: /login|chatty commander/i });
-    await expect(loginHeading.first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: /login|chatty commander/i })).toBeVisible();
     await page.waitForLoadState('networkidle');
 
     await page.screenshot({
@@ -237,8 +237,8 @@ test.describe("Documentation Screenshots", () => {
     await page.goto("/configuration");
     await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
 
-    // Scroll to voice models section if present
-    const modelsHeading = page.locator("text=Voice Models (ONNX)").first();
+    // Scroll to voice models section if present (use getByText instead of brittle locator("text=...").first())
+    const modelsHeading = page.getByText("Voice Models (ONNX)", { exact: true });
     if (await modelsHeading.isVisible()) {
       await modelsHeading.scrollIntoViewIfNeeded();
     }
@@ -258,7 +258,7 @@ test.describe("Documentation Screenshots", () => {
     await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
 
     // Scroll to audio device section
-    const audioHeading = page.locator("text=Audio Devices").first();
+    const audioHeading = page.getByText("Audio Devices", { exact: true });
     if (await audioHeading.isVisible()) {
       await audioHeading.scrollIntoViewIfNeeded();
     }

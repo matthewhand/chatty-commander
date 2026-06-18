@@ -73,7 +73,7 @@ class TestRunner:
             success = result.returncode == 0
             output = (result.stdout or "") + (result.stderr or "")
 
-    
+
             if success:
                 logger.info(f"✅ {description} - PASSED")
             else:
@@ -162,7 +162,7 @@ class TestRunner:
     def start_web_server(self) -> subprocess.Popen | None:
 
         try:
-    
+
             logger.info("🚀 Starting web server for testing...")
             process = subprocess.Popen(
                 ["uv", "run", "python", "main.py", "--web", "--no-auth"],
@@ -172,11 +172,11 @@ class TestRunner:
                 text=True,
             )
 
-    
+
             # Wait briefly for server to start, but don't stall too long
             time.sleep(1.5)
 
-    
+
             if process.poll() is None:  # Process is still running
                 logger.info("✅ Web server started successfully")
                 return process
@@ -225,7 +225,7 @@ class TestRunner:
             command = ["uv", "run", "python", "-c", "import flake8"]
             success, _ = self.run_command(command, "Check flake8 availability")
 
-    
+
             if success:
                 # Run flake8 linting
                 command = [
@@ -245,7 +245,7 @@ class TestRunner:
 
         except Exception as e:
             logger.warning(f"⚠️  Linting check failed: {e}")
-    
+
             return True  # Don't fail the entire test suite for linting
 
     def generate_coverage_report(self) -> None:
@@ -279,7 +279,7 @@ class TestRunner:
         for test_name, success, _ in self.test_results:
             status = "✅ PASS" if success else "❌ FAIL"
             logger.info(f"   {test_name:<25} {status}")
-    
+
             if success:
                 passed += 1
 
@@ -341,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
                 "--cov-report=term-missing",
                 "-q",
             ]
-    
+
             if extra_paths:
                 args = list(extra_paths) + base_args
             else:
@@ -349,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
             code = int(pytest.main(args))
             return code
         except SystemExit as e:
-    
+
             return int(e.code) if isinstance(e.code, int) else 1
         except Exception as e:  # noqa: BLE001
             logger.error(f"Fast pytest path failed: {e}")

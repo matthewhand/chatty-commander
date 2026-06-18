@@ -146,10 +146,7 @@ class LLMManager:
         logger.warning("All backends failed, using mock backend")
 
     def is_available(self) -> bool:
-<<<<<<< HEAD
         """Check if any backend is available."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return self.active_backend is not None
 
     def generate_response(self, prompt: str, **kwargs) -> str:

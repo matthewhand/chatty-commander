@@ -34,9 +34,21 @@ from typing import Any
 
 import pytest
 
+# The Python E2E suite stands up a live in-process uvicorn server (and drives a
+# real browser via Playwright). It is opt-in: it is NOT part of the fast default
+# unit gate (`pytest -q --no-cov`), it overlaps the frontend Playwright suite run
+# separately in CI (`pnpm run test:e2e`), and its live server thread is
+# incompatible with the in-process Starlette TestClient used elsewhere in the same
+# session. Run it explicitly with: RUN_E2E=1 pytest tests/e2e
+_RUN_E2E = bool(os.environ.get("RUN_E2E") or os.environ.get("RUN_PYTHON_E2E"))
+if not _RUN_E2E:
+    # Ignore every test module in this directory by default; the conftest itself
+    # (fixtures/hooks) still loads so an explicit `RUN_E2E=1` run works unchanged.
+    collect_ignore_glob = ["test_*.py"]
+
 # Skip all E2E tests if playwright is not installed
 try:
-    from playwright.sync_api import Page, expect
+    from playwright.sync_api import Page
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -52,26 +64,28 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture(scope="session")
 def e2e_server() -> Generator[str, None, None]:
     """Start the FastAPI server for E2E tests.
-    
+
     Yields the base URL for the running server.
     """
     import socket
-    
+
     # Find an available port
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
     sock.close()
-    
+
     base_url = f"http://127.0.0.1:{port}"
-    
+
     handles = {"process": None, "server": None, "thread": None, "kind": None}
-    
+
     # Start server in-process using the app directly (faster/more reliable than CLI subprocess for e2e)
     try:
-        from chatty_commander.web.web_mode import create_app as _create_web_app
-        import uvicorn
         from threading import Thread
+
+        import uvicorn
+
+        from chatty_commander.web.web_mode import create_app as _create_web_app
         app = _create_web_app(no_auth=True)
         config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning", access_log=False)
         server = uvicorn.Server(config)
@@ -94,7 +108,7 @@ def e2e_server() -> Generator[str, None, None]:
         )
         handles["process"] = proc
         handles["kind"] = "subprocess"
-    
+
     # Wait for server to be ready (web init can be slow due to model/llm loads)
     max_retries = 90
     last_err = None
@@ -117,9 +131,9 @@ def e2e_server() -> Generator[str, None, None]:
                     diag = "inproc-uvicorn (no extra diag)"
                 raise RuntimeError(f"Server failed to start on {base_url} after {max_retries} tries. Last: {last_err}. Diag tail:\n{diag}") from e
             time.sleep(0.7)
-    
+
     yield base_url
-    
+
     # Cleanup
     if handles["kind"] == "subprocess" and handles["process"]:
         handles["process"].terminate()
@@ -141,7 +155,8 @@ def page(page: Page, e2e_server: str) -> Page:
     """Configure page with base URL (with domcontentloaded wait for stability)."""
     page.goto(e2e_server)
     page.wait_for_load_state("domcontentloaded")
-    page.wait_for_selector("body", timeout=8000)
+    # modern Playwright: scoped get_by_role + .nth(0) instead of brittle wait_for_selector("body")
+    page.get_by_role("heading").nth(0).wait_for(timeout=5000)
     return page
 
 
@@ -150,7 +165,8 @@ def version_page(page: Page, e2e_server: str) -> Page:
     """Navigate to version endpoint (with domcontentloaded wait for stability)."""
     page.goto(f"{e2e_server}/version")
     page.wait_for_load_state("domcontentloaded")
-    page.wait_for_selector("body", timeout=8000)
+    # modern Playwright: scoped get_by_role + .nth(0) instead of brittle wait_for_selector("body")
+    page.get_by_role("heading").nth(0).wait_for(timeout=5000)
     return page
 
 
@@ -159,7 +175,8 @@ def agents_page(page: Page, e2e_server: str) -> Page:
     """Navigate to agents endpoint (with domcontentloaded wait for stability)."""
     page.goto(f"{e2e_server}/agents")
     page.wait_for_load_state("domcontentloaded")
-    page.wait_for_selector("body", timeout=8000)
+    # modern Playwright: scoped get_by_role + .nth(0) instead of brittle wait_for_selector("body")
+    page.get_by_role("heading").nth(0).wait_for(timeout=5000)
     return page
 
 
@@ -168,7 +185,8 @@ def metrics_page(page: Page, e2e_server: str) -> Page:
     """Navigate to metrics endpoint (with domcontentloaded wait for stability)."""
     page.goto(f"{e2e_server}/metrics")
     page.wait_for_load_state("domcontentloaded")
-    page.wait_for_selector("body", timeout=8000)
+    # modern Playwright: scoped get_by_role + .nth(0) instead of brittle wait_for_selector("body")
+    page.get_by_role("heading").nth(0).wait_for(timeout=5000)
     return page
 
 
@@ -176,59 +194,59 @@ def metrics_page(page: Page, e2e_server: str) -> Page:
 @pytest.fixture
 def screenshot_helper():
     """Helper fixture to capture screenshots during tests with user-guide categorization.
-    
+
     Screenshots are organized by:
     - User guide section (getting-started, configuration, agents, etc.)
     - Operation type (normal-operation vs troubleshooting)
     """
     import os
     from pathlib import Path
-    
+
     base_dir = Path(os.environ.get("SCREENSHOT_PATH", "e2e-screenshots"))
-    
+
     # Define categories for user guide organization
     CATEGORIES = {
         # Getting Started - First time user flows
         "getting-started": ["login", "first-run", "welcome", "setup"],
-        
+
         # Core Operations - Normal day-to-day usage
         "normal-operation": [
             "health-check", "version", "config-view", "config-update",
             "agents-list", "agent-create", "agent-edit", "commands-list",
             "metrics-dashboard", "system-info"
         ],
-        
+
         # Configuration - Settings and customization
         "configuration": [
-            "config-json", "environment-vars", "voice-settings", 
+            "config-json", "environment-vars", "voice-settings",
             "llm-backend", "web-port", "commands-custom"
         ],
-        
+
         # Advanced Features - Power user workflows
         "advanced-features": [
             "websocket-realtime", "api-browser", "import-export",
             "batch-operations", "voice-control", "avatar-custom"
         ],
-        
+
         # Troubleshooting - When things go wrong
         "troubleshooting": [
             "error-404", "error-500", "validation-fail", "auth-error",
             "connection-error", "timeout", "rate-limit", "health-fail"
         ],
-        
+
         # Integration Testing - External connections
         "integration": [
             "ollama-connect", "openai-connect", "webhook-test",
             "bridge-event", "model-download", "voice-model-load"
         ],
     }
-    
+
     class ScreenshotHelper:
         def __init__(self, base_directory: Path):
             self.base_directory = base_directory
-            self.counters = {cat: 0 for cat in CATEGORIES.keys()}
+            self.counters = dict.fromkeys(CATEGORIES.keys(), 0)
             self.counters["uncategorized"] = 0
-            
+
             # Create category directories
             for category in list(CATEGORIES.keys()) + ["uncategorized"]:
                 cat_dir = self.base_directory / category
@@ -237,39 +255,39 @@ def screenshot_helper():
                 if category not in ["troubleshooting", "getting-started"]:
                     (cat_dir / "normal").mkdir(exist_ok=True)
                     (cat_dir / "error").mkdir(exist_ok=True)
-        
+
         def _categorize(self, name: str) -> tuple[str, str]:
             """Determine category and subcategory from screenshot name.
-            
+
             Returns: (category, subcategory) where subcategory is 'normal' or 'error'
             """
             name_lower = name.lower()
-            
+
             # Check if it's an error/troubleshooting scenario
             is_error = any(err in name_lower for err in [
                 "error", "fail", "timeout", "invalid", "unauthorized",
                 "forbidden", "not-found", "bad-request", "server-error",
                 "connection-refused", "health-fail"
             ])
-            
+
             # Find matching category
             for category, keywords in CATEGORIES.items():
                 if any(kw in name_lower for kw in keywords):
                     subcategory = "error" if is_error else "normal"
                     return category, subcategory
-            
+
             # Default to uncategorized
             subcategory = "error" if is_error else "normal"
             return "uncategorized", subcategory
-        
+
         def capture(self, page, name: str, category: str = None) -> str:
             """Capture a screenshot with automatic categorization.
-            
+
             Args:
                 page: Playwright page object
                 name: Screenshot name (will be used for categorization)
                 category: Optional explicit category override
-            
+
             Returns:
                 Path to saved screenshot
             """
@@ -278,11 +296,11 @@ def screenshot_helper():
                 category, subcategory = self._categorize(name)
             else:
                 subcategory = "normal"  # Explicit category = normal flow
-            
+
             # Update counter
             self.counters[category] += 1
             counter = self.counters[category]
-            
+
             # Build path: e2e-screenshots/{category}/{subcategory}/{counter}-{name}.png
             if category == "uncategorized" or category == "troubleshooting":
                 # Troubleshooting and uncategorized go directly in category dir
@@ -290,44 +308,44 @@ def screenshot_helper():
             else:
                 # Other categories have normal/error subdirectories
                 filepath = self.base_directory / category / subcategory / f"{counter:03d}-{name}.png"
-            
+
             # Capture screenshot
             page.screenshot(path=str(filepath), full_page=True)
-            
+
             # Log with emoji indicators
             emoji = "❌" if subcategory == "error" else "✅"
             guide_type = "TROUBLESHOOTING" if subcategory == "error" else "USER GUIDE"
             print(f"{emoji} [{guide_type}] [{category}] Screenshot: {filepath.name}")
-            
+
             return str(filepath)
-        
+
         def capture_guide(self, page, section: str, step: str) -> str:
             """Capture screenshot specifically for user guide documentation.
-            
+
             Args:
                 page: Playwright page object
                 section: User guide section (e.g., "getting-started", "configuration")
                 step: Step description for filename
-            
+
             Returns:
                 Path to saved screenshot
             """
             return self.capture(page, f"{section}-{step}", category=section)
-        
+
         def capture_troubleshooting(self, page, issue: str, context: str = "") -> str:
             """Capture screenshot for troubleshooting documentation.
-            
+
             Args:
-                page: Playwright page object  
+                page: Playwright page object
                 issue: Issue being demonstrated (e.g., "connection-timeout")
                 context: Additional context for filename
-            
+
             Returns:
                 Path to saved screenshot
             """
             name = f"{issue}-{context}" if context else issue
             return self.capture(page, name, category="troubleshooting")
-        
+
         def get_summary(self) -> dict:
             """Get summary of captured screenshots by category."""
             summary = {}
@@ -337,34 +355,36 @@ def screenshot_helper():
                     screenshots = list(cat_dir.rglob("*.png"))
                     summary[category] = len(screenshots)
             return summary
-    
+
     return ScreenshotHelper(base_dir)
 
 
 @pytest.fixture
 def live_server():
     """Start the actual application server for HTTP-based E2E tests (in-process preferred).
-    
+
     Uses the same robust pattern as e2e_server for speed and reliability.
     """
     import socket
     import time
-    
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
     sock.close()
-    
+
     base_url = f"http://127.0.0.1:{port}"
-    
+
     handles = {"process": None, "server": None, "thread": None, "kind": None}
-    
+
     try:
-        from chatty_commander.web.web_mode import create_app as _create_web_app
-        import uvicorn
         from threading import Thread
+
         import requests  # for polling
-        
+        import uvicorn
+
+        from chatty_commander.web.web_mode import create_app as _create_web_app
+
         app = _create_web_app(no_auth=True)
         config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning", access_log=False)
         server = uvicorn.Server(config)
@@ -389,7 +409,7 @@ def live_server():
         )
         handles["process"] = proc
         handles["kind"] = "subprocess"
-    
+
     max_retries = 60
     last_err = None
     for i in range(max_retries):
@@ -412,9 +432,9 @@ def live_server():
                     diag = "inproc"
                 raise RuntimeError(f"Server failed to start on {base_url} after retries. Last: {last_err}. Diag: {diag}") from e
             time.sleep(0.6)
-    
+
     yield base_url
-    
+
     if handles["kind"] == "subprocess" and handles["process"]:
         handles["process"].terminate()
         try:
@@ -436,7 +456,7 @@ def pytest_runtest_makereport(item, call):
     """Capture screenshot when a test fails (if using Playwright)."""
     outcome = yield
     report = outcome.get_result()
-    
+
     if report.when == "call" and report.failed:
         # Try to capture screenshot if page fixture was used
         page = item.funcargs.get("page")
@@ -448,7 +468,7 @@ def pytest_runtest_makereport(item, call):
                 filepath = screenshots_dir / filename
                 page.screenshot(path=str(filepath), full_page=True)
                 print(f"\n📸 Failure screenshot saved: {filepath}")
-                
+
                 # Add to report
                 if hasattr(report, "extras"):
                     report.extras.append(f"Screenshot: {filepath}")

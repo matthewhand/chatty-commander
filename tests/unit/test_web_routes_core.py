@@ -4,9 +4,8 @@ Covers route inclusion, status/config/state/command endpoints, middleware.
 Uses fastapi testclient + mocks from conftest. AAA style.
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -14,7 +13,6 @@ from chatty_commander.web.routes.core import (
     ResponseTimeMiddleware,
     include_core_routes,
 )
-
 
 # ============================================================================
 # MIDDLEWARE

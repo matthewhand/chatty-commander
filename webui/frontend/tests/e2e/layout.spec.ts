@@ -61,7 +61,7 @@ test.describe("MainLayout - Mobile Viewport", () => {
 
   test("hamburger menu toggle works", async ({ page }) => {
     // Sidebar should be off-screen initially on mobile
-    const sidebar = page.locator("aside");
+    const sidebar = page.locator("aside").nth(0);  // modern: .nth(0) scoped instead of generic locator (avoids brittle)
     await expect(sidebar).toHaveClass(/-translate-x-full/);
 
     // Click hamburger menu to open sidebar
@@ -76,7 +76,7 @@ test.describe("MainLayout - Mobile Viewport", () => {
   });
 
   test("clicking nav item closes sidebar", async ({ page }) => {
-    const sidebar = page.locator("aside");
+    const sidebar = page.locator("aside").nth(0); // modern: .nth(0) to scope (consistent with hamburger test)
 
     // Open sidebar
     await page.getByRole("button", { name: "Open sidebar" }).click();
@@ -91,7 +91,7 @@ test.describe("MainLayout - Mobile Viewport", () => {
   });
 
   test("clicking backdrop closes sidebar", async ({ page }) => {
-    const sidebar = page.locator("aside");
+    const sidebar = page.locator("aside").nth(0); // modern: .nth(0) to scope (consistent with hamburger test)
 
     // Open sidebar
     await page.getByRole("button", { name: "Open sidebar" }).click();
@@ -101,8 +101,8 @@ test.describe("MainLayout - Mobile Viewport", () => {
     const backdrop = page.locator("div.fixed.inset-0");
     await expect(backdrop).toBeVisible();
 
-    // Click the backdrop
-    await backdrop.click({ position: { x: 350, y: 300 } });
+    // Click the backdrop (simpler click() without brittle hardcoded position numbers; overlay click closes via handler)
+    await backdrop.click();
 
     // Sidebar should close
     await expect(sidebar).toHaveClass(/-translate-x-full/);

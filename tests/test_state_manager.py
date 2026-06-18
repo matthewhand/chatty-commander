@@ -9,7 +9,7 @@ tests/unit/test_pipeline.py and EXAMPLE_REFACTORED_TEST.py.
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
 
@@ -20,7 +20,6 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from chatty_commander.app.state_manager import StateManager
-
 
 # ============================================================================
 # FIXTURES

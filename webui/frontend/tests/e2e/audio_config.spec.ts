@@ -12,11 +12,11 @@ test.describe("Audio Configuration", () => {
 
         // Wait for Audio Devices section to be visible
         // This makes sure we are looking at the right part of the page
-        const audioDevicesSection = page.locator('.card', { has: page.locator('h3', { hasText: 'Audio Devices' }) });
+        const audioDevicesSection = page.locator('.card:has-text("Audio Devices")');
         await expect(audioDevicesSection).toBeVisible();
 
-        // Find the specific card for Input Device within that section
-        const inputDeviceCard = audioDevicesSection.locator('.card', { has: page.locator('h4', { hasText: 'Input Device' }) });
+        // Find the specific card for Input Device within that section (modern scoped .card:has-text)
+        const inputDeviceCard = audioDevicesSection.locator('.card:has-text("Input Device")');
         const inputSelectLocator = inputDeviceCard.locator('select');
 
         await expect(inputSelectLocator).toBeVisible();
@@ -32,7 +32,7 @@ test.describe("Audio Configuration", () => {
         await inputSelectLocator.selectOption({ label: "Mock Microphone 1" });
 
         const saveRequestPromise = page.waitForRequest(req => req.url().includes("/api/v1/audio/device") && req.method() === 'POST');
-        await page.click("text=Save Changes");
+        await page.getByRole("button", { name: /Save Changes/i }).click();
 
         const saveRequest = await saveRequestPromise;
         expect(saveRequest.postDataJSON()).toEqual({ device_id: "Mock Microphone 1" });

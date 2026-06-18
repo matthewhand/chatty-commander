@@ -228,13 +228,9 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
                 else 0.0
             )
 
-<<<<<<< HEAD
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Any]
     ) -> Any:
-=======
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         start_time = time.time()
         response = await call_next(request)
         duration_ms = (time.time() - start_time) * 1000.0
@@ -287,6 +283,45 @@ def include_core_routes(
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
 
+    def _get_system_usage() -> tuple[str, str]:
+        """Extracted helper: return (memory_usage, cpu_usage) or 'unknown'."""
+        memory_usage = "unknown"
+        cpu_usage = "unknown"
+        try:
+            import psutil
+
+            memory = psutil.virtual_memory()
+            memory_usage = f"{memory.percent:.1f}%"
+            cpu_usage = f"{psutil.cpu_percent():.1f}%"
+        except ImportError:
+            pass  # psutil not available
+        return memory_usage, cpu_usage
+
+    async def _get_database_status(db_url: str | None) -> str:
+        """Extracted helper: db status check with timeout."""
+        if not db_url:
+            return "not_configured"
+
+        def _check_db():
+            try:
+                from sqlalchemy import create_engine, text
+                from sqlalchemy.pool import NullPool
+
+                engine = create_engine(db_url, poolclass=NullPool)
+                with engine.connect() as conn:
+                    conn.execute(text("SELECT 1")).scalar()
+                engine.dispose()
+                return "healthy"
+            except Exception:
+                return "unreachable"
+
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(_check_db), timeout=2.0
+            )
+        except Exception:
+            return "unreachable"
+
     # Basic in-memory metrics counters (per-router instance)
     counters = {
         "status": 0,
@@ -299,19 +334,26 @@ def include_core_routes(
 
     @router.get("/api/v1/status", response_model=SystemStatus)
     async def get_status():
-<<<<<<< HEAD
-=======
-        """Return current system status."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
         sm = get_state_manager()
+        raw_state = getattr(sm, "current_state", "idle")
+        # Coerce to a plain string: under test mocks (and to honor the
+        # "never 500" contract) current_state may be a non-str object that
+        # would otherwise fail SystemStatus validation.
+        current_state = raw_state if isinstance(raw_state, str) else "idle"
+        try:
+            active_models = (
+                sm.get_active_models() if hasattr(sm, "get_active_models") else []
+            )
+            if not isinstance(active_models, list):
+                active_models = []
+        except Exception:
+            active_models = []
         return SystemStatus(
             status="running",
-            current_state=getattr(sm, "current_state", "idle"),
-            active_models=(
-                sm.get_active_models() if hasattr(sm, "get_active_models") else []
-            ),
+            current_state=current_state,
+            active_models=active_models,
             uptime=uptime_str,
         )
 
@@ -321,84 +363,14 @@ def include_core_routes(
         uptime_seconds = time.time() - get_start_time()
         uptime_str = _format_uptime(uptime_seconds)
 
-        # Basic system checks
-        memory_usage = "unknown"
-        cpu_usage = "unknown"
-
-        try:
-            import psutil
-
-            memory = psutil.virtual_memory()
-            memory_usage = f"{memory.percent:.1f}%"
-            cpu_usage = f"{psutil.cpu_percent():.1f}%"
-        except ImportError:
-            pass  # psutil not available
-
-        # Database connectivity check
-        database_status = "not_configured"
-
+        # Use extracted helpers for system/db checks (reduces length/complexity of include_core_routes)
+        memory_usage, cpu_usage = _get_system_usage()
         cfg_mgr = get_config_manager()
         cfg = getattr(cfg_mgr, "config", {})
-<<<<<<< HEAD
-        # Look for database_url in general_settings or root
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         db_url = cfg.get("database_url") or cfg.get("general_settings", {}).get(
             "database_url"
         )
-
-        if db_url:
-            def _check_db():
-<<<<<<< HEAD
-=======
-                global _ENGINE_CACHE_HITS, _ENGINE_CACHE_MISSES
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
-                try:
-                    from sqlalchemy import create_engine, text
-                    from sqlalchemy.pool import NullPool
-
-<<<<<<< HEAD
-                    engine = create_engine(db_url, poolclass=NullPool)
-=======
-                    with _ENGINES_LOCK:
-                        now = time.time()
-                        cached = _ENGINES.get(db_url)
-                        # Check TTL expiration
-                        if cached and (now - cached[1]) > _ENGINE_TTL_SECONDS:
-                            # Expired - dispose and remove
-                            cached[0].dispose()
-                            del _ENGINES[db_url]
-                            cached = None
-
-                        if cached:
-                            _ENGINE_CACHE_HITS += 1
-                            engine = cached[0]
-                        else:
-                            _ENGINE_CACHE_MISSES += 1
-                            # Evict oldest if at capacity
-                            if len(_ENGINES) >= _MAX_ENGINES:
-                                oldest_url = min(
-                                    _ENGINES.keys(), key=lambda k: _ENGINES[k][1]
-                                )
-                                _ENGINES[oldest_url][0].dispose()
-                                del _ENGINES[oldest_url]
-                            engine = create_engine(db_url, poolclass=NullPool)
-                            _ENGINES[db_url] = (engine, now)
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
-                    with engine.connect() as conn:
-                        conn.execute(text("SELECT 1")).scalar()
-                    engine.dispose()
-                    return "healthy"
-                except Exception:
-                    return "unreachable"
-
-            try:
-                database_status = await asyncio.wait_for(
-                    asyncio.to_thread(_check_db), timeout=2.0
-                )
-            except Exception:
-                database_status = "unreachable"
+        database_status = await _get_database_status(db_url)
 
         return HealthStatus(
             status="healthy",
@@ -421,14 +393,7 @@ def include_core_routes(
 
     @router.get("/metrics", response_model=MetricsData)
     async def get_metrics():
-<<<<<<< HEAD
         """Get application metrics and performance data."""
-=======
-        """Retrieve operation.
-
-        TODO: Add detailed description and parameters.
-        """
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         uptime_seconds = time.time() - get_start_time()
         total_requests = sum(counters.values())
 
@@ -468,10 +433,7 @@ def include_core_routes(
 
     @router.get("/api/v1/config")
     async def get_config():
-<<<<<<< HEAD
-=======
         """Retrieve current configuration (masked)."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["config_get"] += 1
         try:
             cfg_mgr = get_config_manager()
@@ -504,10 +466,7 @@ def include_core_routes(
         dependencies=[Depends(require_role("admin"))],
     )
     async def update_config(config_data: dict[str, Any]):
-<<<<<<< HEAD
-=======
         """Update configuration with allowed keys only."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["config_put"] += 1
 
         rejected_keys = sorted(set(config_data) - ALLOWED_CONFIG_KEYS)
@@ -541,10 +500,7 @@ def include_core_routes(
 
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
-<<<<<<< HEAD
-=======
         """Get current state info."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["state_get"] += 1
         sm = get_state_manager()
         return StateInfo(
@@ -567,10 +523,7 @@ def include_core_routes(
         dependencies=[Depends(require_scope("state:write"))],
     )
     async def change_state(request: StateChangeRequest):
-<<<<<<< HEAD
-=======
         """Change the application state."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["state_post"] += 1
         try:
             sm = get_state_manager()
@@ -580,7 +533,6 @@ def include_core_routes(
         except Exception as err:
             raise HTTPException(status_code=400, detail=str(err)) from err
 
-<<<<<<< HEAD
     # Per-router token bucket for the command endpoint. Resolved once at
     # router construction; None means rate limiting is disabled (the default
     # under pytest — see _resolve_command_rate_limit).
@@ -598,11 +550,6 @@ def include_core_routes(
         dependencies=[Depends(require_role("user"))],
     )
     async def execute_command(request: CommandRequest, http_request: Request):
-=======
-    @router.post("/api/v1/command", response_model=CommandResponse)
-    async def execute_command(request: CommandRequest):
-        """Execute a command via the provided executor."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         counters["command_post"] += 1
         if command_rate_limiter is not None:
             allowed, retry_after = command_rate_limiter.try_acquire(
@@ -645,7 +592,6 @@ def include_core_routes(
         "/api/v1/health", operation_id="health_check_core", response_model=HealthStatus
     )
     async def health_check_core():
-<<<<<<< HEAD
         counters["status"] += 1
         return await health_check()
 
@@ -661,10 +607,4 @@ def include_core_routes(
         metrics_dict["response_time_avg"] = round(avg_duration, 2)
         return metrics_dict
 
-=======
-        """Health check alias for metrics/status."""
-        counters["status"] += 1
-        return await health_check()
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     return router

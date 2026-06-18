@@ -98,14 +98,11 @@ class WakeWordDetector:
             self._is_mock = True
 
     def add_callback(self, callback: Callable[[str, float], None]) -> None:
-<<<<<<< HEAD
         """Add callback for wake word detection.
 
         Args:
             callback: Function called with (wake_word, confidence) when detected
         """
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         self._callbacks.append(callback)
 
     def remove_callback(self, callback: Callable[[str, float], None]) -> None:
@@ -114,10 +111,7 @@ class WakeWordDetector:
             self._callbacks.remove(callback)
 
     def start_listening(self) -> None:
-<<<<<<< HEAD
         """Start listening for wake words."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self._running:
             logger.warning("Wake word detector already running")
             return
@@ -149,10 +143,7 @@ class WakeWordDetector:
             raise
 
     def stop_listening(self) -> None:
-<<<<<<< HEAD
         """Stop listening for wake words."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         self._running = False
 
         if self._thread and self._thread.is_alive():
@@ -217,23 +208,14 @@ class WakeWordDetector:
 
     def _notify_callbacks(self, wake_word: str, confidence: float) -> None:
         """Notify all registered callbacks of wake word detection."""
-<<<<<<< HEAD
-        for (
-            callback
-        ) in self._callbacks.copy():  # Copy to avoid modification during iteration
-=======
         for callback in self._callbacks.copy():  # Copy to avoid modification during iteration
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             try:
                 callback(wake_word, confidence)
             except Exception as e:
                 logger.error(f"Error in wake word callback: {e}")
 
     def get_available_models(self) -> list[str]:
-<<<<<<< HEAD
         """Get list of available wake word models."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if getattr(self, "_is_mock", False):
             return ["hey_jarvis", "alexa", "hey_google"]
 
@@ -247,10 +229,7 @@ class WakeWordDetector:
             return []
 
     def is_listening(self) -> bool:
-<<<<<<< HEAD
         """Check if detector is currently listening."""
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         return bool(self._running and self._thread and self._thread.is_alive())
 
 
@@ -277,13 +256,9 @@ class MockWakeWordDetector:
         self._running = False
         logger.info("Mock wake word detector stopped")
 
-<<<<<<< HEAD
     def trigger_wake_word(
         self, wake_word: str = "hey_jarvis", confidence: float = 0.9
     ) -> None:
-=======
-    def trigger_wake_word(self, wake_word: str = "hey_jarvis", confidence: float = 0.9) -> None:
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         """Manually trigger a wake word detection (for testing)."""
         if self._running:
             for callback in self._callbacks:
@@ -296,8 +271,4 @@ class MockWakeWordDetector:
         return ["hey_jarvis", "alexa", "hey_google"]
 
     def is_listening(self) -> bool:
-<<<<<<< HEAD
         return self._running
-=======
-        return self._running
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16

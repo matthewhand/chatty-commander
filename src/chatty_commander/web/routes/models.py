@@ -79,10 +79,6 @@ DEFAULT_MODEL_DIRS = ["models-idle", "models-computer", "models-chatty", "wakewo
 def _format_size(size_bytes: int) -> str:
     size: float = float(size_bytes)
     for unit in ["B", "KB", "MB", "GB"]:
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if size < 1024:
             return f"{size:.1f} {unit}"
         size /= 1024
@@ -96,10 +92,6 @@ def _get_model_dirs() -> list[Path]:
     dirs = []
     for dir_name in DEFAULT_MODEL_DIRS:
         path = Path(dir_name)
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if path.exists() and path.is_dir():
             dirs.append(path)
     return dirs
@@ -114,15 +106,8 @@ def _scan_model_files() -> list[ModelFileInfo]:
         dir_name = model_dir.name
         if "idle" in dir_name:
             state = "idle"
-<<<<<<< HEAD
         elif "computer" in dir_name:
             state = "computer"
-=======
-
-        elif "computer" in dir_name:
-            state = "computer"
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         elif "chatty" in dir_name:
             state = "chatty"
         else:
@@ -147,7 +132,6 @@ def _scan_model_files() -> list[ModelFileInfo]:
 
 
 def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
-<<<<<<< HEAD
     """Create router for model file management.
 
     Args:
@@ -156,8 +140,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
     Returns:
         FastAPI router with model management endpoints
     """
-=======
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     router = APIRouter(prefix="/api/v1/models", tags=["models"])
 
     @router.get("/files", response_model=ModelListResponse)
@@ -190,10 +172,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
         else:
             target_dir = Path(upload_dir)
 
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Create directory if it doesn't exist
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -218,10 +196,6 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
                 detail="Invalid filename: path escapes target directory"
             ) from None
 
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         # Check if file already exists
         if file_path.exists():
             raise HTTPException(

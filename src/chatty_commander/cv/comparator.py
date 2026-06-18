@@ -28,7 +28,6 @@ This module provides image comparison algorithms for visual regression testing.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
 import cv2
 import numpy as np
@@ -129,7 +128,8 @@ class ImageComparator:
         """
         if len(image.shape) == 3 and image.shape[2] == 3:
             # Convert RGB to grayscale
-            return cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2GRAY).astype(np.float64)
+            gray: np.ndarray = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2GRAY)
+            return gray.astype(np.float64)
         return image.astype(np.float64)
 
     def compare_ssim(

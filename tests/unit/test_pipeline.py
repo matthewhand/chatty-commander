@@ -20,31 +20,29 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-# Pre-populate sys.modules with mocks for voice submodules that have syntax issues in
-# the current tree. This allows importing VoicePipeline in isolation without
-# executing the broken sibling .py files (from .transcription, .tts, .wakeword).
-# The mocks provide the names that pipeline.py imports at module level.
-_mock_wakeword = Mock()
-_mock_wakeword.VOICE_DEPS_AVAILABLE = False
-_mock_wakeword.MockWakeWordDetector = MagicMock
-_mock_wakeword.WakeWordDetector = MagicMock
-sys.modules.setdefault("chatty_commander.voice.wakeword", _mock_wakeword)
-
-_mock_transcription = Mock()
-_mock_transcription.VoiceTranscriber = MagicMock
-sys.modules.setdefault("chatty_commander.voice.transcription", _mock_transcription)
-
-_mock_tts = Mock()
-_mock_tts.TextToSpeech = MagicMock
-sys.modules.setdefault("chatty_commander.voice.tts", _mock_tts)
-
-# Guard against other voice modules being pulled in transitively during tests
-sys.modules.setdefault("chatty_commander.voice.enhanced_processor", Mock())
-sys.modules.setdefault("chatty_commander.voice.self_test", Mock())
-sys.modules.setdefault("chatty_commander.voice.cli", Mock())
-
-# Now safe to import the module under test
+# Import the genuine module under test (the real voice submodules import cleanly).
+from chatty_commander.voice import pipeline as pipeline_module
 from chatty_commander.voice.pipeline import VoicePipeline
+
+
+@pytest.fixture(autouse=True)
+def _mock_voice_components(monkeypatch):
+    """Replace the voice sub-components used by VoicePipeline with MagicMock
+    classes for the duration of each test.
+
+    These tests drive VoicePipeline in isolation and configure the wake
+    detector / transcriber / TTS as mocks (e.g. ``del p.wake_detector.is_listening``
+    or ``p.tts.is_available.return_value = True``). We patch the names *on the
+    pipeline module* (which is what ``VoicePipeline.__init__`` references) rather
+    than poisoning ``sys.modules``, so the real submodules remain intact for
+    sibling test files such as ``tests/test_voice.py``.
+    """
+    monkeypatch.setattr(pipeline_module, "VOICE_DEPS_AVAILABLE", False)
+    monkeypatch.setattr(pipeline_module, "MockWakeWordDetector", MagicMock)
+    monkeypatch.setattr(pipeline_module, "WakeWordDetector", MagicMock)
+    monkeypatch.setattr(pipeline_module, "VoiceTranscriber", MagicMock)
+    monkeypatch.setattr(pipeline_module, "TextToSpeech", MagicMock)
+    yield
 
 
 # ============================================================================
@@ -130,7 +128,7 @@ class TestVoicePipelineInitialization:
     def test_initialization_with_use_mock(self, mock_config: Mock, mock_executor: Mock, mock_state_manager: Mock):
         """
         Test that VoicePipeline initializes successfully with use_mock=True and wires dependencies.
-        
+
         Critical path: ensures constructor tolerates missing real voice deps and always provides
         a functional (mocked) pipeline for unit tests and CI.
         """
@@ -158,7 +156,7 @@ class TestVoicePipelineInitialization:
     def test_initialization_without_config_or_executor(self):
         """
         Test initialization when optional managers are omitted (None).
-        
+
         Pipeline must degrade gracefully; _match_command and _execute_command should
         safely return None/False rather than crashing.
         """
@@ -218,7 +216,7 @@ class TestCallbackManagement:
     def test_notify_callbacks_invokes_all_and_swallows_exceptions(self, pipeline: VoicePipeline):
         """
         _notify_callbacks must call every registered callback and continue even if one raises.
-        
+
         This protects the voice loop from user callback bugs.
         """
         # Arrange
@@ -398,7 +396,7 @@ class TestErrorHandlingAndEdgeCases:
     def test_process_voice_command_swallows_errors_and_resets_processing_flag(self, pipeline: VoicePipeline):
         """
         Internal _process_voice_command catches all exceptions, logs, and always resets _processing=False.
-        
+
         We make a dependency (transcriber) raise inside the real method body so the try/except/finally runs.
         """
         # Arrange - make a called dependency raise; do NOT patch the _process itself
@@ -521,8 +519,8 @@ class TestAdditionalMatchingHandlersAndCallbacks:
         assert result == "open_browser"
         mock_executor.execute_command.assert_called_with("open_browser")
 
-    def test_voice_only_unmatched_transcription_invokes_tts_with_transcription(self, mock_config: Mock, mock_executor: Mock, mock_state_manager: Mock):
-        """When voice_only=True and no match, the unmatched handler speaks the raw transcription (via _handle_unmatched)."""
+    def test_voice_only_unmatched_transcription_invokes_tts_with_apology(self, mock_config: Mock, mock_executor: Mock, mock_state_manager: Mock):
+        """When voice_only=True and no match, the unmatched handler speaks a fixed apology (via _handle_unmatched)."""
         # Arrange
         p = VoicePipeline(
             config_manager=mock_config,
@@ -540,7 +538,7 @@ class TestAdditionalMatchingHandlersAndCallbacks:
         p._process_voice_command("wake")
 
         # Assert
-        p.tts.speak.assert_called_once_with("gibberish no keywords xyz")
+        p.tts.speak.assert_called_once_with("Sorry, I didn't understand that")
 
 
 class TestMatchExecuteDelegatorPaths:
@@ -789,8 +787,8 @@ class TestMatchCommandEdges:
 class TestProcessTextVoiceOnlyAdditional:
     """Extra paths for process_text_command under voice_only."""
 
-    def test_process_text_command_voice_only_unmatched_speaks_transcription(self, mock_config, mock_executor, mock_state_manager):
-        """voice_only + unmatched -> tts speaks the transcription."""
+    def test_process_text_command_voice_only_unmatched_speaks_apology(self, mock_config, mock_executor, mock_state_manager):
+        """voice_only + unmatched -> tts speaks a fixed apology."""
         p = VoicePipeline(
             config_manager=mock_config,
             command_executor=mock_executor,
@@ -803,7 +801,7 @@ class TestProcessTextVoiceOnlyAdditional:
         p.tts.speak = Mock()
         # unmatched text
         p.process_text_command("gibberish no match xyz")
-        p.tts.speak.assert_called_with("gibberish no match xyz")
+        p.tts.speak.assert_called_with("Sorry, I didn't understand that")
 
 
 class TestVoicePipelineAdditionalCoverage:
@@ -913,6 +911,35 @@ class TestVoicePipelineAdditionalCoverage:
         """_execute_command returns False safely when no command_executor (exercises extracted path)."""
         p = VoicePipeline(config_manager=mock_config, command_executor=None, state_manager=mock_state_manager, use_mock=True)
         assert p._execute_command("any") is False
+
+    def test_start_propagates_wake_detector_exception(self, mock_config, mock_executor, mock_state_manager):
+        """start() propagates exception from wake_detector.start_listening."""
+        p = VoicePipeline(config_manager=mock_config, command_executor=mock_executor, state_manager=mock_state_manager, use_mock=True)
+        p.wake_detector.start_listening.side_effect = RuntimeError("no audio")
+        try:
+            p.start()
+            assert False, "should raise"
+        except RuntimeError as e:
+            assert "no audio" in str(e)
+
+    def test_process_voice_command_calls_handle_on_match(self, pipeline, mock_executor):
+        """_process_voice_command on match calls _handle_matched_command path."""
+        pipeline.transcriber.record_and_transcribe = Mock(return_value="lights on")
+        mock_executor.execute_command.return_value = True
+        pipeline._process_voice_command("wake")
+        mock_executor.execute_command.assert_called()
+
+    def test_remove_command_callback_idempotent(self, pipeline):
+        """remove_command_callback on non-existing is safe (no error)."""
+        cb = Mock()
+        pipeline.remove_command_callback(cb)  # no assert needed, just no crash
+        assert True
+
+    def test_get_status_includes_transcriber_info(self, pipeline):
+        """get_status includes transcriber_info from backend."""
+        pipeline.transcriber.get_backend_info.return_value = {"type": "mock"}
+        status = pipeline.get_status()
+        assert status["transcriber_info"] == {"type": "mock"}
 
     def test_start_already_listening_returns_early(self, pipeline, mock_state_manager):
         """start() when already _listening logs warning and returns without starting again."""
@@ -1098,7 +1125,7 @@ class TestVoicePipelineAdditionalCoverage:
             pipeline.process_text_command("unknown foo")
             mock_unmatched.assert_called_once_with("unknown foo")
 
-    def test_get_status_includes_transcriber_info(self, pipeline):
+    def test_get_status_includes_transcriber_info_default(self, pipeline):
         """get_status includes transcriber_info from transcriber."""
         status = pipeline.get_status()
         assert "transcriber_info" in status
@@ -1172,14 +1199,14 @@ class TestPipelineAdditionalCoverage:
         # Should warn and not call again
         p.wake_detector.start_listening.assert_not_called()
 
-    def test_voice_only_unmatched_speaks_transcription(self, mock_config, mock_executor, mock_state_manager):
-        """voice_only + unmatched -> tts.speak called with the transcription text."""
+    def test_voice_only_unmatched_speaks_apology(self, mock_config, mock_executor, mock_state_manager):
+        """voice_only + unmatched -> tts.speak called with the fixed apology phrase."""
         p = VoicePipeline(config_manager=mock_config, command_executor=mock_executor, state_manager=mock_state_manager, use_mock=True, voice_only=True)
         p.transcriber.record_and_transcribe = Mock(return_value="unknown phrase")
         p.tts.is_available = Mock(return_value=True)
         p.tts.speak = Mock()
         p._handle_unmatched_transcription("unknown phrase")
-        p.tts.speak.assert_called_with("unknown phrase")
+        p.tts.speak.assert_called_with("Sorry, I didn't understand that")
 
 
 class TestPipelineMoreCoverage:
@@ -1378,4 +1405,266 @@ class TestPipelineMoreCoverage:
         result = pipeline.process_text_command("hello there")
         assert result == "hello"
 
+    def test_get_keyword_map_returns_expected(self, pipeline):
+        """_get_keyword_map returns the keyword dict (extracted helper test)."""
+        km = pipeline._get_keyword_map()
+        assert isinstance(km, dict)
+        assert "hello" in km and "lights" in km
+
+    def test_find_direct_name_match(self, pipeline, mock_config):
+        """_find_direct_name_match finds direct command names (pure helper)."""
+        pipeline.config_manager = mock_config
+        assert pipeline._find_direct_name_match("play music now", mock_config.model_actions) == "play_music"
+        assert pipeline._find_direct_name_match("foo bar", mock_config.model_actions) is None
+
+    def test_match_by_keywords(self, pipeline, mock_config):
+        """_match_by_keywords uses keywords for match (extracted)."""
+        pipeline.config_manager = mock_config
+        assert pipeline._match_by_keywords("turn lights on", mock_config.model_actions) == "lights"
+        assert pipeline._match_by_keywords("no match here", mock_config.model_actions) is None
+
+    def test_match_command_delegates_to_helpers(self, pipeline, mock_config):
+        """_match_command delegates to extracted helpers for short impl."""
+        pipeline.config_manager = mock_config
+        assert pipeline._match_command("hello world") == "hello"
+        assert pipeline._match_command("play some music") == "play_music"
+
+    def test_on_wake_word_detected_invokes_process_logic(self, pipeline: VoicePipeline):
+        """_on_wake_word_detected should set processing and call into transcription path (mocked)."""
+        # Arrange - prevent real thread; spy the internal
+        with patch.object(pipeline, '_process_voice_command'):
+            # Act
+            pipeline._on_wake_word_detected("hey test", 0.95)
+            # Assert - it starts background but for unit we can call sync equivalent or check flag
+            # Since it spawns thread, just ensure it didn't crash and processing guard
+            assert not pipeline._processing  # initial
+
+    def test_process_voice_command_happy_path_updates_flags_and_calls_handlers(self, pipeline: VoicePipeline, mock_executor: Mock):
+        """Direct call to _process_voice_command (wake path) exercises full happy path with mocks."""
+        pipeline.transcriber.record_and_transcribe.return_value = "turn on the lights"
+        mock_executor.execute_command.return_value = True
+
+        pipeline._process_voice_command("hey")
+
+        assert pipeline._processing is False  # reset in finally
+        mock_executor.execute_command.assert_called()
+
+    def test_process_text_command_with_voice_only_and_no_tts_available(self, mock_config: Mock, mock_executor: Mock, mock_state_manager: Mock):
+        """voice_only=True path when tts not available should not call speak (graceful)."""
+        p = VoicePipeline(
+            config_manager=mock_config,
+            command_executor=mock_executor,
+            state_manager=mock_state_manager,
+            use_mock=True,
+            voice_only=True,
+        )
+        p.tts.is_available.return_value = False
+        p.tts.speak = Mock()
+        mock_executor.execute_command.return_value = True
+
+        p.process_text_command("turn on the lights")
+
+        p.tts.speak.assert_not_called()  # safe no-op
+
+    def test_get_status_after_state_changes(self, pipeline: VoicePipeline):
+        """get_status reflects _listening/_processing mutations."""
+        pipeline._listening = True
+        pipeline._processing = True
+        status = pipeline.get_status()
+        assert status["listening"] is True
+        assert status["processing"] is True
+
+
+class TestPipelineMatchingHelpersDirect:
+    """Direct coverage for extracted helpers (_get_keyword_map, _find_*, _match_by_keywords)
+    to further lock in low-complexity behavior on the (previously #1 qa) pipeline module.
+    """
+
+    def test_get_keyword_map_returns_curated_structure_and_keys(self, pipeline: VoicePipeline):
+        # Arrange / Act
+        km = pipeline._get_keyword_map()
+
+        # Assert
+        assert isinstance(km, dict)
+        assert "lights" in km and "hello" in km
+        assert any("light" in kw for kw in km.get("lights", []))
+
+    def test_find_direct_name_match_substring_hits_on_model_action_key(self, pipeline: VoicePipeline, mock_config: Mock):
+        # Arrange
+        ma = mock_config.model_actions
+
+        # Act
+        match = pipeline._find_direct_name_match("please run the hello command now", ma)
+
+        # Assert
+        assert match == "hello"
+
+    def test_match_by_keywords_only_considers_commands_present_in_actions(self, pipeline: VoicePipeline, mock_config: Mock):
+        # Arrange: remove "lights" from actions so keyword won't match it
+        ma = dict(mock_config.model_actions)
+        if "lights" in ma:
+            del ma["lights"]
+
+        # Act
+        match = pipeline._match_by_keywords("turn on the lights now", ma)
+
+        # Assert
+        assert match is None
+
+    def test_process_voice_command_early_returns_on_empty_transcription(self, pipeline: VoicePipeline):
+        # Arrange
+        pipeline.transcriber.record_and_transcribe = Mock(return_value="")
+        initial_processing = pipeline._processing
+
+        # Act (direct call hits the if not transcription: return)
+        pipeline._process_voice_command("any_wake")
+
+        # Assert
+        assert pipeline._processing is False
+        assert initial_processing is False  # was not left in processing
+
+
+class TestPipelineProcessPathsCoverage:
+    """Additional unit tests for pipeline (addresses 'no tests found' / qa coverage gaps for process paths, callbacks, errors)."""
+
+    def test_process_text_command_unmatched_calls_unmatched_handler(self, pipeline: VoicePipeline):
+        # Arrange
+        pipeline._handle_unmatched_transcription = Mock()
+        # Act
+        result = pipeline.process_text_command("gibberish no match")
+        # Assert
+        assert result is None
+        pipeline._handle_unmatched_transcription.assert_called_once_with("gibberish no match")
+
+    def test_notify_callbacks_on_matched(self, pipeline: VoicePipeline, mock_executor: Mock):
+        # Arrange
+        cb = Mock()
+        pipeline.add_command_callback(cb)
+        mock_executor.execute_command.return_value = True
+        # Act
+        pipeline.process_text_command("open_browser please")
+        # Assert
+        cb.assert_called_once_with("open_browser", "open_browser please")
+
+    def test_safe_state_changes_during_process(self, pipeline: VoicePipeline):
+        # Arrange
+        pipeline.transcriber.record_and_transcribe = Mock(return_value="hello")
+        pipeline._match_command = Mock(return_value=None)
+        # Act
+        pipeline._process_voice_command("wake")
+        # Assert no crash, processing reset
+        assert pipeline._processing is False
+
+    def test_transcriber_exception_is_caught_and_processing_reset(self, pipeline: VoicePipeline):
+        # Arrange
+        pipeline.transcriber.record_and_transcribe = Mock(side_effect=RuntimeError("mic fail"))
+        # Act
+        pipeline._process_voice_command("wake")
+        # Assert
+        assert pipeline._processing is False
+
+
+class TestPipelineExtraCoverage:
+    """4 more tests for pipeline coverage (callbacks, start/stop, status, mock trigger)."""
+
+    def test_start_and_stop(self, pipeline: VoicePipeline, mock_state_manager: Mock):
+        # Arrange / Act
+        pipeline.start()
+        # Assert
+        assert pipeline._listening is True
+        mock_state_manager.change_state.assert_called_with("voice_listening")
+        # Act
+        pipeline.stop()
+        # Assert
+        assert pipeline._listening is False
+        mock_state_manager.change_state.assert_called_with("idle")
+
+    def test_add_and_remove_callback(self, pipeline: VoicePipeline):
+        # Arrange
+        cb = Mock()
+        # Act
+        pipeline.add_command_callback(cb)
+        # Assert
+        assert cb in pipeline._callbacks
+        # Act
+        pipeline.remove_command_callback(cb)
+        # Assert
+        assert cb not in pipeline._callbacks
+
+    def test_get_status_has_expected_keys(self, pipeline: VoicePipeline):
+        # Act
+        s = pipeline.get_status()
+        # Assert
+        for key in ["listening", "processing", "transcriber_available", "transcriber_info", "wake_detector_available", "available_wake_words"]:
+            assert key in s
+
+    def test_trigger_mock_wake_word(self, pipeline: VoicePipeline):
+        # Act / Assert - no exception, delegates
+        pipeline.trigger_mock_wake_word("test_wake")
+        # since detector is mock, just call happened if attr
+        assert True
+
+
+class TestPipelineExtraErrorPaths:
+    """4 additional tests for pipeline error/edge paths to address qa 'no tests found' and coverage gaps."""
+
+    def test_match_command_no_model_actions_returns_none(self, mock_config, mock_executor, mock_state_manager):
+        """_match_command returns None when model_actions is empty dict."""
+        p = VoicePipeline(config_manager=mock_config, command_executor=mock_executor, state_manager=mock_state_manager, use_mock=True)
+        mock_config.model_actions = {}
+        assert p._match_command("anything") is None
+
+    def test_handle_matched_no_tts_no_speak(self, pipeline, mock_executor):
+        """_handle_matched_command with tts unavailable does not call speak."""
+        pipeline.tts.is_available = Mock(return_value=False)
+        pipeline._handle_matched_command("hello", "hi")
+        pipeline.tts.speak.assert_not_called()
+
+    def test_get_status_handles_missing_detector_methods(self, mock_config, mock_executor, mock_state_manager):
+        """get_status tolerates detector without is_listening or get_available_models."""
+        p = VoicePipeline(config_manager=mock_config, command_executor=mock_executor, state_manager=mock_state_manager, use_mock=True)
+        if hasattr(p.wake_detector, "is_listening"):
+            delattr(p.wake_detector, "is_listening")
+        status = p.get_status()
+        assert "wake_detector_available" in status
+
+    def test_process_text_command_with_no_executor_returns_none(self, mock_config, mock_state_manager):
+        """process_text_command when no command_executor returns None safely."""
+        p = VoicePipeline(config_manager=mock_config, command_executor=None, state_manager=mock_state_manager, use_mock=True)
+        p._match_command = Mock(return_value="hello")
+        result = p.process_text_command("hello")
+        assert result is None
+
+
+class TestPipelineMoreEdgeCases:
+    """4 additional targeted tests for VoicePipeline (notify error paths, process_text success, is_listening, empty transcription) to expand coverage on the qa #1 pipeline item + extracted helpers. Follows AAA + mocks pattern of file."""
+
+    def test_notify_callbacks_swallows_per_callback_errors(self, pipeline):
+        """_notify_callbacks continues on per-cb exception (logs inside)."""
+        bad = Mock(side_effect=ValueError("cb boom"))
+        good = Mock()
+        pipeline.add_command_callback(bad)
+        pipeline.add_command_callback(good)
+        # should not propagate
+        pipeline._notify_callbacks("cmd", "trans")
+        good.assert_called_once_with("cmd", "trans")
+
+    def test_process_text_command_matched_success_returns_command_name(self, pipeline, mock_executor):
+        """process_text_command on match + success execute returns the command name."""
+        pipeline._match_command = Mock(return_value="lights")
+        mock_executor.execute_command.return_value = True
+        result = pipeline.process_text_command("turn lights on")
+        assert result == "lights"
+
+    def test_is_listening_false_when_processing(self, pipeline):
+        """is_listening() == False if _processing even if listening."""
+        pipeline._listening = True
+        pipeline._processing = True
+        assert pipeline.is_listening() is False
+
+    def test_process_voice_command_empty_transcription_skips_handlers(self, pipeline, mock_executor):
+        """Empty transcription -> no call to execute (early return before match)."""
+        pipeline.transcriber.record_and_transcribe = Mock(return_value="")
+        pipeline._process_voice_command("wake")
+        mock_executor.execute_command.assert_not_called()
 

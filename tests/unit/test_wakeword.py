@@ -24,8 +24,6 @@
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from src.chatty_commander.voice.wakeword import MockWakeWordDetector
 
 

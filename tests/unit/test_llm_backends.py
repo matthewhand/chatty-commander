@@ -10,12 +10,11 @@ import pytest
 
 from chatty_commander.llm.backends import (
     LLMBackend,
+    LocalTransformersBackend,
     MockLLMBackend,
     OllamaBackend,
     OpenAIBackend,
-    LocalTransformersBackend,
 )
-
 
 # ============================================================================
 # MOCK BACKEND (always available, deterministic for unit)

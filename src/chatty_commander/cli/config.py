@@ -78,7 +78,6 @@ class ConfigCLI:
     # Mutators used by tests
 
     def set_model_action(self, model_name: str, action: str) -> None:
-<<<<<<< HEAD
         self.config.model_actions[model_name] = action
         self.save_config()
 
@@ -86,34 +85,18 @@ class ConfigCLI:
         self.config.state_models[state] = [m.strip() for m in models_str.split(",")]
         self.save_config()
 
-=======
-        """Set a model action mapping and persist."""
-        self.config.model_actions[model_name] = action
-        self.save_config()
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     def set_listen_for(self, key: str, value: str) -> None:
         self.config.listen_for[key] = value
         self.save_config()
 
-<<<<<<< HEAD
     def set_mode(self, mode: str, value: str) -> None:
         self.config.modes[mode] = value
-=======
-    def set_state_model(self, state: str, models_str: str) -> None:
-        """Update state model mapping."""
-        self.config.state_models[state] = [m.strip() for m in models_str.split(",")]
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         self.save_config()
 
     # ------------------------------------------------------------------
     # Display helpers
 
     def list_config(self) -> None:
-<<<<<<< HEAD
-=======
-        """List current configuration."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         print("Current Configuration:")
         print("\nModel Actions:")
         for model, action in self.config.model_actions.items():
@@ -141,16 +124,10 @@ class ConfigCLI:
     # Interactive helper used in tests
 
     def interactive_mode(self) -> None:
-<<<<<<< HEAD
         while True:
             config_type = input(
                 "Enter configuration type (model_action or state_model): "
             )
-=======
-        """Interactive wizard for config (used in tests)."""
-        while True:
-            config_type = input("Enter configuration type (model_action or state_model): ")
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
             if config_type == "model_action":
                 model_name = input("Enter model name: ")
                 action = input("Enter action: ")

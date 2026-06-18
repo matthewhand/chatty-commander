@@ -33,24 +33,7 @@ Modules:
 - ``fs_ops``: atomic filesystem write helpers
 """
 
-<<<<<<< HEAD:src/chatty_commander/cli/api_docs/__init__.py
 from .cli import main
 
 __all__ = ["main"]
-=======
-from chatty_commander.ai.agents.fleet import (
-    AgentFleet,
-    AgentFleetConfig,
-    AgentInstance,
-)
-from chatty_commander.ai.agents.launcher import (
-    LaunchConfig,
-)
 
-__all__ = [
-    "AgentFleet",
-    "AgentFleetConfig",
-    "AgentInstance",
-    "LaunchConfig",
-]
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16:src/chatty_commander/ai/agents/__init__.py

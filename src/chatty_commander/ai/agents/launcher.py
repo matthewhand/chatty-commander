@@ -104,28 +104,15 @@ def create_fleet_from_config(config: LaunchConfig) -> tuple[AgentFleet, list[Age
     return fleet, []
 
 
-def launch_preset_fleet(
-    preset: str = "balanced",
-    count: int = 3,
-    **kwargs: Any,
-) -> tuple[AgentFleet, list[AgentInstance]]:
-    """Create and launch an agent fleet from configuration.
-
-    Args:
-    config: Launch configuration
-
-    Returns:
-    Tuple of (fleet, launched_agents)
-    """
-    """Launch a preset fleet configuration.
+def _build_preset_config(preset: str, count: int = 3) -> LaunchConfig:
+    """Build the :class:`LaunchConfig` for a named preset.
 
     Args:
         preset: Fleet preset name ("balanced", "research", "development", "writing")
         count: Number of agents per role in the preset
-        **kwargs: Additional launch configuration
 
     Returns:
-        Tuple of (fleet, launched_agents)
+        The corresponding ``LaunchConfig`` (falls back to "balanced").
     """
     configs: dict[str, LaunchConfig] = {
         "balanced": LaunchConfig(
@@ -151,7 +138,25 @@ def launch_preset_fleet(
         ),
     }
 
-    config = configs.get(preset, configs["balanced"])
+    return configs.get(preset, configs["balanced"])
+
+
+def launch_preset_fleet(
+    preset: str = "balanced",
+    count: int = 3,
+    **kwargs: Any,
+) -> tuple[AgentFleet, list[AgentInstance]]:
+    """Launch a preset fleet configuration.
+
+    Args:
+        preset: Fleet preset name ("balanced", "research", "development", "writing")
+        count: Number of agents per role in the preset
+        **kwargs: Additional launch configuration overrides
+
+    Returns:
+        Tuple of (fleet, launched_agents)
+    """
+    config = _build_preset_config(preset, count)
     for key, value in kwargs.items():
         setattr(config, key, value)
 
@@ -168,44 +173,45 @@ async def launch_fleet_async(
     if config and preset:
         raise ValueError("Cannot specify both config and preset")
 
+    # Resolve a concrete LaunchConfig so downstream attribute access is well typed.
+    cfg: LaunchConfig
     if preset:
-        fleet, agents = launch_preset_fleet(preset)
+        cfg = _build_preset_config(preset)
     elif config:
-        fleet, agents = create_fleet_from_config(config)
+        cfg = config
     else:
-        config = LaunchConfig()
-        fleet, agents = create_fleet_from_config(config)
+        cfg = LaunchConfig()
+
+    fleet, agents = create_fleet_from_config(cfg)
 
     await fleet.start()
 
     if from_blueprints:
         launched = await fleet.launch_agents_from_blueprints(
-            blueprints_path=config.blueprints_path,
+            blueprints_path=cfg.blueprints_path,
             blueprint_ids=blueprint_ids,
         )
         agents.extend(launched)
 
-    # Launch agents based on presets
-    if preset or config:
-        cfg = config or launch_preset_fleet(preset)[0].config
-        roles_and_counts = [
-            ("researcher", cfg.researcher_count),
-            ("analyst", cfg.analyst_count),
-            ("coder", cfg.coder_count),
-            ("writer", cfg.writer_count),
-            ("general", cfg.general_count),
-        ]
+    # Launch agents based on team composition.
+    roles_and_counts = [
+        ("researcher", cfg.researcher_count),
+        ("analyst", cfg.analyst_count),
+        ("coder", cfg.coder_count),
+        ("writer", cfg.writer_count),
+        ("general", cfg.general_count),
+    ]
 
-        for role, count in roles_and_counts:
-            for _ in range(max(0, count)):
-                agent = fleet.launch_agent(
-                    name=f"{role.title()}-{len([a for a in fleet.agents.values() if a.team_role == role]) + 1}",
-                    persona_id=f"{role}-{len([a for a in fleet.agents.values() if a.team_role == role]) + 1}",
-                    team_role=role,
-                    model=cfg.default_model,
-                    temperature=cfg.default_temperature,
-                )
-                agents.append(agent)
+    for role, count in roles_and_counts:
+        for _ in range(max(0, count)):
+            agent = fleet.launch_agent(
+                name=f"{role.title()}-{len([a for a in fleet.agents.values() if a.team_role == role]) + 1}",
+                persona_id=f"{role}-{len([a for a in fleet.agents.values() if a.team_role == role]) + 1}",
+                team_role=role,
+                model=cfg.default_model,
+                temperature=cfg.default_temperature,
+            )
+            agents.append(agent)
 
     return fleet, agents
 
@@ -364,11 +370,17 @@ def run_cli() -> int:
     try:
         if args.command == "launch":
             config = LaunchConfig(
-                count=args.count,
-                model=args.model,
-                temperature=args.temperature,
-                max_agents=args.max_agents,
+                default_model=args.model,
+                default_temperature=args.temperature,
             )
+            if args.max_agents is not None:
+                config.max_agents = args.max_agents
+            # ``--count`` controls per-role team size; when no preset is given,
+            # apply it to a balanced default composition.
+            if not args.preset:
+                config.researcher_count = args.count
+                config.analyst_count = args.count
+                config.coder_count = args.count
             fleet, agents = launch_fleet(
                 config=config if not args.preset else None,
                 preset=args.preset,

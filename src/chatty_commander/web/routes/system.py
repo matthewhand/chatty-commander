@@ -125,16 +125,8 @@ class ActionResponse(BaseModel):
 def include_system_routes(
     *,
     get_start_time: Callable[[], float],
-<<<<<<< HEAD
-) -> APIRouter:
-=======
     get_config_manager: Callable[[], Any] | None = None,
 ) -> APIRouter:
-    """Include System Routes operation.
-
-    TODO: Add detailed description and parameters.
-    """
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     router = APIRouter()
 
     @router.get("/api/system/info", response_model=SystemInfo)

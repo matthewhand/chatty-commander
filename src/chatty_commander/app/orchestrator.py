@@ -40,31 +40,21 @@ except ImportError:
 
 
 class CommandSink(Protocol):
-<<<<<<< HEAD
-=======
     """CommandSink protocol for executing commands."""
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     def execute_command(self, command_name: str) -> Any:  # pragma: no cover - protocol
         ...
 
 
 class AdvisorSink(Protocol):
-<<<<<<< HEAD
-=======
     """AdvisorSink protocol for handling advisor messages."""
 
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     def handle_message(self, message: Any) -> Any:  # pragma: no cover - protocol
         ...
 
 
 class InputAdapter(Protocol):
-<<<<<<< HEAD
-=======
     """InputAdapter protocol."""
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     name: str
 
     def start(self) -> None:  # pragma: no cover - protocol
@@ -74,33 +64,14 @@ class InputAdapter(Protocol):
         ...
 
 
-<<<<<<< HEAD
-@dataclass
-class OrchestratorFlags:
-    enable_text: bool = False
-    enable_gui: bool = False
-    enable_web: bool = False
-    enable_openwakeword: bool = False
-    enable_computer_vision: bool = False
-    enable_discord_bridge: bool = False
-
-
-class TextInputAdapter:
-=======
 class TextInputAdapter:
     """TextInputAdapter for text input."""
-    
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     name = "text"
 
     def __init__(self, on_command: Callable[[str], None]) -> None:
         self._on_command = on_command
         self._started = False
 
-<<<<<<< HEAD
-=======
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     def start(self) -> None:
         self._started = True
 
@@ -132,7 +103,6 @@ class DummyAdapter:
         pass
 
 
-<<<<<<< HEAD
 class DiscordBridgeAdapter:
     """Adapter routing Discord/Slack bridge messages to an advisor sink.
 
@@ -140,12 +110,6 @@ class DiscordBridgeAdapter:
     speaking the advisors bridge protocol documented in
     ``docs/developer/ADAPTERS.md``; it delivers platform messages and this
     adapter forwards them to the advisors service via ``feed``.
-=======
-class ComputerVisionAdapter:
-    """Adapter for Computer Vision module.
-    Provides screenshot validation and visual regression testing capabilities.
-    Can be enabled via --enable-computer-vision flag.
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
     """
 
     name = "discord_bridge"
@@ -155,89 +119,16 @@ class ComputerVisionAdapter:
         self._started = False
 
     def start(self) -> None:
-<<<<<<< HEAD
-=======
-        if self._started:
-            return
-
-        if not CV_AVAILABLE:
-            self._validator = None
-        else:
-            self._validator = ComputerVisionValidator(
-                screenshots_dir=self._screenshots_dir,
-                reference_dir=self._reference_dir,
-                threshold=self._threshold,
-            )
-
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         self._started = True
 
     def stop(self) -> None:
         self._started = False
 
-<<<<<<< HEAD
     # Helper for tests/bridge transports to deliver a message
     def feed(self, message: Any) -> Any:
         if self._started:
             return self._on_message(message)
         return None
-=======
-    def validate_screenshot(
-        self,
-        image_path: str | Path,
-        expected_texts: list[str] | None = None,
-    ) -> dict | None:
-        if not CV_AVAILABLE or self._validator is None:
-            return None
-
-        result = self._validator.validate_screenshot(
-            image_path=image_path,
-            expected_texts=expected_texts,
-            threshold=self._threshold,
-        )
-
-        if self._on_validation:
-            self._on_validation(result.to_dict())
-
-        return result.to_dict()
-
-    def compare_screenshots(
-        self,
-        current_path: str | Path,
-        reference_path: str | Path,
-    ) -> dict | None:
-        """Compare two screenshots.
-
-        Args:
-            current_path: Path to current screenshot
-            reference_path: Path to reference screenshot
-
-        Returns:
-            Comparison result as dictionary, or None if CV not available
-        """
-        if not CV_AVAILABLE or self._validator is None:
-            return None
-
-        result = self._validator.compare_screenshots(
-            current_path=current_path,
-            reference_path=reference_path,
-            threshold=self._threshold,
-        )
-
-        return result.to_dict()
-
-    def validate_directory(self) -> dict | None:
-        if not CV_AVAILABLE or self._validator is None:
-            return None
-
-        results = self._validator.validate_directory(
-            directory=self._screenshots_dir,
-            reference_dir=self._reference_dir,
-            threshold=self._threshold,
-        )
-
-        return {k: v.to_dict() for k, v in results.items()}
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
 
 
 class OpenWakeWordAdapter:
@@ -259,10 +150,6 @@ class OpenWakeWordAdapter:
         self._started = False
 
     def start(self) -> None:
-<<<<<<< HEAD
-=======
-        # Apply conditional logic
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if not VOICE_AVAILABLE:
             raise ImportError("Voice dependencies not available. Install with: uv sync")
 
@@ -295,10 +182,7 @@ class OpenWakeWordAdapter:
         self._started = True
 
     def stop(self) -> None:
-<<<<<<< HEAD
-=======
         """Stop the OpenWakeWord adapter."""
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16
         if self._detector and self._started:
             try:
                 self._detector.stop_listening()
@@ -307,18 +191,8 @@ class OpenWakeWordAdapter:
             self._started = False
 
     def _handle_wake_word(self, wake_word: str, confidence: float) -> None:
-        """Handle wake word detection by calling the callback.
-        # For now, treat wake word as a command trigger
-        # In the future, this could activate voice input or advisor mode
-        """
-        command_name = f"wake_word_{wake_word}"
-        try:
-            self._on_wake_word(command_name, confidence)  # or dispatch if needed
-        except Exception:
-            try:
-                self._on_wake_word("wake", confidence)
-            except Exception:
-                pass
+        """Handle wake word detection by calling the callback."""
+        self._on_wake_word(wake_word, confidence)
 
 
 @dataclass
@@ -326,8 +200,8 @@ class OrchestratorFlags:
     """Flags for orchestrator modes and adapters."""
 
     enable_text: bool = False
-    gui: bool = False
-    web: bool = False
+    enable_gui: bool = False
+    enable_web: bool = False
     enable_openwakeword: bool = False
     enable_computer_vision: bool = False
     enable_discord_bridge: bool = False
@@ -435,7 +309,6 @@ class ModeOrchestrator:
             # If no specific wake word command, try a generic wake command
             try:
                 self._dispatch_command("wake")
-<<<<<<< HEAD
             except Exception as e:
                 # No matching command for this wake word; surface for diagnosis.
                 logger.warning(
@@ -444,8 +317,3 @@ class ModeOrchestrator:
                     confidence,
                     e,
                 )
-=======
-            except Exception:
-                # If no wake command, log the detection
-                pass  # Could add logging here if needed
->>>>>>> fix/syntax-rot-webui-tests-2026-06-16

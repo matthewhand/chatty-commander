@@ -41,21 +41,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AnalystRequest:
-    """AnalystRequest class.
-
-    TODO: Add class description.
-    """
-    
+    """Request payload for browser analyst: the target URL to fetch and summarize."""
     url: str
 
 
 @dataclass
 class AnalystResult:
-    """AnalystResult class.
-
-    TODO: Add class description.
-    """
-    
+    """Result of URL analysis: extracted title, truncated summary, and original URL."""
     title: str
     summary: str
     url: str

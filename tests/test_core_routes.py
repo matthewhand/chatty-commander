@@ -147,11 +147,13 @@ def test_webui_missing_endpoints_now_implemented():
     Uses isolated router construction (bypasses full app import issues in test env).
     """
     from unittest.mock import MagicMock
+
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
     from chatty_commander.web.routes.audio import include_audio_routes
-    from chatty_commander.web.routes.system import include_system_routes
     from chatty_commander.web.routes.models import router as models_router
+    from chatty_commander.web.routes.system import include_system_routes
 
     cfg = MagicMock()
     cfg.config = {"ui": {"theme": "dark"}}

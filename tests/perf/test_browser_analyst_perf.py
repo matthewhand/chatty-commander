@@ -26,14 +26,26 @@ def test_browser_analyst_tool_perf(request):
         mock_response.iter_bytes.return_value = (chunk_data for _ in range(125))
         return mock_context_manager
 
+    # The tool now connects via an IP-pinned httpx.Client (DNS-rebinding
+    # hardening), so mock the Client and its .stream(), and the URL resolver.
+    mock_client = MagicMock()
+    mock_client.__enter__.return_value = mock_client
+    mock_client.__exit__.return_value = None
+    mock_client.stream.side_effect = stream_mock
+
+    pinned = MagicMock()
+    pinned.url = "https://93.184.216.34"
+    pinned.host_header = "example.com"
+    pinned.sni_hostname = "example.com"
+
     with (
         patch(
-            "chatty_commander.advisors.tools.browser_analyst.httpx.stream",
-            side_effect=stream_mock,
+            "chatty_commander.advisors.tools.browser_analyst.httpx.Client",
+            return_value=mock_client,
         ),
         patch(
-            "chatty_commander.advisors.tools.browser_analyst.is_safe_url",
-            return_value=True,
+            "chatty_commander.advisors.tools.browser_analyst.resolve_safe_url",
+            return_value=pinned,
         ),
         patch("chatty_commander.advisors.tools.browser_analyst.Config") as MockConfig,
     ):

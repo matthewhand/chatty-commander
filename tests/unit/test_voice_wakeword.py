@@ -42,11 +42,9 @@ sys.modules.setdefault("numpy", _mock_np)
 
 # Now safe to import the module under test
 from chatty_commander.voice.wakeword import (
-    VOICE_DEPS_AVAILABLE,
     MockWakeWordDetector,
     WakeWordDetector,
 )
-
 
 # ============================================================================
 # FIXTURES
@@ -115,7 +113,9 @@ class TestWakeWordDetectorInitialization:
         (so higher layers like VoicePipeline can still use it in degraded mode).
         """
         with patch("chatty_commander.voice.wakeword.VOICE_DEPS_AVAILABLE", True), \
-             patch("chatty_commander.voice.wakeword.openwakeword") as mock_oww:
+             patch("chatty_commander.voice.wakeword.openwakeword") as mock_oww, \
+             patch("chatty_commander.voice.wakeword.pyaudio", create=True), \
+             patch("chatty_commander.voice.wakeword.np", create=True):
             mock_oww.Model.side_effect = Exception("model load failed")
             det = WakeWordDetector(wake_words=["test"])
             assert getattr(det, "_is_mock", False) is True

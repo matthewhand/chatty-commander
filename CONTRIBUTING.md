@@ -1,5 +1,7 @@
 # Contributing to ChattyCommander
 
+**Our Vision:** A reliable, local-first, extensible voice automation platform (see [docs/developer/ARCHITECTURE.md](docs/developer/ARCHITECTURE.md) for Vision, current honest state, and Archived/Legacy section).
+
 Thanks for your interest in contributing! This guide covers the practical details of working in this repo. A longer-form guide lives at [docs/developer/CONTRIBUTING.md](docs/developer/CONTRIBUTING.md).
 
 ## Dev setup

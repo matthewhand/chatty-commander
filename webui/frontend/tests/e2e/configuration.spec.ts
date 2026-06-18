@@ -128,7 +128,7 @@ test.describe("Configuration Page - Theme Dropdown", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const themeSelect = page.locator('select[name="theme"]');
+    const themeSelect = page.getByLabel('Theme');
     await expect(themeSelect).toBeVisible();
     await expect(themeSelect).toHaveValue("dark");
   });
@@ -137,7 +137,7 @@ test.describe("Configuration Page - Theme Dropdown", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const themeSelect = page.locator('select[name="theme"]');
+    const themeSelect = page.getByLabel('Theme');
     await expect(themeSelect).toBeVisible();
 
     for (const theme of ["light", "cyberpunk", "synthwave", "dark"]) {

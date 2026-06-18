@@ -41,7 +41,6 @@ sys.modules.setdefault("chatty_commander.voice.self_test", _mock_self_test)
 # Now safe to import the module under test
 from chatty_commander.voice import cli as voice_cli
 
-
 # ============================================================================
 # FIXTURES
 # ============================================================================
