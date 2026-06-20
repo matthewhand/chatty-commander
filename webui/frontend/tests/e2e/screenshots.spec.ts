@@ -39,12 +39,39 @@ const AGENT_STATS_RESPONSE = {
   total: 2,
 };
 
-const COMMANDS_RESPONSE = [
-  { name: "take_screenshot", description: "Captures screen content" },
-  { name: "cycle_window", description: "Cycles through active windows" },
-  { name: "toggle_mute", description: "Toggle microphone mute state" },
-  { name: "volume_up", description: "Increase system volume" },
-];
+// The /api/v1/commands contract is a DICT keyed by command name (the page does
+// Object.entries(commands)); an array makes it render rows named "0/1/2/3" with
+// no action. Mirror the real shape (action + keys/url/cmd/message).
+const COMMANDS_RESPONSE = {
+  take_screenshot: {
+    action: "keypress",
+    keys: "Print",
+    url: null,
+    cmd: null,
+    message: null,
+  },
+  open_browser: {
+    action: "url",
+    keys: null,
+    url: "https://example.com",
+    cmd: null,
+    message: null,
+  },
+  toggle_mute: {
+    action: "keypress",
+    keys: "ctrl+shift+m",
+    url: null,
+    cmd: null,
+    message: null,
+  },
+  volume_up: {
+    action: "keypress",
+    keys: "XF86AudioRaiseVolume",
+    url: null,
+    cmd: null,
+    message: null,
+  },
+};
 
 const MOCK_CONFIG = {
   advisors: {
@@ -203,14 +230,23 @@ test.describe("Documentation Screenshots", () => {
   });
 
   test("login", async ({ page }) => {
+    // The e2e backend runs with --no-auth, so the auth probe (GET /api/v1/config)
+    // succeeds and the app auto-authenticates — visiting /login would redirect to
+    // the dashboard and the "login" screenshot would actually show the dashboard.
+    // Force the probe to 401 (as guided_tour.spec.ts does) so the REAL login form
+    // renders and gets captured.
+    await page.route("**/api/v1/config", (route) =>
+      route.fulfill({ status: 401, json: { detail: "Not authenticated" } })
+    );
+
     await page.goto("/login");
 
-    // In --no-auth mode (the e2e backend), visiting /login redirects straight to
-    // the dashboard, so the rendered heading is "Dashboard"; with auth enabled it
-    // is the LoginPage's "Chatty Commander". Accept whichever actually renders.
-    await expect(
-      page.getByRole("heading", { name: /login|chatty commander|dashboard/i }).first(),
-    ).toBeVisible();
+    // The login card uses the <Logo> wordmark + a Login button (no heading
+    // role), so assert on those — same as guided_tour's tour-01 capture.
+    await expect(page.getByText("ChattyCommander").first()).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByRole("button", { name: /login/i })).toBeVisible();
     await page.waitForLoadState('networkidle');
 
     await page.screenshot({

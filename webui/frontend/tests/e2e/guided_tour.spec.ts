@@ -356,8 +356,12 @@ test.describe("Guided Tour Screenshots", () => {
     await expect(wsStatus).toBeVisible({ timeout: 15_000 });
     await settle(page);
 
-    // Focused capture of just the WebSocket stat card.
-    const wsCard = page.locator(".stats", { has: wsStatus });
-    await wsCard.screenshot({ path: shot("tour-08-websocket-status.png") });
+    // Capture the whole status-card grid so the WebSocket card is shown in
+    // context with the other live metrics, rather than a lone cropped card
+    // (which produced a tiny, broken-looking guide image).
+    const statsGrid = page.getByTestId("dashboard-stats-grid");
+    await statsGrid.scrollIntoViewIfNeeded();
+    await settle(page);
+    await statsGrid.screenshot({ path: shot("tour-08-websocket-status.png") });
   });
 });
