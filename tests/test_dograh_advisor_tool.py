@@ -175,15 +175,24 @@ def _stub_agents_module(monkeypatch):
     # Re-import providers so it sees the fake agents module + the real
     # tool modules with FunctionTool re-stamped.
     import chatty_commander.advisors.providers as providers_mod
-
-    importlib.reload(providers_mod)
     import chatty_commander.advisors.tools.browser_analyst as ba
-
-    importlib.reload(ba)
     import chatty_commander.advisors.tools.dograh_call as dc
 
-    importlib.reload(dc)
+    # importlib.reload() rebinds these modules' classes *in place*, which
+    # orphans any `from ... import LLMProvider`-style reference other test
+    # modules captured at import time (their isinstance checks then fail once
+    # this fixture has run). Snapshot each module's original __dict__ and
+    # restore the exact original objects on teardown so suite ordering — e.g.
+    # under pytest-randomly — can't leak this reload into other tests.
+    modules = (providers_mod, ba, dc)
+    snapshots = [dict(mod.__dict__) for mod in modules]
+    for mod in modules:
+        importlib.reload(mod)
     yield
+    monkeypatch.undo()
+    for mod, snap in zip(modules, snapshots, strict=False):
+        mod.__dict__.clear()
+        mod.__dict__.update(snap)
 
 
 def test_agents_provider_loads_dograh_call_when_enabled():

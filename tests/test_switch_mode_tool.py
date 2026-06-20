@@ -114,14 +114,20 @@ def _stub_agents_module(monkeypatch):
     import chatty_commander.advisors.tools.switch_mode as sm
 
     modules = (providers_mod, ba, dc, sm)
+    # Snapshot each module's original __dict__ before reloading. importlib.reload
+    # rebinds classes *in place*, so reloading again on teardown would create a
+    # third generation of class objects rather than restore the originals —
+    # leaving `from ... import X` references other test modules captured at
+    # import time pointing at orphaned classes (isinstance checks then fail under
+    # pytest-randomly ordering). Restore the exact original objects instead.
+    snapshots = [dict(mod.__dict__) for mod in modules]
     for mod in modules:
         importlib.reload(mod)
     yield
-    # Put the real `agents` module back before re-reloading so other tests
-    # see the genuine SDK objects again.
     monkeypatch.undo()
-    for mod in modules:
-        importlib.reload(mod)
+    for mod, snap in zip(modules, snapshots, strict=False):
+        mod.__dict__.clear()
+        mod.__dict__.update(snap)
 
 
 def _agent_tool_names(provider):
