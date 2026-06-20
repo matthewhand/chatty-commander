@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -7,6 +7,7 @@ import {
   Sparkles,
   Terminal,
   AlertCircle,
+  AlertTriangle,
   Check,
   X,
   Plus,
@@ -19,6 +20,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { useToast } from '../components/ToastProvider';
 
 // --- TypeScript Interfaces ---
 
@@ -30,6 +32,118 @@ interface CommandAction {
   command?: string; // Alternative for shell
   message?: string;
 }
+
+// --- Danger heuristics ---
+
+/**
+ * Heuristic scan of a shell command string for patterns that are commonly
+ * destructive or that pull-and-execute remote code. Returns a human-readable
+ * warning, or null when nothing suspicious is found. This is advisory only —
+ * it never blocks saving, it just surfaces risk to the author.
+ */
+export function detectShellDanger(cmd: string): string | null {
+  const c = cmd.trim();
+  if (!c) return null;
+  const lower = c.toLowerCase();
+  if (/\brm\s+(-[a-z]*\s+)*-[a-z]*f|\brm\s+-[a-z]*r[a-z]*f|\brm\s+-rf|\brm\s+-fr/.test(lower)) {
+    return 'Looks like a recursive/forced delete (rm -rf). This can permanently destroy files.';
+  }
+  if (/\b(curl|wget)\b[^|]*\|\s*(sudo\s+)?(sh|bash|zsh)\b/.test(lower)) {
+    return 'Pipes a downloaded script straight into a shell (curl | sh). This runs untrusted remote code.';
+  }
+  if (/(^|\s)sudo\s/.test(lower)) {
+    return 'Runs with elevated privileges (sudo). Make sure you trust this command.';
+  }
+  if (/\b(mkfs|dd\s+if=)/.test(lower) || /:\(\)\s*\{.*\}\s*;/.test(c)) {
+    return 'Contains a potentially destructive disk/fork operation.';
+  }
+  if (/>\s*\/dev\/sd|>\s*\/dev\/disk/.test(lower)) {
+    return 'Writes directly to a raw disk device. This can corrupt the system.';
+  }
+  return null;
+}
+
+/**
+ * Heuristic scan of a URL action. Flags schemes other than https unless the
+ * host is localhost/127.0.0.1 (a common, intentional local-dev target).
+ * Returns a warning string or null.
+ */
+export function detectUrlDanger(url: string): string | null {
+  const u = url.trim();
+  if (!u) return null;
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(u);
+  } catch {
+    // Not parseable as an absolute URL — flag so the author adds a scheme.
+    return 'URL has no scheme. Use https:// (or http://localhost for local development).';
+  }
+  const host = parsed.hostname.toLowerCase();
+  const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
+  if (parsed.protocol === 'https:') return null;
+  if (parsed.protocol === 'http:' && isLocal) return null;
+  if (parsed.protocol === 'http:') {
+    return 'Uses insecure http:// for a non-local host. Prefer https://.';
+  }
+  return `Unusual URL scheme "${parsed.protocol.replace(':', '')}". Expected https (or http on localhost).`;
+}
+
+/** A flagged action for prominent display in the confirm modal. */
+interface DangerFlag {
+  index: number;
+  type: string;
+  detail: string;
+  warning: string;
+}
+
+function actionDetail(action: CommandAction): string {
+  return action.keys || action.url || action.cmd || action.command || action.message || '';
+}
+
+/** Collect danger flags across all actions of a command. */
+export function collectDangerFlags(actions: CommandAction[]): DangerFlag[] {
+  const flags: DangerFlag[] = [];
+  actions.forEach((action, index) => {
+    let warning: string | null = null;
+    if (action.type === 'shell') {
+      warning = detectShellDanger(action.cmd || action.command || '');
+    } else if (action.type === 'url') {
+      warning = detectUrlDanger(action.url || '');
+    }
+    if (warning) {
+      flags.push({ index, type: action.type, detail: actionDetail(action), warning });
+    }
+  });
+  return flags;
+}
+
+/**
+ * Validate a single action and return an error message, or null if valid.
+ * Shared by both AI and manual flows so validation is symmetric.
+ */
+export function validateAction(action: CommandAction): string | null {
+  switch (action.type) {
+    case 'keypress':
+      return action.keys?.trim() ? null : "Keypress requires a 'keys' value (e.g. ctrl+alt+t)";
+    case 'url':
+      return action.url?.trim() ? null : "URL requires a 'url' value";
+    case 'shell':
+      return action.cmd?.trim() || action.command?.trim()
+        ? null
+        : "Shell action requires a 'command' value";
+    case 'custom_message':
+      return action.message?.trim() ? null : "Message requires a 'message' value";
+    default:
+      return 'Action has an invalid type';
+  }
+}
+
+const fetchExistingCommandNames = async (): Promise<string[]> => {
+  const res = await fetch('/api/v1/config');
+  if (!res.ok) return [];
+  const config = await res.json().catch(() => ({}));
+  return config?.commands ? Object.keys(config.commands) : [];
+};
 
 interface GeneratedCommand {
   name: string;
@@ -55,7 +169,10 @@ const generateCommandFromDescription = async (description: string): Promise<Gene
   return res.json();
 };
 
-const saveCommand = async (command: GeneratedCommand): Promise<void> => {
+const saveCommand = async (
+  command: GeneratedCommand,
+  editName?: string | null,
+): Promise<void> => {
   // First fetch the current config
   const configRes = await fetch('/api/v1/config');
   if (!configRes.ok) {
@@ -63,9 +180,16 @@ const saveCommand = async (command: GeneratedCommand): Promise<void> => {
   }
   const config = await configRes.json();
 
+  const existing = { ...(config.commands || {}) };
+  // When editing and the name changed, remove the old key so we don't orphan
+  // the previous definition under its former name.
+  if (editName && editName !== command.name && editName in existing) {
+    delete existing[editName];
+  }
+
   // Add the new command to the commands object
   const updatedCommands = {
-    ...config.commands,
+    ...existing,
     [command.name]: {
       name: command.display_name,
       actions: command.actions.map(action => {
@@ -115,6 +239,13 @@ const ActionTypeBadge: React.FC<{ type: string }> = ({ type }) => {
   );
 };
 
+const ACTION_HELP: Record<CommandAction['type'], string> = {
+  keypress: 'A key chord sent to the active window. Combine modifiers with "+", e.g. ctrl+alt+t.',
+  url: 'A URL to open in the default browser. Must include a scheme — https:// (or http://localhost for local development).',
+  shell: 'A shell command run on the host. Unlike keypress, this executes directly — avoid destructive commands.',
+  custom_message: 'A message spoken/displayed back to you. No system action is taken.',
+};
+
 const ActionField: React.FC<{
   action: CommandAction;
   onChange: (action: CommandAction) => void;
@@ -130,12 +261,26 @@ const ActionField: React.FC<{
     onChange({ ...action, [field]: value });
   };
 
+  const validationError = validateAction(action);
+  const dangerWarning =
+    action.type === 'shell'
+      ? detectShellDanger(action.cmd || action.command || '')
+      : action.type === 'url'
+        ? detectUrlDanger(action.url || '')
+        : null;
+
   return (
     <motion.div
       initial={reduceMotion ? false : { opacity: 0, x: -20 }}
       animate={reduceMotion ? undefined : { opacity: 1, x: 0 }}
       exit={reduceMotion ? undefined : { opacity: 0, x: 20 }}
-      className="card bg-base-200/50 border border-base-content/10 p-4 space-y-3"
+      className={`card bg-base-200/50 border p-4 space-y-3 ${
+        validationError
+          ? 'border-error/50'
+          : dangerWarning
+            ? 'border-warning/50'
+            : 'border-base-content/10'
+      }`}
     >
       <div className="flex justify-between items-center">
         <span className="text-sm font-medium text-base-content/60">Action {index + 1}</span>
@@ -163,6 +308,7 @@ const ActionField: React.FC<{
           <option value="shell">Shell Command</option>
           <option value="custom_message">Custom Message</option>
         </select>
+        <span className="text-xs text-base-content/50 mt-1">{ACTION_HELP[action.type]}</span>
       </div>
 
       {action.type === 'keypress' && (
@@ -228,6 +374,20 @@ const ActionField: React.FC<{
           />
         </div>
       )}
+
+      {validationError && (
+        <p role="alert" className="text-error text-xs flex items-center gap-1">
+          <AlertCircle size={14} />
+          {validationError}
+        </p>
+      )}
+
+      {dangerWarning && (
+        <p className="text-warning text-xs flex items-center gap-1">
+          <AlertTriangle size={14} />
+          {dangerWarning}
+        </p>
+      )}
     </motion.div>
   );
 };
@@ -236,6 +396,8 @@ const ActionField: React.FC<{
 
 export default function CommandAuthoringPage() {
   const reduceMotion = useReducedMotionPref();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const [searchParams] = useSearchParams();
   const editName = searchParams.get('edit');
   const isEditing = Boolean(editName);
@@ -257,6 +419,22 @@ export default function CommandAuthoringPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  // Existing command keys, fetched once, used to detect silent clobber.
+  const [existingNames, setExistingNames] = useState<string[]>([]);
+  // Element that had focus when the modal opened, so we can restore it on close.
+  const modalTriggerRef = useRef<HTMLElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchExistingCommandNames().then((names) => {
+      if (!cancelled) setExistingNames(names);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // When arriving with ?edit=<name>, load that command from config and
   // preload the manual editor so the existing definition can be modified.
@@ -345,20 +523,25 @@ export default function CommandAuthoringPage() {
 
   // Save command mutation
   const saveMutation = useMutation({
-    mutationFn: saveCommand,
-    onSuccess: () => {
+    mutationFn: (command: GeneratedCommand) => saveCommand(command, editName),
+    onSuccess: (_data, command) => {
       queryClient.invalidateQueries({ queryKey: ['commands'] });
       setShowConfirmModal(false);
-      // Reset form
-      setDescription('');
-      setGeneratedCommand(null);
-      setManualCommand({ name: '', display_name: '', wakeword: '', actions: [] });
       setFormErrors({});
       setError(null);
+      addToast(
+        isEditing
+          ? `Command "${command.name}" updated.`
+          : `Command "${command.name}" created.`,
+        'success',
+      );
+      // Successful save is a destination, not a dead end: go back to the list.
+      navigate('/commands');
     },
     onError: (err: Error) => {
       setError(err.message);
       setShowConfirmModal(false);
+      addToast(err.message, 'error');
     },
   });
 
@@ -372,7 +555,9 @@ export default function CommandAuthoringPage() {
     generateMutation.mutate(description);
   }, [description, generateMutation]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback((e?: React.MouseEvent<HTMLButtonElement>) => {
+    // Remember the trigger so focus can be restored when the modal closes.
+    modalTriggerRef.current = (e?.currentTarget as HTMLElement) ?? null;
     const commandToSave = mode === 'ai' && generatedCommand ? generatedCommand : manualCommand;
 
     // Validation
@@ -389,48 +574,46 @@ export default function CommandAuthoringPage() {
       return;
     }
 
-    // Validate each action has required fields based on type
+    // Validate each action has required fields based on type (shared with the
+    // inline per-action errors so AI and manual flows agree).
     for (let i = 0; i < commandToSave.actions.length; i++) {
-      const action = commandToSave.actions[i];
-      switch (action.type) {
-        case 'keypress':
-          if (!action.keys?.trim()) {
-            setError(`Action ${i + 1} (Keypress) requires a 'keys' value`);
-            return;
-          }
-          break;
-        case 'url':
-          if (!action.url?.trim()) {
-            setError(`Action ${i + 1} (URL) requires a 'url' value`);
-            return;
-          }
-          break;
-        case 'shell':
-          if (!action.cmd?.trim() && !action.command?.trim()) {
-            setError(`Action ${i + 1} (Shell) requires a 'command' value`);
-            return;
-          }
-          break;
-        case 'custom_message':
-          if (!action.message?.trim()) {
-            setError(`Action ${i + 1} (Message) requires a 'message' value`);
-            return;
-          }
-          break;
-        default:
-          setError(`Action ${i + 1} has an invalid type`);
-          return;
+      const actionError = validateAction(commandToSave.actions[i]);
+      if (actionError) {
+        setError(`Action ${i + 1}: ${actionError}`);
+        return;
       }
+    }
+
+    // Prevent silently clobbering an existing command. When editing, colliding
+    // with the command currently being edited is fine; any other collision is
+    // a rename onto an existing key and must be confirmed/blocked.
+    const collidesWith = existingNames.includes(commandToSave.name);
+    const isSelf = isEditing && commandToSave.name === editName;
+    if (collidesWith && !isSelf) {
+      setError(
+        `A command named "${commandToSave.name}" already exists. Choose a different name to avoid overwriting it.`,
+      );
+      return;
     }
 
     setShowConfirmModal(true);
     setError(null);
-  }, [mode, generatedCommand, manualCommand]);
+  }, [mode, generatedCommand, manualCommand, existingNames, isEditing, editName]);
+
+  const closeModal = useCallback(() => {
+    setShowConfirmModal(false);
+    // Restore focus to whatever opened the dialog.
+    modalTriggerRef.current?.focus?.();
+  }, []);
 
   const confirmSave = useCallback(() => {
     const commandToSave = mode === 'ai' && generatedCommand ? generatedCommand : manualCommand;
     saveMutation.mutate(commandToSave);
   }, [mode, generatedCommand, manualCommand, saveMutation]);
+
+  const handleCancel = useCallback(() => {
+    navigate('/commands');
+  }, [navigate]);
 
   const addManualAction = useCallback(() => {
     setManualCommand((prev) => ({
@@ -461,6 +644,43 @@ export default function CommandAuthoringPage() {
   }, [generatedCommand]);
 
   const currentCommand = useMemo(() => mode === 'ai' && generatedCommand ? generatedCommand : manualCommand, [mode, generatedCommand, manualCommand]);
+
+  const dangerFlags = useMemo(() => collectDangerFlags(currentCommand.actions), [currentCommand]);
+
+  // Modal accessibility: focus the Cancel button on open, trap Tab within the
+  // dialog, close on Escape. Focus restoration is handled by closeModal.
+  useEffect(() => {
+    if (!showConfirmModal) return;
+    cancelButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModal();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const dialog = modalRef.current;
+      if (!dialog) return;
+      const focusable = dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showConfirmModal, closeModal]);
 
   return (
     <div className="space-y-6">
@@ -647,7 +867,10 @@ export default function CommandAuthoringPage() {
               </div>
             </div>
 
-            <div className="card-actions justify-end mt-4">
+            <div className="card-actions justify-end mt-4 gap-2">
+              <button className="btn btn-ghost" onClick={handleCancel}>
+                Cancel
+              </button>
               <button
                 className="btn btn-primary"
                 onClick={handleSave}
@@ -697,11 +920,15 @@ export default function CommandAuthoringPage() {
                   className={`input input-bordered${formErrors.name ? ' input-error' : ''}`}
                   placeholder="my_command"
                   value={manualCommand.name}
+                  aria-describedby="cmd-name-help"
                   onChange={(e) =>
                     setManualCommand((prev) => ({ ...prev, name: e.target.value }))
                   }
                   onBlur={(e) => validateField('name', e.target.value)}
                 />
+                <span id="cmd-name-help" className="text-xs text-base-content/50 mt-1">
+                  Unique internal id used in config and the API. Not spoken.
+                </span>
                 {formErrors.name && (
                   <span className="text-error text-xs mt-1">{formErrors.name}</span>
                 )}
@@ -737,11 +964,15 @@ export default function CommandAuthoringPage() {
                   className={`input input-bordered${formErrors.wakeword ? ' input-error' : ''}`}
                   placeholder="Trigger phrase"
                   value={manualCommand.wakeword}
+                  aria-describedby="cmd-wakeword-help"
                   onChange={(e) =>
                     setManualCommand((prev) => ({ ...prev, wakeword: e.target.value }))
                   }
                   onBlur={(e) => validateField('wakeword', e.target.value)}
                 />
+                <span id="cmd-wakeword-help" className="text-xs text-base-content/50 mt-1">
+                  The spoken phrase that triggers this command.
+                </span>
                 {formErrors.wakeword && (
                   <span className="text-error text-xs mt-1">{formErrors.wakeword}</span>
                 )}
@@ -779,7 +1010,10 @@ export default function CommandAuthoringPage() {
               )}
             </AnimatePresence>
 
-            <div className="card-actions justify-end mt-6">
+            <div className="card-actions justify-end mt-6 gap-2">
+              <button className="btn btn-ghost" onClick={handleCancel}>
+                Cancel
+              </button>
               <button
                 className="btn btn-primary"
                 onClick={handleSave}
@@ -829,19 +1063,25 @@ export default function CommandAuthoringPage() {
               animate={reduceMotion ? undefined : { opacity: 1 }}
               exit={reduceMotion ? undefined : { opacity: 0 }}
               className="fixed inset-0 bg-black/50 z-40"
-              onClick={() => setShowConfirmModal(false)}
+              onClick={closeModal}
             />
             <motion.div
               initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
               animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
               exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9 }}
               className="fixed inset-0 flex items-center justify-center z-50 p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="confirm-modal-title"
+              ref={modalRef}
             >
               <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl">
                 <div className="card-body">
                   <div className="flex items-center gap-3 text-warning mb-4">
                     <Shield size={28} />
-                    <h3 className="text-xl font-bold">Confirm Command Creation</h3>
+                    <h3 id="confirm-modal-title" className="text-xl font-bold">
+                      {isEditing ? 'Confirm Command Changes' : 'Confirm Command Creation'}
+                    </h3>
                   </div>
 
                   <div className="alert alert-warning mb-4">
@@ -851,6 +1091,25 @@ export default function CommandAuthoringPage() {
                       before saving.
                     </span>
                   </div>
+
+                  {dangerFlags.length > 0 && (
+                    <div className="alert alert-error mb-4 flex-col items-start">
+                      <div className="flex items-center gap-2 font-semibold">
+                        <AlertTriangle size={18} />
+                        Potentially risky actions flagged
+                      </div>
+                      <ul className="list-disc list-inside text-sm mt-1 space-y-1">
+                        {dangerFlags.map((flag) => (
+                          <li key={flag.index}>
+                            <span className="font-mono">
+                              Action {flag.index + 1} ({flag.type}): {flag.detail}
+                            </span>
+                            <span className="block opacity-90">{flag.warning}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   <div className="bg-base-200/50 rounded-xl p-4 space-y-2 mb-4">
                     <div className="flex justify-between">
@@ -883,7 +1142,8 @@ export default function CommandAuthoringPage() {
                   <div className="card-actions justify-end gap-2">
                     <button
                       className="btn btn-ghost"
-                      onClick={() => setShowConfirmModal(false)}
+                      onClick={closeModal}
+                      ref={cancelButtonRef}
                     >
                       Cancel
                     </button>

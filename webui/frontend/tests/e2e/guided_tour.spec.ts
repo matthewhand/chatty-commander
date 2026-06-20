@@ -243,6 +243,9 @@ test.describe("Guided Tour Screenshots", () => {
 
     await expect(page).toHaveURL(/configuration/);
     await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+    // Configuration is now tabbed; voice models live under the "Voice Models"
+    // tab. Open it so the captured page shows the loaded ONNX models.
+    await page.getByRole("tab", { name: "Voice Models" }).click();
     await expect(page.getByText("hey_jarvis_v0.1.onnx", { exact: true })).toBeVisible();
     await settle(page);
 
@@ -287,8 +290,10 @@ test.describe("Guided Tour Screenshots", () => {
     await expect(
       page.getByRole("heading", { name: /commands & triggers/i })
     ).toBeVisible();
-    // The authored hello_world command is present in the grid.
-    await expect(page.getByLabel("Options for hello_world")).toBeVisible();
+    // The authored hello_world command is present in the table; each row has a
+    // per-command options dropdown ("More options for <name>") holding the
+    // "Test this command" link.
+    await expect(page.getByLabel("More options for hello_world")).toBeVisible();
     await settle(page);
 
     await page.screenshot({ path: shot("tour-05-commands-list.png"), fullPage: true });
@@ -316,6 +321,10 @@ test.describe("Guided Tour Screenshots", () => {
 
     await page.goto("/configuration");
     await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+
+    // Configuration is now tabbed; the audio device cards live under the
+    // "Audio" tab, so open it before the heading/selects are in the DOM.
+    await page.getByRole("tab", { name: "Audio" }).click();
 
     // Choose mocked devices so the dropdowns show a realistic selection.
     // modern Playwright: .nth(0) instead of .first() (avoids brittle .first(); consistent with other modern getByText.nth(0) in tour/dashboard)

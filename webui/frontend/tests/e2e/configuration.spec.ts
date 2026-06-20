@@ -109,6 +109,16 @@ async function mockAllRoutes(page: Page) {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/**
+ * The configuration form is now tabbed (General / Audio / Voice Models / LLM).
+ * Only the active tab's panel is mounted, so a test must open the relevant tab
+ * before asserting on the fields inside it. The sticky Save bar lives outside
+ * the tab panels and is always present.
+ */
+async function openTab(page: Page, name: "General" | "Audio" | "Voice Models" | "LLM") {
+  await page.getByRole("tab", { name }).click();
+}
+
 /** Locate the inner card-body for an audio device card by its card-title text. */
 function audioCardBody(page: Page, heading: string) {
   return page.locator(".card-body").filter({
@@ -128,7 +138,7 @@ test.describe("Configuration Page - Theme Dropdown", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const themeSelect = page.getByLabel('Theme');
+    const themeSelect = page.getByLabel('Theme', { exact: true });
     await expect(themeSelect).toBeVisible();
     await expect(themeSelect).toHaveValue("dark");
   });
@@ -137,7 +147,8 @@ test.describe("Configuration Page - Theme Dropdown", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const themeSelect = page.getByLabel('Theme');
+    // exact:true — the global layout also exposes a quick "Select theme" picker.
+    const themeSelect = page.getByLabel('Theme', { exact: true });
     await expect(themeSelect).toBeVisible();
 
     for (const theme of ["light", "cyberpunk", "synthwave", "dark"]) {
@@ -216,6 +227,7 @@ test.describe("Configuration Page - Audio Devices", () => {
   test("populates input device dropdown from mock API", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Audio");
 
     const audioSection = page.locator("h3", { hasText: "Audio Devices" });
     await expect(audioSection).toBeVisible();
@@ -230,6 +242,7 @@ test.describe("Configuration Page - Audio Devices", () => {
   test("populates output device dropdown from mock API", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Audio");
 
     const outputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Output Device" }) });
     const outputSelect = outputCardBody.locator("select");
@@ -242,6 +255,7 @@ test.describe("Configuration Page - Audio Devices", () => {
   test("can select an input device", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Audio");
 
     const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
     const inputSelect = inputCardBody.locator("select");
@@ -254,6 +268,7 @@ test.describe("Configuration Page - Audio Devices", () => {
   test("can select an output device", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Audio");
 
     const outputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Output Device" }) });
     const outputSelect = outputCardBody.locator("select");
@@ -263,32 +278,28 @@ test.describe("Configuration Page - Audio Devices", () => {
     await expect(outputSelect).toHaveValue("HDMI Output");
   });
 
-  test("Test button for input device is disabled when no device is selected", async ({ page }) => {
+  test("Test button for input device is enabled regardless of device selection", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Audio");
 
+    // The Test button now runs an in-browser mic test on the browser's default
+    // device, so it is enabled even before a server device is selected (it is
+    // only disabled while a test is actively running).
     const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
     const testBtn = inputCardBody.getByRole("button", { name: "Test" });
     await expect(testBtn).toBeVisible();
-    await expect(testBtn).toBeDisabled();
-  });
+    await expect(testBtn).toBeEnabled();
 
-  test("Test button for input device becomes enabled after selecting a device", async ({ page }) => {
-    await mockAllRoutes(page);
-    await page.goto("/configuration");
-
-    const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
-    const inputSelect = inputCardBody.locator("select");
-    const testBtn = inputCardBody.getByRole("button", { name: "Test" });
-
-    await expect(testBtn).toBeDisabled();
-    await inputSelect.selectOption("Mock Microphone 1");
+    // Selecting a device leaves it enabled.
+    await inputCardBody.locator("select").selectOption("Mock Microphone 1");
     await expect(testBtn).toBeEnabled();
   });
 
   test("clicking Test on input device shows Testing state and recovers", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Audio");
 
     const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
     const inputSelect = inputCardBody.locator("select");
@@ -304,18 +315,23 @@ test.describe("Configuration Page - Audio Devices", () => {
     await expect(inputCardBody.getByRole("button", { name: "Test" })).toBeVisible({ timeout: 5000 });
   });
 
-  test("Test button for output device is disabled when no device is selected", async ({ page }) => {
+  test("Test button for output device is enabled regardless of device selection", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Audio");
 
+    // Like the mic test, the output Test button plays an in-browser tone and is
+    // enabled by default (only disabled while a tone is playing).
     const outputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Output Device" }) });
     const testBtn = outputCardBody.getByRole("button", { name: "Test" });
-    await expect(testBtn).toBeDisabled();
+    await expect(testBtn).toBeVisible();
+    await expect(testBtn).toBeEnabled();
   });
 
   test("clicking Test on output device shows Playing state and recovers", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Audio");
 
     const outputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Output Device" }) });
     const outputSelect = outputCardBody.locator("select");
@@ -337,6 +353,7 @@ test.describe("Configuration Page - Voice Models (ONNX)", () => {
   test("displays voice model table with mock data", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Voice Models");
 
     const modelsSection = page.locator("h3", { hasText: "Voice Models (ONNX)" });
     await expect(modelsSection).toBeVisible();
@@ -352,6 +369,7 @@ test.describe("Configuration Page - Voice Models (ONNX)", () => {
   test("shows model names, states, and sizes from mock data", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Voice Models");
 
     const table = page.locator("table");
 
@@ -389,13 +407,15 @@ test.describe("Configuration Page - Voice Models (ONNX)", () => {
     );
 
     await page.goto("/configuration");
+    await openTab(page, "Voice Models");
 
     await expect(page.getByText("No custom models found.")).toBeVisible();
   });
 
-  test("clicking delete button sends DELETE request for the correct model", async ({ page }) => {
+  test("deleting a model requires confirmation before sending DELETE", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Voice Models");
 
     const table = page.locator("table");
     await expect(table.getByText("hey_jarvis_v0.1.onnx")).toBeVisible();
@@ -403,11 +423,18 @@ test.describe("Configuration Page - Voice Models (ONNX)", () => {
     const deleteBtn = page.getByRole("button", { name: "Delete model hey_jarvis_v0.1.onnx" });
     await expect(deleteBtn).toBeVisible();
 
+    // Clicking the row delete icon now opens a confirmation modal first — the
+    // DELETE must not fire until the modal is confirmed.
+    await deleteBtn.click();
+    const confirmDialog = page.getByRole("dialog", { name: "Delete voice model?" });
+    await expect(confirmDialog).toBeVisible();
+    await expect(confirmDialog.getByText("hey_jarvis_v0.1.onnx")).toBeVisible();
+
     const deletePromise = page.waitForRequest(
       (req) => req.url().includes("/api/v1/models/files/hey_jarvis_v0.1.onnx") && req.method() === "DELETE",
     );
 
-    await deleteBtn.click();
+    await page.getByTestId("delete-confirm").click();
     const deleteReq = await deletePromise;
     expect(deleteReq.method()).toBe("DELETE");
   });
@@ -415,6 +442,7 @@ test.describe("Configuration Page - Voice Models (ONNX)", () => {
   test("upload section shows target state dropdown with correct options", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Voice Models");
 
     const uploadSection = page.locator("h4", { hasText: "Upload Model" });
     await expect(uploadSection).toBeVisible();
@@ -432,6 +460,7 @@ test.describe("Configuration Page - Voice Models (ONNX)", () => {
   test("can change target state for upload", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Voice Models");
 
     const stateSelect = page.locator("select").filter({ hasText: "Idle (Wake Word)" });
     await stateSelect.selectOption("computer");
@@ -444,6 +473,7 @@ test.describe("Configuration Page - Voice Models (ONNX)", () => {
   test("file input accepts .onnx files and triggers upload", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "Voice Models");
 
     const uploadPromise = page.waitForRequest(
       (req) => req.url().includes("/api/v1/models/upload") && req.method() === "POST",
@@ -472,6 +502,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
   test("displays API Base URL and API Key inputs with defaults", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "LLM");
 
     const llmSection = page.locator("h3", { hasText: "LLM Endpoint" });
     await expect(llmSection).toBeVisible();
@@ -487,6 +518,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
   test("can fill in API Base URL", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "LLM");
 
     const baseUrlInput = page.locator('input[name="llmBaseUrl"]');
     await baseUrlInput.clear();
@@ -497,6 +529,7 @@ test.describe("Configuration Page - LLM Endpoint", () => {
   test("can fill in API Key", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "LLM");
 
     const apiKeyInput = page.locator('input[name="apiKey"]');
     await apiKeyInput.fill("sk-test-key-12345");
@@ -506,57 +539,79 @@ test.describe("Configuration Page - LLM Endpoint", () => {
   test("displays model text input when no models have been fetched", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "LLM");
 
     // Before fetching, should show a text input for model (not a select)
     const modelInput = page.locator('input[name="llmModel"]');
     await expect(modelInput).toBeVisible();
   });
 
-  test("Fetch Models button populates model dropdown", async ({ page }) => {
+  test("Fetch Models populates the model combobox datalist", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "LLM");
+
+    // The page is served with a strict CSP (connect-src 'self'), so the LLM
+    // /models fetch must be same-origin for the route mock to apply. Point the
+    // base URL at a same-origin path; fetchLLMModels appends "/models".
+    const baseUrlInput = page.locator('input[name="llmBaseUrl"]');
+    await baseUrlInput.fill("/v1");
 
     const fetchBtn = page.locator("button", { hasText: "Fetch list" });
     await expect(fetchBtn).toBeVisible();
 
     await fetchBtn.click();
 
-    // After fetching, a <select> should appear with the model options
-    const modelSelect = page.locator('select[name="llmModel"]');
-    await expect(modelSelect).toBeVisible({ timeout: 5000 });
+    // The model field stays a text combobox (so a typed value is never lost);
+    // fetched models are offered as <datalist> suggestions wired via list=.
+    const modelInput = page.locator('input[name="llmModel"]');
+    await expect(modelInput).toHaveAttribute("list", "llm-model-options", { timeout: 5000 });
 
-    // Wait for the options to be added to the DOM
-    await expect(modelSelect.locator("option", { hasText: "gpt-4o-mini" })).toBeVisible({ timeout: 5000 });
+    const datalist = page.locator("datalist#llm-model-options");
+    // <datalist><option> elements aren't part of the rendered/visible tree, so
+    // Playwright's attribute selector can resolve to 0; query the option values
+    // directly via the DOM and poll until the fetched models populate.
+    await expect
+      .poll(
+        async () =>
+          datalist.locator("option").evaluateAll((opts) =>
+            opts.map((o) => (o as HTMLOptionElement).value),
+          ),
+        { timeout: 5000 },
+      )
+      .toContain("gpt-4o-mini");
 
-    const options = await modelSelect.locator("option").allInnerTexts();
-    expect(options).toContain("gpt-4o-mini");
-    expect(options).toContain("llama-3.1-8b-instant");
-    expect(options).toContain("mixtral-8x7b");
+    const optionValues = await datalist.locator("option").evaluateAll((opts) =>
+      opts.map((o) => (o as HTMLOptionElement).value),
+    );
+    expect(optionValues).toContain("gpt-4o-mini");
+    expect(optionValues).toContain("llama-3.1-8b-instant");
+    expect(optionValues).toContain("mixtral-8x7b");
   });
 
-  test("can select a model from the fetched dropdown", async ({ page }) => {
+  test("can pick a fetched model into the combobox", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "LLM");
 
-    // Fetch models first
+    // Fetch models first.
     await page.locator("button", { hasText: "Fetch list" }).click();
 
-    const modelSelect = page.locator('select[name="llmModel"]');
-    await expect(modelSelect).toBeVisible({ timeout: 5000 });
+    const modelInput = page.locator('input[name="llmModel"]');
+    await expect(modelInput).toHaveAttribute("list", "llm-model-options", { timeout: 5000 });
 
-    // Wait for options to populate before interacting
-    await expect(modelSelect.locator("option", { hasText: "gpt-4o-mini" })).toBeVisible({ timeout: 5000 });
+    // The combobox accepts a value matching a suggestion (or any typed value).
+    await modelInput.fill("gpt-4o-mini");
+    await expect(modelInput).toHaveValue("gpt-4o-mini");
 
-    await modelSelect.selectOption("gpt-4o-mini");
-    await expect(modelSelect).toHaveValue("gpt-4o-mini");
-
-    await modelSelect.selectOption("mixtral-8x7b");
-    await expect(modelSelect).toHaveValue("mixtral-8x7b");
+    await modelInput.fill("mixtral-8x7b");
+    await expect(modelInput).toHaveValue("mixtral-8x7b");
   });
 
   test("Fetch Models button is disabled when base URL is empty", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    await openTab(page, "LLM");
 
     const baseUrlInput = page.locator('input[name="llmBaseUrl"]');
     await baseUrlInput.clear();
@@ -569,27 +624,45 @@ test.describe("Configuration Page - LLM Endpoint", () => {
 // ─── Save Changes ────────────────────────────────────────────────────────────
 
 test.describe("Configuration Page - Save Changes", () => {
-  test("Save Changes button is visible and clickable", async ({ page }) => {
+  test("Save button is disabled and labelled 'Saved' when there are no changes", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    const saveBtn = page.getByRole("button", { name: "Save Changes" });
+    // The sticky Save bar reflects clean state: button is disabled and reads
+    // "Saved" (it only becomes an enabled "Save Changes" once the form is dirty).
+    const saveBtn = page.getByTestId("save-button");
     await expect(saveBtn).toBeVisible();
+    await expect(saveBtn).toBeDisabled();
+    await expect(saveBtn).toHaveText(/Saved/);
+    await expect(page.getByTestId("dirty-status")).toContainText("All changes saved");
+  });
+
+  test("editing a field enables Save and relabels it 'Save Changes'", async ({ page }) => {
+    await mockAllRoutes(page);
+    await page.goto("/configuration");
+
+    await expect(page.locator('select[name="theme"]')).toHaveValue("dark");
+    await page.locator('select[name="theme"]').selectOption("cyberpunk");
+
+    const saveBtn = page.getByTestId("save-button");
     await expect(saveBtn).toBeEnabled();
+    await expect(saveBtn).toHaveText(/Save Changes/);
+    await expect(page.getByTestId("dirty-status")).toContainText("Unsaved changes");
   });
 
   test("clicking Save sends PUT /api/v1/config with current settings", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    // Wait for config to load
+    // Wait for config to load, then make a change so Save becomes enabled.
     await expect(page.locator('select[name="theme"]')).toHaveValue("dark");
+    await page.locator('select[name="theme"]').selectOption("cyberpunk");
 
     const savePromise = page.waitForRequest(
       (req) => req.url().includes("/api/v1/config") && req.method() === "PUT",
     );
 
-    await page.getByRole("button", { name: "Save Changes" }).click();
+    await page.getByTestId("save-button").click();
 
     const saveReq = await savePromise;
     const body = saveReq.postDataJSON();
@@ -598,18 +671,21 @@ test.describe("Configuration Page - Save Changes", () => {
     expect(body).toHaveProperty("ui");
     expect(body).toHaveProperty("voice");
     expect(body).toHaveProperty("services");
-    expect(body.ui.theme).toBe("dark");
+    expect(body.ui.theme).toBe("cyberpunk");
   });
 
-  test("shows success indicator after saving", async ({ page }) => {
+  test("shows success feedback after saving", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
     await expect(page.locator('select[name="theme"]')).toHaveValue("dark");
+    await page.locator('select[name="theme"]').selectOption("cyberpunk");
 
-    await page.getByRole("button", { name: "Save Changes" }).click();
+    await page.getByTestId("save-button").click();
 
-    await expect(page.getByText("Saved")).toBeVisible({ timeout: 5000 });
+    // A success toast confirms the save, and the bar returns to the clean state.
+    await expect(page.getByText("Configuration saved successfully.")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("save-button")).toHaveText(/Saved/);
   });
 
   test("saves modified theme and service toggle values", async ({ page }) => {
@@ -629,7 +705,7 @@ test.describe("Configuration Page - Save Changes", () => {
       (req) => req.url().includes("/api/v1/config") && req.method() === "PUT",
     );
 
-    await page.getByRole("button", { name: "Save Changes" }).click();
+    await page.getByTestId("save-button").click();
 
     const saveReq = await savePromise;
     const body = saveReq.postDataJSON();
@@ -640,46 +716,63 @@ test.describe("Configuration Page - Save Changes", () => {
     expect(body.services.restApi).toBe(true);
   });
 
-  test("saves audio device selection alongside config", async ({ page }) => {
+  test("saves audio device selection inside the config PUT", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
+    // The audio device lives on the Audio tab now.
+    await openTab(page, "Audio");
 
-    // Select an input device
+    // Select an input device.
     const inputCardBody = page.locator(".card.shadow-sm").filter({ has: page.getByRole("heading", { name: "Input Device" }) });
     const inputSelect = inputCardBody.locator("select");
     await expect(inputSelect).toContainText("Mock Microphone 1");
     await inputSelect.selectOption("Mock Microphone 1");
 
-    // Save should trigger both PUT /config and POST /audio/device
+    // The device is now persisted as part of the unified config PUT under
+    // audio_settings (there is no longer a separate POST /audio/device call).
     const configPromise = page.waitForRequest(
       (req) => req.url().includes("/api/v1/config") && req.method() === "PUT",
     );
-    const audioPromise = page.waitForRequest(
-      (req) => req.url().includes("/api/v1/audio/device") && req.method() === "POST",
-    );
 
-    await page.getByRole("button", { name: "Save Changes" }).click();
+    await page.getByTestId("save-button").click();
 
     const configReq = await configPromise;
-    expect(configReq.method()).toBe("PUT");
-
-    const audioReq = await audioPromise;
-    expect(audioReq.postDataJSON()).toEqual({ device_id: "Mock Microphone 1" });
+    const body = configReq.postDataJSON();
+    expect(body.audio_settings.input_device).toBe("Mock Microphone 1");
   });
 });
 
 // ─── Page-level rendering ────────────────────────────────────────────────────
 
 test.describe("Configuration Page - General", () => {
-  test("renders the page heading and all section titles", async ({ page }) => {
+  test("renders the page heading and all four config tabs", async ({ page }) => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
     await expect(page.getByRole("heading", { name: "Configuration" })).toBeVisible();
+
+    // Sections are now split across tabs.
+    await expect(page.getByRole("tab", { name: "General" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Audio" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Voice Models" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "LLM" })).toBeVisible();
+  });
+
+  test("each tab reveals its section title", async ({ page }) => {
+    await mockAllRoutes(page);
+    await page.goto("/configuration");
+
+    // General is active by default.
     await expect(page.getByText("General Settings")).toBeVisible();
     await expect(page.getByText("Services")).toBeVisible();
+
+    await openTab(page, "Audio");
     await expect(page.getByText("Audio Devices")).toBeVisible();
+
+    await openTab(page, "Voice Models");
     await expect(page.getByText("Voice Models (ONNX)")).toBeVisible();
+
+    await openTab(page, "LLM");
     await expect(page.getByText("LLM Endpoint")).toBeVisible();
   });
 });

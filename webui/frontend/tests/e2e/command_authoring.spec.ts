@@ -16,16 +16,19 @@ const MOCK_GENERATED_COMMAND = {
 const MOCK_CONFIG = {
   commands: {
     take_screenshot: {
-      action: "shell",
-      cmd: "gnome-screenshot",
+      name: "Take Screenshot",
+      actions: [{ type: "shell", cmd: "gnome-screenshot" }],
     },
   },
   settings: {},
 };
 
 /**
- * Set up route mocks that most tests need: the auth/session endpoint
- * and the GET /api/v1/config endpoint used during save.
+ * Set up route mocks that most tests need: the GET /api/v1/config endpoint
+ * (read on mount to learn existing command names, and again during save) and
+ * the PUT used when persisting. The page reads existing names from this config
+ * to block silent name collisions, so MOCK_CONFIG is the source of truth for
+ * "which names already exist".
  */
 async function setupBaseMocks(page: import("@playwright/test").Page) {
   await page.route("**/api/v1/config", async (route) => {
@@ -45,6 +48,16 @@ async function setupBaseMocks(page: import("@playwright/test").Page) {
       await route.continue();
     }
   });
+}
+
+/**
+ * Convenience accessor for the save-confirmation modal. The page now renders a
+ * real role="dialog" (focus-trapped, Escape-closable), and there are *also*
+ * page-level "Cancel" buttons in both AI and Manual mode, so modal buttons MUST
+ * be scoped to the dialog to avoid strict-mode ambiguity.
+ */
+function confirmDialog(page: import("@playwright/test").Page) {
+  return page.getByRole("dialog");
 }
 
 // --- Test Suites ---
@@ -241,8 +254,10 @@ test.describe("Command Authoring - Manual Mode Flow", () => {
 
     // Action 1 should appear
     await expect(page.getByText("Action 1")).toBeVisible();
-    // Default type should be keypress selected in dropdown (use .nth(0) scoped instead of brittle .first())
-    const typeSelect = page.locator("select").nth(0);
+    // Default type should be keypress. The app shell exposes a global theme
+    // <select>, so the first page select isn't the action type — target the
+    // per-action type select by its stable id (#action-type-<index>).
+    const typeSelect = page.locator("#action-type-0");
     await expect(typeSelect).toHaveValue("keypress");
   });
 
@@ -252,8 +267,9 @@ test.describe("Command Authoring - Manual Mode Flow", () => {
 
     // Add action and select URL type
     await page.getByRole("button", { name: /Add Action/i }).click();
-    // modern Playwright: use .nth(0) scoped instead of .first() to avoid brittle/strict mode
-    const typeSelect = page.locator("select").nth(0);
+    // Target the per-action type select by id (the shell's theme select is the
+    // first <select> on the page).
+    const typeSelect = page.locator("#action-type-0");
     await typeSelect.selectOption("url");
 
     const urlInput = page.getByPlaceholder("https://example.com");
@@ -303,13 +319,13 @@ test.describe("Command Authoring - Manual Mode Flow", () => {
 
     // Add a shell action
     await page.getByRole("button", { name: /Add Action/i }).click();
-    const firstSelect = page.locator("select").nth(0);
+    const firstSelect = page.locator("#action-type-0");
     await firstSelect.selectOption("shell");
     await page.getByPlaceholder("e.g., npm start").fill("echo hello");
 
     // Add a URL action
     await page.getByRole("button", { name: /Add Action/i }).click();
-    const secondSelect = page.locator("select").nth(1);
+    const secondSelect = page.locator("#action-type-1");
     await secondSelect.selectOption("url");
     await page.getByPlaceholder("https://example.com").fill("https://example.org");
 
@@ -340,15 +356,22 @@ test.describe("Command Authoring - Save Flow", () => {
     // Click Save Command
     await page.getByRole("button", { name: /Save Command/i }).click();
 
-    // Confirmation modal should appear
-    await expect(page.getByText("Confirm Command Creation")).toBeVisible();
+    // Confirmation modal should appear as a real dialog with the create heading.
+    const dialog = confirmDialog(page);
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("heading", { name: "Confirm Command Creation" })
+    ).toBeVisible();
 
-    // Command summary should be in modal
-    await expect(page.getByText("start_my_day").nth(1)).toBeVisible();
-    await expect(page.getByText("Start My Day").nth(1)).toBeVisible();
+    // Command summary should be in the modal (scope to the dialog so we don't
+    // match the same text in the preview card behind it).
+    await expect(dialog.getByText("start_my_day")).toBeVisible();
+    // exact:true — "Start My Day" matches the wakeword "start my day"
+    // case-insensitively otherwise.
+    await expect(dialog.getByText("Start My Day", { exact: true })).toBeVisible();
 
     // Actions count should be shown
-    await expect(page.getByText(/Actions \(3\)/)).toBeVisible();
+    await expect(dialog.getByText(/Actions \(3\)/)).toBeVisible();
   });
 
   test("Cancel button in confirmation modal dismisses it", async ({ page }) => {
@@ -369,19 +392,52 @@ test.describe("Command Authoring - Save Flow", () => {
     await expect(page.getByText("Generated Command").nth(0)).toBeVisible();
 
     await page.getByRole("button", { name: /Save Command/i }).click();
-    await expect(page.getByText("Confirm Command Creation")).toBeVisible();
+    const dialog = confirmDialog(page);
+    await expect(dialog).toBeVisible();
 
-    // Click Cancel
-    await page.getByRole("button", { name: "Cancel" }).click();
+    // Click Cancel inside the dialog (a page-level Cancel button also exists, so
+    // we scope to the dialog to disambiguate).
+    await dialog.getByRole("button", { name: /^Cancel$/ }).click();
 
-    // Modal should be dismissed
-    await expect(page.getByText("Confirm Command Creation")).not.toBeVisible();
+    // Modal should be dismissed and we should NOT have navigated away.
+    await expect(confirmDialog(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/commands\/authoring/);
 
     // The generated command preview should still be visible
-    await expect(page.getByText("Generated Command").nth(0)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Generated Command" })).toBeVisible();
   });
 
-  test("Confirm Save calls PUT /api/v1/config and resets form", async ({ page }) => {
+  test("Escape key closes the confirmation modal", async ({ page }) => {
+    await setupBaseMocks(page);
+
+    await page.route("**/api/v1/commands/generate", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_GENERATED_COMMAND),
+      });
+    });
+
+    await page.goto("/commands/authoring");
+
+    await page.getByPlaceholder("When I say 'start my day'").fill("start my day");
+    await page.getByRole("button", { name: /Generate Command/i }).click();
+    await expect(page.getByRole("heading", { name: "Generated Command" })).toBeVisible();
+
+    await page.getByRole("button", { name: /Save Command/i }).click();
+    const dialog = confirmDialog(page);
+    await expect(dialog).toBeVisible();
+
+    // The dialog focuses Cancel on open; pressing Escape closes it.
+    await expect(dialog.getByRole("button", { name: /^Cancel$/ })).toBeFocused();
+    await page.keyboard.press("Escape");
+
+    await expect(confirmDialog(page)).toHaveCount(0);
+    // Escape is a dismiss, not a save: stay on the authoring page.
+    await expect(page).toHaveURL(/\/commands\/authoring/);
+  });
+
+  test("Confirm Save persists via PUT, toasts success, and navigates to /commands", async ({ page }) => {
     let putCalled = false;
 
     await page.route("**/api/v1/config", async (route) => {
@@ -418,19 +474,33 @@ test.describe("Command Authoring - Save Flow", () => {
 
     await page.getByPlaceholder("When I say 'start my day'").fill("start my day");
     await page.getByRole("button", { name: /Generate Command/i }).click();
-    await expect(page.getByText("Generated Command").nth(0)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Generated Command" })).toBeVisible();
 
     await page.getByRole("button", { name: /Save Command/i }).click();
-    await expect(page.getByText("Confirm Command Creation")).toBeVisible();
+    const dialog = confirmDialog(page);
+    await expect(dialog).toBeVisible();
 
-    // Click Confirm Save
-    await page.getByRole("button", { name: /Confirm Save/i }).click();
+    // Click Confirm Save (scoped to the dialog)
+    await dialog.getByRole("button", { name: /Confirm Save/i }).click();
 
-    // Modal should close
-    await expect(page.getByText("Confirm Command Creation")).not.toBeVisible();
+    // A success toast should announce the creation.
+    await expect(
+      page.getByText('Command "start_my_day" created.')
+    ).toBeVisible();
 
-    // Form should be reset - the generated command preview should be gone
-    await expect(page.getByText("Generated Command")).not.toBeVisible();
+    // On success the page no longer resets in place — it navigates to the
+    // command list, where the Commands page heading is shown.
+    await expect(page).toHaveURL(/\/commands(\?.*)?$/);
+    await expect(
+      page.getByRole("heading", { name: "Commands & Triggers" })
+    ).toBeVisible();
+
+    // And the authoring confirm modal is gone. (The destination /commands page
+    // mounts its own native <dialog> elements, so assert the authoring dialog
+    // specifically by its title rather than "no dialog at all".)
+    await expect(
+      page.getByRole("heading", { name: "Confirm Command Creation" })
+    ).toHaveCount(0);
 
     expect(putCalled).toBe(true);
   });
@@ -469,17 +539,147 @@ test.describe("Command Authoring - Save Flow", () => {
 
     // Add a shell action with content
     await page.getByRole("button", { name: /Add Action/i }).click();
-    await page.locator("select").nth(0).selectOption("shell");
+    await page.locator("#action-type-0").selectOption("shell");
     await page.getByPlaceholder("e.g., npm start").fill("ls -la");
 
     // Save
     await page.getByRole("button", { name: /Save Command/i }).click();
-    await expect(page.getByText("Confirm Command Creation")).toBeVisible();
+    const dialog = confirmDialog(page);
+    await expect(dialog).toBeVisible();
 
-    await page.getByRole("button", { name: /Confirm Save/i }).click();
-    await expect(page.getByText("Confirm Command Creation")).not.toBeVisible();
+    await dialog.getByRole("button", { name: /Confirm Save/i }).click();
+
+    // Successful save navigates to the command list (no in-place reset). The
+    // /commands page has its own native <dialog>s, so assert the authoring
+    // confirm dialog specifically (by title) rather than "no dialog at all".
+    await expect(page).toHaveURL(/\/commands(\?.*)?$/);
+    await expect(
+      page.getByRole("heading", { name: "Confirm Command Creation" })
+    ).toHaveCount(0);
 
     expect(putCalled).toBe(true);
+  });
+
+  test("page-level Cancel button returns to /commands without saving", async ({ page }) => {
+    let putCalled = false;
+    await page.route("**/api/v1/config", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(MOCK_CONFIG),
+        });
+      } else if (route.request().method() === "PUT") {
+        putCalled = true;
+        await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("/commands/authoring");
+    await page.getByRole("tab", { name: /Manual Mode/i }).click();
+
+    // The page-level Cancel (a ghost button beside Save Command) abandons the
+    // editor and returns to the command list.
+    await page.getByRole("button", { name: /^Cancel$/ }).click();
+
+    await expect(page).toHaveURL(/\/commands(\?.*)?$/);
+    await expect(
+      page.getByRole("heading", { name: "Commands & Triggers" })
+    ).toBeVisible();
+    expect(putCalled).toBe(false);
+  });
+
+  test("blocks saving a command whose name already exists", async ({ page }) => {
+    await setupBaseMocks(page);
+
+    await page.goto("/commands/authoring");
+    await page.getByRole("tab", { name: /Manual Mode/i }).click();
+
+    // "take_screenshot" already exists in MOCK_CONFIG — reusing it must be
+    // blocked (no ?edit= override present) rather than silently clobbering it.
+    await page.getByPlaceholder("my_command").fill("take_screenshot");
+    await page.getByPlaceholder("My Command").fill("Take Screenshot");
+    await page.getByPlaceholder("Trigger phrase").fill("screenshot");
+    await page.getByRole("button", { name: /Add Action/i }).click();
+    await page.getByPlaceholder("e.g., ctrl+alt+t").fill("ctrl+c");
+
+    await page.getByRole("button", { name: /Save Command/i }).click();
+
+    // A blocking error is shown and the confirm dialog never opens.
+    await expect(page.getByText(/already exists/i)).toBeVisible();
+    await expect(confirmDialog(page)).toHaveCount(0);
+  });
+
+  test("editing via ?edit= allows saving the existing name", async ({ page }) => {
+    await setupBaseMocks(page);
+
+    // Arrive in edit mode for an existing command; saving its own name must NOT
+    // be treated as a collision.
+    await page.goto("/commands/authoring?edit=take_screenshot");
+
+    // Edit mode preloads the manual editor with the existing definition.
+    await expect(page.getByPlaceholder("my_command")).toHaveValue("take_screenshot");
+
+    await page.getByRole("button", { name: /Save Command/i }).click();
+
+    // No collision error; the confirm dialog (in "changes" wording) opens.
+    await expect(page.getByText(/already exists/i)).toHaveCount(0);
+    const dialog = confirmDialog(page);
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("heading", { name: "Confirm Command Changes" })
+    ).toBeVisible();
+  });
+});
+
+test.describe("Command Authoring - Danger Warnings", () => {
+  test("inline warning is shown for a destructive rm -rf shell command", async ({ page }) => {
+    await setupBaseMocks(page);
+
+    await page.goto("/commands/authoring");
+    await page.getByRole("tab", { name: /Manual Mode/i }).click();
+
+    await page.getByRole("button", { name: /Add Action/i }).click();
+    await page.locator("#action-type-0").selectOption("shell");
+    await page.getByPlaceholder("e.g., npm start").fill("rm -rf /tmp/x");
+
+    // The per-action danger heuristic surfaces an inline advisory warning.
+    await expect(page.getByText(/recursive\/forced delete|permanently destroy/i)).toBeVisible();
+  });
+
+  test("inline warning is shown for an insecure non-local http:// URL", async ({ page }) => {
+    await setupBaseMocks(page);
+
+    await page.goto("/commands/authoring");
+    await page.getByRole("tab", { name: /Manual Mode/i }).click();
+
+    await page.getByRole("button", { name: /Add Action/i }).click();
+    await page.locator("#action-type-0").selectOption("url");
+    await page.getByPlaceholder("https://example.com").fill("http://example.com");
+
+    await expect(page.getByText(/insecure http/i)).toBeVisible();
+  });
+
+  test("risky actions are flagged prominently in the confirm dialog", async ({ page }) => {
+    await setupBaseMocks(page);
+
+    await page.goto("/commands/authoring");
+    await page.getByRole("tab", { name: /Manual Mode/i }).click();
+
+    await page.getByPlaceholder("my_command").fill("risky_cmd");
+    await page.getByPlaceholder("My Command").fill("Risky Command");
+    await page.getByPlaceholder("Trigger phrase").fill("do risky thing");
+    await page.getByRole("button", { name: /Add Action/i }).click();
+    await page.locator("#action-type-0").selectOption("shell");
+    await page.getByPlaceholder("e.g., npm start").fill("sudo rm -rf /tmp/x");
+
+    await page.getByRole("button", { name: /Save Command/i }).click();
+
+    const dialog = confirmDialog(page);
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/Potentially risky actions flagged/i)).toBeVisible();
   });
 });
 
@@ -500,8 +700,8 @@ test.describe("Command Authoring - Validation Errors", () => {
     // Error alert should appear
     await expect(page.getByText("Command name is required")).toBeVisible();
 
-    // Modal should NOT appear
-    await expect(page.getByText("Confirm Command Creation")).not.toBeVisible();
+    // The confirm dialog should NOT open on a validation failure.
+    await expect(confirmDialog(page)).toHaveCount(0);
   });
 
   test("save with no actions shows error", async ({ page }) => {
@@ -540,12 +740,25 @@ test.describe("Command Authoring - Validation Errors", () => {
     await page.getByPlaceholder("my_command").fill("test_cmd");
     await page.getByPlaceholder("My Command").fill("Test Command");
 
-    // Add a keypress action but leave keys empty
+    // Add a keypress action but leave keys empty. The empty action shows an
+    // inline per-action validation error immediately.
     await page.getByRole("button", { name: /Add Action/i }).click();
 
-    await page.getByRole("button", { name: /Save Command/i }).click();
+    await expect(
+      page.getByText(/Keypress requires a 'keys' value/)
+    ).toBeVisible();
 
-    await expect(page.getByText(/Action 1 \(Keypress\) requires a 'keys' value/)).toBeVisible();
+    // The Save button stays enabled (action-level errors aren't part of the
+    // field-error gating), but attempting to save surfaces a blocking
+    // page-level "Action N: ..." error and never opens the confirm dialog.
+    const saveBtn = page.getByRole("button", { name: /Save Command/i });
+    await expect(saveBtn).toBeEnabled();
+    await saveBtn.click();
+
+    await expect(
+      page.getByText(/Action 1: Keypress requires a 'keys' value/)
+    ).toBeVisible();
+    await expect(confirmDialog(page)).toHaveCount(0);
   });
 
   test("error alert can be dismissed", async ({ page }) => {

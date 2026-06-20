@@ -46,24 +46,26 @@ test.describe("Commands Page CRUD", () => {
     });
   });
 
-  test("commands page renders with command cards", async ({ page }) => {
+  test("commands page renders with command rows", async ({ page }) => {
     await page.goto("/commands");
 
     await expect(
       page.getByRole("heading", { name: "Commands & Triggers" })
     ).toBeVisible();
 
-    // All four mock commands should be visible
-    await expect(page.getByRole("heading", { name: "take_screenshot" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "open_browser" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "say_hello" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "volume_up" })).toBeVisible();
+    // The 2-up card grid is now a table; each command is a row whose Name
+    // cell holds the command name.
+    await expect(page.getByRole("cell", { name: "take_screenshot", exact: true })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "open_browser", exact: true })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "say_hello", exact: true })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "volume_up", exact: true })).toBeVisible();
 
-    // +2 expects: search input + scoped action badge (modern getBy + .card:has-text, expands commands UI coverage per WEBUI_ISSUES)
+    // Search input + scoped type badge on a row.
     await expect(page.getByPlaceholder("Search commands...")).toBeVisible();
-    await expect(page.locator('.card:has-text("take_screenshot")').getByText("shell")).toBeVisible();
+    await expect(
+      page.getByRole("row", { name: /take_screenshot/ }).locator(".badge", { hasText: "Shell" })
+    ).toBeVisible();
 
-    // small addition: +1 expect for New Command link (expands commands page UI coverage for authoring flow per ROADMAP/WEBUI_ISSUES)
     await expect(page.getByRole("link", { name: "New Command" })).toBeVisible();
   });
 
@@ -79,7 +81,7 @@ test.describe("Commands Page CRUD", () => {
     });
 
     await page.goto("/commands");
-    await expect(page.getByRole("heading", { name: "take_screenshot" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "take_screenshot", exact: true })).toBeVisible();
 
     const initialFetchCount = fetchCount;
 
@@ -87,7 +89,7 @@ test.describe("Commands Page CRUD", () => {
     await page.getByRole("button", { name: "Refresh Commands" }).click();
 
     // Wait for the refetch to complete
-    await expect(page.getByRole("heading", { name: "take_screenshot" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "take_screenshot", exact: true })).toBeVisible();
 
     // Verify an additional fetch was triggered
     expect(fetchCount).toBeGreaterThan(initialFetchCount);
@@ -101,51 +103,73 @@ test.describe("Commands Page CRUD", () => {
     await expect(page).toHaveURL(/\/commands\/authoring/);
   });
 
-  test("command card shows action type badge", async ({ page }) => {
+  test("command row shows action type badge", async ({ page }) => {
     await page.goto("/commands");
-    await expect(page.getByRole("heading", { name: "take_screenshot" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "take_screenshot", exact: true })).toBeVisible();
 
-    // Each command card should display its action type (scoped to card to avoid brittle .first())
-    await expect(page.locator('.card:has-text("take_screenshot")').getByText("shell")).toBeVisible();
-    await expect(page.locator('.card:has-text("open_browser")').getByText("url")).toBeVisible();
-    await expect(page.locator('.card:has-text("say_hello")').getByText("custom_message")).toBeVisible();
-    await expect(page.locator('.card:has-text("volume_up")').getByText("keypress")).toBeVisible();
+    // Each command row displays a colored .badge with its human-readable type
+    // label (Shell / URL / Message / Keypress), scoped to its row. Target the
+    // badge specifically so it doesn't collide with the action-detail text
+    // (e.g. "Opens URL").
+    await expect(page.getByRole("row", { name: /take_screenshot/ }).locator(".badge", { hasText: "Shell" })).toBeVisible();
+    await expect(page.getByRole("row", { name: /open_browser/ }).locator(".badge", { hasText: "URL" })).toBeVisible();
+    await expect(page.getByRole("row", { name: /say_hello/ }).locator(".badge", { hasText: "Message" })).toBeVisible();
+    await expect(page.getByRole("row", { name: /volume_up/ }).locator(".badge", { hasText: "Keypress" })).toBeVisible();
   });
 
-  test("command card dropdown menu opens on click", async ({ page }) => {
+  test("each row exposes direct Edit and Delete controls", async ({ page }) => {
     await page.goto("/commands");
-    await expect(page.getByRole("heading", { name: "take_screenshot" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "take_screenshot", exact: true })).toBeVisible();
 
-    // Find the dropdown toggle button using aria-label from DynamicDropdown (fixes outdated aria-haspopup selector)
-    const dropdownButton = page.getByLabel('Options for take_screenshot');
-    await expect(dropdownButton).toHaveAttribute("aria-expanded", "false");
+    // Edit is now a direct link to the authoring page (not behind a dropdown).
+    const editLink = page.getByRole("link", { name: "Edit take_screenshot" });
+    await expect(editLink).toBeVisible();
+    await expect(editLink).toHaveAttribute(
+      "href",
+      /\/commands\/authoring\?edit=take_screenshot/
+    );
 
-    // Click to open dropdown
-    await dropdownButton.click();
-    await expect(dropdownButton).toHaveAttribute("aria-expanded", "true");
-
-    // Dropdown menu items should be visible
-    await expect(page.getByRole("button", { name: "Edit take_screenshot" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Delete take_screenshot" })).toBeVisible();
-  });
-
-  test("delete action in dropdown triggers action", async ({ page }) => {
-    await page.goto("/commands");
-    await expect(page.getByRole("heading", { name: "take_screenshot" })).toBeVisible();
-
-    // Open dropdown for take_screenshot
-    const dropdownButton = page.getByLabel('Options for take_screenshot');
-    await dropdownButton.click();
-
-    // The delete button should be visible with correct aria-label
+    // Delete is a direct icon button.
     const deleteButton = page.getByRole("button", { name: "Delete take_screenshot" });
     await expect(deleteButton).toBeVisible();
     await expect(deleteButton).toHaveClass(/text-error/);
   });
 
+  test("row dropdown holds the 'Test this command' link", async ({ page }) => {
+    await page.goto("/commands");
+    await expect(page.getByRole("cell", { name: "take_screenshot", exact: true })).toBeVisible();
+
+    // The per-row dropdown now only contains "Test this command". Scope to the
+    // button role: the open menu panel shares the same aria-label.
+    const dropdownButton = page.getByRole("button", { name: "More options for take_screenshot" });
+    await expect(dropdownButton).toHaveAttribute("aria-expanded", "false");
+
+    await dropdownButton.click();
+    await expect(dropdownButton).toHaveAttribute("aria-expanded", "true");
+
+    const testLink = page.getByRole("menuitem", { name: "Test take_screenshot" });
+    await expect(testLink).toBeVisible();
+    await expect(testLink).toHaveAttribute(
+      "href",
+      /\/voice-test\?command=take_screenshot/
+    );
+  });
+
+  test("delete button opens the confirmation dialog", async ({ page }) => {
+    await page.goto("/commands");
+    await expect(page.getByRole("cell", { name: "take_screenshot", exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Delete take_screenshot" }).click();
+
+    // A confirm-deletion modal appears naming the command.
+    const dialog = page.locator("dialog.modal[open]");
+    await expect(dialog.getByRole("heading", { name: "Confirm Deletion" })).toBeVisible();
+    await expect(dialog.getByText("take_screenshot")).toBeVisible();
+  });
+
   test("command count display when searching", async ({ page }) => {
     await page.goto("/commands");
-    await expect(page.getByRole("heading", { name: "take_screenshot" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "take_screenshot", exact: true })).toBeVisible();
 
     const searchInput = page.locator('input[placeholder="Search commands..."]');
     await searchInput.fill("screenshot");

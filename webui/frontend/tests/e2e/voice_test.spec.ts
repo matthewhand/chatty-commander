@@ -66,22 +66,62 @@ test.describe("Voice Test page", () => {
   }) => {
     await gotoVoiceTest(page);
 
+    // Subtitle under the H1 sets honest expectations (no real actions run).
+    await expect(page.getByRole("heading", { name: "Voice Test" })).toBeVisible();
+    await expect(page.getByTestId("voice-test-subtitle")).toContainText(
+      /no real actions run/i
+    );
+
     const banner = page.getByTestId("dry-run-banner");
     await expect(banner).toBeVisible();
+    await expect(banner).toContainText("What to expect:");
     await expect(banner).toContainText(
-      "Dry-run mode: detected commands are reported, not executed."
+      "dry-run mode — detected commands are reported, not executed."
+    );
+
+    // The verify-setup checklist starts with the server-connected row pending
+    // and ticks once the WebSocket is up (asserted after waitForWsConnected).
+    const checklist = page.getByTestId("voice-checklist");
+    await expect(checklist).toBeVisible();
+    await expect(checklist).toContainText("Verify setup");
+    await expect(checklist).toContainText("Wake word detected");
+
+    // The example wake-word chips fill the simulation input.
+    const chips = page.getByTestId("wake-word-chip");
+    await expect(chips.first()).toBeVisible();
+    const firstChipText = (await chips.first().textContent())?.trim() ?? "";
+    await chips.first().click();
+    await expect(page.getByTestId("voice-simulate-input")).toHaveValue(
+      firstChipText
+    );
+
+    // The "Edit commands" cross-link points at the commands page.
+    await expect(page.getByTestId("edit-commands-link")).toHaveAttribute(
+      "href",
+      "/commands"
     );
 
     // The page connects to the live /ws/voice-test endpoint on load and
     // sends the {type: "start", dry_run: true} handshake; the backend
     // acknowledges with a "listening" stage event confirming dry-run mode.
     await waitForWsConnected(page);
+
+    // Once connected, the "Server connected" checklist row is ticked.
+    await expect(
+      checklist.locator('li[data-checked="true"]', { hasText: "Server connected" })
+    ).toBeVisible();
+
     const listeningEvent = page.locator(
       '[data-testid="voice-stage-event"][data-stage="listening"]'
     );
     await expect(listeningEvent).toHaveCount(1, { timeout: 10_000 });
     await expect(listeningEvent).toContainText("dry_run: true");
     await expect(listeningEvent).toHaveAttribute("data-status", "success");
+
+    // The timeline is an aria-live log so screen readers announce new stages.
+    const timeline = page.getByTestId("voice-stage-timeline");
+    await expect(timeline).toHaveAttribute("role", "log");
+    await expect(timeline).toHaveAttribute("aria-live", "polite");
   });
 
   test("enabling the microphone reaches the active state and renders the level meter", async ({
@@ -96,18 +136,39 @@ test.describe("Voice Test page", () => {
 
     await gotoVoiceTest(page);
 
+    // The microphone input-device picker is present and defaults to "System
+    // default" before any device labels are known.
+    const deviceSelect = page.getByTestId("voice-device-select");
+    await expect(deviceSelect).toBeVisible();
+    await expect(
+      deviceSelect.getByRole("option", { name: "System default" })
+    ).toBeAttached();
+
     const micToggle = page.getByTestId("mic-toggle");
     await expect(micToggle).toHaveText(/Enable microphone/);
     await micToggle.click();
 
     // Fake media stream: permission is auto-granted, no prompt, so the page
-    // must land in the "active" state (not "denied").
+    // must land in the active state (not "denied"). Real Chromium provides
+    // MediaRecorder, so the recorder runs and the WS is up — the honest
+    // streaming wording is "Listening — streaming to server".
     await expect(page.getByTestId("mic-state")).toHaveText(
-      /Listening — audio is streaming to the server/,
+      /Listening — streaming to server/,
       { timeout: 10_000 }
     );
     await expect(page.getByTestId("mic-denied-alert")).toHaveCount(0);
+    // When truly streaming, the "mic on but not streaming" warning is absent.
+    await expect(page.getByTestId("mic-stream-warning")).toHaveCount(0);
     await expect(micToggle).toHaveText(/Stop microphone/);
+
+    // The "Microphone active and streaming" checklist row ticks.
+    await expect(
+      page
+        .getByTestId("voice-checklist")
+        .locator('li[data-checked="true"]', {
+          hasText: "Microphone active and streaming",
+        })
+    ).toBeVisible();
 
     // The input level meter renders as an accessible meter element.
     const meter = page.getByTestId("voice-level-meter");
@@ -143,6 +204,17 @@ test.describe("Voice Test page", () => {
   }) => {
     await gotoVoiceTest(page);
     await waitForWsConnected(page);
+
+    // Before any transcript arrives, the dedicated transcript panel shows a
+    // placeholder. On the real test backend speech-to-text isn't configured, so
+    // the panel reports "transcript-unavailable" rather than the generic
+    // "transcript-empty"; accept either pre-transcript placeholder.
+    await expect(page.getByTestId("voice-transcript-panel")).toBeVisible();
+    await expect(
+      page
+        .getByTestId("transcript-empty")
+        .or(page.getByTestId("transcript-unavailable")),
+    ).toBeVisible();
 
     const input = page.getByTestId("voice-simulate-input");
     const send = page.getByTestId("voice-simulate-send");
@@ -193,6 +265,30 @@ test.describe("Voice Test page", () => {
     expect(ti).toBeGreaterThanOrEqual(0);
     expect(mi).toBeGreaterThan(ti);
     expect(ai).toBeGreaterThan(mi);
+
+    // The recognized text (the simulated utterance) is surfaced to the user.
+    // When server-side speech-to-text is configured the dedicated transcript
+    // panel shows it; on the test backend STT is unavailable, so the panel
+    // keeps its "unavailable" notice and the recognized text is surfaced via the
+    // transcript stage event in the timeline instead. Accept whichever path
+    // applies in the current environment.
+    await expect(
+      page
+        .getByTestId("transcript-text")
+        .or(
+          page.locator(
+            '[data-testid="voice-stage-event"][data-stage="transcript"]',
+          ),
+        )
+        .filter({ hasText: SIMULATED_UTTERANCE }),
+    ).toBeVisible();
+
+    // A successful match ticks the "Command matched" checklist row.
+    await expect(
+      page
+        .getByTestId("voice-checklist")
+        .locator('li[data-checked="true"]', { hasText: "Command matched" })
+    ).toBeVisible();
 
     // Small addition: 2 Playwright request asserts for wired endpoints used in voice/dry-run flow (commands for match, per WEBUI expand e2e)
     const cmdResp = await page.request.get("/api/v1/commands");

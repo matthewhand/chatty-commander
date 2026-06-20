@@ -153,6 +153,12 @@ ALLOWED_CONFIG_KEYS = frozenset(
         "voice_only",
         "default_state",
         "voice",
+        # Written by the web Configuration page: LLM/advisor provider settings
+        # (advisors.providers.{api_key,base_url,model}) and the service toggles
+        # (services.{voiceCommands,restApi}). Without these the page's saves were
+        # silently rejected with 422.
+        "advisors",
+        "services",
     }
 )
 

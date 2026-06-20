@@ -204,9 +204,12 @@ test.describe("Documentation Screenshots", () => {
   test("login", async ({ page }) => {
     await page.goto("/login");
 
-    // In --no-auth mode, login redirects to dashboard
-    // So we check what actually renders
-    await expect(page.getByRole("heading", { name: /login|chatty commander/i })).toBeVisible();
+    // In --no-auth mode (the e2e backend), visiting /login redirects straight to
+    // the dashboard, so the rendered heading is "Dashboard"; with auth enabled it
+    // is the LoginPage's "Chatty Commander". Accept whichever actually renders.
+    await expect(
+      page.getByRole("heading", { name: /login|chatty commander|dashboard/i }).first(),
+    ).toBeVisible();
     await page.waitForLoadState('networkidle');
 
     await page.screenshot({
@@ -237,11 +240,12 @@ test.describe("Documentation Screenshots", () => {
     await page.goto("/configuration");
     await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
 
-    // Scroll to voice models section if present (use getByText instead of brittle locator("text=...").first())
+    // Configuration is now tabbed; the voice models table lives under the
+    // "Voice Models" tab, so open it before capturing (and asserting) it.
+    await page.getByRole("tab", { name: "Voice Models" }).click();
     const modelsHeading = page.getByText("Voice Models (ONNX)", { exact: true });
-    if (await modelsHeading.isVisible()) {
-      await modelsHeading.scrollIntoViewIfNeeded();
-    }
+    await expect(modelsHeading).toBeVisible();
+    await modelsHeading.scrollIntoViewIfNeeded();
 
     await page.waitForLoadState('networkidle');
 
@@ -257,11 +261,12 @@ test.describe("Documentation Screenshots", () => {
     await page.goto("/configuration");
     await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
 
-    // Scroll to audio device section
+    // Configuration is now tabbed; the audio device cards live under the
+    // "Audio" tab, so open it before capturing (and asserting) the section.
+    await page.getByRole("tab", { name: "Audio" }).click();
     const audioHeading = page.getByText("Audio Devices", { exact: true });
-    if (await audioHeading.isVisible()) {
-      await audioHeading.scrollIntoViewIfNeeded();
-    }
+    await expect(audioHeading).toBeVisible();
+    await audioHeading.scrollIntoViewIfNeeded();
 
     await page.waitForLoadState('networkidle');
 
