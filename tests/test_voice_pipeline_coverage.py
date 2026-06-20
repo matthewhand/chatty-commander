@@ -230,6 +230,50 @@ def test_on_wake_word_spawns_processing_thread(monkeypatch):
     assert seen["wake_word"] == "hey_jarvis"
 
 
+def test_two_rapid_wake_words_start_only_one_processing_run():
+    """Two wake words arriving back-to-back must result in exactly one
+    processing run: the check-and-set of ``_processing`` is guarded by a lock,
+    so the second detection sees the slot already claimed and is ignored.
+
+    The first worker is held inside ``_process_voice_command`` (via a barrier)
+    until *after* the second detection has been delivered, reproducing the
+    race window where both could otherwise pass the guard.
+    """
+    import threading as _threading
+
+    pipeline = make_pipeline()
+
+    started = []
+    proceed = _threading.Event()
+    entered = _threading.Event()
+
+    def blocking_process(wake_word):
+        started.append(wake_word)
+        entered.set()
+        # Hold the processing slot open until the test releases us.
+        proceed.wait(timeout=2.0)
+        # Mirror real behaviour: clear the flag in a finally-equivalent.
+        pipeline._processing = False
+
+    pipeline._process_voice_command = blocking_process  # type: ignore
+
+    # First detection spawns a real daemon thread and claims the slot.
+    pipeline._on_wake_word_detected("hey_jarvis", 0.9)
+    assert entered.wait(timeout=2.0), "first worker never started"
+
+    # Second detection arrives while the first still holds the slot.
+    pipeline._on_wake_word_detected("hey_jarvis", 0.9)
+
+    # Release the first worker and let it finish.
+    proceed.set()
+    if pipeline._processing_thread is not None:
+        pipeline._processing_thread.join(timeout=2.0)
+
+    # Exactly one processing run despite two detections.
+    assert started == ["hey_jarvis"]
+    assert pipeline._processing is False
+
+
 # ---------------------------------------------------------------------------
 # _process_voice_command flow
 # ---------------------------------------------------------------------------

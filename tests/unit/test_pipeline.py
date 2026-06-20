@@ -1430,14 +1430,17 @@ class TestPipelineMoreCoverage:
         assert pipeline._match_command("play some music") == "play_music"
 
     def test_on_wake_word_detected_invokes_process_logic(self, pipeline: VoicePipeline):
-        """_on_wake_word_detected should set processing and call into transcription path (mocked)."""
-        # Arrange - prevent real thread; spy the internal
-        with patch.object(pipeline, '_process_voice_command'):
+        """_on_wake_word_detected claims the processing slot and spawns the worker."""
+        # Arrange - prevent real work; spy the internal target
+        with patch.object(pipeline, '_process_voice_command') as mock_proc:
             # Act
             pipeline._on_wake_word_detected("hey test", 0.95)
-            # Assert - it starts background but for unit we can call sync equivalent or check flag
-            # Since it spawns thread, just ensure it didn't crash and processing guard
-            assert not pipeline._processing  # initial
+            # The worker thread is tracked; wait for it so the patched target runs.
+            if pipeline._processing_thread is not None:
+                pipeline._processing_thread.join(timeout=1.0)
+            # Assert - processing slot was claimed under the lock and worker ran.
+            assert pipeline._processing is True
+            mock_proc.assert_called_once_with("hey test")
 
     def test_process_voice_command_happy_path_updates_flags_and_calls_handlers(self, pipeline: VoicePipeline, mock_executor: Mock):
         """Direct call to _process_voice_command (wake path) exercises full happy path with mocks."""

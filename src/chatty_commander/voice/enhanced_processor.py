@@ -22,6 +22,8 @@
 
 """Enhanced voice processing with improved quality and intelligence."""
 
+from __future__ import annotations
+
 import logging
 import queue
 import threading
@@ -30,7 +32,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-import numpy as np
+try:
+    import numpy as np
+
+    NUMPY_AVAILABLE = True
+except ImportError:  # pragma: no cover - exercised via mocked-absent test
+    np = None  # type: ignore[assignment]
+    NUMPY_AVAILABLE = False
 
 
 @dataclass
@@ -194,7 +202,14 @@ class EnhancedVoiceProcessor:
         return signal.filtfilt(b, a, audio_data)  # type: ignore[no-any-return]
 
     def _energy_based_vad(self, audio_chunk: bytes) -> bool:
+        if np is None:
+            return False
         audio_data = np.frombuffer(audio_chunk, dtype=np.int16)
+        # An empty chunk (e.g. PyAudio overflow/close returning b"") would make
+        # len(audio_data) == 0 and raise ZeroDivisionError below; treat it as
+        # "no speech" instead of crashing the processing loop.
+        if len(audio_data) == 0:
+            return False
         audio_float = audio_data.astype(np.float32)
         energy = np.dot(audio_float, audio_float) / len(audio_data)
 

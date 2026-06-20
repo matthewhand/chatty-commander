@@ -293,18 +293,27 @@ class VoiceTranscriber:
                     )
                     frames.append(data)
 
-                    # Check for silence (simple volume-based detection)
+                    # Check for silence (simple volume-based detection).
+                    # PyAudio can return an empty buffer (b"") on overflow or
+                    # when the stream is closing; computing RMS on a zero-length
+                    # array would raise ZeroDivisionError. Skip the silence
+                    # computation for empty chunks but still fall through to the
+                    # timeout check so a stream that only ever yields empty
+                    # buffers cannot spin forever.
                     audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
-                    volume = np.sqrt(np.dot(audio_array, audio_array) / len(audio_array))
+                    if len(audio_array) > 0:
+                        volume = np.sqrt(
+                            np.dot(audio_array, audio_array) / len(audio_array)
+                        )
 
-                    if volume < self.silence_threshold:  # RMS silence threshold
-                        if silence_start is None:
-                            silence_start = time.time()
-                        elif time.time() - silence_start > self.silence_timeout:
-                            logger.info("Silence detected, stopping recording")
-                            break
-                    else:
-                        silence_start = None
+                        if volume < self.silence_threshold:  # RMS silence threshold
+                            if silence_start is None:
+                                silence_start = time.time()
+                            elif time.time() - silence_start > self.silence_timeout:
+                                logger.info("Silence detected, stopping recording")
+                                break
+                        else:
+                            silence_start = None
 
                     # Timeout check
                     if time.time() - start_time > self.record_timeout:

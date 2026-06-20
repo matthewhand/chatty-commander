@@ -81,6 +81,11 @@ class WakeWordDetector:
         self._stream: pyaudio.Stream | None = None  # type: ignore[name-defined]
         self._running = False
         self._thread: threading.Thread | None = None
+        # Serialises access to / teardown of the audio stream so the listen
+        # loop and stop_listening() cannot close + read the same stream object
+        # concurrently (use-after-free if the loop is blocked in a long read
+        # when stop_listening() closes the stream after a join timeout).
+        self._stream_lock = threading.Lock()
         self._callbacks: list[Callable[[str, float], None]] = []
 
         self._initialize_model()
@@ -149,14 +154,19 @@ class WakeWordDetector:
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=1.0)
 
-        if self._stream:
-            try:
-                self._stream.stop_stream()
-                self._stream.close()
-            except Exception as e:
-                logger.warning(f"Error closing audio stream: {e}")
-            finally:
-                self._stream = None
+        # Close the stream under the lock so we never tear it down while the
+        # listen loop is mid-read on the same object. If the loop is still
+        # blocked in a >1s read at join-timeout, it re-checks _running after
+        # the read returns/raises and exits without touching a closed stream.
+        with self._stream_lock:
+            if self._stream:
+                try:
+                    self._stream.stop_stream()
+                    self._stream.close()
+                except Exception as e:
+                    logger.warning(f"Error closing audio stream: {e}")
+                finally:
+                    self._stream = None
 
         if self._audio:
             try:
@@ -178,14 +188,24 @@ class WakeWordDetector:
                     time.sleep(1.0)  # Mock detection interval
                     continue
 
-                # Type narrowing - these are guaranteed non-None when running
-                assert self._stream is not None
-                assert self._model is not None
+                # Grab a reference to the stream under the lock and re-check
+                # _running: stop_listening() may have flipped _running and is
+                # about to close the stream. Reading under the lock keeps the
+                # stream object alive for the duration of this read so it can
+                # never be closed out from under us mid-read.
+                with self._stream_lock:
+                    if not self._running:
+                        break
+                    stream = self._stream
+                    if stream is None:
+                        break
+                    assert self._model is not None
 
-                # Read audio chunk
-                audio_data = self._stream.read(
-                    self.chunk_size, exception_on_overflow=False
-                )
+                    # Read audio chunk (held under the lock so a concurrent
+                    # stop_listening() blocks on teardown until the read returns)
+                    audio_data = stream.read(
+                        self.chunk_size, exception_on_overflow=False
+                    )
                 audio_array = np.frombuffer(audio_data, dtype=np.int16)
 
                 # Get predictions from model
