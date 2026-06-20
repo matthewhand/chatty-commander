@@ -334,7 +334,7 @@ export default function CommandsPage() {
         </div>
         <div className="flex gap-2">
           <button
-            className="btn btn-ghost"
+            className="btn btn-ghost btn-sm"
             onClick={() => refetch()}
             onKeyDown={(e) => e.key === 'Enter' && refetch()}
             title="Refresh Commands"
@@ -368,7 +368,7 @@ export default function CommandsPage() {
             <Upload size={16} />
             Import JSON
           </button>
-          <Link to="/commands/authoring" className="btn btn-primary glass">
+          <Link to="/commands/authoring" className="btn btn-primary btn-sm glass">
             <Plus size={18} />
             New Command
           </Link>
@@ -396,7 +396,7 @@ export default function CommandsPage() {
             type="text"
             placeholder="Search commands..."
             aria-label="Search commands"
-            className="input input-bordered w-full pl-10 pr-20"
+            className="input input-bordered input-sm w-full pl-10 pr-20"
             value={searchQuery}
             onChange={handleSearchChange}
           />

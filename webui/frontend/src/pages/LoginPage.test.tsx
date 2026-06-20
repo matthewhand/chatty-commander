@@ -17,13 +17,20 @@ vi.mock("../services/authService", () => ({
 
 const mockedUseAuth = vi.mocked(useAuth);
 
-const setLogin = (login: (u: string, p: string) => Promise<boolean>) => {
+const clearSessionExpiredNotice = vi.fn();
+
+const setLogin = (
+  login: (u: string, p: string) => Promise<boolean>,
+  sessionExpiredNotice: string | null = null,
+) => {
   mockedUseAuth.mockReturnValue({
     user: null,
     isAuthenticated: false,
     login,
     logout: vi.fn(),
     loading: false,
+    sessionExpiredNotice,
+    clearSessionExpiredNotice,
   });
 };
 
@@ -95,6 +102,35 @@ describe("LoginPage", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/can't reach the server/i);
+  });
+
+  test("shows the session-expired notice when the hook provides one", () => {
+    setLogin(vi.fn(), "Your session expired — please sign in again");
+    render(<LoginPage />);
+
+    const notice = screen.getByRole("status");
+    expect(notice).toHaveTextContent(/session expired/i);
+  });
+
+  test("no session-expired notice is rendered when the hook has none", () => {
+    setLogin(vi.fn(), null);
+    render(<LoginPage />);
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  test("starting a new login clears the session-expired notice", async () => {
+    setLogin(
+      vi.fn().mockResolvedValue(true),
+      "Your session expired — please sign in again",
+    );
+    render(<LoginPage />);
+
+    fillAndSubmit();
+
+    await waitFor(() =>
+      expect(clearSessionExpiredNotice).toHaveBeenCalled(),
+    );
   });
 
   test("password visibility toggle flips the input type", () => {

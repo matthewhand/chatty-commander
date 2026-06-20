@@ -287,13 +287,13 @@ P2 = polish.
 - [x] **Author → test journey has no connective tissue** — nothing links a new command to Voice Test and back; add a "Test this command" action on command cards and an "Edit commands" link on Voice Test ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx), [`VoiceTestPage.tsx`](webui/frontend/src/pages/VoiceTestPage.tsx))  ✅ (#712)
 - [x] **DynamicDropdown menu lacks keyboard semantics** — no `role=menu`/`menuitem`, no Escape, no arrow-key roving focus; add them ([`DynamicDropdown.tsx`](webui/frontend/src/components/DynamicDropdown.tsx))  ✅ (#711)
 
-### P2 — polish (8/10)
+### P2 — polish (10/10)
 
 - [x] **Stale screenshots** — `docs/screenshots/*.png` show UI not in the current code (a 4-step authoring stepper, a Theme Preview panel, a "Voice Pipeline" toggle, star "RELIABILITY" ratings); regenerate the screenshots and reconcile any genuinely-missing controls ([`tests/e2e/guided_tour.spec.ts`](webui/frontend/tests/e2e/guided_tour.spec.ts))  ✅ (#712)
-- [ ] **Inconsistent control sizing** across pages (`select`/`select-sm`/`select-xs`, mixed toolbar button heights); standardise a size scale ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), `CommandsPage.tsx`)
+- [x] **Inconsistent control sizing** across pages (`select`/`select-sm`/`select-xs`, mixed toolbar button heights); standardise a size scale ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), `CommandsPage.tsx`)  ✅ (#714)
 - [x] **Dashboard hero pushes telemetry below the fold** — make the welcome hero compact/dismissible or move it below the stats grid ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#712)
 - [x] **Command-log rows keyed by array index** on a rolling window (key collisions); key on a stable id ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#712)
-- [ ] **Two parallel notification systems** (framer-motion toasts vs CSS `.alert`) with different motion/placement; unify on one ([`ToastProvider.tsx`](webui/frontend/src/components/ToastProvider.tsx), `index.css`)
+- [x] **Two parallel notification systems** (framer-motion toasts vs CSS `.alert`) with different motion/placement; unify on one ([`ToastProvider.tsx`](webui/frontend/src/components/ToastProvider.tsx), `index.css`)  ✅ (#714)
 - [x] **Brand identity is thin & inconsistent** — "Chatty / Voice Commander" (sidebar) vs "Chatty Commander" (login/mobile), no logo mark; design one logo lockup used everywhere ([`MainLayout.tsx`](webui/frontend/src/components/MainLayout.tsx), `LoginPage.tsx`)  ✅ (#713)
 - [x] **`index.css` is borrowed** ("Open Hivemind — Modern UI Styles" header) and overrides DaisyUI element defaults broadly; re-home it and prefer component classes over blanket `.card/.btn/.table` overrides ([`index.css`](webui/frontend/src/index.css))  ✅ (#712)
 - [x] **Motion isn't reduced-motion-aware** — focus/hover `translateY`, card lift/glow, row translate, progress pulse, unbounded list-stagger delay all animate unconditionally; gate behind `prefers-reduced-motion` and cap the stagger ([`index.css`](webui/frontend/src/index.css), `CommandsPage.tsx`)  ✅ (#712)

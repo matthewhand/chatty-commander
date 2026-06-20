@@ -3,6 +3,8 @@
  * Handles all HTTP requests to the backend API
  */
 
+import { notifySessionExpired } from "./authService";
+
 class ApiService {
   constructor(baseURL = "") {
     this.baseURL = baseURL;
@@ -29,6 +31,15 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
+
+      // Centralised 401 handling: a 401 on a request that carried a bearer
+      // token means a previously-authenticated session expired/was revoked
+      // mid-session, so trigger the shared sign-out/redirect path. A 401 with
+      // no token is the normal unauthenticated / dev no-auth signal and must
+      // not disturb that flow (notifySessionExpired no-ops without a token).
+      if (response.status === 401 && token) {
+        notifySessionExpired();
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

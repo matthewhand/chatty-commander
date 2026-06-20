@@ -579,7 +579,7 @@ const ConfigurationPage: React.FC = () => {
                           <p className="text-xs opacity-70">Microphone source</p>
                         </div>
                         <button
-                          className="btn btn-xs btn-outline btn-primary"
+                          className="btn btn-sm btn-outline btn-primary"
                           onClick={handleTestMic}
                           disabled={micTestStatus === "testing"}
                           aria-label={micTestStatus === "testing" ? "Testing microphone" : "Test microphone"}
@@ -663,7 +663,7 @@ const ConfigurationPage: React.FC = () => {
                           <p className="text-xs opacity-70">Playback endpoint</p>
                         </div>
                         <button
-                          className="btn btn-xs btn-outline btn-secondary"
+                          className="btn btn-sm btn-outline btn-secondary"
                           onClick={handleTestOutput}
                           disabled={outputTestStatus === "playing"}
                           aria-label={outputTestStatus === "playing" ? "Playing test tone" : "Play test tone"}
