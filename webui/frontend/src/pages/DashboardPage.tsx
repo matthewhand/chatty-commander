@@ -168,7 +168,7 @@ const CommandConsole = React.memo(function CommandConsole({
             className="btn btn-primary"
             disabled={!commandInput.trim() || isSending}
           >
-            {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
+            {isSending ? <span className="loading loading-spinner"></span> : <Send size={16} />}
             Execute
           </button>
         </form>
@@ -186,7 +186,7 @@ const CommandConsole = React.memo(function CommandConsole({
                 onClick={onReconnect}
                 data-testid="log-reconnect-button"
               >
-                <RotateCw size={12} aria-hidden="true" />
+                <RotateCw size={16} aria-hidden="true" />
                 Reconnect
               </button>
             )}
@@ -558,7 +558,7 @@ const DashboardPage = React.memo(() => {
       {/* Dismissible welcome hero — compact so it doesn't push telemetry below the fold. */}
       {!welcomeDismissed && (
         <div className="alert bg-base-200 border border-base-content/10 py-2" role="status">
-          <Mic size={18} className="text-primary" aria-hidden="true" />
+          <Mic size={16} className="text-primary" aria-hidden="true" />
           <span className="text-sm">
             Welcome to ChattyCommander — your voice assistant control center. Monitor status, watch the live log, and run commands below.
           </span>
@@ -639,7 +639,7 @@ const DashboardPage = React.memo(() => {
         >
           <div className="stat">
             <div className="stat-figure text-primary">
-              <Mic size={32} />
+              <Mic size={24} />
             </div>
             <div className="stat-title">Voice Assistant</div>
             <div className="stat-value text-primary text-2xl capitalize">
@@ -657,7 +657,7 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-base-content/60" aria-hidden="true">
-              <Server size={32} aria-hidden="true" />
+              <Server size={24} aria-hidden="true" />
             </div>
             <div className="stat-title">System Status</div>
             <div className="stat-value">{systemStatus?.status || "Unknown"}</div>
@@ -668,7 +668,7 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-base-content/60">
-              <Clock size={32} />
+              <Clock size={24} />
             </div>
             <div className="stat-title">Uptime</div>
             <div className="stat-value text-2xl">{systemStatus?.uptime || "N/A"}</div>
@@ -679,7 +679,7 @@ const DashboardPage = React.memo(() => {
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
             <div className="stat-figure text-base-content/60">
-              <Terminal size={32} />
+              <Terminal size={24} />
             </div>
             <div className="stat-title">Commands</div>
             <div className="stat-value">{systemStatus?.commandsExecuted || 0}</div>
@@ -766,11 +766,11 @@ const DashboardPage = React.memo(() => {
             <div className="stat-figure">
               {isConnected ?
                 (isStale ?
-                  <Wifi size={32} className="text-warning" /> :
-                  <Wifi size={32} className="text-success" />) :
+                  <Wifi size={24} className="text-warning" /> :
+                  <Wifi size={24} className="text-success" />) :
                 isReconnecting ?
-                  <Wifi size={32} className="text-warning animate-pulse" /> :
-                  <WifiOff size={32} className="text-error" />
+                  <Wifi size={24} className="text-warning animate-pulse" /> :
+                  <WifiOff size={24} className="text-error" />
               }
             </div>
             <div className="stat-title">WebSocket</div>
@@ -784,7 +784,7 @@ const DashboardPage = React.memo(() => {
                     : "Offline"}
             </div>
             <div className="stat-desc flex items-center gap-1">
-              <Zap size={14} className={isStale ? "text-warning" : "text-base-content/60"} />
+              <Zap size={16} className={isStale ? "text-warning" : "text-base-content/60"} />
               <span>
                 {isStale ? "No data — last msg: " : "Last msg: "}
                 {lastMsgAgo}
@@ -799,7 +799,7 @@ const DashboardPage = React.memo(() => {
                   onClick={handleReconnect}
                   data-testid="ws-reconnect-button"
                 >
-                  <RotateCw size={14} aria-hidden="true" />
+                  <RotateCw size={16} aria-hidden="true" />
                   Reconnect
                 </button>
               </div>
@@ -824,7 +824,7 @@ const DashboardPage = React.memo(() => {
                   onClick={() => setIsPaused(!isPaused)}
                   aria-label={isPaused ? "Resume Chart" : "Pause Chart"}
                 >
-                  {isPaused ? <Play size={18} /> : <Pause size={18} />}
+                  {isPaused ? <Play size={16} /> : <Pause size={16} />}
                 </button>
               </div>
               <div className="tooltip" data-tip="Export CSV">
@@ -833,7 +833,7 @@ const DashboardPage = React.memo(() => {
                   onClick={handleExport}
                   aria-label="Export Data as CSV"
                 >
-                  <Download size={18} />
+                  <Download size={16} />
                 </button>
               </div>
             </div>
@@ -870,7 +870,7 @@ const DashboardPage = React.memo(() => {
 
       {/* Agent Status Section */}
       <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mt-8 mb-4 flex items-center gap-2">
-        <AssessmentIcon size={24} className="text-base-content/60" /> Agent Status
+        <AssessmentIcon size={20} className="text-base-content/60" /> Agent Status
       </h3>
 
       {agentsError && (

@@ -388,14 +388,14 @@ const ActionField: React.FC<{
 
       {validationError && (
         <p id={errorId} role="alert" className="text-error text-xs flex items-center gap-1">
-          <AlertCircle size={14} />
+          <AlertCircle size={16} />
           {validationError}
         </p>
       )}
 
       {dangerWarning && (
         <p className="text-warning text-xs flex items-center gap-1">
-          <AlertTriangle size={14} />
+          <AlertTriangle size={16} />
           {dangerWarning}
         </p>
       )}
@@ -753,7 +753,7 @@ export default function CommandAuthoringPage() {
             </ul>
           </div>
           <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-3">
-            <Wand2 size={32} />
+            <Wand2 size={24} />
             {isEditing ? `Edit: ${editName}` : 'Command Authoring'}
           </h1>
           <p className="text-base-content/60 mt-1">
@@ -854,12 +854,12 @@ export default function CommandAuthoringPage() {
               >
                 {generateMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <Wand2 size={18} />
+                    <Wand2 size={16} />
                     Generate Command
                   </>
                 )}
@@ -939,12 +939,12 @@ export default function CommandAuthoringPage() {
               >
                 {saveMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save size={18} />
+                    <Save size={16} />
                     Save Command
                   </>
                 )}
@@ -1053,7 +1053,7 @@ export default function CommandAuthoringPage() {
             <AnimatePresence>
               {manualCommand.actions.length === 0 ? (
                 <div className="text-center py-8 text-base-content/50">
-                  <Terminal size={32} className="mx-auto mb-2 opacity-50" />
+                  <Terminal size={24} className="mx-auto mb-2 opacity-50" />
                   <p>No actions defined yet. Click "Add Action" to get started.</p>
                 </div>
               ) : (
@@ -1082,12 +1082,12 @@ export default function CommandAuthoringPage() {
               >
                 {saveMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save size={18} />
+                    <Save size={16} />
                     Save Command
                   </>
                 )}
@@ -1139,14 +1139,14 @@ export default function CommandAuthoringPage() {
               <div className="card glass-card max-w-lg w-full bg-base-100 shadow-2xl">
                 <div className="card-body">
                   <div className="flex items-center gap-3 text-warning mb-4">
-                    <Shield size={28} />
+                    <Shield size={24} />
                     <h3 id="confirm-modal-title" className="text-xl font-bold">
                       {isEditing ? 'Confirm Command Changes' : 'Confirm Command Creation'}
                     </h3>
                   </div>
 
                   <div className="alert alert-warning mb-4">
-                    <AlertCircle size={18} />
+                    <AlertCircle size={16} />
                     <span className="text-sm">
                       Commands can execute shell commands and open URLs. Please review carefully
                       before saving.
@@ -1156,7 +1156,7 @@ export default function CommandAuthoringPage() {
                   {dangerFlags.length > 0 && (
                     <div className="alert alert-error mb-4 flex-col items-start">
                       <div className="flex items-center gap-2 font-semibold">
-                        <AlertTriangle size={18} />
+                        <AlertTriangle size={16} />
                         Potentially risky actions flagged
                       </div>
                       <ul className="list-disc list-inside text-sm mt-1 space-y-1">

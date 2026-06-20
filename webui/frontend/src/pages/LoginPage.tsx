@@ -131,7 +131,7 @@ const LoginPage: React.FC = () => {
                   aria-pressed={showPassword}
                   disabled={loading}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>

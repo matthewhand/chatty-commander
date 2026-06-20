@@ -157,7 +157,7 @@ const themeLabel = (id: string): string =>
 const HelpHint: React.FC<{ text: string; label: string }> = ({ text, label }) => (
   <span className="tooltip tooltip-right align-middle" data-tip={text}>
     <HelpIcon
-      size={14}
+      size={16}
       className="text-base-content/50 cursor-help"
       role="img"
       aria-label={label}
@@ -586,7 +586,7 @@ const ConfigurationPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-primary/10 rounded-xl text-primary">
-          <SettingsIcon size={32} />
+          <SettingsIcon size={24} />
         </div>
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -813,19 +813,19 @@ const ConfigurationPage: React.FC = () => {
                           >
                             {micPeak >= MIC_SIGNAL_THRESHOLD ? (
                               <>
-                                <CheckIcon size={12} aria-hidden="true" />
+                                <CheckIcon size={16} aria-hidden="true" />
                                 {`Signal detected (peak ${micPeak}%)`}
                               </>
                             ) : (
                               <>
-                                <AlertTriangleIcon size={12} aria-hidden="true" />
+                                <AlertTriangleIcon size={16} aria-hidden="true" />
                                 No signal detected — check your microphone
                               </>
                             )}
                           </span>
                         ) : micTestStatus === "error" ? (
                           <span data-testid="mic-test-result" className="text-xs text-error w-full text-center flex items-center justify-center gap-1">
-                            <AlertTriangleIcon size={12} aria-hidden="true" />
+                            <AlertTriangleIcon size={16} aria-hidden="true" />
                             {micTestError}
                           </span>
                         ) : (
@@ -887,13 +887,13 @@ const ConfigurationPage: React.FC = () => {
                           {outputTestStatus === "playing" && "Playing 440 Hz test tone..."}
                           {outputTestStatus === "done" && (
                             <>
-                              <CheckIcon size={12} aria-hidden="true" />
+                              <CheckIcon size={16} aria-hidden="true" />
                               Test tone played
                             </>
                           )}
                           {outputTestStatus === "error" && (
                             <>
-                              <AlertTriangleIcon size={12} aria-hidden="true" />
+                              <AlertTriangleIcon size={16} aria-hidden="true" />
                               {outputTestError}
                             </>
                           )}
@@ -961,7 +961,7 @@ const ConfigurationPage: React.FC = () => {
                                     {deleteMutation.isPending && deleteMutation.variables === model.name ? (
                                       <span className="loading loading-spinner loading-xs"></span>
                                     ) : (
-                                      <TrashIcon size={14} />
+                                      <TrashIcon size={16} />
                                     )}
                                   </button>
                                 </td>
@@ -981,7 +981,7 @@ const ConfigurationPage: React.FC = () => {
 
                   <div className="card bg-base-200/50 border border-base-content/5 p-4 h-fit">
                     <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                      <UploadIcon size={14} /> Upload Model
+                      <UploadIcon size={16} /> Upload Model
                     </h4>
 
                     <div className="form-control w-full mb-3">
@@ -1077,7 +1077,7 @@ const ConfigurationPage: React.FC = () => {
                           title="Copy to clipboard"
                           aria-label="Copy API Base URL"
                         >
-                          {copiedField === "baseUrl" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+                          {copiedField === "baseUrl" ? <CheckIcon size={16} className="text-success" /> : <CopyIcon size={16} />}
                         </button>
                       )}
                     </div>
@@ -1125,7 +1125,7 @@ const ConfigurationPage: React.FC = () => {
                           disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
                           title="Fetch available models from endpoint"
                         >
-                          {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={12} />}
+                          {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={16} />}
                           {fetchingModels ? "Fetching..." : "Fetch list"}
                         </button>
                       </label>
@@ -1159,7 +1159,7 @@ const ConfigurationPage: React.FC = () => {
                             title="Copy to clipboard"
                             aria-label="Copy Model"
                           >
-                            {copiedField === "model" ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
+                            {copiedField === "model" ? <CheckIcon size={16} className="text-success" /> : <CopyIcon size={16} />}
                           </button>
                         )}
                       </div>
@@ -1169,7 +1169,7 @@ const ConfigurationPage: React.FC = () => {
                             data-testid="model-fetch-error"
                             className="label-text-alt text-error flex items-center gap-1"
                           >
-                            <AlertTriangleIcon size={12} aria-hidden="true" />
+                            <AlertTriangleIcon size={16} aria-hidden="true" />
                             {modelFetchError}
                           </span>
                         </label>
@@ -1189,12 +1189,12 @@ const ConfigurationPage: React.FC = () => {
             >
               {dirty ? (
                 <>
-                  <AlertTriangleIcon size={14} aria-hidden="true" />
+                  <AlertTriangleIcon size={16} aria-hidden="true" />
                   Unsaved changes
                 </>
               ) : (
                 <>
-                  <CheckIcon size={14} aria-hidden="true" />
+                  <CheckIcon size={16} aria-hidden="true" />
                   All changes saved
                 </>
               )}
@@ -1204,7 +1204,7 @@ const ConfigurationPage: React.FC = () => {
                 data-testid="stale-remote-note"
                 className="text-xs text-info flex items-center gap-1"
               >
-                <AlertTriangleIcon size={12} aria-hidden="true" />
+                <AlertTriangleIcon size={16} aria-hidden="true" />
                 Settings changed on the server since you started editing — saving will overwrite them.
               </span>
             )}
