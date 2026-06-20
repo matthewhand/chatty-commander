@@ -66,6 +66,16 @@ test.describe("Dograh smallwebrtc loopback", () => {
     fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
   });
 
+  // Exercises the live dograh stack (smallwebrtc / pipecat). Skip cleanly when
+  // that external service isn't reachable, rather than failing the suite.
+  test.beforeEach(async () => {
+    const apiBase = process.env.DOGRAH_API_BASE || "http://localhost:8020";
+    const reachable = await fetch(apiBase, { signal: AbortSignal.timeout(2000) })
+      .then(() => true)
+      .catch(() => false);
+    test.skip(!reachable, `dograh backend not reachable at ${apiBase}`);
+  });
+
   test("webcall-handshake", async ({ page, request }) => {
     // Track signaling-channel evidence: the WS URL is the proof that
     // the pipecat pipeline started for our run.
