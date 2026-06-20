@@ -53,13 +53,15 @@ describe("LoginPage", () => {
   test("renders the unified ChattyCommander logo/wordmark", () => {
     setLogin(vi.fn());
     render(<LoginPage />);
-    // The brand lockup announces the unified product name.
+    // The two-column layout renders the brand lockup in the desktop hero panel
+    // AND (for small screens) in the form card; both live in the DOM since the
+    // show/hide is CSS-only. Assert the brand is present (at least once).
     expect(
-      screen.getByRole("img", { name: "ChattyCommander" }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("img", { name: "ChattyCommander" }).length,
+    ).toBeGreaterThanOrEqual(1);
     // Wordmark renders the unified name, not the old "Chatty Commander" split.
-    expect(screen.getByText("Chatty")).toBeInTheDocument();
-    expect(screen.getByText("Commander")).toBeInTheDocument();
+    expect(screen.getAllByText("Chatty").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Commander").length).toBeGreaterThanOrEqual(1);
   });
 
   test("login background uses an intentional treatment, not the dead pattern class", () => {
