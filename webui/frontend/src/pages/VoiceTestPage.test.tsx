@@ -1,10 +1,12 @@
 import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import VoiceTestPage, {
   VOICE_TEST_WS_PATH,
   buildVoiceTestWsUrl,
 } from "./VoiceTestPage";
+import { ToastProvider } from "../components/ToastProvider";
 
 // Mutable mock user so individual tests can flip noAuth.
 const authMock = vi.hoisted(() => ({
@@ -20,6 +22,16 @@ vi.mock("../hooks/useAuth", () => ({
     logout: vi.fn(),
   }),
 }));
+
+// Render helper wrapping the page in the providers it depends on (router + toasts).
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <ToastProvider>
+        <VoiceTestPage />
+      </ToastProvider>
+    </MemoryRouter>,
+  );
 
 // Controllable WebSocket test double; records instances and sent frames.
 class TestWebSocket {
@@ -82,25 +94,40 @@ beforeEach(() => {
   // jsdom has no mediaDevices; install a stub per test.
   Object.defineProperty(navigator, "mediaDevices", {
     configurable: true,
-    value: { getUserMedia: vi.fn().mockResolvedValue(fakeStream) },
+    value: {
+      getUserMedia: vi.fn().mockResolvedValue(fakeStream),
+      enumerateDevices: vi.fn().mockResolvedValue([]),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    },
   });
 });
 
 describe("VoiceTestPage", () => {
-  test("renders heading, dry-run banner, and timeline empty state", () => {
-    render(<VoiceTestPage />);
+  test("renders heading, subtitle, dry-run banner, and timeline empty state", () => {
+    renderPage();
 
     expect(screen.getByRole("heading", { name: "Voice Test" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Dry-run mode: detected commands are reported, not executed."),
-    ).toBeInTheDocument();
+    // Subtitle explains what the test verifies.
+    expect(screen.getByTestId("voice-test-subtitle")).toHaveTextContent(
+      /no real actions run/i,
+    );
+    expect(screen.getByTestId("dry-run-banner")).toHaveTextContent(/What to expect/i);
     expect(screen.getByTestId("voice-timeline-empty")).toBeInTheDocument();
     expect(screen.getByText("No pipeline events yet.")).toBeInTheDocument();
     expect(document.title).toBe("Voice Test | ChattyCommander");
   });
 
+  test("renders the verify-setup checklist and the edit-commands cross-link", () => {
+    renderPage();
+
+    expect(screen.getByTestId("voice-checklist")).toBeInTheDocument();
+    const link = screen.getByTestId("edit-commands-link");
+    expect(link).toHaveAttribute("href", "/commands");
+  });
+
   test("connects to the voice-test WS path and sends the dry-run start frame", () => {
-    render(<VoiceTestPage />);
+    renderPage();
 
     const socket = lastSocket();
     expect(socket.url).toContain(VOICE_TEST_WS_PATH);
@@ -116,14 +143,14 @@ describe("VoiceTestPage", () => {
     authMock.user = { username: "tester", roles: ["admin"], is_active: true, noAuth: false };
     localStorage.setItem("auth_token", "tok123");
 
-    render(<VoiceTestPage />);
+    renderPage();
 
     expect(lastSocket().url).toBe(buildVoiceTestWsUrl(false));
     expect(lastSocket().url).toContain(`${VOICE_TEST_WS_PATH}?token=tok123`);
   });
 
   test("page still renders and shows a disconnected badge when the server is absent", () => {
-    render(<VoiceTestPage />);
+    renderPage();
 
     act(() => lastSocket().serverClose());
 
@@ -131,6 +158,46 @@ describe("VoiceTestPage", () => {
     // Core UI remains usable.
     expect(screen.getByTestId("voice-test-page")).toBeInTheDocument();
     expect(screen.getByLabelText("Simulate a voice command")).toBeInTheDocument();
+  });
+
+  describe("device picker", () => {
+    test("renders a default option and enumerated audio-input devices", async () => {
+      (navigator.mediaDevices.enumerateDevices as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { kind: "audioinput", deviceId: "mic-a", label: "Built-in Mic" },
+        { kind: "audioinput", deviceId: "mic-b", label: "USB Headset" },
+        { kind: "audiooutput", deviceId: "spk-a", label: "Speakers" },
+      ]);
+      renderPage();
+
+      const select = await screen.findByTestId("voice-device-select");
+      expect(select).toBeInTheDocument();
+      // System default + 2 audio inputs (the audiooutput is filtered out).
+      await waitFor(() =>
+        expect(screen.getByRole("option", { name: "Built-in Mic" })).toBeInTheDocument(),
+      );
+      expect(screen.getByRole("option", { name: "USB Headset" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "System default" })).toBeInTheDocument();
+      expect(screen.queryByRole("option", { name: "Speakers" })).not.toBeInTheDocument();
+    });
+
+    test("passes the selected deviceId as a getUserMedia constraint", async () => {
+      (navigator.mediaDevices.enumerateDevices as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { kind: "audioinput", deviceId: "mic-b", label: "USB Headset" },
+      ]);
+      const getUserMedia = navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>;
+      renderPage();
+
+      await screen.findByRole("option", { name: "USB Headset" });
+      fireEvent.change(screen.getByTestId("voice-device-select"), {
+        target: { value: "mic-b" },
+      });
+      fireEvent.click(screen.getByTestId("mic-toggle"));
+
+      await waitFor(() => expect(getUserMedia).toHaveBeenCalled());
+      expect(getUserMedia).toHaveBeenCalledWith({
+        audio: { deviceId: { exact: "mic-b" } },
+      });
+    });
   });
 
   describe("microphone permission flow", () => {
@@ -141,7 +208,9 @@ describe("VoiceTestPage", () => {
           resolveStream = resolve;
         }),
       );
-      render(<VoiceTestPage />);
+      renderPage();
+      // Streaming state requires an open socket too.
+      act(() => lastSocket().serverOpen());
 
       expect(screen.getByTestId("mic-state")).toHaveTextContent("Microphone off");
 
@@ -151,9 +220,9 @@ describe("VoiceTestPage", () => {
 
       await act(async () => resolveStream(fakeStream));
 
-      expect(screen.getByTestId("mic-state")).toHaveTextContent(
-        "Listening — audio is streaming to the server",
-      );
+      // MediaRecorder is undefined in jsdom, so the recorder never starts; the
+      // honest state reports the mic is on but not streaming.
+      expect(screen.getByTestId("mic-state")).toHaveTextContent("Microphone on — not streaming");
       expect(screen.getByTestId("voice-level-meter")).toBeInTheDocument();
       expect(screen.getByRole("meter", { name: "Microphone input level" })).toBeInTheDocument();
 
@@ -163,11 +232,55 @@ describe("VoiceTestPage", () => {
       expect(screen.queryByTestId("voice-level-meter")).not.toBeInTheDocument();
     });
 
+    test("reports honest streaming state once the recorder is running", async () => {
+      // Provide a minimal MediaRecorder so the recorder branch runs.
+      class FakeRecorder {
+        ondataavailable: ((e: unknown) => void) | null = null;
+        start() {}
+        stop() {}
+      }
+      (globalThis as any).MediaRecorder = FakeRecorder;
+      try {
+        renderPage();
+        act(() => lastSocket().serverOpen());
+
+        fireEvent.click(screen.getByTestId("mic-toggle"));
+        await waitFor(() =>
+          expect(screen.getByTestId("mic-state")).toHaveTextContent(
+            "Listening — streaming to server",
+          ),
+        );
+        expect(screen.queryByTestId("mic-stream-warning")).not.toBeInTheDocument();
+      } finally {
+        delete (globalThis as any).MediaRecorder;
+      }
+    });
+
+    test("warns when the mic is on but the socket is down", async () => {
+      class FakeRecorder {
+        ondataavailable: ((e: unknown) => void) | null = null;
+        start() {}
+        stop() {}
+      }
+      (globalThis as any).MediaRecorder = FakeRecorder;
+      try {
+        renderPage();
+        // Socket never opened.
+        fireEvent.click(screen.getByTestId("mic-toggle"));
+        await waitFor(() =>
+          expect(screen.getByTestId("mic-stream-warning")).toBeInTheDocument(),
+        );
+        expect(screen.getByTestId("mic-state")).toHaveTextContent("Microphone on — not streaming");
+      } finally {
+        delete (globalThis as any).MediaRecorder;
+      }
+    });
+
     test("shows the denied state when getUserMedia rejects", async () => {
       (navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>).mockRejectedValue(
         new DOMException("Permission denied", "NotAllowedError"),
       );
-      render(<VoiceTestPage />);
+      renderPage();
 
       fireEvent.click(screen.getByTestId("mic-toggle"));
 
@@ -184,7 +297,7 @@ describe("VoiceTestPage", () => {
         configurable: true,
         value: undefined,
       });
-      render(<VoiceTestPage />);
+      renderPage();
 
       fireEvent.click(screen.getByTestId("mic-toggle"));
 
@@ -194,7 +307,7 @@ describe("VoiceTestPage", () => {
 
   describe("text simulation and stage timeline", () => {
     test("sends {type:'text', text} and renders returned stage events with timing", async () => {
-      render(<VoiceTestPage />);
+      renderPage();
       const socket = lastSocket();
       act(() => socket.serverOpen());
 
@@ -206,6 +319,8 @@ describe("VoiceTestPage", () => {
         JSON.stringify({ type: "text", text: "hey chatty open browser" }),
       );
       expect(input).toHaveValue(""); // cleared after send
+      // Processing indicator appears until the next stage event arrives.
+      expect(screen.getByTestId("voice-processing")).toBeInTheDocument();
 
       const base = 1717900000000; // realistic epoch-ms timestamp
       act(() => {
@@ -217,7 +332,7 @@ describe("VoiceTestPage", () => {
         });
         socket.serverEvent({
           stage: "match",
-          data: { command: "open_browser", success: true },
+          data: { command: "open_browser", success: true, matched: true },
           ts: base + 150,
         });
         socket.serverEvent({
@@ -226,6 +341,9 @@ describe("VoiceTestPage", () => {
           ts: base + 160,
         });
       });
+
+      // Processing indicator clears once stages arrive.
+      expect(screen.queryByTestId("voice-processing")).not.toBeInTheDocument();
 
       const events = screen.getAllByTestId("voice-stage-event");
       expect(events).toHaveLength(4);
@@ -243,17 +361,63 @@ describe("VoiceTestPage", () => {
       }
       // Empty state is gone.
       expect(screen.queryByTestId("voice-timeline-empty")).not.toBeInTheDocument();
+      // Transcript surfaced in its dedicated panel.
+      expect(screen.getByTestId("transcript-text")).toHaveTextContent("open browser");
     });
 
-    test("renders failure styling for error events and success:false data", () => {
-      render(<VoiceTestPage />);
+    test("renders the timeline as an aria-live log", () => {
+      renderPage();
+      const socket = lastSocket();
+      act(() => socket.serverOpen());
+      act(() => socket.serverEvent({ stage: "listening", data: {}, ts: 1 }));
+
+      const timeline = screen.getByTestId("voice-stage-timeline");
+      expect(timeline).toHaveAttribute("role", "log");
+      expect(timeline).toHaveAttribute("aria-live", "polite");
+    });
+
+    test("highlights the wake-word stage distinctly and shows the detected affordance", () => {
+      renderPage();
+      const socket = lastSocket();
+      act(() => socket.serverOpen());
+
+      act(() => {
+        socket.serverEvent({ stage: "wakeword", data: { keyword: "hey chatty" }, ts: 1 });
+      });
+
+      expect(screen.getByTestId("wake-word-detected")).toBeInTheDocument();
+      expect(screen.getByTestId("wake-word-badge")).toBeInTheDocument();
+      const event = screen.getByTestId("voice-stage-event");
+      expect(event).toHaveAttribute("data-wakeword", "true");
+    });
+
+    test("shows the transcript-unavailable explainer when the server reports it", () => {
+      renderPage();
+      const socket = lastSocket();
+      act(() => socket.serverOpen());
+
+      act(() => {
+        socket.serverEvent({
+          stage: "listening",
+          data: { transcription_available: false },
+          ts: 1,
+        });
+      });
+
+      expect(screen.getByTestId("transcript-unavailable")).toHaveTextContent(
+        /Speech-to-text isn't configured/i,
+      );
+    });
+
+    test("renders failure styling for error events and unmatched data", () => {
+      renderPage();
       const socket = lastSocket();
       act(() => socket.serverOpen());
 
       act(() => {
         socket.serverEvent({
           stage: "match",
-          data: { success: false, error: "no command matched" },
+          data: { matched: false, text: "blah" },
           ts: 2000,
         });
         socket.serverEvent({ stage: "error", data: { error: "pipeline crashed" }, ts: 2050 });
@@ -262,13 +426,24 @@ describe("VoiceTestPage", () => {
       const events = screen.getAllByTestId("voice-stage-event");
       expect(events).toHaveLength(2);
       expect(events[0]).toHaveAttribute("data-status", "failure");
-      expect(events[0]).toHaveTextContent("no command matched");
       expect(events[1]).toHaveAttribute("data-status", "failure");
       expect(events[1]).toHaveTextContent("Error");
     });
 
+    test("wake-word example chips fill the simulation input", () => {
+      renderPage();
+      act(() => lastSocket().serverOpen());
+
+      const chips = screen.getAllByTestId("wake-word-chip");
+      expect(chips.length).toBeGreaterThan(0);
+      fireEvent.click(chips[0]);
+      expect(screen.getByLabelText("Simulate a voice command")).toHaveValue(
+        chips[0].textContent,
+      );
+    });
+
     test("send button is disabled while disconnected", async () => {
-      render(<VoiceTestPage />);
+      renderPage();
 
       fireEvent.change(screen.getByLabelText("Simulate a voice command"), {
         target: { value: "open browser" },

@@ -3,32 +3,76 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   TerminalSquare,
-  Settings2,
+  Keyboard,
   Globe,
+  MessageSquare,
+  Mic,
   Plus,
   Edit3,
   Trash2,
-  FileAudio,
+  PlayCircle,
   RefreshCw,
   Search,
   Download,
-  Upload
+  Upload,
+  ArrowUpDown
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
 import { DynamicDropdown } from '../components/DynamicDropdown';
+import { useToast } from '../components/ToastProvider';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 
 // Backend response is a Record<string, CommandConfig>
 interface CommandConfig {
-  action: string; // 'keypress' | 'url' | 'shell' | 'custom_message' | 'voice_chat'
+  action?: string; // 'keypress' | 'url' | 'shell' | 'custom_message' | 'voice_chat'
   keys?: string;
   url?: string;
   cmd?: string;
   message?: string;
 }
 
-// Human-readable summary of what a command actually does, for the card.
+// Cap the framer-motion entrance stagger so large lists don't animate with an
+// unbounded delay (the last rows would otherwise wait seconds before appearing).
+const MAX_STAGGER_INDEX = 12;
+const STAGGER_STEP = 0.03;
+
+type CommandTypeKey = 'keypress' | 'url' | 'shell' | 'voice_chat' | 'custom_message' | 'unknown';
+
+interface CommandTypeMeta {
+  key: CommandTypeKey;
+  label: string;
+  badgeClass: string;
+  Icon: typeof TerminalSquare;
+}
+
+const TYPE_META: Record<CommandTypeKey, CommandTypeMeta> = {
+  keypress: { key: 'keypress', label: 'Keypress', badgeClass: 'badge-primary', Icon: Keyboard },
+  url: { key: 'url', label: 'URL', badgeClass: 'badge-info', Icon: Globe },
+  shell: { key: 'shell', label: 'Shell', badgeClass: 'badge-warning', Icon: TerminalSquare },
+  voice_chat: { key: 'voice_chat', label: 'Voice', badgeClass: 'badge-secondary', Icon: Mic },
+  custom_message: { key: 'custom_message', label: 'Message', badgeClass: 'badge-accent', Icon: MessageSquare },
+  unknown: { key: 'unknown', label: 'Other', badgeClass: 'badge-ghost', Icon: TerminalSquare },
+};
+
+// Derive the command's type from its config. The explicit `action` field wins;
+// otherwise we infer it from whichever payload field is populated.
+function getCommandType(config: CommandConfig): CommandTypeMeta {
+  const action = config.action;
+  if (action === 'keypress') return TYPE_META.keypress;
+  if (action === 'url') return TYPE_META.url;
+  if (action === 'shell') return TYPE_META.shell;
+  if (action === 'voice_chat') return TYPE_META.voice_chat;
+  if (action === 'custom_message') return TYPE_META.custom_message;
+  // Infer from payload when action is missing/unrecognized.
+  if (config.keys) return TYPE_META.keypress;
+  if (config.url) return TYPE_META.url;
+  if (config.cmd) return TYPE_META.shell;
+  if (config.message) return TYPE_META.custom_message;
+  return TYPE_META.unknown;
+}
+
+// Human-readable summary of what a command actually does.
 function describeAction(config: CommandConfig): { label: string; detail: string } {
   if (config.url) return { label: 'Opens URL', detail: config.url };
   if (config.keys) return { label: 'Presses keys', detail: config.keys };
@@ -38,18 +82,33 @@ function describeAction(config: CommandConfig): { label: string; detail: string 
   return { label: 'No action', detail: 'Not configured' };
 }
 
+type SortKey = 'name' | 'type';
+
+interface PendingImport {
+  parsed: Record<string, CommandConfig>;
+  added: string[];
+  removed: string[];
+  changed: string[];
+}
+
 export default function CommandsPage() {
   useEffect(() => {
     document.title = "Commands | ChattyCommander";
   }, []);
 
   const reduceMotion = useReducedMotionPref();
+  const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
+  const [sortKey, setSortKey] = useState<SortKey>('name');
   const [pendingDeleteCommand, setPendingDeleteCommand] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
+  const importDialogRef = useRef<HTMLDialogElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
@@ -71,6 +130,20 @@ export default function CommandsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Wire Ctrl/Cmd+K to focus the search input (the kbd hint previously did
+  // nothing). We avoid a focus-stealing autoFocus on mount in favour of this.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const handleDeleteClick = (commandName: string) => {
     setPendingDeleteCommand(commandName);
     deleteDialogRef.current?.showModal();
@@ -87,9 +160,9 @@ export default function CommandsPage() {
       deleteDialogRef.current?.close();
       setPendingDeleteCommand(null);
     } catch (err) {
-      // Keep the dialog open and surface the failure instead of silently
-      // closing and pretending the delete succeeded.
-      alert(`Failed to delete command: ${err instanceof Error ? err.message : String(err)}`);
+      // Surface the failure via a toast (consistent with the rest of the app)
+      // and keep the dialog open so the user can retry or cancel.
+      addToast(`Failed to delete command: ${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -125,11 +198,11 @@ export default function CommandsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-          alert('Invalid JSON: expected an object mapping command names to definitions.');
+          addToast('Invalid JSON: expected an object mapping command names to definitions.', 'error');
           return;
         }
         // Validate each command entry has a recognizable shape before importing,
@@ -143,13 +216,24 @@ export default function CommandsPage() {
         });
         if (invalid.length > 0) {
           const names = invalid.map(([n]) => n).slice(0, 5).join(', ');
-          alert(`Import rejected: ${invalid.length} command(s) have no valid actions (${names}${invalid.length > 5 ? ', …' : ''}).`);
+          addToast(`Import rejected: ${invalid.length} command(s) have no valid actions (${names}${invalid.length > 5 ? ', …' : ''}).`, 'error');
           return;
         }
-        await apiService.updateConfig({ commands: parsed });
-        refetch();
+        // Compute a diff against the current command set so the user can review
+        // added/removed/changed counts before this replaces the whole config.
+        const next = parsed as Record<string, CommandConfig>;
+        const current = commands ?? {};
+        const currentNames = Object.keys(current);
+        const nextNames = Object.keys(next);
+        const added = nextNames.filter((n) => !(n in current));
+        const removed = currentNames.filter((n) => !(n in next));
+        const changed = nextNames.filter(
+          (n) => n in current && JSON.stringify(current[n]) !== JSON.stringify(next[n]),
+        );
+        setPendingImport({ parsed: next, added, removed, changed });
+        importDialogRef.current?.showModal();
       } catch (err) {
-        alert(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+        addToast(`Import failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
       }
     };
     reader.readAsText(file);
@@ -157,15 +241,57 @@ export default function CommandsPage() {
     e.target.value = '';
   };
 
-  // Memoize filtered commands for search functionality (uses debounced value)
+  const handleImportConfirm = async () => {
+    if (!pendingImport || isImporting) return;
+    setIsImporting(true);
+    try {
+      await apiService.updateConfig({ commands: pendingImport.parsed });
+      refetch();
+      importDialogRef.current?.close();
+      setPendingImport(null);
+      addToast('Commands imported successfully.', 'success');
+    } catch (err) {
+      addToast(`Import failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleImportCancel = () => {
+    importDialogRef.current?.close();
+    setPendingImport(null);
+  };
+
+  // Memoize filtered + sorted commands. Search now covers the visible detail
+  // (url/keys/cmd/message) in addition to name + action.
   const filteredCommands = useMemo(() => {
-    if (!debouncedSearch.trim()) return commandsList;
-    const query = debouncedSearch.toLowerCase();
-    return commandsList.filter(([name, config]) =>
-      name.toLowerCase().includes(query) ||
-      (config.action && config.action.toLowerCase().includes(query))
-    );
-  }, [commandsList, debouncedSearch]);
+    const query = debouncedSearch.trim().toLowerCase();
+    const filtered = query
+      ? commandsList.filter(([name, config]) => {
+          const haystack = [
+            name,
+            config.action,
+            config.url,
+            config.keys,
+            config.cmd,
+            config.message,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(query);
+        })
+      : commandsList.slice();
+    filtered.sort(([aName, aCfg], [bName, bCfg]) => {
+      if (sortKey === 'type') {
+        const typeCmp = getCommandType(aCfg).label.localeCompare(getCommandType(bCfg).label);
+        if (typeCmp !== 0) return typeCmp;
+      }
+      return aName.localeCompare(bName);
+    });
+    return filtered;
+  }, [commandsList, debouncedSearch, sortKey]);
+
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading commands">
@@ -179,11 +305,7 @@ export default function CommandsPage() {
 
         <div className="divider divider-accent"></div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="card glass-card overflow-hidden h-64 skeleton rounded-box"></div>
-          ))}
-        </div>
+        <div className="h-64 skeleton rounded-box"></div>
       </div>
     );
   }
@@ -191,7 +313,7 @@ export default function CommandsPage() {
   if (isError) {
     return (
       <div className="alert alert-error shadow-lg">
-        <span>Failed to load commands. Please check the backend connection.</span>
+        <span>Failed to load commands: {(error as Error)?.message ?? 'Please check the backend connection.'}</span>
       </div>
     );
   }
@@ -255,18 +377,28 @@ export default function CommandsPage() {
 
       <div className="divider divider-accent"></div>
 
-      {/* Search Filter */}
-      <div className="flex items-center gap-2">
+      {/* Page-level note: all commands are triggerable via the REST API. This
+          replaces the identical per-row "REST API Trigger" block. */}
+      <div className="alert alert-info/60 bg-info/5 border border-info/30 text-sm">
+        <Globe className="text-info shrink-0" size={18} />
+        <span>
+          Every command can be triggered via the REST API:{' '}
+          <code className="font-mono">POST /api/v1/command</code>.
+        </span>
+      </div>
+
+      {/* Controls: search + sort */}
+      <div className="flex flex-col md:flex-row md:items-center gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={18} />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search commands..."
             aria-label="Search commands"
             className="input input-bordered w-full pl-10 pr-20"
             value={searchQuery}
             onChange={handleSearchChange}
-            autoFocus
           />
           <kbd className="kbd kbd-sm absolute right-10 top-1/2 -translate-y-1/2 text-base-content/40">
             Ctrl+K
@@ -281,6 +413,19 @@ export default function CommandsPage() {
             </button>
           )}
         </div>
+        <label className="flex items-center gap-2 text-sm">
+          <ArrowUpDown size={16} className="text-base-content/50" />
+          <span className="text-base-content/60">Sort</span>
+          <select
+            className="select select-bordered select-sm"
+            aria-label="Sort commands"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+          >
+            <option value="name">Name</option>
+            <option value="type">Type</option>
+          </select>
+        </label>
         {searchQuery && (
           <span className="text-sm text-base-content/60">
             Showing {filteredCommands.length} of {commandsList.length} commands
@@ -288,117 +433,120 @@ export default function CommandsPage() {
         )}
       </div>
 
-      {/* Loading / Error States */}
-      {isLoading && (
-        <div className="flex justify-center p-12">
-          <span className="loading loading-spinner loading-lg text-primary"></span>
-        </div>
-      )}
-
-      {isError && (
-        <div className="alert alert-error shadow-lg">
-          <span>Failed to load commands: {(error as Error).message}</span>
-        </div>
-      )}
-
-      {/* Commands Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <AnimatePresence>
-          {filteredCommands.map(([name, config], idx) => (
-            <motion.div
-              key={name}
-              data-reduced-motion={reduceMotion ? 'true' : 'false'}
-              initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
-              animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
-              transition={reduceMotion ? undefined : { delay: idx * 0.05 }}
-              className="card glass-card overflow-hidden"
-            >
-              <div className="border-gradient"></div>
-              <div className="card-body p-0">
-                {/* Command Header */}
-                <div className="p-6 bg-base-200/50 border-b border-base-content/10 flex justify-between items-start gap-3">
-                  <div className="min-w-0 flex items-center gap-3">
-                    <TerminalSquare size={20} className="text-primary shrink-0" />
-                    <h3 className="text-lg font-bold truncate" title={name}>{name}</h3>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <DynamicDropdown
-                      buttonContent={
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                        </svg>
+      {/* Commands Table */}
+      {!isEmpty && filteredCommands.length > 0 && (
+        <div className="overflow-x-auto rounded-box border border-base-content/10">
+          <table className="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Action</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence>
+                {filteredCommands.map(([name, config], idx) => {
+                  const type = getCommandType(config);
+                  const { label, detail } = describeAction(config);
+                  const TypeIcon = type.Icon;
+                  return (
+                    <motion.tr
+                      key={name}
+                      data-reduced-motion={reduceMotion ? 'true' : 'false'}
+                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                      transition={
+                        reduceMotion
+                          ? undefined
+                          : { delay: Math.min(idx, MAX_STAGGER_INDEX) * STAGGER_STEP }
                       }
-                      menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
-                      ariaLabel={`Options for ${name}`}
+                      className="hover"
                     >
-                      <li>
-                        <Link to={`/commands/authoring?edit=${encodeURIComponent(name)}`} aria-label={`Edit ${name}`}>
-                          <Edit3 size={16} className="text-primary" />
-                          Edit Command
-                        </Link>
-                      </li>
-                      <li>
-                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} onClick={() => handleDeleteClick(name)}>
-                          <Trash2 size={16} />
-                          Delete Command
-                        </button>
-                      </li>
-                    </DynamicDropdown>
-                  </div>
-                </div>
+                      <td className="font-semibold align-top max-w-[16rem]">
+                        <span className="truncate block" title={name}>{name}</span>
+                      </td>
+                      <td className="align-top">
+                        <span className={`badge ${type.badgeClass} gap-1 whitespace-nowrap`}>
+                          <TypeIcon size={14} />
+                          {type.label}
+                        </span>
+                      </td>
+                      <td className="align-top">
+                        <div className="text-xs uppercase tracking-wider text-base-content/50">{label}</div>
+                        <div className="text-sm font-mono break-all max-w-md">{detail}</div>
+                      </td>
+                      <td className="align-top">
+                        <div className="flex items-center justify-end gap-1">
+                          <Link
+                            to={`/commands/authoring?edit=${encodeURIComponent(name)}`}
+                            className="btn btn-ghost btn-xs btn-circle text-primary"
+                            aria-label={`Edit ${name}`}
+                            title="Edit"
+                          >
+                            <Edit3 size={16} />
+                          </Link>
+                          <button
+                            className="btn btn-ghost btn-xs btn-circle text-error"
+                            aria-label={`Delete ${name}`}
+                            title="Delete"
+                            onClick={() => handleDeleteClick(name)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <DynamicDropdown
+                            buttonContent={
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                              </svg>
+                            }
+                            menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
+                            ariaLabel={`More options for ${name}`}
+                          >
+                            <li>
+                              <Link to={`/voice-test?command=${encodeURIComponent(name)}`} aria-label={`Test ${name}`}>
+                                <PlayCircle size={16} className="text-success" />
+                                Test this command
+                              </Link>
+                            </li>
+                          </DynamicDropdown>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+      )}
 
-                {/* Action + Triggers Section */}
-                <div className="p-6 space-y-4">
-                  {/* What this command does */}
-                  <div>
-                    <h4 className="text-sm font-semibold uppercase tracking-wider text-base-content/50 flex items-center gap-2 mb-2">
-                      <Settings2 size={14} /> {describeAction(config).label}
-                    </h4>
-                    <p className="text-sm text-base-content/80 font-mono break-all bg-base-200/40 rounded-lg px-3 py-2">
-                      {describeAction(config).detail}
-                    </p>
-                  </div>
-
-                  {/* How it's triggered */}
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success/5">
-                    <Globe className="text-success" size={20} />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">REST API Trigger</p>
-                      <p className="text-xs text-base-content/60 font-mono mt-0.5">POST /api/v1/command</p>
-                    </div>
-                    <div className="badge badge-success badge-sm badge-outline">Enabled</div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {isEmpty && (
-          <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
-            <TerminalSquare size={48} className="text-base-content/20 mb-4" />
-            <h3 className="text-lg font-semibold text-base-content/70">No commands configured.</h3>
-            <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
-              Get started by creating your first command to automate tasks and streamline your workflow.
-            </p>
-            <Link to="/commands/authoring" className="btn btn-primary">
-              <Plus size={18} />
-              Create Command
-            </Link>
-          </div>
-        )}
-        {searchQuery && filteredCommands.length === 0 && !isEmpty && (
-          <div className="col-span-full flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
-            <Search size={48} className="text-base-content/20 mb-4" />
-            <h3 className="text-lg font-semibold text-base-content/70">No commands match your search.</h3>
-            <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
-              Try adjusting your search terms or clearing the search filter to see all commands.
-            </p>
-            <button className="btn btn-outline" onClick={() => setSearchParams({})}>
-              Clear Search
-            </button>
-          </div>
-        )}
-      </div>
+      {isEmpty && (
+        <div className="flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
+          <TerminalSquare size={48} className="text-base-content/20 mb-4" />
+          <h3 className="text-lg font-semibold text-base-content/70">No commands configured.</h3>
+          <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
+            Get started by creating your first command to automate tasks and streamline your workflow.
+          </p>
+          <Link to="/commands/authoring" className="btn btn-primary">
+            <Plus size={18} />
+            Create Command
+          </Link>
+        </div>
+      )}
+      {searchQuery && filteredCommands.length === 0 && !isEmpty && (
+        <div className="flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10">
+          <Search size={48} className="text-base-content/20 mb-4" />
+          <h3 className="text-lg font-semibold text-base-content/70">No commands match your search.</h3>
+          <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
+            Try adjusting your search terms or clearing the search filter to see all commands.
+          </p>
+          <button className="btn btn-outline" onClick={() => setSearchParams({})}>
+            Clear Search
+          </button>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <dialog ref={deleteDialogRef} className="modal">
@@ -417,6 +565,33 @@ export default function CommandsPage() {
           <button onClick={handleDeleteCancel}>close</button>
         </form>
       </dialog>
+
+      {/* Import Confirmation Modal — shows the diff before replacing the set */}
+      <dialog ref={importDialogRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Confirm Import</h3>
+          <p className="py-2 text-sm text-base-content/70">
+            Importing replaces your entire command set. Review the changes below.
+          </p>
+          {pendingImport && (
+            <div className="flex flex-wrap gap-2 py-2">
+              <span className="badge badge-success gap-1">+{pendingImport.added.length} added</span>
+              <span className="badge badge-error gap-1">-{pendingImport.removed.length} removed</span>
+              <span className="badge badge-warning gap-1">~{pendingImport.changed.length} changed</span>
+            </div>
+          )}
+          <div className="modal-action">
+            <button className="btn" onClick={handleImportCancel} disabled={isImporting}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleImportConfirm} disabled={isImporting}>
+              {isImporting ? <span className="loading loading-spinner loading-sm" aria-hidden="true"></span> : null}
+              Apply Import
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleImportCancel}>close</button>
+        </form>
+      </dialog>
     </div>
   );
-};
+}
