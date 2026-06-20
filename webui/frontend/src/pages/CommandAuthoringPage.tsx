@@ -20,6 +20,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 import { useToast } from '../components/ToastProvider';
 
 // --- TypeScript Interfaces ---
@@ -431,6 +432,12 @@ export default function CommandAuthoringPage() {
     wakeword: '',
     actions: [],
   });
+  // The pristine baseline of the manual editor: the empty form for a new
+  // command, or the loaded definition when editing (?edit=). Used to derive a
+  // "has unsaved edits" signal without storing a separate dirty flag.
+  const manualBaselineRef = useRef<string>(
+    JSON.stringify({ name: '', display_name: '', wakeword: '', actions: [] }),
+  );
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -472,12 +479,16 @@ export default function CommandAuthoringPage() {
             ? [cmd.action]
             : [];
         if (!cancelled) {
-          setManualCommand({
+          const loaded: GeneratedCommand = {
             name: editName,
             display_name: cmd.name || editName,
             wakeword: cmd.wakeword || '',
             actions,
-          });
+          };
+          // The loaded definition is the pristine baseline, so preloading an
+          // existing command for editing doesn't count as an unsaved edit.
+          manualBaselineRef.current = JSON.stringify(loaded);
+          setManualCommand(loaded);
           setMode('manual');
         }
       } catch (e: unknown) {
@@ -522,6 +533,19 @@ export default function CommandAuthoringPage() {
   }, []);
 
   const hasFormErrors = useMemo(() => Object.keys(formErrors).length > 0, [formErrors]);
+
+  // Whether the author has unsaved work in progress. True when the manual editor
+  // diverges from its pristine baseline (new-command empty form, or the loaded
+  // definition when editing), or when the AI flow has a typed description or a
+  // generated-but-unsaved command. Used to defer a mid-edit session expiry so
+  // these edits aren't silently discarded.
+  const isDirty = useMemo(() => {
+    const manualDirty =
+      JSON.stringify(manualCommand) !== manualBaselineRef.current;
+    const aiDirty = description.trim().length > 0 || generatedCommand !== null;
+    return manualDirty || aiDirty;
+  }, [manualCommand, description, generatedCommand]);
+  useUnsavedChanges(isDirty);
 
   // Generate command mutation
   const generateMutation = useMutation({

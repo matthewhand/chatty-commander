@@ -23,6 +23,7 @@ import {
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme, AVAILABLE_THEMES } from "../components/ThemeProvider";
 import { useToast } from "../components/ToastProvider";
+import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { runMicTest, playTestTone } from "../utils/audioTest";
 
 // In-browser audio test tuning.
@@ -284,6 +285,11 @@ const ConfigurationPage: React.FC = () => {
     () => JSON.stringify(config) !== JSON.stringify(baseline),
     [config, baseline],
   );
+
+  // Advertise dirtiness to the global registry so a mid-edit session expiry
+  // defers the forced sign-out (keeping these unsaved edits on screen) instead
+  // of silently unmounting this page.
+  useUnsavedChanges(dirty);
 
   // True when a refetch brought new remote data we couldn't auto-apply because
   // the form has unsaved edits — the baseline is now older than the server.

@@ -4,6 +4,7 @@ import {
   subscribeSessionExpired,
   User,
 } from "../services/authService";
+import { hasUnsavedChanges } from "./useUnsavedChanges";
 import { logger } from "../utils/logger";
 
 /**
@@ -27,6 +28,27 @@ interface AuthContextType {
   sessionExpiredNotice: string | null;
   /** Dismiss the {@link sessionExpiredNotice}. */
   clearSessionExpiredNotice: () => void;
+  /**
+   * True when the session has expired *while a form had unsaved changes* and we
+   * have deliberately deferred clearing the user, so the page (and its
+   * in-progress edits) stay mounted. A blocking modal is shown to the user
+   * instead of an immediate redirect. False in the common case (no dirty forms),
+   * where expiry behaves exactly as before — the user is cleared and
+   * ProtectedRoute redirects to /login.
+   */
+  sessionExpiredBlocking: boolean;
+  /**
+   * Commit the deferred sign-out: clear the in-memory user so ProtectedRoute
+   * redirects to /login. Called from the blocking modal's "Sign in again"
+   * action once the user has had a chance to copy/save their edits.
+   */
+  confirmSessionExpiredSignIn: () => void;
+  /**
+   * Hide the blocking modal without signing out, keeping the user on the page in
+   * the expired state so they can copy/save-attempt their edits. The modal
+   * re-shows on the next 401.
+   */
+  dismissSessionExpiredBlocking: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +59,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [sessionExpiredNotice, setSessionExpiredNotice] = useState<
     string | null
   >(null);
+  // True when we've deferred the forced sign-out because a form had unsaved
+  // edits; drives the blocking SessionExpiredModal instead of an immediate
+  // redirect.
+  const [sessionExpiredBlocking, setSessionExpiredBlocking] = useState(false);
   const retryCount = useRef(0);
   // Track the pending retry timer and mount state so we can cancel in-flight
   // retries on unmount and avoid setting state on an unmounted component.
@@ -80,15 +106,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [checkAuth]); // Include checkAuth per exhaustive-deps rule
 
   // Centralised session-expiry handling. The token has already been cleared by
-  // authService.notifySessionExpired(); here we drop the in-memory user (which
-  // makes ProtectedRoute redirect to /login), surface a notice, and broadcast a
+  // authService.notifySessionExpired(); here we surface a notice and broadcast a
   // window event so any toast surface mounted elsewhere in the tree can react.
+  //
+  // The branch: if NO form has unsaved edits (the common case), behave exactly
+  // as before — drop the in-memory user so ProtectedRoute redirects to /login.
+  // If a dirty form IS mounted, do NOT clear the user yet: keep the page (and
+  // its unsaved edits) on screen and raise a blocking modal instead, so the
+  // user can copy/save before signing in again.
   useEffect(() => {
     const unsubscribe = subscribeSessionExpired((message) => {
       if (!isMountedRef.current) return;
-      setUser(null);
-      setLoading(false);
       setSessionExpiredNotice(message);
+      if (hasUnsavedChanges()) {
+        // Defer the sign-out; the modal drives confirmSessionExpiredSignIn().
+        setSessionExpiredBlocking(true);
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
       try {
         window.dispatchEvent(
           new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { message } }),
@@ -129,6 +165,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSessionExpiredNotice(null);
   }, []);
 
+  // Commit the deferred sign-out: now that the user has had a chance to copy
+  // their edits, drop the in-memory user so ProtectedRoute redirects to /login.
+  const confirmSessionExpiredSignIn = useCallback(() => {
+    setSessionExpiredBlocking(false);
+    setUser(null);
+    setLoading(false);
+  }, []);
+
+  // Hide the blocking modal but keep the user on the page in the expired state.
+  // We deliberately leave the user non-null so the route stays mounted; the
+  // modal re-shows on the next 401 (the expiry latch re-arms only on a fresh
+  // successful auth).
+  const dismissSessionExpiredBlocking = useCallback(() => {
+    setSessionExpiredBlocking(false);
+  }, []);
+
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
@@ -137,8 +189,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const userData = await authService.getCurrentUser();
       setUser(userData);
-      // A successful sign-in supersedes any stale expiry notice.
+      // A successful sign-in supersedes any stale expiry notice / blocking modal.
       setSessionExpiredNotice(null);
+      setSessionExpiredBlocking(false);
       return true;
     } catch (error) {
       logger.error("Login failed:", error);
@@ -163,6 +216,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         sessionExpiredNotice,
         clearSessionExpiredNotice,
+        sessionExpiredBlocking,
+        confirmSessionExpiredSignIn,
+        dismissSessionExpiredBlocking,
       }}
     >
       {children}
