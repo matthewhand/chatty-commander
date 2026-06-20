@@ -57,6 +57,7 @@ from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # Advisors (optional feature set used by tests)
+from chatty_commander import __version__ as APP_VERSION
 from chatty_commander.advisors.service import AdvisorMessage, AdvisorsService
 from chatty_commander.app.command_executor import CommandExecutor
 from chatty_commander.app.config import Config
@@ -320,7 +321,7 @@ class SystemStatus(BaseModel):
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of loaded models")
     uptime: str = Field(..., description="System uptime")
-    version: str = Field(default="0.2.0", description="Application version")
+    version: str = Field(default=APP_VERSION, description="Application version")
 
 
 class StateChangeRequest(BaseModel):
@@ -545,7 +546,7 @@ class WebModeServer:
         app = FastAPI(
             title="ChattyCommander API",
             description="Voice command automation system with web interface",
-            version="0.2.0",
+            version=APP_VERSION,
             docs_url="/docs" if self.no_auth else None,
             redoc_url="/redoc" if self.no_auth else None,
         )

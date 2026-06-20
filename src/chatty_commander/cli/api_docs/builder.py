@@ -25,6 +25,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from chatty_commander import __version__ as APP_VERSION
+
 
 def build_openapi_schema() -> dict[str, Any]:
     spec: dict[str, Any] = {
@@ -32,7 +34,7 @@ def build_openapi_schema() -> dict[str, Any]:
         "info": {
             "title": "ChattyCommander API",
             "description": "Voice command automation system with web interface",
-            "version": "0.2.0",
+            "version": APP_VERSION,
             "contact": {
                 "name": "ChattyCommander",
                 "url": "https://github.com/your-repo/chatty-commander",

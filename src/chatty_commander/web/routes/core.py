@@ -36,6 +36,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from chatty_commander import __version__ as APP_VERSION
 from chatty_commander.utils.security import mask_sensitive_data
 from chatty_commander.web.deps.auth import require_role, require_scope
 
@@ -210,7 +211,7 @@ class SystemStatus(BaseModel):
     current_state: str = Field(..., description="Current operational state")
     active_models: list[str] = Field(..., description="List of loaded models")
     uptime: str = Field(..., description="System uptime")
-    version: str = Field(default="0.2.0", description="Application version")
+    version: str = Field(default=APP_VERSION, description="Application version")
 
 
 class StateChangeRequest(BaseModel):
@@ -284,7 +285,7 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
         with self._lock:
             self._response_times.append(duration_ms)
 
-        response.headers["X-API-Version"] = "0.2.0"
+        response.headers["X-API-Version"] = APP_VERSION
         return response
 
 
@@ -421,7 +422,7 @@ def include_core_routes(
         return HealthStatus(
             status="healthy",
             uptime=uptime_str,
-            version="0.2.0",
+            version=APP_VERSION,
             database=database_status,
             memory_usage=memory_usage,
             cpu_usage=cpu_usage,
