@@ -111,7 +111,7 @@ Returns the current system status including active state and loaded models.
   "current_state": "idle",
   "active_models": ["hey_chat_tee", "hey_khum_puter"],
   "uptime": "2h 15m 30s",
-  "version": "0.2.0"
+  "version": "0.6.0"
 }
 ```
 
