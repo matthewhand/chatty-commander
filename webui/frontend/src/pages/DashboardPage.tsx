@@ -8,6 +8,7 @@ import { fetchAgentStatus, Agent } from "../services/api";
 import { formatTimestamp } from "../utils/formatTime";
 import DograhStatusCard from "../components/DograhStatusCard";
 import CallStateBadge, { DograhCallStatePayload } from "../components/CallStateBadge";
+import Collapse from "../components/Collapse";
 import type { PerfMetric } from "../components/PerformanceChart";
 
 // Lazy-load the recharts-backed chart so the heavy charting bundle is split out
@@ -873,11 +874,19 @@ const DashboardPage = React.memo(() => {
         onboardingVisible={!onboardingDismissed}
       />
 
-      {/* Agent Status Section */}
-      <h3 className="text-2xl font-bold text-gradient-primary mt-8 mb-4 flex items-center gap-2">
-        <AssessmentIcon size={20} className="text-base-content/60" /> Agent Status
-      </h3>
-
+      {/* Agent Status — secondary diagnostics, collapsed by default to keep the
+          dashboard focused on live telemetry + the command log. */}
+      <Collapse
+        title="Agent Status"
+        icon={<AssessmentIcon size={20} className="text-base-content/60" />}
+        badge={
+          agentData && agentData.length > 0 ? (
+            <span className="badge badge-sm">{agentData.length}</span>
+          ) : null
+        }
+        className="mt-8"
+        data-testid="agent-status-section"
+      >
       {agentsError && (
         <div className="alert alert-error shadow-lg" role="alert">
           <span>{(agentsErrObj as Error)?.message || "Failed to fetch agent status."}</span>
@@ -927,6 +936,7 @@ const DashboardPage = React.memo(() => {
           ))}
         </div>
       )}
+      </Collapse>
     </div>
   );
 });
