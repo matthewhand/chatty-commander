@@ -69,7 +69,12 @@ Once running, the **Configuration** page edits settings in real time:
 
   ![Voice Models](../screenshots/configuration-voice-models.png)
 
-- **LLM settings** — endpoint and model parameters for the advisors.
+- **LLM settings** — point the advisors at any OpenAI-compatible endpoint. Set
+  the base URL up front; the API key and model live under a "Credentials & model"
+  disclosure (expanded automatically when either is already set or env-locked):
+
+  ![LLM Configuration](../screenshots/configuration-llm.png)
+
 - **Audio** — select input/output devices:
 
   ![Audio Configuration](../screenshots/configuration-audio.png)
