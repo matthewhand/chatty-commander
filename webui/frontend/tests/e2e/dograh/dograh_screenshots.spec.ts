@@ -17,6 +17,16 @@ test.describe("Dograh integration screenshots", () => {
     fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
   });
 
+  // These exercise the live dograh stack (dograh-ui + backend). Skip cleanly
+  // when that external service isn't running, rather than failing the suite.
+  test.beforeEach(async () => {
+    const apiBase = process.env.DOGRAH_API_BASE || "http://localhost:8020";
+    const reachable = await fetch(apiBase, { signal: AbortSignal.timeout(2000) })
+      .then(() => true)
+      .catch(() => false);
+    test.skip(!reachable, `dograh backend not reachable at ${apiBase}`);
+  });
+
   test("login-page", async ({ page }) => {
     await page.goto("/auth/login");
     await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
