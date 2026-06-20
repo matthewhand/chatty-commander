@@ -1,6 +1,8 @@
 // API service for agent/advisor status
 // Connects to the real FastAPI backend
 
+import { authedFetch } from "./authService";
+
 export interface Agent {
   id: string;
   name: string;
@@ -33,7 +35,7 @@ export interface ModelListResponse {
  */
 export const fetchAgentStatus = async (): Promise<Agent[]> => {
   try {
-    const res = await fetch("/api/v1/advisors/context/stats");
+    const res = await authedFetch("/api/v1/advisors/context/stats");
     if (!res.ok) {
       // Advisors may be disabled — return empty list gracefully
       // Also handle 404/500 if the service is completely missing
@@ -85,7 +87,7 @@ export const fetchLLMModels = async (
  */
 export const fetchVoiceModels = async (): Promise<ModelFileInfo[]> => {
   try {
-    const res = await fetch("/api/v1/models/files");
+    const res = await authedFetch("/api/v1/models/files");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: ModelListResponse = await res.json();
     return data.models;
@@ -108,7 +110,7 @@ export const uploadVoiceModel = async (
     formData.append("state", state);
   }
 
-  const res = await fetch("/api/v1/models/upload", {
+  const res = await authedFetch("/api/v1/models/upload", {
     method: "POST",
     body: formData,
   });
@@ -123,7 +125,7 @@ export const uploadVoiceModel = async (
  * Delete a voice model file.
  */
 export const deleteVoiceModel = async (filename: string): Promise<void> => {
-  const res = await fetch(`/api/v1/models/files/${encodeURIComponent(filename)}`, {
+  const res = await authedFetch(`/api/v1/models/files/${encodeURIComponent(filename)}`, {
     method: "DELETE",
   });
 

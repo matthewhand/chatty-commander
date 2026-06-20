@@ -4,13 +4,26 @@ import { vi } from "vitest";
 import { AuthProvider, useAuth } from "./useAuth";
 import { authService } from "../services/authService";
 
-// Mock the named export 'authService' object used by the hook
+// Captures the session-expiry listener the hook registers, so tests can drive
+// the expiry path directly. The mock's subscribe stores the latest listener and
+// returns an unsubscribe.
+let sessionExpiredListener: ((message: string) => void) | null = null;
+
+// Mock the named export 'authService' object used by the hook, plus the
+// module-level session-expiry pub/sub helpers it subscribes to.
 vi.mock("../services/authService", () => ({
   authService: {
     login: vi.fn(),
     logout: vi.fn(),
     getCurrentUser: vi.fn(),
   },
+  subscribeSessionExpired: (listener: (message: string) => void) => {
+    sessionExpiredListener = listener;
+    return () => {
+      if (sessionExpiredListener === listener) sessionExpiredListener = null;
+    };
+  },
+  SESSION_EXPIRED_MESSAGE: "Your session expired — please sign in again",
 }));
 
 const mockedAuthService = vi.mocked(authService);
@@ -117,6 +130,72 @@ describe("useAuth Hook", () => {
 
     consoleSpy.mockRestore();
     unmount();
+  });
+
+  test("session expiry clears the user and surfaces a notice", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Become authenticated first.
+    await waitFor(() => {
+      expect(result.current.isAuthenticated).toBe(true);
+    });
+    expect(result.current.sessionExpiredNotice).toBeNull();
+
+    // Fire the session-expiry event the hook subscribed to (as authService
+    // would after a mid-session 401).
+    act(() => {
+      sessionExpiredListener?.("Your session expired — please sign in again");
+    });
+
+    // User cleared => ProtectedRoute will redirect to /login; notice is shown.
+    expect(result.current.user).toBeNull();
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.sessionExpiredNotice).toBe(
+      "Your session expired — please sign in again",
+    );
+  });
+
+  test("session expiry dispatches a window event consumers can observe", async () => {
+    mockedAuthService.getCurrentUser.mockResolvedValue({
+      username: "testuser",
+      is_active: true,
+      roles: ["user"],
+    });
+
+    const { result, unmount } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    const handler = vi.fn();
+    window.addEventListener("chatty:session-expired", handler);
+
+    act(() => {
+      sessionExpiredListener?.("expired");
+    });
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    window.removeEventListener("chatty:session-expired", handler);
+    unmount();
+  });
+
+  test("clearSessionExpiredNotice dismisses the notice", async () => {
+    mockedAuthService.getCurrentUser.mockResolvedValue({
+      username: "testuser",
+      is_active: true,
+      roles: ["user"],
+    });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+    expect(result.current.sessionExpiredNotice).toBe("expired");
+
+    act(() => result.current.clearSessionExpiredNotice());
+    expect(result.current.sessionExpiredNotice).toBeNull();
   });
 
   test("logout clears the user and token", async () => {

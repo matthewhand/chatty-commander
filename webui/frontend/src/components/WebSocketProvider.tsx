@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { notifySessionExpired } from "../services/authService";
 import { logger } from "../utils/logger";
 
 type WebSocketContextType = {
@@ -7,7 +8,29 @@ type WebSocketContextType = {
   isConnected: boolean;
   reconnectAttempt: number;
   lastMessageTime: number | null;
+  /**
+   * True once automatic reconnection has been exhausted (all
+   * MAX_RECONNECT_ATTEMPTS used up) so the UI can offer a manual
+   * "connection lost — reconnect" affordance instead of silently giving up.
+   */
+  reconnectExhausted: boolean;
+  /**
+   * Manually restart the reconnection cycle from scratch. Intended for a
+   * user-facing "Reconnect" button once {@link reconnectExhausted} is true; a
+   * no-op while there is no authenticated user.
+   */
+  reconnect: () => void;
 };
+
+/**
+ * WebSocket close codes that mean "you are not (or no longer) authorised":
+ *  - 1008: policy violation (the standard code servers use to reject auth).
+ *  - 4401: app-specific convention mirroring HTTP 401 in the 4000–4999 range.
+ * A close with either code is treated as a session expiry, not a transient
+ * network drop, so we stop futile reconnects and route through the shared
+ * sign-out flow.
+ */
+const AUTH_CLOSE_CODES = new Set([1008, 4401]);
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
   undefined,
@@ -21,6 +44,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isConnected, setIsConnected] = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [lastMessageTime, setLastMessageTime] = useState<number | null>(null);
+  const [reconnectExhausted, setReconnectExhausted] = useState(false);
 
   // Refs to manage reconnection timer and state without triggering re-renders
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -51,12 +75,27 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsConnected(true);
       reconnectAttemptRef.current = 0;
       setReconnectAttempt(0); // Sync display state
+      setReconnectExhausted(false); // A live connection clears any prior "give up" state
     };
 
     socket.onclose = (ev) => {
       logger.info("WebSocketProvider: Disconnected", ev.code, ev.reason);
       setIsConnected(false);
       setWs(null);
+
+      // An auth-policy close means the session is no longer valid: don't burn
+      // reconnect attempts against a server that will keep rejecting us — route
+      // through the shared session-expiry flow (clears token, redirects to
+      // login). notifySessionExpired no-ops when there's no stored token, so the
+      // dev/no-auth flow is unaffected.
+      if (AUTH_CLOSE_CODES.has(ev.code)) {
+        logger.error(
+          `WebSocketProvider: Auth-related close (code ${ev.code}); treating as session expiry`,
+        );
+        shouldReconnectRef.current = false;
+        notifySessionExpired();
+        return;
+      }
 
       if (!shouldReconnectRef.current) return;
 
@@ -72,6 +111,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
         }, delay);
       } else {
         logger.error("WebSocketProvider: Max reconnect attempts reached");
+        // Surface the give-up so consumers can render a manual reconnect prompt
+        // instead of the connection silently staying dead.
+        setReconnectExhausted(true);
       }
     };
 
@@ -94,11 +136,28 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     setWs(socket);
   }, [user]); // Only depends on user — reconnect logic uses refs, not state
 
+  // Manual reconnect: reset the backoff counters and start a fresh cycle. Safe
+  // to call at any time; consumers use it for a "Reconnect" button once
+  // automatic attempts are exhausted.
+  const reconnect = useCallback(() => {
+    if (!user) return;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    shouldReconnectRef.current = true;
+    reconnectAttemptRef.current = 0;
+    setReconnectAttempt(0);
+    setReconnectExhausted(false);
+    connect();
+  }, [user, connect]);
+
   useEffect(() => {
     if (!user) return;
 
     shouldReconnectRef.current = true;
     reconnectAttemptRef.current = 0;
+    setReconnectExhausted(false);
     connect();
 
     return () => {
@@ -118,7 +177,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user, connect]); // Only re-run when user changes, not on every reconnect attempt
 
   return (
-    <WebSocketContext.Provider value={{ ws, isConnected, reconnectAttempt, lastMessageTime }}>
+    <WebSocketContext.Provider
+      value={{
+        ws,
+        isConnected,
+        reconnectAttempt,
+        lastMessageTime,
+        reconnectExhausted,
+        reconnect,
+      }}
+    >
       {children}
     </WebSocketContext.Provider>
   );
