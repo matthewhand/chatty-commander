@@ -55,14 +55,16 @@ const TELEMETRY_INTERVAL_SECONDS = 5;
 const STALE_THRESHOLD_SECONDS = TELEMETRY_INTERVAL_SECONDS * 2;
 
 // CPU/memory cards reserve semantic color for the value it actually conveys:
-// a healthy load stays muted, and we escalate to warning/error only once the
-// reading crosses the usual "getting busy" / "under pressure" thresholds. This
-// keeps color meaningful instead of painting every gauge a fixed hue.
+// a healthy load reads as themed `primary`, and we escalate to warning/error
+// only once the reading crosses the usual "getting busy" / "under pressure"
+// thresholds. A muted grey here made the radial ring (which strokes its filled
+// arc with currentColor) look flat and far emptier than its real value, so a
+// healthy gauge now gets a real themed hue instead of grey-on-grey.
 function loadColorClass(percent: number): string {
-  if (Number.isNaN(percent)) return "text-base-content/60";
+  if (Number.isNaN(percent)) return "text-base-content/40";
   if (percent >= 90) return "text-error";
   if (percent >= 75) return "text-warning";
-  return "text-base-content/60";
+  return "text-primary";
 }
 
 interface CommandConsoleProps {

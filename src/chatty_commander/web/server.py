@@ -248,6 +248,27 @@ def register_shared_routers(
             app, config_manager, revocation_store=shared_revocation_store
         )
 
+    # Close the shared revocation store on app shutdown so its sqlite connection
+    # + file descriptor are released. Without this, every app built (tests build
+    # many) leaks a connection/fd for the lifetime of the process. The InMemory
+    # store has no connection, so guard with ``hasattr`` to keep it a no-op.
+    if shared_revocation_store is not None and hasattr(
+        shared_revocation_store, "close"
+    ):
+        _store_to_close = shared_revocation_store
+
+        def _close_revocation_store() -> None:
+            try:
+                _store_to_close.close()
+            except Exception:  # pragma: no cover - defensive cleanup
+                logging.getLogger(__name__).debug(
+                    "Failed to close revocation store on shutdown", exc_info=True
+                )
+
+        add_handler = getattr(app, "add_event_handler", None)
+        if callable(add_handler):
+            add_handler("shutdown", _close_revocation_store)
+
     try:
         from .deps.auth import configure_auth_context
 

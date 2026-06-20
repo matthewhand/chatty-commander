@@ -140,6 +140,22 @@ def test_upload_legit_filename_still_works(sandbox):
     assert (app_dir / "wakewords" / "good.onnx").read_bytes() == b"model-bytes"
 
 
+def test_upload_rejects_oversized_file(sandbox, monkeypatch):
+    """An upload exceeding MAX_UPLOAD_BYTES is rejected (413) and no partial
+    file is left behind — the bounded streaming write never buffers it all."""
+    from chatty_commander.web.routes import models as models_mod
+
+    monkeypatch.setattr(models_mod, "MAX_UPLOAD_BYTES", 16)
+    client, app_dir, _secret = sandbox
+    resp = client.post(
+        "/api/v1/models/upload",
+        files={"file": ("big.onnx", b"x" * 64, "application/octet-stream")},
+    )
+    assert resp.status_code == 413, resp.text
+    # No partial/leftover file remains in the upload dir.
+    assert list((app_dir / "wakewords").iterdir()) == []
+
+
 # ---------------------------------------------------------------------------
 # Download handler
 # ---------------------------------------------------------------------------

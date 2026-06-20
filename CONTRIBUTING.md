@@ -36,7 +36,12 @@ uv run pytest -q --no-cov                 # full suite
 uv run pytest tests/test_cli.py -q --no-cov   # a single file while iterating
 ```
 
-Frontend e2e tests use Playwright: `npm run test:e2e` from `webui/frontend/`.
+Frontend tests run from `webui/frontend/`:
+
+```bash
+npm run test         # Vitest unit/component tests (jsdom + Testing Library)
+npm run test:e2e     # Playwright end-to-end / screenshot suite
+```
 
 ## Code style
 

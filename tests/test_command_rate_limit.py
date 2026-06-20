@@ -148,6 +148,22 @@ def test_resolve_unset_defaults_outside_test_mode(monkeypatch):
     assert _resolve_command_rate_limit() == DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE
 
 
+@pytest.mark.parametrize("value", ["1", "true", "yes", "on", "ON"])
+def test_resolve_explicit_optout_disables(monkeypatch, value):
+    """CHATTY_DISABLE_RATE_LIMIT is an explicit, unambiguous opt-out."""
+    monkeypatch.setenv("CHATCOMM_COMMAND_RATE_LIMIT", "30")
+    monkeypatch.setenv("CHATTY_DISABLE_RATE_LIMIT", value)
+    assert _resolve_command_rate_limit() is None
+
+
+def test_resolve_explicit_optout_falsey_does_not_disable(monkeypatch):
+    """A non-truthy CHATTY_DISABLE_RATE_LIMIT must not disable the limiter."""
+    monkeypatch.delenv("CHATCOMM_COMMAND_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setenv("CHATTY_DISABLE_RATE_LIMIT", "0")
+    assert _resolve_command_rate_limit() == DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE
+
+
 # ---------------------------------------------------------------------------
 # Endpoint integration
 # ---------------------------------------------------------------------------

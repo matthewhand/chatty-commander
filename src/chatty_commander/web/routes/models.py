@@ -28,11 +28,18 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from chatty_commander.web.deps.auth import require_role
+
 logger = logging.getLogger(__name__)
+
+# Upper bound on accepted model upload size. ONNX wakeword models are small
+# (single-digit MB); 500 MB is a generous ceiling that still prevents an
+# unbounded ``await file.read()`` from exhausting server memory.
+MAX_UPLOAD_BYTES = 500 * 1024 * 1024
 
 
 class ModelFileInfo(BaseModel):
@@ -154,7 +161,14 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             total_size_human=_format_size(total_size),
         )
 
-    @router.post("/upload", response_model=UploadResponse)
+    @router.post(
+        "/upload",
+        response_model=UploadResponse,
+        # Destructive write: gate behind the admin role (additive + opt-in —
+        # pass-through in --no-auth / no-users-configured mode, so existing
+        # tests stay green; enforced only when user auth is active).
+        dependencies=[Depends(require_role("admin"))],
+    )
     async def upload_model_file(
         file: UploadFile = File(...),
         state: str | None = None,
@@ -204,19 +218,42 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             )
 
         try:
-            # Write file
-            content = await file.read()
+            # Stream to disk in bounded chunks rather than buffering the whole
+            # upload in memory (`await file.read()`), and reject anything over
+            # MAX_UPLOAD_BYTES so a huge body can't exhaust memory or disk.
+            chunk_size = 1024 * 1024  # 1 MB
+            total_written = 0
             with open(file_path, "wb") as f:
-                f.write(content)
+                while True:
+                    chunk = await file.read(chunk_size)
+                    if not chunk:
+                        break
+                    total_written += len(chunk)
+                    if total_written > MAX_UPLOAD_BYTES:
+                        f.close()
+                        file_path.unlink(missing_ok=True)
+                        raise HTTPException(
+                            status_code=413,
+                            detail=(
+                                f"File too large: limit is "
+                                f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB"
+                            ),
+                        )
+                    f.write(chunk)
 
             return UploadResponse(
                 success=True,
                 message=f"Model '{safe_filename}' uploaded successfully to {target_dir}",
                 filename=safe_filename,
-                size_bytes=len(content),
+                size_bytes=total_written,
             )
+        except HTTPException:
+            # Size-limit (413) and other intentional client errors must pass
+            # through unchanged rather than be masked as a 500.
+            raise
         except Exception as e:
             logger.error("Failed to save uploaded model file: %s", e)
+            file_path.unlink(missing_ok=True)
             raise HTTPException(
                 status_code=500,
                 detail="Failed to save file. Check server logs for details."
@@ -249,7 +286,13 @@ def create_models_router(upload_dir: str = "wakewords") -> APIRouter:
             media_type="application/octet-stream",
         )
 
-    @router.delete("/files/{filename}", response_model=DeleteResponse)
+    @router.delete(
+        "/files/{filename}",
+        response_model=DeleteResponse,
+        # Destructive delete: gate behind the admin role (same additive +
+        # opt-in pass-through behavior as upload).
+        dependencies=[Depends(require_role("admin"))],
+    )
     async def delete_model_file(filename: str):
         """Delete an ONNX model file."""
         # Find the file in model directories

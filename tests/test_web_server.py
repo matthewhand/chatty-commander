@@ -218,7 +218,9 @@ class TestCreateAppAuthMiddleware:
         client = TestClient(app)
         response = client.get("/api/v1/dograh/status")
         assert response.status_code == 401
-        assert "Invalid or missing API key" in response.json()["detail"]
+        body = response.json()
+        assert body["error"] == "Invalid or missing API key"
+        assert body["code"] == "unauthorized"
 
     def test_api_rejects_wrong_key(self):
         app = create_app(no_auth=False, config_manager=self._config_with_key())
@@ -848,6 +850,47 @@ class TestWebModeServer:
         # Standardized error envelope from web/errors.py
         assert "error" in data
         assert "code" in data
+        # The raw exception text must never leak into the client response.
+        assert "Save failed" not in str(data)
+        assert data["error"] == "Failed to save configuration"
+
+    def test_update_config_partial_section_preserves_siblings(
+        self, test_client, mock_managers
+    ):
+        """A partial-section PUT deep-merges and keeps existing sibling keys.
+
+        Regression for the shallow ``cfg.update`` data-loss bug: PUTting only
+        ``advisors.providers.model`` must not drop ``advisors.providers.api_key``
+        / ``base_url`` or other ``advisors`` subkeys.
+        """
+        config, _, _, _ = mock_managers
+        config.config = {
+            "advisors": {
+                "enabled": True,
+                "providers": {
+                    "api_key": "secret-key",
+                    "base_url": "http://localhost:11434/v1",
+                    "model": "old-model",
+                },
+            }
+        }
+        config.save_config = Mock()
+
+        response = test_client.put(
+            "/api/v1/config",
+            json={"advisors": {"providers": {"model": "new-model"}}},
+        )
+        assert response.status_code == 200, response.text
+
+        advisors = config.config["advisors"]
+        providers = advisors["providers"]
+        # Updated leaf applied...
+        assert providers["model"] == "new-model"
+        # ...and every sibling preserved.
+        assert providers["api_key"] == "secret-key"
+        assert providers["base_url"] == "http://localhost:11434/v1"
+        assert advisors["enabled"] is True
+        config.save_config.assert_called_once()
 
     def test_get_state_endpoint(self, test_client, web_server):
         response = test_client.get("/api/v1/state")

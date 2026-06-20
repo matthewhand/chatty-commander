@@ -47,18 +47,40 @@ DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE = 30.0
 #: Env values for CHATCOMM_COMMAND_RATE_LIMIT that disable rate limiting.
 _RATE_LIMIT_DISABLED_VALUES = frozenset({"0", "off", "false", "disabled", "none"})
 
+#: Truthy values for the explicit rate-limit opt-out env var.
+_TRUTHY_VALUES = frozenset({"1", "true", "yes", "on"})
+
+
+def _rate_limit_explicitly_disabled() -> bool:
+    """Return True when rate limiting is explicitly opted out via the env.
+
+    Uses a dedicated ``CHATTY_DISABLE_RATE_LIMIT`` flag rather than the ambient
+    ``PYTEST_CURRENT_TEST`` variable, which can leak into non-test subprocesses
+    spawned by the app and silently disable the limiter in production.
+    """
+    raw = os.environ.get("CHATTY_DISABLE_RATE_LIMIT")
+    return raw is not None and raw.strip().lower() in _TRUTHY_VALUES
+
 
 def _resolve_command_rate_limit() -> float | None:
     """Resolve the command-endpoint rate limit (requests/minute) from the env.
 
     - ``CHATCOMM_COMMAND_RATE_LIMIT=<n>`` sets the limit explicitly.
     - ``CHATCOMM_COMMAND_RATE_LIMIT=0|off|false|disabled|none`` disables it.
+    - ``CHATTY_DISABLE_RATE_LIMIT=1`` is an explicit, unambiguous opt-out that
+      disables the limiter regardless of the numeric setting.
     - Unset: defaults to :data:`DEFAULT_COMMAND_RATE_LIMIT_PER_MINUTE`, except
-      under pytest (``PYTEST_CURRENT_TEST`` present) where it is disabled so
-      existing tests hammering the endpoint stay deterministic.
+      under pytest (``PYTEST_CURRENT_TEST`` present) where it is disabled as a
+      convenience fallback so existing tests hammering the endpoint stay
+      deterministic. Production never relies on this fallback: the explicit
+      ``CHATTY_DISABLE_RATE_LIMIT`` opt-out is the supported control, so a
+      stray ``PYTEST_CURRENT_TEST`` leaking into a prod subprocess no longer
+      means rate limiting must be off.
 
     Returns the limit in requests per minute, or ``None`` when disabled.
     """
+    if _rate_limit_explicitly_disabled():
+        return None
     raw = os.environ.get("CHATCOMM_COMMAND_RATE_LIMIT")
     if raw is not None:
         value_str = raw.strip().lower()
@@ -161,6 +183,24 @@ ALLOWED_CONFIG_KEYS = frozenset(
         "services",
     }
 )
+
+
+def _deep_merge(base: dict[str, Any], updates: dict[str, Any]) -> None:
+    """Recursively merge ``updates`` into ``base`` in place.
+
+    Nested dicts are merged key-by-key so a partial-section PUT preserves
+    sibling keys (e.g. ``{"advisors": {"providers": {"model": "x"}}}`` updates
+    only ``advisors.providers.model`` and keeps any existing
+    ``advisors.providers.api_key`` / ``base_url`` and other ``advisors``
+    subkeys). Non-dict values (and dict-over-non-dict / non-dict-over-dict
+    type mismatches) replace the existing value outright.
+    """
+    for key, value in updates.items():
+        existing = base.get(key)
+        if isinstance(existing, dict) and isinstance(value, dict):
+            _deep_merge(existing, value)
+        else:
+            base[key] = value
 
 
 class SystemStatus(BaseModel):
@@ -461,7 +501,10 @@ def include_core_routes(
                 return config_data
             return {}
         except Exception as err:
-            raise HTTPException(status_code=500, detail=str(err)) from err
+            # Degrade gracefully (repo contract: never 500, never leak internals).
+            # Log the real error server-side; return an honest empty config.
+            logger.exception("Failed to retrieve configuration: %s", err)
+            return {}
 
     @router.put(
         "/api/v1/config",
@@ -492,7 +535,9 @@ def include_core_routes(
             cfg_mgr = get_config_manager()
             cfg = getattr(cfg_mgr, "config", {})
             if isinstance(cfg, dict):
-                cfg.update(filtered_data)
+                # Recursive deep-merge so a partial-section PUT preserves
+                # sibling keys instead of replacing the whole top-level block.
+                _deep_merge(cfg, filtered_data)
             save = getattr(cfg_mgr, "save_config", None)
             if callable(save):
                 try:
@@ -502,7 +547,12 @@ def include_core_routes(
                     save(cfg)  # type: ignore[arg-type]
             return {"message": "Configuration updated successfully"}
         except Exception as err:
-            raise HTTPException(status_code=500, detail=str(err)) from err
+            # Log the real error server-side; return a generic client message
+            # (repo contract: never leak internals in client-visible strings).
+            logger.exception("Failed to save configuration: %s", err)
+            raise HTTPException(
+                status_code=500, detail="Failed to save configuration"
+            ) from err
 
     @router.get("/api/v1/state", response_model=StateInfo)
     async def get_state():
@@ -537,7 +587,14 @@ def include_core_routes(
             # Legacy broadcast occurs elsewhere; preserve behavior here as data-only change.
             return {"message": f"State changed to {request.state}"}
         except Exception as err:
-            raise HTTPException(status_code=400, detail=str(err)) from err
+            # Invalid state values are already rejected by StateChangeRequest's
+            # pattern (422), so reaching here means an internal failure — not a
+            # client error. Return a generic 500 and log the real detail; never
+            # leak str(err) to the client.
+            logger.exception("Failed to change state: %s", err)
+            raise HTTPException(
+                status_code=500, detail="Failed to change state"
+            ) from err
 
     # Per-router token bucket for the command endpoint. Resolved once at
     # router construction; None means rate limiting is disabled (the default

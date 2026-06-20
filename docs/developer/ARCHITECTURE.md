@@ -49,7 +49,7 @@ A detailed, evidence-based audit lives in the root [FEATURE_STATUS.md](../../FEA
 - CLI (uv run chatty-commander) + subcommands, modes, dograh integration.
 - LLM Advisors: personas, memory, tools (browser analyst etc) via openai-agents or Ollama.
 - dograh voice calls: CLI, status card, integration hardened (optional compose stack).
-- Testing: 1100+ Python tests + Playwright e2e; CI green on main.
+- Testing: 1100+ Python tests; Vitest frontend unit/component suite (`npm run test`, jsdom + Testing Library, many `*.test.tsx`) + Playwright e2e; CI green on main.
 - Packaging/ops: Docker, uv, ruff/mypy.
 - Metrics, structured logging, auth middleware on both factories.
 
@@ -59,7 +59,6 @@ A detailed, evidence-based audit lives in the root [FEATURE_STATUS.md](../../FEA
 - Desktop GUI / avatar: legacy PyQt5 tray + webview code exists but unfinished; web dashboard is the supported path.
 - Bridges (Discord/Slack): orchestrator routes but external client not fully maintained.
 - dograh end-to-end: requires user to author workflows + configure telephony provider (key rotation remaining P0).
-- Frontend unit tests: Playwright e2e strong; Vitest setup present but incomplete.
 - Certain web voice endpoints flip state only (no full pipeline control yet).
 - CLI dual implementation (cli/cli.py primary vs legacy main.py via __main__).
 - LLM module: some consolidation opportunities.
@@ -123,7 +122,7 @@ See [PROJECT_HISTORY.md](PROJECT_HISTORY.md) for snapshot summaries of earlier s
 
 See the canonical [ROADMAP.md](../../ROADMAP.md) (P0 publish blockers, P1 quality, P2 post-launch) and [WEBUI_ISSUES.md](WEBUI_ISSUES.md) for detailed gaps. High-level honest items from current audits (re-inspected 2026-06-18 during docs expansion loop):
 
-- P0: Rotate dograh keys at provider; frontend unit test completeness (Vitest); certain CLI wiring convergence.
+- P0: Rotate dograh keys at provider; broaden frontend unit-test coverage (Vitest is wired and running — depth, not setup); certain CLI wiring convergence.
 - Voice experience gaps in default CLI path (simulation vs real pipeline).
 - Desktop/avatar completion (deprioritized in favor of web; remnants only).
 - Full dograh end-to-end user setup documentation and provider configs.
@@ -151,7 +150,7 @@ Primary design components, most significant first. Versions reflect `pyproject.t
 | Language | **TypeScript / JavaScript** | Frontend SPA (`webui/frontend/src/`) |
 | Backend framework | **FastAPI** (+ Uvicorn, Pydantic) | REST API, WebSocket channels, app factories (`web/`) |
 | Frontend framework | **React 18** (+ React Router 6) | Dashboard SPA pages and components |
-| UI styling | **Tailwind CSS 3 + DaisyUI 4** | Styling and the bundled theme system (dark/light/cyberpunk/synthwave) |
+| UI styling | **Tailwind CSS 3 + DaisyUI 4** | Styling and the bundled theme system (enabled themes: light/dark/corporate/business/emerald/nord, see `webui/frontend/tailwind.config.js`) |
 | Frontend build | **Vite 5** | Dev server and production build |
 | Voice / ML | **OpenWakeWord + ONNX Runtime** | Edge wake-word detection driving the state machine |
 | LLM agents | **openai-agents SDK** (OpenAI/Ollama backends) | Advisors and their tools (`advisors/`) |
@@ -315,13 +314,14 @@ erDiagram
 ## Communication Flows
 
 - **REST**: `GET/POST /api/v1/*` for config, commands, agents
-- **WebSocket**: `/ws` for real-time events
+- **WebSocket**: `/ws` for real-time events. Beyond state changes, the server pushes `dograh_status` messages so the dashboard's dograh status card updates live after connect (computed by `compute_dograh_status()` in `web/routes/dograh.py`, the same source as `GET /api/v1/dograh/status`); active calls broadcast `dograh_call_state`.
 - **Metrics**: `/metrics/json` (JSON) and `/metrics/prom` (Prometheus)
 
 ## Security
 
-- JWT authentication (configurable, disable with `--no-auth` for dev)
-- Rate limiting: 100 req/min default
+- JWT authentication (configurable, disable with `--no-auth` for dev). `/api/v1/auth/login` issues an access + refresh token pair; `/api/v1/auth/refresh` rotates them (the presented refresh `jti` is revoked and a fresh pair minted, so a leaked-then-rotated token is single-use); `/api/v1/auth/logout` denylists the presented `jti`. Revocation is pluggable via the `RevocationStore` protocol — `InMemoryRevocationStore` (default, self-pruning) or the opt-in `SqliteRevocationStore` (`auth.revocation_store: "sqlite"`, persists to `.chatty/revocations.sqlite3`). See `web/routes/auth.py` and `web/revocation.py`.
+- Role-based access (`require_role`) and scoped service-to-service API keys layer on top (AuthZ phases 2–3).
+- Rate limiting: `RateLimitMiddleware` defaults to 60 req/min per IP, emits `X-RateLimit-*` headers, and extracts the client IP with trusted-proxy awareness (`web/web_mode.py`). In-memory/single-instance only — distributed limiting is a roadmap item.
 - XSS/CSRF headers via middleware
 
 For extension points see [ADAPTERS.md](ADAPTERS.md).

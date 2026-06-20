@@ -189,10 +189,10 @@ def test_non_api_404_keeps_default_shape(client):
     assert resp.json() == {"detail": "Not Found"}
 
 
-def test_auth_middleware_401_bypasses_handlers():
-    """AuthMiddleware returns its 401 JSONResponse directly from the
-    middleware layer, so the standardized handlers never see it and its
-    body shape is unchanged (verified, per task)."""
+def test_auth_middleware_401_uses_standard_envelope():
+    """AuthMiddleware returns its 401 directly from the middleware layer, but
+    now emits the standardized {error, code, details, request_id} envelope
+    (matching the HTTPException handler) instead of the bare {detail: ...}."""
 
     class DummyConfig:
         auth = {"api_key": "sekrit"}
@@ -203,7 +203,12 @@ def test_auth_middleware_401_bypasses_handlers():
     )
     resp = client.get("/api/v1/version")
     assert resp.status_code == 401
-    assert resp.json() == {"detail": "Invalid or missing API key"}
+    body = resp.json()
+    assert body["error"] == "Invalid or missing API key"
+    assert body["code"] == "unauthorized"
+    # Standard envelope keys are present.
+    assert set(body) == {"error", "code", "details", "request_id"}
+    assert resp.headers.get("WWW-Authenticate") == "Bearer"
     # With the right key the request passes through normally.
     ok = client.get("/api/v1/version", headers={"X-API-Key": "sekrit"})
     assert ok.status_code == 200

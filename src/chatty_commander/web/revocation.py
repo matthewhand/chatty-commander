@@ -41,11 +41,14 @@ swapped in :mod:`chatty_commander.web.server` without touching the verify paths.
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 import threading
 import time
 from collections.abc import Callable
 from typing import Protocol, runtime_checkable
+
+logger = logging.getLogger(__name__)
 
 # Default on-disk location for the sqlite store, relative to cwd. Kept small and
 # hidden so it sits alongside other ``.chatty`` runtime state.
@@ -121,6 +124,14 @@ class InMemoryRevocationStore:
         with self._lock:
             return len(self._revoked)
 
+    def close(self) -> None:  # pragma: no cover - trivial, no connection to close
+        """No-op: the in-memory store holds no connection. Idempotent.
+
+        Defined so callers (e.g. the app-shutdown hook) can ``close()`` either
+        backend uniformly without a ``hasattr`` branch.
+        """
+        return None
+
 
 class SqliteRevocationStore:
     """Persistent jti denylist backed by sqlite, with pruning by ``exp``.
@@ -130,16 +141,22 @@ class SqliteRevocationStore:
     point a fresh instance at the same database file and previously-revoked
     (still-valid) tokens remain revoked.
 
-    Self-pruning mirrors the in-memory store: :meth:`revoke` upserts then
-    deletes every row past its ``exp`` and :meth:`is_revoked` treats an expired
-    row as not-revoked (deleting it), so the table never grows beyond the set of
-    *currently-valid* revoked tokens.
+    Self-pruning happens on the *write* path only: :meth:`revoke` upserts then
+    deletes every row past its ``exp`` (and :meth:`prune` can be called
+    explicitly), so the table never grows beyond the set of *currently-valid*
+    revoked tokens. :meth:`is_revoked` is a pure read — it never writes — so the
+    hot auth path is not serialized behind a write lock + fsync; an expired row
+    reads as not-revoked without being deleted.
 
     Thread safety: a single connection opened with ``check_same_thread=False``
     is guarded by a lock, so the store is safe to share across the request
     threads that consult it. Pass ``path=":memory:"`` for an ephemeral in-memory
     database (used by tests); any other path is created (with parent dirs) on
     first use.
+
+    Note: a ``:memory:`` path cannot persist across the per-app store rebuilds
+    in ``server.register_shared_routers`` (defeating the "survives restart"
+    contract), so configuring it outside tests logs a warning.
     """
 
     def __init__(
@@ -150,7 +167,18 @@ class SqliteRevocationStore:
     ) -> None:
         self._time_fn = time_fn
         self._lock = threading.Lock()
-        if path != ":memory:":
+        self._closed = False
+        if path == ":memory:":
+            # ``:memory:`` databases are per-connection and vanish on close, so a
+            # fresh store (e.g. a new app instance) can't see prior revocations —
+            # this silently defeats the Phase 4 "survives restart" contract.
+            logger.warning(
+                "SqliteRevocationStore configured with ':memory:'; revocations "
+                "will not persist across process restarts or app rebuilds. Use a "
+                "file path for the persistence the sqlite backend is meant to "
+                "provide."
+            )
+        else:
             import os
 
             parent = os.path.dirname(path)
@@ -180,21 +208,26 @@ class SqliteRevocationStore:
             self._conn.commit()
 
     def is_revoked(self, jti: str) -> bool:
+        # Pure read: SELECT only, never writes. Returns True iff the jti exists
+        # and its token has not yet expired. Expired rows read as not-revoked but
+        # are left for :meth:`revoke`/:meth:`prune` to clean up, so the hot auth
+        # path is not serialized behind a write lock + fsync.
         if not jti:
             return False
         now = int(self._time_fn())
         with self._lock:
             row = self._conn.execute(
-                "SELECT exp FROM revoked_tokens WHERE jti = ?", (jti,)
+                "SELECT exp FROM revoked_tokens WHERE jti = ? AND exp > ?",
+                (jti, now),
             ).fetchone()
-            if row is None:
-                return False
-            if int(row[0]) <= now:
-                # Token would have expired anyway; drop and treat as not revoked.
-                self._conn.execute("DELETE FROM revoked_tokens WHERE jti = ?", (jti,))
-                self._conn.commit()
-                return False
-            return True
+            return row is not None
+
+    def prune(self) -> None:
+        """Drop rows whose token has already expired (write path)."""
+        now = int(self._time_fn())
+        with self._lock:
+            self._prune_locked(now)
+            self._conn.commit()
 
     def _prune_locked(self, now: int) -> None:
         """Drop rows whose token has already expired (caller holds the lock)."""
@@ -205,6 +238,10 @@ class SqliteRevocationStore:
             row = self._conn.execute("SELECT COUNT(*) FROM revoked_tokens").fetchone()
             return int(row[0]) if row else 0
 
-    def close(self) -> None:  # pragma: no cover - trivial, aids cleanup
+    def close(self) -> None:
+        """Close the underlying sqlite connection. Idempotent."""
         with self._lock:
+            if self._closed:
+                return
+            self._closed = True
             self._conn.close()
