@@ -38,6 +38,28 @@ interface CommandConfig {
 const MAX_STAGGER_INDEX = 12;
 const STAGGER_STEP = 0.03;
 
+// The "every command is REST-triggerable" note is useful once, then just noise.
+// Persist its dismissal so it stays hidden across reloads (mirrors the
+// dashboard onboarding callout's localStorage pattern).
+const REST_API_NOTE_DISMISSED_KEY = "chatty.commandsRestApiNoteDismissed";
+
+function readRestApiNoteDismissed(): boolean {
+  try {
+    return window.localStorage.getItem(REST_API_NOTE_DISMISSED_KEY) === "1";
+  } catch {
+    // localStorage may be unavailable (private mode / SSR); default to showing.
+    return false;
+  }
+}
+
+function persistRestApiNoteDismissed(): void {
+  try {
+    window.localStorage.setItem(REST_API_NOTE_DISMISSED_KEY, "1");
+  } catch {
+    // Best-effort; if we can't persist, the note simply reappears next load.
+  }
+}
+
 type CommandTypeKey = 'keypress' | 'url' | 'shell' | 'voice_chat' | 'custom_message' | 'unknown';
 
 interface CommandTypeMeta {
@@ -148,6 +170,7 @@ export default function CommandsPage() {
   // Bulk selection is keyed on command name so it survives sort/re-render.
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [restApiNoteDismissed, setRestApiNoteDismissed] = useState(readRestApiNoteDismissed);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const importDialogRef = useRef<HTMLDialogElement>(null);
   const bulkDeleteDialogRef = useRef<HTMLDialogElement>(null);
@@ -616,14 +639,31 @@ export default function CommandsPage() {
       <div className="divider divider-accent"></div>
 
       {/* Page-level note: all commands are triggerable via the REST API. This
-          replaces the identical per-row "REST API Trigger" block. */}
-      <div className="alert alert-info/60 bg-info/5 border border-info/30 text-sm">
-        <Globe className="text-info shrink-0" size={20} />
-        <span>
-          Every command can be triggered via the REST API:{' '}
-          <code className="font-mono">POST /api/v1/command</code>.
-        </span>
-      </div>
+          replaces the identical per-row "REST API Trigger" block. Dismissible +
+          persisted, since it's a learn-once hint, not standing UI. */}
+      {!restApiNoteDismissed && (
+        <div
+          className="alert alert-info/60 bg-info/5 border border-info/30 text-sm"
+          data-testid="rest-api-note"
+        >
+          <Globe className="text-info shrink-0" size={20} />
+          <span className="flex-1">
+            Every command can be triggered via the REST API:{' '}
+            <code className="font-mono">POST /api/v1/command</code>.
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs btn-square"
+            onClick={() => {
+              setRestApiNoteDismissed(true);
+              persistRestApiNoteDismissed();
+            }}
+            aria-label="Dismiss REST API note"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Controls: search + sort */}
       <div className="flex flex-col md:flex-row md:items-center gap-3">
