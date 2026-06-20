@@ -245,11 +245,12 @@ def _endpoint(router):
     return router.routes[0].endpoint
 
 
-def test_on_message_exception_hits_generic_handler_and_cleans_up():
-    """A raising on_message exercises the generic ``except Exception`` branch.
+def test_on_message_exception_does_not_drop_connection():
+    """A raising on_message must NOT tear down the connection.
 
-    The error is swallowed (logged at error level), the loop exits, and the
-    ``finally`` block still discards the connection so no socket leaks.
+    The callback failure is caught locally (logged + continue), so the loop
+    keeps processing subsequent frames — here a follow-up ping still gets its
+    pong — and only the eventual client disconnect ends the session.
     """
     conns: set[WebSocket] = set()
     state: dict = {"conns": conns}
@@ -266,17 +267,23 @@ def test_on_message_exception_hits_generic_handler_and_cleans_up():
         get_state_snapshot=lambda: {"current_state": "idle"},
         on_message=_boom,
     )
-    fake = _FakeWebSocket(inbound=[json.dumps({"type": "anything"})])
+    # First frame makes on_message raise; the second (ping) must still be
+    # serviced, proving the connection survived the callback failure.
+    fake = _FakeWebSocket(
+        inbound=[json.dumps({"type": "anything"}), json.dumps({"type": "ping"})]
+    )
 
     import asyncio
 
     asyncio.run(_endpoint(router)(fake))  # type: ignore[arg-type]
 
     assert fake.accepted is True
+    types = [json.loads(s)["type"] for s in fake.sent]
     # Snapshot was sent before the failing frame was processed.
-    assert json.loads(fake.sent[0])["type"] == "connection_established"
-    # The RuntimeError from on_message was caught by the generic handler; the
-    # connection was still registered then discarded.
+    assert types[0] == "connection_established"
+    # The ping AFTER the raising frame was still handled → loop did not abort.
+    assert "pong" in types
+    # Connection was registered then discarded on the eventual disconnect.
     assert state["conns"] == set()
 
 
@@ -307,7 +314,7 @@ def test_websocket_disconnect_branch_cleans_up_connection():
 
 
 def test_on_message_exception_is_logged(caplog):
-    """The generic handler logs the error (not silently swallowed)."""
+    """A raising on_message is logged (not silently swallowed), at DEBUG."""
     import asyncio
     import logging
 
@@ -321,10 +328,10 @@ def test_on_message_exception_is_logged(caplog):
     )
     fake = _FakeWebSocket(inbound=[json.dumps({"type": "x"})])
 
-    with caplog.at_level(logging.ERROR, logger="chatty_commander.web.routes.ws"):
+    with caplog.at_level(logging.DEBUG, logger="chatty_commander.web.routes.ws"):
         asyncio.run(_endpoint(router)(fake))  # type: ignore[arg-type]
 
-    assert any("WebSocket error" in rec.message for rec in caplog.records)
+    assert any("on_message callback failed" in rec.message for rec in caplog.records)
 
 
 def test_state_snapshot_reflects_live_provider():

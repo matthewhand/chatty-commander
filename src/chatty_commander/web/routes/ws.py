@@ -101,7 +101,13 @@ def include_ws_routes(
                     except Exception:
                         message = {"type": "raw", "data": data}
                     if on_message:
-                        on_message(message)
+                        # A consumer callback failure must never tear down the
+                        # connection (mirrors the initial-message producer guard
+                        # above): log and continue processing further frames.
+                        try:
+                            on_message(message)
+                        except Exception as err:  # noqa: BLE001
+                            logger.debug("on_message callback failed: %s", err)
 
                     # Respond to ping for client keepalive symmetry
                     if isinstance(message, dict) and message.get("type") == "ping":

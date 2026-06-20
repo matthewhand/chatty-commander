@@ -42,9 +42,9 @@ Non-``/api`` paths keep FastAPI's default ``{"detail": ...}`` responses so
 existing endpoints (``/bridge/event``, docs, static files) are unchanged.
 
 Note on auth: ``AuthMiddleware`` returns its 401 ``JSONResponse`` directly
-from the middleware layer, so it never reaches these exception handlers and
-its ``{"detail": "Invalid or missing API key"}`` body is intentionally
-untouched.
+from the middleware layer (so it never reaches these exception handlers), but
+it now emits the same ``{error, code, details, request_id}`` envelope via
+``error_payload`` so middleware and handler 401s are shape-consistent.
 
 ``request_id`` is read opportunistically — from ``request.state.request_id``
 if some middleware set it, else from the ``X-Request-ID`` request header, else

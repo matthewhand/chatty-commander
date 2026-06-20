@@ -154,8 +154,16 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 logger.debug("Auth failed for %s - API key mismatch or missing", path)
                 from fastapi.responses import JSONResponse
 
+                from chatty_commander.web.errors import error_payload, get_request_id
+
                 return JSONResponse(
-                    status_code=401, content={"detail": "Invalid or missing API key"}
+                    status_code=401,
+                    content=error_payload(
+                        error="Invalid or missing API key",
+                        code="unauthorized",
+                        request_id=get_request_id(request),
+                    ),
+                    headers={"WWW-Authenticate": "Bearer"},
                 )
 
             # Attach the resolved scopes so per-route require_scope dependencies

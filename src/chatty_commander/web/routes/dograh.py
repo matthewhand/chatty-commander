@@ -26,8 +26,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from chatty_commander.web.deps.auth import require_scope
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +164,12 @@ def _get_poller_registry():
 @router.post(
     "/api/v1/dograh/call-state/track",
     response_model=DograhTrackResponse,
+    # State-changing route: mirror POST /api/v1/state's scope gate so a
+    # service-to-service caller must present an X-API-Key carrying the
+    # ``state:write`` scope (legacy wildcard key ['*'] satisfies it). Additive +
+    # opt-in — pass-through in --no-auth / no-key-configured mode, so existing
+    # tests stay green.
+    dependencies=[Depends(require_scope("state:write"))],
 )
 async def track_dograh_call_state(
     body: DograhTrackRequest,
@@ -189,6 +197,8 @@ async def track_dograh_call_state(
 @router.post(
     "/api/v1/dograh/call-state/untrack",
     response_model=DograhTrackResponse,
+    # State-changing route: same scope gate as track (and POST /api/v1/state).
+    dependencies=[Depends(require_scope("state:write"))],
 )
 async def untrack_dograh_call_state() -> DograhTrackResponse:
     """Stop tracking the current dograh workflow-run's call state.
@@ -279,17 +289,27 @@ async def get_dograh_workflows() -> list[DograhWorkflow]:
 
     try:
         workflows = client.list_workflows()
+        result: list[DograhWorkflow] = []
+        for wf in workflows:
+            if "id" not in wf:
+                continue
+            try:
+                # A non-numeric / malformed id from dograh must not turn this
+                # graceful-degrade endpoint into a 500 — skip the bad row.
+                wf_id = int(wf["id"])
+            except (TypeError, ValueError):
+                logger.debug("skipping dograh workflow with non-numeric id: %r", wf.get("id"))
+                continue
+            result.append(
+                DograhWorkflow(
+                    id=wf_id,
+                    name=str(wf.get("name", "")),
+                    status=wf.get("status"),
+                )
+            )
     except Exception:
         return []
     finally:
         client.close()
 
-    return [
-        DograhWorkflow(
-            id=int(wf["id"]),
-            name=str(wf.get("name", "")),
-            status=wf.get("status"),
-        )
-        for wf in workflows
-        if "id" in wf
-    ]
+    return result

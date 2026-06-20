@@ -7,6 +7,8 @@ self-pruning (driven by a mocked clock, no real sleeps).
 
 from __future__ import annotations
 
+import sqlite3
+
 import pytest
 
 from chatty_commander.web.revocation import (
@@ -86,14 +88,59 @@ def test_sqlite_revoke_then_is_revoked():
     assert store.is_revoked("never-revoked") is False
 
 
-def test_sqlite_is_revoked_false_after_token_expiry_and_entry_dropped():
+def test_sqlite_is_revoked_false_after_token_expiry():
     clock = _Clock(t=1000.0)
     store = SqliteRevocationStore(":memory:", time_fn=clock)
     store.revoke("jti-1", exp=1100)
     assert store.is_revoked("jti-1") is True
+    # Past its own exp the token is dead, so is_revoked reports False. is_revoked
+    # is a pure read, so the (now-expired) row is NOT deleted here — it stays
+    # until a write path (revoke/prune) cleans it up.
     clock.t = 1101.0
     assert store.is_revoked("jti-1") is False
-    assert len(store) == 0
+    assert len(store) == 1
+
+
+def test_sqlite_is_revoked_does_not_write():
+    """is_revoked is a pure read: it never deletes/mutates rows."""
+    clock = _Clock(t=1000.0)
+    store = SqliteRevocationStore(":memory:", time_fn=clock)
+    store.revoke("live", exp=2000)
+    store.revoke("dead", exp=1100)
+
+    # Reading a not-yet-expired jti leaves the row present.
+    assert store.is_revoked("live") is True
+    assert len(store) == 2
+
+    # Reading an expired jti returns False but does NOT delete it (no write).
+    clock.t = 1500.0
+    assert store.is_revoked("dead") is False
+    assert len(store) == 2
+
+    # Only an explicit write path (prune) removes the expired row.
+    store.prune()
+    assert len(store) == 1
+    assert store.is_revoked("live") is True
+
+
+def test_sqlite_close_is_idempotent_and_closes_connection():
+    store = SqliteRevocationStore(":memory:")
+    store.revoke("jti-1", exp=9999999999)
+    store.close()
+    # Idempotent: a second close() does not raise.
+    store.close()
+    # Connection is actually closed: operating on it now raises.
+    with pytest.raises(sqlite3.ProgrammingError):
+        store._conn.execute("SELECT 1")
+
+
+def test_inmemory_close_is_noop_and_idempotent():
+    store = InMemoryRevocationStore()
+    store.revoke("jti-1", exp=9999999999)
+    store.close()
+    store.close()
+    # Still fully functional after a no-op close.
+    assert store.is_revoked("jti-1") is True
 
 
 def test_sqlite_revoke_self_prunes_expired_entries():

@@ -160,3 +160,18 @@ class TestDograhWorkflowsEndpoint:
 
         r = _client().get("/api/v1/dograh/workflows")
         assert [wf["id"] for wf in r.json()] == [1]
+
+    @patch("chatty_commander.integrations.dograh_client.DograhClient")
+    def test_workflows_non_numeric_id_does_not_500(self, mock_cls):
+        # A non-numeric id from dograh must not turn this graceful-degrade
+        # endpoint into a 500 — the bad row is skipped, valid rows returned.
+        instance = MagicMock()
+        instance.list_workflows.return_value = [
+            {"id": "abc", "name": "bad"},
+            {"id": 7, "name": "good"},
+        ]
+        mock_cls.return_value = instance
+
+        r = _client().get("/api/v1/dograh/workflows")
+        assert r.status_code == 200
+        assert [wf["id"] for wf in r.json()] == [7]
