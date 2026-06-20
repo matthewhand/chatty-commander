@@ -54,12 +54,10 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-base-300 pattern-isometric">
       <div className="card w-96 bg-base-100 shadow-xl border border-primary/20">
         <div className="card-body items-center text-center">
-          <div className="avatar placeholder mb-4">
-            <div className="bg-primary text-primary-content rounded-full w-20 ring ring-primary ring-offset-2 ring-offset-base-100 flex items-center justify-center">
-              <Logo iconOnly decorative size={48} iconClassName="text-primary-content" />
-            </div>
-          </div>
-          <Logo size={28} className="text-2xl mb-1" />
+          {/* Single, prominent brand lockup. The Logo already pairs the
+              speech-bubble mark with the wordmark, so a separate avatar circle
+              would repeat the same mark — show the brand once, cleanly. */}
+          <Logo size={36} className="text-3xl mt-2 mb-1" />
           <p className="text-sm opacity-70 mb-4">Voice Control System</p>
 
           {sessionExpiredNotice && (
