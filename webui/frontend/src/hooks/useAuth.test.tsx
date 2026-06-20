@@ -3,6 +3,10 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { AuthProvider, useAuth } from "./useAuth";
 import { authService } from "../services/authService";
+import {
+  __resetUnsavedChanges,
+  useUnsavedChanges,
+} from "./useUnsavedChanges";
 
 // Captures the session-expiry listener the hook registers, so tests can drive
 // the expiry path directly. The mock's subscribe stores the latest listener and
@@ -36,6 +40,7 @@ describe("useAuth Hook", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+    __resetUnsavedChanges();
   });
 
   test("throws when used outside an AuthProvider", () => {
@@ -282,5 +287,95 @@ describe("useAuth Hook", () => {
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
     expect(localStorage.getItem("auth_token")).toBeNull();
+  });
+
+  test("expiry with NO unsaved changes redirects immediately (user cleared, not blocking)", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+
+    // Unchanged behaviour: user cleared so ProtectedRoute redirects; no modal.
+    expect(result.current.user).toBeNull();
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.sessionExpiredBlocking).toBe(false);
+  });
+
+  test("expiry WITH unsaved changes shows blocking modal without clearing the user", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    // Render the auth hook alongside a registered "dirty form".
+    const { result } = renderHook(
+      () => {
+        useUnsavedChanges(true);
+        return useAuth();
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+
+    // Deferred: the user (and their page/edits) stay mounted; modal blocks.
+    expect(result.current.user).toEqual(mockUser);
+    expect(result.current.isAuthenticated).toBe(true);
+    expect(result.current.sessionExpiredBlocking).toBe(true);
+    expect(result.current.sessionExpiredNotice).toBe("expired");
+  });
+
+  test("confirmSessionExpiredSignIn clears the user and lifts the block", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result } = renderHook(
+      () => {
+        useUnsavedChanges(true);
+        return useAuth();
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+    expect(result.current.sessionExpiredBlocking).toBe(true);
+
+    act(() => result.current.confirmSessionExpiredSignIn());
+
+    expect(result.current.sessionExpiredBlocking).toBe(false);
+    expect(result.current.user).toBeNull();
+    expect(result.current.isAuthenticated).toBe(false);
+  });
+
+  test("dismissSessionExpiredBlocking hides the modal but keeps the user signed in", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result } = renderHook(
+      () => {
+        useUnsavedChanges(true);
+        return useAuth();
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+    expect(result.current.sessionExpiredBlocking).toBe(true);
+
+    act(() => result.current.dismissSessionExpiredBlocking());
+
+    // Modal hidden, but the user stays on the page (still "authenticated" in
+    // memory) so they can copy/save their edits.
+    expect(result.current.sessionExpiredBlocking).toBe(false);
+    expect(result.current.user).toEqual(mockUser);
+    expect(result.current.isAuthenticated).toBe(true);
   });
 });

@@ -308,7 +308,7 @@ Deeper pass over the improved UI (5 agents: aesthetics, deep interaction/edge
 cases, responsive, a11y+design-system, workflows+perf). Several P0s are
 **regressions the fix-waves introduced** — fix first.
 
-### P0 — regressions & broken (8/9)
+### P0 — regressions & broken (9/9)
 
 - [x] **Theme switcher shows raw token names** — `THEME_LABELS` (MainLayout) still maps the removed `cyberpunk`/`synthwave`, so `corporate/business/emerald/nord` fall through to lowercase ids; key the labels to `AVAILABLE_THEMES` + title-case fallback ([`MainLayout.tsx`](webui/frontend/src/components/MainLayout.tsx))  ✅ (#716)
 - [x] **Config "General" theme `<select>` lists dead themes** — it hardcodes `dark/light/cyberpunk/synthwave`; picking cyberpunk/synthwave sets a non-existent `data-theme`, and the 4 real themes are missing. Drive the options from `AVAILABLE_THEMES`/`useTheme()` ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))  ✅ (#716)
@@ -318,7 +318,7 @@ cases, responsive, a11y+design-system, workflows+perf). Several P0s are
 - [x] **WS reconnect-exhausted is dead state** — `WebSocketProvider` exposes `reconnectExhausted`/`reconnect()` but no UI consumes them; after 10 attempts the user is dead-ended. Surface a "Reconnect" button in the dashboard WS card + command-log offline notice ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#716)
 - [x] **Commands table has no mobile fallback** — only `overflow-x-auto`; at ~375px the Actions column scrolls off-screen. Add a stacked-card list `md:hidden`, table at `md+` ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx))  ✅ (#716)
 - [x] **Config tabs overflow on mobile** — `tabs tabs-bordered` non-wrapping row clips "LLM" at ~360px; add `overflow-x-auto`/scroll or a `max-sm` `<select>` ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))  ✅ (#716)
-- [ ] **Expiry mid-form destroys unsaved edits** — a 401 (incl. background polling) clears auth and unmounts the form via ProtectedRoute with no guard; defer redirect when a dirty form/modal is open, or stash a returnTo+draft ([`useAuth.tsx`](webui/frontend/src/hooks/useAuth.tsx), [`apiService.js`](webui/frontend/src/services/apiService.js))
+- [x] **Expiry mid-form destroys unsaved edits** — a 401 (incl. background polling) clears auth and unmounts the form via ProtectedRoute with no guard; defer redirect when a dirty form/modal is open, or stash a returnTo+draft ([`useAuth.tsx`](webui/frontend/src/hooks/useAuth.tsx), [`apiService.js`](webui/frontend/src/services/apiService.js))  ✅ (#721)
 
 ### P1 — quality (11/13)
 

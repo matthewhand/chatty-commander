@@ -9,6 +9,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MainLayout from "./components/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SessionExpiredModal from "./components/SessionExpiredModal";
 import { WebSocketProvider } from "./components/WebSocketProvider";
 import { useAuth, AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -67,6 +68,10 @@ function AppContent() {
 
   return (
     <Router>
+      {/* Blocking modal shown when the session expires while a form has unsaved
+          edits. Mounted inside Router (it navigates) and AuthProvider (it reads
+          the blocking state). It self-hides when not blocking. */}
+      <SessionExpiredModal />
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public Routes */}
