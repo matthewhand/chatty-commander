@@ -1,6 +1,6 @@
 {
   "name": "chatty-commander-webui",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Web-based interface for ChattyCommander voice control system",
   "private": true,
   "type": "module",
