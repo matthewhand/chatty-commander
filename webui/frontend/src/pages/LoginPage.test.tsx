@@ -43,6 +43,18 @@ describe("LoginPage", () => {
     authService.lastLoginErrorKind = null;
   });
 
+  test("renders the unified ChattyCommander logo/wordmark", () => {
+    setLogin(vi.fn());
+    render(<LoginPage />);
+    // The brand lockup announces the unified product name.
+    expect(
+      screen.getByRole("img", { name: "ChattyCommander" }),
+    ).toBeInTheDocument();
+    // Wordmark renders the unified name, not the old "Chatty Commander" split.
+    expect(screen.getByText("Chatty")).toBeInTheDocument();
+    expect(screen.getByText("Commander")).toBeInTheDocument();
+  });
+
   test("does not leak internal CLI flags in helper copy", () => {
     setLogin(vi.fn());
     const { container } = render(<LoginPage />);

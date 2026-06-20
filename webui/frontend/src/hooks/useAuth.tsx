@@ -1,6 +1,17 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from "react";
-import { authService, User } from "../services/authService";
+import {
+  authService,
+  subscribeSessionExpired,
+  User,
+} from "../services/authService";
 import { logger } from "../utils/logger";
+
+/**
+ * Window CustomEvent fired when the session expires mid-use. Lets any part of
+ * the app (e.g. a toast surface mounted below the AuthProvider) react without
+ * depending on React-context ordering. Detail carries the user-facing message.
+ */
+export const SESSION_EXPIRED_EVENT = "chatty:session-expired";
 
 interface AuthContextType {
   user: User | null;
@@ -8,6 +19,14 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
+  /**
+   * User-facing notice set when a previously-authenticated session is rejected
+   * mid-session. Null when there is nothing to show. Consumers (e.g. the login
+   * screen / a toast) can read this to explain the forced sign-out.
+   */
+  sessionExpiredNotice: string | null;
+  /** Dismiss the {@link sessionExpiredNotice}. */
+  clearSessionExpiredNotice: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +34,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState<
+    string | null
+  >(null);
   const retryCount = useRef(0);
   // Track the pending retry timer and mount state so we can cancel in-flight
   // retries on unmount and avoid setting state on an unmounted component.
@@ -57,6 +79,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [checkAuth]); // Include checkAuth per exhaustive-deps rule
 
+  // Centralised session-expiry handling. The token has already been cleared by
+  // authService.notifySessionExpired(); here we drop the in-memory user (which
+  // makes ProtectedRoute redirect to /login), surface a notice, and broadcast a
+  // window event so any toast surface mounted elsewhere in the tree can react.
+  useEffect(() => {
+    const unsubscribe = subscribeSessionExpired((message) => {
+      if (!isMountedRef.current) return;
+      setUser(null);
+      setLoading(false);
+      setSessionExpiredNotice(message);
+      try {
+        window.dispatchEvent(
+          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { message } }),
+        );
+      } catch {
+        /* environments without CustomEvent (non-browser) — notice still set */
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  const clearSessionExpiredNotice = useCallback(() => {
+    setSessionExpiredNotice(null);
+  }, []);
+
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
@@ -65,6 +112,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const userData = await authService.getCurrentUser();
       setUser(userData);
+      // A successful sign-in supersedes any stale expiry notice.
+      setSessionExpiredNotice(null);
       return true;
     } catch (error) {
       logger.error("Login failed:", error);
@@ -80,7 +129,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        loading,
+        sessionExpiredNotice,
+        clearSessionExpiredNotice,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -86,7 +86,7 @@ test.describe("Dashboard - Stats Cards", () => {
     await mockDashboardAPIs(page);
     await page.goto("/dashboard");
 
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
     // System Status - modernized legacy .stat-title/.stat-value locator to getByText({exact:true}).nth(0) (scoped, avoids multi-match brittleness, matches modern PW patterns elsewhere in file)
     await expect(page.getByText("System Status", { exact: true }).nth(0)).toBeVisible();
@@ -131,7 +131,7 @@ test.describe("Dashboard - Stats Cards", () => {
     await page.goto("/dashboard");
 
     // Should still render the dashboard (query returns fallback data)
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible({ timeout: 10000 });
 
     // Fallback: Unknown status, N/A for uptime, 0 for commands
     await expect(page.getByText("Unknown", { exact: true }).nth(0)).toBeVisible();
@@ -163,7 +163,7 @@ test.describe("Dashboard - Command Execution", () => {
     });
 
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
     // Wait for WebSocket to connect so the input is enabled
     const wsStatus = page.getByText("Connected", { exact: true }).nth(0);
@@ -199,7 +199,7 @@ test.describe("Dashboard - Command Execution", () => {
     });
 
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
     // Wait for connected state
     // modernized legacy .stat-value brittle locator to getByText({exact:true}).nth(0) (consistent with other tests in file)
@@ -216,7 +216,7 @@ test.describe("Dashboard - Command Execution", () => {
     await mockDashboardAPIs(page);
 
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
     // Wait for connected state
     // modernized legacy .stat-value brittle locator to getByText({exact:true}).nth(0) (consistent with other tests in file)
@@ -246,7 +246,7 @@ test.describe("Dashboard - Command Execution", () => {
     });
 
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
     // Wait for connected state
     // modernized legacy .stat-value brittle locator to getByText({exact:true}).nth(0) (consistent with other tests in file)
@@ -273,7 +273,7 @@ test.describe("Dashboard - Performance Chart", () => {
     await mockDashboardAPIs(page);
     await page.goto("/dashboard");
 
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
     await expect(page.getByText("Real-time Performance History")).toBeVisible();
 
     // Chart container should be present
@@ -396,7 +396,7 @@ test.describe("Dashboard - WebSocket Status", () => {
     await mockDashboardAPIs(page);
     await page.goto("/dashboard");
 
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
     // The real server is running in test-mode, so WS should connect
     // modernized from .stat-value brittle locator to getByText({exact:true}).nth(0) (consistent with other specs + py e2e patterns)
@@ -438,7 +438,7 @@ test.describe("Dashboard - WebSocket Status", () => {
     });
 
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
     // modernized legacy .stat-value to getByText({exact:true}).nth(0) (consistent with Connected test + other specs)
     const wsStatus = page.getByText("Offline", { exact: true }).nth(0);
@@ -477,6 +477,6 @@ test.describe("Dashboard - Loading State", () => {
     await expect(skeleton).toBeVisible({ timeout: 3000 });
 
     // After the delayed response resolves, dashboard should render
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible({ timeout: 10000 });
   });
 });

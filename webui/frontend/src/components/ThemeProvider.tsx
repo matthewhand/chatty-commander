@@ -9,8 +9,11 @@ interface ThemeContextType {
     availableThemes: readonly string[];
 }
 
-/** DaisyUI themes enabled in tailwind.config.js. */
-export const AVAILABLE_THEMES = ['light', 'dark', 'cyberpunk', 'synthwave'] as const;
+/**
+ * DaisyUI themes enabled in tailwind.config.js. Keep this list in sync with the
+ * `daisyui.themes` array there — a theme not enabled in Tailwind won't render.
+ */
+export const AVAILABLE_THEMES = ['light', 'dark', 'corporate', 'business', 'emerald', 'nord'] as const;
 
 const STORAGE_KEY = 'chatty.theme';
 const DEFAULT_THEME = 'dark';

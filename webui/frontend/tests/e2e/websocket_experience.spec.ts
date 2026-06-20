@@ -10,7 +10,7 @@ test.describe("WebSocket Experience", () => {
         await page.goto("/");
 
         // Wait for dashboard to load
-        await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
         // 1. Verify WebSocket connects (Green "Connected" status)
         // fully modernized: getByText({exact:true}).nth(0) for status + class (removed last .stat-value brittle per 30m cycles)
@@ -18,8 +18,9 @@ test.describe("WebSocket Experience", () => {
         await expect(wsStatus).toBeVisible({ timeout: 15000 });
         // status indicator verified via modern getByText (class check on internal wrapper avoided to eliminate brittle .stat-value; visibility + input enabled cover the WS status UX)
 
-        // 2. Verify the Real-time Command Log container exists
-        const logContainer = page.locator(".mockup-code");
+        // 2. Verify the Real-time Command Log container exists. The log is now a
+        // semantic live region (role="log") rather than the old .mockup-code box.
+        const logContainer = page.getByRole("log", { name: "Real-time command log" });
         await expect(logContainer).toBeVisible();
 
         // The log initially shows "Waiting for commands..." when no messages have arrived.

@@ -15,7 +15,31 @@ import { useAuth } from '../hooks/useAuth';
 import ScrollToTop from './ScrollToTop';
 import Breadcrumbs from './Breadcrumbs';
 import ErrorBoundary from './ErrorBoundary';
+import Logo from './Logo';
 import { useTheme } from './ThemeProvider';
+
+// Human-readable page title derived from the current route. Kept in sync with
+// the nav items / Breadcrumbs label map so the header title is consistent.
+const PAGE_TITLES: Record<string, string> = {
+    '/dashboard': 'Dashboard',
+    '/commands': 'Commands',
+    '/commands/authoring': 'Command Authoring',
+    '/voice-test': 'Voice Test',
+    '/configuration': 'Configuration',
+};
+
+function pageTitleFor(pathname: string): string {
+    if (PAGE_TITLES[pathname]) {
+        return PAGE_TITLES[pathname];
+    }
+    // Fall back to the last path segment, humanized, so unmapped routes still
+    // get a sensible title instead of an empty header.
+    const last = pathname.split('/').filter(Boolean).pop();
+    if (!last) {
+        return 'Dashboard';
+    }
+    return last.charAt(0).toUpperCase() + last.slice(1);
+}
 
 const THEME_LABELS: Record<string, string> = {
     light: 'Light',
@@ -51,6 +75,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const pageTitle = pageTitleFor(location.pathname);
 
     const asideRef = useRef<HTMLElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -173,12 +198,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             `}>
                 {/* Header */}
                 <div className="p-4 border-b border-base-content/10 bg-base-300 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                            Chatty
-                        </h1>
-                        <p className="text-xs text-base-content/60">Voice Commander</p>
-                    </div>
+                    <Link to="/dashboard" aria-label="ChattyCommander home" className="min-h-[44px] flex items-center">
+                        <Logo size={28} className="text-lg" />
+                    </Link>
                     <button
                         ref={closeButtonRef}
                         className="lg:hidden p-2 hover:bg-base-content/10 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -247,14 +269,33 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     >
                         <MenuIcon size={24} />
                     </button>
-                    <div className="font-bold">Chatty Commander</div>
+                    <Link to="/dashboard" aria-label="ChattyCommander home" className="flex items-center">
+                        <Logo size={24} className="text-base" />
+                    </Link>
                 </header>
 
                 {/* Content Scroll Area */}
-                <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6 ml-0">
-                    <div className="max-w-7xl mx-auto space-y-6 animate-on-load">
-                        <Breadcrumbs />
-                        <ErrorBoundary>{children}</ErrorBoundary>
+                <main id="main-content" className="flex-1 overflow-y-auto ml-0">
+                    {/* Persistent desktop app bar: sticks to the top of the scroll
+                        area so the page title, breadcrumb and global controls stay
+                        visible while content scrolls. Hidden on mobile, which uses
+                        the dedicated mobile header above. */}
+                    <header className="hidden lg:flex sticky top-0 z-10 bg-base-100/95 backdrop-blur border-b border-base-content/10 px-6 py-3 items-center gap-4">
+                        <div className="min-w-0 flex-1">
+                            <h1 className="text-xl font-bold truncate">{pageTitle}</h1>
+                            <Breadcrumbs />
+                        </div>
+                    </header>
+
+                    <div className="p-4 md:p-6">
+                        <div className="max-w-7xl mx-auto space-y-6 animate-on-load">
+                            {/* Breadcrumb stays in-flow on mobile, where the sticky
+                                desktop header is hidden. */}
+                            <div className="lg:hidden">
+                                <Breadcrumbs />
+                            </div>
+                            <ErrorBoundary>{children}</ErrorBoundary>
+                        </div>
                     </div>
                 </main>
             </div>

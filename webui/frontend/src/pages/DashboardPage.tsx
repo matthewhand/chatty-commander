@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from "react";
+import { Link } from "react-router-dom";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap, Mic, X } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap, Mic, X, Rocket, PenLine, FlaskConical } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 import { formatTimestamp } from "../utils/formatTime";
@@ -16,6 +17,27 @@ const PerformanceChart = lazy(() => import("../components/PerformanceChart"));
 const MAX_MESSAGES = 100;
 const MAX_RECENT_MESSAGES = 15;
 const MAX_HISTORY_ITEMS = 20;
+
+// Persisted dismissal for the first-run onboarding callout. Once dismissed it
+// stays hidden across reloads regardless of command count.
+const ONBOARDING_DISMISSED_KEY = "chatty.onboardingDismissed";
+
+function readOnboardingDismissed(): boolean {
+  try {
+    return window.localStorage.getItem(ONBOARDING_DISMISSED_KEY) === "1";
+  } catch {
+    // localStorage may be unavailable (private mode / SSR); default to showing.
+    return false;
+  }
+}
+
+function persistOnboardingDismissed(): void {
+  try {
+    window.localStorage.setItem(ONBOARDING_DISMISSED_KEY, "1");
+  } catch {
+    // Best-effort; if we can't persist, the callout simply reappears next load.
+  }
+}
 
 // Telemetry arrives roughly every 5s; treat the WS as "stale" once we've gone
 // more than ~2 intervals without any frame, even if it's technically connected.
@@ -78,6 +100,25 @@ const DashboardPage = React.memo(() => {
   const [history, setHistory] = useState<PerfMetric[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+
+  // First-run onboarding callout. Shown until the user explicitly dismisses it
+  // (persisted in localStorage). We also fetch the command count so the copy can
+  // distinguish "no commands yet" from "you have commands, here's the workflow".
+  const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(() =>
+    readOnboardingDismissed(),
+  );
+  const dismissOnboarding = useCallback(() => {
+    setOnboardingDismissed(true);
+    persistOnboardingDismissed();
+  }, []);
+  const { data: commandsMap } = useQuery<Record<string, unknown>>({
+    queryKey: ["commands"],
+    queryFn: () => apiService.getCommands(),
+    retry: false,
+  });
+  // Treat an undefined/failed fetch as "no commands" for guidance purposes so a
+  // brand-new install still sees the onboarding steps.
+  const hasNoCommands = !commandsMap || Object.keys(commandsMap).length === 0;
 
   // Current state-machine mode (idle/computer/chatty). Seeded from
   // GET /api/v1/status and then driven live by the `state_change` WS frame.
@@ -338,6 +379,61 @@ const DashboardPage = React.memo(() => {
           >
             <X size={16} />
           </button>
+        </div>
+      )}
+
+      {/* First-run onboarding / empty-state guidance. Dismissible and persisted;
+          stays unobtrusive once the user opts out. */}
+      {!onboardingDismissed && (
+        <div
+          className="card bg-base-200 border border-primary/30 shadow-sm"
+          role="region"
+          aria-label="Getting started"
+          data-testid="onboarding-callout"
+        >
+          <div className="card-body p-4 gap-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Rocket size={20} className="text-primary" aria-hidden="true" />
+                <h3 className="card-title text-base">
+                  {hasNoCommands ? "Get started in two steps" : "New here? Two steps to get going"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs btn-square"
+                onClick={dismissOnboarding}
+                aria-label="Dismiss getting started guide"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-sm text-base-content/70">
+              {hasNoCommands
+                ? "You don't have any commands yet. Author one, then try it out by voice."
+                : "Author commands and test them by voice — here's the quickest path."}
+            </p>
+            <ol className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <li className="flex-1">
+                <Link
+                  to="/commands/authoring"
+                  className="btn btn-primary btn-sm w-full justify-start gap-2 normal-case"
+                >
+                  <PenLine size={16} aria-hidden="true" />
+                  <span>1. Author a command</span>
+                </Link>
+              </li>
+              <li className="flex-1">
+                <Link
+                  to="/voice-test"
+                  className="btn btn-outline btn-sm w-full justify-start gap-2 normal-case"
+                >
+                  <FlaskConical size={16} aria-hidden="true" />
+                  <span>2. Test it by voice</span>
+                </Link>
+              </li>
+            </ol>
+          </div>
         </div>
       )}
 

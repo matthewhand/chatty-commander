@@ -1,5 +1,12 @@
 import { vi } from "vitest";
-import { authService } from "./authService";
+import {
+  authService,
+  authedFetch,
+  subscribeSessionExpired,
+  notifySessionExpired,
+  resetSessionExpiry,
+  hasStoredToken,
+} from "./authService";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -178,5 +185,135 @@ describe("AuthService", () => {
     await expect(authService.getCurrentUser()).rejects.toThrow(
       "Authentication required",
     );
+  });
+});
+
+describe("session-expiry / authedFetch", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    mockFetch.mockClear();
+    getItemSpy.mockClear();
+    removeItemSpy.mockClear();
+    // Re-arm the once-per-expiry latch between tests.
+    resetSessionExpiry();
+  });
+
+  test("hasStoredToken reflects token presence", () => {
+    expect(hasStoredToken()).toBe(false);
+    localStorage.setItem("auth_token", "t");
+    expect(hasStoredToken()).toBe(true);
+  });
+
+  test("authedFetch attaches the bearer token when present", async () => {
+    localStorage.setItem("auth_token", "abc");
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200 } as Response);
+
+    await authedFetch("/api/v1/anything");
+
+    const init = mockFetch.mock.calls[0][1] as RequestInit;
+    const headers = new Headers(init.headers);
+    expect(headers.get("Authorization")).toBe("Bearer abc");
+  });
+
+  test("a 401 with a token clears the token and notifies subscribers", async () => {
+    localStorage.setItem("auth_token", "abc");
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionExpired(listener);
+
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 } as Response);
+
+    const res = await authedFetch("/api/v1/protected");
+
+    expect(res.status).toBe(401);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(
+      "Your session expired — please sign in again",
+    );
+    // Token was cleared as part of the expiry flow.
+    expect(localStorage.getItem("auth_token")).toBeNull();
+
+    unsubscribe();
+  });
+
+  test("a 401 with NO token does not trigger expiry (no-auth/dev flow intact)", async () => {
+    // No token stored — a 401 here is the normal "please sign in" path.
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionExpired(listener);
+
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 } as Response);
+
+    const res = await authedFetch("/api/v1/protected");
+
+    expect(res.status).toBe(401);
+    expect(listener).not.toHaveBeenCalled();
+
+    unsubscribe();
+  });
+
+  test("a non-401 error with a token does not trigger expiry", async () => {
+    localStorage.setItem("auth_token", "abc");
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionExpired(listener);
+
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500 } as Response);
+
+    await authedFetch("/api/v1/protected");
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(localStorage.getItem("auth_token")).toBe("abc");
+
+    unsubscribe();
+  });
+
+  test("notifySessionExpired fires listeners only once until reset", () => {
+    localStorage.setItem("auth_token", "abc");
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionExpired(listener);
+
+    notifySessionExpired();
+    notifySessionExpired(); // latched — should not double-fire
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // After a fresh token + reset, a later expiry fires again.
+    localStorage.setItem("auth_token", "def");
+    resetSessionExpiry();
+    notifySessionExpired();
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
+  });
+
+  test("notifySessionExpired no-ops when there is no token", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionExpired(listener);
+
+    notifySessionExpired();
+
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  test("login re-arms the expiry latch on success", async () => {
+    localStorage.setItem("auth_token", "abc");
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionExpired(listener);
+
+    // First expiry fires once and latches.
+    notifySessionExpired();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // A successful login resets the latch.
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({ access_token: "t", token_type: "bearer", expires_in: 1 }),
+    } as Response);
+    await authService.login("user", "pass");
+
+    localStorage.setItem("auth_token", "t");
+    notifySessionExpired();
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
   });
 });

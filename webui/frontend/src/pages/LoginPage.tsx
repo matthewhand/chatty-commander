@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { authService } from "../services/authService";
-import { Mic as MicIcon, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import Logo from "../components/Logo";
 
 const LoginPage: React.FC = () => {
   useEffect(() => {
@@ -51,13 +52,11 @@ const LoginPage: React.FC = () => {
       <div className="card w-96 bg-base-100 shadow-xl border border-primary/20">
         <div className="card-body items-center text-center">
           <div className="avatar placeholder mb-4">
-            <div className="bg-primary text-primary-content rounded-full w-20 ring ring-primary ring-offset-2 ring-offset-base-100">
-              <MicIcon size={48} />
+            <div className="bg-primary text-primary-content rounded-full w-20 ring ring-primary ring-offset-2 ring-offset-base-100 flex items-center justify-center">
+              <Logo iconOnly decorative size={48} iconClassName="text-primary-content" />
             </div>
           </div>
-          <h2 className="card-title text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Chatty Commander
-          </h2>
+          <Logo size={28} className="text-2xl mb-1" />
           <p className="text-sm opacity-70 mb-4">Voice Control System</p>
 
           <form onSubmit={handleSubmit} className="w-full space-y-4">

@@ -4,7 +4,9 @@ test("basic page load", async ({ page }) => {
   await page.goto("/");
   // Should redirect to dashboard (with no auth)
   await expect(page).toHaveURL(/dashboard/);
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  // The sticky desktop app bar adds its own page-title <h1>, so "Dashboard"
+  // can resolve to two headings (app bar + page) — scope to the first.
+  await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 });
 
 test("navigation works", async ({ page }) => {
@@ -17,7 +19,7 @@ test("navigation works", async ({ page }) => {
   await expect(page).toHaveURL(/configuration/);
   await page.waitForLoadState('domcontentloaded'); // small addition for nav stability
   // expand journey: check configuration heading visible (modern getByRole DOM check)
-  await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
 
   // Navigate back to Dashboard
   await page.getByRole('link', { name: 'Dashboard' }).click();

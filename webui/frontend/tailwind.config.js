@@ -9,6 +9,9 @@ export default {
     },
     plugins: [require("daisyui")],
     daisyui: {
-        themes: ["light", "dark", "cyberpunk", "synthwave"],
+        // Curated, intentionally distinct set: light + dark plus high-contrast /
+        // neutral options. All exist in DaisyUI v4. Keep in sync with
+        // AVAILABLE_THEMES in src/components/ThemeProvider.tsx.
+        themes: ["light", "dark", "corporate", "business", "emerald", "nord"],
     },
 }
