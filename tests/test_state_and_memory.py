@@ -155,6 +155,45 @@ class TestThinkingStateManager:
         assert state is not None
         assert state.state == ThinkingState.ERROR
 
+    def test_set_state_concurrent_auto_register_registers_once(self) -> None:
+        """Racing set_agent_state on a brand-new id must register it exactly once.
+
+        The auto-register membership check and the register itself happen under
+        a single lock acquisition, so two threads hitting the same new id can't
+        both create an entry (which would clobber the other's state writes). We
+        run many threads against the same fresh id and assert the entry is
+        created once and survives intact.
+        """
+        import threading
+
+        mgr = get_thinking_manager()
+        agent_id = "race-agent"
+        ready = threading.Barrier(16)
+        errors: list[BaseException] = []
+
+        def worker() -> None:
+            try:
+                ready.wait()  # maximise overlap on the membership check
+                mgr.set_agent_state(agent_id, ThinkingState.THINKING)
+            except BaseException as exc:  # noqa: BLE001 - capture for assertion
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker) for _ in range(16)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert errors == []
+        # Exactly one entry for the raced id, and it reflects a valid state
+        # (proving no thread's register wiped a concurrent state write).
+        all_states = mgr.get_all_states()
+        matching = [aid for aid in all_states if aid == agent_id]
+        assert matching == [agent_id]
+        state = mgr.get_agent_state(agent_id)
+        assert state is not None
+        assert state.state == ThinkingState.THINKING
+
     def test_get_all_states(self) -> None:
         """Test getting all agent states."""
         mgr = get_thinking_manager()

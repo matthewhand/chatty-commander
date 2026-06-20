@@ -29,6 +29,7 @@ control messages from the avatar client.
 import asyncio
 import json
 import logging
+import threading
 from collections.abc import Callable
 from typing import Any
 
@@ -44,6 +45,14 @@ router = APIRouter()
 class AvatarWSConnectionManager:
     def __init__(self, theme_resolver: Callable[[str], str] | None = None):
         self.active_connections: list[WebSocket] = []
+        # ``active_connections`` is mutated from ``connect``/``disconnect`` on
+        # the server event loop AND read/mutated from ``broadcast_state_change``,
+        # which ThinkingStateManager may invoke from a DIFFERENT thread when a
+        # sync command/advisor thread changes state. A plain list mutated
+        # cross-thread can corrupt, so all access goes through this lock. We only
+        # ever hold it around the list operation itself (append/remove/snapshot),
+        # never while awaiting a send.
+        self._connections_lock = threading.Lock()
         # optional persona -> theme resolver
         self.theme_resolver = theme_resolver
         # Track the manager instance we've registered with to survive resets in tests
@@ -71,7 +80,8 @@ class AvatarWSConnectionManager:
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.append(websocket)
+        with self._connections_lock:
+            self.active_connections.append(websocket)
         # ensure we are bound to the current manager (handles reset in tests)
         mgr = self._ensure_manager()
         # send snapshot of current states (enrich with theme if available)
@@ -91,10 +101,11 @@ class AvatarWSConnectionManager:
             logger.error(f"Failed to send snapshot to avatar client: {e}")
 
     def disconnect(self, websocket: WebSocket):
-        try:
-            self.active_connections.remove(websocket)
-        except ValueError:
-            pass
+        with self._connections_lock:
+            try:
+                self.active_connections.remove(websocket)
+            except ValueError:
+                pass
 
     async def send_personal_message(
         self, message: dict[str, Any], websocket: WebSocket
@@ -119,8 +130,13 @@ class AvatarWSConnectionManager:
 
         # Schedule broadcast (simple inline to avoid broken nested def)
         async def _do_broadcast():
+            # Snapshot the connection list under the lock, then send outside it
+            # so a concurrent connect/disconnect (possibly on another thread)
+            # can't mutate the list while we iterate it.
+            with self._connections_lock:
+                connections = list(self.active_connections)
             dead: list[WebSocket] = []
-            for connection in list(self.active_connections):
+            for connection in connections:
                 try:
                     await connection.send_text(json.dumps(message))
                 except Exception:
@@ -154,9 +170,27 @@ class AvatarAudioQueue:
 
     def __init__(self, ws_manager: AvatarWSConnectionManager) -> None:
         self.manager = ws_manager
-        self.queue: asyncio.Queue[tuple[str, str, bytes | None]] = asyncio.Queue()
+        # The queue is created lazily on first access (see the ``queue``
+        # property) rather than at construction. ``asyncio.Queue`` binds to the
+        # running loop at creation time; building it here — at import time for
+        # the module-level singleton — would bind it to whatever loop happened
+        # to be current then (often a closed/foreign loop under uvicorn or the
+        # test harness), causing "got Future attached to a different loop"
+        # errors. Creating it on first use inside the running loop avoids this.
+        self._queue: asyncio.Queue[tuple[str, str, bytes | None]] | None = None
         self._processor_task: asyncio.Task | None = None
         self._current_play_task: asyncio.Task | None = None
+
+    @property
+    def queue(self) -> asyncio.Queue[tuple[str, str, bytes | None]]:
+        """Return the message queue, creating it lazily on first use.
+
+        Created inside the (running) loop of the first caller so the queue binds
+        to the correct event loop rather than an import-time one.
+        """
+        if self._queue is None:
+            self._queue = asyncio.Queue()
+        return self._queue
 
     @property
     def is_speaking(self) -> bool:
