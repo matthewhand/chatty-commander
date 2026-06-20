@@ -189,8 +189,9 @@ test.describe("Documentation Screenshots", () => {
     // Redirects to dashboard with --no-auth
     await expect(page).toHaveURL(/dashboard/);
 
-    // Wait for dashboard to fully load
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    // Wait for dashboard to fully load. The sticky desktop app bar renders its
+    // own page-title <h1> "Dashboard" alongside the page heading, so scope to first.
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
     // modernized brittle .stat-value to getByText({exact:true}).nth(0) (consistent with dashboard.spec and other e2e)
     await expect(page.getByText("Healthy", { exact: true }).nth(0)).toBeVisible();
     await page.waitForLoadState('networkidle');
@@ -225,7 +226,7 @@ test.describe("Documentation Screenshots", () => {
     await page.getByRole("link", { name: "Configuration" }).click();
 
     await expect(page).toHaveURL(/configuration/);
-    await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
     await page.waitForLoadState('networkidle');
 
     await page.screenshot({
@@ -238,7 +239,7 @@ test.describe("Documentation Screenshots", () => {
     await mockConfigurationAPIs(page);
 
     await page.goto("/configuration");
-    await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
 
     // Configuration is now tabbed; the voice models table lives under the
     // "Voice Models" tab, so open it before capturing (and asserting) it.
@@ -259,7 +260,7 @@ test.describe("Documentation Screenshots", () => {
     await mockConfigurationAPIs(page);
 
     await page.goto("/configuration");
-    await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
 
     // Configuration is now tabbed; the audio device cards live under the
     // "Audio" tab, so open it before capturing (and asserting) the section.
@@ -283,7 +284,7 @@ test.describe("Documentation Screenshots", () => {
     await page.getByRole("link", { name: "Commands" }).click();
 
     await expect(page).toHaveURL(/commands/);
-    await expect(page.getByRole("heading", { name: /commands/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /commands/i }).first()).toBeVisible();
     await page.waitForLoadState('networkidle');
 
     await page.screenshot({

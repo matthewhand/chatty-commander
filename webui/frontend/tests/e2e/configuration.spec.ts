@@ -749,7 +749,9 @@ test.describe("Configuration Page - General", () => {
     await mockAllRoutes(page);
     await page.goto("/configuration");
 
-    await expect(page.getByRole("heading", { name: "Configuration" })).toBeVisible();
+    // The sticky desktop app bar adds its own page-title <h1> "Configuration",
+    // so this name now resolves to two headings — scope to the first.
+    await expect(page.getByRole("heading", { name: "Configuration" }).first()).toBeVisible();
 
     // Sections are now split across tabs.
     await expect(page.getByRole("tab", { name: "General" })).toBeVisible();

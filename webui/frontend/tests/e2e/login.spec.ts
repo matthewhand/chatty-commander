@@ -28,13 +28,13 @@ test.describe("Login Page", () => {
     // giving up, but route interception responds instantly so retries
     // resolve quickly. Wait for the login heading to appear.
     await expect(
-      page.getByRole("heading", { name: "Chatty Commander" })
+      page.getByText("ChattyCommander").first()
     ).toBeVisible({ timeout: 30_000 });
   });
 
   test("renders with title and form inputs", async ({ page }) => {
     await expect(
-      page.getByRole("heading", { name: "Chatty Commander" })
+      page.getByText("ChattyCommander").first()
     ).toBeVisible();
 
     await expect(
@@ -59,11 +59,7 @@ test.describe("Login Page", () => {
 
   test("info alert about auth config is visible", async ({ page }) => {
     await expect(
-      page.getByText("Auth configured via CLI. No reset function.")
-    ).toBeVisible();
-
-    await expect(
-      page.getByText("Use --no-auth to disable.")
+      page.getByText("Credentials are managed by your administrator.")
     ).toBeVisible();
   });
 

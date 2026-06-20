@@ -5,7 +5,7 @@ test('WebSocket connection succeeds with dynamic port', async ({ page }) => {
   await page.goto('/');
 
   // Wait for the Dashboard to load
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
   // Verify that the WebSocket status indicator shows "Connected"
   // This confirms that the frontend is successfully connecting to the backend on the correct port (8100)

@@ -197,7 +197,7 @@ test.describe("Guided Tour Screenshots", () => {
     // The auth provider retries its probe a few times before giving up, so
     // allow extra time for the login card to appear.
     await expect(
-      page.getByRole("heading", { name: "Chatty Commander" })
+      page.getByText("ChattyCommander").first()
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("button", { name: /login/i })).toBeVisible();
 
@@ -227,7 +227,7 @@ test.describe("Guided Tour Screenshots", () => {
 
     await page.goto("/");
     await expect(page).toHaveURL(/dashboard/);
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
     // modernized legacy .stat-value to getByText({exact:true}).nth(0) (consistent with dashboard/websocket patterns + prior 30m cycles)
     await expect(page.getByText("Healthy", { exact: true }).nth(0)).toBeVisible();
     await settle(page);
@@ -242,7 +242,9 @@ test.describe("Guided Tour Screenshots", () => {
     await page.getByRole("link", { name: "Configuration" }).click();
 
     await expect(page).toHaveURL(/configuration/);
-    await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+    // The sticky desktop app bar renders its own page-title <h1>, so the page's
+    // own <h2> heading is the second match — scope to the first visible heading.
+    await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
     // Configuration is now tabbed; voice models live under the "Voice Models"
     // tab. Open it so the captured page shows the loaded ONNX models.
     await page.getByRole("tab", { name: "Voice Models" }).click();
@@ -303,15 +305,17 @@ test.describe("Guided Tour Screenshots", () => {
     await mockConfigurationAPIs(page);
 
     await page.goto("/configuration");
-    await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
 
-    // Pick a non-default DaisyUI theme to show live theming.
-    await page.locator("#config-theme").selectOption("synthwave");
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "synthwave");
+    // Pick a non-default DaisyUI theme to show live theming. Use the global
+    // sidebar theme switcher, which exposes the currently enabled themes
+    // (light/dark/corporate/business/emerald/nord).
+    await page.getByLabel("Select theme").selectOption("emerald");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "emerald");
     await settle(page);
 
     await page.screenshot({
-      path: shot("tour-06-theme-synthwave.png"),
+      path: shot("tour-06-theme-emerald.png"),
       fullPage: true,
     });
   });
@@ -320,7 +324,7 @@ test.describe("Guided Tour Screenshots", () => {
     await mockConfigurationAPIs(page);
 
     await page.goto("/configuration");
-    await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
 
     // Configuration is now tabbed; the audio device cards live under the
     // "Audio" tab, so open it before the heading/selects are in the DOM.
@@ -343,7 +347,7 @@ test.describe("Guided Tour Screenshots", () => {
     await mockDashboardAPIs(page);
 
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
 
     // The WebSocket stat connects to the live test backend (the /ws endpoint
     // is not mocked), so the indicator reflects a genuine connection.

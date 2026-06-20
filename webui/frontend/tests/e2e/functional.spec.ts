@@ -12,7 +12,8 @@ test.describe("Functional Flows", () => {
         // Verify the link has active class or similar visual indicator if applicable
         // For DaisyUI/Tailwind, typically 'active' or 'bg-base-200' class.
         // We'll check if the link is visible and URL is correct, which is robust enough for functional flow.
-        await expect(page.getByRole("heading", { name: "Configuration" })).toBeVisible();
+        // The sticky app bar adds a duplicate page-title heading; scope to first.
+        await expect(page.getByRole("heading", { name: "Configuration" }).first()).toBeVisible();
 
         // Go to Commands
         await page.getByRole("link", { name: "Commands" }).click();
@@ -32,7 +33,7 @@ test.describe("Functional Flows", () => {
     test("configuration form interactions", async ({ page }) => {
         await page.goto("/configuration");
 
-        await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
+        await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
 
         // Use actual modern locators from ConfigurationPage (theme select + service toggles)
         // avoids outdated generic input[type=text] + conditional fallbacks.

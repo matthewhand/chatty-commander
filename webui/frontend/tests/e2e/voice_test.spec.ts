@@ -67,7 +67,9 @@ test.describe("Voice Test page", () => {
     await gotoVoiceTest(page);
 
     // Subtitle under the H1 sets honest expectations (no real actions run).
-    await expect(page.getByRole("heading", { name: "Voice Test" })).toBeVisible();
+    // The sticky desktop app bar adds its own page-title <h1> "Voice Test",
+    // so the heading now resolves to two elements — scope to the first.
+    await expect(page.getByRole("heading", { name: "Voice Test" }).first()).toBeVisible();
     await expect(page.getByTestId("voice-test-subtitle")).toContainText(
       /no real actions run/i
     );
