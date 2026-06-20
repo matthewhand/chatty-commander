@@ -115,14 +115,49 @@ Returns the current system status including active state and loaded models.
 }
 ```
 
+#### GET /api/v1/health
+
+Lightweight liveness/health probe. Always returns `200` with an honest body
+(degrades gracefully when `psutil`/DB are unavailable).
+
+**Response Example:**
+```json
+{
+  "status": "healthy",
+  "uptime": "2h 15m 30s",
+  "version": "0.6.0",
+  "database": "ok",
+  "memory_usage": 41.2,
+  "cpu_usage": 3.0,
+  "last_health_check": "2026-06-20T15:00:00"
+}
+```
+
+#### GET /api/v1/version
+
+Returns the application version (sourced from package metadata) plus the short
+git SHA when available (`null` if git isn't present).
+
+**Response Example:**
+```json
+{
+  "version": "0.6.0",
+  "git_sha": "a8ddda36"
+}
+```
+
 ### Configuration Management
 
 #### GET /api/v1/config
 
 Retrieves the current system configuration. The shape mirrors `config.json`
-(loaded by `src/chatty_commander/app/config.py`). Top-level keys include
-`model_paths`, `commands`, `state_models`, `default_state`, `general`,
-`web_server`, and the optional `advisors`/`voice`/`ui` blocks.
+(loaded by `src/chatty_commander/app/config.py`). Top-level keys are
+`model_paths`, `commands`, `state_models`, `state_transitions`, `keybindings`,
+`command_sequences`, `api_endpoints`, `audio_settings`, `general_settings`,
+`general`, `logging`, `web_server`, `voice_only`, and `wakeword_state_map`.
+Note `default_state` lives **inside** `general_settings` (alongside
+`debug_mode`, `inference_framework`, `start_on_boot`, `check_for_updates`),
+not at the top level.
 
 **Response Example:**
 ```json

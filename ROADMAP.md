@@ -543,8 +543,8 @@ bug class.
 
 - [ ] **`POST /avatar/animation/choose` is an unauthenticated POST** — it's a stateless classifier (no persistence), so low risk, but for consistency with the other `/avatar/*` mutating routes it should carry `Depends(require_role("user"))` (verify the avatar UI sends a token before gating) ([`web/routes/avatar_selector.py`](src/chatty_commander/web/routes/avatar_selector.py))
 - [ ] **`/bridge/event` registered in two factories** — `server.py:create_app` and `web_mode.py` define it separately with slightly divergent response bodies and auth handling; consolidate into one shared registration ([`web/server.py`](src/chatty_commander/web/server.py), [`web/web_mode.py`](src/chatty_commander/web/web_mode.py))
-- [ ] **`docs/API.md` config-schema example is inaccurate** — shows `default_state` as a top-level key (it lives under `general_settings`) and claims optional `advisors`/`voice`/`ui` blocks that the loaded config dict doesn't contain; fix the example to match `Config().config` ([`docs/API.md`](docs/API.md))
-- [ ] **Undocumented endpoints in `docs/API.md`** — `GET /api/v1/health` and `GET /api/v1/version` (with `git_sha`) exist and are in the OpenAPI spec but absent from the markdown ([`docs/API.md`](docs/API.md))
+- [x] **`docs/API.md` config-schema example is inaccurate** — showed `default_state` as a top-level key (it lives under `general_settings`) and claimed `advisors`/`voice`/`ui` blocks the loaded config dict doesn't contain ✅ (#738 — corrected the top-level key list against `Config().config` and noted `default_state` nests under `general_settings`) ([`docs/API.md`](docs/API.md))
+- [x] **Undocumented endpoints in `docs/API.md`** — `GET /api/v1/health` and `GET /api/v1/version` (with `git_sha`) existed in the OpenAPI spec but not the markdown ✅ (#738 — both now documented with response examples matching `HealthStatus`/`VersionInfo`) ([`docs/API.md`](docs/API.md))
 
 ---
 
