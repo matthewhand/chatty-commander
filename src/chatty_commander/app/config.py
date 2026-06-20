@@ -348,11 +348,6 @@ class Config:
                 if parsed <= 0:
                     raise ValueError
                 return parsed
-
-
-                if parsed <= 0:
-                    raise ValueError
-                return parsed
             except ValueError:
                 logger.warning("Invalid %s=%r; using %s", var_name, value, fallback)
         return fallback
@@ -377,11 +372,7 @@ class Config:
             logger.warning(
                 "Error loading config file %s. Using defaults.", self.config_file
             )
-
             return {}
-
-            return {"general": {}}
-
         except json.JSONDecodeError:
             logger.error(
                 "Config file %s is not valid JSON. Using defaults.", self.config_file
@@ -439,31 +430,16 @@ class Config:
         commands_cfg = self.commands if isinstance(self.commands, dict) else {}
         keybindings = self.config_data.get("keybindings", {}) or {}
         for name, cfg in commands_cfg.items():
-
-            if not isinstance(cfg, dict):
-                continue
-            action_type = cfg.get("action")
-            if action_type == "keypress":
-                keys = cfg.get("keys")
-                if isinstance(keys, str):
-                   mapped = keybindings.get(keys, keys)
-                   if mapped:
-                       actions[name] = {"keypress": mapped}
-
-
             if not isinstance(cfg, dict):
                 continue
             action_type = cfg.get("action")
 
             if action_type == "keypress":
                 keys = cfg.get("keys")
-
                 if isinstance(keys, str):
-                   mapped = keybindings.get(keys, keys)
-
-                   if mapped:
-                       actions[name] = {"keypress": mapped}
-
+                    mapped = keybindings.get(keys, keys)
+                    if mapped:
+                        actions[name] = {"keypress": mapped}
 
             elif action_type == "url":
                 url = cfg.get("url", "")
@@ -478,12 +454,6 @@ class Config:
             elif action_type == "custom_message":
                 msg = cfg.get("message", "")
                 actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
-
-
-            elif action_type == "custom_message":
-                msg = cfg.get("message", "")
-                actions[name] = {"shell": f"echo {shlex.quote(msg)}"}
-
 
             elif action_type == "voice_chat":
                 # Voice chat action - pass through the entire config
@@ -502,7 +472,14 @@ class Config:
 
     # ------------------------------------------------------------------
     # Public API
-    def save_config(self, config_data: dict | None = None) -> None:
+    def save_config(self, config_data: dict | None = None) -> bool:
+        """Persist the configuration to disk.
+
+        Returns ``True`` when the config was written successfully (or skipped
+        because no ``config_file`` is set, as in tests), and ``False`` when a
+        write error (e.g. disk full, read-only directory) was caught. Callers
+        that ignore the return value continue to work unchanged.
+        """
         if config_data is not None:
             self.config_data.update(config_data)
             self.config = self.config_data
@@ -512,7 +489,7 @@ class Config:
         self.config_data["voice_only"] = self.voice_only
         if not self.config_file:
             # Skip saving when config_file is empty (for tests)
-            return
+            return True
         try:
             # Write atomically: serialize to a sibling temp file, then replace.
             # This prevents a crash mid-write from corrupting the live config.
@@ -536,6 +513,8 @@ class Config:
                 raise
         except (TypeError, ValueError, OSError) as e:
             logger.error(f"Could not save config file: {e}")
+            return False
+        return True
 
     @property
     def voice_only(self) -> bool:
@@ -584,11 +563,18 @@ class Config:
             "implemented for this platform; no autostart entry was removed."
         )
 
-    def _update_general_setting(self, key: str, value: Any) -> None:
+    def _update_general_setting(self, key: str, value: Any) -> bool:
         if "general" not in self.config_data:
             self.config_data["general"] = {}
         self.config_data["general"][key] = value
-        self.save_config(self.config_data)
+        saved = self.save_config(self.config_data)
+        if not saved:
+            logger.error(
+                "Failed to persist general setting %r; in-memory value updated "
+                "but not written to disk.",
+                key,
+            )
+        return saved
 
     def perform_update_check(self) -> dict[str, Any] | None:
         if not self.check_for_updates:
@@ -647,11 +633,8 @@ class Config:
         instance = cls.__new__(cls)
         instance.config_file = config_file
 
-        instance.config_data = data.copy()
-        # Mirror __init__: web handlers/tests expect `.config` as the raw dict.
-        instance.config = instance.config_data
-
         instance.config_data = (data or {}).copy()
+        # Mirror __init__: web handlers/tests expect `.config` as the raw dict.
         instance.config = instance.config_data
         instance._config_was_valid = bool(instance.config_data)
 
@@ -670,10 +653,6 @@ class Config:
         instance.chat_models_path = instance.config_data.get(
             "chat_models_path", "models-chatty"
         )
-
-        instance.system_models_path = instance.config_data.get("system_models_path", "models-computer")
-        instance.chat_models_path = instance.config_data.get("chat_models_path", "models-chatty")
-
 
         instance.state_models = instance.config_data.get("state_models", {})
         instance.api_endpoints = instance.config_data.get(
@@ -731,11 +710,7 @@ class Config:
         return instance
 
     def to_dict(self) -> dict[str, Any]:
-
-        """Convert the config back to a dictionary for serialization."""
-
         """Serialize current config state (for persistence/web)."""
-
         result = self.config_data.copy()
         result["model_actions"] = self.model_actions
         result["state_models"] = self.state_models

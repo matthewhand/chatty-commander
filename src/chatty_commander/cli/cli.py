@@ -107,7 +107,9 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
         except Exception as e:
             logger.error(f"Error during shutdown: {e}")
         logger.info("ChattyCommander CLI shutdown complete")
-        sys.exit(0)
+    # Return (instead of sys.exit(0)) so the caller (cli_main) owns the exit
+    # code; the cleanup above runs via finally regardless of how the loop ended.
+    return 0
 
 
 def _detect_action_type(action) -> str:
@@ -434,6 +436,13 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         help="Start interactive shell mode for text-based command input and execution.",
     )
 
+    # Advisors enable flag (opt-in; turns on the advisors subsystem at runtime).
+    parser.add_argument(
+        "--advisors",
+        action="store_true",
+        help="Enable the advisors subsystem (LLM agents) at runtime, overriding config.",
+    )
+
     # Orchestrator flags (opt-in; does not change default behavior)
     parser.add_argument(
         "--orchestrate",
@@ -517,8 +526,15 @@ def _validate_args(args, parser):
     Uses parser.error to trigger SystemExit(2) with message, matching test expectations.
     """
     port = getattr(args, "port", None)
-    if port is not None and port < 1024 and getattr(args, "web", False):
-        parser.error("Port must be 1024 or higher")
+    if port is not None:
+        # Reject anything outside the valid TCP range unconditionally (0,
+        # negatives, and > 65535 are never serviceable regardless of mode).
+        if not (1 <= port <= 65535):
+            parser.error("Port must be between 1 and 65535")
+        # Privileged ports (< 1024) are additionally rejected in web mode since
+        # binding them typically requires root.
+        if port < 1024 and getattr(args, "web", False):
+            parser.error("Port must be 1024 or higher")
     if getattr(args, "no_auth", False) and not getattr(args, "web", False):
         parser.error("--no-auth only applicable in web mode")
 
@@ -914,14 +930,11 @@ def cli_main():
         config_cli.run_wizard()
         return 0
     elif getattr(args, "web", False):
-        # Ensure web_server config exists and reflect CLI overrides
-        if not hasattr(config, "web_server") or config.web_server is None:
-            config.web_server = {}
-        host = getattr(args, "host", None) or config.web_server.get("host", "0.0.0.0")
-        port = getattr(args, "port", None) or config.web_server.get("port", 8100)
-        config.web_server.update(
-            {"host": host, "port": port, "auth_enabled": not args.no_auth}
-        )
+        # host/port/auth_enabled were already derived above (single override
+        # pass at the top of cli_main) honoring config-file values, CLI flags,
+        # and --no-auth. Reuse them here instead of recomputing — in particular
+        # do NOT recompute auth_enabled as `not args.no_auth`, which would
+        # silently re-enable auth that a config file disabled.
         run_web_mode(
             config,
             model_manager,

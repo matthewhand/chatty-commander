@@ -317,6 +317,48 @@ class TestConfigUpdates:
         config._update_general_setting("debug_mode", False)
         assert config.config_data["general"]["debug_mode"] is False
 
+    def test_save_config_returns_true_on_success(self, tmp_path, monkeypatch):
+        for name in (
+            "CHATCOMM_DEBUG",
+            "CHATCOMM_DEFAULT_STATE",
+            "CHATCOMM_INFERENCE_FRAMEWORK",
+            "CHATCOMM_START_ON_BOOT",
+            "CHATCOMM_CHECK_FOR_UPDATES",
+        ):
+            monkeypatch.delenv(name, raising=False)
+        cfg_path = _write_tmp_config(tmp_path, {"general": {}})
+        config = Config(config_file=str(cfg_path))
+        assert config.save_config({"hello": "world"}) is True
+        # The write actually landed on disk.
+        on_disk = json.loads(cfg_path.read_text(encoding="utf-8"))
+        assert on_disk["hello"] == "world"
+
+    def test_save_config_returns_false_when_write_raises(
+        self, tmp_path, monkeypatch
+    ):
+        cfg_path = _write_tmp_config(tmp_path, {"general": {}})
+        config = Config(config_file=str(cfg_path))
+
+        # Simulate a disk-full / read-only failure during the atomic replace.
+        def _boom(*_args, **_kwargs):
+            raise OSError("No space left on device")
+
+        monkeypatch.setattr(os, "replace", _boom)
+        assert config.save_config({"hello": "world"}) is False
+
+    def test_save_config_empty_file_returns_true(self, monkeypatch):
+        config = _clean_env_config(monkeypatch)
+        # No config_file => write is skipped but reported as success.
+        assert config.config_file == ""
+        assert config.save_config() is True
+
+    def test_update_general_setting_returns_save_result(self, tmp_path, monkeypatch):
+        cfg_path = _write_tmp_config(tmp_path, {"general": {}})
+        config = Config(config_file=str(cfg_path))
+        assert config._update_general_setting("debug_mode", False) is True
+        monkeypatch.setattr(os, "replace", lambda *a, **k: (_ for _ in ()).throw(OSError()))
+        assert config._update_general_setting("debug_mode", True) is False
+
     def test_set_check_for_updates(self, monkeypatch):
         config = _clean_env_config(monkeypatch)
         config.set_check_for_updates(0)

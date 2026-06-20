@@ -107,9 +107,8 @@ class TestRunCliMode:
         sm.update_state.side_effect = update_then_stop
         mm.listen_for_commands.return_value = "hello"
 
-        with pytest.raises(SystemExit) as exc:
-            run_cli_mode(config, mm, sm, ce, logger)
-        assert exc.value.code == 0
+        # run_cli_mode returns 0 (does not sys.exit) so cli_main owns the exit code.
+        assert run_cli_mode(config, mm, sm, ce, logger) == 0
 
         mm.reload_models.assert_any_call("idle")
         mm.reload_models.assert_any_call("active")
@@ -144,8 +143,7 @@ class TestRunCliMode:
 
         mm.listen_for_commands.side_effect = fake_listen
 
-        with pytest.raises(SystemExit):
-            run_cli_mode(config, mm, sm, ce, logger)
+        assert run_cli_mode(config, mm, sm, ce, logger) == 0
         ce.execute_command.assert_not_called()
 
     def test_inner_exception_logged_and_loop_survives(self, monkeypatch):
@@ -174,8 +172,7 @@ class TestRunCliMode:
 
         mm.listen_for_commands.side_effect = fake_listen
 
-        with pytest.raises(SystemExit):
-            run_cli_mode(config, mm, sm, ce, logger)
+        assert run_cli_mode(config, mm, sm, ce, logger) == 0
         assert any(
             "Error while processing command loop" in str(c)
             for c in logger.error.call_args_list
@@ -184,7 +181,7 @@ class TestRunCliMode:
     def test_shutdown_cleanup_errors_are_swallowed(self, monkeypatch):
         logger = _logger()
         config = _Config({})
-        # model_manager.shutdown raises; finally block must catch and exit(0).
+        # model_manager.shutdown raises; finally block must catch and return 0.
         mm = MagicMock()
         mm.shutdown.side_effect = RuntimeError("cleanup boom")
         sm = MagicMock()
@@ -204,9 +201,7 @@ class TestRunCliMode:
 
         mm.listen_for_commands.side_effect = fake_listen
 
-        with pytest.raises(SystemExit) as exc:
-            run_cli_mode(config, mm, sm, ce, logger)
-        assert exc.value.code == 0
+        assert run_cli_mode(config, mm, sm, ce, logger) == 0
         assert any(
             "Error during shutdown" in str(c) for c in logger.error.call_args_list
         )
@@ -632,6 +627,50 @@ class TestCliMainArgValidation:
         code, _out, err = _run_main(monkeypatch, ["--no-auth"])
         assert code == 2
         assert "--no-auth only applicable in web mode" in err
+
+    def test_port_out_of_range_errors(self, monkeypatch):
+        # Out-of-range port is rejected unconditionally (no --web needed).
+        code, _out, err = _run_main(monkeypatch, ["--port", "70000"])
+        assert code == 2
+        assert "Port must be between 1 and 65535" in err
+
+    def test_port_zero_errors(self, monkeypatch):
+        code, _out, err = _run_main(monkeypatch, ["--port", "0"])
+        assert code == 2
+        assert "Port must be between 1 and 65535" in err
+
+    def test_advisors_flag_enables_advisors(self, monkeypatch):
+        # The --advisors flag must flip config.advisors["enabled"] to True
+        # (the previously-dead enable block is now reachable).
+        captured = {}
+
+        class _AdvisorConfig(_DummyConfig):
+            pass
+
+        def _make_config():
+            cfg = _AdvisorConfig()
+            captured["cfg"] = cfg
+            return cfg
+
+        monkeypatch.setattr(cli_mod, "Config", _make_config)
+        monkeypatch.setattr(cli_mod, "ModelManager", lambda *a, **k: MagicMock())
+        monkeypatch.setattr(cli_mod, "StateManager", lambda *a, **k: MagicMock())
+        monkeypatch.setattr(cli_mod, "CommandExecutor", lambda *a, **k: MagicMock())
+        monkeypatch.setattr(
+            cli_mod, "generate_default_config_if_needed", lambda: False
+        )
+        env_mod = types.ModuleType("chatty_commander.app.env_validation")
+        env_mod.EnvValidationError = type("EnvValidationError", (Exception,), {})
+        env_mod.validate_startup_env = MagicMock()
+        monkeypatch.setitem(
+            sys.modules, "chatty_commander.app.env_validation", env_mod
+        )
+        with patch.object(cli_mod, "run_interactive_shell"):
+            code, _o, _e = _run_main(
+                monkeypatch, ["--advisors", "--shell", "--test-mode"]
+            )
+        assert code == 0
+        assert captured["cfg"].advisors["enabled"] is True
 
     def test_orchestrate_dispatch(self, monkeypatch):
         _install_light_app(monkeypatch)

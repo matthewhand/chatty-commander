@@ -32,6 +32,35 @@ class TestCliMainHelpers:
         _validate_args(args, parser)
         parser.error.assert_called_once()
 
+    def test_validate_args_port_zero_errors(self):
+        # Port 0 is out of the valid TCP range and must be rejected even
+        # without --web (range check is unconditional).
+        parser = Mock()
+        args = Namespace(web=False, port=0, no_auth=False)
+        _validate_args(args, parser)
+        parser.error.assert_called_once()
+
+    def test_validate_args_port_too_high_errors(self):
+        # > 65535 is out of range and rejected unconditionally.
+        parser = Mock()
+        args = Namespace(web=False, port=70000, no_auth=False)
+        _validate_args(args, parser)
+        parser.error.assert_called_once()
+
+    def test_validate_args_negative_port_errors(self):
+        parser = Mock()
+        args = Namespace(web=False, port=-1, no_auth=False)
+        _validate_args(args, parser)
+        parser.error.assert_called_once()
+
+    def test_validate_args_high_port_without_web_ok(self):
+        # A valid (>=1024) port without --web is accepted (no longer silently
+        # ignored at validation time; range is just checked).
+        parser = Mock()
+        args = Namespace(web=False, port=9000, no_auth=False)
+        _validate_args(args, parser)
+        parser.error.assert_not_called()
+
     def test_handle_list_subcommand_plain(self, capsys):
         cfg = Mock(model_actions={"take_screenshot": {}, "lights": {}})
         rc = _handle_list_subcommand(Namespace(subcommand="list", json=False), cfg)
