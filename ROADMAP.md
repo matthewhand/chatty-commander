@@ -523,6 +523,31 @@ Fix those first.
 
 ---
 
+## Backlog — round 8 (from 2026-06-20 audit: API-surface hygiene + docs accuracy)
+
+Two read-only critique passes (route-registration hygiene + docs-vs-code). The
+duplicate-route findings were real dead code that produced duplicate OpenAPI
+operation IDs and were the structural cause of the round-7 "shadowed handler"
+bug class.
+
+### Fixed (#737)
+
+- [x] **Duplicate `/api/preferences` GET+PUT** — `system.py` re-registered handlers already owned by `preferences.py` (which wins dispatch); removed the dead `system.py` copies (kept `ALLOWED_PREF_KEYS`, still used by `/api/restore`) ([`web/routes/system.py`](src/chatty_commander/web/routes/system.py))
+- [x] **Duplicate `/api/themes` + `/api/theme`** — `system.py` copies (which skipped the `AVAILABLE_THEMES` validation in `themes.py`) were dead and removed ([`web/routes/system.py`](src/chatty_commander/web/routes/system.py))
+- [x] **Duplicate `/api/audio/devices` + `/api/audio/device`** — `audio.py` "legacy" wrappers re-registered paths the stacked decorators already cover; removed ([`web/routes/audio.py`](src/chatty_commander/web/routes/audio.py))
+- [x] **4 duplicate OpenAPI operation-ID warnings** eliminated as a result (verified 0 in the full test run)
+- [x] **`str(e)` leaked in 500 responses** — `avatar_api.py` (`/avatar/animations`) and `avatar_settings.py` (`GET`/`PUT /avatar/config`) returned the raw exception (could carry filesystem paths) to clients; now log server-side + return a generic message ([`web/routes/avatar_api.py`](src/chatty_commander/web/routes/avatar_api.py), [`web/routes/avatar_settings.py`](src/chatty_commander/web/routes/avatar_settings.py))
+- [x] **Docs API version drift** — `docs/API.md`, `docs/openapi.json`, `docs/developer/openapi.json` hardcoded `0.2.0`; updated to `0.6.0` to match the now-dynamic runtime version ([`docs/API.md`](docs/API.md))
+
+### Still open
+
+- [ ] **`POST /avatar/animation/choose` is an unauthenticated POST** — it's a stateless classifier (no persistence), so low risk, but for consistency with the other `/avatar/*` mutating routes it should carry `Depends(require_role("user"))` (verify the avatar UI sends a token before gating) ([`web/routes/avatar_selector.py`](src/chatty_commander/web/routes/avatar_selector.py))
+- [ ] **`/bridge/event` registered in two factories** — `server.py:create_app` and `web_mode.py` define it separately with slightly divergent response bodies and auth handling; consolidate into one shared registration ([`web/server.py`](src/chatty_commander/web/server.py), [`web/web_mode.py`](src/chatty_commander/web/web_mode.py))
+- [ ] **`docs/API.md` config-schema example is inaccurate** — shows `default_state` as a top-level key (it lives under `general_settings`) and claims optional `advisors`/`voice`/`ui` blocks that the loaded config dict doesn't contain; fix the example to match `Config().config` ([`docs/API.md`](docs/API.md))
+- [ ] **Undocumented endpoints in `docs/API.md`** — `GET /api/v1/health` and `GET /api/v1/version` (with `git_sha`) exist and are in the OpenAPI spec but absent from the markdown ([`docs/API.md`](docs/API.md))
+
+---
+
 ## Done (recent)
 
 2026-06-11 (continued):

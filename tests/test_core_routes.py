@@ -153,7 +153,9 @@ def test_webui_missing_endpoints_now_implemented():
 
     from chatty_commander.web.routes.audio import include_audio_routes
     from chatty_commander.web.routes.models import router as models_router
+    from chatty_commander.web.routes.preferences import include_preferences_routes
     from chatty_commander.web.routes.system import include_system_routes
+    from chatty_commander.web.routes.themes import include_theme_routes
 
     cfg = MagicMock()
     cfg.config = {"ui": {"theme": "dark"}}
@@ -162,6 +164,11 @@ def test_webui_missing_endpoints_now_implemented():
     app = FastAPI()
     app.include_router(include_audio_routes(get_config_manager=lambda: cfg))
     app.include_router(models_router)
+    # /api/themes + /api/theme and /api/preferences are owned by the themes /
+    # preferences routers (system.py's duplicates were removed); mount them the
+    # same way register_shared_routers does.
+    app.include_router(include_theme_routes(get_config_manager=lambda: cfg))
+    app.include_router(include_preferences_routes(get_config_manager=lambda: cfg))
     app.include_router(include_system_routes(get_start_time=lambda: 0.0, get_config_manager=lambda: cfg))
     client = TestClient(app)
 

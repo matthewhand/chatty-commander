@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -29,6 +30,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from chatty_commander.web.deps.auth import require_role
+
+logger = logging.getLogger(__name__)
 
 
 class AvatarConfigModel(BaseModel):
@@ -98,7 +101,10 @@ def include_avatar_settings_routes(
             avatar = _get_avatar_cfg(cfg_mgr)
             return AvatarConfigModel(**avatar)
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(status_code=500, detail=str(e)) from e
+            logger.exception("Failed to read avatar config")
+            raise HTTPException(
+                status_code=500, detail="Failed to read avatar config"
+            ) from e
 
     @router.put("/avatar/config", response_model=AvatarConfigModel)
     async def update_avatar_config(
@@ -125,7 +131,12 @@ def include_avatar_settings_routes(
                 except TypeError:
                     save(getattr(cfg_mgr, "config", {}))  # type: ignore[misc]
             return AvatarConfigModel(**avatar)
+        except HTTPException:
+            raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(status_code=500, detail=str(e)) from e
+            logger.exception("Failed to update avatar config")
+            raise HTTPException(
+                status_code=500, detail="Failed to update avatar config"
+            ) from e
 
     return router

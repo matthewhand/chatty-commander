@@ -148,7 +148,12 @@ async def list_animations(
     except HTTPException:
         raise
     except Exception as e:  # pragma: no cover - unexpected
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        # Don't leak the raw exception (may carry filesystem paths/internals) to
+        # the client; log it server-side and return a generic message.
+        logger.exception("Failed to list avatar animations")
+        raise HTTPException(
+            status_code=500, detail="Failed to list animations"
+        ) from e
 
 
 @router.post("/avatar/launch")

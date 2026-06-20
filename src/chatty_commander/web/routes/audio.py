@@ -123,13 +123,9 @@ def include_audio_routes(
 
         return {"success": True, "device": device_id, "persisted": persisted}
 
-    # Legacy paths (no /v1) for compatibility with apiService.js and listed gaps
-    @router.get("/api/audio/devices", response_model=AudioDevices)
-    async def get_audio_devices_legacy():
-        return await get_audio_devices()
-
-    @router.post("/api/audio/device")
-    async def set_audio_device_legacy(request: AudioDeviceRequest):
-        return await set_audio_device(request)
+    # NOTE: the unversioned /api/audio/devices + /api/audio/device paths are
+    # already registered above via the stacked decorators on get_audio_devices /
+    # set_audio_device, so no separate "legacy" wrappers are needed — they only
+    # produced shadowed duplicate registrations.
 
     return router

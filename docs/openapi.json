@@ -3,7 +3,7 @@
   "info": {
     "title": "ChattyCommander API",
     "description": "Voice command automation system with web interface",
-    "version": "0.2.0",
+    "version": "0.6.0",
     "contact": {
       "name": "ChattyCommander",
       "url": "https://github.com/your-repo/chatty-commander"
@@ -43,7 +43,7 @@
                     "hey_khum_puter"
                   ],
                   "uptime": "2h 15m 30s",
-                  "version": "0.2.0"
+                  "version": "0.6.0"
                 }
               }
             }
