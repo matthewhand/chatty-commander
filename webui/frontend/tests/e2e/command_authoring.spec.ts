@@ -142,7 +142,9 @@ test.describe("Command Authoring - AI Mode Flow", () => {
     // Verify generated command preview shows all fields
     // modern Playwright: getByRole heading instead of getByText(...).first() (scoped, avoids brittle)
     await expect(page.getByRole("heading", { name: "Generated Command" })).toBeVisible();
-    await expect(page.getByText("start_my_day")).toBeVisible();
+    // exact: the collapsible "Command details" summary badge also contains the
+    // name ("start_my_day · 3 actions"), so scope to the detail <p>.
+    await expect(page.getByText("start_my_day", { exact: true })).toBeVisible();
     await expect(page.getByText("Start My Day", { exact: true })).toBeVisible();
     await expect(page.getByText("start my day", { exact: true })).toBeVisible();
 
@@ -179,11 +181,14 @@ test.describe("Command Authoring - AI Mode Flow", () => {
     await textarea.fill("start my day workflow");
 
     await page.getByRole("button", { name: /Generate Command/i }).click();
-    await expect(page.getByText("start_my_day")).toBeVisible();
+    // exact: the collapsible "Command details" summary badge also contains the
+    // name ("start_my_day · 3 actions"), so scope to the detail <p>.
+    await expect(page.getByText("start_my_day", { exact: true })).toBeVisible();
 
     // Click Regenerate
     await page.getByRole("button", { name: /Regenerate/i }).click();
-    await expect(page.getByText("start_my_day_v2")).toBeVisible();
+    // exact: avoid matching the "Command details" summary badge too.
+    await expect(page.getByText("start_my_day_v2", { exact: true })).toBeVisible();
 
     expect(callCount).toBe(2);
   });

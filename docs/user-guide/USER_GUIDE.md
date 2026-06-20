@@ -112,7 +112,12 @@ and threshold are set in `config.json`.
 ### Custom commands
 
 Map voice triggers to actions (keypress, URL, shell command, dograh voice call)
-in `config.json` — or use the **Command Authoring** page in the dashboard.
+in `config.json` — or use the **Command Authoring** page in the dashboard. In
+AI mode you describe the command in plain English and review the generated
+result before saving; the verbose definition sits under a "Command details"
+disclosure so the preview stays scannable:
+
+![AI command authoring with a generated command](../screenshots/command-authoring-generated.png)
 
 ### CLI: list and run commands
 
