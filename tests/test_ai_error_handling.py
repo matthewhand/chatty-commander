@@ -238,6 +238,86 @@ class TestConversationEngineRobustness:
         assert engine.analyze_sentiment(text) in ("positive", "negative", "neutral")
 
 
+class TestConversationEngineWordBoundaryMatching:
+    """analyze_intent/analyze_sentiment match keywords on word boundaries.
+
+    Regression coverage for the naive-substring bug where words like "window",
+    "this" or "today" mis-fired task_request/greeting intents because "do"/"hi"
+    appeared as substrings.
+    """
+
+    @pytest.fixture
+    def engine(self):
+        return ConversationEngine({})
+
+    # --- false positives that must NOT match (the bug) -------------------
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "open the window",  # contains substring "do" but not the word
+            "shutdown the process",  # contains "do"
+            "I doubt that",  # contains "do"
+            "what a wonderful day",  # contains "do" via "wonderful"? no - safety
+        ],
+    )
+    def test_substring_do_does_not_fire_task_request(self, engine, text):
+        assert engine.analyze_intent(text) != "task_request"
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "this is fine",  # contains "hi" substring
+            "what happened today",  # contains "hi" via... no; "today" check
+            "a thing about things",  # contains "hi"
+            "machine history",  # contains "hi"
+        ],
+    )
+    def test_substring_hi_does_not_fire_greeting(self, engine, text):
+        assert engine.analyze_intent(text) != "greeting"
+
+    def test_open_the_window_is_general_conversation(self, engine):
+        # "open the window" has neither a task keyword nor a greeting as a word.
+        assert engine.analyze_intent("open the window") == "general_conversation"
+
+    # --- true positives that MUST still match ----------------------------
+    @pytest.mark.parametrize(
+        "text, expected",
+        [
+            ("do this task", "task_request"),
+            ("please help me", "task_request"),
+            ("can you assist", "task_request"),
+            ("make a list", "task_request"),
+            ("create a file", "task_request"),
+            ("hi there", "greeting"),
+            ("hello world", "greeting"),
+            ("hey you", "greeting"),
+            ("good morning", "greeting"),
+            ("good afternoon everyone", "greeting"),
+            ("goodbye for now", "farewell"),
+            ("see you later", "farewell"),
+            ("switch to chatty mode", "mode_switch"),
+            ("what is the time", "question"),
+            ("how are you", "question"),
+        ],
+    )
+    def test_true_positive_intents(self, engine, text, expected):
+        assert engine.analyze_intent(text) == expected
+
+    # --- sentiment word boundaries ---------------------------------------
+    def test_sentiment_substring_does_not_false_fire(self, engine):
+        # "badminton" contains "bad" and "likely" contains "like" but neither
+        # should register as a sentiment word.
+        assert engine.analyze_sentiment("a badminton match is likely") == "neutral"
+
+    def test_sentiment_true_positives(self, engine):
+        assert engine.analyze_sentiment("this is great and awesome") == "positive"
+        assert engine.analyze_sentiment("that was bad and terrible") == "negative"
+
+    def test_empty_input_is_safe(self, engine):
+        assert engine.analyze_intent("") == "general_conversation"
+        assert engine.analyze_sentiment("") == "neutral"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 

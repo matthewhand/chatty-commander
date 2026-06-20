@@ -23,9 +23,25 @@
 """Advanced conversation engine for ChattyCommander AI interactions."""
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
+
+
+def _contains_word(text_lower: str, words: list[str]) -> bool:
+    """Return True if any keyword/phrase matches ``text_lower`` on word boundaries.
+
+    Multi-word phrases (e.g. ``"go to"``, ``"good morning"``) are matched with
+    flexible whitespace between tokens. Matching is case-insensitive (the caller
+    passes already-lowercased text) and anchored on word boundaries (``\\b``) so
+    substrings do not false-fire (e.g. ``"do"`` does not match ``"window"``).
+    """
+    for word in words:
+        pattern = r"\s+".join(re.escape(part) for part in word.split())
+        if re.search(rf"\b{pattern}\b", text_lower):
+            return True
+    return False
 
 
 @dataclass
@@ -49,12 +65,20 @@ class ConversationEngine:
         self.user_preferences: dict[str, dict[str, Any]] = {}
 
     def analyze_intent(self, text: str) -> str:
-        """Analyze user intent from text."""
+        """Analyze user intent from text.
+
+        Keyword matching is anchored on word boundaries (case-insensitive) so
+        that substrings do not false-fire (e.g. "window" must not match "do",
+        "this"/"today" must not match "hi"). Mirrors the approach used in
+        ``ai.intelligence_core._analyze_intent``.
+        """
+        if not text:
+            return "general_conversation"
         text_lower = text.lower()
 
         # Command intents
-        if any(word in text_lower for word in ["switch", "change", "go to"]):
-            if "mode" in text_lower:
+        if _contains_word(text_lower, ["switch", "change", "go to"]):
+            if _contains_word(text_lower, ["mode"]):
                 return "mode_switch"
 
         # Question intents
@@ -62,27 +86,20 @@ class ConversationEngine:
             return "question"
 
         # Task intents
-        if any(
-            word in text_lower for word in ["help", "assist", "do", "make", "create"]
-        ):
+        if _contains_word(text_lower, ["help", "assist", "do", "make", "create"]):
             return "task_request"
 
         # Social intents
-        if any(
-            word in text_lower
-            for word in ["hello", "hi", "hey", "good morning", "good afternoon"]
+        if _contains_word(
+            text_lower, ["hello", "hi", "hey", "good morning", "good afternoon"]
         ):
             return "greeting"
 
-        if any(
-            word in text_lower for word in ["bye", "goodbye", "see you", "farewell"]
-        ):
+        if _contains_word(text_lower, ["bye", "goodbye", "see you", "farewell"]):
             return "farewell"
 
         # Information seeking
-        if any(
-            word in text_lower for word in ["tell me", "explain", "describe", "what is"]
-        ):
+        if _contains_word(text_lower, ["tell me", "explain", "describe", "what is"]):
             return "information_seeking"
 
         return "general_conversation"
@@ -109,9 +126,15 @@ class ConversationEngine:
             "frustrated",
         ]
 
+        if not text:
+            return "neutral"
         text_lower = text.lower()
-        positive_count = sum(1 for word in positive_words if word in text_lower)
-        negative_count = sum(1 for word in negative_words if word in text_lower)
+        positive_count = sum(
+            1 for word in positive_words if _contains_word(text_lower, [word])
+        )
+        negative_count = sum(
+            1 for word in negative_words if _contains_word(text_lower, [word])
+        )
 
         if positive_count > negative_count:
             return "positive"

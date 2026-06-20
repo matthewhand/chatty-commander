@@ -45,11 +45,16 @@ class MemoryStore:
         max_items_per_context: int = 100,
         persist: bool = False,
         persist_path: str | None = None,
+        compact_every: int = 500,
     ) -> None:
         self._store: dict[str, deque[MemoryItem]] = {}
         self._max = max(1, int(max_items_per_context))
         self._persist = persist
         self._path = persist_path or "data/advisors_memory.jsonl"
+        # Compact the on-disk JSONL after this many appends so the file does
+        # not grow unbounded (in-memory deques are already capped at ``_max``).
+        self._compact_every = max(1, int(compact_every))
+        self._appends_since_compact = 0
         if self._persist:
             os.makedirs(os.path.dirname(self._path), exist_ok=True)
             self._load_from_disk()
@@ -108,6 +113,9 @@ class MemoryStore:
                         )
                         + "\n"
                     )
+                self._appends_since_compact += 1
+                if self._appends_since_compact >= self._compact_every:
+                    self.compact()
             except Exception as e:
                 logger.warning("Failed to persist advisor memory to %s: %s", self._path, e)
 
@@ -128,3 +136,45 @@ class MemoryStore:
         if key in self._store:
             del self._store[key]
         return count
+
+    def compact(self) -> None:
+        """Rewrite the on-disk JSONL to only the currently-retained items.
+
+        The append-only persistence file grows unbounded over time even though
+        the in-memory deques are capped at ``max_items_per_context``. Compaction
+        atomically rewrites the file from the (capped) in-memory state, keeping
+        the same one-JSON-object-per-line format that ``_load_from_disk`` reads.
+        This is a no-op when persistence is disabled.
+        """
+        if not self._persist:
+            return
+
+        tmp_path = f"{self._path}.tmp"
+        try:
+            os.makedirs(os.path.dirname(self._path) or ".", exist_ok=True)
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                for key, q in self._store.items():
+                    for item in q:
+                        f.write(
+                            json.dumps(
+                                {
+                                    "key": key,
+                                    "role": item.role,
+                                    "content": item.content,
+                                    "timestamp": item.timestamp,
+                                }
+                            )
+                            + "\n"
+                        )
+            os.replace(tmp_path, self._path)
+            self._appends_since_compact = 0
+        except Exception as e:
+            logger.warning("Failed to compact advisor memory at %s: %s", self._path, e)
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    def flush(self) -> None:
+        """Flush retained state to disk by compacting (no-op without persistence)."""
+        self.compact()

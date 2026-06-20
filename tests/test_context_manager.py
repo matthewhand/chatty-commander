@@ -304,3 +304,81 @@ class TestContextManager:
 
         assert updated_context is context  # Same context object
         assert context.identity.username == "newusername"
+
+
+class TestContextManagerDebounceAndExpiry:
+    """Tests for debounced persistence and opportunistic inactive-context expiry."""
+
+    def _config(self, temp_dir, **overrides):
+        config = {
+            "personas": {"general": {"system_prompt": "You are helpful."}},
+            "default_persona": "general",
+            "persistence_enabled": True,
+            "persistence_path": str(Path(temp_dir) / "contexts.json"),
+        }
+        config.update(overrides)
+        return config
+
+    def test_save_is_debounced(self):
+        """The full context dict is not re-serialized on every single message."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Large interval + threshold so only the first change persists.
+            config = self._config(
+                temp_dir,
+                save_every_changes=1000,
+                save_interval_seconds=3600.0,
+            )
+            manager = ContextManager(config)
+
+            save_calls = {"n": 0}
+            original_save = manager._save_contexts
+
+            def counting_save():
+                save_calls["n"] += 1
+                original_save()
+
+            manager._save_contexts = counting_save  # type: ignore[method-assign]
+
+            # First create flushes immediately (last_save_time starts at 0.0).
+            for i in range(20):
+                manager.get_or_create_context(
+                    platform=PlatformType.WEB, channel="c", user_id=f"user{i}"
+                )
+
+            # Only the very first change should have hit disk; the rest are debounced.
+            assert save_calls["n"] == 1
+
+            # flush() forces the pending changes out.
+            manager.flush()
+            assert save_calls["n"] == 2
+
+            # And reloading reflects all contexts.
+            manager2 = ContextManager(config)
+            assert manager2.get_stats()["total_contexts"] == 20
+
+    def test_opportunistic_expiry_on_access(self):
+        """Inactive contexts are expired opportunistically as access count crosses the gate."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = self._config(
+                temp_dir,
+                expire_every_accesses=3,
+                inactive_max_age_hours=1.0,
+            )
+            manager = ContextManager(config)
+
+            stale = manager.get_or_create_context(
+                platform=PlatformType.DISCORD, channel="old", user_id="stale"
+            )
+            stale.last_activity = time.time() - 2 * 3600  # 2 hours ago
+
+            # Access count: stale create = 1. Two more accesses reach the gate (3).
+            manager.get_or_create_context(
+                platform=PlatformType.SLACK, channel="a", user_id="fresh1"
+            )
+            manager.get_or_create_context(
+                platform=PlatformType.SLACK, channel="b", user_id="fresh2"
+            )
+
+            # The stale context should have been expired during the gated sweep.
+            assert manager.get_context(stale.identity.context_key) is None
+            assert manager.get_stats()["total_contexts"] == 2

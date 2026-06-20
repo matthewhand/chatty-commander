@@ -1,6 +1,7 @@
 """Comprehensive tests for ThinkingState management and MemoryStore persistence."""
 
 import asyncio
+import json
 from pathlib import Path
 
 from chatty_commander.advisors.memory import MemoryItem, MemoryStore
@@ -439,4 +440,61 @@ class TestMemoryStorePersistence:
 
         # No file should be created (using default path check would be flaky)
         # Just verify it doesn't raise
+        assert store.get("discord", "gen", "u1")[0].content == "test"
+
+    def test_compaction_caps_disk_to_window(self, tmp_path: Path) -> None:
+        """After many adds, an explicit compact rewrites the file to the capped window."""
+        persist_file = tmp_path / "memory.jsonl"
+
+        store = MemoryStore(
+            max_items_per_context=3,
+            persist=True,
+            persist_path=str(persist_file),
+        )
+
+        # Append far more than the cap; the file grows append-only.
+        for i in range(50):
+            store.add("discord", "gen", "u1", "user", f"msg{i}")
+
+        lines_before = persist_file.read_text().strip().split("\n")
+        assert len(lines_before) == 50  # append-only before compaction
+
+        # Compact: file should hold only the retained (capped) window.
+        store.compact()
+        lines_after = persist_file.read_text().strip().split("\n")
+        assert len(lines_after) == 3
+
+        # And it must still load back to exactly the capped window.
+        store2 = MemoryStore(
+            max_items_per_context=3,
+            persist=True,
+            persist_path=str(persist_file),
+        )
+        items = store2.get("discord", "gen", "u1", limit=100)
+        assert [item.content for item in items] == ["msg47", "msg48", "msg49"]
+
+    def test_auto_compaction_on_threshold(self, tmp_path: Path) -> None:
+        """Reaching compact_every appends triggers automatic compaction."""
+        persist_file = tmp_path / "memory.jsonl"
+
+        store = MemoryStore(
+            max_items_per_context=2,
+            persist=True,
+            persist_path=str(persist_file),
+            compact_every=5,
+        )
+
+        # 5 appends -> auto-compact down to the cap (2).
+        for i in range(5):
+            store.add("discord", "gen", "u1", "user", f"msg{i}")
+
+        lines = persist_file.read_text().strip().split("\n")
+        assert len(lines) == 2
+        assert [json.loads(line)["content"] for line in lines] == ["msg3", "msg4"]
+
+    def test_compact_noop_without_persistence(self) -> None:
+        """compact() is a harmless no-op when persistence is disabled."""
+        store = MemoryStore(persist=False)
+        store.add("discord", "gen", "u1", "user", "test")
+        store.compact()  # should not raise
         assert store.get("discord", "gen", "u1")[0].content == "test"
