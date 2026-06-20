@@ -1,5 +1,14 @@
 import { vi } from "vitest";
+
+// Spy on the shared session-expiry path so we can assert apiService routes its
+// authenticated 401s through it. The rest of authService keeps its real impl.
+vi.mock("./authService", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, notifySessionExpired: vi.fn() };
+});
+
 import apiService from "./apiService";
+import { notifySessionExpired } from "./authService";
 
 beforeAll(() => {
   global.fetch = vi.fn();
@@ -102,6 +111,42 @@ describe("ApiService", () => {
       }),
     );
     localStorage.removeItem("auth_token");
+  });
+
+  test("a 401 with a token triggers the shared session-expiry path", async () => {
+    localStorage.setItem("auth_token", "test-token");
+    notifySessionExpired.mockClear();
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: "Unauthorized",
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve(""),
+      headers: { get: () => "application/json" },
+    });
+
+    await expect(apiService.getStatus()).rejects.toThrow(/HTTP 401/);
+    expect(notifySessionExpired).toHaveBeenCalledTimes(1);
+
+    localStorage.removeItem("auth_token");
+  });
+
+  test("a 401 without a token does NOT trigger the session-expiry path", async () => {
+    localStorage.removeItem("auth_token");
+    notifySessionExpired.mockClear();
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: "Unauthorized",
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve(""),
+      headers: { get: () => "application/json" },
+    });
+
+    await expect(apiService.getStatus()).rejects.toThrow(/HTTP 401/);
+    expect(notifySessionExpired).not.toHaveBeenCalled();
   });
 
   test("health check endpoint", async () => {

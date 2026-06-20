@@ -14,7 +14,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, sessionExpiredNotice, clearSessionExpiredNotice } = useAuth();
   const passwordRef = useRef<HTMLInputElement>(null);
 
   // After a failed login the password input is briefly disabled (loading), so
@@ -30,6 +30,9 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    // Starting a fresh sign-in supersedes any stale "session expired" notice
+    // that redirected the user here.
+    clearSessionExpiredNotice();
     setLoading(true);
     const success = await login(username, password);
     setLoading(false);
@@ -58,6 +61,29 @@ const LoginPage: React.FC = () => {
           </div>
           <Logo size={28} className="text-2xl mb-1" />
           <p className="text-sm opacity-70 mb-4">Voice Control System</p>
+
+          {sessionExpiredNotice && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="alert alert-warning shadow-sm w-full text-left text-sm mb-4"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                className="stroke-current shrink-0 h-6 w-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <span>{sessionExpiredNotice}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="w-full space-y-4">
             <div className="form-control w-full">
