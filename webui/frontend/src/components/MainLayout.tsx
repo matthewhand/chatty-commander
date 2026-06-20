@@ -85,22 +85,40 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         setIsSidebarOpen(false);
     }, [location.pathname]);
 
-    // Global Ctrl+K / Cmd+K shortcut to navigate to Commands and focus search
+    // Single global Ctrl+K / Cmd+K shortcut: navigate to Commands (if not already
+    // there) and focus its search input. This is the sole owner of the shortcut —
+    // CommandsPage no longer binds its own, so this must drive the full behavior.
     useEffect(() => {
+        const focusCommandSearch = () => {
+            const searchInput = document.getElementById('command-search') as HTMLInputElement | null;
+            searchInput?.focus();
+        };
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
+            if (!(e.ctrlKey || e.metaKey) || (e.key !== 'k' && e.key !== 'K')) {
+                return;
+            }
+            // Don't hijack the shortcut while the user is typing in a field.
+            const target = e.target as HTMLElement | null;
+            if (
+                target &&
+                (target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    target.isContentEditable)
+            ) {
+                return;
+            }
+            e.preventDefault();
+            if (location.pathname !== '/commands') {
                 navigate('/commands');
-                // Focus the search input after navigation completes
-                requestAnimationFrame(() => {
-                    const searchInput = document.querySelector<HTMLInputElement>('input[aria-label="Search commands"]');
-                    searchInput?.focus();
-                });
+                // Defer focus until the Commands page (and its search input) mounts.
+                requestAnimationFrame(focusCommandSearch);
+            } else {
+                focusCommandSearch();
             }
         };
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [navigate]);
+    }, [navigate, location.pathname]);
 
     // Mobile sidebar behaves as a modal dialog: focus the close button on open,
     // trap Tab focus within the aside, close on Escape, and restore focus to the

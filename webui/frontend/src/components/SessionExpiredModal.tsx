@@ -10,15 +10,18 @@ import { useAuth } from "../hooks/useAuth";
  * nothing is lost without notice.
  *
  * It is deliberately *not* Escape-dismissable and traps focus: the user must
- * make a choice ("Sign in again" or "Dismiss"). "Dismiss" hides the modal but
- * keeps them on the expired page so they can still copy/save their edits; the
- * modal re-shows on the next 401.
+ * make a choice ("Sign in again" or "Keep page open"). "Keep page open" hides
+ * the blocking modal but keeps them on the expired page so they can still copy
+ * their edits — and because the session is genuinely gone, a persistent
+ * non-blocking banner remains (rendered from this same file) so the page never
+ * dishonestly looks logged-in while every API call 401s.
  *
  * Mounted once at the app root, inside the auth + router context.
  */
 const SessionExpiredModal: React.FC = () => {
   const {
     sessionExpiredBlocking,
+    sessionExpired,
     confirmSessionExpiredSignIn,
     dismissSessionExpiredBlocking,
   } = useAuth();
@@ -61,6 +64,48 @@ const SessionExpiredModal: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [sessionExpiredBlocking]);
 
+  // Lock body scroll while the blocking modal is open so the page behind it
+  // can't be scrolled, and restore the previous value on cleanup.
+  useEffect(() => {
+    if (!sessionExpiredBlocking) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [sessionExpiredBlocking]);
+
+  const handleSignInBanner = () => {
+    // The banner is a non-blocking surface; clicking "Sign in" commits the
+    // deferred sign-out and routes to /login, same as the modal's primary CTA.
+    confirmSessionExpiredSignIn();
+    navigate("/login");
+  };
+
+  // Persistent, non-blocking banner: shown once the session has expired but the
+  // blocking modal has been dismissed. Stays until the user signs in, so the
+  // page never lies about being logged in.
+  if (sessionExpired && !sessionExpiredBlocking) {
+    return (
+      <div
+        className="fixed top-0 inset-x-0 z-50 flex items-center justify-center gap-3 bg-warning text-warning-content px-4 py-2 text-sm shadow"
+        role="status"
+        data-testid="session-expired-banner"
+      >
+        <AlertTriangle size={16} aria-hidden="true" />
+        <span>Session expired — sign in to save your work.</span>
+        <button
+          type="button"
+          className="btn btn-xs btn-primary"
+          onClick={handleSignInBanner}
+          data-testid="session-expired-banner-signin"
+        >
+          Sign in
+        </button>
+      </div>
+    );
+  }
+
   if (!sessionExpiredBlocking) return null;
 
   const handleSignIn = () => {
@@ -87,17 +132,17 @@ const SessionExpiredModal: React.FC = () => {
           Session expired
         </h3>
         <p id="session-expired-body" className="py-4 text-sm">
-          Your session has expired. Your unsaved changes are still here on this
-          page. Copy anything you need, then sign in again.
+          Your session has expired. Saving is disabled until you sign in again —
+          copy any unsaved changes you need, then sign in.
         </p>
-        <div className="modal-action">
+        <div className="modal-action flex flex-col sm:flex-row">
           <button
             type="button"
             className="btn btn-ghost"
             onClick={dismissSessionExpiredBlocking}
             data-testid="session-expired-dismiss"
           >
-            Dismiss
+            Keep page open
           </button>
           <button
             type="button"

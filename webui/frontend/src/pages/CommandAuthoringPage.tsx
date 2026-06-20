@@ -153,6 +153,35 @@ interface GeneratedCommand {
   actions: CommandAction[];
 }
 
+/**
+ * Normalize a command into the exact shape that {@link saveCommand} persists
+ * (e.g. `command` → `cmd`, a singular `action` already flattened to `actions`).
+ * Used both when writing config and when computing the manual-editor dirty
+ * baseline, so an edit-then-revert round-trips to an identical serialization
+ * and reads as clean rather than phantom-dirty.
+ */
+function normalizeCommandForSave(command: GeneratedCommand): {
+  name: string;
+  display_name: string;
+  wakeword: string;
+  actions: Record<string, string>[];
+} {
+  return {
+    name: command.name,
+    display_name: command.display_name,
+    wakeword: command.wakeword,
+    actions: command.actions.map((action) => {
+      const normalized: Record<string, string> = { type: action.type };
+      if (action.keys) normalized.keys = action.keys;
+      if (action.url) normalized.url = action.url;
+      if (action.cmd) normalized.cmd = action.cmd;
+      else if (action.command) normalized.cmd = action.command;
+      if (action.message) normalized.message = action.message;
+      return normalized;
+    }),
+  };
+}
+
 // --- API Functions ---
 
 const generateCommandFromDescription = async (description: string): Promise<GeneratedCommand> => {
@@ -189,21 +218,13 @@ const saveCommand = async (
   }
 
   // Add the new command to the commands object
+  const normalized = normalizeCommandForSave(command);
   const updatedCommands = {
     ...existing,
     [command.name]: {
-      name: command.display_name,
-      actions: command.actions.map(action => {
-        // Normalize action structure
-        const normalized: Record<string, string> = { type: action.type };
-        if (action.keys) normalized.keys = action.keys;
-        if (action.url) normalized.url = action.url;
-        if (action.cmd) normalized.cmd = action.cmd;
-        else if (action.command) normalized.cmd = action.command;
-        if (action.message) normalized.message = action.message;
-        return normalized;
-      }),
-      ...(command.wakeword ? { wakeword: command.wakeword } : {}),
+      name: normalized.display_name,
+      actions: normalized.actions,
+      ...(normalized.wakeword ? { wakeword: normalized.wakeword } : {}),
     },
   };
 
@@ -433,10 +454,14 @@ export default function CommandAuthoringPage() {
     actions: [],
   });
   // The pristine baseline of the manual editor: the empty form for a new
-  // command, or the loaded definition when editing (?edit=). Used to derive a
-  // "has unsaved edits" signal without storing a separate dirty flag.
+  // command, or the loaded definition when editing (?edit=). Stored as the
+  // SAME normalized serialization saveCommand produces, so an edit-then-revert
+  // round-trips to an identical string and reads as clean (not phantom-dirty).
+  // Used to derive a "has unsaved edits" signal without a separate dirty flag.
   const manualBaselineRef = useRef<string>(
-    JSON.stringify({ name: '', display_name: '', wakeword: '', actions: [] }),
+    JSON.stringify(
+      normalizeCommandForSave({ name: '', display_name: '', wakeword: '', actions: [] }),
+    ),
   );
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -487,7 +512,9 @@ export default function CommandAuthoringPage() {
           };
           // The loaded definition is the pristine baseline, so preloading an
           // existing command for editing doesn't count as an unsaved edit.
-          manualBaselineRef.current = JSON.stringify(loaded);
+          // Normalize through the same mapper saveCommand uses so an
+          // edit-then-revert serializes back to this exact baseline.
+          manualBaselineRef.current = JSON.stringify(normalizeCommandForSave(loaded));
           setManualCommand(loaded);
           setMode('manual');
         }
@@ -536,15 +563,17 @@ export default function CommandAuthoringPage() {
 
   // Whether the author has unsaved work in progress. True when the manual editor
   // diverges from its pristine baseline (new-command empty form, or the loaded
-  // definition when editing), or when the AI flow has a typed description or a
-  // generated-but-unsaved command. Used to defer a mid-edit session expiry so
-  // these edits aren't silently discarded.
+  // definition when editing), or when the AI flow has actual savable work — a
+  // generated-but-unsaved command. A half-typed AI description with no generated
+  // result is NOT dirty: it has nothing to save and shouldn't trip the
+  // session-expiry deferral. Used to defer a mid-edit session expiry so real
+  // edits aren't silently discarded.
   const isDirty = useMemo(() => {
     const manualDirty =
-      JSON.stringify(manualCommand) !== manualBaselineRef.current;
-    const aiDirty = description.trim().length > 0 || generatedCommand !== null;
+      JSON.stringify(normalizeCommandForSave(manualCommand)) !== manualBaselineRef.current;
+    const aiDirty = generatedCommand !== null;
     return manualDirty || aiDirty;
-  }, [manualCommand, description, generatedCommand]);
+  }, [manualCommand, generatedCommand]);
   useUnsavedChanges(isDirty);
 
   // Generate command mutation
@@ -594,7 +623,7 @@ export default function CommandAuthoringPage() {
     generateMutation.mutate(description);
   }, [description, generateMutation]);
 
-  const handleSave = useCallback((e?: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSave = useCallback(async (e?: React.MouseEvent<HTMLButtonElement>) => {
     // Remember the trigger so focus can be restored when the modal closes.
     modalTriggerRef.current = (e?.currentTarget as HTMLElement) ?? null;
     const commandToSave = mode === 'ai' && generatedCommand ? generatedCommand : manualCommand;
@@ -625,8 +654,20 @@ export default function CommandAuthoringPage() {
 
     // Prevent silently clobbering an existing command. When editing, colliding
     // with the command currently being edited is fine; any other collision is
-    // a rename onto an existing key and must be confirmed/blocked.
-    const collidesWith = existingNames.includes(commandToSave.name);
+    // a rename onto an existing key and must be confirmed/blocked. Re-fetch the
+    // current command names here rather than trusting the mount snapshot, so a
+    // command created in another tab/session after this page loaded is still
+    // seen and not silently overwritten. Fall back to the mount snapshot if the
+    // refresh fails, so a transient fetch error never weakens the guard.
+    let names = existingNames;
+    try {
+      const fresh = await fetchExistingCommandNames();
+      names = fresh;
+      setExistingNames(fresh);
+    } catch {
+      // Keep the last-known names; the guard still applies.
+    }
+    const collidesWith = names.includes(commandToSave.name);
     const isSelf = isEditing && commandToSave.name === editName;
     if (collidesWith && !isSelf) {
       setError(

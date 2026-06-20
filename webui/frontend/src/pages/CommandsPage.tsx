@@ -83,6 +83,40 @@ function describeAction(config: CommandConfig): { label: string; detail: string 
   return { label: 'No action', detail: 'Not configured' };
 }
 
+// Normalize imported command definitions so the app's own (flat) export round-
+// trips losslessly while still accepting the nested `actions[]` shape.
+//
+// The flat export shape is the canonical CommandConfig ({action, keys, url, cmd,
+// message}). A flat entry is passed through as-is. A nested entry (one carrying
+// an `actions[]` array) is left structurally intact for backward compatibility —
+// we only ensure flat entries stay flat so export → import is a no-op diff.
+function normalizeImported(
+  parsed: Record<string, Record<string, unknown>>,
+): Record<string, CommandConfig> {
+  const out: Record<string, CommandConfig> = {};
+  for (const [name, def] of Object.entries(parsed)) {
+    const d = def as Record<string, unknown>;
+    const hasActions = Array.isArray(d.actions) && d.actions.length > 0;
+    if (hasActions) {
+      // Preserve the nested shape verbatim (backward compatibility).
+      out[name] = def as CommandConfig;
+      continue;
+    }
+    // Flat / legacy shape: keep only the recognized CommandConfig fields so the
+    // result matches exactly what the exporter emits.
+    const flat: CommandConfig = {};
+    if (typeof d.action === 'string') flat.action = d.action;
+    if (typeof d.keys === 'string') flat.keys = d.keys;
+    // Legacy `keypress` alias maps onto the canonical `keys` field.
+    else if (typeof d.keypress === 'string') flat.keys = d.keypress;
+    if (typeof d.url === 'string') flat.url = d.url;
+    if (typeof d.cmd === 'string') flat.cmd = d.cmd;
+    if (typeof d.message === 'string') flat.message = d.message;
+    out[name] = flat;
+  }
+  return out;
+}
+
 type SortKey = 'name' | 'type';
 type SortDir = 'asc' | 'desc';
 
@@ -158,6 +192,16 @@ export default function CommandsPage() {
     });
   };
 
+  // Clear the search query while preserving any active sort params (mirrors how
+  // the sort handler preserves ?q=). Building from `prev` avoids wiping ?sort/?dir.
+  const clearSearch = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('q');
+      return next;
+    });
+  };
+
   // Mirror for the <select> control: always sets the key, resetting direction.
   const handleSortSelect = (key: SortKey) => {
     setSearchParams((prev) => {
@@ -182,19 +226,9 @@ export default function CommandsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Wire Ctrl/Cmd+K to focus the search input (the kbd hint previously did
-  // nothing). We avoid a focus-stealing autoFocus on mount in favour of this.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
+  // Note: Ctrl/Cmd+K focus is owned by MainLayout's global handler (which targets
+  // the search input via its stable `id="command-search"` / ref below). We do NOT
+  // register a duplicate handler here — both would fire on /commands.
 
   const handleDeleteClick = (commandName: string) => {
     setPendingDeleteCommand(commandName);
@@ -209,6 +243,15 @@ export default function CommandsPage() {
       // Only refresh and close once the deletion actually succeeded, so the UI
       // never reports a deletion that didn't happen on the backend.
       refetch();
+      // Drop the just-deleted command from any active selection so the bulk bar
+      // doesn't linger (and a later bulk-delete can't 404 on a gone command).
+      const deletedName = pendingDeleteCommand;
+      setSelected((prev) => {
+        if (!prev.has(deletedName)) return prev;
+        const next = new Set(prev);
+        next.delete(deletedName);
+        return next;
+      });
       deleteDialogRef.current?.close();
       setPendingDeleteCommand(null);
     } catch (err) {
@@ -258,22 +301,32 @@ export default function CommandsPage() {
           return;
         }
         // Validate each command entry has a recognizable shape before importing,
-        // so a malformed file can't silently overwrite the live config.
+        // so a malformed file can't silently overwrite the live config. We accept
+        // the nested `actions[]`/legacy shape AND the flat `/api/v1/commands`
+        // export shape (action/keys/url/cmd/message) so the app's own export can
+        // be re-imported.
         const invalid = Object.entries(parsed as Record<string, unknown>).filter(([, def]) => {
           if (typeof def !== 'object' || def === null || Array.isArray(def)) return true;
           const d = def as Record<string, unknown>;
           const hasActions = Array.isArray(d.actions) && d.actions.length > 0;
           const hasLegacyAction = typeof d.action === 'string' || typeof d.keypress === 'string' || typeof d.url === 'string';
-          return !hasActions && !hasLegacyAction;
+          // Flat export shape: any populated payload field is enough.
+          const hasFlatPayload =
+            typeof d.keys === 'string' ||
+            typeof d.url === 'string' ||
+            typeof d.cmd === 'string' ||
+            typeof d.message === 'string';
+          return !hasActions && !hasLegacyAction && !hasFlatPayload;
         });
         if (invalid.length > 0) {
           const names = invalid.map(([n]) => n).slice(0, 5).join(', ');
           addToast(`Import rejected: ${invalid.length} command(s) have no valid actions (${names}${invalid.length > 5 ? ', …' : ''}).`, 'error');
           return;
         }
-        // Compute a diff against the current command set so the user can review
-        // added/removed/changed counts before this replaces the whole config.
-        const next = parsed as Record<string, CommandConfig>;
+        // Normalize each entry to the canonical flat shape so a flat ↔ flat
+        // round-trip is lossless and a nested `actions[]` import still applies.
+        // (The nested shape is passed through unchanged for backward compat.)
+        const next = normalizeImported(parsed as Record<string, Record<string, unknown>>);
         const current = commands ?? {};
         const currentNames = Object.keys(current);
         const nextNames = Object.keys(next);
@@ -419,20 +472,39 @@ export default function CommandsPage() {
     if (selected.size === 0 || isBulkDeleting) return;
     setIsBulkDeleting(true);
     try {
-      // Delete each selected command via the existing per-command mechanism.
+      // Delete each selected command via the existing per-command mechanism. We
+      // use allSettled so a mid-list failure doesn't abort the rest — every
+      // command is attempted and reported on honestly.
       const names = Array.from(selected);
-      for (const name of names) {
-        await apiService.deleteCommand(name);
-      }
-      refetch();
-      bulkDeleteDialogRef.current?.close();
-      setSelected(new Set());
-      addToast(`Deleted ${names.length} command${names.length === 1 ? '' : 's'}.`, 'success');
-    } catch (err) {
-      addToast(
-        `Failed to delete commands: ${err instanceof Error ? err.message : String(err)}`,
-        'error',
+      const results = await Promise.allSettled(
+        names.map((name) => apiService.deleteCommand(name)),
       );
+      const succeeded = names.filter((_, i) => results[i].status === 'fulfilled');
+      const failedCount = names.length - succeeded.length;
+
+      // Always refetch so the list reflects whatever actually got deleted, even
+      // on partial failure.
+      refetch();
+      // Clear only the commands that were actually deleted from the selection,
+      // leaving the failed ones selected so the user can retry them.
+      const succeededSet = new Set(succeeded);
+      setSelected((prev) => {
+        const next = new Set(prev);
+        succeededSet.forEach((name) => next.delete(name));
+        return next;
+      });
+
+      if (failedCount === 0) {
+        bulkDeleteDialogRef.current?.close();
+        addToast(
+          `Deleted ${succeeded.length} command${succeeded.length === 1 ? '' : 's'}.`,
+          'success',
+        );
+      } else if (succeeded.length === 0) {
+        addToast(`Failed to delete ${failedCount} command${failedCount === 1 ? '' : 's'}.`, 'error');
+      } else {
+        addToast(`Deleted ${succeeded.length}, ${failedCount} failed.`, 'error');
+      }
     } finally {
       setIsBulkDeleting(false);
     }
@@ -497,7 +569,7 @@ export default function CommandsPage() {
             Manage system commands and configuration.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => refetch()}
@@ -559,6 +631,7 @@ export default function CommandsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={16} />
           <input
             ref={searchInputRef}
+            id="command-search"
             type="text"
             placeholder="Search commands..."
             aria-label="Search commands"
@@ -572,7 +645,7 @@ export default function CommandsPage() {
           {searchQuery && (
             <button
               className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
-              onClick={() => setSearchParams({})}
+              onClick={clearSearch}
               aria-label="Clear search"
             >
               <X size={16} />
@@ -604,10 +677,9 @@ export default function CommandsPage() {
         <div
           role="region"
           aria-label="Bulk actions"
-          aria-live="polite"
-          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-box border border-primary/30 bg-primary/5 p-3"
+          className="sticky top-0 z-20 flex flex-col sm:flex-row sm:items-center gap-3 rounded-box border border-primary/30 bg-primary/5 p-3 backdrop-blur"
         >
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium" aria-live="polite">
             {selected.size} selected
           </span>
           <div className="flex gap-2 sm:ml-auto">
@@ -872,7 +944,7 @@ export default function CommandsPage() {
           <p className="text-base-content/50 mt-2 mb-6 max-w-md text-center">
             Try adjusting your search terms or clearing the search filter to see all commands.
           </p>
-          <button className="btn btn-outline" onClick={() => setSearchParams({})}>
+          <button className="btn btn-outline" onClick={clearSearch}>
             Clear Search
           </button>
         </div>

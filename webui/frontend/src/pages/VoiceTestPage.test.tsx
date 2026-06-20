@@ -373,6 +373,54 @@ describe("VoiceTestPage", () => {
       expect(screen.getByTestId("transcript-text")).toHaveTextContent("open browser");
     });
 
+    test("never renders a negative delta for out-of-order timestamps", () => {
+      renderPage();
+      const socket = lastSocket();
+      act(() => socket.serverOpen());
+
+      const base = 1717900000000; // epoch-ms
+      act(() => {
+        socket.serverEvent({ stage: "listening", data: {}, ts: base + 500 });
+        // Out-of-order: this stage's ts is *earlier* than the previous one, which
+        // would naively yield a negative delta.
+        socket.serverEvent({ stage: "transcript", data: { text: "x" }, ts: base });
+      });
+
+      const events = screen.getAllByTestId("voice-stage-event");
+      expect(events).toHaveLength(2);
+      // First row is the baseline; second must clamp to a non-negative delta.
+      expect(events[0]).toHaveTextContent("start");
+      const delta = events[1].textContent ?? "";
+      expect(delta).not.toMatch(/-\d/); // no negative number anywhere in the row
+      expect(delta).toContain("+0ms");
+    });
+
+    test("assigns each stage event a stable, unique id used as its key", () => {
+      renderPage();
+      const socket = lastSocket();
+      act(() => socket.serverOpen());
+
+      act(() => {
+        socket.serverEvent({ stage: "listening", data: {}, ts: 1 });
+        socket.serverEvent({ stage: "transcript", data: { text: "a" }, ts: 2 });
+        socket.serverEvent({ stage: "match", data: { matched: true }, ts: 3 });
+      });
+
+      const events = screen.getAllByTestId("voice-stage-event");
+      expect(events).toHaveLength(3);
+      const ids = events.map((el) => el.getAttribute("data-event-id"));
+      // Every row carries an id...
+      for (const id of ids) {
+        expect(id).toBeTruthy();
+      }
+      // ...and they are unique and monotonic, so the ring buffer can scroll
+      // without index-based keys colliding.
+      expect(new Set(ids).size).toBe(ids.length);
+      const numeric = ids.map((id) => Number(id));
+      expect(numeric[0]).toBeLessThan(numeric[1]);
+      expect(numeric[1]).toBeLessThan(numeric[2]);
+    });
+
     test("renders the timeline as an aria-live log", () => {
       renderPage();
       const socket = lastSocket();
@@ -503,9 +551,24 @@ describe("VoiceTestPage", () => {
         (m) => m === JSON.stringify({ type: "text", text: "open_browser" }),
       );
       expect(sends).toHaveLength(1);
-      // ...the input is cleared and the processing indicator is shown.
-      expect(screen.getByLabelText("Simulate a voice command")).toHaveValue("");
+      // ...the processing indicator is shown.
       expect(screen.getByTestId("voice-processing")).toBeInTheDocument();
+    });
+
+    test("keeps the input populated for an auto-sent prefill so it can be resent", () => {
+      renderPage("/voice-test?command=open_browser");
+      const socket = lastSocket();
+
+      act(() => socket.serverOpen());
+
+      // The auto-send fired (frame on the wire)...
+      expect(socket.sent).toContainEqual(
+        JSON.stringify({ type: "text", text: "open_browser" }),
+      );
+      // ...but unlike a manual send, the input is NOT cleared: clearing it would
+      // empty the prefill the effect just set and strand the user with no way to
+      // re-run the command.
+      expect(screen.getByLabelText("Simulate a voice command")).toHaveValue("open_browser");
     });
 
     test("no banner or auto-send without a ?command= param", () => {

@@ -1,6 +1,6 @@
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { render, screen, within, fireEvent } from "@testing-library/react";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { vi } from "vitest";
 import MainLayout from "./MainLayout";
 
@@ -35,12 +35,18 @@ vi.mock("./ThemeProvider", () => ({
   }),
 }));
 
+function LocationDisplay() {
+  const location = useLocation();
+  return <div data-testid="location-display">{location.pathname}</div>;
+}
+
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <MainLayout>
         <div>page body</div>
       </MainLayout>
+      <LocationDisplay />
     </MemoryRouter>,
   );
 }
@@ -109,5 +115,18 @@ describe("MainLayout", () => {
     // Exact name avoids matching the "Command Authoring" nav link.
     const activeLink = screen.getByRole("link", { name: "Commands" });
     expect(activeLink).toHaveAttribute("aria-current", "page");
+  });
+
+  test("Ctrl+K navigates to /commands when not already there", () => {
+    renderAt("/dashboard");
+    expect(screen.getByTestId("location-display")).toHaveTextContent(
+      "/dashboard",
+    );
+
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+
+    expect(screen.getByTestId("location-display")).toHaveTextContent(
+      "/commands",
+    );
   });
 });
