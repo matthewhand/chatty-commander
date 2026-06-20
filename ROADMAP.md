@@ -491,6 +491,38 @@ routes, rate-limiter pruning) — these are the genuine issues.
 
 ---
 
+## Backlog — round 7 (from 2026-06-20 audit of CI/build + test-infra + security verification)
+
+The security-verification pass found two of the recent fixes were INCOMPLETE
+(the avatar-auth and preferences-allowlist holes have twins in other files).
+Fix those first.
+
+### Security — incomplete fixes / new holes (0/6)
+
+- [ ] **`PUT /avatar/config` still bypasses auth** — same hole as the just-fixed `/avatar/launch`, but in `avatar_settings.py` (registered outside `/api/`, persists config); gate it behind `require_role` ([`web/routes/avatar_settings.py`](src/chatty_commander/web/routes/avatar_settings.py))
+- [ ] **Second UNFILTERED `PUT /api/preferences` shadows the fix** — `preferences.py` registers a `PreferencesModel(extra="allow")` handler with `prefs.update(updates)` BEFORE the `ALLOWED_PREF_KEYS`-filtered one in `system.py`, so FastAPI dispatches to the unfiltered one → arbitrary config write still open + my round-6 fix is dead code on the real path; apply the allow-list in `preferences.py` (or remove the duplicate) ([`web/routes/preferences.py`](src/chatty_commander/web/routes/preferences.py))
+- [ ] **dograh phone validation incomplete** — the E.164 guard is only in the LLM tool (`advisors/tools/dograh_call.py`), not the config/wake-word path (`command_executor._validate_dograh_call_params`) nor `DograhClient.initiate_call`; move the E.164 check into `DograhClient.initiate_call` so both paths are covered ([`integrations/dograh_client.py`](src/chatty_commander/integrations/dograh_client.py))
+- [ ] **WebSocket endpoints unauthenticated** — `/ws`, `/avatar/ws`, `/ws/voice-test` bypass `AuthMiddleware` (BaseHTTPMiddleware can't see WS scope); `/ws/voice-test` is state-changing. Add an explicit token/key check in the WS accept handlers (gated so no-auth stays open) ([`web/routes/ws.py`](src/chatty_commander/web/routes/ws.py), [`web/routes/voice_test.py`](src/chatty_commander/web/routes/voice_test.py))
+- [ ] **Auth middleware is a prefix-allowlist (root cause)** — only `/api/*` is protected; every non-`/api/` route silently bypasses auth (the source of both avatar holes). Switch to default-deny with an explicit public allowlist, or mount all mutating routes under `/api/` ([`web/middleware/auth.py`](src/chatty_commander/web/middleware/auth.py))
+- [ ] **`providers.health_check` does a billable call** — the no-billing fix only touched `llm/backends.is_available`; `advisors/providers.health_check` still does a real `generate("Test")`; make it a cheap local check ([`advisors/providers.py`](src/chatty_commander/advisors/providers.py))
+
+### Test infrastructure (0/4)
+
+- [ ] **Two competing pytest configs** — `pytest.ini` overrides `[tool.pytest.ini_options]`, dropping `--strict-markers`/`--strict-config` and re-enabling `--cov` (vs the documented `-q --no-cov`), and only 4 of the 30 markers are registered; consolidate into one ([`pytest.ini`](pytest.ini), [`pyproject.toml`](pyproject.toml))
+- [ ] **Module-level `sys.modules` stubs leak** — `test_cli_features.py` + `test_wakeword_comprehensive.py` install fake openwakeword/pyaudio at import and never remove them (order-dependence); move to autouse `monkeypatch.setitem` like the rest of the suite ([`tests/`](tests/))
+- [ ] **No random test ordering** — order-dependence is hidden (module-global stores + the leaking stubs); add `pytest-randomly` to surface coupling ([`pyproject.toml`](pyproject.toml))
+- [ ] **Racy sleep-based WS tests** — `test_websocket_routes.py` gates heartbeat assertions on real `time.sleep`; flaky under load. Poll-with-deadline / deterministic scheduling ([`tests/unit/test_websocket_routes.py`](tests/unit/test_websocket_routes.py))
+
+### CI / build / packaging (0/5)
+
+- [ ] **`screenshots.yml` double-starts the server** — it manually starts on :8100 while Playwright's `webServer` (reuseExistingServer=false in CI) also binds :8100 → port conflict; drop the manual step or set reuse ([`.github/workflows/screenshots.yml`](.github/workflows/screenshots.yml))
+- [ ] **perf-smoke / screenshots don't disable the rate limiter** — the live 600/min limiter can 429 a k6 smoke / screenshot burst; export `CHATTY_DISABLE_RATE_LIMIT=1` on the server-start step ([`.github/workflows/perf-smoke.yml`](.github/workflows/perf-smoke.yml), [`.github/workflows/screenshots.yml`](.github/workflows/screenshots.yml))
+- [ ] **No `[build-system]` in pyproject** — `python -m build` / plain `pip wheel .` fail (uv silently falls back to setuptools); add an explicit build backend ([`pyproject.toml`](pyproject.toml))
+- [ ] **Two frontend lockfiles + version drift** — `package-lock.json` (npm jobs) and `pnpm-lock.yaml` (pnpm e2e job) both committed; pick one. `pyproject` is `0.2.0` (stale vs tags v0.5.0) while `package.json` is `1.0.0`; reconcile/bump ([`webui/frontend`](webui/frontend), [`pyproject.toml`](pyproject.toml))
+- [ ] **`@playwright/test` floor `^1.40.0`** drifts from the resolved 1.58.2 / Python `playwright>=1.58.0`; bump the floor ([`webui/frontend/package.json`](webui/frontend/package.json))
+
+---
+
 ## Done (recent)
 
 2026-06-11 (continued):
