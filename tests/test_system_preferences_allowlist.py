@@ -1,8 +1,12 @@
-"""PUT /api/preferences + /api/restore (system.py) must honor the allow-list.
+"""POST /api/restore (system.py) must honor the ALLOWED_PREF_KEYS allow-list.
 
-The guard previously read ``if k in ALLOWED_PREF_KEYS or True:`` — the ``or
-True`` made it a no-op, so any config key (auth, web_server, ...) could be
-overwritten and persisted. These tests pin the real filtering behavior.
+A restore payload must not be able to overwrite arbitrary config keys (auth,
+web_server, ...) — only allow-listed preference keys are applied.
+
+Note: GET/PUT /api/preferences are owned by web/routes/preferences.py (which
+registers first and wins dispatch); their allow-list is pinned in
+``tests/test_preferences_routes.py``. system.py no longer registers those
+duplicate handlers, so the only allow-list surface left here is /api/restore.
 """
 
 from __future__ import annotations
@@ -33,40 +37,13 @@ def _client(cfg_mgr):
     return TestClient(app)
 
 
-def test_put_preferences_persists_allowed_key():
+def test_restore_persists_allowed_key():
     cfg_mgr = FakeConfigManager()
     client = _client(cfg_mgr)
-    resp = client.put("/api/preferences", json={"ui": {"theme": "light"}})
+    resp = client.post("/api/restore", json={"data": {"ui": {"theme": "light"}}})
     assert resp.status_code == 200
     assert cfg_mgr.config["ui"] == {"theme": "light"}
     assert "ui" in ALLOWED_PREF_KEYS
-
-
-def test_put_preferences_rejects_disallowed_key():
-    cfg_mgr = FakeConfigManager({"auth": {"api_key": "secret"}})
-    client = _client(cfg_mgr)
-    resp = client.put(
-        "/api/preferences",
-        json={"auth": {"api_key": "attacker"}, "web_server": {"host": "0.0.0.0"}},
-    )
-    assert resp.status_code == 200
-    # Disallowed keys were NOT written.
-    assert cfg_mgr.config["auth"] == {"api_key": "secret"}
-    assert "web_server" not in cfg_mgr.config
-    # And not echoed back as accepted preferences.
-    assert resp.json()["preferences"] == {}
-
-
-def test_put_preferences_mixed_keys_only_allowed_persisted():
-    cfg_mgr = FakeConfigManager()
-    client = _client(cfg_mgr)
-    resp = client.put(
-        "/api/preferences",
-        json={"ui": {"theme": "dark"}, "auth": {"api_key": "x"}},
-    )
-    assert resp.status_code == 200
-    assert cfg_mgr.config.get("ui") == {"theme": "dark"}
-    assert "auth" not in cfg_mgr.config
 
 
 def test_restore_rejects_disallowed_key():

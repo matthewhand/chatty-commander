@@ -9,7 +9,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
@@ -86,26 +86,6 @@ class SystemInfo(BaseModel):
         default_factory=list,
         description="Recognised environment variables and whether they are set",
     )
-
-
-class ThemeInfo(BaseModel):
-    """Response for available UI themes and currently active one."""
-
-    themes: list[str] = Field(..., description="List of supported theme identifiers")
-    current: str | None = Field(None, description="Currently selected theme (from persisted config if available)")
-
-
-class ThemeSetRequest(BaseModel):
-    """Request payload for setting active theme (permissive for frontend variations)."""
-
-    theme: str | None = Field(None, description="Theme name to activate")
-    name: str | None = Field(None, description="Alternative key for theme name")
-
-
-class PreferencesResponse(BaseModel):
-    """Response wrapper for user preferences."""
-
-    preferences: dict[str, Any] = Field(default_factory=dict, description="Active preferences (ui, audio, voice, etc)")
 
 
 class ActionResponse(BaseModel):
@@ -191,78 +171,13 @@ def include_system_routes(
 
         return info
 
-    # --- Themes (legacy /api/ for apiService.js + frontend) ---
-    @router.get("/api/themes", response_model=ThemeInfo)
-    async def get_themes():
-        # Supported themes match ConfigurationPage and ThemeProvider usage + Audio/UX needs.
-        # NOTE: This and sibling endpoints live under /api/* so AuthMiddleware applies
-        # (rejects unauthed unless no_auth=True in WebModeServer/create_app).
-        themes_list: list[str] = ["dark", "light", "cyberpunk", "synthwave", "dracula", "night"]
-        current: str | None = None
-        if get_config_manager:
-            try:
-                cfg_mgr = get_config_manager()
-                cfg = getattr(cfg_mgr, "config", {}) or {}
-                ui = cfg.get("ui", {}) if isinstance(cfg.get("ui"), dict) else {}
-                current = ui.get("theme")
-                if current and current not in themes_list:
-                    themes_list = list(themes_list) + [current]
-            except Exception as e:
-                logger.warning(f"Could not read current theme from config: {e}")
-        return {"themes": themes_list, "current": current}
-
-    @router.post("/api/theme", response_model=ActionResponse)
-    async def set_theme(payload: dict[str, Any] = Body(default={})):
-        theme_name = payload.get("theme") or payload.get("name") or "dark"
-        logger.info(f"Setting theme to: {theme_name}")
-        if get_config_manager:
-            try:
-                cfg_mgr = get_config_manager()
-                if hasattr(cfg_mgr, "config"):
-                    if "ui" not in cfg_mgr.config or not isinstance(cfg_mgr.config.get("ui"), dict):
-                        cfg_mgr.config["ui"] = {}
-                    cfg_mgr.config["ui"]["theme"] = theme_name
-                    if hasattr(cfg_mgr, "save_config"):
-                        cfg_mgr.save_config()
-            except Exception as e:
-                logger.warning(f"Could not persist theme to config: {e}")
-        return {"success": True, "message": f"Theme set to {theme_name}", "theme": theme_name}
-
-    # --- Preferences (legacy /api/ ) ---
-    @router.get("/api/preferences", response_model=PreferencesResponse)
-    async def get_preferences():
-        # NOTE: Protected by global AuthMiddleware when no_auth=False (see web_mode.py + middleware/auth.py).
-        # Works with --no-auth as middleware short-circuits.
-        prefs: dict[str, Any] = {}
-        if get_config_manager:
-            try:
-                cfg_mgr = get_config_manager()
-                cfg = getattr(cfg_mgr, "config", {}) or {}
-                # Expose ui + some top level as "preferences"
-                prefs = {k: v for k, v in cfg.items() if k in ("ui", "general", "audio_settings", "voice")}
-                prefs.setdefault("ui", cfg.get("ui", {"theme": "dark"}))
-            except Exception:
-                pass
-        return {"preferences": prefs}
-
-    @router.put("/api/preferences", response_model=ActionResponse)
-    async def update_preferences(payload: dict[str, Any] = Body(default={})):
-        if get_config_manager:
-            try:
-                cfg_mgr = get_config_manager()
-                if hasattr(cfg_mgr, "config"):
-                    # SECURITY: only persist keys on the allow-list. Without
-                    # this filter any config key (auth, web_server, ...) could
-                    # be overwritten via the preferences endpoint.
-                    for k, v in payload.items():
-                        if k in ALLOWED_PREF_KEYS:
-                            cfg_mgr.config[k] = v
-                    if hasattr(cfg_mgr, "save_config"):
-                        cfg_mgr.save_config()
-            except Exception as e:
-                logger.warning(f"Failed to update preferences: {e}")
-        accepted = {k: v for k, v in payload.items() if k in ALLOWED_PREF_KEYS}
-        return {"success": True, "message": "Preferences updated", "preferences": accepted}
+    # NOTE: GET/POST /api/themes + /api/theme and GET/PUT /api/preferences are
+    # NOT registered here — they are owned by web/routes/themes.py and
+    # web/routes/preferences.py, which register first in register_shared_routers
+    # (so they win FastAPI dispatch) and carry the real validation/allow-list.
+    # Duplicating them here only produced shadowed dead code + duplicate
+    # OpenAPI operation IDs (and was the root of the round-7 "shadowed
+    # allow-list" bug). ALLOWED_PREF_KEYS below is still used by /api/restore.
 
     # --- Backup / Restore (stubs, functional enough for UI; persist config snapshot) ---
     @router.post("/api/backup", response_model=ActionResponse)
