@@ -28,10 +28,29 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from chatty_commander.web.deps.auth import require_role
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Single-instance / idempotency guard for /avatar/launch. The launch endpoint
+# spawns a host subprocess, so repeated POSTs must not be able to fork unlimited
+# GUI processes. We remember the most recently launched child and, while it is
+# still alive, return that existing instance (200) instead of spawning another.
+_LAUNCHED_PROCESS: Any | None = None
+
+
+def _existing_running_process() -> Any | None:
+    """Return the tracked launch subprocess if it is still running, else None."""
+    proc = _LAUNCHED_PROCESS
+    if proc is None:
+        return None
+    # asyncio subprocess: returncode is None while the child is alive.
+    if getattr(proc, "returncode", 0) is None:
+        return proc
+    return None
 
 
 _ALLOWED_EXTS = {
@@ -133,8 +152,31 @@ async def list_animations(
 
 
 @router.post("/avatar/launch")
-async def launch_avatar() -> dict[str, Any]:
+async def launch_avatar(
+    _principal: Any = Depends(require_role("user")),
+) -> dict[str, Any]:
+    # SECURITY: /avatar/launch spawns a host subprocess and lives outside the
+    # /api/ prefix that AuthMiddleware gates, so it would otherwise be reachable
+    # unauthenticated. require_role("user") enforces an authenticated user when
+    # auth is active and is a pass-through in --no-auth / no-auth-configured
+    # mode (web/deps/auth.py degradation rule), so dev usage is unchanged.
+    global _LAUNCHED_PROCESS
     try:
+        # Idempotency / single-instance guard: if a previously launched avatar
+        # is still running, return it instead of forking another process. This
+        # prevents repeated POSTs from spawning unlimited GUI subprocesses.
+        existing = _existing_running_process()
+        if existing is not None:
+            logger.info(
+                "Avatar already running (PID: %s); returning existing instance",
+                existing.pid,
+            )
+            return {
+                "status": "already_running",
+                "message": "Avatar already running",
+                "pid": existing.pid,
+            }
+
         # Get the current Python executable and project root
         python_exe = sys.executable
         project_root = Path(__file__).resolve().parents[4]  # Go up to project root
@@ -158,6 +200,8 @@ async def launch_avatar() -> dict[str, Any]:
         await asyncio.sleep(0.1)  # Give it a moment to start
 
         if process.returncode is None:  # Process is still running
+            # Track the live child so subsequent launches are idempotent.
+            _LAUNCHED_PROCESS = process
             logger.info(f"Avatar process started successfully with PID: {process.pid}")
             return {
                 "status": "success",

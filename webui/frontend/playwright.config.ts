@@ -46,7 +46,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "cd ../.. && PYTHONPATH=src uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
+    // CHATTY_DISABLE_RATE_LIMIT: parallel Playwright workers share one source
+    // IP and would otherwise trip the 600/min limiter; the harness must not be
+    // throttled (prod default stays intact).
+    command: "cd ../.. && CHATTY_DISABLE_RATE_LIMIT=1 PYTHONPATH=src uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth",
     url: "http://localhost:8100/health",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

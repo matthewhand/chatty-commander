@@ -9,11 +9,19 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from chatty_commander.web.routes import avatar_api
 from chatty_commander.web.routes.avatar_api import router as avatar_router
 
 
 class TestAvatarLaunchAPI:
     """Test suite for the avatar launch API endpoint."""
+
+    @pytest.fixture(autouse=True)
+    def _reset_launch_guard(self):
+        """Reset the single-instance guard between tests."""
+        avatar_api._LAUNCHED_PROCESS = None
+        yield
+        avatar_api._LAUNCHED_PROCESS = None
 
     @pytest.fixture
     def app(self):
@@ -131,27 +139,62 @@ class TestAvatarLaunchAPI:
         mock_sleep.assert_called_once_with(0.1)
 
     @patch("asyncio.create_subprocess_exec")
-    def test_launch_avatar_multiple_calls(self, mock_subprocess, client):
-        """Test multiple avatar launch calls."""
-        # Mock successful process creation
+    def test_launch_avatar_idempotent_while_running(self, mock_subprocess, client):
+        """Repeated launches while a child is alive return the existing instance.
+
+        Single-instance guard: the subprocess must only be spawned once so
+        repeated POSTs can't fork unlimited GUI processes.
+        """
+        # Mock successful process creation (returncode=None => still running)
         mock_process = AsyncMock()
         mock_process.pid = 12345
         mock_process.returncode = None
         mock_subprocess.return_value = mock_process
 
-        # First call
+        # First call spawns the process.
         response1 = client.post("/avatar/launch")
         assert response1.status_code == 200
+        assert response1.json()["status"] == "success"
+        assert response1.json()["pid"] == 12345
 
-        # Second call should also succeed (new process)
-        mock_process.pid = 12346  # Different PID
+        # Second call returns the existing instance without spawning again.
         response2 = client.post("/avatar/launch")
         assert response2.status_code == 200
-
         data2 = response2.json()
-        assert data2["pid"] == 12346
+        assert data2["status"] == "already_running"
+        assert data2["pid"] == 12345
 
-        # Verify subprocess was called twice
+        # Verify subprocess was only created once.
+        assert mock_subprocess.call_count == 1
+
+    @patch("asyncio.create_subprocess_exec")
+    def test_launch_avatar_relaunches_after_exit(self, mock_subprocess, client):
+        """Once the tracked child has exited, a new launch spawns a fresh one."""
+        # First process is running.
+        running = AsyncMock()
+        running.pid = 12345
+        running.returncode = None
+
+        # After it "exits" (returncode set), a second launch should spawn again.
+        exited = AsyncMock()
+        exited.pid = 12345
+        exited.returncode = 0
+
+        fresh = AsyncMock()
+        fresh.pid = 999
+        fresh.returncode = None
+
+        mock_subprocess.return_value = running
+        assert client.post("/avatar/launch").status_code == 200
+        assert mock_subprocess.call_count == 1
+
+        # Simulate the tracked process having exited.
+        running.returncode = 0
+        mock_subprocess.return_value = fresh
+        resp = client.post("/avatar/launch")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "success"
+        assert resp.json()["pid"] == 999
         assert mock_subprocess.call_count == 2
 
     @patch("asyncio.create_subprocess_exec")

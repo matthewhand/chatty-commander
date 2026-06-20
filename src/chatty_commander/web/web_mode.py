@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -246,6 +247,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._last_cleanup = time.time()
 
     async def dispatch(self, request: Request, call_next):
+        # Explicit opt-out for test harnesses / trusted local runs: parallel
+        # clients share one source IP and would otherwise trip the limit. Same
+        # CHATTY_DISABLE_RATE_LIMIT control used by the command rate limiter
+        # (a stray PYTEST_CURRENT_TEST must NOT silently disable prod limiting).
+        raw = os.environ.get("CHATTY_DISABLE_RATE_LIMIT")
+        if raw is not None and raw.strip().lower() in {"1", "true", "yes", "on"}:
+            return await call_next(request)
+
         # Use secure IP extraction to prevent spoofing
         client_ip = get_client_ip(request, self.trusted_proxies)
 
@@ -575,9 +584,23 @@ class WebModeServer:
                 "192.168.0.0/16",
             ]
 
+        # Rate limit: sane default (600/min), configurable via
+        # web_server.rate_limit_rpm. A non-positive / unparseable config value
+        # falls back to the default rather than disabling the limiter.
+        rate_limit_rpm = 600
+        if hasattr(self.config_manager, "web_server"):
+            try:
+                configured = int(
+                    self.config_manager.web_server.get("rate_limit_rpm", rate_limit_rpm)
+                )
+                if configured > 0:
+                    rate_limit_rpm = configured
+            except (TypeError, ValueError):
+                pass
+
         app.add_middleware(
             RateLimitMiddleware,
-            requests_per_minute=10000,
+            requests_per_minute=rate_limit_rpm,
             trusted_proxies=trusted_proxies,
         )
 
@@ -691,10 +714,6 @@ class WebModeServer:
 
         if frontend_path.exists():
             static_assets = frontend_path / "assets"
-            if static_assets.exists():
-                app.mount(
-                    "/assets", StaticFiles(directory=str(static_assets)), name="assets"
-                )
             if static_assets.exists():
                 app.mount(
                     "/assets", StaticFiles(directory=str(static_assets)), name="assets"
@@ -975,43 +994,22 @@ class WebModeServer:
                     pass
 
     def _on_state_change(self, old_state: str, new_state: str) -> None:
+        # Synchronous bookkeeping always happens; the live broadcast is routed
+        # through _schedule_broadcast which already tolerates a missing / closed
+        # / not-yet-running event loop (degrading to a debug-logged skip).
+        # Building a fresh non-running loop here, as the old code did, only
+        # leaked a loop and silently dropped the message anyway.
         self.last_state_change = datetime.now()
-        try:
-            loop = asyncio.get_event_loop()
-            loop.create_task(
-                self._broadcast_message(
-                    WebSocketMessage(
-                        type="state_change",
-                        data={
-                            "old_state": old_state,
-                            "new_state": new_state,
-                            "timestamp": self.last_state_change.isoformat(),
-                        },
-                    )
-                )
+        self._schedule_broadcast(
+            WebSocketMessage(
+                type="state_change",
+                data={
+                    "old_state": old_state,
+                    "new_state": new_state,
+                    "timestamp": self.last_state_change.isoformat(),
+                },
             )
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.create_task(
-                    self._broadcast_message(
-                        WebSocketMessage(
-                            type="state_change",
-                            data={
-                                "old_state": old_state,
-                                "new_state": new_state,
-                                "timestamp": self.last_state_change.isoformat(),
-                            },
-                        )
-                    )
-                )
-            except Exception as e:  # noqa: BLE001
-                logger.debug("state_change broadcast scheduling failed: %s", e)
-        except Exception as e:  # noqa: BLE001
-            # e.g. the event loop is closed — fail gracefully rather than
-            # propagating into the state manager callback chain.
-            logger.debug("state_change broadcast scheduling failed: %s", e)
+        )
 
     # --------------------------
     # dograh availability status (push-driven UI card)
