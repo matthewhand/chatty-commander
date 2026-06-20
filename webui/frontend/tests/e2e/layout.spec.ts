@@ -28,20 +28,23 @@ test.describe("MainLayout", () => {
   });
 
   test("active nav item has visual indicator", async ({ page }) => {
-    // On /dashboard, the Dashboard link should have the active class
+    // The overhauled sidebar marks the active link with aria-current="page"
+    // (plus a self-contained highlight: bg-primary + left bar). The old
+    // `.active`/`.border-primary` DaisyUI classes are gone, so assert on the
+    // accessible state instead, which is the stable contract for active nav.
     const dashboardLink = page.getByRole("link", { name: "Dashboard" });
-    await expect(dashboardLink).toHaveClass(/active/);
-    await expect(dashboardLink).toHaveClass(/border-primary/);
+    await expect(dashboardLink).toHaveAttribute("aria-current", "page");
+    await expect(dashboardLink).toHaveClass(/bg-primary/);
 
     // Navigate to Commands and verify it becomes active
     await page.getByRole("link", { name: "Commands", exact: true }).click();
     await expect(page).toHaveURL(/\/commands$/);
 
     const commandsLink = page.getByRole("link", { name: "Commands", exact: true });
-    await expect(commandsLink).toHaveClass(/active/);
+    await expect(commandsLink).toHaveAttribute("aria-current", "page");
 
     // Dashboard link should no longer be active
-    await expect(dashboardLink).not.toHaveClass(/active/);
+    await expect(dashboardLink).not.toHaveAttribute("aria-current", "page");
   });
 
   test("logout button is visible and clickable", async ({ page }) => {
@@ -70,8 +73,9 @@ test.describe("MainLayout - Mobile Viewport", () => {
     // Sidebar should now be visible (translate-x-0)
     await expect(sidebar).toHaveClass(/translate-x-0/);
 
-    // Close sidebar via the close button
-    await page.getByRole("button", { name: "Close sidebar" }).click();
+    // Close sidebar via the in-sidebar close button. A backdrop overlay also
+    // carries the "Close sidebar" label, so scope to the button inside the aside.
+    await sidebar.getByRole("button", { name: "Close sidebar" }).click();
     await expect(sidebar).toHaveClass(/-translate-x-full/);
   });
 
@@ -97,12 +101,20 @@ test.describe("MainLayout - Mobile Viewport", () => {
     await page.getByRole("button", { name: "Open sidebar" }).click();
     await expect(sidebar).toHaveClass(/translate-x-0/);
 
-    // The backdrop is a div with fixed inset-0 and bg-black/50
-    const backdrop = page.locator("div.fixed.inset-0");
+    // The backdrop is now a <button> (fixed inset-0, bg-black/50) so it is
+    // keyboard-operable; it shares the "Close sidebar" label with the header
+    // close button, so scope to the full-screen overlay by its classes.
+    const backdrop = page.locator("button.fixed.inset-0");
     await expect(backdrop).toBeVisible();
 
-    // Click the backdrop (simpler click() without brittle hardcoded position numbers; overlay click closes via handler)
-    await backdrop.click();
+    // The backdrop spans the full viewport, but the open sidebar (z-30) sits on
+    // top of its left edge, so a default center click is intercepted by the
+    // sidebar. Click near the right edge — the area a user taps to dismiss —
+    // which is backdrop, not sidebar.
+    const box = await backdrop.boundingBox();
+    await backdrop.click({
+      position: { x: (box?.width ?? 320) - 10, y: (box?.height ?? 400) / 2 },
+    });
 
     // Sidebar should close
     await expect(sidebar).toHaveClass(/-translate-x-full/);

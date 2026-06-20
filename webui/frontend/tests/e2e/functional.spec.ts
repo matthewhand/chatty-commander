@@ -35,8 +35,9 @@ test.describe("Functional Flows", () => {
         await expect(page.getByRole("heading", { name: /configuration/i })).toBeVisible();
 
         // Use actual modern locators from ConfigurationPage (theme select + service toggles)
-        // avoids outdated generic input[type=text] + conditional fallbacks
-        await expect(page.getByLabel("Theme")).toBeVisible();
+        // avoids outdated generic input[type=text] + conditional fallbacks.
+        // exact:true — the global layout also exposes a "Select theme" picker.
+        await expect(page.getByLabel("Theme", { exact: true })).toBeVisible();
         await expect(page.getByText("Voice Commands (always-on)")).toBeVisible();
         await expect(page.getByText("REST API")).toBeVisible();
     });

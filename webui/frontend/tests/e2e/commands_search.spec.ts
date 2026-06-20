@@ -28,9 +28,12 @@ test.describe("Commands Page Search Synchronization", () => {
 
     await page.goto("/commands");
 
-    // Wait for commands to load (use recommended getByText exact to avoid .first() brittleness/strict issues)
-    await expect(page.getByText("Take Screenshot", { exact: true })).toBeVisible();
-    await expect(page.getByText("Hello World", { exact: true })).toBeVisible();
+    // The card grid is now a `table table-zebra`; assert on rows. Each command's
+    // name lives in a table cell, so target the cell role rather than free text.
+    const screenshotRow = page.getByRole("row", { name: /Take Screenshot/ });
+    const helloRow = page.getByRole("row", { name: /Hello World/ });
+    await expect(page.getByRole("cell", { name: "Take Screenshot", exact: true })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Hello World", exact: true })).toBeVisible();
 
     // Type in search bar
     const searchInput = page.getByPlaceholder("Search commands...");
@@ -41,9 +44,12 @@ test.describe("Commands Page Search Synchronization", () => {
     // URL should be updated with ?q=Screenshot
     await expect(page).toHaveURL(/.*q=Screenshot/);
 
-    // Results should be filtered (modern getByText to replace brittle text= .first())
-    await expect(page.getByText("Take Screenshot", { exact: true })).toBeVisible();
-    await expect(page.getByText("Hello World", { exact: true })).not.toBeVisible();
+    // Filtering removes the non-matching row entirely (debounced ~300ms).
+    await expect(screenshotRow).toBeVisible();
+    await expect(helloRow).toHaveCount(0);
+
+    // The "Showing N of M commands" count appears while a search is active.
+    await expect(page.getByText(/Showing .* of .* commands/)).toBeVisible();
 
     // Clear search bar
     await searchInput.fill("");
@@ -51,9 +57,9 @@ test.describe("Commands Page Search Synchronization", () => {
     // URL should drop the search query
     await expect(page).not.toHaveURL(/.*q=/);
 
-    // All results should be visible again
-    await expect(page.getByText("Take Screenshot", { exact: true })).toBeVisible();
-    await expect(page.getByText("Hello World", { exact: true })).toBeVisible();
+    // All rows should be visible again
+    await expect(screenshotRow).toBeVisible();
+    await expect(helloRow).toBeVisible();
 
     // Navigate to page with pre-filled query
     await page.goto("/commands?q=Hello");
@@ -62,8 +68,8 @@ test.describe("Commands Page Search Synchronization", () => {
     await expect(searchInput).toHaveValue("Hello");
 
     // Results should be pre-filtered
-    await expect(page.getByText("Take Screenshot", { exact: true })).not.toBeVisible();
-    await expect(page.getByText("Hello World", { exact: true })).toBeVisible();
+    await expect(page.getByRole("row", { name: /Take Screenshot/ })).toHaveCount(0);
+    await expect(page.getByRole("cell", { name: "Hello World", exact: true })).toBeVisible();
 
     // +2 wired endpoint asserts (via request; hits mocks/server per WEBUI/ROADMAP e2e expansion)
     const cmdsRes = await page.request.get("/api/v1/commands");
