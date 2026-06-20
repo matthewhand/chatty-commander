@@ -566,7 +566,7 @@ const VoiceTestPage: React.FC = () => {
     <div className="space-y-6" data-testid="voice-test-page">
       <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gradient-primary flex items-center gap-2">
             {/* Shared brand mark — decorative; the wordmark is already shown in
                 the app shell, so we only tie this page to the brand visually. */}
             <Logo iconOnly decorative size={28} />

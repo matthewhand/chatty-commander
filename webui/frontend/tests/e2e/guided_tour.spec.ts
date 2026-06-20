@@ -364,4 +364,26 @@ test.describe("Guided Tour Screenshots", () => {
     await settle(page);
     await statsGrid.screenshot({ path: shot("tour-08-websocket-status.png") });
   });
+
+  test("09 voice test page", async ({ page }) => {
+    // tour-09-voice-test.png is embedded by both 00_GUIDED_TOUR.md and
+    // USER_GUIDE.md but previously had NO generating step, so it went stale
+    // (showed the pre-MainLayout sidebar). Capture it from the current UI.
+    await mockDashboardAPIs(page);
+
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "Dashboard" }).first()).toBeVisible();
+    await page.getByRole("link", { name: "Voice Test" }).click();
+
+    await expect(page).toHaveURL(/voice-test/);
+    await expect(page.getByRole("heading", { name: "Voice Test" }).first()).toBeVisible();
+    // The Voice Test page opens a live WS to the test backend; wait for the
+    // genuine connected indicator so the capture isn't mid-connect.
+    await expect(page.getByText("Connected", { exact: true }).nth(0)).toBeVisible({
+      timeout: 15_000,
+    });
+    await settle(page);
+
+    await page.screenshot({ path: shot("tour-09-voice-test.png"), fullPage: true });
+  });
 });
