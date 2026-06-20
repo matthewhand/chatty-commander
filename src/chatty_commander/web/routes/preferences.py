@@ -50,6 +50,15 @@ _DEFAULTS: dict[str, Any] = {
     "telemetry": False,
 }
 
+# SECURITY: canonical allow-list of writable user-preference keys. This handler
+# is dispatched BEFORE the ``ALLOWED_PREF_KEYS``-filtered handler in
+# ``web/routes/system.py``, so without its own filter the model's
+# ``extra="allow"`` + ``prefs.update(updates)`` would let any key be persisted
+# into the ``preferences`` config section, making system.py's allow-list dead
+# code. We pin writes to exactly the known preference keys (the ``_DEFAULTS``
+# keys); any other key in a PUT body is ignored (never written, never echoed).
+ALLOWED_PREF_KEYS: frozenset[str] = frozenset(_DEFAULTS)
+
 
 class PreferencesModel(BaseModel):
     """User preferences accepted from / returned to the web UI.
@@ -112,7 +121,12 @@ def include_preferences_routes(*, get_config_manager: Callable[[], Any]) -> APIR
             cfg_mgr = get_config_manager()
             prefs = _get_preferences(cfg_mgr)
             updates = new_prefs.model_dump(exclude_none=True)
-            prefs.update(updates)
+            # SECURITY: only persist allow-listed preference keys. ``extra`` keys
+            # the model accepted for round-tripping are dropped here so an
+            # attacker cannot smuggle arbitrary config into the preferences
+            # section. Disallowed keys are silently ignored (not written).
+            filtered = {k: v for k, v in updates.items() if k in ALLOWED_PREF_KEYS}
+            prefs.update(filtered)
             _save(cfg_mgr)
             return dict(prefs)
         except HTTPException:

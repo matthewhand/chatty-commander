@@ -128,12 +128,24 @@ class LLMProvider(ABC):
         ...
 
     def health_check(self) -> bool:
-        """Check if the provider is healthy and accessible."""
+        """Cheap local readiness probe — must NOT make a billable call.
+
+        Mirrors the ``llm/backends.is_available`` change: provider *health*
+        is checked by confirming the prerequisites for a successful call are
+        in place (an API key and an initialized agent/client), NOT by issuing
+        a real ``generate`` request. A prior implementation called
+        ``self.generate("Test")`` on every health check, which billed a token
+        round-trip per probe; that is removed here.
+        """
         try:
-            # Simple test generation
-            test_response = self.generate("Test")
-            return bool(test_response and len(test_response) > 0)
-        except Exception as e:
+            # Real providers (Completion/Responses) build an ``agent`` client
+            # in __init__ and need an API key to reach a backend. Stub/echo
+            # providers have no ``agent`` and are always ready by construction
+            # (they never make a network call), so report them healthy.
+            if not hasattr(self, "agent"):
+                return True
+            return bool(self.api_key)
+        except Exception as e:  # noqa: BLE001 - never raise from a health probe
             logger.error(f"Health check failed: {e}")
             return False
 

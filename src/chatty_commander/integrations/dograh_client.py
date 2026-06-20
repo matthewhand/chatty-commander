@@ -16,10 +16,15 @@ then set ``DOGRAH_API_KEY`` and ``DOGRAH_BASE_URL`` in the environment.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, cast
 
 import httpx
+
+# E.164: optional leading '+', a non-zero leading digit, then 6-14 more digits.
+# Kept in lockstep with advisors/tools/dograh_call.py (defense in depth).
+_E164_RE = re.compile(r"^\+?[1-9]\d{6,14}$")
 
 
 class DograhError(RuntimeError):
@@ -28,6 +33,16 @@ class DograhError(RuntimeError):
 
 class DograhUnavailableError(DograhError):
     """Raised when dograh is not configured or not reachable."""
+
+
+class DograhValidationError(DograhError, ValueError):
+    """Raised when caller-supplied call parameters fail validation.
+
+    Surfaced *before* any network request so an invalid phone number or
+    non-integer workflow id can never reach the telephony backend. This
+    guards BOTH the LLM tool path and the config / wake-word path
+    (command_executor), which both funnel through ``initiate_call``.
+    """
 
 
 class DograhHTTPError(DograhError):
@@ -167,7 +182,30 @@ class DograhClient:
         (Twilio/Vonage/etc.) is set up in dograh — that's expected when
         running the OSS stack without telephony credentials, and the
         caller should surface it as a config error rather than a bug.
+
+        SECURITY: ``workflow_id`` and ``phone_number`` may originate from an
+        LLM reply or a user-edited config/wake-word binding. Both are
+        validated here — at the single network chokepoint — so neither path
+        can dial an arbitrary number or pass a non-numeric workflow id. A
+        :class:`DograhValidationError` is raised before any HTTP request.
         """
+        try:
+            workflow_id = int(workflow_id)
+        except (TypeError, ValueError) as e:
+            raise DograhValidationError(
+                "invalid workflow_id (must be an integer)"
+            ) from e
+
+        if phone_number is not None:
+            if not isinstance(phone_number, str) or not _E164_RE.match(
+                phone_number.strip()
+            ):
+                # Do not echo the raw value back — keep the message generic.
+                raise DograhValidationError(
+                    "invalid phone number (expected E.164, e.g. +15555550100)"
+                )
+            phone_number = phone_number.strip()
+
         body: dict[str, Any] = {"workflow_id": workflow_id}
         if phone_number is not None:
             body["phone_number"] = phone_number

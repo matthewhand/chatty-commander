@@ -94,7 +94,7 @@ class TestCompletionProvider:
     @patch("chatty_commander.advisors.providers.AGENTS_AVAILABLE", True)
     @patch("chatty_commander.advisors.providers.Agent")
     def test_completion_provider_health_check(self, mock_agent, config):
-        """Test health check functionality."""
+        """A ready provider (api key + agent) reports healthy."""
         mock_client = Mock()
         mock_client.chat.return_value = "Test"
         mock_agent.return_value = mock_client
@@ -106,16 +106,40 @@ class TestCompletionProvider:
 
     @patch("chatty_commander.advisors.providers.AGENTS_AVAILABLE", True)
     @patch("chatty_commander.advisors.providers.Agent")
+    def test_completion_provider_health_check_makes_no_generate_call(
+        self, mock_agent, config
+    ):
+        """health_check must be a cheap readiness probe, not a billable call.
+
+        Previously health_check called ``generate("Test")``, billing a token
+        round-trip per probe. It now only checks prerequisites (api key +
+        agent), so ``Agent.chat`` must never be invoked.
+        """
+        mock_client = Mock()
+        mock_client.chat.side_effect = AssertionError(
+            "health_check must not call generate()"
+        )
+        mock_agent.return_value = mock_client
+
+        provider = CompletionProvider(config)
+        assert provider.health_check() is True
+        mock_client.chat.assert_not_called()
+
+    @patch("chatty_commander.advisors.providers.AGENTS_AVAILABLE", True)
+    @patch("chatty_commander.advisors.providers.Agent")
     def test_completion_provider_health_check_failure(self, mock_agent, config):
-        """Test health check failure."""
+        """No API key => not ready, and still no generate call is made."""
         mock_client = Mock()
         mock_client.chat.side_effect = Exception("API error")
         mock_agent.return_value = mock_client
 
-        provider = CompletionProvider(config)
+        no_key = dict(config)
+        no_key["api_key"] = None
+        provider = CompletionProvider(no_key)
         result = provider.health_check()
 
         assert result is False
+        mock_client.chat.assert_not_called()
 
 
 class TestResponsesProvider:

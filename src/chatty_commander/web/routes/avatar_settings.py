@@ -25,8 +25,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
+
+from chatty_commander.web.deps.auth import require_role
 
 
 class AvatarConfigModel(BaseModel):
@@ -99,7 +101,17 @@ def include_avatar_settings_routes(
             raise HTTPException(status_code=500, detail=str(e)) from e
 
     @router.put("/avatar/config", response_model=AvatarConfigModel)
-    async def update_avatar_config(new_cfg: AvatarConfigModel):
+    async def update_avatar_config(
+        new_cfg: AvatarConfigModel,
+        _principal: Any = Depends(require_role("user")),
+    ):
+        # SECURITY: PUT /avatar/config persists configuration but lives outside
+        # the /api/ prefix that AuthMiddleware gates, so without this dependency
+        # it would be reachable unauthenticated (the same hole previously fixed
+        # for /avatar/launch). require_role("user") enforces an authenticated
+        # user when auth is active and is a pass-through in --no-auth /
+        # no-auth-configured mode (web/deps/auth.py degradation rule), so dev
+        # usage is unchanged.
         try:
             cfg_mgr = get_config_manager()
             avatar = _get_avatar_cfg(cfg_mgr)
