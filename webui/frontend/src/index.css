@@ -572,21 +572,30 @@ textarea {
 /* ============================================
    Polished Alerts
    ============================================ */
+/*
+ * Alerts share the toast presentation language (see ToastProvider.tsx):
+ * a vertical slide-up entrance, ~0.25s easing, and a soft drop shadow so that
+ * in-page alerts and transient toasts read as the same notification primitive.
+ * The shadow matches Tailwind's `shadow-lg` (applied to toasts via className).
+ */
 .alert {
-  animation: alertSlide 0.3s ease-out;
+  animation: alertSlide 0.25s ease-out;
   border: 1px solid transparent;
   backdrop-filter: blur(4px);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 @keyframes alertSlide {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateY(20px);
   }
 
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
