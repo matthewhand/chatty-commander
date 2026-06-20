@@ -36,10 +36,12 @@ directly into command matching, and the real-audio path reports
 
 from __future__ import annotations
 
+import asyncio
 import logging
-import re
 from datetime import UTC, datetime
 from typing import Any
+
+from chatty_commander.voice import matching
 
 logger = logging.getLogger(__name__)
 
@@ -63,48 +65,14 @@ def stage_event(stage: str, data: dict[str, Any]) -> dict[str, Any]:
 def match_command(text: str, model_actions: dict[str, Any]) -> str | None:
     """Match a transcript against configured commands.
 
-    Mirrors ``voice.pipeline.VoicePipeline._match_command``: whole-word /
-    contiguous-phrase matching against command names (underscores in names
-    are treated as word separators), then a small keyword table for common
-    aliases. Substring matching is deliberately avoided so a command named
-    "play" does not match "replay" or "display".
+    Thin wrapper over the single shared matcher in
+    :mod:`chatty_commander.voice.matching`, which is ALSO used by the real
+    ``voice.pipeline.VoicePipeline``. Routing both pipelines through one helper
+    is what stops the dry-run browser test from drifting away from the real
+    pipeline's behavior (it previously lacked the ``play_music`` keyword
+    aliases the real pipeline had).
     """
-    if not text or not isinstance(model_actions, dict) or not model_actions:
-        return None
-
-    tokens = re.findall(r"[a-z0-9']+", text.lower())
-    token_set = set(tokens)
-
-    def _matches_phrase(phrase: str) -> bool:
-        phrase_tokens = re.findall(r"[a-z0-9']+", phrase.lower().strip())
-        if not phrase_tokens:
-            return False
-        if len(phrase_tokens) == 1:
-            return phrase_tokens[0] in token_set
-        n = len(phrase_tokens)
-        return any(
-            tokens[i : i + n] == phrase_tokens for i in range(len(tokens) - n + 1)
-        )
-
-    # Direct name match first (whole-word, not substring).
-    for command_name in model_actions:
-        if _matches_phrase(str(command_name)):
-            return str(command_name)
-
-    # Keyword-based aliases (same table as the local voice pipeline).
-    command_keywords = {
-        "hello": ["hello", "hi", "hey", "greet"],
-        "lights": ["lights", "light", "lamp", "illumination"],
-        "music": ["music", "song", "play", "audio"],
-        "weather": ["weather", "temperature", "forecast"],
-        "time": ["time", "clock", "hour"],
-        "timer": ["timer", "alarm", "remind"],
-    }
-    for command_name, keywords in command_keywords.items():
-        if command_name in model_actions and any(_matches_phrase(k) for k in keywords):
-            return command_name
-
-    return None
+    return matching.match_command(text, model_actions)
 
 
 def describe_dry_run(command_name: str, action: Any) -> str:
@@ -217,8 +185,14 @@ class VoiceTestPipeline:
         self._audio_buffer.extend(chunk)
         return None
 
-    def finish_audio(self) -> list[dict[str, Any]]:
-        """Transcribe buffered audio (if a real backend exists) and match."""
+    async def finish_audio(self) -> list[dict[str, Any]]:
+        """Transcribe buffered audio (if a real backend exists) and match.
+
+        Whisper inference is synchronous and CPU-bound and can run for several
+        seconds on a real backend. It is offloaded to a worker thread via
+        :func:`asyncio.to_thread` so it does not block the event loop (which
+        serves every other WebSocket handler) while a transcription is running.
+        """
         audio = bytes(self._audio_buffer)
         self._audio_buffer.clear()
         if not audio:
@@ -243,7 +217,8 @@ class VoiceTestPipeline:
                 )
             ]
         try:
-            text = transcriber.transcribe_audio_data(audio)
+            # Offload the blocking Whisper inference off the event loop.
+            text = await asyncio.to_thread(transcriber.transcribe_audio_data, audio)
         except Exception as e:
             return [
                 stage_event(

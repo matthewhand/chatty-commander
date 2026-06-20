@@ -24,6 +24,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from chatty_commander.app.voice_test_pipeline import (
     MAX_AUDIO_BUFFER_BYTES,
     VoiceTestPipeline,
@@ -93,6 +95,48 @@ def test_match_command_empty_inputs():
 def test_match_command_keyword_alias():
     actions = {"lights": {"action": "shell", "cmd": "lights-on"}}
     assert match_command("turn on the lamp", actions) == "lights"
+
+
+def test_match_command_play_music_keyword_no_longer_drifts():
+    """Regression: voice-test previously lacked the ``play_music`` keyword
+    aliases the real pipeline had, so the browser dry-run reported "no match"
+    for an utterance the real pipeline would execute. Now both share one table.
+    """
+    actions = {"play_music": {"action": "keypress", "keys": "ctrl+p"}}
+    # "play" is a keyword alias for play_music; must match (not None).
+    assert match_command("please play some music", actions) == "play_music"
+
+
+def test_match_command_matches_real_pipeline_across_phrases():
+    """The shared matcher must agree command-for-command with the REAL
+    voice pipeline (the source of truth) — including the previously-divergent
+    play_music case."""
+    from chatty_commander.voice.pipeline import VoicePipeline
+
+    actions = {
+        "screenshot": {"action": "keypress", "keys": "ctrl+shift+x"},
+        "open_jellyfin": {"action": "url", "url": "https://example.com/jellyfin"},
+        "play": {"action": "custom_message", "message": "playing"},
+        "play_music": {"action": "keypress", "keys": "ctrl+p"},
+        "lights": {"action": "shell", "cmd": "lights-on"},
+    }
+
+    class Cfg:
+        model_actions = actions
+
+    real = VoicePipeline(config_manager=Cfg(), use_mock=True)
+
+    phrases = [
+        "take a screenshot now",
+        "please open jellyfin",
+        "watch the replay",  # must NOT match "play"
+        "please play some music",  # play_music via keyword
+        "turn on the lamp",  # lights via keyword
+        "completely unrelated words",
+        "play",  # direct name match on "play"
+    ]
+    for phrase in phrases:
+        assert match_command(phrase, actions) == real._match_command(phrase), phrase
 
 
 # ------------------------------------------------------------ describe_dry_run
@@ -192,29 +236,32 @@ def test_start_rejects_silly_sample_rates():
     assert ev["data"]["sample_rate"] == 16000
 
 
-def test_finish_audio_without_audio_is_error():
+@pytest.mark.asyncio
+async def test_finish_audio_without_audio_is_error():
     p = VoiceTestPipeline(config_manager=DummyConfigManager())
-    events = p.finish_audio()
+    events = await p.finish_audio()
     assert events[0]["stage"] == "error"
     assert events[0]["data"]["code"] == "no_audio"
 
 
-def test_finish_audio_without_backend_degrades_gracefully():
+@pytest.mark.asyncio
+async def test_finish_audio_without_backend_degrades_gracefully():
     p = VoiceTestPipeline(config_manager=DummyConfigManager())
     # Force "resolved, unavailable" regardless of host audio stack.
     p._transcriber_resolved = True
     p._transcriber = None
     p.feed_audio(b"\x00\x01" * 100)
-    events = p.finish_audio()
+    events = await p.finish_audio()
     assert events[0]["stage"] == "error"
     assert events[0]["data"]["code"] == "transcription_unavailable"
 
 
-def test_finish_audio_with_injected_transcriber_runs_full_pipeline():
+@pytest.mark.asyncio
+async def test_finish_audio_with_injected_transcriber_runs_full_pipeline():
     t = FakeTranscriber("open jellyfin please")
     p = VoiceTestPipeline(config_manager=DummyConfigManager(), transcriber=t)
     p.feed_audio(b"\x00\x01" * 100)
-    events = p.finish_audio()
+    events = await p.finish_audio()
     assert [e["stage"] for e in events] == ["transcript", "match", "action"]
     assert events[0]["data"]["simulated"] is False
     assert events[1]["data"]["command"] == "open_jellyfin"
@@ -222,16 +269,75 @@ def test_finish_audio_with_injected_transcriber_runs_full_pipeline():
     assert t.received == [b"\x00\x01" * 100]
 
 
-def test_finish_audio_transcriber_exception_is_error_event():
+@pytest.mark.asyncio
+async def test_finish_audio_transcriber_exception_is_error_event():
     class Boom:
         def transcribe_audio_data(self, audio: bytes) -> str:
             raise RuntimeError("kaput")
 
     p = VoiceTestPipeline(config_manager=DummyConfigManager(), transcriber=Boom())
     p.feed_audio(b"abc")
-    events = p.finish_audio()
+    events = await p.finish_audio()
     assert events[0]["stage"] == "error"
     assert events[0]["data"]["code"] == "transcription_failed"
+
+
+@pytest.mark.asyncio
+async def test_finish_audio_offloads_transcription_to_thread(monkeypatch):
+    """The blocking Whisper inference must run off the event loop.
+
+    We record the thread the transcriber runs on; it must differ from the
+    event-loop thread, proving ``finish_audio`` used ``asyncio.to_thread``
+    (or an equivalent executor) rather than calling it inline.
+    """
+    import asyncio
+    import threading
+
+    loop_thread = threading.get_ident()
+    seen: dict[str, int] = {}
+
+    class ThreadRecordingTranscriber:
+        def transcribe_audio_data(self, audio: bytes) -> str:
+            seen["thread"] = threading.get_ident()
+            return "take a screenshot"
+
+    p = VoiceTestPipeline(
+        config_manager=DummyConfigManager(), transcriber=ThreadRecordingTranscriber()
+    )
+    p.feed_audio(b"\x00\x01" * 100)
+
+    # Sanity: finish_audio is a coroutine (so the route awaits it).
+    coro = p.finish_audio()
+    assert asyncio.iscoroutine(coro)
+    events = await coro
+
+    assert seen["thread"] != loop_thread
+    assert events[1]["data"]["command"] == "screenshot"
+
+
+@pytest.mark.asyncio
+async def test_finish_audio_uses_asyncio_to_thread(monkeypatch):
+    """finish_audio routes the blocking call through asyncio.to_thread."""
+    import chatty_commander.app.voice_test_pipeline as vtp
+
+    calls: list = []
+    real_to_thread = vtp.asyncio.to_thread
+
+    async def spy_to_thread(func, /, *args, **kwargs):
+        calls.append(func)
+        return await real_to_thread(func, *args, **kwargs)
+
+    monkeypatch.setattr(vtp.asyncio, "to_thread", spy_to_thread)
+
+    p = VoiceTestPipeline(
+        config_manager=DummyConfigManager(),
+        transcriber=FakeTranscriber("take a screenshot"),
+    )
+    p.feed_audio(b"\x00\x01" * 100)
+    events = await p.finish_audio()
+
+    assert calls, "finish_audio did not offload via asyncio.to_thread"
+    assert events[1]["data"]["command"] == "screenshot"
 
 
 def test_feed_audio_buffer_cap():

@@ -102,7 +102,7 @@ async def _handle_control_frame(
         for event in pipeline.process_text(text):
             await websocket.send_json(event)
     elif frame_type == "stop":
-        for event in pipeline.finish_audio():
+        for event in await pipeline.finish_audio():
             await websocket.send_json(event)
     else:
         await websocket.send_json(

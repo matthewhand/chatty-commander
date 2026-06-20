@@ -106,7 +106,9 @@ def run_cli_mode(config, model_manager, state_manager, command_executor, logger)
         except Exception as e:
             logger.error(f"Error during shutdown: {e}")
         logger.info("ChattyCommander CLI shutdown complete")
-        sys.exit(0)
+    # Return (instead of sys.exit(0)) so the caller (main) owns the exit code;
+    # the cleanup above runs via finally regardless of how the loop ended.
+    return 0
 
 
 def run_web_mode(
@@ -233,76 +235,26 @@ def run_gui_mode(
     display_override: str | None = None,
     no_gui: bool = False,
 ):
-    """run gui mode."""
     """Run the GUI mode with graceful handling in headless environments.
+
+    Delegates to the maintained implementation in cli.cli (which has the
+    correct avatar -> PyQt5 -> tray popup -> legacy tkinter fallback chain),
+    mirroring how run_web_mode is delegated above.
 
     Returns:
         int: 0 if skipped or exited cleanly; non-zero if GUI could not start due to missing deps.
     """
-    import os
+    from chatty_commander.cli.cli import run_gui_mode as _run_gui_mode
 
-    if no_gui:
-        logger.info("--no-gui specified; skipping GUI launch")
-        return 0
-
-    # Apply DISPLAY override if provided (POSIX only)
-    if display_override and os.name != "nt":
-        os.environ["DISPLAY"] = display_override
-
-    # Graceful handling when DISPLAY is not present (headless/CI on POSIX)
-    if os.name != "nt" and not os.environ.get("DISPLAY"):
-        logger.warning(
-            "No DISPLAY environment variable set. Skipping GUI mode in headless environment."
-        )
-        return 0
-    # Prefer new tray popup GUI (pystray + pywebview) with fallback to legacy tkinter GUI
-    try:
-        # Prefer avatar GUI if available (pywebview + local index.html)
-        try:
-            from chatty_commander.avatars.avatar_gui import (
-                run_avatar_gui,  # type: ignore
-            )
-            logger.info("Starting Avatar GUI (TalkingHead)")
-            rc = run_avatar_gui()
-            return 0 if rc is None else int(rc)
-        except Exception as e:
-            logger.warning(
-                f"Avatar GUI unavailable ({e}); falling back to PyQt5 avatar GUI"
-            )
-            try:
-                # Try PyQt5-based transparent browser avatar
-                from chatty_commander.gui.pyqt5_avatar import (
-                    run_pyqt5_avatar,  # type: ignore
-                )
-                logger.info("Starting PyQt5 Avatar GUI (Transparent Browser)")
-                rc = run_pyqt5_avatar()
-                return 0 if rc is None else int(rc)
-            except Exception as e2:
-                logger.warning(
-                    f"PyQt5 Avatar GUI unavailable ({e2}); falling back to tray popup GUI"
-                )
-                # Installed package path
-                from chatty_commander.gui.tray_popup import (
-                    run_tray_popup,  # type: ignore
-                )
-
-                logger.info("Starting GUI tray popup mode")
-                rc = run_tray_popup(config, logger)
-                return 0 if rc is None else int(rc)
-    except Exception as e:
-        logger.warning(
-            f"Tray popup GUI unavailable ({e}); falling back to legacy tkinter GUI"
-        )
-        try:
-            # Legacy GUI fallback; gui module may not define main()
-            from chatty_commander.gui import main as gui_main  # type: ignore[attr-defined]  # noqa: I001
-
-            logger.info("Starting legacy tkinter GUI mode")
-            rc = gui_main()
-            return 0 if rc is None else int(rc)
-        except Exception:
-            logger.error("GUI dependencies not available. Install with: uv add tkinter")
-            return 2
+    return _run_gui_mode(
+        config,
+        model_manager,
+        state_manager,
+        command_executor,
+        logger,
+        display_override=display_override,
+        no_gui=no_gui,
+    )
 
 
 def create_parser():
@@ -363,6 +315,13 @@ For detailed documentation and source code, visit: https://github.com/your-repo/
         "--shell",
         action="store_true",
         help="Start interactive shell mode for text-based command input and execution.",
+    )
+
+    # Advisors enable flag (opt-in; turns on the advisors subsystem at runtime).
+    parser.add_argument(
+        "--advisors",
+        action="store_true",
+        help="Enable the advisors subsystem (LLM agents) at runtime, overriding config.",
     )
 
     # Orchestrator flags (opt-in; does not change default behavior)
@@ -584,8 +543,14 @@ def main():
     # If help was requested, argparse would have exited above with code 0.
     # Continue with validation for actual runs only.
     # Argument validation (only enforce when options are provided)
-    if getattr(args, "web", False) and args.port is not None and args.port < 1024:
-        parser.error("Port must be 1024 or higher for non-root users")
+    if args.port is not None:
+        # Reject anything outside the valid TCP range unconditionally (0,
+        # negatives, and > 65535 are never serviceable regardless of mode).
+        if not (1 <= args.port <= 65535):
+            parser.error("Port must be between 1 and 65535")
+        # Privileged ports (< 1024) are additionally rejected in web mode.
+        if getattr(args, "web", False) and args.port < 1024:
+            parser.error("Port must be 1024 or higher for non-root users")
     if getattr(args, "no_auth", False) and not getattr(args, "web", False):
         parser.error("--no-auth only applicable in web mode")
 
@@ -746,14 +711,11 @@ def main():
         config_cli.run_wizard()
         return 0
     elif getattr(args, "web", False):
-        # Ensure web_server config exists and reflect CLI overrides
-        if not hasattr(config, "web_server") or config.web_server is None:
-            config.web_server = {}
-        host = getattr(args, "host", None) or config.web_server.get("host", "0.0.0.0")
-        port = getattr(args, "port", None) or config.web_server.get("port", 8100)
-        config.web_server.update(
-            {"host": host, "port": port, "auth_enabled": not args.no_auth}
-        )
+        # host/port/auth_enabled were already derived above (single override
+        # pass) honoring config-file values, CLI flags, and --no-auth. Reuse
+        # them here instead of recomputing — in particular do NOT recompute
+        # auth_enabled as `not args.no_auth`, which would silently re-enable
+        # auth that a config file disabled.
         # Use the maintained implementation (the local stub was stale/duplicate)
         from chatty_commander.cli.cli import run_web_mode as run_web_mode
         run_web_mode(
