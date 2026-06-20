@@ -28,7 +28,20 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        // Make getUserMedia deterministic so audio/mic-test specs don't flake
+        // under parallel worker contention: a synthetic media stream, the
+        // permission prompt auto-accepted, and the mic permission pre-granted.
+        permissions: ["microphone"],
+        launchOptions: {
+          args: [
+            "--use-fake-device-for-media-stream",
+            "--use-fake-ui-for-media-stream",
+            "--autoplay-policy=no-user-gesture-required",
+          ],
+        },
+      },
     },
   ],
 
