@@ -25,12 +25,10 @@ jobs:
       - name: Install backend dependencies
         run: pip install uv && uv sync
 
-      - name: Start backend (test mode)
-        run: |
-          uv run python -m chatty_commander.cli.main --web --test-mode --port 8100 --no-auth &
-          sleep 5
-        env:
-          PYTHONPATH: src
+      # The backend is started by Playwright's `webServer` (see
+      # webui/frontend/playwright.config.ts), which owns :8100 and sets
+      # CHATTY_DISABLE_RATE_LIMIT=1. Starting it manually here too caused a
+      # port conflict in CI (reuseExistingServer is false when CI is set).
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -50,8 +48,6 @@ jobs:
       - name: Generate screenshots
         run: npx playwright test tests/e2e/screenshots.spec.ts --reporter=list
         working-directory: webui/frontend
-        env:
-          BASE_URL: http://localhost:8100
 
       - name: Commit screenshots
         uses: stefanzweifel/git-auto-commit-action@v5
