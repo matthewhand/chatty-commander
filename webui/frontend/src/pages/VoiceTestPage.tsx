@@ -20,6 +20,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../components/ToastProvider";
 import Logo from "../components/Logo";
+import Collapse from "../components/Collapse";
 import { notifySessionExpired } from "../services/authService";
 
 /**
@@ -643,23 +644,42 @@ const VoiceTestPage: React.FC = () => {
         </span>
       </div>
 
-      {/* Verify-setup checklist */}
-      <div className="card bg-base-100 shadow" data-testid="voice-checklist">
-        <div className="card-body py-4">
-          <h2 className="card-title text-base">Verify setup</h2>
-          <ul className="grid gap-1 sm:grid-cols-2">
-            <ChecklistRow done={wsStatus === "connected"} label="Server connected" />
-            <ChecklistRow done={streaming} label="Microphone active and streaming" />
-            <ChecklistRow done={wakeWordSeen} label="Wake word detected" />
-            <ChecklistRow done={commandMatched} label="Command matched" />
-          </ul>
-        </div>
-      </div>
+      {/* Setup verification — the checklist + the microphone control that drives
+          it, merged into one progressive-disclosure card. Stays open while
+          setup is incomplete (the mic toggle is the primary action here) and
+          auto-tucks once all four checks pass, so a verified user gets a calm
+          collapsed summary instead of two stacked cards. */}
+      {(() => {
+        const setupChecks = [
+          { done: wsStatus === "connected", label: "Server connected" },
+          { done: streaming, label: "Microphone active and streaming" },
+          { done: wakeWordSeen, label: "Wake word detected" },
+          { done: commandMatched, label: "Command matched" },
+        ];
+        const readyCount = setupChecks.filter((c) => c.done).length;
+        const allReady = readyCount === setupChecks.length;
+        return (
+          <Collapse
+            title="Setup verification"
+            defaultOpen={!allReady}
+            badge={
+              <span
+                className={`badge badge-sm ${allReady ? "badge-success" : ""}`}
+                data-testid="voice-setup-ready-count"
+              >
+                {readyCount}/{setupChecks.length} ready
+              </span>
+            }
+            data-testid="voice-checklist"
+          >
+            <div className="space-y-4">
+              <ul className="grid gap-1 sm:grid-cols-2">
+                {setupChecks.map((c) => (
+                  <ChecklistRow key={c.label} done={c.done} label={c.label} />
+                ))}
+              </ul>
 
-      {/* Microphone controls */}
-      <div className="card bg-base-100 shadow">
-        <div className="card-body space-y-4">
-          <h2 className="card-title text-lg">Microphone</h2>
+              <div className="divider my-0" />
 
           {micState === "denied" && (
             <div className="alert alert-error" role="alert" data-testid="mic-denied-alert">
@@ -754,8 +774,10 @@ const VoiceTestPage: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
+            </div>
+          </Collapse>
+        );
+      })()}
 
       {/* Text simulation — works without a microphone or browser audio support */}
       <div className="card bg-base-100 shadow">

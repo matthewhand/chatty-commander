@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 export interface CollapseProps {
@@ -34,9 +34,15 @@ const Collapse: React.FC<CollapseProps> = ({
   children,
   ...rest
 }) => {
+  // Own the open state so the disclosure stays uncontrolled from the caller's
+  // perspective: `defaultOpen` seeds the INITIAL state only (a later change to
+  // the prop won't yank a section shut while the user is interacting with it),
+  // and native summary toggles are synced back via onToggle.
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <details
-      open={defaultOpen}
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
       className={`group rounded-box border border-base-content/10 bg-base-100 shadow-sm ${className ?? ""}`.trim()}
       {...rest}
     >

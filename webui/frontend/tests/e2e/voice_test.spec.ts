@@ -85,7 +85,9 @@ test.describe("Voice Test page", () => {
     // and ticks once the WebSocket is up (asserted after waitForWsConnected).
     const checklist = page.getByTestId("voice-checklist");
     await expect(checklist).toBeVisible();
-    await expect(checklist).toContainText("Verify setup");
+    // The checklist + mic controls are merged into one "Setup verification"
+    // disclosure (open by default while setup is incomplete).
+    await expect(checklist).toContainText("Setup verification");
     await expect(checklist).toContainText("Wake word detected");
 
     // The example wake-word chips fill the simulation input.
