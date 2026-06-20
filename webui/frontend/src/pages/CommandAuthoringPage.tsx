@@ -262,6 +262,9 @@ const ActionField: React.FC<{
   };
 
   const validationError = validateAction(action);
+  // Stable id for the validation error so the relevant input(s) can point at it
+  // via aria-describedby and screen readers associate the two.
+  const errorId = `action-error-${index}`;
   const dangerWarning =
     action.type === 'shell'
       ? detectShellDanger(action.cmd || action.command || '')
@@ -322,6 +325,8 @@ const ActionField: React.FC<{
             className="input input-sm input-bordered"
             placeholder="e.g., ctrl+alt+t"
             value={action.keys || ''}
+            aria-invalid={validationError ? true : undefined}
+            aria-describedby={validationError ? errorId : undefined}
             onChange={(e) => handleFieldChange('keys', e.target.value)}
           />
         </div>
@@ -338,6 +343,8 @@ const ActionField: React.FC<{
             className="input input-sm input-bordered"
             placeholder="https://example.com"
             value={action.url || ''}
+            aria-invalid={validationError ? true : undefined}
+            aria-describedby={validationError ? errorId : undefined}
             onChange={(e) => handleFieldChange('url', e.target.value)}
           />
         </div>
@@ -354,6 +361,8 @@ const ActionField: React.FC<{
             className="input input-sm input-bordered"
             placeholder="e.g., npm start"
             value={action.cmd || action.command || ''}
+            aria-invalid={validationError ? true : undefined}
+            aria-describedby={validationError ? errorId : undefined}
             onChange={(e) => handleFieldChange('cmd', e.target.value)}
           />
         </div>
@@ -370,13 +379,15 @@ const ActionField: React.FC<{
             className="input input-sm input-bordered"
             placeholder="Enter message to display"
             value={action.message || ''}
+            aria-invalid={validationError ? true : undefined}
+            aria-describedby={validationError ? errorId : undefined}
             onChange={(e) => handleFieldChange('message', e.target.value)}
           />
         </div>
       )}
 
       {validationError && (
-        <p role="alert" className="text-error text-xs flex items-center gap-1">
+        <p id={errorId} role="alert" className="text-error text-xs flex items-center gap-1">
           <AlertCircle size={14} />
           {validationError}
         </p>
@@ -408,6 +419,10 @@ export default function CommandAuthoringPage() {
 
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
+  // Refs to the mode tabs so keyboard navigation can move focus to the newly
+  // selected tab (focus follows selection, per the WAI-ARIA APG tabs pattern).
+  const aiTabRef = useRef<HTMLButtonElement | null>(null);
+  const manualTabRef = useRef<HTMLButtonElement | null>(null);
   const [description, setDescription] = useState('');
   const [generatedCommand, setGeneratedCommand] = useState<GeneratedCommand | null>(null);
   const [manualCommand, setManualCommand] = useState<GeneratedCommand>({
@@ -643,6 +658,46 @@ export default function CommandAuthoringPage() {
     setMode('manual');
   }, [generatedCommand]);
 
+  // Keyboard navigation for the mode tablist (WAI-ARIA APG tabs pattern).
+  // Arrow keys (and Home/End) move between tabs; selection follows focus, so
+  // activating a tab also moves the visible focus to it via its ref.
+  const handleTabKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      const order: Array<'ai' | 'manual'> = ['ai', 'manual'];
+      const refs: Record<'ai' | 'manual', React.RefObject<HTMLButtonElement>> = {
+        ai: aiTabRef,
+        manual: manualTabRef,
+      };
+      const currentIndex = order.indexOf(mode);
+      let nextMode: 'ai' | 'manual' | null = null;
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          nextMode = order[(currentIndex + 1) % order.length];
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          nextMode = order[(currentIndex - 1 + order.length) % order.length];
+          break;
+        case 'Home':
+          nextMode = order[0];
+          break;
+        case 'End':
+          nextMode = order[order.length - 1];
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      if (nextMode && nextMode !== mode) {
+        setMode(nextMode);
+      }
+      // Focus follows selection — move focus to the (now) active tab.
+      refs[nextMode].current?.focus();
+    },
+    [mode],
+  );
+
   const currentCommand = useMemo(() => mode === 'ai' && generatedCommand ? generatedCommand : manualCommand, [mode, generatedCommand, manualCommand]);
 
   const dangerFlags = useMemo(() => collectDangerFlags(currentCommand.actions), [currentCommand]);
@@ -712,22 +767,28 @@ export default function CommandAuthoringPage() {
         <div className="tabs tabs-boxed bg-base-200" role="tablist" aria-label="Command Creation Mode">
           <button
             id="tab-ai-mode"
+            ref={aiTabRef}
             role="tab"
             aria-selected={mode === 'ai'}
             aria-controls="ai-mode-panel"
+            tabIndex={mode === 'ai' ? 0 : -1}
             className={`tab ${mode === 'ai' ? 'tab-active' : ''}`}
             onClick={() => setMode('ai')}
+            onKeyDown={handleTabKeyDown}
           >
             <Sparkles size={16} className="mr-2" />
             AI Mode
           </button>
           <button
             id="tab-manual-mode"
+            ref={manualTabRef}
             role="tab"
             aria-selected={mode === 'manual'}
             aria-controls="manual-mode-panel"
+            tabIndex={mode === 'manual' ? 0 : -1}
             className={`tab ${mode === 'manual' ? 'tab-active' : ''}`}
             onClick={() => setMode('manual')}
+            onKeyDown={handleTabKeyDown}
           >
             <Code size={16} className="mr-2" />
             Manual Mode

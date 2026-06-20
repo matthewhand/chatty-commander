@@ -18,8 +18,10 @@ const MAX_MESSAGES = 100;
 const MAX_RECENT_MESSAGES = 15;
 const MAX_HISTORY_ITEMS = 20;
 
-// Persisted dismissal for the first-run onboarding callout. Once dismissed it
-// stays hidden across reloads regardless of command count.
+// Persisted dismissal for the first-run onboarding callout. The dismissal is
+// only meaningful while the user actually has commands: if they later return to
+// a true empty state (no commands), the guidance should resurface, so we clear
+// the persisted flag in that case rather than hiding help forever.
 const ONBOARDING_DISMISSED_KEY = "chatty.onboardingDismissed";
 
 function readOnboardingDismissed(): boolean {
@@ -39,10 +41,29 @@ function persistOnboardingDismissed(): void {
   }
 }
 
+function clearOnboardingDismissed(): void {
+  try {
+    window.localStorage.removeItem(ONBOARDING_DISMISSED_KEY);
+  } catch {
+    // Best-effort.
+  }
+}
+
 // Telemetry arrives roughly every 5s; treat the WS as "stale" once we've gone
 // more than ~2 intervals without any frame, even if it's technically connected.
 const TELEMETRY_INTERVAL_SECONDS = 5;
 const STALE_THRESHOLD_SECONDS = TELEMETRY_INTERVAL_SECONDS * 2;
+
+// CPU/memory cards reserve semantic color for the value it actually conveys:
+// a healthy load stays muted, and we escalate to warning/error only once the
+// reading crosses the usual "getting busy" / "under pressure" thresholds. This
+// keeps color meaningful instead of painting every gauge a fixed hue.
+function loadColorClass(percent: number): string {
+  if (Number.isNaN(percent)) return "text-base-content/60";
+  if (percent >= 90) return "text-error";
+  if (percent >= 75) return "text-warning";
+  return "text-base-content/60";
+}
 
 interface CommandConsoleProps {
   messages: { id: number; text: string }[];
@@ -50,6 +71,10 @@ interface CommandConsoleProps {
   isConnected: boolean;
   reconnectExhausted: boolean;
   onReconnect: () => void;
+  // Re-open the onboarding guidance. Surfaced as a link in the empty-log state
+  // so a returning user can always find their way back to "getting started".
+  onShowOnboarding: () => void;
+  onboardingVisible: boolean;
 }
 
 // Command input + live log, isolated into its own memoized component so that
@@ -61,6 +86,8 @@ const CommandConsole = React.memo(function CommandConsole({
   isConnected,
   reconnectExhausted,
   onReconnect,
+  onShowOnboarding,
+  onboardingVisible,
 }: CommandConsoleProps) {
   const [commandInput, setCommandInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -108,8 +135,18 @@ const CommandConsole = React.memo(function CommandConsole({
               <div key={msg.id} className="text-base-content/80 leading-relaxed">{msg.text}</div>
             ))
           ) : (
-            <div className="p-4 text-base-content/50 italic text-center pt-24">
-              Waiting for commands...
+            <div className="p-4 text-base-content/50 text-center pt-24 space-y-2">
+              <div className="italic">Waiting for commands...</div>
+              {!onboardingVisible && (
+                <button
+                  type="button"
+                  className="link link-primary not-italic text-xs"
+                  onClick={onShowOnboarding}
+                  data-testid="show-onboarding-link"
+                >
+                  Show getting started
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -242,11 +279,7 @@ const DashboardPage = React.memo(() => {
   const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(() =>
     readOnboardingDismissed(),
   );
-  const dismissOnboarding = useCallback(() => {
-    setOnboardingDismissed(true);
-    persistOnboardingDismissed();
-  }, []);
-  const { data: commandsMap } = useQuery<Record<string, unknown>>({
+  const { data: commandsMap, isSuccess: commandsLoaded } = useQuery<Record<string, unknown>>({
     queryKey: ["commands"],
     queryFn: () => apiService.getCommands(),
     retry: false,
@@ -254,6 +287,38 @@ const DashboardPage = React.memo(() => {
   // Treat an undefined/failed fetch as "no commands" for guidance purposes so a
   // brand-new install still sees the onboarding steps.
   const hasNoCommands = !commandsMap || Object.keys(commandsMap).length === 0;
+  // A *confirmed* empty state: the fetch succeeded and returned no commands.
+  // We only act on this for the re-show logic so a still-loading or failed
+  // fetch (commandsMap undefined) doesn't spuriously clear a real dismissal.
+  const confirmedNoCommands =
+    commandsLoaded && (!commandsMap || Object.keys(commandsMap).length === 0);
+
+  // Persisting the dismissal only makes sense while the user has commands. If
+  // they delete everything and return to a true empty state, resurface the
+  // guidance and clear the stale persisted flag so it stays sticky next time
+  // only once they've actually authored something again.
+  const dismissOnboarding = useCallback(() => {
+    setOnboardingDismissed(true);
+    if (!confirmedNoCommands) {
+      persistOnboardingDismissed();
+    }
+  }, [confirmedNoCommands]);
+
+  // Re-open the callout (and forget the persisted dismissal) whenever we drop
+  // back into a confirmed empty-command state, so a returning empty install
+  // always gets guidance again rather than being silently left without it.
+  useEffect(() => {
+    if (confirmedNoCommands) {
+      clearOnboardingDismissed();
+      setOnboardingDismissed(false);
+    }
+  }, [confirmedNoCommands]);
+
+  // Manual re-open from the empty command-log state, regardless of dismissal.
+  const showOnboarding = useCallback(() => {
+    clearOnboardingDismissed();
+    setOnboardingDismissed(false);
+  }, []);
 
   // Current state-machine mode (idle/computer/chatty). Seeded from
   // GET /api/v1/status and then driven live by the `state_change` WS frame.
@@ -283,6 +348,11 @@ const DashboardPage = React.memo(() => {
 
   const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
   const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
+
+  // Whole-percent CPU/memory readings shared by the gauge label and the
+  // threshold-driven color. NaN when the backend reports "N/A".
+  const cpuPercent = Math.round(parseFloat(systemStatus?.cpu ?? "0"));
+  const memPercent = Math.round(parseFloat(systemStatus?.memory ?? "0"));
 
   // Live Dograh call state. Seed from the cached snapshot on mount so the badge
   // reflects the last known state before any WS frame arrives, then let the
@@ -586,60 +656,60 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-primary" aria-hidden="true">
+            <div className="stat-figure text-base-content/60" aria-hidden="true">
               <Server size={32} aria-hidden="true" />
             </div>
             <div className="stat-title">System Status</div>
-            <div className="stat-value text-primary">{systemStatus?.status || "Unknown"}</div>
+            <div className="stat-value">{systemStatus?.status || "Unknown"}</div>
             <div className="stat-desc">Core services running</div>
           </div>
         </div>
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-secondary">
+            <div className="stat-figure text-base-content/60">
               <Clock size={32} />
             </div>
             <div className="stat-title">Uptime</div>
-            <div className="stat-value text-secondary text-2xl">{systemStatus?.uptime || "N/A"}</div>
+            <div className="stat-value text-2xl">{systemStatus?.uptime || "N/A"}</div>
             <div className="stat-desc">Since last restart</div>
           </div>
         </div>
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-accent">
+            <div className="stat-figure text-base-content/60">
               <Terminal size={32} />
             </div>
             <div className="stat-title">Commands</div>
-            <div className="stat-value text-accent">{systemStatus?.commandsExecuted || 0}</div>
+            <div className="stat-value">{systemStatus?.commandsExecuted || 0}</div>
             <div className="stat-desc">Total executed</div>
           </div>
         </div>
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-info">
+            <div className={`stat-figure ${loadColorClass(cpuPercent)}`}>
               <div
-                className="radial-progress text-info bg-base-300/60 border-4 border-base-300/60"
+                className={`radial-progress bg-base-300/60 border-4 border-base-300/60 ${loadColorClass(cpuPercent)}`}
                 style={{
-                  "--value": Math.round(parseFloat(systemStatus?.cpu || "0")),
+                  "--value": cpuPercent || 0,
                   "--size": "3.5rem",
                   "--thickness": "5px",
                 } as any}
                 role="progressbar"
                 aria-label="CPU load"
-                aria-valuenow={Math.round(parseFloat(systemStatus?.cpu || "0"))}
+                aria-valuenow={cpuPercent || 0}
                 aria-valuemin={0}
                 aria-valuemax={100}
               >
-                {Math.round(parseFloat(systemStatus?.cpu || "0"))}%
+                {cpuPercent || 0}%
               </div>
             </div>
             <div className="stat-title">CPU Load</div>
-            <div className="stat-value text-info text-2xl">
+            <div className={`stat-value text-2xl ${loadColorClass(cpuPercent)}`}>
               {systemStatus?.cpu != null && systemStatus?.cpu !== "N/A"
-                ? `${Math.round(parseFloat(systemStatus.cpu))}%`
+                ? `${cpuPercent}%`
                 : "N/A"}
             </div>
             <div className="stat-desc">Processor usage</div>
@@ -648,27 +718,27 @@ const DashboardPage = React.memo(() => {
 
         <div className="stats shadow bg-base-100 border border-base-content/10">
           <div className="stat">
-            <div className="stat-figure text-warning">
+            <div className={`stat-figure ${loadColorClass(memPercent)}`}>
               <div
-                className="radial-progress text-warning bg-base-300/60 border-4 border-base-300/60"
+                className={`radial-progress bg-base-300/60 border-4 border-base-300/60 ${loadColorClass(memPercent)}`}
                 style={{
-                  "--value": Math.round(parseFloat(systemStatus?.memory || "0")),
+                  "--value": memPercent || 0,
                   "--size": "3.5rem",
                   "--thickness": "5px",
                 } as any}
                 role="progressbar"
                 aria-label="Memory usage"
-                aria-valuenow={Math.round(parseFloat(systemStatus?.memory || "0"))}
+                aria-valuenow={memPercent || 0}
                 aria-valuemin={0}
                 aria-valuemax={100}
               >
-                {Math.round(parseFloat(systemStatus?.memory || "0"))}%
+                {memPercent || 0}%
               </div>
             </div>
             <div className="stat-title">Memory</div>
-            <div className="stat-value text-warning text-2xl">
+            <div className={`stat-value text-2xl ${loadColorClass(memPercent)}`}>
               {systemStatus?.memory != null && systemStatus?.memory !== "N/A"
-                ? `${Math.round(parseFloat(systemStatus.memory))}%`
+                ? `${memPercent}%`
                 : "N/A"}
             </div>
             <div className="stat-desc">RAM usage</div>
@@ -714,7 +784,7 @@ const DashboardPage = React.memo(() => {
                     : "Offline"}
             </div>
             <div className="stat-desc flex items-center gap-1">
-              <Zap size={14} className={isStale ? "text-warning" : "text-accent"} />
+              <Zap size={14} className={isStale ? "text-warning" : "text-base-content/60"} />
               <span>
                 {isStale ? "No data — last msg: " : "Last msg: "}
                 {lastMsgAgo}
@@ -794,11 +864,13 @@ const DashboardPage = React.memo(() => {
         isConnected={isConnected}
         reconnectExhausted={reconnectExhausted}
         onReconnect={handleReconnect}
+        onShowOnboarding={showOnboarding}
+        onboardingVisible={!onboardingDismissed}
       />
 
       {/* Agent Status Section */}
-      <h3 className="text-2xl font-bold bg-gradient-to-r from-error to-warning bg-clip-text text-transparent mt-8 mb-4 flex items-center gap-2">
-        <AssessmentIcon size={24} className="text-error" /> Agent Status
+      <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mt-8 mb-4 flex items-center gap-2">
+        <AssessmentIcon size={24} className="text-base-content/60" /> Agent Status
       </h3>
 
       {agentsError && (

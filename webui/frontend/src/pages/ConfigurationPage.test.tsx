@@ -1,6 +1,7 @@
 import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { vi } from "vitest";
 import ConfigurationPage from "./ConfigurationPage";
 import { ThemeProvider, AVAILABLE_THEMES } from "../components/ThemeProvider";
@@ -50,18 +51,21 @@ beforeEach(() => {
   }) as unknown as typeof fetch;
 });
 
-const renderPage = () => {
+// `route` lets tests exercise the `?tab=` deep link (defaults to the bare page).
+const renderPage = (route = "/configuration") => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ToastProvider>
-          <ConfigurationPage />
-        </ToastProvider>
-      </ThemeProvider>
-    </QueryClientProvider>,
+    <MemoryRouter initialEntries={[route]}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <ToastProvider>
+            <ConfigurationPage />
+          </ToastProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 };
 
@@ -405,6 +409,71 @@ describe("ConfigurationPage tab keyboard navigation (APG)", () => {
 
     fireEvent.keyDown(tablist, { key: "Home" });
     expect(screen.getByRole("tab", { name: /General/ })).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+describe("ConfigurationPage URL-backed active tab", () => {
+  // Surfaces the live location (path + query) so tests can assert the URL is
+  // kept in sync with the active tab.
+  const LocationProbe: React.FC = () => {
+    const location = useLocation();
+    return <div data-testid="location">{location.pathname + location.search}</div>;
+  };
+
+  const renderWithLocation = (route = "/configuration") => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <MemoryRouter initialEntries={[route]}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <ToastProvider>
+              <ConfigurationPage />
+              <LocationProbe />
+            </ToastProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+  };
+
+  test("?tab=llm opens the LLM tab on load", async () => {
+    renderWithLocation("/configuration?tab=llm");
+
+    const llmTab = await screen.findByRole("tab", { name: /LLM/ });
+    expect(llmTab).toHaveAttribute("aria-selected", "true");
+    // The LLM panel content is rendered, the General one is not.
+    expect(screen.getByText("LLM Endpoint")).toBeInTheDocument();
+    expect(screen.queryByText("General Settings")).not.toBeInTheDocument();
+  });
+
+  test("an unknown ?tab= falls back to the General tab", async () => {
+    renderWithLocation("/configuration?tab=bogus");
+
+    const general = await screen.findByRole("tab", { name: /General/ });
+    expect(general).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("switching tabs updates the URL (replacing, not pushing)", async () => {
+    renderWithLocation("/configuration");
+
+    await screen.findByRole("tab", { name: /Audio/ });
+    fireEvent.click(screen.getByRole("tab", { name: /Audio/ }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent("/configuration?tab=audio"),
+    );
+    expect(screen.getByRole("tab", { name: /Audio/ })).toHaveAttribute("aria-selected", "true");
+
+    // Keyboard navigation drives the URL too.
+    fireEvent.keyDown(
+      screen.getByRole("tablist", { name: "Configuration sections" }),
+      { key: "ArrowRight" },
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent("/configuration?tab=models"),
+    );
   });
 });
 
