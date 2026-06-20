@@ -33,11 +33,11 @@ Provides a complete voice interface:
 from __future__ import annotations
 
 import logging
-import re
 import threading
 from collections.abc import Callable
 from typing import Any
 
+from . import matching
 from .transcription import VoiceTranscriber
 from .tts import TextToSpeech
 from .wakeword import VOICE_DEPS_AVAILABLE, MockWakeWordDetector, WakeWordDetector
@@ -283,29 +283,21 @@ class VoicePipeline:
         an underscore-joined command name like "play_music" matches the spoken
         phrase "play music". Single-word phrases require an exact token; multi-
         word phrases require the token sequence to appear contiguously.
+
+        Delegates to :mod:`chatty_commander.voice.matching` — the single shared
+        matcher used by both this pipeline and the dry-run voice-test pipeline,
+        so the two cannot drift.
         """
-        phrase = phrase.lower().strip()
-        if not phrase:
-            return False
-        phrase_tokens = re.findall(r"[a-z0-9']+", phrase)
-        if not phrase_tokens:
-            return False
-        if len(phrase_tokens) == 1:
-            return phrase_tokens[0] in tokens
-        n = len(phrase_tokens)
-        for i in range(len(tokens) - n + 1):
-            if tokens[i : i + n] == phrase_tokens:
-                return True
-        return False
+        return matching.matches_phrase(phrase, tokens)
 
     def _match_by_keywords(self, transcription_lower: str, model_actions: dict) -> str | None:
         """Keyword-based matching extracted from _match_command.
 
-        Reduces length/complexity of the main matcher while preserving behavior.
         Only considers keywords for commands that exist in current model_actions.
         Uses word-boundary matching so keywords match whole words only.
+        Delegates to the shared :mod:`chatty_commander.voice.matching` helpers.
         """
-        tokens = re.findall(r"[a-z0-9']+", transcription_lower)
+        tokens = matching.tokenize(transcription_lower)
         command_keywords = self._get_keyword_map()
         for command_name, keywords in command_keywords.items():
             if command_name in model_actions:
@@ -317,20 +309,11 @@ class VoicePipeline:
     def _get_keyword_map(self) -> dict[str, list[str]]:
         """Return the keyword mapping used for fuzzy command matching.
 
-        Extracted helper (1 of 1 for this cycle) from _match_by_keywords to
-        shrink the method, separate data from logic, and address qa rank-1
-        pipeline complexity guidance (stale report, but continuing small
-        cleanups on the file). Behavior identical.
+        Delegates to the canonical table in
+        :mod:`chatty_commander.voice.matching` so the real pipeline and the
+        dry-run voice-test pipeline share one source of truth.
         """
-        return {
-            "hello": ["hello", "hi", "hey", "greet"],
-            "lights": ["lights", "light", "lamp", "illumination"],
-            "music": ["music", "song", "play", "audio"],
-            "play_music": ["music", "song", "play", "audio"],
-            "weather": ["weather", "temperature", "forecast"],
-            "time": ["time", "clock", "hour"],
-            "timer": ["timer", "alarm", "remind"],
-        }
+        return matching.get_keyword_map()
 
     def _find_direct_name_match(self, transcription_lower: str, model_actions: dict) -> str | None:
         """Direct name (whole-word/phrase) match extracted from _match_command.
@@ -339,9 +322,9 @@ class VoicePipeline:
         word-boundary awareness (via :meth:`_matches_phrase`) rather than naive
         substring containment, so underscore-joined names like "play_music"
         match the spoken phrase "play music now" while "play" does not match
-        "replay".
+        "replay". Delegates tokenization/matching to the shared module.
         """
-        tokens = re.findall(r"[a-z0-9']+", transcription_lower)
+        tokens = matching.tokenize(transcription_lower)
         for command_name in model_actions.keys():
             if self._matches_phrase(str(command_name), tokens):
                 return str(command_name)
