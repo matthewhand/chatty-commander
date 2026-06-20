@@ -84,12 +84,15 @@ class TestOpenAIBackend:
         backend = OpenAIBackend()
         assert backend.is_available() is False
 
-    def test_is_available_with_client_success(self):
-        """Test is_available returns True when client works."""
+    def test_is_available_with_client_and_key(self):
+        """Test is_available returns True when a client and key are present.
+
+        The availability check must be CHEAP: presence of a client plus an API
+        key, with no (billed) chat-completion probe.
+        """
         from chatty_commander.llm.backends import OpenAIBackend
 
         mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = MagicMock()
 
         with patch.dict(os.environ, {}, clear=True):
             with patch("openai.OpenAI", return_value=mock_client):
@@ -97,18 +100,15 @@ class TestOpenAIBackend:
                 backend._client = mock_client
 
         assert backend.is_available() is True
+        # Crucially, no paid probe was made during the availability check.
+        mock_client.chat.completions.create.assert_not_called()
 
-    def test_is_available_with_client_failure(self):
-        """Test is_available returns False when client fails."""
+    def test_is_available_false_without_key(self):
+        """Test is_available returns False when there is no API key/client."""
         from chatty_commander.llm.backends import OpenAIBackend
 
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.side_effect = Exception("API Error")
-
         with patch.dict(os.environ, {}, clear=True):
-            with patch("openai.OpenAI", return_value=mock_client):
-                backend = OpenAIBackend(api_key="test-key")
-                backend._client = mock_client
+            backend = OpenAIBackend(api_key=None)
 
         assert backend.is_available() is False
 
@@ -281,8 +281,12 @@ class TestOllamaBackend:
         assert backend.is_available() is False
 
     @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
-    def test_is_available_server_responding_model_found(self, mock_is_safe):
-        """Test is_available when server responds and model is found."""
+    def test_is_available_server_responding(self, mock_is_safe):
+        """Test is_available returns True when the server responds with 200.
+
+        Availability is now a cheap reachability probe: a single GET /api/tags.
+        It must NOT inspect the model list or trigger a pull.
+        """
         from chatty_commander.llm.backends import OllamaBackend
 
         mock_client = MagicMock()
@@ -297,44 +301,35 @@ class TestOllamaBackend:
             result = backend.is_available()
 
         assert result is True
+        # Exactly one reachability GET; no pull POST during selection.
+        assert mock_client.get.call_count == 1
+        mock_client.post.assert_not_called()
 
     @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
-    def test_is_available_server_responding_model_not_found(self, mock_is_safe):
-        """Test is_available when server responds but model not found."""
+    def test_is_available_never_pulls_model(self, mock_is_safe):
+        """Test is_available never triggers a model pull, even if absent.
+
+        Selection must stay cheap: a reachable server (200) is enough to be
+        ``available``; the model list is irrelevant here and no POST /api/pull
+        may fire.
+        """
         from chatty_commander.llm.backends import OllamaBackend
 
-        # First response: model not found
         mock_response = MagicMock()
         mock_response.status_code = 200
+        # Model not present in the tags listing.
         mock_response.json.return_value = {"models": [{"name": "other-model"}]}
 
-        # Pull response
-        mock_pull_response = MagicMock()
-        mock_pull_response.status_code = 200
-
-        # After pull, model is available
-        mock_tags_after_pull = MagicMock()
-        mock_tags_after_pull.json.return_value = {"models": [{"name": "llama2"}]}
-
-        call_count = [0]
-
-        def get_side_effect(*args, **kwargs):
-            call_count[0] += 1
-            if call_count[0] == 1:
-                return mock_response
-            return mock_tags_after_pull
-
         mock_client = MagicMock()
-        mock_client.get.side_effect = get_side_effect
-        mock_client.post.return_value = mock_pull_response
+        mock_client.get.return_value = mock_response
 
         with patch("httpx.Client") as MockClient:
             MockClient.return_value.__enter__.return_value = mock_client
             backend = OllamaBackend(model="llama2")
             result = backend.is_available()
 
-        # Should try to pull and succeed
         assert result is True
+        mock_client.post.assert_not_called()
 
     def test_is_available_server_not_responding(self):
         """Test is_available when server doesn't respond."""
@@ -512,6 +507,32 @@ class TestOllamaBackend:
             MockClient.return_value.__enter__.return_value = mock_client
             with pytest.raises(Exception, match="Network error"):
                 backend.generate_response("test prompt")
+
+    def test_generate_response_validates_url_before_post(self):
+        """Test the generate path validates the URL before any outbound POST.
+
+        A switched/unvalidated OLLAMA_HOST must be rejected *before* the
+        /api/generate request fires, even when the cached availability flag was
+        set without re-validating (e.g. via switch_backend).
+        """
+        from chatty_commander.llm.backends import OllamaBackend
+
+        backend = OllamaBackend(host="169.254.169.254:11434", model="llama2")
+        backend._available = True  # simulate a skipped/cached availability check
+
+        mock_client = MagicMock()
+
+        with patch(
+            "chatty_commander.utils.url_validator.is_safe_url", return_value=False
+        ) as mock_is_safe:
+            with patch("httpx.Client") as MockClient:
+                MockClient.return_value.__enter__.return_value = mock_client
+                with pytest.raises(RuntimeError, match="security policy"):
+                    backend.generate_response("test prompt")
+
+        # The URL was validated and the outbound request never happened.
+        mock_is_safe.assert_called_once()
+        mock_client.post.assert_not_called()
 
     def test_get_backend_info(self):
         """Test get_backend_info returns correct info."""

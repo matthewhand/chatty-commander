@@ -22,6 +22,7 @@
 
 """Advisor service for handling AI advisor interactions."""
 
+import logging
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -33,6 +34,14 @@ from .context import ContextManager, PlatformType
 from .conversation_engine import create_conversation_engine
 from .memory import MemoryStore
 from .providers import build_provider_safe as build_provider_safe
+
+logger = logging.getLogger(__name__)
+
+# Canonical set of valid application modes. Matches the allowlist used in
+# web/validation.py (validate_state_change) and routes/models.py. Any
+# LLM-derived SWITCH_MODE target outside this set is rejected to prevent
+# prompt-injection from driving arbitrary state transitions.
+VALID_SWITCH_MODES: frozenset[str] = frozenset({"idle", "computer", "chatty"})
 
 _DEFAULT_BUILD_PROVIDER_SAFE = build_provider_safe
 
@@ -288,7 +297,7 @@ class AdvisorsService:
                 user_input=combined_user_text,
                 user_id=f"{message.platform}:{message.channel}:{message.user}",
                 persona_config=persona_config,
-                current_mode=getattr(self.config, "current_mode", "chatty"),
+                current_mode=self.config.get("current_mode", "chatty"),
             )
 
             if hasattr(self, "llm_manager") and self.llm_manager:
@@ -364,13 +373,28 @@ class AdvisorsService:
         for line in lines:
             if line.strip().startswith("SWITCH_MODE:"):
                 _, target = line.strip().split(":", 1)
+                target = target.strip()
+                # Security: the target is LLM-derived (and may originate from
+                # untrusted web content via browser_analyst). Only allow known
+                # modes; never pass an arbitrary value to change_state().
+                if target not in VALID_SWITCH_MODES:
+                    logger.warning(
+                        "Rejected SWITCH_MODE directive with invalid target %r "
+                        "(allowed: %s)",
+                        target,
+                        ", ".join(sorted(VALID_SWITCH_MODES)),
+                    )
+                    response = response.replace(
+                        line, f"✗ Mode switch rejected: invalid mode '{target}'"
+                    )
+                    continue
                 try:
                     from ..app.state_manager import StateManager
 
                     sm = StateManager()
-                    sm.change_state(target.strip())
+                    sm.change_state(target)
                     response = response.replace(
-                        line, f"✓ Switched to {target.strip()} mode"
+                        line, f"✓ Switched to {target} mode"
                     )
                 except Exception as e:
                     response = response.replace(

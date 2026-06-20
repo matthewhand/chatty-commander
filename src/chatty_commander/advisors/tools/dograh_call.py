@@ -20,6 +20,7 @@ Opt-in via config block::
 from __future__ import annotations
 
 import logging
+import re
 
 try:
     from agents import FunctionTool
@@ -29,6 +30,9 @@ except ImportError:
     AGENTS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+# E.164: optional leading '+', a non-zero leading digit, then 6-14 more digits.
+_E164_RE = re.compile(r"^\+?[1-9]\d{6,14}$")
 
 
 def dograh_place_call_tool(workflow_id: int, phone_number: str) -> str:
@@ -41,6 +45,24 @@ def dograh_place_call_tool(workflow_id: int, phone_number: str) -> str:
     Returns:
         A short human-readable status describing what happened.
     """
+    # Security: workflow_id and phone_number are LLM-supplied. Validate both
+    # before contacting the telephony backend so a prompt-injected reply can't
+    # dial arbitrary numbers or pass non-numeric workflow ids.
+    try:
+        workflow_id = int(workflow_id)
+    except (TypeError, ValueError):
+        logger.warning("dograh_place_call rejected non-numeric workflow_id")
+        return "dograh call rejected: invalid workflow_id (must be an integer)"
+
+    if not isinstance(phone_number, str) or not _E164_RE.match(phone_number.strip()):
+        # Do not echo the raw value back verbatim; keep the message generic.
+        logger.warning("dograh_place_call rejected invalid phone number")
+        return (
+            "dograh call rejected: invalid phone number "
+            "(expected E.164, e.g. +15555550100)"
+        )
+    phone_number = phone_number.strip()
+
     try:
         from chatty_commander.integrations.dograh_client import (
             DograhClient,

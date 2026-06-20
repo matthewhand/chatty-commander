@@ -70,15 +70,10 @@ class OpenAIBackend(LLMBackend):
         self.max_retries = kwargs.get("max_retries", 3)
         self.timeout = kwargs.get("timeout", 30.0)
         self._client: Any = None
-        # Cache the (expensive) availability probe so repeated checks don't fire
-        # a live API request every time; reset whenever the client re-initializes.
-        self._available_cache: bool | None = None
         self._initialize_client()
 
     def _initialize_client(self):
         """Initialize OpenAI client."""
-        # A fresh client means the previous availability result is stale.
-        self._available_cache = None
         if not self.api_key:
             logger.debug("No OpenAI API key provided")
             return
@@ -101,25 +96,15 @@ class OpenAIBackend(LLMBackend):
             logger.error(f"Failed to initialize OpenAI client: {e}")
 
     def is_available(self) -> bool:
-        """Check if OpenAI backend is available (result cached after first probe)."""
-        if not self._client:
-            return False
-        if self._available_cache is not None:
-            return self._available_cache
+        """Check if OpenAI backend is configured and ready.
 
-        try:
-            # Test with a minimal request
-            self._client.chat.completions.create(
-                model=getattr(self, "model", "gpt-3.5-turbo"),
-                messages=[{"role": "user", "content": "test"}],
-                max_tokens=1,
-            )
-            self._available_cache = True
-            return True
-        except Exception as e:
-            logger.debug(f"OpenAI availability check failed: {e}")
-            self._available_cache = False
-        return self._available_cache
+        This is a CHEAP check: it confirms a client was initialized and an API
+        key is present. It must NOT make a (billed) network request such as a
+        ``chat.completions.create`` probe — backend *selection* calls this and
+        should never trigger paid API usage. Any real failure is surfaced
+        lazily on the actual ``generate_response`` call.
+        """
+        return bool(self._client) and bool(self.api_key)
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         """Generate response using OpenAI API with retries."""
@@ -173,47 +158,45 @@ class OllamaBackend(LLMBackend):
         self._available: bool | None = None
         logger.info(f"Initialized Ollama backend: {self.base_url}, model: {self.model}")
 
+    def _validate_url(self, url: str) -> None:
+        """Reject an outbound Ollama URL that fails the SSRF policy.
+
+        Applied immediately before every outbound request so a switched or
+        otherwise unvalidated ``OLLAMA_HOST`` can never be hit, regardless of
+        whether ``is_available`` (which is cacheable/skippable) ran first.
+        """
+        from chatty_commander.utils.url_validator import is_safe_url
+
+        if not is_safe_url(url):
+            logger.warning(f"Ollama URL {url} rejected by security policy.")
+            raise RuntimeError("Ollama URL rejected by security policy")
+
     def is_available(self) -> bool:
-        """Check if Ollama server is available."""
+        """Check if the Ollama server is reachable.
+
+        This is a CHEAP check: it does a single short-timeout ``GET
+        /api/tags`` to confirm the server responds. It must NEVER trigger a
+        model *pull* (which can block for minutes) — backend *selection* calls
+        this, and selection must not download models. Auto-pull, if needed,
+        happens lazily inside :meth:`generate_response`.
+        """
         if self._available is not None:
             return self._available
 
+        tags_url = f"{self.base_url}/api/tags"
         try:
             import httpx
 
-            from chatty_commander.utils.url_validator import is_safe_url
+            self._validate_url(tags_url)
 
-            if not is_safe_url(f"{self.base_url}/api/tags"):
-                logger.warning(f"Ollama base URL {self.base_url} rejected by security policy.")
-                self._available = False
-                return self._available
-
-            # Check if Ollama server is running
+            # Quick reachability probe with a short timeout; never pulls.
             with httpx.Client() as client:
-                response = client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
-                if response.status_code == 200:
-                    # Check if our model is available
-                    models = response.json().get("models", [])
-                    model_names = [m.get("name", "") for m in models]
-
-                    if self.model in model_names:
-                        self._available = True
-                        logger.info(f"Ollama model {self.model} is available")
-                    else:
-                        logger.info(
-                            f"Ollama server running but model {self.model} not found. Available: {model_names}"
-                        )
-                        # Try to pull the model
-                        self._try_pull_model()
-                        self._available = self.model in [
-                            m.get("name", "")
-                            for m in client.get(f"{self.base_url}/api/tags", timeout=5, follow_redirects=False)
-                            .json()
-                            .get("models", [])
-                        ]
-                else:
-                    self._available = False
-                    logger.debug(f"Ollama server not responding: {response.status_code}")
+                response = client.get(tags_url, timeout=5, follow_redirects=False)
+            self._available = response.status_code == 200
+            if self._available:
+                logger.debug(f"Ollama server reachable at {self.base_url}")
+            else:
+                logger.debug(f"Ollama server not responding: {response.status_code}")
 
         except ImportError:
             logger.warning("httpx library not available for Ollama backend")
@@ -229,10 +212,13 @@ class OllamaBackend(LLMBackend):
         try:
             import httpx
 
+            pull_url = f"{self.base_url}/api/pull"
+            self._validate_url(pull_url)
+
             logger.info(f"Attempting to pull model {self.model}...")
             with httpx.Client() as client:
                 response = client.post(
-                    f"{self.base_url}/api/pull",
+                    pull_url,
                     json={"name": self.model},
                     timeout=300,  # 5 minutes timeout for model download
                     follow_redirects=False,
@@ -259,9 +245,12 @@ class OllamaBackend(LLMBackend):
             max_tokens = kwargs.get("max_tokens", 150)
             temperature = kwargs.get("temperature", 0.7)
 
+            generate_url = f"{self.base_url}/api/generate"
+            self._validate_url(generate_url)
+
             with httpx.Client() as client:
                 response = client.post(
-                    f"{self.base_url}/api/generate",
+                    generate_url,
                     json={
                         "model": self.model,
                         "prompt": prompt,

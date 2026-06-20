@@ -29,7 +29,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from ..advisors.service import AdvisorMessage, AdvisorsService
+from ..advisors.service import (
+    VALID_SWITCH_MODES,
+    AdvisorMessage,
+    AdvisorsService,
+)
 from ..app.config import Config
 from ..app.state_manager import StateManager
 from ..voice.enhanced_processor import VoiceResult, create_enhanced_voice_processor
@@ -321,6 +325,17 @@ class IntelligenceCore:
                 if action_type == "mode_switch":
                     target_mode = action.get("target_mode")
                     if target_mode:
+                        # Security: target_mode is LLM-derived (extracted from a
+                        # SWITCH_MODE: directive that may originate from untrusted
+                        # content). Only allow known modes through to change_state.
+                        if target_mode not in VALID_SWITCH_MODES:
+                            self.logger.warning(
+                                "Rejected mode_switch action with invalid target "
+                                "%r (allowed: %s)",
+                                target_mode,
+                                ", ".join(sorted(VALID_SWITCH_MODES)),
+                            )
+                            continue
                         self.state_manager.change_state(target_mode)
                         if self.on_mode_change:
                             self.on_mode_change(target_mode)

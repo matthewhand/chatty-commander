@@ -309,7 +309,26 @@ class CommandExecutor:
             key_parts = [part.strip() for part in keys.split("+")]
             pyautogui.hotkey(*key_parts)
         else:
+            self._validate_single_key(keys)
             pyautogui.press(keys)
+
+    def _validate_single_key(self, key: Any) -> None:
+        """Reject single keys that aren't real pyautogui keys.
+
+        A semantic/config label like ``"take_screenshot"`` is not a valid
+        pyautogui key, so ``pyautogui.press`` would silently no-op (or raise).
+        Validate against ``pyautogui.KEYBOARD_KEYS`` when available; in mocked
+        or headless test environments that attribute is typically absent, so we
+        skip validation rather than break those paths.
+        """
+        valid_keys = getattr(pyautogui, "KEYBOARD_KEYS", None)
+        if not valid_keys:
+            return
+        if not isinstance(valid_keys, list | tuple | set | frozenset):
+            # Mocked pyautogui exposes a MagicMock here; skip validation.
+            return
+        if key not in valid_keys:
+            raise ValueError(f"'{key}' is not a valid keyboard key")
 
     def _execute_url(self, command_name: str, url: str) -> None:
         """
@@ -319,8 +338,13 @@ class CommandExecutor:
             self.report_error(command_name, "missing URL")
             return
 
-        from chatty_commander.utils.url_validator import is_safe_url
-        if not is_safe_url(url):
+        from chatty_commander.utils.url_validator import resolve_safe_url
+
+        # Validate and PIN the URL to its resolved IP. Fetching the pinned URL
+        # (host = validated IP literal) closes the DNS-rebinding TOCTOU window:
+        # no second DNS lookup happens between validation and connect.
+        pinned = resolve_safe_url(url)
+        if pinned is None:
             self.report_error(command_name, "unsafe URL rejected")
             return
 
@@ -328,9 +352,17 @@ class CommandExecutor:
             self.report_error(command_name, "httpx not available")
             return
         try:
-            # Add timeout and disable redirects for security
+            # Add timeout and disable redirects for security. Connect to the
+            # pinned IP while presenting the original host via the Host header
+            # and TLS SNI (sni_hostname) so HTTPS verification still works.
             with httpx.Client() as client:
-                resp = client.get(url, timeout=10, follow_redirects=False)
+                resp = client.get(
+                    pinned.url,
+                    timeout=10,
+                    follow_redirects=False,
+                    headers={"Host": pinned.host_header},
+                    extensions={"sni_hostname": pinned.sni_hostname},
+                )
             if getattr(resp, "status_code", 200) >= 400:
                 self.report_error(command_name, f"http {resp.status_code}")
             else:
