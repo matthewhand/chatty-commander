@@ -802,7 +802,9 @@ class TestWebModeServer:
         assert data["current_state"] == "idle"
         assert data["active_models"] == ["test_model"]
         assert "uptime" in data
-        assert data["version"] == "0.2.0"
+        from chatty_commander import __version__ as expected_version
+
+        assert data["version"] == expected_version
 
     def test_get_config_endpoint(self, test_client):
         response = test_client.get("/api/v1/config")
@@ -1014,7 +1016,9 @@ class TestPydanticModels:
         assert status.current_state == "idle"
         assert status.active_models == ["model1", "model2"]
         assert status.uptime == "1h 30m"
-        assert status.version == "0.2.0"
+        from chatty_commander import __version__ as expected_version
+
+        assert status.version == expected_version
 
     def test_state_change_request_validation(self):
         for state in ["idle", "computer", "chatty"]:

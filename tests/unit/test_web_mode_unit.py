@@ -43,8 +43,10 @@ class TestWebModeModels:
         # Act
         obj = SystemStatus(**data)
         # Assert
+        from chatty_commander import __version__ as expected_version
+
         assert obj.status == "ok"
-        assert obj.version == "0.2.0"
+        assert obj.version == expected_version
         assert "active_models" in obj.model_dump()
 
     def test_state_change_request_valid_and_invalid(self):

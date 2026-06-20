@@ -572,8 +572,8 @@ wheels = [
 
 [[package]]
 name = "chatty-commander"
-version = "0.2.0"
-source = { virtual = "." }
+version = "0.5.0"
+source = { editable = "." }
 dependencies = [
     { name = "bcrypt" },
     { name = "cryptography" },

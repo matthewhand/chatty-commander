@@ -36,7 +36,9 @@ class TestResponseTimeMiddleware:
         assert resp.status_code == 200
         # Actual impl adds X-API-Version (process time tracked internally)
         assert "X-API-Version" in resp.headers
-        assert resp.headers["X-API-Version"] == "0.2.0"
+        from chatty_commander import __version__ as expected_version
+
+        assert resp.headers["X-API-Version"] == expected_version
 
 
 # ============================================================================

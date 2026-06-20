@@ -97,11 +97,15 @@ def test_version_endpoint_ok():
     version_app = create_app(no_auth=True)
     version_client = TestClient(version_app)
 
+    from chatty_commander import __version__ as expected_version
+
     resp = version_client.get("/api/v1/version")
     assert resp.status_code == 200
     data = resp.json()
     assert isinstance(data, dict)
-    assert data.get("version") == "0.2.0"
+    # Single source of truth: the endpoint mirrors package metadata, so assert
+    # against __version__ rather than a literal that drifts on every bump.
+    assert data.get("version") == expected_version
     # git_sha may be None if git is unavailable in the environment
     assert "git_sha" in data
     assert (data["git_sha"] is None) or isinstance(data["git_sha"], str)
