@@ -524,7 +524,7 @@ const DashboardPage = React.memo(() => {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+        <h2 className="text-3xl font-bold text-gradient-primary">
           Dashboard
         </h2>
         {/* Header-level freshness indicator. */}
@@ -874,7 +874,7 @@ const DashboardPage = React.memo(() => {
       />
 
       {/* Agent Status Section */}
-      <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mt-8 mb-4 flex items-center gap-2">
+      <h3 className="text-2xl font-bold text-gradient-primary mt-8 mb-4 flex items-center gap-2">
         <AssessmentIcon size={20} className="text-base-content/60" /> Agent Status
       </h3>
 

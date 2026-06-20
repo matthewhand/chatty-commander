@@ -620,7 +620,7 @@ const ConfigurationPage: React.FC = () => {
           <SettingsIcon size={24} />
         </div>
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold text-gradient-primary">
             Configuration
           </h2>
           <p className="text-base-content/60">Manage application settings</p>
