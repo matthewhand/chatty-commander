@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Mic,
   MicOff,
@@ -14,9 +14,13 @@ import {
   Loader2,
   FileText,
   ExternalLink,
+  RotateCw,
+  Target,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../components/ToastProvider";
+import Logo from "../components/Logo";
+import { notifySessionExpired } from "../services/authService";
 
 /**
  * Single source of truth for the voice-test WebSocket path. The backend
@@ -36,7 +40,21 @@ export function buildVoiceTestWsUrl(noAuth?: boolean): string {
 }
 
 export type MicState = "idle" | "requesting" | "denied" | "active";
-type WsStatus = "connecting" | "connected" | "disconnected";
+/**
+ * `disconnected` means a transient drop that we are still retrying.
+ * `exhausted` means we have given up (retries spent or an auth-policy close) and
+ * will only reconnect on explicit user action — the badge must not lie about
+ * "retrying" in that state.
+ */
+type WsStatus = "connecting" | "connected" | "disconnected" | "exhausted";
+
+/**
+ * WebSocket close codes that signal an auth/policy rejection rather than a
+ * transient network drop. 1008 = policy violation; 4401 = our app-level
+ * "unauthorized" convention. Reconnecting on these just burns retries against a
+ * token the server has already rejected, so we surface session expiry instead.
+ */
+const AUTH_CLOSE_CODES = new Set([1008, 4401]);
 
 export interface StageEvent {
   stage: string;
@@ -120,6 +138,13 @@ const VoiceTestPage: React.FC = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
 
+  // Author -> test deep link: CommandsPage links here as
+  // `/voice-test?command=<name>` to prefill + test a specific command.
+  const [searchParams] = useSearchParams();
+  const prefillCommand = searchParams.get("command") ?? "";
+  // Guard so we only auto-send the prefilled command once per connection.
+  const autoSentRef = useRef(false);
+
   // --- WebSocket state ---
   const [wsStatus, setWsStatus] = useState<WsStatus>("connecting");
   const [events, setEvents] = useState<StageEvent[]>([]);
@@ -138,7 +163,8 @@ const VoiceTestPage: React.FC = () => {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
-  const [textInput, setTextInput] = useState("");
+  const [textInput, setTextInput] = useState(prefillCommand);
+  const simulateInputRef = useRef<HTMLInputElement | null>(null);
 
   // --- Device selection ---
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -201,17 +227,34 @@ const VoiceTestPage: React.FC = () => {
       }
     };
 
-    socket.onclose = () => {
-      setWsStatus("disconnected");
+    socket.onclose = (event: CloseEvent) => {
       wsRef.current = null;
-      if (!shouldReconnectRef.current) return;
+      if (!shouldReconnectRef.current) {
+        setWsStatus("disconnected");
+        return;
+      }
+
+      // Auth-policy closes won't recover by retrying the same (rejected) token:
+      // stop reconnecting, surface the expired session, and show an honest,
+      // non-retrying state.
+      if (AUTH_CLOSE_CODES.has(event?.code)) {
+        shouldReconnectRef.current = false;
+        setWsStatus("exhausted");
+        notifySessionExpired();
+        return;
+      }
+
       if (reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS) {
+        setWsStatus("disconnected");
         const attempt = reconnectAttemptRef.current;
         const delay = Math.min(30000, BASE_RECONNECT_DELAY_MS * Math.pow(1.5, attempt));
         reconnectTimerRef.current = setTimeout(() => {
           reconnectAttemptRef.current += 1;
           connect();
         }, delay);
+      } else {
+        // Retries spent: don't show a "retrying" badge that no longer retries.
+        setWsStatus("exhausted");
       }
     };
 
@@ -236,6 +279,18 @@ const VoiceTestPage: React.FC = () => {
       }
       wsRef.current = null;
     };
+  }, [connect]);
+
+  // Manual reconnect after we have given up (exhausted retries / auth close).
+  const reconnect = useCallback(() => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    shouldReconnectRef.current = true;
+    reconnectAttemptRef.current = 0;
+    autoSentRef.current = false;
+    connect();
   }, [connect]);
 
   // --- Processing indicator lifecycle ---
@@ -377,16 +432,37 @@ const VoiceTestPage: React.FC = () => {
     }
   };
 
+  const sendSimulation = useCallback(
+    (raw: string): boolean => {
+      const text = raw.trim();
+      if (!text) return false;
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "text", text }));
+        setTextInput("");
+        beginProcessing();
+        return true;
+      }
+      return false;
+    },
+    [beginProcessing],
+  );
+
   const sendText = (e: React.FormEvent) => {
     e.preventDefault();
-    const text = textInput.trim();
-    if (!text) return;
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "text", text }));
-      setTextInput("");
-      beginProcessing();
-    }
+    sendSimulation(textInput);
   };
+
+  // Author -> test deep link: once connected, focus the simulation input and
+  // (since the author explicitly chose to test this command) auto-send it once.
+  // Prefill alone is harmless; auto-send only runs the safe dry-run pipeline.
+  useEffect(() => {
+    if (wsStatus !== "connected") return;
+    if (!prefillCommand) return;
+    if (autoSentRef.current) return;
+    autoSentRef.current = true;
+    simulateInputRef.current?.focus();
+    sendSimulation(prefillCommand);
+  }, [wsStatus, prefillCommand, sendSimulation]);
 
   // --- Derived state ---
   const micActive = micState === "active";
@@ -447,31 +523,64 @@ const VoiceTestPage: React.FC = () => {
     <div className="space-y-6" data-testid="voice-test-page">
       <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-3xl font-bold">Voice Test</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            {/* Shared brand mark — decorative; the wordmark is already shown in
+                the app shell, so we only tie this page to the brand visually. */}
+            <Logo iconOnly decorative size={28} />
+            Voice Test
+          </h1>
           <p className="text-base-content/70 mt-1 max-w-2xl" data-testid="voice-test-subtitle">
             Confirm your mic, wake-word detection and command matching work end-to-end —
             no real actions run. Speak (or type) a command and watch each pipeline stage
             light up below; matched commands are reported, never executed.
           </p>
         </div>
-        <span
-          data-testid="voice-ws-status"
-          className={`badge gap-2 ${
-            wsStatus === "connected"
-              ? "badge-success"
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            data-testid="voice-ws-status"
+            className={`badge gap-2 ${
+              wsStatus === "connected"
+                ? "badge-success"
+                : wsStatus === "connecting"
+                  ? "badge-warning"
+                  : "badge-error"
+            }`}
+          >
+            {wsStatus === "connected" ? <Wifi size={14} /> : <WifiOff size={14} />}
+            {wsStatus === "connected"
+              ? "Connected"
               : wsStatus === "connecting"
-                ? "badge-warning"
-                : "badge-error"
-          }`}
-        >
-          {wsStatus === "connected" ? <Wifi size={14} /> : <WifiOff size={14} />}
-          {wsStatus === "connected"
-            ? "Connected"
-            : wsStatus === "connecting"
-              ? "Connecting..."
-              : "Disconnected — retrying"}
-        </span>
+                ? "Connecting..."
+                : wsStatus === "exhausted"
+                  ? "Disconnected — reconnect"
+                  : "Disconnected — retrying"}
+          </span>
+          {wsStatus === "exhausted" && (
+            <button
+              type="button"
+              className="btn btn-xs btn-outline gap-1"
+              onClick={reconnect}
+              data-testid="voice-ws-reconnect"
+            >
+              <RotateCw size={14} />
+              Reconnect
+            </button>
+          )}
+        </div>
       </div>
+
+      {prefillCommand && (
+        <div
+          className="alert alert-info py-2"
+          role="status"
+          data-testid="voice-test-target-banner"
+        >
+          <Target size={18} />
+          <span>
+            Testing: <strong>{prefillCommand}</strong>
+          </span>
+        </div>
+      )}
 
       <div className="alert alert-info" role="status" data-testid="dry-run-banner">
         <Info size={18} />
@@ -620,6 +729,7 @@ const VoiceTestPage: React.FC = () => {
           </div>
           <form onSubmit={sendText} className="flex gap-2 flex-wrap">
             <input
+              ref={simulateInputRef}
               type="text"
               className="input input-bordered flex-1 min-w-48"
               placeholder="e.g. hey chatty open browser"

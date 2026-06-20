@@ -151,7 +151,7 @@ test.describe("Configuration Page - Theme Dropdown", () => {
     const themeSelect = page.getByLabel('Theme', { exact: true });
     await expect(themeSelect).toBeVisible();
 
-    for (const theme of ["light", "cyberpunk", "synthwave", "dark"]) {
+    for (const theme of ["light", "emerald", "nord", "dark"]) {
       await themeSelect.selectOption(theme);
       await expect(themeSelect).toHaveValue(theme);
     }
@@ -163,11 +163,11 @@ test.describe("Configuration Page - Theme Dropdown", () => {
 
     const themeSelect = page.locator('select[name="theme"]');
 
-    await themeSelect.selectOption("cyberpunk");
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "cyberpunk");
+    await themeSelect.selectOption("emerald");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "emerald");
 
-    await themeSelect.selectOption("synthwave");
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "synthwave");
+    await themeSelect.selectOption("nord");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "nord");
 
     await themeSelect.selectOption("light");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -642,7 +642,7 @@ test.describe("Configuration Page - Save Changes", () => {
     await page.goto("/configuration");
 
     await expect(page.locator('select[name="theme"]')).toHaveValue("dark");
-    await page.locator('select[name="theme"]').selectOption("cyberpunk");
+    await page.locator('select[name="theme"]').selectOption("emerald");
 
     const saveBtn = page.getByTestId("save-button");
     await expect(saveBtn).toBeEnabled();
@@ -656,7 +656,7 @@ test.describe("Configuration Page - Save Changes", () => {
 
     // Wait for config to load, then make a change so Save becomes enabled.
     await expect(page.locator('select[name="theme"]')).toHaveValue("dark");
-    await page.locator('select[name="theme"]').selectOption("cyberpunk");
+    await page.locator('select[name="theme"]').selectOption("emerald");
 
     const savePromise = page.waitForRequest(
       (req) => req.url().includes("/api/v1/config") && req.method() === "PUT",
@@ -671,7 +671,7 @@ test.describe("Configuration Page - Save Changes", () => {
     expect(body).toHaveProperty("ui");
     expect(body).toHaveProperty("voice");
     expect(body).toHaveProperty("services");
-    expect(body.ui.theme).toBe("cyberpunk");
+    expect(body.ui.theme).toBe("emerald");
   });
 
   test("shows success feedback after saving", async ({ page }) => {
@@ -679,7 +679,7 @@ test.describe("Configuration Page - Save Changes", () => {
     await page.goto("/configuration");
 
     await expect(page.locator('select[name="theme"]')).toHaveValue("dark");
-    await page.locator('select[name="theme"]').selectOption("cyberpunk");
+    await page.locator('select[name="theme"]').selectOption("emerald");
 
     await page.getByTestId("save-button").click();
 
@@ -696,7 +696,7 @@ test.describe("Configuration Page - Save Changes", () => {
     await expect(page.locator('select[name="theme"]')).toHaveValue("dark");
 
     // Change theme
-    await page.locator('select[name="theme"]').selectOption("cyberpunk");
+    await page.locator('select[name="theme"]').selectOption("emerald");
 
     // Toggle voice commands off
     await page.locator('input[name="voiceCommands"]').uncheck();
@@ -710,7 +710,7 @@ test.describe("Configuration Page - Save Changes", () => {
     const saveReq = await savePromise;
     const body = saveReq.postDataJSON();
 
-    expect(body.ui.theme).toBe("cyberpunk");
+    expect(body.ui.theme).toBe("emerald");
     expect(body.voice.enabled).toBe(false);
     expect(body.services.voiceCommands).toBe(false);
     expect(body.services.restApi).toBe(true);

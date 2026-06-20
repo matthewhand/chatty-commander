@@ -109,8 +109,11 @@ describe("DashboardPage", () => {
     const card = await screen.findByTestId("voice-status-card");
     // current_state defaults to "idle" from the stubbed /api/v1/status payload.
     await waitFor(() => expect(card).toHaveAttribute("data-voice-mode", "idle"));
-    // Mic-active isn't reported by the backend, so it's shown honestly.
-    expect(card.textContent?.toLowerCase()).toContain("unknown");
+    // The mode is rendered as a real value (not a leaked "unknown" token), and
+    // mic — which the backend doesn't report — shows a clean em-dash placeholder.
+    expect(card.textContent?.toLowerCase()).toContain("idle");
+    expect(card.textContent?.toLowerCase()).not.toContain("unknown");
+    expect(card.textContent).toContain("—");
   });
 
   test("real-time log is an aria-live log region", async () => {

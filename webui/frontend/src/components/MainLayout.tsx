@@ -18,35 +18,28 @@ import ErrorBoundary from './ErrorBoundary';
 import Logo from './Logo';
 import { useTheme } from './ThemeProvider';
 
-// Human-readable page title derived from the current route. Kept in sync with
-// the nav items / Breadcrumbs label map so the header title is consistent.
-const PAGE_TITLES: Record<string, string> = {
-    '/dashboard': 'Dashboard',
-    '/commands': 'Commands',
-    '/commands/authoring': 'Command Authoring',
-    '/voice-test': 'Voice Test',
-    '/configuration': 'Configuration',
-};
-
-function pageTitleFor(pathname: string): string {
-    if (PAGE_TITLES[pathname]) {
-        return PAGE_TITLES[pathname];
-    }
-    // Fall back to the last path segment, humanized, so unmapped routes still
-    // get a sensible title instead of an empty header.
-    const last = pathname.split('/').filter(Boolean).pop();
-    if (!last) {
-        return 'Dashboard';
-    }
-    return last.charAt(0).toUpperCase() + last.slice(1);
-}
-
+// Human-readable labels for the live themes (AVAILABLE_THEMES in ThemeProvider:
+// light, dark, corporate, business, emerald, nord). Any unmapped theme falls
+// back to a title-cased version of its id so a new/renamed theme can never
+// silently render as a raw lowercase token again.
 const THEME_LABELS: Record<string, string> = {
     light: 'Light',
     dark: 'Dark',
-    cyberpunk: 'Cyberpunk',
-    synthwave: 'Synthwave',
+    corporate: 'Corporate',
+    business: 'Business',
+    emerald: 'Emerald',
+    nord: 'Nord',
 };
+
+function themeLabelFor(theme: string): string {
+    if (THEME_LABELS[theme]) {
+        return THEME_LABELS[theme];
+    }
+    if (!theme) {
+        return theme;
+    }
+    return theme.charAt(0).toUpperCase() + theme.slice(1);
+}
 
 const ThemeSwitcher: React.FC = () => {
     const { theme, setTheme, availableThemes } = useTheme();
@@ -62,7 +55,7 @@ const ThemeSwitcher: React.FC = () => {
             >
                 {availableThemes.map((t) => (
                     <option key={t} value={t}>
-                        {THEME_LABELS[t] ?? t}
+                        {themeLabelFor(t)}
                     </option>
                 ))}
             </select>
@@ -75,7 +68,6 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const pageTitle = pageTitleFor(location.pathname);
 
     const asideRef = useRef<HTMLElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -277,12 +269,17 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {/* Content Scroll Area */}
                 <main id="main-content" className="flex-1 overflow-y-auto ml-0">
                     {/* Persistent desktop app bar: sticks to the top of the scroll
-                        area so the page title, breadcrumb and global controls stay
-                        visible while content scrolls. Hidden on mobile, which uses
-                        the dedicated mobile header above. */}
-                    <header className="hidden lg:flex sticky top-0 z-10 bg-base-100/95 backdrop-blur border-b border-base-content/10 px-6 py-3 items-center gap-4">
+                        area so the breadcrumb and global controls stay visible
+                        while content scrolls. It deliberately does NOT render the
+                        page title — each page owns its own hero title, and
+                        duplicating it here produced two visible headings / two
+                        <h1>s. Hidden on mobile, which uses the dedicated mobile
+                        header above. */}
+                    <header
+                        aria-label="Page toolbar"
+                        className="hidden lg:flex sticky top-0 z-10 bg-base-100/95 backdrop-blur border-b border-base-content/10 px-6 py-3 items-center gap-4"
+                    >
                         <div className="min-w-0 flex-1">
-                            <h1 className="text-xl font-bold truncate">{pageTitle}</h1>
                             <Breadcrumbs />
                         </div>
                     </header>

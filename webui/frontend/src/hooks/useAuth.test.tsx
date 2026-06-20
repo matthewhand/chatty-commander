@@ -198,6 +198,72 @@ describe("useAuth Hook", () => {
     expect(result.current.sessionExpiredNotice).toBeNull();
   });
 
+  test("a storage event removing the token logs the tab out (cross-tab sync)", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result, unmount } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    // Another tab logged out: the token is removed and a storage event fires.
+    act(() => {
+      localStorage.removeItem("auth_token");
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "auth_token",
+          oldValue: "test-token",
+          newValue: null,
+        }),
+      );
+    });
+
+    expect(result.current.user).toBeNull();
+    expect(result.current.isAuthenticated).toBe(false);
+
+    unmount();
+  });
+
+  test("a storage event adding a token re-checks auth (cross-tab login)", async () => {
+    // Start unauthenticated: mount-time check rejects.
+    mockedAuthService.getCurrentUser.mockRejectedValue(
+      new Error("Authentication required"),
+    );
+
+    const { result, unmount } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() =>
+      expect(mockedAuthService.getCurrentUser).toHaveBeenCalled(),
+    );
+    expect(result.current.isAuthenticated).toBe(false);
+    const callsBefore = mockedAuthService.getCurrentUser.mock.calls.length;
+
+    // Another tab logs in: a token appears and a storage event fires, so this
+    // tab re-runs the auth check and adopts the now-valid session.
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+
+    act(() => {
+      localStorage.setItem("auth_token", "fresh-token");
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "auth_token",
+          oldValue: null,
+          newValue: "fresh-token",
+        }),
+      );
+    });
+
+    // The storage handler re-invoked the auth check...
+    expect(mockedAuthService.getCurrentUser.mock.calls.length).toBeGreaterThan(
+      callsBefore,
+    );
+    // ...and the session is adopted.
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+    expect(result.current.user).toEqual(mockUser);
+
+    unmount();
+  });
+
   test("logout clears the user and token", async () => {
     const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
     mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);

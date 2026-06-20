@@ -20,7 +20,7 @@ import {
   RotateCcw as RotateCcwIcon,
 } from "lucide-react";
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
-import { useTheme } from "../components/ThemeProvider";
+import { useTheme, AVAILABLE_THEMES } from "../components/ThemeProvider";
 import { useToast } from "../components/ToastProvider";
 import { runMicTest, playTestTone } from "../utils/audioTest";
 
@@ -140,6 +140,10 @@ async function persistConfig(cfg: AppConfig): Promise<void> {
   }
 }
 
+/** Human-readable label for a DaisyUI theme id (e.g. "nord" → "Nord"). */
+const themeLabel = (id: string): string =>
+  id.length ? id.charAt(0).toUpperCase() + id.slice(1) : id;
+
 // ─── Small presentational helpers ─────────────────────────────────────────────
 /** Inline tooltip help icon for technical options. */
 const HelpHint: React.FC<{ text: string; label: string }> = ({ text, label }) => (
@@ -170,6 +174,7 @@ const ConfigurationPage: React.FC = () => {
 
   const [modelList, setModelList] = useState<string[]>([]);
   const [fetchingModels, setFetchingModels] = useState(false);
+  const [modelFetchError, setModelFetchError] = useState<string | null>(null);
 
   // In-browser audio test state. The mic test measures real input levels via
   // getUserMedia + AnalyserNode; the output test plays a generated tone.
@@ -179,6 +184,13 @@ const ConfigurationPage: React.FC = () => {
   const [micTestError, setMicTestError] = useState<string | null>(null);
   const [outputTestStatus, setOutputTestStatus] = useState<"idle" | "playing" | "done" | "error">("idle");
   const [outputTestError, setOutputTestError] = useState<string | null>(null);
+  // Handle to the in-progress mic-test MediaStream. runMicTest owns its own
+  // stream internally and releases it when its timer elapses, but if the user
+  // leaves the Audio tab (or the route unmounts) mid-test the mic would stay
+  // hot until then. We capture the stream as it's acquired so we can stop it
+  // immediately on tab change / unmount. Held in a ref (not state) so cleanup
+  // can read the latest value without re-running effects.
+  const micStreamRef = useRef<MediaStream | null>(null);
 
   // Voice Models State
   const [uploadState, setUploadState] = useState<"idle" | "computer" | "chatty">("idle");
@@ -209,16 +221,34 @@ const ConfigurationPage: React.FC = () => {
     queryKey: ["config"],
     queryFn: loadConfig,
   });
-  // Seed the editable form from the remote config exactly once, during render
-  // (not in an effect) so the seed can never land *after* a user edit and
-  // clobber it. React Query may return a fresh object reference on later
-  // renders (staleTime=0); re-seeding then would discard in-progress edits, so
-  // we guard with a ref. The baseline tracks the seeded remote value.
+  // Seed the editable form from the remote config during render (not in an
+  // effect) so the seed can never land *after* a user edit and clobber it.
+  // `seeded` marks the first seed; `lastRemoteJson` remembers the remote payload
+  // we last seeded from so we can detect a genuine refetch (React Query returns a
+  // fresh object reference on every render with staleTime=0, so identity alone
+  // isn't enough).
   const seeded = useRef(false);
-  if (remoteConfig && !seeded.current) {
-    seeded.current = true;
-    setConfig(remoteConfig);
-    setBaseline(remoteConfig);
+  const lastRemoteJson = useRef<string | null>(null);
+  if (remoteConfig) {
+    const remoteJson = JSON.stringify(remoteConfig);
+    if (!seeded.current) {
+      // First load: seed both the working copy and the baseline.
+      seeded.current = true;
+      lastRemoteJson.current = remoteJson;
+      setConfig(remoteConfig);
+      setBaseline(remoteConfig);
+    } else if (remoteJson !== lastRemoteJson.current) {
+      // A later refetch returned genuinely different remote data.
+      lastRemoteJson.current = remoteJson;
+      const isDirty = JSON.stringify(config) !== JSON.stringify(baseline);
+      if (!isDirty) {
+        // Not dirty: re-seed so we don't show "All changes saved" against stale
+        // data. (If dirty, we intentionally leave the in-progress edit alone —
+        // see the staleRemote note rendered in the save bar.)
+        setConfig(remoteConfig);
+        setBaseline(remoteConfig);
+      }
+    }
   }
 
   // ─── Dirty-state tracking ──────────────────────────────────────────────────
@@ -226,6 +256,16 @@ const ConfigurationPage: React.FC = () => {
   const dirty = useMemo(
     () => JSON.stringify(config) !== JSON.stringify(baseline),
     [config, baseline],
+  );
+
+  // True when a refetch brought new remote data we couldn't auto-apply because
+  // the form has unsaved edits — the baseline is now older than the server.
+  const staleRemote = useMemo(
+    () =>
+      dirty &&
+      lastRemoteJson.current !== null &&
+      lastRemoteJson.current !== JSON.stringify(baseline),
+    [dirty, baseline],
   );
 
   // Warn on browser-level navigation (reload / close tab) while dirty.
@@ -357,22 +397,54 @@ const ConfigurationPage: React.FC = () => {
 
   const handleFetchModels = async () => {
     setFetchingModels(true);
+    setModelFetchError(null);
     try {
       const models = await fetchLLMModels(config.llmBaseUrl, config.apiKey || undefined);
       setModelList(models);
       if (models.length === 0) {
         setModelList(["(no models returned — check endpoint/key)"]);
       }
+    } catch (err) {
+      // A bad URL / key / CORS failure previously surfaced nothing. Tell the
+      // user what went wrong instead of silently leaving the list empty.
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Could not fetch models — check the base URL and API key.";
+      setModelFetchError(message);
+      setModelList([]);
+      addToast(`Failed to fetch models: ${message}`, "error");
     } finally {
       setFetchingModels(false);
     }
   };
+
+  // Stop and forget any live mic-test stream. Safe to call repeatedly.
+  const stopMicStream = useCallback(() => {
+    const stream = micStreamRef.current;
+    if (stream) {
+      micStreamRef.current = null;
+      stream.getTracks().forEach((t) => t.stop());
+    }
+  }, []);
 
   const handleTestMic = async () => {
     setMicTestStatus("testing");
     setMicTestError(null);
     setMicLevel(0);
     setMicPeak(0);
+    // Capture the MediaStream as runMicTest acquires it (by transiently
+    // wrapping getUserMedia) so we hold a handle we can stop early on
+    // tab-change/unmount. The wrapper is restored before runMicTest returns.
+    const md = navigator.mediaDevices;
+    const originalGetUserMedia = md?.getUserMedia?.bind(md);
+    if (md && originalGetUserMedia) {
+      md.getUserMedia = async (constraints?: MediaStreamConstraints) => {
+        const stream = await originalGetUserMedia(constraints);
+        micStreamRef.current = stream;
+        return stream;
+      };
+    }
     try {
       const { peakLevel } = await runMicTest({
         durationMs: MIC_TEST_DURATION_MS,
@@ -392,6 +464,13 @@ const ConfigurationPage: React.FC = () => {
           : "Microphone access was denied or is unavailable.",
       );
       setMicTestStatus("error");
+    } finally {
+      // runMicTest stops its own stream on completion; drop our handle and
+      // restore the original getUserMedia.
+      micStreamRef.current = null;
+      if (md && originalGetUserMedia) {
+        md.getUserMedia = originalGetUserMedia;
+      }
     }
   };
 
@@ -409,12 +488,67 @@ const ConfigurationPage: React.FC = () => {
     }
   };
 
+  // Stop an in-progress mic test when the user leaves the Audio tab, and on
+  // unmount — otherwise the microphone could stay live after navigating away.
+  useEffect(() => {
+    if (activeTab !== "audio") {
+      stopMicStream();
+      if (micTestStatus === "testing") {
+        setMicTestStatus("idle");
+        setMicLevel(0);
+      }
+    }
+    return () => {
+      stopMicStream();
+    };
+  }, [activeTab, stopMicStream, micTestStatus]);
+
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "general", label: "General", icon: <SlidersIcon className="w-4 h-4" /> },
     { id: "audio", label: "Audio", icon: <HeadphonesIcon className="w-4 h-4" /> },
     { id: "models", label: "Voice Models", icon: <FileAudioIcon className="w-4 h-4" /> },
     { id: "llm", label: "LLM", icon: <CpuIcon className="w-4 h-4" /> },
   ];
+
+  // Refs to each tab button so the keyboard handler can move focus along with
+  // the active selection (APG tablist roving-tabindex pattern).
+  const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({
+    general: null,
+    audio: null,
+    models: null,
+    llm: null,
+  });
+
+  // ARIA Authoring-Practices keyboard nav: Arrow Left/Right move between tabs
+  // (wrapping), Home/End jump to the first/last. Activation follows focus.
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+    if (currentIndex === -1) return;
+    let nextIndex: number | null = null;
+    switch (e.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextIndex = (currentIndex + 1) % tabs.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    const nextTab = tabs[nextIndex].id;
+    setActiveTab(nextTab);
+    // Move focus to the newly-active tab so keyboard navigation is visible.
+    tabRefs.current[nextTab]?.focus();
+  };
 
   return (
     <div className="space-y-6">
@@ -445,20 +579,26 @@ const ConfigurationPage: React.FC = () => {
       <div className="card bg-base-100 shadow-xl border border-base-content/10 overflow-visible">
         <div className="card-body p-0">
 
-          {/* Tab navigation */}
+          {/* Tab navigation. `overflow-x-auto` + `flex-nowrap` keep every tab
+              reachable on narrow (phone) widths instead of clipping the last one,
+              and the APG roving-tabindex + Arrow/Home/End handler below makes the
+              tablist keyboard-navigable. */}
           <div
             role="tablist"
             aria-label="Configuration sections"
-            className="tabs tabs-bordered px-4 pt-4"
+            className="tabs tabs-bordered px-4 pt-4 flex-nowrap overflow-x-auto"
+            onKeyDown={handleTabKeyDown}
           >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                ref={(el) => { tabRefs.current[tab.id] = el; }}
                 role="tab"
                 type="button"
                 aria-selected={activeTab === tab.id}
                 aria-controls={`config-panel-${tab.id}`}
                 id={`config-tab-${tab.id}`}
+                tabIndex={activeTab === tab.id ? 0 : -1}
                 className={`tab gap-2 ${activeTab === tab.id ? "tab-active" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
@@ -492,10 +632,21 @@ const ConfigurationPage: React.FC = () => {
                       value={config.theme}
                       onChange={handleChange}
                     >
-                      <option value="dark">Dark</option>
-                      <option value="light">Light</option>
-                      <option value="cyberpunk">Cyberpunk</option>
-                      <option value="synthwave">Synthwave</option>
+                      {/* Drive options from the themes actually enabled in
+                          Tailwind/DaisyUI (AVAILABLE_THEMES) so a pick can never
+                          set a non-existent data-theme. If the persisted theme is
+                          one that's since been removed, still list it (disabled)
+                          so the current value renders honestly rather than blank. */}
+                      {!(AVAILABLE_THEMES as readonly string[]).includes(config.theme) && (
+                        <option value={config.theme} disabled>
+                          {themeLabel(config.theme)} (unavailable)
+                        </option>
+                      )}
+                      {AVAILABLE_THEMES.map((t) => (
+                        <option key={t} value={t}>
+                          {themeLabel(t)}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -980,6 +1131,17 @@ const ConfigurationPage: React.FC = () => {
                           </button>
                         )}
                       </div>
+                      {modelFetchError && (
+                        <label className="label">
+                          <span
+                            data-testid="model-fetch-error"
+                            className="label-text-alt text-error flex items-center gap-1"
+                          >
+                            <AlertTriangleIcon size={12} aria-hidden="true" />
+                            {modelFetchError}
+                          </span>
+                        </label>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1005,6 +1167,15 @@ const ConfigurationPage: React.FC = () => {
                 </>
               )}
             </span>
+            {staleRemote && (
+              <span
+                data-testid="stale-remote-note"
+                className="text-xs text-info flex items-center gap-1"
+              >
+                <AlertTriangleIcon size={12} aria-hidden="true" />
+                Settings changed on the server since you started editing — saving will overwrite them.
+              </span>
+            )}
             <div className="flex items-center gap-2">
               <button
                 type="button"

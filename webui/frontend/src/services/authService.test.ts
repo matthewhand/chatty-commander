@@ -6,6 +6,8 @@ import {
   notifySessionExpired,
   resetSessionExpiry,
   hasStoredToken,
+  consumeReturnTo,
+  RETURN_TO_KEY,
 } from "./authService";
 
 // Mock fetch globally
@@ -63,6 +65,57 @@ describe("AuthService", () => {
     const user = await authService.getCurrentUser();
 
     expect(user).toEqual(userData);
+  });
+
+  test("getCurrentUser success re-arms the session-expiry latch", async () => {
+    // Arrange: latch the expiry so a fresh getCurrentUser must reset it.
+    localStorage.setItem("auth_token", "valid-token");
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionExpired(listener);
+    notifySessionExpired();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // getCurrentUser succeeds with the (re-set) token...
+    getItemSpy.mockReturnValueOnce("valid-token");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({ username: "u", is_active: true, roles: ["user"] }),
+    } as Response);
+    await authService.getCurrentUser();
+
+    // ...which re-arms the latch, so a later stale 401 fires expiry again.
+    localStorage.setItem("auth_token", "valid-token");
+    notifySessionExpired();
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
+    resetSessionExpiry();
+  });
+
+  test("getCurrentUser no-auth probe success re-arms the latch", async () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionExpired(listener);
+    localStorage.setItem("auth_token", "abc");
+    notifySessionExpired();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // No token now; the /config probe grants a no-auth session.
+    getItemSpy.mockReturnValueOnce(null);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({}),
+    } as Response);
+    const user = await authService.getCurrentUser();
+    expect(user.noAuth).toBe(true);
+
+    // Latch re-armed: a fresh expiry can fire again.
+    localStorage.setItem("auth_token", "abc");
+    notifySessionExpired();
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
+    resetSessionExpiry();
   });
 
   test("getCurrentUser throws when no token and no-auth probe fails", async () => {
@@ -281,6 +334,35 @@ describe("session-expiry / authedFetch", () => {
     expect(listener).toHaveBeenCalledTimes(2);
 
     unsubscribe();
+  });
+
+  test("expiry stashes a returnTo path for the post-login redirect", () => {
+    // jsdom serves pages from http://localhost/ — give it a non-login path.
+    window.history.pushState({}, "", "/commands?tab=edit");
+    localStorage.setItem("auth_token", "abc");
+
+    notifySessionExpired();
+
+    // The pre-expiry location is captured so login can send the user back.
+    expect(localStorage.getItem(RETURN_TO_KEY)).toBe("/commands?tab=edit");
+    // consumeReturnTo reads-and-clears it.
+    expect(consumeReturnTo()).toBe("/commands?tab=edit");
+    expect(localStorage.getItem(RETURN_TO_KEY)).toBeNull();
+    expect(consumeReturnTo()).toBeNull();
+
+    window.history.pushState({}, "", "/");
+  });
+
+  test("expiry does not stash a returnTo when already on /login", () => {
+    window.history.pushState({}, "", "/login");
+    localStorage.setItem("auth_token", "abc");
+
+    notifySessionExpired();
+
+    // We never bounce the user back to the login page itself.
+    expect(localStorage.getItem(RETURN_TO_KEY)).toBeNull();
+
+    window.history.pushState({}, "", "/");
   });
 
   test("notifySessionExpired no-ops when there is no token", () => {

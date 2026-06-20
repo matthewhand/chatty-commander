@@ -100,6 +100,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
+  // Cross-tab auth sync. `storage` events fire in *other* tabs when this or
+  // another tab mutates localStorage, so when one tab logs out/expires (token
+  // removed) or logs in (token set) the rest follow suit instead of drifting
+  // out of sync. SSR-safe: guarded on `window` existing.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onStorage = (event: StorageEvent) => {
+      // Only react to our own token key (null key => storage.clear()).
+      if (event.key !== null && event.key !== "auth_token") return;
+      if (!isMountedRef.current) return;
+      if (event.newValue) {
+        // A token appeared in another tab (login elsewhere) — pick up the
+        // session here by re-running the normal auth check.
+        retryCount.current = 0;
+        checkAuth();
+      } else {
+        // Token removed elsewhere (logout/expiry) — reflect unauthenticated.
+        setUser(null);
+        setLoading(false);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [checkAuth]);
+
   const clearSessionExpiredNotice = useCallback(() => {
     setSessionExpiredNotice(null);
   }, []);
