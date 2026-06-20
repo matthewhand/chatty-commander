@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Save as SaveIcon,
@@ -49,7 +50,14 @@ interface AppConfig {
   };
 }
 
-type TabId = "general" | "audio" | "models" | "llm";
+// The known tab ids, in display order. Used both as the URL `?tab=` vocabulary
+// and (via the derived TabId) for compile-time exhaustiveness.
+const TAB_IDS = ["general", "audio", "models", "llm"] as const;
+type TabId = (typeof TAB_IDS)[number];
+
+/** Coerce an arbitrary `?tab=` value to a known tab id, defaulting to general. */
+const normalizeTab = (value: string | null): TabId =>
+  (TAB_IDS as readonly string[]).includes(value ?? "") ? (value as TabId) : "general";
 
 const DEFAULT_CONFIG: AppConfig = {
   apiKey: "",
@@ -170,7 +178,26 @@ const ConfigurationPage: React.FC = () => {
   const [config, setConfig] = useState<AppConfig>({ ...DEFAULT_CONFIG });
   // The last-known remote/loaded config; the source of truth for dirtiness.
   const [baseline, setBaseline] = useState<AppConfig>({ ...DEFAULT_CONFIG });
-  const [activeTab, setActiveTab] = useState<TabId>("general");
+
+  // Back the active tab with the URL (?tab=) so it survives refresh/back and can
+  // be deep-linked/shared. An unknown or missing value falls back to "general".
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = normalizeTab(searchParams.get("tab"));
+  const setActiveTab = useCallback(
+    (tab: TabId) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("tab", tab);
+          return next;
+        },
+        // Replace (not push) so flipping tabs doesn't flood the history stack
+        // and the browser Back button still leaves the page in one press.
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
 
   const [modelList, setModelList] = useState<string[]>([]);
   const [fetchingModels, setFetchingModels] = useState(false);
@@ -488,20 +515,25 @@ const ConfigurationPage: React.FC = () => {
     }
   };
 
-  // Stop an in-progress mic test when the user leaves the Audio tab, and on
-  // unmount — otherwise the microphone could stay live after navigating away.
+  // Stop an in-progress mic test when the user leaves the Audio tab. Note we do
+  // NOT depend on micTestStatus here (and use a functional setState) — otherwise
+  // starting a test (idle -> testing) would re-run this effect and its cleanup
+  // would stop the stream we just opened.
   useEffect(() => {
     if (activeTab !== "audio") {
       stopMicStream();
-      if (micTestStatus === "testing") {
-        setMicTestStatus("idle");
-        setMicLevel(0);
-      }
+      setMicTestStatus((s) => (s === "testing" ? "idle" : s));
+      setMicLevel((l) => (l !== 0 ? 0 : l));
     }
+  }, [activeTab, stopMicStream]);
+
+  // Always release the mic stream on unmount (separate effect so it only fires
+  // on unmount, not on every tab/status change).
+  useEffect(() => {
     return () => {
       stopMicStream();
     };
-  }, [activeTab, stopMicStream, micTestStatus]);
+  }, [stopMicStream]);
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "general", label: "General", icon: <SlidersIcon className="w-4 h-4" /> },

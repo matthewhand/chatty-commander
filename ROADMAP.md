@@ -320,12 +320,12 @@ cases, responsive, a11y+design-system, workflows+perf). Several P0s are
 - [x] **Config tabs overflow on mobile** — `tabs tabs-bordered` non-wrapping row clips "LLM" at ~360px; add `overflow-x-auto`/scroll or a `max-sm` `<select>` ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))  ✅ (#716)
 - [ ] **Expiry mid-form destroys unsaved edits** — a 401 (incl. background polling) clears auth and unmounts the form via ProtectedRoute with no guard; defer redirect when a dirty form/modal is open, or stash a returnTo+draft ([`useAuth.tsx`](webui/frontend/src/hooks/useAuth.tsx), [`apiService.js`](webui/frontend/src/services/apiService.js))
 
-### P1 — quality (9/13)
+### P1 — quality (11/13)
 
 - [x] **VoiceTest brand inconsistency** — its sidebar/header shows a stacked "Chatty / Voice Commander" lockup instead of the shared `Logo` ([`VoiceTestPage.tsx`](webui/frontend/src/pages/VoiceTestPage.tsx))  ✅ (#716)
-- [ ] **Config & Authoring tabs miss the APG keyboard pattern** — `role=tab` present but no roving `tabIndex` / Arrow/Home/End handling ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), [`CommandAuthoringPage.tsx`](webui/frontend/src/pages/CommandAuthoringPage.tsx))
+- [x] **Config & Authoring tabs miss the APG keyboard pattern** — `role=tab` present but no roving `tabIndex` / Arrow/Home/End handling ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), [`CommandAuthoringPage.tsx`](webui/frontend/src/pages/CommandAuthoringPage.tsx))  ✅ (#717)
 - [x] **`:focus-visible` ring uses `--p` (primary)** — invisible on `bg-primary` surfaces (active nav, primary buttons, active tab); use `--bc`/contrasting halo + offset ([`index.css`](webui/frontend/src/index.css))  ✅ (#716)
-- [ ] **Config tab state not persisted/deep-linkable**; back `?tab=` (and persist Commands `?sort=`) via `useSearchParams` ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), [`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx))
+- [x] **Config tab state not persisted/deep-linkable**; back `?tab=` (and persist Commands `?sort=`) via `useSearchParams` ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), [`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx))  ✅ (#717)
 - [x] **Mic test stream leaks on tab/route change** — leaving the Audio tab doesn't stop an in-progress `getUserMedia` test; clean up on tab change/unmount ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))  ✅ (#716)
 - [x] **Config seeds once → stale-write risk** — never re-seeds baseline on refetch/refocus, so it can show "All saved" against stale data and clobber a newer remote config; re-seed when clean, warn when dirty ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))  ✅ (#716)
 - [x] **`handleFetchModels` swallows errors** — a thrown fetch (bad URL/key/CORS) shows nothing; add catch→toast/error state ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))  ✅ (#716)
@@ -336,20 +336,20 @@ cases, responsive, a11y+design-system, workflows+perf). Several P0s are
 - [ ] **No reusable Button/Card/Field primitives** — card/field/button class clusters are copy-pasted with drift; extract shared components ([`webui/frontend/src/components`](webui/frontend/src/components))
 - [x] **Multi-tab + background-poll auth desync** — expiry isn't broadcast across tabs (no `storage` listener); polling keeps running after logout and can force-expire a fresh login; reset latch on `getCurrentUser` success and cancel polls when unauthenticated ([`authService.ts`](webui/frontend/src/services/authService.ts), [`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#716)
 
-### P2 — polish (4/12)
+### P2 — polish (10/12)
 
-- [ ] **Gradient `h1` + gradient buttons/badges everywhere** dilute emphasis — reserve the gradient for one hero; solid `text-base-content` for routine titles ([`index.css`](webui/frontend/src/index.css))
-- [ ] **Stat-card icons are a random rainbow** — standardize to a muted accent or status-driven color ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
+- [x] **Gradient `h1` + gradient buttons/badges everywhere** dilute emphasis — reserve the gradient for one hero; solid `text-base-content` for routine titles ([`index.css`](webui/frontend/src/index.css))  ✅ (#717)
+- [x] **Stat-card icons are a random rainbow** — standardize to a muted accent or status-driven color ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#717)
 - [x] **Voice Assistant card leaks placeholder strings** ("Mic: unknown · current mode") — render a real value or a clean "Not detected" ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#716)
 - [x] **Radial gauges read as broken arcs** — use a full-track radial-progress with centered label ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#716)
 - [ ] **Emoji section-icons mixed with lucide line icons** — unify on lucide ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), pages)
-- [ ] **Login double-branding** — big avatar mark + full Logo lockup (which includes the mark) shown together; keep one ([`LoginPage.tsx`](webui/frontend/src/pages/LoginPage.tsx))
+- [x] **Login double-branding** — big avatar mark + full Logo lockup (which includes the mark) shown together; keep one ([`LoginPage.tsx`](webui/frontend/src/pages/LoginPage.tsx))  ✅ (#717)
 - [ ] **Icon sizes ad-hoc (12–32)** — define sm/md/lg scale ([`webui/frontend/src`](webui/frontend/src))
 - [x] **Shadows use raw `rgba(0,0,0,…)`** (too heavy on light themes) — token from `--bc`/`--b3` ([`index.css`](webui/frontend/src/index.css))  ✅ (#716)
-- [ ] **Radius scale inconsistent** (`rounded` vs `-lg`/`-xl`/`-box` + raw rem) — standardize ([`index.css`](webui/frontend/src/index.css))
-- [ ] **No bulk ops on Commands** (select-all, multi-delete, export-selected) ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx))
+- [x] **Radius scale inconsistent** (`rounded` vs `-lg`/`-xl`/`-box` + raw rem) — standardize ([`index.css`](webui/frontend/src/index.css))  ✅ (#717)
+- [x] **No bulk ops on Commands** (select-all, multi-delete, export-selected) ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx))  ✅ (#717)
 - [x] **Dead `.menu li>a.active` CSS** (component opts out) — delete ([`index.css`](webui/frontend/src/index.css))  ✅ (#716)
-- [ ] **Onboarding never reappears** when the user returns to a true empty state; re-show on `hasNoCommands` or add a "show getting started" affordance ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
+- [x] **Onboarding never reappears** when the user returns to a true empty state; re-show on `hasNoCommands` or add a "show getting started" affordance ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#717)
 
 ---
 

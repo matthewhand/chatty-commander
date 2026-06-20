@@ -18,13 +18,25 @@ vi.mock("../components/WebSocketProvider", () => ({
 const jsonResponse = (data: unknown) => ({
   ok: true,
   status: 200,
+  // apiService inspects content-type to decide json vs text, so provide a
+  // realistic headers shape (raw-fetch callers in the page ignore this).
+  headers: { get: (name: string) => (name.toLowerCase() === "content-type" ? "application/json" : null) },
   json: async () => data,
+  text: async () => JSON.stringify(data),
 });
+
+// Mutable per-test override for the /api/v1/commands response so tests can
+// model both an empty install and one with authored commands.
+let commandsResponse: Record<string, unknown> = {};
 
 beforeEach(() => {
   window.localStorage.clear();
+  commandsResponse = {};
   global.fetch = vi.fn(async (input: any) => {
     const url = String(input);
+    if (url.includes("/api/v1/commands")) {
+      return jsonResponse(commandsResponse);
+    }
     if (url.includes("/health")) {
       return jsonResponse({
         status: "healthy",
@@ -137,9 +149,13 @@ describe("DashboardPage", () => {
     expect(testLink).toHaveAttribute("href", "/voice-test");
   });
 
-  test("onboarding callout dismisses and stays dismissed (persisted)", async () => {
+  test("onboarding callout dismisses and stays dismissed (persisted) while commands exist", async () => {
+    // Dismissal only sticks while the user actually has commands.
+    commandsResponse = { greet: { action: "noop" } };
+
     const { unmount } = renderDashboard();
     await screen.findByText("Healthy");
+    await screen.findByTestId("onboarding-callout");
 
     fireEvent.click(
       screen.getByRole("button", { name: /dismiss getting started guide/i }),
@@ -150,10 +166,50 @@ describe("DashboardPage", () => {
     );
     expect(window.localStorage.getItem("chatty.onboardingDismissed")).toBe("1");
 
-    // A fresh mount honours the persisted dismissal.
+    // A fresh mount honours the persisted dismissal (commands still present).
     unmount();
     renderDashboard();
     await screen.findByText("Healthy");
-    expect(screen.queryByTestId("onboarding-callout")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByTestId("onboarding-callout")).not.toBeInTheDocument(),
+    );
+  });
+
+  test("onboarding re-shows when returning to an empty command state after dismissal", async () => {
+    // Simulate a returning user who previously dismissed the guide...
+    window.localStorage.setItem("chatty.onboardingDismissed", "1");
+    // ...but who now has no commands at all (true empty state).
+    commandsResponse = {};
+
+    renderDashboard();
+    await screen.findByText("Healthy");
+
+    // The guidance resurfaces despite the persisted dismissal, and the stale
+    // flag is cleared so it only re-sticks once they author something again.
+    expect(await screen.findByTestId("onboarding-callout")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(window.localStorage.getItem("chatty.onboardingDismissed")).toBeNull(),
+    );
+  });
+
+  test("empty command log offers a link to re-open the getting-started guide", async () => {
+    commandsResponse = { greet: { action: "noop" } };
+
+    renderDashboard();
+    await screen.findByText("Healthy");
+
+    // Dismiss the callout (commands exist, so it would otherwise stay hidden).
+    await screen.findByTestId("onboarding-callout");
+    fireEvent.click(
+      screen.getByRole("button", { name: /dismiss getting started guide/i }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByTestId("onboarding-callout")).not.toBeInTheDocument(),
+    );
+
+    // The empty command-log state surfaces a way back to the guide.
+    const link = screen.getByTestId("show-onboarding-link");
+    fireEvent.click(link);
+    expect(await screen.findByTestId("onboarding-callout")).toBeInTheDocument();
   });
 });

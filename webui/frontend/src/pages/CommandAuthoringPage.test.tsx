@@ -182,6 +182,93 @@ describe("modal a11y", () => {
   });
 });
 
+describe("mode tabs a11y (WAI-ARIA APG)", () => {
+  test("uses roving tabindex with the active tab focusable", async () => {
+    renderPage();
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/v1/config"));
+
+    const aiTab = screen.getByRole("tab", { name: /AI Mode/i });
+    const manualTab = screen.getByRole("tab", { name: /Manual Mode/i });
+
+    // AI mode is active by default: active tab tabIndex=0, other tabIndex=-1.
+    expect(aiTab).toHaveAttribute("aria-selected", "true");
+    expect(aiTab).toHaveAttribute("tabindex", "0");
+    expect(manualTab).toHaveAttribute("aria-selected", "false");
+    expect(manualTab).toHaveAttribute("tabindex", "-1");
+
+    // Panel is wired to its tab.
+    const panel = screen.getByRole("tabpanel");
+    expect(panel).toHaveAttribute("aria-labelledby", "tab-ai-mode");
+  });
+
+  test("ArrowRight/Left move selection and focus between tabs", async () => {
+    renderPage();
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/v1/config"));
+
+    const aiTab = screen.getByRole("tab", { name: /AI Mode/i });
+    const manualTab = screen.getByRole("tab", { name: /Manual Mode/i });
+
+    aiTab.focus();
+    fireEvent.keyDown(aiTab, { key: "ArrowRight" });
+
+    // Selection follows focus: Manual becomes active and focused.
+    await waitFor(() => expect(manualTab).toHaveAttribute("aria-selected", "true"));
+    expect(manualTab).toHaveAttribute("tabindex", "0");
+    expect(aiTab).toHaveAttribute("tabindex", "-1");
+    expect(manualTab).toHaveFocus();
+    // Manual panel is now shown.
+    expect(screen.getByRole("tabpanel")).toHaveAttribute(
+      "aria-labelledby",
+      "tab-manual-mode"
+    );
+
+    // ArrowLeft moves back to AI.
+    fireEvent.keyDown(manualTab, { key: "ArrowLeft" });
+    await waitFor(() => expect(aiTab).toHaveAttribute("aria-selected", "true"));
+    expect(aiTab).toHaveFocus();
+  });
+
+  test("Home/End jump to the first/last tab", async () => {
+    renderPage();
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/v1/config"));
+
+    const aiTab = screen.getByRole("tab", { name: /AI Mode/i });
+    const manualTab = screen.getByRole("tab", { name: /Manual Mode/i });
+
+    aiTab.focus();
+    fireEvent.keyDown(aiTab, { key: "End" });
+    await waitFor(() => expect(manualTab).toHaveAttribute("aria-selected", "true"));
+    expect(manualTab).toHaveFocus();
+
+    fireEvent.keyDown(manualTab, { key: "Home" });
+    await waitFor(() => expect(aiTab).toHaveAttribute("aria-selected", "true"));
+    expect(aiTab).toHaveFocus();
+  });
+});
+
+describe("per-action validation a11y", () => {
+  test("invalid action input is wired to its error via aria-describedby", async () => {
+    renderPage();
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/v1/config"));
+    fireEvent.click(screen.getByRole("tab", { name: /Manual Mode/i }));
+    // A fresh keypress action has no keys yet → validation error present.
+    fireEvent.click(screen.getByRole("button", { name: /Add Action/i }));
+
+    const keysInput = screen.getByLabelText("Keys");
+    expect(keysInput).toHaveAttribute("aria-invalid", "true");
+    const describedBy = keysInput.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const errorEl = document.getElementById(describedBy as string);
+    expect(errorEl).not.toBeNull();
+    expect(errorEl).toHaveAttribute("role", "alert");
+
+    // Once a valid value is entered, the wiring is removed.
+    fireEvent.change(keysInput, { target: { value: "ctrl+alt+t" } });
+    expect(screen.getByLabelText("Keys")).not.toHaveAttribute("aria-invalid");
+    expect(screen.getByLabelText("Keys")).not.toHaveAttribute("aria-describedby");
+  });
+});
+
 describe("danger warnings", () => {
   test("inline warning shown for rm -rf shell command", async () => {
     renderPage();

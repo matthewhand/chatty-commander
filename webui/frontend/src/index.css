@@ -84,28 +84,42 @@ textarea {
      so oklch(var(--p)) is invalid and made these headings render transparent.
      Use oklch(var(--x)) to match how Tailwind/DaisyUI consume the same vars.
 
-     NOTE (gradient overuse): components apply .text-gradient-* to nearly every
-     routine page title. The stops below already reference theme tokens
-     (--p/--s/--a), so they desaturate automatically on softer themes
-     (corporate/business/emerald/nord) — there is no CSS-level over-saturation to
-     dial back here without diverging from theme intent. Reducing how broadly the
-     gradient is applied is a component-level change, out of scope for index.css. */
+     TONE (gradient overuse): components apply .text-gradient-* to nearly every
+     routine page title, so a loud full-saturation primary→secondary sweep stops
+     signaling anything. We keep the gradients (still theme-token based, so they
+     adapt per theme) but make them REFINED rather than loud:
+       - the gradient holds the primary token across most of the heading and only
+         eases toward the second token in the last third (closer stops), so the
+         text reads as one confident color with a subtle shift, not a rainbow;
+       - the second stop is softened toward base-content via color-mix, lowering
+         the saturation swing between the two ends.
+     This stays token-driven (oklch(var(--p/--s/--a))) so softer themes
+     (corporate/business/emerald/nord) still desaturate automatically. */
   .text-gradient-primary {
-    background: linear-gradient(135deg, oklch(var(--p)) 0%, oklch(var(--s)) 100%);
+    background: linear-gradient(135deg,
+        oklch(var(--p)) 0%,
+        oklch(var(--p)) 55%,
+        color-mix(in oklch, oklch(var(--s)), oklch(var(--bc)) 25%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .text-gradient-accent {
-    background: linear-gradient(135deg, oklch(var(--a)) 0%, oklch(var(--p)) 100%);
+    background: linear-gradient(135deg,
+        oklch(var(--a)) 0%,
+        oklch(var(--a)) 55%,
+        color-mix(in oklch, oklch(var(--p)), oklch(var(--bc)) 25%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .text-gradient-warm {
-    background: linear-gradient(135deg, oklch(var(--wa)) 0%, oklch(var(--er)) 100%);
+    background: linear-gradient(135deg,
+        oklch(var(--wa)) 0%,
+        oklch(var(--wa)) 55%,
+        color-mix(in oklch, oklch(var(--er)), oklch(var(--bc)) 25%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -207,12 +221,27 @@ textarea {
 }
 
 /* ============================================
+   Radius scale
+   --------------------------------------------
+   Surfaces previously mixed ad-hoc 1rem / 0.75rem / 0.5rem radii. Standardize
+   the custom border-radius values we control onto DaisyUI's radius tokens so
+   cards/tables/inputs/menus share a coherent corner language and follow the
+   active theme (each theme can override --rounded-box / --rounded-btn):
+     - large surfaces (cards, stats, tables, dropdown menus) -> --rounded-box
+       (DaisyUI default 1rem)
+     - controls and nested items (inputs, tabs, dropdown items) -> --rounded-btn
+       (DaisyUI default 0.5rem)
+   Pill shapes (9999px progress bars) and the decorative 4px scrollbar thumb are
+   intentionally outside this scale.
+   ============================================ */
+
+/* ============================================
    Enhanced Card Styles - MORE VISIBLE
    ============================================ */
 .card {
   background: oklch(var(--b1));
   border: 1px solid oklch(var(--bc) / 0.15);
-  border-radius: 1rem;
+  border-radius: var(--rounded-box, 1rem);
   box-shadow:
     0 4px 6px -1px oklch(var(--bc) / 0.08),
     0 2px 4px -2px oklch(var(--bc) / 0.08);
@@ -241,7 +270,7 @@ textarea {
 .stats {
   background: oklch(var(--b1));
   border: 1px solid oklch(var(--bc) / 0.15);
-  border-radius: 1rem;
+  border-radius: var(--rounded-box, 1rem);
   box-shadow: 0 4px 6px -1px oklch(var(--bc) / 0.08);
   overflow: hidden;
 }
@@ -387,7 +416,7 @@ textarea {
    Table Enhancements
    ============================================ */
 .table {
-  border-radius: 0.75rem;
+  border-radius: var(--rounded-box, 1rem);
   overflow: hidden;
   border: 1px solid oklch(var(--bc) / 0.1);
 }
@@ -516,13 +545,13 @@ textarea {
    ============================================ */
 .tabs-boxed {
   background: oklch(var(--b2));
-  border-radius: 0.75rem;
+  border-radius: var(--rounded-box, 1rem);
   padding: 0.25rem;
   gap: 0.25rem;
 }
 
 .tabs-boxed .tab {
-  border-radius: 0.5rem;
+  border-radius: var(--rounded-btn, 0.5rem);
   transition: all 0.2s ease;
   font-weight: 500;
 }
@@ -706,7 +735,7 @@ textarea {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid oklch(var(--bc) / 0.15);
-  border-radius: 0.75rem;
+  border-radius: var(--rounded-box, 1rem);
   box-shadow:
     0 20px 40px oklch(var(--bc) / 0.18),
     0 0 1px oklch(var(--bc) / 0.1);
@@ -717,7 +746,7 @@ textarea {
 .dropdown-content li>a,
 .dropdown-content li>button {
   transition: all 0.15s ease;
-  border-radius: 0.5rem;
+  border-radius: var(--rounded-btn, 0.5rem);
   margin: 0.25rem;
 }
 
@@ -797,7 +826,7 @@ textarea {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid oklch(var(--bc) / 0.2);
-  border-radius: 0.5rem;
+  border-radius: var(--rounded-btn, 0.5rem);
   padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
