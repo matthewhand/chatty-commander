@@ -748,3 +748,18 @@ class TestActionExtraction:
         actions = core._extract_actions(response_text)
         screenshot_actions = [a for a in actions if a["type"] == "screenshot"]
         assert len(screenshot_actions) >= 1
+
+    def test_execute_actions_valid_mode_calls_change_state(self, core):
+        """A valid (allowlisted) mode_switch action drives change_state."""
+        core._execute_actions(
+            [{"type": "mode_switch", "target_mode": "computer", "priority": "high"}]
+        )
+        core.state_manager.change_state.assert_called_once_with("computer")
+
+    def test_execute_actions_out_of_allowlist_mode_rejected(self, core):
+        """Security: a mode_switch target outside the allowlist (e.g. injected
+        via untrusted content) must NOT reach change_state."""
+        core._execute_actions(
+            [{"type": "mode_switch", "target_mode": "root", "priority": "high"}]
+        )
+        core.state_manager.change_state.assert_not_called()

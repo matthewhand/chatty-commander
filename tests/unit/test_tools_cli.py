@@ -239,3 +239,51 @@ class TestToolsCliMoreCoverage:
         mock_gen.return_value = {}
         main(["-v"])
         mock_cfg.assert_called()
+
+
+class TestGenerateMarkdownDocs:
+    """Tests for the api_docs builder markdown generation."""
+
+    def test_markdown_has_no_template_literals(self):
+        """The produced markdown must be valid: no unresolved template
+        placeholders and no doubled JSON braces."""
+        from src.chatty_commander.cli.api_docs.builder import generate_markdown_docs
+
+        docs = generate_markdown_docs()
+        # The literal f-string placeholder must not survive into the output.
+        assert "{datetime" not in docs
+        assert "datetime.now()" not in docs
+        # JSON example bodies must be single-braced (valid JSON), not doubled.
+        assert "{{" not in docs
+        assert "}}" not in docs
+
+    def test_markdown_has_real_date_header(self):
+        """The 'Generated on' header line must be an interpolated date."""
+        import re
+
+        from src.chatty_commander.cli.api_docs.builder import generate_markdown_docs
+
+        docs = generate_markdown_docs()
+        generated_lines = [
+            line for line in docs.splitlines() if line.startswith("*Generated on")
+        ]
+        assert len(generated_lines) == 1
+        # e.g. "*Generated on 2026-06-20 12:41:19*"
+        assert re.match(
+            r"^\*Generated on \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\*$",
+            generated_lines[0],
+        )
+
+    def test_markdown_json_blocks_are_parseable(self):
+        """Spot-check that a JSON example block is now valid JSON."""
+        import json
+
+        from src.chatty_commander.cli.api_docs.builder import generate_markdown_docs
+
+        docs = generate_markdown_docs()
+        # Extract the first ```json ... ``` fenced block and parse it.
+        start = docs.index("```json")
+        body_start = docs.index("\n", start) + 1
+        end = docs.index("```", body_start)
+        block = docs[body_start:end]
+        json.loads(block)

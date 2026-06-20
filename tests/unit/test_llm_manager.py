@@ -22,7 +22,8 @@
 
 """Tests for LLM manager module."""
 
-from unittest.mock import patch
+import os
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -278,3 +279,46 @@ class TestLLMManagerMoreCoverage:
         manager = LLMManager(use_mock=True)
         res = manager.test_backend("no-such")
         assert "error" in res
+
+
+class TestLLMManagerSelectionHasNoSideEffects:
+    """Building the manager / selecting a backend must be cheap.
+
+    Backend selection calls ``is_available()`` on every candidate, so it must
+    never make billed OpenAI requests or trigger an Ollama model pull.
+    """
+
+    def test_construction_makes_no_paid_or_pull_calls(self):
+        # Arrange: a real (non-mock) manager with both OpenAI and Ollama
+        # configured. Patch the OpenAI client factory and httpx so we can
+        # observe whether any costly/slow call is attempted during selection.
+        mock_openai_client = MagicMock()
+
+        mock_httpx_client = MagicMock()
+        mock_tags = MagicMock()
+        mock_tags.status_code = 200
+        mock_tags.json.return_value = {"models": [{"name": "other"}]}
+        mock_httpx_client.get.return_value = mock_tags
+
+        env = {"OPENAI_API_KEY": "test-key", "OLLAMA_HOST": "localhost:11434"}
+        with patch.dict(os.environ, env, clear=True):
+            with patch("openai.OpenAI", return_value=mock_openai_client):
+                with patch("httpx.Client") as MockHttpx:
+                    MockHttpx.return_value.__enter__.return_value = (
+                        mock_httpx_client
+                    )
+                    with patch(
+                        "chatty_commander.utils.url_validator.is_safe_url",
+                        return_value=True,
+                    ):
+                        # Act
+                        manager = LLMManager(
+                            preferred_backend="openai",
+                            openai_api_key="test-key",
+                            ollama_host="localhost:11434",
+                        )
+
+        # Assert: a backend was selected without any paid probe or pull.
+        assert manager.is_available() is True
+        mock_openai_client.chat.completions.create.assert_not_called()
+        mock_httpx_client.post.assert_not_called()

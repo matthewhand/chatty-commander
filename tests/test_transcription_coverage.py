@@ -391,3 +391,52 @@ class TestBackendSelection:
 
     def test_mock_backend_is_always_available(self):
         assert MockTranscriptionBackend().is_available() is True
+
+
+# ---------------------------------------------------------------------------
+# Robustness: zero-length chunk must not crash the record loop (ZeroDivision)
+# ---------------------------------------------------------------------------
+class TestRecordAudioZeroLengthChunk:
+    def test_zero_length_chunk_does_not_crash_record_loop(self):
+        """PyAudio can return b"" on overflow/close; computing RMS over a
+        zero-length array would raise ZeroDivisionError. The record loop must
+        skip the empty chunk and continue (then break on record_timeout),
+        returning bytes rather than propagating an exception.
+
+        Uses *real* numpy so np.frombuffer(b"", int16) yields a genuine
+        zero-length array, faithfully reproducing the bug condition.
+        """
+        np = pytest.importorskip("numpy")
+
+        mock_pyaudio = MagicMock()
+        mock_audio_instance = MagicMock()
+        mock_stream = MagicMock()
+        mock_audio_instance.open.return_value = mock_stream
+        mock_pyaudio.PyAudio.return_value = mock_audio_instance
+        mock_pyaudio.paInt16 = 8
+        # Always return an empty buffer -> len(audio_array) == 0 every iteration.
+        mock_stream.read.return_value = b""
+
+        # Drive time so record_timeout trips after a couple of iterations,
+        # guaranteeing the loop terminates even though every chunk is skipped.
+        seq = [0.0, 0.1, 0.2, 100.0, 100.1]
+        state = {"i": 0}
+
+        def fake_time():
+            i = state["i"]
+            state["i"] = min(i + 1, len(seq) - 1)
+            return seq[i]
+
+        with (
+            patch.object(tmod, "AUDIO_DEPS_AVAILABLE", True),
+            patch.object(tmod, "pyaudio", mock_pyaudio),
+            patch.object(tmod, "np", np),
+            patch.object(tmod.time, "time", fake_time),
+        ):
+            t = VoiceTranscriber(backend="mock")
+            t.record_timeout = 1.0
+            # Must not raise ZeroDivisionError.
+            result = t._record_audio()
+
+        assert isinstance(result, bytes)
+        mock_stream.read.assert_called()

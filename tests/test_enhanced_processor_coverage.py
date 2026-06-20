@@ -315,6 +315,49 @@ def test_energy_based_vad_silence_below_threshold():
     assert proc._energy_based_vad(quiet) is False
 
 
+def test_energy_based_vad_empty_chunk_returns_false_no_zero_division():
+    """An empty chunk (b"", as PyAudio may return on overflow/close) makes
+    len(audio_data) == 0; the VAD must treat it as no-speech rather than
+    raising ZeroDivisionError."""
+    proc = _bare_processor()
+    assert proc._energy_based_vad(b"") is False
+
+
+# ---------------------------------------------------------------------------
+# numpy import safety: module must import even when numpy is absent
+# ---------------------------------------------------------------------------
+
+
+def test_module_imports_with_numpy_absent():
+    """Re-importing enhanced_processor with numpy mocked-absent must not crash
+    (the top-level ``import numpy`` is wrapped in try/except). The reloaded
+    module exposes ``np is None`` and ``NUMPY_AVAILABLE is False``, and an
+    instance can still be constructed (it degrades instead of raising)."""
+    import importlib
+
+    import chatty_commander.voice.enhanced_processor as epmod
+
+    try:
+        # Simulate numpy being uninstalled: setting sys.modules["numpy"] = None
+        # makes ``import numpy`` raise ImportError on reload.
+        with mock.patch.dict(sys.modules, {"numpy": None}):
+            reloaded = importlib.reload(epmod)
+            assert reloaded.np is None
+            assert reloaded.NUMPY_AVAILABLE is False
+            # Construction must not crash even without numpy.
+            cfg = reloaded.VoiceProcessingConfig()
+            with mock.patch.object(
+                reloaded.EnhancedVoiceProcessor, "_initialize_components"
+            ):
+                proc = reloaded.EnhancedVoiceProcessor(cfg)
+            # Energy VAD degrades to "no speech" without numpy.
+            assert proc._energy_based_vad(b"\x00\x00") is False
+    finally:
+        # Restore the real module *after* the numpy patch is lifted, so the
+        # reloaded module re-imports the genuine numpy for the rest of the suite.
+        importlib.reload(epmod)
+
+
 # ---------------------------------------------------------------------------
 # _detect_wake_words
 # ---------------------------------------------------------------------------

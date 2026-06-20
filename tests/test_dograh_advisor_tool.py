@@ -38,6 +38,36 @@ def test_place_call_falls_back_to_top_level_id(mock_cls):
     assert "workflow_run_id=99" in result
 
 
+@patch("chatty_commander.integrations.dograh_client.DograhClient")
+def test_place_call_rejects_invalid_phone_before_initiate(mock_cls):
+    """An LLM-supplied non-E.164 phone number must be rejected before any
+    call is placed (initiate_call / DograhClient never touched)."""
+    instance = MagicMock()
+    mock_cls.return_value = instance
+
+    result = dograh_place_call_tool(42, "not-a-phone; rm -rf /")
+
+    assert "rejected" in result
+    assert "phone number" in result
+    # Never even constructed a client / contacted the backend.
+    mock_cls.assert_not_called()
+    instance.initiate_call.assert_not_called()
+
+
+@patch("chatty_commander.integrations.dograh_client.DograhClient")
+def test_place_call_rejects_non_numeric_workflow_id(mock_cls):
+    """A non-numeric workflow_id is rejected before any call is placed."""
+    instance = MagicMock()
+    mock_cls.return_value = instance
+
+    result = dograh_place_call_tool("DROP TABLE", "+15555550100")  # type: ignore[arg-type]
+
+    assert "rejected" in result
+    assert "workflow_id" in result
+    mock_cls.assert_not_called()
+    instance.initiate_call.assert_not_called()
+
+
 @patch(
     "chatty_commander.integrations.dograh_client.DograhConfig.from_env",
     side_effect=DograhUnavailableError("env missing"),

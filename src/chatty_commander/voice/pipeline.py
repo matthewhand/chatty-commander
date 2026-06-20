@@ -79,6 +79,13 @@ class VoicePipeline:
         # State
         self._listening = False
         self._processing = False
+        # Guards the check-and-set of ``_processing`` so two wake words arriving
+        # in quick succession cannot both pass the "already processing?" check
+        # and spawn competing recorder threads contending for the microphone.
+        self._processing_lock = threading.Lock()
+        # Keep a reference to the most recently spawned worker so it is not a
+        # fully untracked daemon thread (aids join-on-stop / debugging).
+        self._processing_thread: threading.Thread | None = None
         self._callbacks: list[Callable[[str, str], None]] = (
             []
         )  # (command, transcription)
@@ -135,16 +142,21 @@ class VoicePipeline:
 
     def _on_wake_word_detected(self, wake_word: str, confidence: float) -> None:
         """Handle wake word detection."""
-        if self._processing:
-            logger.debug("Already processing voice command, ignoring wake word")
-            return
+        # Atomically claim the processing slot: check-and-set ``_processing``
+        # under the lock so two rapid detections cannot both spawn a recorder.
+        with self._processing_lock:
+            if self._processing:
+                logger.debug("Already processing voice command, ignoring wake word")
+                return
+            self._processing = True
 
         logger.info(f"Wake word '{wake_word}' detected (confidence: {confidence:.3f})")
 
-        # Start processing in background thread
+        # Start processing in background thread (tracked, not fully orphaned).
         thread = threading.Thread(
             target=self._process_voice_command, args=(wake_word,), daemon=True
         )
+        self._processing_thread = thread
         thread.start()
 
     def _safe_change_state(self, new_state: str) -> None:

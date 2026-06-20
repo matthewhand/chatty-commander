@@ -12,6 +12,18 @@ from unittest.mock import Mock, patch
 import pytest
 
 from chatty_commander.app.command_executor import CommandExecutor
+from chatty_commander.utils.url_validator import PinnedURL
+
+
+def _pinned(pinned_url: str, host: str) -> PinnedURL:
+    """Build a PinnedURL stub for resolve_safe_url patches."""
+    return PinnedURL(
+        url=pinned_url,
+        ip=pinned_url.split("//", 1)[-1].split("/", 1)[0],
+        host_header=host,
+        sni_hostname=host,
+    )
+
 
 # ============================================================================
 # FIXTURES (local + leveraging conftest via pytest)
@@ -86,8 +98,9 @@ class TestCommandExecutorExecuteHappyPaths:
     def test_execute_url_action(self, executor, sample_actions):
         # Arrange
         executor.config.model_actions = sample_actions
-        with patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True), \
+        with patch("chatty_commander.utils.url_validator.resolve_safe_url") as mock_resolve, \
              patch("chatty_commander.app.command_executor.httpx") as mock_httpx:
+            mock_resolve.return_value = _pinned("https://93.184.216.34/safe", "example.com")
             mock_client = Mock()
             mock_resp = Mock(status_code=200)
             mock_client.get.return_value = mock_resp
@@ -96,7 +109,13 @@ class TestCommandExecutorExecuteHappyPaths:
             result = executor.execute_command("url_cmd")
             # Assert
             assert result is True
-            mock_client.get.assert_called()
+            mock_client.get.assert_called_once_with(
+                "https://93.184.216.34/safe",
+                timeout=10,
+                follow_redirects=False,
+                headers={"Host": "example.com"},
+                extensions={"sni_hostname": "example.com"},
+            )
 
     def test_execute_shell_action_success(self, executor, sample_actions):
         # Arrange
@@ -157,8 +176,9 @@ class TestCommandExecutorExecuteHappyPaths:
     def test_execute_old_format_url(self, executor, sample_actions):
         # Arrange
         executor.config.model_actions = sample_actions
-        with patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True), \
+        with patch("chatty_commander.utils.url_validator.resolve_safe_url") as mock_resolve, \
              patch("chatty_commander.app.command_executor.httpx") as mock_httpx:
+            mock_resolve.return_value = _pinned("https://93.184.216.34", "old.example")
             mock_client = Mock()
             mock_resp = Mock(status_code=200)
             mock_client.get.return_value = mock_resp
@@ -389,12 +409,15 @@ class TestCommandExecutorMoreCoverage:
 
     def test_execute_url_unsafe_reports_error(self, executor, sample_actions):
         executor.config.model_actions = sample_actions
-        with patch("chatty_commander.utils.url_validator.is_safe_url", return_value=False), \
+        with patch("chatty_commander.utils.url_validator.resolve_safe_url", return_value=None), \
+             patch("chatty_commander.app.command_executor.httpx") as mock_httpx, \
              patch.object(executor, "report_error") as mock_report:
             result = executor.execute_command("url_cmd")
             # Current impl still returns True from caller, but reports (side effect tested)
             assert result is True
             mock_report.assert_called()
+            # Unsafe URL must never reach the network.
+            mock_httpx.Client.assert_not_called()
 
     def test_validate_new_format_missing_fields(self, executor):
         bad = {"action": "keypress"}  # missing "keys"
@@ -430,7 +453,7 @@ class TestCommandExecutorMoreCoverage:
     def test_execute_url_unsafe_reported(self, executor, sample_actions):
         """Unsafe URL is reported via report_error."""
         executor.config.model_actions = sample_actions
-        with patch("src.chatty_commander.utils.url_validator.is_safe_url", return_value=False):
+        with patch("chatty_commander.utils.url_validator.resolve_safe_url", return_value=None):
             with patch.object(executor, "report_error") as mock_report:
                 result = executor.execute_command("url_cmd")
                 # impl reports but returns True from upper
@@ -489,10 +512,12 @@ class TestCommandExecutorMoreCoverage:
         assert executor._validate_new_format_action({"action": "shell"}) is False
 
     def test_execute_old_format_url(self, executor):
-        """Old format url execution goes through safe url and httpx."""
+        """Old format url execution goes through pinned url and httpx."""
         executor.config.model_actions = {"oldu": {"url": "https://example.com"}}
-        with patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True), \
-             patch("chatty_commander.app.command_executor.httpx.Client"):
+        with patch(
+            "chatty_commander.utils.url_validator.resolve_safe_url",
+            return_value=_pinned("https://93.184.216.34", "example.com"),
+        ), patch("chatty_commander.app.command_executor.httpx.Client"):
             res = executor.execute_command("oldu")
             assert res is True
 
@@ -529,8 +554,10 @@ class TestCommandExecutorMoreCoverage:
     def test_execute_url_error_reported(self, executor):
         """URL error path reports but returns True (per impl)."""
         executor.config.model_actions = {"u": {"action": "url", "url": "https://ex.com"}}
-        with patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True), \
-             patch("chatty_commander.app.command_executor.httpx.Client") as cli:
+        with patch(
+            "chatty_commander.utils.url_validator.resolve_safe_url",
+            return_value=_pinned("https://93.184.216.34", "ex.com"),
+        ), patch("chatty_commander.app.command_executor.httpx.Client") as cli:
             resp = Mock(status_code=500)
             cli.return_value.__enter__.return_value.get.return_value = resp
             res = executor.execute_command("u")

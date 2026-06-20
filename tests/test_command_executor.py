@@ -54,9 +54,17 @@ class TestCommandExecutor:
         assert executor.execute_command("simple_key") is True
         mock_pyautogui.press.assert_called_once_with("a")
 
-    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
     @patch("chatty_commander.app.command_executor.httpx")
-    def test_execute_url_success(self, mock_httpx, mock_is_safe, executor):
+    @patch("chatty_commander.utils.url_validator.resolve_safe_url")
+    def test_execute_url_success(self, mock_resolve, mock_httpx, executor):
+        from chatty_commander.utils.url_validator import PinnedURL
+
+        mock_resolve.return_value = PinnedURL(
+            url="http://93.184.216.34",
+            ip="93.184.216.34",
+            host_header="example.com",
+            sni_hostname="example.com",
+        )
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -65,13 +73,27 @@ class TestCommandExecutor:
         mock_httpx.Client.return_value.__enter__.return_value = mock_client
 
         assert executor.execute_command("test_url") is True
+        # Fetch must go to the pinned IP URL, with Host header + SNI set to the
+        # original hostname (DNS-rebinding TOCTOU closed).
         mock_client.get.assert_called_once_with(
-            "http://example.com", timeout=10, follow_redirects=False
+            "http://93.184.216.34",
+            timeout=10,
+            follow_redirects=False,
+            headers={"Host": "example.com"},
+            extensions={"sni_hostname": "example.com"},
         )
 
-    @patch("chatty_commander.utils.url_validator.is_safe_url", return_value=True)
     @patch("chatty_commander.app.command_executor.httpx")
-    def test_execute_url_failure(self, mock_httpx, mock_is_safe, executor):
+    @patch("chatty_commander.utils.url_validator.resolve_safe_url")
+    def test_execute_url_failure(self, mock_resolve, mock_httpx, executor):
+        from chatty_commander.utils.url_validator import PinnedURL
+
+        mock_resolve.return_value = PinnedURL(
+            url="http://93.184.216.34",
+            ip="93.184.216.34",
+            host_header="example.com",
+            sni_hostname="example.com",
+        )
         mock_client = MagicMock()
         # Setup mock to raise an exception
         mock_client.get.side_effect = Exception("Network error")
@@ -79,8 +101,22 @@ class TestCommandExecutor:
 
         assert executor.execute_command("test_url") is True
         mock_client.get.assert_called_once_with(
-            "http://example.com", timeout=10, follow_redirects=False
+            "http://93.184.216.34",
+            timeout=10,
+            follow_redirects=False,
+            headers={"Host": "example.com"},
+            extensions={"sni_hostname": "example.com"},
         )
+
+    @patch("chatty_commander.app.command_executor.httpx")
+    @patch("chatty_commander.utils.url_validator.resolve_safe_url", return_value=None)
+    def test_execute_url_unsafe_rejected_no_fetch(self, mock_resolve, mock_httpx, executor):
+        """An unsafe URL must report_error and never reach httpx."""
+        with patch.object(executor, "report_error") as mock_report:
+            assert executor.execute_command("test_url") is True
+            mock_report.assert_called_once()
+            assert "unsafe URL rejected" in mock_report.call_args[0][1]
+        mock_httpx.Client.assert_not_called()
 
     @patch("chatty_commander.app.command_executor.subprocess.run")
     def test_execute_shell_success(self, mock_run, executor):
@@ -300,6 +336,43 @@ class TestKeybindingExecution:
             or ("Completed execution of command: kp" in rec.message)
             for rec in caplog.records
         )
+
+    def test_keypress_unmapped_literal_reports_error(self, caplog, monkeypatch):
+        """A semantic/unmapped single key (not in KEYBOARD_KEYS) must report an
+        error rather than pressing the literal string."""
+        mock_pg = MagicMock()
+        # Provide a real KEYBOARD_KEYS set so validation is active.
+        mock_pg.KEYBOARD_KEYS = ["a", "b", "enter", "space", "ctrl"]
+        monkeypatch.setattr(
+            "chatty_commander.app.command_executor.pyautogui", mock_pg, raising=False
+        )
+        self.executor.config.model_actions = {
+            "shot": {"action": "keypress", "keys": "take_screenshot"}
+        }
+
+        self.executor.execute_command("shot")
+
+        mock_pg.press.assert_not_called()
+        assert any(
+            "not a valid keyboard key" in rec.message for rec in caplog.records
+        )
+        assert any(
+            rec.levelname == "CRITICAL" and "Error in shot" in rec.message
+            for rec in caplog.records
+        )
+
+    def test_keypress_valid_key_with_keyboard_keys_present(self, caplog, monkeypatch):
+        """A valid single key passes validation and is pressed."""
+        mock_pg = MagicMock()
+        mock_pg.KEYBOARD_KEYS = ["a", "b", "enter", "space"]
+        monkeypatch.setattr(
+            "chatty_commander.app.command_executor.pyautogui", mock_pg, raising=False
+        )
+        self.executor.config.model_actions = {"kp": {"action": "keypress", "keys": "a"}}
+
+        self.executor.execute_command("kp")
+
+        mock_pg.press.assert_called_once_with("a")
 
     def test_keypress_runtime_error_logged(self, caplog, monkeypatch):
         mock_pg = MagicMock()
