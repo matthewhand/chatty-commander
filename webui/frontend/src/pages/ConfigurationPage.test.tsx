@@ -16,6 +16,14 @@ vi.mock("../services/api", () => ({
   deleteVoiceModel: vi.fn(),
 }));
 
+// The page reads useAuth().sessionExpiredBlocking to disable the save bar when a
+// session has expired mid-edit. The tests don't mount an AuthProvider, so mock
+// the hook and let individual tests flip the blocking flag.
+let mockSessionExpiredBlocking = false;
+vi.mock("../hooks/useAuth", () => ({
+  useAuth: () => ({ sessionExpiredBlocking: mockSessionExpiredBlocking }),
+}));
+
 // The in-browser audio tests are unit-tested in utils/audioTest.test.ts;
 // here we only verify the page wires them up and renders honest feedback.
 vi.mock("../utils/audioTest", () => ({
@@ -38,6 +46,14 @@ const jsonResponse = (data: unknown, ok = true, status = 200) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockSessionExpiredBlocking = false;
+  // Theme is persisted in localStorage by ThemeProvider; clear it so each test
+  // starts from the default theme and seeded backend theme behaves predictably.
+  try {
+    window.localStorage.clear();
+  } catch {
+    /* ignore */
+  }
   fetchVoiceModelsMock.mockResolvedValue([]);
   global.fetch = vi.fn(async (input: unknown) => {
     const url = String(input);
@@ -367,6 +383,117 @@ describe("ConfigurationPage theme select", () => {
     fireEvent.change(select, { target: { value: "nord" } });
     expect(select.value).toBe("nord");
     expect(screen.getByTestId("save-button")).toBeEnabled();
+  });
+
+  test("reflects the LIVE theme (useTheme), not a stale backend-seeded value", async () => {
+    // The backend config returns a theme ("emerald") that differs from the
+    // ThemeProvider's live theme. The select must show what is actually applied
+    // (the live theme), so it can never disagree with the sidebar switcher.
+    global.fetch = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.includes("/api/v1/audio/devices")) {
+        return jsonResponse({ input: [], output: [] });
+      }
+      if (url.includes("/api/v1/config")) {
+        return jsonResponse({ ui: { theme: "emerald" } });
+      }
+      return jsonResponse({});
+    }) as unknown as typeof fetch;
+
+    renderPage();
+    const select = (await screen.findByLabelText("Theme")) as HTMLSelectElement;
+
+    // ThemeProvider applies the live theme to <html data-theme>; the select must
+    // match that, not necessarily the backend payload.
+    await waitFor(() => {
+      expect(select.value).toBe(
+        document.documentElement.getAttribute("data-theme"),
+      );
+    });
+
+    // Picking a new theme updates the live theme (data-theme) too — proving the
+    // select drives useTheme.setTheme rather than only local config state.
+    fireEvent.change(select, { target: { value: "nord" } });
+    expect(select.value).toBe("nord");
+    await waitFor(() =>
+      expect(document.documentElement.getAttribute("data-theme")).toBe("nord"),
+    );
+  });
+});
+
+describe("ConfigurationPage remote re-seed behavior", () => {
+  test("a refetch re-seeds the form while clean but never clobbers a dirty edit", async () => {
+    let configPayload: Record<string, unknown> = { ui: { theme: "dark" }, advisors: { providers: { model: "first-model" } } };
+    global.fetch = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.includes("/api/v1/audio/devices")) {
+        return jsonResponse({ input: [], output: [] });
+      }
+      if (url.includes("/api/v1/config")) {
+        return jsonResponse(configPayload);
+      }
+      return jsonResponse({});
+    }) as unknown as typeof fetch;
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <MemoryRouter initialEntries={["/configuration?tab=llm"]}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <ToastProvider>
+              <ConfigurationPage />
+            </ToastProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    // Initial seed from the first remote payload (LLM tab via ?tab=llm).
+    const modelInput = (await screen.findByDisplayValue(
+      "first-model",
+    )) as HTMLInputElement;
+
+    // While CLEAN: a refetch returning new remote data re-seeds the form.
+    configPayload = { ui: { theme: "dark" }, advisors: { providers: { model: "second-model" } } };
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ["config"] });
+    });
+    await waitFor(() => expect(modelInput.value).toBe("second-model"));
+    expect(screen.getByTestId("dirty-status")).toHaveTextContent("All changes saved");
+
+    // Now make a DIRTY edit, then trigger another refetch with different data.
+    fireEvent.change(modelInput, { target: { value: "my-local-edit" } });
+    expect(screen.getByTestId("dirty-status")).toHaveTextContent("Unsaved changes");
+
+    configPayload = { ui: { theme: "dark" }, advisors: { providers: { model: "third-model" } } };
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ["config"] });
+    });
+
+    // The in-flight edit must survive the refetch (no clobber), and the page
+    // advises that the server changed underneath it.
+    await screen.findByTestId("stale-remote-note");
+    expect(modelInput.value).toBe("my-local-edit");
+    expect(screen.getByTestId("dirty-status")).toHaveTextContent("Unsaved changes");
+  });
+});
+
+describe("ConfigurationPage session-expired save bar", () => {
+  test("disables Save and Discard while the session is blocking", async () => {
+    mockSessionExpiredBlocking = true;
+    renderPage();
+    await screen.findByTestId("save-button");
+
+    // Even after a dirty edit, the save bar stays disabled because a save would
+    // 401 in the expired-blocking state.
+    fireEvent.change(await screen.findByLabelText("Theme"), {
+      target: { value: "nord" },
+    });
+    expect(screen.getByTestId("dirty-status")).toHaveTextContent("Unsaved changes");
+    expect(screen.getByTestId("save-button")).toBeDisabled();
+    expect(screen.getByTestId("discard-button")).toBeDisabled();
   });
 });
 

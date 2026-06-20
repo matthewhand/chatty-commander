@@ -378,4 +378,101 @@ describe("useAuth Hook", () => {
     expect(result.current.user).toEqual(mockUser);
     expect(result.current.isAuthenticated).toBe(true);
   });
+
+  test("dismiss leaves a persistent sessionExpired flag (drives the banner)", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result } = renderHook(
+      () => {
+        useUnsavedChanges(true);
+        return useAuth();
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+    // Both the blocking gate and the persistent latch are set on expiry.
+    expect(result.current.sessionExpiredBlocking).toBe(true);
+    expect(result.current.sessionExpired).toBe(true);
+
+    act(() => result.current.dismissSessionExpiredBlocking());
+
+    // Modal gone, but the persistent expired latch remains so the app can show
+    // the non-blocking banner until the user signs in.
+    expect(result.current.sessionExpiredBlocking).toBe(false);
+    expect(result.current.sessionExpired).toBe(true);
+  });
+
+  test("confirmSessionExpiredSignIn clears the persistent sessionExpired flag", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result } = renderHook(
+      () => {
+        useUnsavedChanges(true);
+        return useAuth();
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+    act(() => result.current.dismissSessionExpiredBlocking());
+    expect(result.current.sessionExpired).toBe(true);
+
+    act(() => result.current.confirmSessionExpiredSignIn());
+    expect(result.current.sessionExpired).toBe(false);
+  });
+
+  test("a successful login clears the persistent sessionExpired flag", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result } = renderHook(
+      () => {
+        useUnsavedChanges(true);
+        return useAuth();
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+    act(() => result.current.dismissSessionExpiredBlocking());
+    expect(result.current.sessionExpired).toBe(true);
+
+    mockedAuthService.login.mockResolvedValueOnce({
+      access_token: "fresh-token",
+      token_type: "bearer",
+      expires_in: 3600,
+    });
+
+    await act(async () => {
+      await result.current.login("testuser", "password");
+    });
+
+    expect(result.current.sessionExpired).toBe(false);
+    expect(result.current.sessionExpiredBlocking).toBe(false);
+  });
+
+  test("the no-unsaved-changes path does not set the persistent sessionExpired flag", async () => {
+    const mockUser = { username: "testuser", is_active: true, roles: ["user"] };
+    mockedAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    localStorage.setItem("auth_token", "test-token");
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+    act(() => sessionExpiredListener?.("expired"));
+
+    // Immediate-redirect path: user cleared, and neither expired flag is set.
+    expect(result.current.user).toBeNull();
+    expect(result.current.sessionExpiredBlocking).toBe(false);
+    expect(result.current.sessionExpired).toBe(false);
+  });
 });

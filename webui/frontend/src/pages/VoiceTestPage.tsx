@@ -57,6 +57,12 @@ type WsStatus = "connecting" | "connected" | "disconnected" | "exhausted";
 const AUTH_CLOSE_CODES = new Set([1008, 4401]);
 
 export interface StageEvent {
+  /**
+   * Monotonic id assigned on receipt. Index-based keys break React
+   * reconciliation once the ring buffer drops its oldest entry (every row's
+   * index shifts), so timeline rows are keyed on this stable id instead.
+   */
+  id: number;
   stage: string;
   data: Record<string, unknown>;
   ts: number;
@@ -98,11 +104,25 @@ const isFailureEvent = (e: StageEvent): boolean =>
 const isWakeWordStage = (stage: string): boolean =>
   stage === "wakeword" || stage === "wake_word" || stage === "wake-word";
 
-/** Normalise a server ts (epoch seconds or ms) delta into milliseconds. */
-const deltaMs = (prev: number, curr: number): number => {
+/** A delta above this (24h in ms) almost certainly means mixed units or a
+ *  bogus timestamp; treat it as unknown rather than displaying a huge number. */
+const MAX_SANE_DELTA_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Normalise a server ts (epoch seconds or ms) delta into milliseconds.
+ * Server timestamps can arrive out of order or in mixed units, which would
+ * otherwise yield negative or absurdly large deltas; clamp to a sane range so
+ * the per-stage "+Nms" label never shows a negative or nonsensical value.
+ * Returns null when the delta is out of range so callers can fall back.
+ */
+const deltaMs = (prev: number, curr: number): number | null => {
+  if (!Number.isFinite(prev) || !Number.isFinite(curr)) return null;
   const d = curr - prev;
   // Epoch-seconds timestamps are ~1.7e9; epoch-ms are ~1.7e12.
-  return Math.round(curr > 1e12 ? d : d * 1000);
+  const ms = Math.round(curr > 1e12 ? d : d * 1000);
+  if (ms < 0) return 0;
+  if (ms > MAX_SANE_DELTA_MS) return null;
+  return ms;
 };
 
 const summariseData = (data: Record<string, unknown>): string => {
@@ -152,6 +172,9 @@ const VoiceTestPage: React.FC = () => {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const shouldReconnectRef = useRef(true);
+  // Monotonic id source for stage events, so timeline rows key stably even as
+  // the ring buffer scrolls and receivedAt timestamps repeat (cf. DashboardPage).
+  const eventIdRef = useRef(0);
 
   // --- Microphone state ---
   const [micState, setMicState] = useState<MicState>("idle");
@@ -201,6 +224,12 @@ const VoiceTestPage: React.FC = () => {
 
     socket.onopen = () => {
       reconnectAttemptRef.current = 0;
+      // Each fresh connection is a clean slate for the prefill auto-send. The
+      // manual reconnect() reset alone missed the automatic backoff reconnect,
+      // so after a transient drop the prefilled command was silently never
+      // re-tested while the banner still implied it was. Resetting here makes
+      // the auto-send behaviour consistent across both reconnect paths.
+      autoSentRef.current = false;
       setWsStatus("connected");
       // Backend contract: announce the session in dry-run mode.
       socket.send(JSON.stringify({ type: "start", dry_run: true }));
@@ -212,6 +241,7 @@ const VoiceTestPage: React.FC = () => {
         const parsed = JSON.parse(event.data);
         if (parsed && typeof parsed.stage === "string") {
           const stageEvent: StageEvent = {
+            id: eventIdRef.current++,
             stage: parsed.stage,
             data: parsed.data && typeof parsed.data === "object" ? parsed.data : {},
             ts: typeof parsed.ts === "number" ? parsed.ts : Date.now(),
@@ -433,12 +463,15 @@ const VoiceTestPage: React.FC = () => {
   };
 
   const sendSimulation = useCallback(
-    (raw: string): boolean => {
+    (raw: string, { clearInput = true }: { clearInput?: boolean } = {}): boolean => {
       const text = raw.trim();
       if (!text) return false;
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: "text", text }));
-        setTextInput("");
+        // For the author->test auto-send we keep the input populated so the
+        // user can resend; clearing it here would empty the prefill the effect
+        // just set and strand them with no way to re-run the command.
+        if (clearInput) setTextInput("");
         beginProcessing();
         return true;
       }
@@ -461,7 +494,7 @@ const VoiceTestPage: React.FC = () => {
     if (autoSentRef.current) return;
     autoSentRef.current = true;
     simulateInputRef.current?.focus();
-    sendSimulation(prefillCommand);
+    sendSimulation(prefillCommand, { clearInput: false });
   }, [wsStatus, prefillCommand, sendSimulation]);
 
   // --- Derived state ---
@@ -476,27 +509,37 @@ const VoiceTestPage: React.FC = () => {
         ? "Requesting microphone access..."
         : "Enable microphone";
 
-  // transcription_available is reported in the `listening` stage data.
-  const transcriptionUnavailable = useMemo(() => {
-    const listening = [...events].reverse().find((e) => e.stage === "listening");
-    if (!listening) return false;
-    return listening.data?.transcription_available === false;
-  }, [events]);
-
-  // Latest transcript text for the dedicated panel.
-  const latestTranscript = useMemo(() => {
-    const t = [...events].reverse().find((e) => e.stage === "transcript");
-    if (!t) return null;
-    const text = t.data?.text;
-    return typeof text === "string" ? text : "";
-  }, [events]);
-
-  // Verify-setup checklist progress.
-  const wakeWordSeen = useMemo(() => events.some((e) => isWakeWordStage(e.stage)), [events]);
-  const commandMatched = useMemo(
-    () => events.some((e) => e.stage === "match" && e.data?.matched === true),
-    [events],
-  );
+  // Fold every events-derived scan into a single backward pass instead of
+  // multiple `[...events].reverse().find(...)` copies plus separate `.some()`
+  // scans. We walk newest -> oldest so the first `listening`/`transcript` we
+  // hit is the latest; wakeWordSeen/commandMatched are existence checks that
+  // fall out of the same loop. Behaviour-preserving.
+  const { transcriptionUnavailable, latestTranscript, wakeWordSeen, commandMatched } =
+    useMemo(() => {
+      let transcriptionUnavailable = false;
+      let latestTranscript: string | null = null;
+      let wakeWordSeen = false;
+      let commandMatched = false;
+      let sawListening = false;
+      let sawTranscript = false;
+      for (let i = events.length - 1; i >= 0; i--) {
+        const e = events[i];
+        if (!sawListening && e.stage === "listening") {
+          sawListening = true;
+          transcriptionUnavailable = e.data?.transcription_available === false;
+        }
+        if (!sawTranscript && e.stage === "transcript") {
+          sawTranscript = true;
+          const text = e.data?.text;
+          latestTranscript = typeof text === "string" ? text : "";
+        }
+        if (!wakeWordSeen && isWakeWordStage(e.stage)) wakeWordSeen = true;
+        if (!commandMatched && e.stage === "match" && e.data?.matched === true) {
+          commandMatched = true;
+        }
+      }
+      return { transcriptionUnavailable, latestTranscript, wakeWordSeen, commandMatched };
+    }, [events]);
 
   const wakeWordJustDetected = useMemo(() => {
     // Highlight when the most recent event is a wake-word stage.
@@ -578,6 +621,15 @@ const VoiceTestPage: React.FC = () => {
           <Target size={20} />
           <span>
             Testing: <strong>{prefillCommand}</strong>
+            {/* Be honest about state: the command only actually runs once the
+                socket is connected. While we are (re)connecting, say so rather
+                than implying the test is in flight. */}
+            {wsStatus !== "connected" && (
+              <span className="text-base-content/70">
+                {" "}
+                — waiting for connection before sending…
+              </span>
+            )}
           </span>
         </div>
       )}
@@ -869,8 +921,9 @@ const VoiceTestPage: React.FC = () => {
                 const delta = prev ? deltaMs(prev.ts, event.ts) : null;
                 return (
                   <li
-                    key={`${event.receivedAt}-${i}`}
+                    key={event.id}
                     data-testid="voice-stage-event"
+                    data-event-id={event.id}
                     data-stage={event.stage}
                     data-status={failure ? "failure" : "success"}
                     data-wakeword={wake ? "true" : undefined}

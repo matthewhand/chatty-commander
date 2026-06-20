@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-300 pattern-isometric">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-base-300 via-base-200 to-base-300">
       <div className="card w-96 bg-base-100 shadow-xl border border-primary/20">
         <div className="card-body items-center text-center">
           {/* Single, prominent brand lockup. The Logo already pairs the

@@ -38,6 +38,15 @@ interface AuthContextType {
    */
   sessionExpiredBlocking: boolean;
   /**
+   * True once the session has expired mid-use (with unsaved changes) and stays
+   * true after the blocking modal is dismissed, until the user signs in again.
+   * Unlike {@link sessionExpiredBlocking}, this does NOT get cleared on dismiss,
+   * so the app can honestly show a persistent "session expired" banner instead
+   * of pretending the page is still logged in. Cleared only by a successful
+   * login or by confirming the sign-out.
+   */
+  sessionExpired: boolean;
+  /**
    * Commit the deferred sign-out: clear the in-memory user so ProtectedRoute
    * redirects to /login. Called from the blocking modal's "Sign in again"
    * action once the user has had a chance to copy/save their edits.
@@ -63,6 +72,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // edits; drives the blocking SessionExpiredModal instead of an immediate
   // redirect.
   const [sessionExpiredBlocking, setSessionExpiredBlocking] = useState(false);
+  // Persistent expired latch: stays true after the blocking modal is dismissed
+  // so a non-blocking "session expired" banner can remain until the user signs
+  // in again. Distinct from sessionExpiredBlocking, which only gates the modal.
+  const [sessionExpired, setSessionExpired] = useState(false);
   const retryCount = useRef(0);
   // Track the pending retry timer and mount state so we can cancel in-flight
   // retries on unmount and avoid setting state on an unmounted component.
@@ -120,7 +133,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSessionExpiredNotice(message);
       if (hasUnsavedChanges()) {
         // Defer the sign-out; the modal drives confirmSessionExpiredSignIn().
+        // Latch the persistent expired flag too so that, if the modal is later
+        // dismissed, a non-blocking banner remains until the user signs in.
         setSessionExpiredBlocking(true);
+        setSessionExpired(true);
       } else {
         setUser(null);
         setLoading(false);
@@ -169,6 +185,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // their edits, drop the in-memory user so ProtectedRoute redirects to /login.
   const confirmSessionExpiredSignIn = useCallback(() => {
     setSessionExpiredBlocking(false);
+    // Committing the sign-out resolves the expired state — the user is heading
+    // to /login, so the persistent banner no longer applies.
+    setSessionExpired(false);
     setUser(null);
     setLoading(false);
   }, []);
@@ -189,9 +208,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const userData = await authService.getCurrentUser();
       setUser(userData);
-      // A successful sign-in supersedes any stale expiry notice / blocking modal.
+      // A successful sign-in supersedes any stale expiry notice / blocking modal
+      // and clears the persistent expired banner.
       setSessionExpiredNotice(null);
       setSessionExpiredBlocking(false);
+      setSessionExpired(false);
       return true;
     } catch (error) {
       logger.error("Login failed:", error);
@@ -217,6 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sessionExpiredNotice,
         clearSessionExpiredNotice,
         sessionExpiredBlocking,
+        sessionExpired,
         confirmSessionExpiredSignIn,
         dismissSessionExpiredBlocking,
       }}

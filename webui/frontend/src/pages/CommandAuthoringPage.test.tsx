@@ -10,6 +10,10 @@ import CommandAuthoringPage, {
   validateAction,
 } from "./CommandAuthoringPage";
 import { ToastProvider } from "../components/ToastProvider";
+import {
+  hasUnsavedChanges,
+  __resetUnsavedChanges,
+} from "../hooks/useUnsavedChanges";
 
 // --- Pure heuristic unit tests (no DOM) ---
 
@@ -111,11 +115,13 @@ function renderPage(initialEntries: string[] = ["/authoring"]) {
 
 beforeEach(() => {
   vi.stubGlobal("fetch", mockFetch());
+  __resetUnsavedChanges();
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  __resetUnsavedChanges();
 });
 
 async function fillManualForm(name: string) {
@@ -298,5 +304,111 @@ describe("success path", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: /Confirm Save/i }));
 
     expect(await screen.findByText("Commands List Page")).toBeInTheDocument();
+  });
+});
+
+describe("dirty tracking (unsaved-changes gate)", () => {
+  test("AI mode is not dirty until a command is generated", async () => {
+    // Generate endpoint returns a command so we can flip from clean → dirty.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url === "/api/v1/commands/generate") {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                name: "made_up",
+                display_name: "Made Up",
+                wakeword: "go",
+                actions: [{ type: "keypress", keys: "ctrl+x" }],
+              }),
+          } as Response);
+        }
+        if (url === "/api/v1/config" && (!init || init.method !== "PUT")) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(config),
+          } as Response);
+        }
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as Response);
+      })
+    );
+
+    renderPage();
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/v1/config"));
+
+    // Typing a half-written prompt must NOT mark the form dirty — there is
+    // nothing savable yet, so the session-expiry deferral shouldn't trip.
+    fireEvent.change(screen.getByLabelText(/Command Description/i), {
+      target: { value: "open my email" },
+    });
+    expect(hasUnsavedChanges()).toBe(false);
+
+    // Generating produces a savable result → now it's dirty.
+    fireEvent.click(screen.getByRole("button", { name: /Generate Command/i }));
+    await waitFor(() => expect(hasUnsavedChanges()).toBe(true));
+  });
+
+  test("manual edit-then-revert reads as clean (no phantom dirty)", async () => {
+    // Load an existing command for editing; its baseline is normalized through
+    // the same mapper saveCommand uses, so reverting an edit returns to clean.
+    renderPage(["/authoring?edit=existing_cmd"]);
+
+    // Wait for the loaded command to populate the form.
+    await waitFor(() =>
+      expect((screen.getByLabelText(/Display Name/i) as HTMLInputElement).value).toBe(
+        "Existing"
+      )
+    );
+    // Freshly loaded definition is the pristine baseline → not dirty.
+    await waitFor(() => expect(hasUnsavedChanges()).toBe(false));
+
+    const displayInput = screen.getByLabelText(/Display Name/i) as HTMLInputElement;
+    // Edit a field → dirty.
+    fireEvent.change(displayInput, { target: { value: "Existing!" } });
+    await waitFor(() => expect(hasUnsavedChanges()).toBe(true));
+
+    // Revert the edit → back to clean, despite the server shape (command→cmd,
+    // singular action) differing from the in-memory editor shape.
+    fireEvent.change(displayInput, { target: { value: "Existing" } });
+    await waitFor(() => expect(hasUnsavedChanges()).toBe(false));
+  });
+});
+
+describe("save-time collision re-check", () => {
+  test("blocks a name created in another session after this page loaded", async () => {
+    // The mount snapshot sees only `existing_cmd`. A later config fetch (the one
+    // performed by the save handler) also returns `late_cmd`, simulating another
+    // tab creating it after load — the guard must catch it.
+    let configReads = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url === "/api/v1/config" && (!init || init.method !== "PUT")) {
+          configReads += 1;
+          // First read (mount) → only existing_cmd. Subsequent reads → also late_cmd.
+          const commands =
+            configReads <= 1
+              ? config.commands
+              : { ...config.commands, late_cmd: { name: "Late", actions: [] } };
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ commands }),
+          } as Response);
+        }
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as Response);
+      })
+    );
+
+    renderPage();
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/v1/config"));
+    // `late_cmd` was not in the mount snapshot, so the stale guard would miss it.
+    await fillManualForm("late_cmd");
+
+    fireEvent.click(screen.getByRole("button", { name: /Save Command/i }));
+
+    expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

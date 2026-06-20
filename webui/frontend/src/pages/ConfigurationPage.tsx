@@ -23,6 +23,7 @@ import {
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme, AVAILABLE_THEMES } from "../components/ThemeProvider";
 import { useToast } from "../components/ToastProvider";
+import { useAuth } from "../hooks/useAuth";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { runMicTest, playTestTone } from "../utils/audioTest";
 
@@ -156,7 +157,10 @@ const themeLabel = (id: string): string =>
 // ─── Small presentational helpers ─────────────────────────────────────────────
 /** Inline tooltip help icon for technical options. */
 const HelpHint: React.FC<{ text: string; label: string }> = ({ text, label }) => (
-  <span className="tooltip tooltip-right align-middle" data-tip={text}>
+  // On narrow (phone) widths a right-pointing tooltip near the right edge of a
+  // card clips off-screen, so default to `tooltip-bottom` and only switch to
+  // `tooltip-right` from the `sm` breakpoint up where there's room.
+  <span className="tooltip tooltip-bottom sm:tooltip-right align-middle" data-tip={text}>
     <HelpIcon
       size={16}
       className="text-base-content/50 cursor-help"
@@ -173,8 +177,12 @@ const ConfigurationPage: React.FC = () => {
   }, []);
 
   const queryClient = useQueryClient();
-  const { setTheme } = useTheme();
+  const { theme: liveTheme, setTheme } = useTheme();
   const { addToast } = useToast();
+  // When the auth session has expired mid-edit we keep the page mounted (see
+  // useAuth.sessionExpiredBlocking) but any save would 401 — used below to
+  // disable the Save/Discard affordances so they're not misleading.
+  const { sessionExpiredBlocking } = useAuth();
 
   const [config, setConfig] = useState<AppConfig>({ ...DEFAULT_CONFIG });
   // The last-known remote/loaded config; the source of truth for dirtiness.
@@ -249,27 +257,52 @@ const ConfigurationPage: React.FC = () => {
     queryKey: ["config"],
     queryFn: loadConfig,
   });
-  // Seed the editable form from the remote config during render (not in an
-  // effect) so the seed can never land *after* a user edit and clobber it.
-  // `seeded` marks the first seed; `lastRemoteJson` remembers the remote payload
-  // we last seeded from so we can detect a genuine refetch (React Query returns a
-  // fresh object reference on every render with staleTime=0, so identity alone
-  // isn't enough).
+
+  // ─── Memoized serializations ───────────────────────────────────────────────
+  // `config`/`baseline` were each being JSON.stringify'd 2-3 times per render
+  // (dirty check + stale-remote check), i.e. on every keystroke. Memoize each
+  // serialization once and compare the cached strings instead.
+  const configJson = useMemo(() => JSON.stringify(config), [config]);
+  const baselineJson = useMemo(() => JSON.stringify(baseline), [baseline]);
+  // React Query hands back a fresh object reference on every render (staleTime=0),
+  // so memoize on the remote payload's *value* to detect a genuine refetch.
+  const remoteJson = useMemo(
+    () => (remoteConfig ? JSON.stringify(remoteConfig) : null),
+    [remoteConfig],
+  );
+
+  // ─── Dirty-state tracking ──────────────────────────────────────────────────
+  // Compare the working config against the loaded/remote baseline (one cached
+  // serialization each).
+  const dirty = configJson !== baselineJson;
+
+  // `seeded` marks that we've performed the first seed. `lastRemoteJson` is held
+  // in state (not a ref) so that recording a genuinely-new remote payload that
+  // we *couldn't* auto-apply (because the form is dirty) triggers a re-render —
+  // that's what surfaces the "stale remote" advisory below.
   const seeded = useRef(false);
-  const lastRemoteJson = useRef<string | null>(null);
-  if (remoteConfig) {
-    const remoteJson = JSON.stringify(remoteConfig);
+  const [lastRemoteJson, setLastRemoteJson] = useState<string | null>(null);
+
+  // Seed / re-seed the editable form from the remote config in an effect (NOT
+  // during render): doing it in render meant a background React-Query refetch
+  // mid-edit could call setConfig and clobber in-flight edits before the dirty
+  // guard below was even evaluated against fresh state. Keyed on `remoteJson`
+  // (the serialized payload) so it only runs when the server data actually
+  // changes. We intentionally read `dirty` here but do not list it as a dep:
+  // the effect should fire on a *remote* change, and a stale `dirty` is fine
+  // because a dirty form must not be re-seeded regardless.
+  useEffect(() => {
+    if (remoteConfig == null || remoteJson == null) return;
     if (!seeded.current) {
       // First load: seed both the working copy and the baseline.
       seeded.current = true;
-      lastRemoteJson.current = remoteJson;
+      setLastRemoteJson(remoteJson);
       setConfig(remoteConfig);
       setBaseline(remoteConfig);
-    } else if (remoteJson !== lastRemoteJson.current) {
+    } else if (remoteJson !== lastRemoteJson) {
       // A later refetch returned genuinely different remote data.
-      lastRemoteJson.current = remoteJson;
-      const isDirty = JSON.stringify(config) !== JSON.stringify(baseline);
-      if (!isDirty) {
+      setLastRemoteJson(remoteJson);
+      if (!dirty) {
         // Not dirty: re-seed so we don't show "All changes saved" against stale
         // data. (If dirty, we intentionally leave the in-progress edit alone —
         // see the staleRemote note rendered in the save bar.)
@@ -277,14 +310,11 @@ const ConfigurationPage: React.FC = () => {
         setBaseline(remoteConfig);
       }
     }
-  }
-
-  // ─── Dirty-state tracking ──────────────────────────────────────────────────
-  // Compare the working config against the loaded/remote baseline.
-  const dirty = useMemo(
-    () => JSON.stringify(config) !== JSON.stringify(baseline),
-    [config, baseline],
-  );
+    // `dirty`/`lastRemoteJson` are deliberately omitted: re-seeding must be
+    // driven by remote changes, and a dirty edit is never clobbered (guarded
+    // above). Including them would re-run the effect on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remoteJson, remoteConfig]);
 
   // Advertise dirtiness to the global registry so a mid-edit session expiry
   // defers the forced sign-out (keeping these unsaved edits on screen) instead
@@ -293,13 +323,8 @@ const ConfigurationPage: React.FC = () => {
 
   // True when a refetch brought new remote data we couldn't auto-apply because
   // the form has unsaved edits — the baseline is now older than the server.
-  const staleRemote = useMemo(
-    () =>
-      dirty &&
-      lastRemoteJson.current !== null &&
-      lastRemoteJson.current !== JSON.stringify(baseline),
-    [dirty, baseline],
-  );
+  const staleRemote =
+    dirty && lastRemoteJson !== null && lastRemoteJson !== baselineJson;
 
   // Warn on browser-level navigation (reload / close tab) while dirty.
   useEffect(() => {
@@ -667,17 +692,23 @@ const ConfigurationPage: React.FC = () => {
                       id="config-theme"
                       name="theme"
                       className="select select-bordered w-full"
-                      value={config.theme}
+                      // Single source of truth: reflect the LIVE theme
+                      // (useTheme/localStorage, shared with the sidebar
+                      // ThemeSwitcher) rather than the backend-seeded
+                      // `config.theme`, so the two can never disagree on screen.
+                      // `handleChange` still mirrors the pick into `config.theme`
+                      // so the existing save contract persists it server-side.
+                      value={liveTheme}
                       onChange={handleChange}
                     >
                       {/* Drive options from the themes actually enabled in
                           Tailwind/DaisyUI (AVAILABLE_THEMES) so a pick can never
-                          set a non-existent data-theme. If the persisted theme is
+                          set a non-existent data-theme. If the live theme is
                           one that's since been removed, still list it (disabled)
                           so the current value renders honestly rather than blank. */}
-                      {!(AVAILABLE_THEMES as readonly string[]).includes(config.theme) && (
-                        <option value={config.theme} disabled>
-                          {themeLabel(config.theme)} (unavailable)
+                      {!(AVAILABLE_THEMES as readonly string[]).includes(liveTheme) && (
+                        <option value={liveTheme} disabled>
+                          {themeLabel(liveTheme)} (unavailable)
                         </option>
                       )}
                       {AVAILABLE_THEMES.map((t) => (
@@ -795,8 +826,11 @@ const ConfigurationPage: React.FC = () => {
                         ))}
                       </select>
 
-                      {/* Live input level meter / test result */}
-                      <div className="h-7 bg-base-200 rounded flex items-center px-2 overflow-hidden">
+                      {/* Live input level meter / test result. Uses min-h (not a
+                          fixed height) and no overflow-hidden so long error /
+                          permission strings can wrap and grow instead of being
+                          clipped. */}
+                      <div className="min-h-7 py-1 bg-base-200 rounded flex items-center px-2">
                         {micTestStatus === "testing" ? (
                           <div
                             role="meter"
@@ -879,7 +913,7 @@ const ConfigurationPage: React.FC = () => {
                         ))}
                       </select>
 
-                      <div className="h-7 bg-base-200 rounded flex items-center justify-center px-4 overflow-hidden">
+                      <div className="min-h-7 py-1 bg-base-200 rounded flex items-center justify-center px-4">
                         <span
                           data-testid="output-test-status"
                           className={`text-xs w-full text-center flex items-center justify-center gap-1 ${
@@ -1219,7 +1253,7 @@ const ConfigurationPage: React.FC = () => {
                 type="button"
                 className="btn btn-ghost gap-2"
                 onClick={handleDiscard}
-                disabled={!dirty || mutation.isPending}
+                disabled={!dirty || mutation.isPending || sessionExpiredBlocking}
                 data-testid="discard-button"
               >
                 <RotateCcwIcon size={16} />
@@ -1228,7 +1262,11 @@ const ConfigurationPage: React.FC = () => {
               <button
                 className="btn btn-primary gap-2"
                 onClick={() => mutation.mutate(config)}
-                disabled={mutation.isPending || !dirty}
+                // Also disabled while the session is in the expired-blocking
+                // state: a save would 401, so the affordance must not pretend
+                // it'll work. The page stays mounted (edits preserved) until the
+                // user re-authenticates via the blocking modal.
+                disabled={mutation.isPending || !dirty || sessionExpiredBlocking}
                 data-testid="save-button"
               >
                 {mutation.isPending ? <span className="loading loading-spinner"></span> : <SaveIcon size={20} />}

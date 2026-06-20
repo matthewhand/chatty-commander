@@ -62,6 +62,16 @@ describe("LoginPage", () => {
     expect(screen.getByText("Commander")).toBeInTheDocument();
   });
 
+  test("login background uses an intentional treatment, not the dead pattern class", () => {
+    setLogin(vi.fn());
+    const { container } = render(<LoginPage />);
+    const wrapper = container.firstElementChild as HTMLElement;
+    // The undefined `pattern-isometric` utility was a no-op; it must be gone.
+    expect(wrapper.className).not.toContain("pattern-isometric");
+    // Background is now a deliberate gradient built from existing utilities.
+    expect(wrapper.className).toContain("bg-gradient-to-br");
+  });
+
   test("does not leak internal CLI flags in helper copy", () => {
     setLogin(vi.fn());
     const { container } = render(<LoginPage />);

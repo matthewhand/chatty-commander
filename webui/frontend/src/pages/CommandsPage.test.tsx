@@ -209,13 +209,19 @@ test("each row exposes direct Edit and Delete controls", async () => {
   expect(table.getByLabelText("Delete take_screenshot")).toBeInTheDocument();
 });
 
-test("Ctrl+K focuses the search input", async () => {
+test("search input exposes a stable id for MainLayout's global Ctrl+K to target", async () => {
+  // CommandsPage no longer owns a Ctrl/Cmd+K handler (MainLayout's global one
+  // does, to avoid both firing on /commands). It just needs to keep a stable
+  // hook so MainLayout can focus it.
   renderPage();
   await screen.findAllByText("take_screenshot");
   const input = screen.getByLabelText("Search commands");
+  expect(input).toHaveAttribute("id", "command-search");
+
+  // Pressing Ctrl+K should NOT be handled by this page (no focus side-effect).
   expect(document.activeElement).not.toBe(input);
   fireEvent.keyDown(window, { key: "k", ctrlKey: true });
-  expect(document.activeElement).toBe(input);
+  expect(document.activeElement).not.toBe(input);
 });
 
 test("respects prefers-reduced-motion: reduce on the row cascade", async () => {
@@ -379,6 +385,147 @@ test("bulk delete confirms once then deletes all selected commands", async () =>
     expect(
       screen.queryByRole("region", { name: "Bulk actions" })
     ).not.toBeInTheDocument();
+  });
+});
+
+test("bulk delete with one failing item reports partial success and clears only succeeded", async () => {
+  // take_screenshot succeeds, open_docs fails.
+  (apiService.deleteCommand as ReturnType<typeof vi.fn>).mockImplementation(
+    (name: string) =>
+      name === "open_docs"
+        ? Promise.reject(new Error("boom"))
+        : Promise.resolve(undefined)
+  );
+
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  fireEvent.click(within(getTable()).getByLabelText("Select take_screenshot"));
+  fireEvent.click(within(getTable()).getByLabelText("Select open_docs"));
+
+  fireEvent.click(screen.getByLabelText("Delete selected commands"));
+  fireEvent.click(screen.getByRole("button", { name: /Delete 2/ }));
+
+  // Both deletions were attempted despite the mid-list failure.
+  await waitFor(() => {
+    expect(apiService.deleteCommand).toHaveBeenCalledWith("take_screenshot");
+    expect(apiService.deleteCommand).toHaveBeenCalledWith("open_docs");
+  });
+  expect(apiService.deleteCommand).toHaveBeenCalledTimes(2);
+
+  // Partial-failure toast.
+  expect(
+    await screen.findByText(/Deleted 1, 1 failed\./)
+  ).toBeInTheDocument();
+
+  // Only the succeeded command was cleared from the selection: the bulk bar
+  // remains, now showing the single failed command still selected.
+  const bar = await screen.findByRole("region", { name: "Bulk actions" });
+  expect(within(bar).getByText("1 selected")).toBeInTheDocument();
+  expect(
+    (within(getTable()).getByLabelText("Select open_docs") as HTMLInputElement)
+      .checked
+  ).toBe(true);
+  expect(
+    (
+      within(getTable()).getByLabelText(
+        "Select take_screenshot"
+      ) as HTMLInputElement
+    ).checked
+  ).toBe(false);
+});
+
+test("single delete removes the command from the bulk selection", async () => {
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  // Select both, so the bulk bar shows "2 selected".
+  fireEvent.click(within(getTable()).getByLabelText("Select take_screenshot"));
+  fireEvent.click(within(getTable()).getByLabelText("Select open_docs"));
+  const bar = await screen.findByRole("region", { name: "Bulk actions" });
+  expect(within(bar).getByText("2 selected")).toBeInTheDocument();
+
+  // Delete one via the single-row delete flow.
+  fireEvent.click(within(getTable()).getByLabelText("Delete take_screenshot"));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+  await waitFor(() => {
+    expect(apiService.deleteCommand).toHaveBeenCalledWith("take_screenshot");
+  });
+
+  // The deleted command is dropped from the selection; the bar now shows "1
+  // selected" rather than lingering at 2 (which would later bulk-delete a 404).
+  await waitFor(() => {
+    expect(
+      within(screen.getByRole("region", { name: "Bulk actions" })).getByText(
+        "1 selected"
+      )
+    ).toBeInTheDocument();
+  });
+});
+
+test("clearing the search preserves the active sort params", async () => {
+  (apiService.getCommands as ReturnType<typeof vi.fn>).mockResolvedValue({
+    aaa_url: { action: "url", url: "https://a.example" },
+    bbb_key: { action: "keypress", keys: "ctrl+a" },
+  });
+  // Start sorted by type with an active search query.
+  renderPage(["/commands?sort=type&q=ctrl"]);
+  await screen.findAllByText("bbb_key");
+
+  // Type sort is active on load.
+  expect(
+    screen.getByRole("columnheader", { name: /Type/ })
+  ).toHaveAttribute("aria-sort", "ascending");
+
+  // Clear the search via the X button.
+  fireEvent.click(screen.getByLabelText("Clear search"));
+
+  // The sort must survive: Type is still the active sort key (not reset to Name).
+  await waitFor(() => {
+    expect(
+      screen.getByRole("columnheader", { name: /Type/ })
+    ).toHaveAttribute("aria-sort", "ascending");
+  });
+  // The search field is now empty.
+  expect(
+    (screen.getByLabelText("Search commands") as HTMLInputElement).value
+  ).toBe("");
+});
+
+test("the app's own flat-shape export re-imports successfully", async () => {
+  // The export emits the flat /api/v1/commands shape. Import must accept it
+  // (round-trip), normalizing to exactly the same shape passed to updateConfig.
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  // Flat export shape: includes a command with only a `cmd` payload (no
+  // `action`), which the old validation rejected.
+  const exported = JSON.stringify({
+    take_screenshot: { action: "keypress", keys: "alt+print_screen" },
+    open_docs: { action: "url", url: "https://example.com/docs" },
+    run_thing: { cmd: "echo hi" },
+  });
+  const file = new File([exported], "commands.json", {
+    type: "application/json",
+  });
+
+  const fileInput = document.querySelector(
+    'input[type="file"]'
+  ) as HTMLInputElement;
+  fireEvent.change(fileInput, { target: { files: [file] } });
+
+  // The import is accepted (the confirm dialog opens) rather than rejected.
+  fireEvent.click(await screen.findByRole("button", { name: /Apply Import/ }));
+
+  await waitFor(() => {
+    expect(apiService.updateConfig).toHaveBeenCalledWith({
+      commands: {
+        take_screenshot: { action: "keypress", keys: "alt+print_screen" },
+        open_docs: { action: "url", url: "https://example.com/docs" },
+        run_thing: { cmd: "echo hi" },
+      },
+    });
   });
 });
 
