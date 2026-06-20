@@ -5,48 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ChattyCommander Avatar</title>
     <style>
+      /* Single source of truth for the avatar palette. Status colors are stored
+         as bare "r, g, b" triples so a single token drives both the translucent
+         fill and the stronger border via rgb(var(--token) / <alpha>). */
+      :root {
+        --bg-gradient-start: #667eea;
+        --bg-gradient-end: #764ba2;
+        --text: #ffffff;
+        --accent: #ffd700;
+        --surface: rgba(255, 255, 255, 0.1);
+        --surface-strong: rgba(255, 255, 255, 0.2);
+        --border-subtle: rgba(255, 255, 255, 0.3);
+        --shadow: rgba(0, 0, 0, 0.3);
+        --panel: rgba(0, 0, 0, 0.2);
+        --panel-strong: rgba(0, 0, 0, 0.3);
+        --state-thinking: 255, 193, 7; /* amber */
+        --state-tool: 40, 167, 69; /* green */
+        --state-handoff: 217, 70, 239; /* magenta */
+        --status-ok: 40, 167, 69;
+        --status-bad: 220, 53, 69;
+      }
       body {
         margin: 0;
         padding: 20px;
         font-family: Arial, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(
+          135deg,
+          var(--bg-gradient-start) 0%,
+          var(--bg-gradient-end) 100%
+        );
         display: flex;
         justify-content: center;
         align-items: center;
         min-height: 100vh;
-        color: white;
+        color: var(--text);
       }
       .avatar-container {
         text-align: center;
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--surface);
         padding: 40px;
         border-radius: 20px;
         backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 32px var(--shadow);
         max-width: 500px;
       }
       .avatar {
         width: 200px;
         height: 200px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
+        background: var(--surface-strong);
         margin: 0 auto 20px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 60px;
         transition: all 0.3s ease;
-        border: 3px solid rgba(255, 255, 255, 0.3);
+        border: 3px solid var(--border-subtle);
       }
       .avatar.thinking {
-        background: rgba(255, 193, 7, 0.3);
-        border-color: rgba(255, 193, 7, 0.6);
+        background: rgb(var(--state-thinking) / 0.3);
+        border-color: rgb(var(--state-thinking) / 0.6);
         animation: pulse 2s infinite;
       }
       .avatar.tool_calling {
-        background: rgba(40, 167, 69, 0.3);
-        border-color: rgba(40, 167, 69, 0.6);
+        background: rgb(var(--state-tool) / 0.3);
+        border-color: rgb(var(--state-tool) / 0.6);
         animation: spin 1s linear infinite;
+      }
+      .avatar.handoff {
+        background: rgb(var(--state-handoff) / 0.3);
+        border-color: rgb(var(--state-handoff) / 0.6);
+        animation: pulse 1.5s infinite;
       }
       @keyframes pulse {
         0%,
@@ -65,6 +94,14 @@
           transform: rotate(360deg);
         }
       }
+      /* Respect reduced-motion: keep the state legible without animation. */
+      @media (prefers-reduced-motion: reduce) {
+        .avatar.thinking,
+        .avatar.tool_calling,
+        .avatar.handoff {
+          animation: none;
+        }
+      }
       .status {
         font-size: 18px;
         margin-top: 20px;
@@ -75,7 +112,7 @@
         margin-top: 20px;
         opacity: 0.8;
         line-height: 1.5;
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--panel);
         padding: 15px;
         border-radius: 10px;
         text-align: left;
@@ -83,10 +120,10 @@
       .instructions h3 {
         margin-top: 0;
         margin-bottom: 10px;
-        color: #ffd700;
+        color: var(--accent);
       }
       .instructions code {
-        background: rgba(255, 255, 255, 0.2);
+        background: var(--surface-strong);
         padding: 2px 6px;
         border-radius: 4px;
         font-family: "Courier New", monospace;
@@ -96,13 +133,15 @@
         margin-top: 15px;
         padding: 8px;
         border-radius: 6px;
-        background: rgba(0, 0, 0, 0.3);
+        background: var(--panel-strong);
       }
+      /* Non-color cue: a leading glyph (set in JS) distinguishes states for
+         color-blind users; color is reinforcement, not the sole signal. */
       .connection-status.connected {
-        background: rgba(40, 167, 69, 0.3);
+        background: rgb(var(--status-ok) / 0.3);
       }
       .connection-status.disconnected {
-        background: rgba(220, 53, 69, 0.3);
+        background: rgb(var(--status-bad) / 0.3);
       }
       h1 {
         margin-bottom: 10px;
@@ -113,9 +152,14 @@
   <body>
     <div class="avatar-container">
       <h1>ChattyCommander Avatar</h1>
-      <div class="avatar" id="avatar">🤖</div>
-      <div class="status" id="status">Ready</div>
-      <div class="connection-status" id="connectionStatus">
+      <div class="avatar" id="avatar" role="img" aria-label="Avatar, state: idle">🤖</div>
+      <div class="status" id="status" role="status" aria-live="polite">Ready</div>
+      <div
+        class="connection-status"
+        id="connectionStatus"
+        role="status"
+        aria-live="polite"
+      >
         Connecting to WebSocket...
       </div>
       <div class="instructions">
@@ -151,17 +195,10 @@
           } else if (state === "handoff") {
             avatar.classList.add("handoff");
           }
+          // Non-color cue: announce the state via an accessible label so the
+          // avatar's meaning isn't conveyed by color/animation alone.
+          avatar.setAttribute("aria-label", "Avatar, state: " + state);
         }
-        // Styling hints
-        const style = document.createElement("style");
-        style.textContent = `
-          .avatar.handoff {
-            background: rgba(255, 0, 255, 0.3) !important;
-            border-color: rgba(255, 0, 255, 0.6) !important;
-            animation: pulse 1.5s infinite;
-          }
-        `;
-        document.head.appendChild(style);
 
         const statusEl = document.getElementById("status");
         const connectionEl = document.getElementById("connectionStatus");
@@ -172,7 +209,11 @@
 
         function updateConnection(text, connected = false) {
           if (connectionEl) {
-            connectionEl.textContent = text;
+            // Leading glyph is a non-color status cue (filled vs hollow dot)
+            // so connection state is distinguishable without relying on the
+            // green/red background alone.
+            const glyph = connected ? "● " : "○ ";
+            connectionEl.textContent = glyph + text;
             connectionEl.className =
               "connection-status " + (connected ? "connected" : "disconnected");
           }
