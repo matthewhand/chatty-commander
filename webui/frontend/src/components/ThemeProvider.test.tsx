@@ -2,7 +2,9 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi } from "vitest";
-import { ThemeProvider, useTheme } from "./ThemeProvider";
+import { ThemeProvider, useTheme, AVAILABLE_THEMES } from "./ThemeProvider";
+// @ts-expect-error - JS config module without type declarations.
+import tailwindConfig from "../../tailwind.config.js";
 
 function ThemeProbe() {
   const { theme, setTheme } = useTheme();
@@ -92,7 +94,7 @@ describe("ThemeProvider", () => {
   });
 
   test("restores a persisted theme from localStorage on load", async () => {
-    window.localStorage.setItem("chatty.theme", "synthwave");
+    window.localStorage.setItem("chatty.theme", "emerald");
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -100,16 +102,16 @@ describe("ThemeProvider", () => {
 
     renderWithProviders(<ThemeProbe />);
 
-    expect(screen.getByTestId("current-theme")).toHaveTextContent("synthwave");
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("emerald");
     await waitFor(() => {
       expect(document.documentElement.getAttribute("data-theme")).toBe(
-        "synthwave",
+        "emerald",
       );
     });
   });
 
   test("a locally persisted theme is not overwritten by the backend config", async () => {
-    window.localStorage.setItem("chatty.theme", "cyberpunk");
+    window.localStorage.setItem("chatty.theme", "nord");
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ ui: { theme: "light" } }),
@@ -121,7 +123,13 @@ describe("ThemeProvider", () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalled();
     });
-    expect(screen.getByTestId("current-theme")).toHaveTextContent("cyberpunk");
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("nord");
+  });
+
+  test("AVAILABLE_THEMES matches the daisyui themes enabled in tailwind.config", () => {
+    // The switcher (AVAILABLE_THEMES) must only offer themes Tailwind actually
+    // builds, or a selection would render with no styles.
+    expect([...AVAILABLE_THEMES]).toEqual(tailwindConfig.daisyui.themes);
   });
 
   test("useTheme throws when used outside a ThemeProvider", () => {
