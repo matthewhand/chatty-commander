@@ -26,9 +26,14 @@ test.describe("Login Page", () => {
     // Wait for the auth provider to finish its retry cycle and settle.
     // The AuthProvider retries up to 5 times with increasing delays before
     // giving up, but route interception responds instantly so retries
-    // resolve quickly. Wait for the login heading to appear.
+    // resolve quickly. The two-column layout renders the brand in the desktop
+    // hero panel BEFORE the form card, so waiting on "ChattyCommander" alone no
+    // longer implies the form is mounted — wait for an actual form input too.
     await expect(
       page.getByText("ChattyCommander").first()
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.getByPlaceholder("Enter username")
     ).toBeVisible({ timeout: 30_000 });
   });
 
