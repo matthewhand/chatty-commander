@@ -8,7 +8,7 @@
 
 ## Summary
 
-Several frontend pages called API endpoints that didn't exist on the backend, causing 404 errors and degraded user experience. Most of these have since been implemented (audio devices, themes, preferences); the remaining gaps are system restart/shutdown and backup/restore.
+Several frontend pages called API endpoints that didn't exist on the backend, causing 404 errors and degraded user experience. These have since been implemented and registered on both app factories: audio devices (`routes/audio.py`), themes/preferences (`routes/themes.py`, `routes/preferences.py`), ONNX model file management (`routes/models.py`), system info/restart/shutdown + backup/restore (`routes/system.py`), and the dry-run voice tester (`routes/voice_test.py`). The previously "Partial/placeholder" page caveats are resolved — pages now read live backend state and degrade gracefully (honest empty state, never 500) when optional integrations are off.
 
 ## Issues Found
 
@@ -90,13 +90,20 @@ The following frontend (Web UI) issues have been resolved:
 
 ## Frontend Pages Status
 
-| Page | Status | Issues |
-|------|--------|--------|
-| LoginPage | ✅ Working | None |
-| DashboardPage | ⚠️ Partial | Uses placeholder data, WebSocket may fail |
-| ConfigurationPage | ⚠️ Partial | Audio device + theme/prefs now functional via backend (save still mixes placeholder in places) |
-| AudioSettingsPage | ✅ Working (ref: ConfigurationPage) | (Was listed; now served by /api/audio/* in audio.py + system prefs) |
-| PersonasPage | ⚠️ Partial | Context stats fail when advisors disabled |
+Seven routes are wired in `webui/frontend/src/App.tsx` (`/`, `/login`, `/dashboard`,
+`/configuration`, `/commands`, `/commands/authoring`, `/voice-test`) backed by six
+page components in `webui/frontend/src/pages/`. The old `AudioSettingsPage` and
+`PersonasPage` no longer exist as standalone routes — audio settings live on the
+Configuration page and advisor/persona views moved into the dashboard.
+
+| Page | Route | Status | Notes |
+|------|-------|--------|-------|
+| LoginPage | `/login` | ✅ Working | None |
+| DashboardPage | `/dashboard` | ✅ Working | Live WebSocket stats/logs/performance + dograh status card; degrades gracefully when advisors/dograh are off |
+| ConfigurationPage | `/configuration` | ✅ Working | Audio device picker, theme switcher, and preferences all persist via the backend config manager |
+| CommandsPage | `/commands` | ✅ Working | Sortable table (name/type, persisted in the URL) with search and bulk delete |
+| CommandAuthoringPage | `/commands/authoring` | ✅ Working | Create/edit commands; "Edit" pre-fills from the Commands list |
+| VoiceTestPage | `/voice-test` | ✅ Working | Dry-run wake-word/command matcher |
 
 ## Next Steps
 

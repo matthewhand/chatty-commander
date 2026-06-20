@@ -17,7 +17,7 @@ A local-first voice assistant that turns wake words into actions. Say a trigger 
 | Wake-word detection | ✅ Stable | OpenWakeWord ONNX models, state-driven loading (`idle`/`chatty`/`computer`) |
 | Voice transcription & TTS | ✅ Stable | Whisper-based transcription with pluggable backends; TTS via offline `pyttsx3` (default) or optional Microsoft Edge neural voices — keyless/free but network-required (`pip install 'chatty-commander[tts-edge]'`, then `backend="edge"`) |
 | Command execution | ✅ Stable | Config-defined actions: keypress, URL, system command, voice call |
-| Web dashboard | ✅ Stable | React + DaisyUI: dashboard, configuration, command authoring, themes, audio settings, and a dry-run Voice Test page |
+| Web dashboard | ✅ Stable | React + DaisyUI: dashboard, configuration, a sortable Commands table with bulk delete, command authoring, a theme switcher (Light/Dark/Corporate/Business/Emerald/Nord, persisted), audio settings, and a dry-run Voice Test page |
 | Web API | ✅ Stable | FastAPI with `X-API-Key` auth middleware, WebSocket state push, standardized error envelopes, OpenAPI docs |
 | CLI | ✅ Stable | `chatty-commander` console script with subcommands (`dograh`, config, modes) |
 | LLM advisors | ✅ Stable | OpenAI/Ollama-backed agents with tools (browser analyst, mode switch, voice call) |
@@ -86,7 +86,7 @@ The canonical tiered checklist lives in [`ROADMAP.md`](ROADMAP.md). The headline
 - [ ] **dograh end-to-end calling** — integration is hardened, but completing a real call needs user-side setup:
   - [ ] author a telephony workflow in dograh's UI
   - [ ] configure a Twilio/Vonage provider (or self-hosted LLM/STT/TTS for browser calls)
-- [ ] **Frontend unit tests** — only Playwright e2e exists; vitest is present but unconfigured (no `test` script, jsdom missing)
+- [ ] **Frontend unit-test depth** — Vitest is wired (`npm run test`, jsdom + Testing Library, many `*.test.tsx`) and runs alongside Playwright e2e; remaining work is broadening coverage, not setup
 - [ ] **`llm/` module consolidation** — ~1,400 lines, partially consumed; merge with `advisors/` providers or trim
 - [ ] **Phase 2: WebRTC audio bridge** — share one audio stream between wake-word detection and dograh calls
 - [ ] **Phase 3: UI consolidation** — single shell for ChattyCommander and dograh dashboards, SSO between them

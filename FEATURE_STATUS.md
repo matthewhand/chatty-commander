@@ -73,8 +73,9 @@ regenerate").
 
 | Feature | Status | Evidence (verified 2026-06-10) |
 |---|---|---|
-| Five SPA pages (Login, Dashboard, Configuration, Commands, CommandAuthoring) | ✅ | `webui/frontend/src/pages/{LoginPage,DashboardPage,ConfigurationPage,CommandsPage,CommandAuthoringPage}.tsx`; `npm run build` green at audit time |
+| Six SPA pages (Login, Dashboard, Configuration, Commands, CommandAuthoring, VoiceTest) | ✅ | `webui/frontend/src/pages/{LoginPage,DashboardPage,ConfigurationPage,CommandsPage,CommandAuthoringPage,VoiceTestPage}.tsx`; routed in `webui/frontend/src/App.tsx`; `npm run build` green at audit time |
 | Auth-protected routing + WebSocket provider | ✅ | `webui/frontend/src/components/ProtectedRoute.tsx` (+ `ProtectedRoute.test.tsx`, `ProtectedRoute.auth.test.tsx`), `WebSocketProvider.tsx` (+ unit/error tests) |
+| Resilience + session UX (ErrorBoundary, SessionExpiredModal, persisted theme) | ✅ | `webui/frontend/src/components/{ErrorBoundary,SessionExpiredModal,ThemeProvider}.tsx` (each with `*.test.tsx`); ThemeProvider persists the selected DaisyUI theme to `localStorage` key `chatty.theme` |
 | Dograh status card on dashboard | ✅ | `webui/frontend/src/components/DograhStatusCard.tsx` backed by the verified `/api/v1/dograh/*` routes above |
 | Audio device picker | ✅ | `webui/frontend/src/pages/ConfigurationPage.tsx:78` fetches `/api/v1/audio/devices` and `:85` posts `/api/v1/audio/device` — both served by `routes/audio.py:94-100` (this frontend/backend mismatch from the audit is fixed) |
 

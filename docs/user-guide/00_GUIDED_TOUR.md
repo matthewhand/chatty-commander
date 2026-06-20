@@ -96,11 +96,12 @@ focused.
 ## 6. Make it yours: switch themes
 
 **What you do:** On the Configuration page, pick a different theme — here
-**Synthwave**, one of the bundled DaisyUI themes alongside Dark, Light, and Cyberpunk.
+**Emerald**, one of the bundled DaisyUI themes alongside Light, Dark, Corporate,
+Business, and Nord.
 
 **What you see:** The whole UI restyles instantly, no reload needed.
 
-![Configuration page in the Synthwave theme](../screenshots/tour-06-theme-synthwave.png)
+![Configuration page in the Emerald theme](../screenshots/tour-06-theme-emerald.png)
 
 **Tip:** Click **Save Changes** to persist the theme to the backend config so it
 survives restarts.
