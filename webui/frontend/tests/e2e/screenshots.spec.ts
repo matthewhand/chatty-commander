@@ -395,4 +395,42 @@ test.describe("Documentation Screenshots", () => {
       fullPage: true
     });
   });
+
+  test("command-authoring-generated", async ({ page }) => {
+    await mockCommandsAPIs(page);
+    await page.route("**/api/v1/commands/generate", (route) =>
+      route.fulfill({
+        status: 200,
+        json: {
+          name: "start_my_day",
+          display_name: "Start My Day",
+          wakeword: "start my day",
+          actions: [
+            { type: "shell", cmd: "code ~/projects" },
+            { type: "url", url: "https://mail.google.com" },
+            { type: "keypress", keys: "ctrl+alt+t" },
+          ],
+        },
+      })
+    );
+
+    await page.goto("/commands/authoring");
+    await page
+      .getByPlaceholder("When I say 'start my day'")
+      .fill("start my day workflow");
+    await page.getByRole("button", { name: /Generate Command/i }).click();
+
+    // The generated preview keeps its header + Save visible and tucks the
+    // verbose detail under a "Command details" disclosure.
+    await expect(
+      page.getByRole("heading", { name: "Generated Command" })
+    ).toBeVisible();
+    await expect(page.getByTestId("generated-command-details")).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    await page.screenshot({
+      path: path.join(SCREENSHOTS_DIR, "command-authoring-generated.png"),
+      fullPage: true,
+    });
+  });
 });

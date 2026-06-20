@@ -22,6 +22,7 @@ import {
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 import { useToast } from '../components/ToastProvider';
+import Collapse from '../components/Collapse';
 
 // --- TypeScript Interfaces ---
 
@@ -959,7 +960,19 @@ export default function CommandAuthoringPage() {
               </div>
             </div>
 
-            <div className="mt-4 space-y-4">
+            <Collapse
+              title="Command details"
+              defaultOpen
+              badge={
+                <span className="badge badge-sm" data-testid="generated-command-summary">
+                  {generatedCommand.name} · {generatedCommand.actions.length}{" "}
+                  {generatedCommand.actions.length === 1 ? "action" : "actions"}
+                </span>
+              }
+              className="mt-4"
+              data-testid="generated-command-details"
+            >
+              <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-base-200/50 p-4 rounded-xl">
                   <p className="text-xs text-base-content/50 uppercase tracking-wider">Name</p>
@@ -991,7 +1004,8 @@ export default function CommandAuthoringPage() {
                   ))}
                 </div>
               </div>
-            </div>
+              </div>
+            </Collapse>
 
             <div className="card-actions justify-end mt-4 gap-2">
               <button className="btn btn-ghost" onClick={handleCancel}>
