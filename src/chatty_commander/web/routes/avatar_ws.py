@@ -36,6 +36,7 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from ...avatars.thinking_state import get_thinking_manager
+from .ws import authorize_websocket
 
 logger = logging.getLogger(__name__)
 
@@ -322,6 +323,12 @@ async def interrupt_avatar_queue(
 
 @router.websocket("/avatar/ws")
 async def avatar_ws_endpoint(websocket: WebSocket):
+    # Re-apply the project auth model at the handshake (AuthMiddleware is
+    # HTTP-only and never sees the WS scope): pass-through in no-auth/dev,
+    # JWT ``?token=`` required when user auth is active. ``manager.connect``
+    # calls ``accept()`` itself, so the gate must run before it.
+    if not await authorize_websocket(websocket):
+        return
     await manager.connect(websocket)
     try:
         while True:

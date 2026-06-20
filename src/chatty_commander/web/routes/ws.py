@@ -33,6 +33,67 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 
+# Policy-violation close code used to reject an unauthenticated WebSocket
+# handshake (RFC 6455 §7.4.1). The HTTP side answers a missing/invalid
+# credential with 401; the WebSocket equivalent is to close with 1008.
+WS_POLICY_VIOLATION = 1008
+
+
+async def authorize_websocket(websocket: WebSocket) -> bool:
+    """Authorize a WebSocket handshake, mirroring the HTTP auth degradation rule.
+
+    The project's ``AuthMiddleware`` is a Starlette ``BaseHTTPMiddleware`` and
+    therefore never sees the WebSocket scope, so ``/ws``, ``/avatar/ws`` and
+    ``/ws/voice-test`` would otherwise be completely unauthenticated. This helper
+    re-applies the *same* auth model the HTTP path uses, via the process-wide
+    ``AuthContext`` (``web/deps/auth.py``):
+
+    * When user auth is **not active** — ``--no-auth`` mode, no ``auth.users``
+      configured, or no resolvable JWT secret — this is a **pass-through**: the
+      handshake is allowed exactly as before (no regression to dev / e2e flows).
+    * When user auth **is active**, a valid JWT *access* token must be supplied.
+      Browsers can't set Authorization headers on a ``WebSocket``, so (matching
+      what the frontend already sends — ``new WebSocket(url + "?token=<jwt>")``)
+      the credential is read from the ``token`` query parameter. A missing,
+      malformed, expired, revoked or wrong-type token rejects the handshake.
+
+    Returns ``True`` if the caller should proceed to ``accept()`` the socket,
+    ``False`` if it has already been rejected (closed with policy-violation).
+    Never raises — a decode failure is treated as an invalid credential.
+    """
+    # Imported lazily so this routes module keeps importing even when the
+    # optional auth dependency stack is unavailable (mirrors server.py guards).
+    try:
+        from ..deps.auth import (
+            decode_access_token,
+            get_auth_context,
+            jwt_secret_for,
+        )
+    except ImportError:  # pragma: no cover - auth stack always present in app
+        return True
+
+    ctx = get_auth_context()
+    if not ctx.is_auth_active():
+        return True
+
+    secret = jwt_secret_for(ctx.config_manager)
+    if not secret:  # pragma: no cover - is_auth_active already checked this
+        return True
+
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=WS_POLICY_VIOLATION)
+        return False
+
+    try:
+        decode_access_token(token, secret, store=ctx.revocation_store)
+    except Exception as err:  # noqa: BLE001 - any decode problem ⇒ reject
+        logger.info("Rejecting WebSocket handshake: invalid token (%s)", err)
+        await websocket.close(code=WS_POLICY_VIOLATION)
+        return False
+
+    return True
+
 
 def include_ws_routes(
     *,
@@ -60,6 +121,8 @@ def include_ws_routes(
 
     @router.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket) -> None:
+        if not await authorize_websocket(websocket):
+            return
         await websocket.accept()
         conns = get_connections()
         conns.add(websocket)
