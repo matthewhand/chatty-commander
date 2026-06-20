@@ -341,6 +341,10 @@ test.describe("Dashboard - Agent Cards", () => {
 
     await expect(page.getByText("Agent Status")).toBeVisible();
 
+    // Agent Status is a collapsed-by-default disclosure now; expand it to
+    // inspect the agent cards.
+    await page.getByText("Agent Status").click();
+
     // Two agents from the mock data
     await expect(page.getByText("helperbot @ discord-advisor")).toBeVisible();
     await expect(page.getByText("streambot @ twitch-advisor")).toBeVisible();
@@ -356,10 +360,10 @@ test.describe("Dashboard - Agent Cards", () => {
     });
     await page.goto("/dashboard");
 
+    // Agent Status is now a collapse summary (not a heading); assert the
+    // section is present via its disclosure wrapper.
+    await expect(page.getByTestId("agent-status-section")).toBeVisible();
     await expect(page.getByText("Agent Status")).toBeVisible();
-
-    // modern getByRole heading (scoped, consistent with other dashboard tests; expand per ARCH/ROADMAP Phase4)
-    await expect(page.getByRole('heading', { name: 'Agent Status' })).toBeVisible();
 
     // No agent cards should be rendered
     const agentCards = page.locator(".card-title", { hasText: /@ / });
@@ -369,6 +373,9 @@ test.describe("Dashboard - Agent Cards", () => {
   test("agent cards display last sent, received, and content fields", async ({ page }) => {
     await mockDashboardAPIs(page);
     await page.goto("/dashboard");
+
+    // Expand the collapsed-by-default Agent Status disclosure first.
+    await page.getByText("Agent Status").click();
 
     await expect(page.getByText("helperbot @ discord-advisor")).toBeVisible();
 
