@@ -53,7 +53,24 @@ try:
 except ImportError:
     PYQT5_AVAILABLE = False
 
-    # Create dummy classes for type hints
+    # PyQt5 is an OPTIONAL dependency. When it is absent the module must still
+    # import cleanly so callers can degrade gracefully (see run_pyqt5_avatar).
+    # The class body of TransparentBrowser references several PyQt5 names at
+    # *definition* time (notably ``pyqtSignal`` for the ``window_closed`` signal,
+    # plus ``Qt``/``QUrl`` in method bodies), so every name referenced at import
+    # time needs a stub here, otherwise importing the module raises NameError
+    # before the availability guard can run.
+
+    # Names referenced at class-definition time.
+    def pyqtSignal(*args: Any, **kwargs: Any) -> Any:  # type: ignore[no-redef]
+        return None
+
+    # Placeholder objects for names used inside method bodies / class attributes.
+    Qt = None  # type: ignore[assignment]
+    QUrl = None  # type: ignore[assignment]
+    QIcon = None  # type: ignore[assignment]
+
+    # Create dummy classes for type hints / base classes.
     class QMainWindow:  # type: ignore[no-redef]
         pass
 
@@ -64,6 +81,18 @@ except ImportError:
         pass
 
     class QApplication:  # type: ignore[no-redef]
+        pass
+
+    class QWidget:  # type: ignore[no-redef]
+        pass
+
+    class QVBoxLayout:  # type: ignore[no-redef]
+        pass
+
+    class QMenu:  # type: ignore[no-redef]
+        pass
+
+    class QAction:  # type: ignore[no-redef]
         pass
 
 

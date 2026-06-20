@@ -467,27 +467,27 @@ The last-uncritiqued surfaces still had real bugs. Most of the reviewed code was
 confirmed solid (trusted-proxy handling, security headers, agents/audio/version
 routes, rate-limiter pruning) — these are the genuine issues.
 
-### Security (0/4)
+### Security (4/4)
 
-- [ ] **`/avatar/*` routes bypass auth** — `AuthMiddleware` only gates `path.startswith("/api/")`, but the avatar routes live at `/avatar/...`; in particular **`/avatar/launch` spawns a host subprocess unauthenticated** (local DoS / process spawn). Gate `/avatar/launch` (and the other state-changing avatar routes) behind auth + add an idempotency/single-instance guard — without breaking the avatar client that connects to `/avatar/ws` ([`web/routes/avatar_api.py`](src/chatty_commander/web/routes/avatar_api.py), [`web/middleware/auth.py`](src/chatty_commander/web/middleware/auth.py))
-- [ ] **`/api/preferences` + `/api/restore` dead allow-list** — `if k in ALLOWED_PREF_KEYS or True:` always passes, so any config key (`auth`, `web_server`) can be overwritten + persisted; drop the `or True`, actually filter ([`web/routes/system.py`](src/chatty_commander/web/routes/system.py))
-- [ ] **Rate-limit default effectively off** — `requests_per_minute=10000`; lower to a sane default (e.g. 600) and/or make it `web_server.rate_limit_rpm`-configurable ([`web/web_mode.py`](src/chatty_commander/web/web_mode.py))
-- [ ] **`apply_cors` wildcard in no-auth** — `allow_origins=["*"]` when `no_auth=True` (credentials correctly dropped, but still readable by any site); default to a localhost allowlist like web_mode already does ([`web/auth.py`](src/chatty_commander/web/auth.py))
+- [x] **`/avatar/*` routes bypass auth** — `AuthMiddleware` only gates `path.startswith("/api/")`, but the avatar routes live at `/avatar/...`; in particular **`/avatar/launch` spawns a host subprocess unauthenticated** (local DoS / process spawn). Gate `/avatar/launch` (and the other state-changing avatar routes) behind auth + add an idempotency/single-instance guard — without breaking the avatar client that connects to `/avatar/ws` ([`web/routes/avatar_api.py`](src/chatty_commander/web/routes/avatar_api.py), [`web/middleware/auth.py`](src/chatty_commander/web/middleware/auth.py))  ✅ (#731)
+- [x] **`/api/preferences` + `/api/restore` dead allow-list** — `if k in ALLOWED_PREF_KEYS or True:` always passes, so any config key (`auth`, `web_server`) can be overwritten + persisted; drop the `or True`, actually filter ([`web/routes/system.py`](src/chatty_commander/web/routes/system.py))  ✅ (#731)
+- [x] **Rate-limit default effectively off** — `requests_per_minute=10000`; lower to a sane default (e.g. 600) and/or make it `web_server.rate_limit_rpm`-configurable ([`web/web_mode.py`](src/chatty_commander/web/web_mode.py))  ✅ (#731)
+- [x] **`apply_cors` wildcard in no-auth** — `allow_origins=["*"]` when `no_auth=True` (credentials correctly dropped, but still readable by any site); default to a localhost allowlist like web_mode already does ([`web/auth.py`](src/chatty_commander/web/auth.py))  ✅ (#731)
 
-### Metrics correctness (0/4)
+### Metrics correctness (4/4)
 
-- [ ] **obs/metrics readers race the writers** — `Counter/Gauge/Histogram` readers iterate `_values`/`_counts` without the lock while request threads mutate under it → "dictionary changed size during iteration" 500 on a concurrent `/metrics` scrape; snapshot under the lock ([`obs/metrics.py`](src/chatty_commander/obs/metrics.py))
-- [ ] **Prometheus `+Inf` histogram bucket invalid** — `+Inf` is emitted as `counts[-1]` (only over-all-edges count), not the cumulative total, producing a non-monotonic histogram that breaks Prometheus parsing; emit the running total and make finite buckets cumulative ([`obs/metrics.py`](src/chatty_commander/obs/metrics.py))
-- [ ] **request-duration histogram always `route:"unknown"`** — the `Timer` closes before the route is resolved; resolve the route after `call_next` and observe with the real label ([`obs/metrics.py`](src/chatty_commander/obs/metrics.py))
-- [ ] **metrics middleware no try/finally** — a raising handler skips the request counter (undercounts errors) and breaks the "metrics never affect the app path" guarantee; wrap in try/finally ([`obs/metrics.py`](src/chatty_commander/obs/metrics.py))
+- [x] **obs/metrics readers race the writers** — `Counter/Gauge/Histogram` readers iterate `_values`/`_counts` without the lock while request threads mutate under it → "dictionary changed size during iteration" 500 on a concurrent `/metrics` scrape; snapshot under the lock ([`obs/metrics.py`](src/chatty_commander/obs/metrics.py))  ✅ (#731)
+- [x] **Prometheus `+Inf` histogram bucket invalid** — `+Inf` is emitted as `counts[-1]` (only over-all-edges count), not the cumulative total, producing a non-monotonic histogram that breaks Prometheus parsing; emit the running total and make finite buckets cumulative ([`obs/metrics.py`](src/chatty_commander/obs/metrics.py))  ✅ (#731)
+- [x] **request-duration histogram always `route:"unknown"`** — the `Timer` closes before the route is resolved; resolve the route after `call_next` and observe with the real label ([`obs/metrics.py`](src/chatty_commander/obs/metrics.py))  ✅ (#731)
+- [x] **metrics middleware no try/finally** — a raising handler skips the request counter (undercounts errors) and breaks the "metrics never affect the app path" guarantee; wrap in try/finally ([`obs/metrics.py`](src/chatty_commander/obs/metrics.py))  ✅ (#731)
 
-### Avatar / GUI robustness (0/5)
+### Avatar / GUI robustness (5/5)
 
-- [ ] **avatar_ws connection list mutated cross-thread** — `active_connections` (a list) is mutated from the loop and from `broadcast_state_change` invoked off-thread via `asyncio.run`; guard with a lock or marshal onto the server loop ([`web/routes/avatar_ws.py`](src/chatty_commander/web/routes/avatar_ws.py))
-- [ ] **thinking_state broadcasts via `asyncio.run` per call** — spins a fresh loop per state change (sockets bound to the server loop → dropped sends); capture the server loop + `run_coroutine_threadsafe`, and make `set_agent_state` auto-register atomic ([`avatars/thinking_state.py`](src/chatty_commander/avatars/thinking_state.py))
-- [ ] **avatar_ws audio queue bound to import-time loop** — `asyncio.Queue()` created at import may belong to a closed/other loop; create it lazily in the running loop ([`web/routes/avatar_ws.py`](src/chatty_commander/web/routes/avatar_ws.py))
-- [ ] **web_mode `_on_state_change` + duplicate asset mount** — `_on_state_change` builds a non-running loop (silent drop + leak); route it through `_schedule_broadcast`; remove the duplicated `app.mount("/assets", ...)` block ([`web/web_mode.py`](src/chatty_commander/web/web_mode.py))
-- [ ] **GUI degrade-not-crash** — `pyqt5_avatar` references `pyqtSignal` at class-definition when PyQt5 is absent → `NameError` on import (should degrade); `tray_popup` resolves `icon.png` from CWD (silent miss) + leaks the webview thread on quit ([`gui/pyqt5_avatar.py`](src/chatty_commander/gui/pyqt5_avatar.py), [`gui/tray_popup.py`](src/chatty_commander/gui/tray_popup.py))
+- [x] **avatar_ws connection list mutated cross-thread** — `active_connections` (a list) is mutated from the loop and from `broadcast_state_change` invoked off-thread via `asyncio.run`; guard with a lock or marshal onto the server loop ([`web/routes/avatar_ws.py`](src/chatty_commander/web/routes/avatar_ws.py))  ✅ (#731)
+- [x] **thinking_state broadcasts via `asyncio.run` per call** — spins a fresh loop per state change (sockets bound to the server loop → dropped sends); capture the server loop + `run_coroutine_threadsafe`, and make `set_agent_state` auto-register atomic ([`avatars/thinking_state.py`](src/chatty_commander/avatars/thinking_state.py))  ✅ (#731)
+- [x] **avatar_ws audio queue bound to import-time loop** — `asyncio.Queue()` created at import may belong to a closed/other loop; create it lazily in the running loop ([`web/routes/avatar_ws.py`](src/chatty_commander/web/routes/avatar_ws.py))  ✅ (#731)
+- [x] **web_mode `_on_state_change` + duplicate asset mount** — `_on_state_change` builds a non-running loop (silent drop + leak); route it through `_schedule_broadcast`; remove the duplicated `app.mount("/assets", ...)` block ([`web/web_mode.py`](src/chatty_commander/web/web_mode.py))  ✅ (#731)
+- [x] **GUI degrade-not-crash** — `pyqt5_avatar` references `pyqtSignal` at class-definition when PyQt5 is absent → `NameError` on import (should degrade); `tray_popup` resolves `icon.png` from CWD (silent miss) + leaks the webview thread on quit ([`gui/pyqt5_avatar.py`](src/chatty_commander/gui/pyqt5_avatar.py), [`gui/tray_popup.py`](src/chatty_commander/gui/tray_popup.py))  ✅ (#731)
 
 ---
 

@@ -1,6 +1,7 @@
 """Comprehensive tests for Avatar WebSocket components and audio queue."""
 
 import asyncio
+import threading
 from typing import Any
 
 from chatty_commander.web.routes.avatar_ws import (
@@ -110,6 +111,73 @@ class TestAvatarWSConnectionManager:
         asyncio.run(run())
         assert ws1 in manager.active_connections
         assert ws2 not in manager.active_connections
+
+    def test_active_connections_concurrent_mutation_no_corruption(self) -> None:
+        """Stress active_connections under concurrent cross-thread mutation.
+
+        Reproduces the original bug class: ``connect``/``disconnect`` mutate the
+        connection list on one thread while ``broadcast_state_change`` snapshots
+        and iterates it from another (mirroring ThinkingStateManager invoking the
+        callback from a sync command/advisor thread). With the lock in place the
+        list must stay internally consistent — no lost/duplicated entries, no
+        ``RuntimeError`` from mutating-while-iterating, no crash.
+        """
+        manager = AvatarWSConnectionManager()
+        errors: list[BaseException] = []
+        stop = threading.Event()
+
+        class _FakeWS:
+            def __init__(self, idx: int) -> None:
+                self.idx = idx
+
+            async def send_text(self, message: str) -> None:  # pragma: no cover
+                # Not exercised here; broadcast snapshots are read-only of state.
+                return None
+
+        sockets = [_FakeWS(i) for i in range(50)]
+
+        def mutator() -> None:
+            try:
+                # Repeatedly add then remove every socket. After this returns the
+                # net effect on the list is zero additions, so a corruption-free
+                # run leaves exactly the sockets added by the (still-running)
+                # other mutators — which we drain at the end.
+                for _ in range(200):
+                    for ws in sockets:
+                        with manager._connections_lock:
+                            manager.active_connections.append(ws)
+                    for ws in sockets:
+                        manager.disconnect(ws)
+            except BaseException as exc:  # noqa: BLE001 - capture for assertion
+                errors.append(exc)
+
+        def reader() -> None:
+            try:
+                while not stop.is_set():
+                    # Snapshot exactly as broadcast does, then iterate the copy.
+                    with manager._connections_lock:
+                        snapshot = list(manager.active_connections)
+                    for _ws in snapshot:
+                        pass
+            except BaseException as exc:  # noqa: BLE001 - capture for assertion
+                errors.append(exc)
+
+        mutators = [threading.Thread(target=mutator) for _ in range(4)]
+        readers = [threading.Thread(target=reader) for _ in range(2)]
+        for t in mutators:
+            t.start()
+        for t in readers:
+            t.start()
+        for t in mutators:
+            t.join()
+        stop.set()
+        for t in readers:
+            t.join()
+
+        assert errors == []
+        # Every mutator added and removed each socket the same number of times,
+        # so the list must be empty (and uncorrupted) at the end.
+        assert manager.active_connections == []
 
     def test_theme_resolver_enriches_messages(self) -> None:
         """Test that theme resolver adds theme to messages."""

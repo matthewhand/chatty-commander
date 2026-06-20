@@ -251,14 +251,18 @@ def include_system_routes(
             try:
                 cfg_mgr = get_config_manager()
                 if hasattr(cfg_mgr, "config"):
+                    # SECURITY: only persist keys on the allow-list. Without
+                    # this filter any config key (auth, web_server, ...) could
+                    # be overwritten via the preferences endpoint.
                     for k, v in payload.items():
-                        if k in ALLOWED_PREF_KEYS or True:  # permissive for UI prefs
+                        if k in ALLOWED_PREF_KEYS:
                             cfg_mgr.config[k] = v
                     if hasattr(cfg_mgr, "save_config"):
                         cfg_mgr.save_config()
             except Exception as e:
                 logger.warning(f"Failed to update preferences: {e}")
-        return {"success": True, "message": "Preferences updated", "preferences": payload}
+        accepted = {k: v for k, v in payload.items() if k in ALLOWED_PREF_KEYS}
+        return {"success": True, "message": "Preferences updated", "preferences": accepted}
 
     # --- Backup / Restore (stubs, functional enough for UI; persist config snapshot) ---
     @router.post("/api/backup", response_model=ActionResponse)
@@ -290,8 +294,11 @@ def include_system_routes(
                 data = payload.get("data") if isinstance(payload, dict) else None
                 data = data if isinstance(data, dict) else (payload if isinstance(payload, dict) else {})
                 if hasattr(cfg_mgr, "config"):
+                    # SECURITY: same allow-list filter as PUT /api/preferences —
+                    # a restore payload must not be able to overwrite arbitrary
+                    # config keys (auth, web_server, ...).
                     for k, v in data.items():
-                        if k in ALLOWED_PREF_KEYS or True:
+                        if k in ALLOWED_PREF_KEYS:
                             cfg_mgr.config[k] = v
                     if hasattr(cfg_mgr, "save_config"):
                         cfg_mgr.save_config()

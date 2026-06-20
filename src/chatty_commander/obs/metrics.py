@@ -96,11 +96,14 @@ class Counter(Metric):
             self._values[key] = self._values.get(key, 0) + amount
 
     def get(self, labels: dict[str, str] | None = None) -> int:
-        return self._values.get(self._key(labels), 0)
+        with self._lock:
+            return self._values.get(self._key(labels), 0)
 
     def samples(self) -> list[tuple[dict[str, str], int]]:
+        with self._lock:
+            snapshot = list(self._values.items())
         out: list[tuple[dict[str, str], int]] = []
-        for key, value in self._values.items():
+        for key, value in snapshot:
             labels = dict(key)
             out.append((labels, value))
         return out
@@ -119,11 +122,14 @@ class Gauge(Metric):
             self._values[key] = float(value)
 
     def get(self, labels: dict[str, str] | None = None) -> float:
-        return self._values.get(self._key(labels), 0.0)
+        with self._lock:
+            return self._values.get(self._key(labels), 0.0)
 
     def samples(self) -> list[tuple[dict[str, str], float]]:
+        with self._lock:
+            snapshot = list(self._values.items())
         out: list[tuple[dict[str, str], float]] = []
-        for key, value in self._values.items():
+        for key, value in snapshot:
             labels = dict(key)
             out.append((labels, value))
         return out
@@ -189,14 +195,25 @@ class Histogram(Metric):
 
     def snapshot(self) -> dict[str, Any]:
         out: dict[str, Any] = {"buckets": self._buckets.edges, "series": []}
-        for key, counts in self._counts.items():
-            labels = dict(key)
+        with self._lock:
+            # Copy the per-series state inside the lock so a concurrent
+            # observe() can't mutate the dicts while we iterate them.
+            snapshot = [
+                (
+                    dict(key),
+                    list(counts),
+                    self._sum.get(key, 0.0),
+                    self._count.get(key, 0),
+                )
+                for key, counts in self._counts.items()
+            ]
+        for labels, counts, sum_val, count_val in snapshot:
             out["series"].append(
                 {
                     "labels": labels,
-                    "counts": list(counts),
-                    "sum": self._sum.get(key, 0.0),
-                    "count": self._count.get(key, 0),
+                    "counts": counts,
+                    "sum": sum_val,
+                    "count": count_val,
                 }
             )
         return out
@@ -297,27 +314,36 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):  # type: ignore[misc]
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Any]
     ) -> Response:  # type: ignore[name-defined]
-        # path variable intentionally unused to minimize attribute access overhead
         method = getattr(request, "method", "GET")
-        # Measure with unknown route first; route set after call_next
-        with Timer(
-            self.h_latency,
-            labels={"route": "unknown", "method": method, "service": self.service},
-        ):
+        t0 = monotonic()
+        status = 0
+        response = None
+        try:
             response = await call_next(request)
-        status = getattr(response, "status_code", 0)
-        route = getattr(request, "scope", {}).get("route", None)
-        route_path = getattr(route, "path", "unknown") if route else "unknown"
-        self.c_req.inc(
-            1,
-            labels={
-                "route": route_path,
-                "method": method,
-                "status": str(status),
-                "service": self.service,
-            },
-        )
-        return response  # type: ignore[no-any-return]
+            status = getattr(response, "status_code", 0)
+            return response  # type: ignore[no-any-return]
+        finally:
+            # Resolve the route only after call_next so the matched route is
+            # available on request.scope. Record duration manually with the
+            # real route label rather than the fixed-label Timer wrapper.
+            # Metrics collection is best-effort and must never break the app
+            # request path, so swallow any errors here.
+            try:
+                elapsed = monotonic() - t0
+                route = getattr(request, "scope", {}).get("route", None)
+                route_path = getattr(route, "path", "unknown") if route else "unknown"
+                labels = {
+                    "route": route_path,
+                    "method": method,
+                    "service": self.service,
+                }
+                self.h_latency.observe(elapsed, labels=labels)
+                self.c_req.inc(
+                    1,
+                    labels={**labels, "status": str(status)},
+                )
+            except Exception:  # pragma: no cover - defensive
+                pass
 
 
 def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter | None:  # type: ignore[misc]
@@ -376,7 +402,10 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter 
                 counts = series.get("counts", [])
                 sum_val = series.get("sum", 0.0)
                 count_val = series.get("count", 0)
-                # Emit cumulative buckets
+                # observe() stores per-finite-edge counts that are already
+                # cumulative (each counts[idx] == observations <= edges[idx]).
+                # Emit them as-is, then the +Inf bucket which, per the
+                # Prometheus spec, must equal the total observation count.
                 for idx, edge in enumerate(snap.get("buckets", [])):
                     bucket_lbl = {**labels, "le": str(edge)}
                     lines.append(
@@ -384,7 +413,7 @@ def create_metrics_router(registry: MetricsRegistry | None = None) -> APIRouter 
                     )
                 bucket_lbl_inf = {**labels, "le": "+Inf"}
                 lines.append(
-                    f"{name}_bucket{{{_lbl(bucket_lbl_inf)}}} {counts[-1] if counts else 0}"
+                    f"{name}_bucket{{{_lbl(bucket_lbl_inf)}}} {count_val}"
                 )
                 lines.append(f"{name}_sum{{{_lbl(labels)}}} {sum_val}")
                 lines.append(f"{name}_count{{{_lbl(labels)}}} {count_val}")

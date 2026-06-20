@@ -75,18 +75,33 @@ def _load_settings(config: Any) -> dict[str, Any]:
     return settings
 
 
+def _icon_candidate_paths() -> list[Path]:
+    """Return possible icon locations resolved relative to the package.
+
+    Resolving relative to this file (rather than the process CWD) means the
+    tray icon loads regardless of which directory the app was launched from.
+    Mirrors ``pyqt5_avatar._get_icon_path``.
+    """
+    here = Path(__file__).resolve().parent
+    repo_root = here.parent.parent.parent
+    return [
+        here.parent / "assets" / "icon.png",
+        repo_root / "icon.png",
+    ]
+
+
 def _icon_image() -> Image.Image | None:
     try:
         from PIL import Image  # type: ignore
     except Exception:
         return None
 
-    icon_path_png = Path("icon.png")
-    if icon_path_png.exists():
-        try:
-            return Image.open(icon_path_png)
-        except Exception:
-            return None
+    for icon_path_png in _icon_candidate_paths():
+        if icon_path_png.exists():
+            try:
+                return Image.open(icon_path_png)
+            except Exception:
+                return None
     # If only SVG exists, we skip rasterization here (no cairosvg dependency in core)
     return None
 
@@ -172,8 +187,29 @@ def run_tray_popup(config: Any, logger) -> int:
         """On Quit handler."""
         _icon.stop()
         # Best-effort graceful shutdown of the webview worker thread.
+        #
+        # ``webview.start()`` (inside the worker thread) blocks until its window
+        # is closed, so simply joining the thread would always time out and leak
+        # the daemon thread. Signal pywebview to tear down its window(s) first so
+        # the worker returns from ``start()`` and the join completes cleanly.
         t = window_thread["t"]
         if t is not None and t.is_alive():
+            if webview is not None:
+                try:
+                    # Destroy any open windows so webview.start() returns.
+                    windows = list(getattr(webview, "windows", []) or [])
+                    for win in windows:
+                        try:
+                            win.destroy()
+                        except Exception:  # pragma: no cover - backend-specific
+                            logger.warning("Failed to destroy webview window", exc_info=True)
+                    if not windows:
+                        # Older pywebview API: module-level destroy helper.
+                        destroy = getattr(webview, "destroy_window", None)
+                        if callable(destroy):
+                            destroy()
+                except Exception:  # pragma: no cover - backend-specific
+                    logger.warning("Failed to signal webview shutdown", exc_info=True)
             t.join(timeout=2.0)
 
     menu = Menu(

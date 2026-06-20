@@ -33,10 +33,10 @@ import inspect
 import logging
 import threading
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +99,24 @@ class ThinkingStateManager:
         # the in-memory mutations and snapshots, never while invoking broadcast
         # callbacks, so a callback may safely re-enter the manager.
         self._lock = threading.RLock()
+        # The server event loop that async broadcast callbacks (WS sends) are
+        # bound to. Captured the first time a broadcast is scheduled from inside
+        # a running loop (e.g. the FastAPI server loop at startup / first state
+        # change). Sync callers on other threads then marshal coroutines onto
+        # this loop via ``run_coroutine_threadsafe`` rather than spinning a
+        # throwaway loop with ``asyncio.run`` — mirrors the dograh
+        # ``DograhCallStatePoller`` / ``run_coroutine_threadsafe`` bridge.
+        self._server_loop: asyncio.AbstractEventLoop | None = None
+
+    def set_server_loop(self, loop: asyncio.AbstractEventLoop | None) -> None:
+        """Explicitly bind the server event loop used for async broadcasts.
+
+        Optional: the loop is also captured lazily the first time a broadcast is
+        scheduled from within a running loop. Provided so a server can pin its
+        loop at startup if desired.
+        """
+        with self._lock:
+            self._server_loop = loop
 
     def register_agent(
         self, agent_id: str, persona_id: str, avatar_id: str | None = None
@@ -125,11 +143,22 @@ class ThinkingStateManager:
         progress: float | None = None,
     ) -> None:
         """Update an agent's thinking state."""
-        if agent_id not in self.agent_states:
-            logger.warning(f"Agent {agent_id} not registered, creating default entry")
-            self.register_agent(agent_id, "default")
-
+        # Membership-check-and-register must be atomic: two threads racing the
+        # same new id would otherwise both pass the ``not in`` check and both
+        # register. Do the check, lazy-register and mutation under one lock
+        # acquisition (the lock is reentrant, so the nested register is safe).
         with self._lock:
+            if agent_id not in self.agent_states:
+                logger.warning(
+                    f"Agent {agent_id} not registered, creating default entry"
+                )
+                self.agent_states[agent_id] = AgentStateInfo(
+                    agent_id=agent_id,
+                    avatar_id=None,
+                    persona_id="default",
+                    state=ThinkingState.IDLE,
+                )
+
             agent_info = self.agent_states[agent_id]
             agent_info.state = state
             agent_info.message = message
@@ -186,19 +215,72 @@ class ThinkingStateManager:
         # callback may safely re-enter the manager without deadlocking.
         with self._lock:
             callbacks = list(self.broadcast_callbacks)
+            server_loop = self._server_loop
         for callback in callbacks:
             try:
                 if inspect.iscoroutinefunction(callback):
-                    # If we're in an event loop, schedule the coroutine, else run it
-                    try:
-                        loop = asyncio.get_running_loop()
-                        loop.create_task(callback(message))
-                    except RuntimeError:
-                        asyncio.run(callback(message))
+                    self._dispatch_async(callback, message, server_loop)
                 else:
                     callback(message)
             except Exception as e:
                 logger.error(f"Error in broadcast callback: {e}")
+
+    def _dispatch_async(
+        self,
+        callback: Callable[[dict[str, Any]], Awaitable[None]],
+        message: dict[str, Any],
+        server_loop: asyncio.AbstractEventLoop | None,
+    ) -> None:
+        """Run an async broadcast callback on the correct event loop.
+
+        Three cases, in order:
+
+        1. Called from inside a running loop — schedule on it directly. We also
+           capture that loop as the server loop (first-write wins) so later
+           cross-thread callers know where the WS sockets live.
+        2. Called from a thread with no running loop but a server loop is known
+           — marshal onto it via ``run_coroutine_threadsafe`` (sockets are bound
+           to that loop). This mirrors the dograh ``run_coroutine_threadsafe``
+           bridge and avoids dropping sends.
+        3. No loop available at all — log and skip rather than spinning a
+           throwaway loop with ``asyncio.run`` (a fresh loop owns no sockets, so
+           the send would be silently lost anyway).
+        """
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+
+        if running_loop is not None:
+            if self._server_loop is None:
+                with self._lock:
+                    if self._server_loop is None:
+                        self._server_loop = running_loop
+            coro = cast("Coroutine[Any, Any, None]", callback(message))
+            try:
+                running_loop.create_task(coro)
+            except Exception:
+                coro.close()
+                raise
+            return
+
+        if server_loop is not None:
+            coro = cast("Coroutine[Any, Any, None]", callback(message))
+            try:
+                asyncio.run_coroutine_threadsafe(coro, server_loop)
+            except Exception as e:
+                coro.close()
+                logger.error(f"Failed to schedule broadcast on server loop: {e}")
+            return
+
+        # No running loop here and no server loop captured yet: a throwaway
+        # ``asyncio.run`` loop would own none of the WS sockets, so the send
+        # would be dropped regardless. Degrade gracefully.
+        logger.debug(
+            "No server event loop available for async broadcast callback; "
+            "skipping (callback=%r)",
+            getattr(callback, "__qualname__", callback),
+        )
 
     def _broadcast_state_change(self, agent_id: str) -> None:
         """Broadcast state change to all registered callbacks."""

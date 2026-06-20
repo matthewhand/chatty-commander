@@ -61,17 +61,29 @@ def apply_cors(
     app: FastAPI, *, no_auth: bool, origins: Iterable[str] | None = None
 ) -> None:
     """
-    Apply CORS middleware consistent with legacy behavior.
+    Apply CORS middleware with a localhost-only default.
 
-    - When no_auth is True: fully permissive for local/dev usage.
-    - Otherwise: restrict to provided origins, defaulting to localhost:3000.
+    - When explicit ``origins`` are provided: use them verbatim (the caller is
+      responsible for the policy, e.g. web_mode.py's CHATTY_CORS_ORIGINS logic).
+    - When no_auth is True and no origins given: pin to a localhost allowlist
+      (NOT a wildcard). no_auth disables authentication entirely, so a wildcard
+      origin would let any website the user visits drive this API from their
+      browser and read the responses (drive-by attack). Mirrors the localhost
+      defaults web_mode.py passes through.
+    - Otherwise: default to localhost:3000.
     """
-    if no_auth:
-        allow_origins = ["*"]
+    if origins is not None:
+        allow_origins = list(origins)
+    elif no_auth:
+        # Localhost-only defaults (vite dev server on :3000 + API port :8100).
+        allow_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:8100",
+            "http://127.0.0.1:8100",
+        ]
     else:
-        allow_origins = (
-            list(origins) if origins is not None else ["http://localhost:3000"]
-        )
+        allow_origins = ["http://localhost:3000"]
 
     # Remove existing CORS middleware if already present to avoid duplicates.
     app.user_middleware = [
