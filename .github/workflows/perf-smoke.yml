@@ -34,6 +34,12 @@ jobs:
         run: uv sync
 
       - name: Start server under test
+        # CHATTY_DISABLE_RATE_LIMIT=1: the k6 smoke bursts requests from one
+        # source IP and would otherwise trip the 600/min limiter (429s would
+        # skew the latency/error thresholds). Consistent with the e2e webServer
+        # in webui/frontend/playwright.config.ts.
+        env:
+          CHATTY_DISABLE_RATE_LIMIT: "1"
         run: |
           uv run chatty-commander --web --no-auth --port 8100 > server.log 2>&1 &
           echo $! > server.pid

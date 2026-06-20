@@ -140,15 +140,29 @@ def test_put_preferences_partial_update_keeps_existing_values():
     assert data["notifications"] is False
 
 
-def test_put_preferences_allows_extra_keys():
+def test_put_preferences_rejects_disallowed_keys():
+    """SECURITY: only allow-listed preference keys are persisted.
+
+    The model accepts extra keys for round-trip tolerance, but the handler
+    must NOT write them into the config — otherwise an attacker could smuggle
+    arbitrary keys into the preferences section, and this handler (dispatched
+    before system.py's filtered one) would make its allow-list dead code.
+    """
     cfg_mgr = FakeConfigManager()
     client = make_client(cfg_mgr)
 
     data = client.put(
-        "/api/preferences", json={"theme": "dark", "avatar_size": "large"}
+        "/api/preferences",
+        json={"theme": "dark", "avatar_size": "large", "auth": {"api_key": "x"}},
     ).json()
-    assert data["avatar_size"] == "large"
-    assert cfg_mgr.config["preferences"]["avatar_size"] == "large"
+
+    # Allowed key persisted; disallowed keys neither persisted nor echoed.
+    assert data["theme"] == "dark"
+    assert "avatar_size" not in data
+    assert "auth" not in data
+    assert "avatar_size" not in cfg_mgr.config["preferences"]
+    assert "auth" not in cfg_mgr.config["preferences"]
+    assert "auth" not in cfg_mgr.config
 
 
 def test_put_preferences_rejects_invalid_types():

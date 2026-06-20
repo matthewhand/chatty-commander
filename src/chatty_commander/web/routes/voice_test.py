@@ -39,11 +39,13 @@ DRY-RUN ONLY: action events describe what WOULD run; nothing is executed.
 
 Auth note: the project's ``AuthMiddleware`` is a Starlette
 ``BaseHTTPMiddleware`` — it dispatches only HTTP requests and only enforces
-API keys on ``/api/*`` paths. WebSocket connections bypass it entirely, so
-``/ws/voice-test`` is unauthenticated by the middleware, the same exemption
-as the existing ``/ws`` and ``/avatar/ws`` endpoints. This is acceptable for
-this iteration precisely because the endpoint is structurally dry-run: it can
-describe configured actions but never execute them.
+API keys on ``/api/*`` paths, so WebSocket connections bypass it entirely.
+Because this endpoint is state-changing-shaped (it drives the test pipeline)
+it re-applies the project's auth model at the handshake via
+``authorize_websocket`` (``web/routes/ws.py``): a pass-through when user auth
+is not active (``--no-auth`` / no users / no JWT secret) so dev and e2e flows
+are unchanged, and a JWT ``?token=`` requirement when auth *is* active,
+mirroring the same gate now used by ``/ws`` and ``/avatar/ws``.
 """
 
 from __future__ import annotations
@@ -56,6 +58,7 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from chatty_commander.app.voice_test_pipeline import VoiceTestPipeline, stage_event
+from chatty_commander.web.routes.ws import authorize_websocket
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +119,12 @@ def include_voice_test_routes(*, get_config_manager: Callable[[], Any]) -> APIRo
 
     @router.websocket(VOICE_TEST_WS_PATH)
     async def voice_test_ws(websocket: WebSocket) -> None:
+        # ``/ws/voice-test`` is state-changing-shaped (it drives the pipeline),
+        # so it gets the same handshake auth gate as ``/ws`` / ``/avatar/ws``:
+        # a pass-through in no-auth/dev, a JWT ``?token=`` requirement when auth
+        # is active. See ``authorize_websocket`` for the degradation rule.
+        if not await authorize_websocket(websocket):
+            return
         await websocket.accept()
         pipeline = VoiceTestPipeline(config_manager=get_config_manager())
         try:

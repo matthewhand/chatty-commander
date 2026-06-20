@@ -26,11 +26,27 @@ Tests the WebSocket connection lifecycle, message handling, and protocol.
 """
 
 import json
+import time
 
 import pytest
 from fastapi.testclient import TestClient
 
 from chatty_commander.web.routes.ws import include_ws_routes
+
+
+def _wait_until(predicate, *, timeout=2.0, interval=0.005):
+    """Poll ``predicate`` until truthy or the timeout budget is exhausted.
+
+    Returns the predicate's last value so callers can assert on it. Using a
+    deadline-bounded poll (instead of a single fixed ``time.sleep``) keeps the
+    callback-based assertions deterministic on slow runners.
+    """
+    deadline = time.monotonic() + timeout
+    result = predicate()
+    while not result and time.monotonic() < deadline:
+        time.sleep(interval)
+        result = predicate()
+    return result
 
 
 @pytest.fixture
@@ -128,11 +144,8 @@ class TestWebSocketHeartbeat:
             # Skip initial connection message
             websocket.receive_text()
 
-            # Wait for heartbeat (timeout is 0.1s)
-            import time
-            time.sleep(0.15)
-
-            # Should have sent heartbeat
+            # receive_text() blocks until the periodic heartbeat frame arrives
+            # (interval is 0.1s), so no fixed sleep is needed.
             data = websocket.receive_text()
             message = json.loads(data)
 
@@ -164,9 +177,7 @@ class TestWebSocketHeartbeat:
         with client.websocket_connect("/ws") as websocket:
             websocket.receive_text()  # Skip initial
 
-            import time
-            time.sleep(0.08)  # Wait for heartbeat
-
+            # receive_text() blocks until the heartbeat frame arrives.
             data = websocket.receive_text()
             message = json.loads(data)
             assert message["type"] == "heartbeat"
@@ -218,12 +229,8 @@ class TestWebSocketMessageHandling:
             test_msg = {"type": "test", "data": {"key": "value"}}
             websocket.send_text(json.dumps(test_msg))
 
-            # Wait for callback (happens in a task)
-            import time
-            time.sleep(0.05)
-
-            # Verify callback received it
-            assert len(received_messages) == 1
+            # Wait for callback (happens in a task) with a deadline-bounded poll.
+            assert _wait_until(lambda: len(received_messages) == 1)
             assert received_messages[0] == test_msg
 
     async def test_non_json_message_handled(self, websocket_router):
@@ -250,11 +257,8 @@ class TestWebSocketMessageHandling:
             # Send non-JSON message
             websocket.send_text("not a json message")
 
-            import time
-            time.sleep(0.05)
-
-            # Should have received raw message
-            assert len(received_messages) == 1
+            # Should have received raw message (deadline-bounded poll).
+            assert _wait_until(lambda: len(received_messages) == 1)
             assert received_messages[0]["type"] == "raw"
             assert received_messages[0]["data"] == "not a json message"
 
@@ -354,11 +358,8 @@ class TestWebSocketErrorHandling:
             # Send invalid JSON
             websocket.send_text('{"type": "test", "data": }')
 
-            import time
-            time.sleep(0.05)
-
-            # Should have received raw message with partial JSON
-            assert len(received) == 1
+            # Should have received raw message with partial JSON (poll).
+            assert _wait_until(lambda: len(received) == 1)
             assert received[0]["type"] == "raw"
 
 
@@ -595,8 +596,5 @@ class TestWebSocketRouteConfiguration:
 
             websocket.send_text(json.dumps({"type": "ping"}))
 
-            import time
-            time.sleep(0.05)
-
-            assert len(message_calls) == 1
+            assert _wait_until(lambda: len(message_calls) == 1)
 

@@ -19,6 +19,7 @@ from chatty_commander.integrations.dograh_client import (
     DograhConfig,
     DograhHTTPError,
     DograhUnavailableError,
+    DograhValidationError,
 )
 
 
@@ -126,6 +127,53 @@ def test_initiate_call_with_phone_and_config(config: DograhConfig) -> None:
         "phone_number": "+15555550100",
         "telephony_configuration_id": 7,
     }
+
+
+@respx.mock
+def test_initiate_call_rejects_invalid_phone_before_network(
+    config: DograhConfig,
+) -> None:
+    """SECURITY: an invalid phone number is rejected before any HTTP request.
+
+    Validation now lives in the client (not just the LLM tool), so BOTH the
+    LLM-tool path and the config / wake-word path are covered. The respx route
+    must NOT be called.
+    """
+    route = respx.post("http://dograh.test/api/v1/telephony/initiate-call").mock(
+        return_value=httpx.Response(200, json={})
+    )
+    with DograhClient(config) as client:
+        for bad in ["not-a-number", "+1 555 0100", "12345", "", "+0123456789"]:
+            with pytest.raises(DograhValidationError):
+                client.initiate_call(42, phone_number=bad)
+    assert not route.called
+
+
+@respx.mock
+def test_initiate_call_rejects_non_integer_workflow_id_before_network(
+    config: DograhConfig,
+) -> None:
+    """A non-numeric workflow id is rejected before any HTTP request."""
+    route = respx.post("http://dograh.test/api/v1/telephony/initiate-call").mock(
+        return_value=httpx.Response(200, json={})
+    )
+    with DograhClient(config) as client:
+        with pytest.raises(DograhValidationError):
+            client.initiate_call("not-an-int")  # type: ignore[arg-type]
+    assert not route.called
+
+
+@respx.mock
+def test_initiate_call_coerces_numeric_string_workflow_id(
+    config: DograhConfig,
+) -> None:
+    """A numeric-string workflow id is coerced to int and sent."""
+    route = respx.post("http://dograh.test/api/v1/telephony/initiate-call").mock(
+        return_value=httpx.Response(200, json={"workflow_run_id": 1})
+    )
+    with DograhClient(config) as client:
+        client.initiate_call("42")  # type: ignore[arg-type]
+    assert json.loads(route.calls.last.request.read()) == {"workflow_id": 42}
 
 
 @respx.mock

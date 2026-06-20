@@ -247,10 +247,20 @@ skips = ["B101", "B601"]
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q --strict-markers --strict-config"
+# Single source of truth for pytest config (the former root pytest.ini was
+# deleted; its unique settings — pythonpath/asyncio_mode/filterwarnings — were
+# merged here). Coverage is intentionally NOT in addopts: the documented gate
+# is `pytest -q --no-cov`; opt into coverage explicitly when needed.
+pythonpath = ["src"]
+asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",

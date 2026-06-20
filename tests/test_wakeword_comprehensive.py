@@ -9,15 +9,34 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Patch sys.modules to mock openwakeword and related modules for test imports
-sys.modules["openwakeword"] = types.ModuleType("openwakeword")
-mock_model_mod = types.ModuleType("openwakeword.model")
-mock_model_mod.Model = MagicMock()
-sys.modules["openwakeword.model"] = mock_model_mod
-sys.modules["pyaudio"] = types.ModuleType("pyaudio")
-# NOTE: do NOT mock numpy here. numpy is installed, and replacing it with an
-# empty module at import time leaked globally (never restored), breaking
-# pytest.approx's numpy detection in any later test under random ordering.
+
+def _build_voice_stubs() -> dict[str, types.ModuleType]:
+    """Return fake ``openwakeword``/``pyaudio`` modules for stubbing.
+
+    NOTE: do NOT mock numpy here. numpy is installed, and replacing it with an
+    empty module at import time leaked globally (never restored), breaking
+    pytest.approx's numpy detection in any later test under random ordering.
+    """
+    ow = types.ModuleType("openwakeword")
+    ow_model = types.ModuleType("openwakeword.model")
+    ow_model.Model = MagicMock()
+    return {
+        "openwakeword": ow,
+        "openwakeword.model": ow_model,
+        "pyaudio": types.ModuleType("pyaudio"),
+    }
+
+
+# Install the stubs just long enough to import the module under test, then
+# remove them so they never leak into later-collected tests. The autouse
+# fixture below re-installs them per-test via monkeypatch.setitem (auto-cleaned)
+# for any test that touches sys.modules at runtime.
+_stub_modules = _build_voice_stubs()
+_added_stub_keys: list[str] = []
+for _name, _mod in _stub_modules.items():
+    if _name not in sys.modules:
+        sys.modules[_name] = _mod
+        _added_stub_keys.append(_name)
 
 # Force-enable voice deps for this module's tests WITHOUT importlib.reload.
 # reload() re-executes the module and creates new class objects, which desyncs
@@ -30,11 +49,25 @@ import chatty_commander.voice.wakeword as _ww  # noqa: E402
 
 _ww.VOICE_DEPS_AVAILABLE = True
 if _ww.openwakeword is None:
-    _ww.openwakeword = sys.modules["openwakeword"]
+    _ww.openwakeword = _stub_modules["openwakeword"]
 if _ww.pyaudio is None:
-    _ww.pyaudio = sys.modules["pyaudio"]
+    _ww.pyaudio = _stub_modules["pyaudio"]
 if _ww.np is None:
     _ww.np = _np_real
+
+for _name in _added_stub_keys:
+    sys.modules.pop(_name, None)
+
+
+@pytest.fixture(autouse=True)
+def _stub_voice_modules(monkeypatch):
+    """Provide fake ``openwakeword``/``pyaudio`` modules during each test,
+    auto-cleaned by ``monkeypatch.setitem`` so they never leak into
+    later-collected tests."""
+    for name, mod in _build_voice_stubs().items():
+        monkeypatch.setitem(sys.modules, name, mod)
+    yield
+
 
 from chatty_commander.voice.wakeword import (  # noqa: E402 - imported after sys.modules patching
     VOICE_DEPS_AVAILABLE,
