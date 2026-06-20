@@ -23,10 +23,17 @@ vi.mock("../hooks/useAuth", () => ({
   }),
 }));
 
+// Spy on session-expiry signalling so auth-close handling can be asserted.
+const notifySessionExpiredMock = vi.hoisted(() => vi.fn());
+vi.mock("../services/authService", () => ({
+  notifySessionExpired: notifySessionExpiredMock,
+}));
+
 // Render helper wrapping the page in the providers it depends on (router + toasts).
-const renderPage = () =>
+// `route` lets tests exercise the `?command=` author->test deep link.
+const renderPage = (route = "/voice-test") =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[route]}>
       <ToastProvider>
         <VoiceTestPage />
       </ToastProvider>
@@ -73,9 +80,9 @@ class TestWebSocket {
     this.onmessage?.({ data: JSON.stringify(payload) });
   }
 
-  serverClose() {
+  serverClose(code = 1006, reason = "abnormal") {
     this.readyState = TestWebSocket.CLOSED;
-    this.onclose?.({ code: 1006, reason: "abnormal" });
+    this.onclose?.({ code, reason });
   }
 }
 
@@ -91,6 +98,7 @@ beforeEach(() => {
   authMock.user = { username: "tester", roles: ["admin"], is_active: true, noAuth: true };
   localStorage.clear();
   fakeTrack.stop.mockClear();
+  notifySessionExpiredMock.mockClear();
   // jsdom has no mediaDevices; install a stub per test.
   Object.defineProperty(navigator, "mediaDevices", {
     configurable: true,
@@ -454,5 +462,148 @@ describe("VoiceTestPage", () => {
       act(() => lastSocket().serverOpen());
       expect(screen.getByTestId("voice-simulate-send")).toBeEnabled();
     });
+  });
+
+  describe("author -> test deep link (?command=)", () => {
+    test("prefills the simulation input from ?command= and shows a target banner", () => {
+      renderPage("/voice-test?command=open_browser");
+
+      // Banner naming the command under test.
+      expect(screen.getByTestId("voice-test-target-banner")).toHaveTextContent(
+        "Testing: open_browser",
+      );
+      // Input is prefilled even before the socket connects.
+      expect(screen.getByLabelText("Simulate a voice command")).toHaveValue("open_browser");
+    });
+
+    test("decodes URL-encoded command names", () => {
+      renderPage("/voice-test?command=hey%20chatty%20open%20browser");
+
+      expect(screen.getByLabelText("Simulate a voice command")).toHaveValue(
+        "hey chatty open browser",
+      );
+    });
+
+    test("auto-sends the prefilled command once connected (dry-run pipeline only)", () => {
+      renderPage("/voice-test?command=open_browser");
+      const socket = lastSocket();
+
+      // Nothing sent until the socket is actually open.
+      expect(socket.sent).not.toContainEqual(
+        JSON.stringify({ type: "text", text: "open_browser" }),
+      );
+
+      act(() => socket.serverOpen());
+
+      // On connect: the safe text-simulation frame is sent exactly once...
+      expect(socket.sent).toContainEqual(
+        JSON.stringify({ type: "text", text: "open_browser" }),
+      );
+      const sends = socket.sent.filter(
+        (m) => m === JSON.stringify({ type: "text", text: "open_browser" }),
+      );
+      expect(sends).toHaveLength(1);
+      // ...the input is cleared and the processing indicator is shown.
+      expect(screen.getByLabelText("Simulate a voice command")).toHaveValue("");
+      expect(screen.getByTestId("voice-processing")).toBeInTheDocument();
+    });
+
+    test("no banner or auto-send without a ?command= param", () => {
+      renderPage();
+      act(() => lastSocket().serverOpen());
+
+      expect(screen.queryByTestId("voice-test-target-banner")).not.toBeInTheDocument();
+      expect(lastSocket().sent).not.toContainEqual(
+        expect.stringContaining('"type":"text"'),
+      );
+    });
+  });
+
+  describe("WebSocket close handling", () => {
+    test("auth-policy close (1008) stops retrying and signals session expiry", () => {
+      renderPage();
+      const socket = lastSocket();
+      act(() => socket.serverOpen());
+
+      const socketCount = TestWebSocket.instances.length;
+      act(() => socket.serverClose(1008, "policy violation"));
+
+      // Honest non-retrying state + manual reconnect affordance.
+      expect(screen.getByTestId("voice-ws-status")).toHaveTextContent(
+        "Disconnected — reconnect",
+      );
+      expect(screen.getByTestId("voice-ws-reconnect")).toBeInTheDocument();
+      // Session-expiry was signalled, and no blind reconnect attempt was made.
+      expect(notifySessionExpiredMock).toHaveBeenCalledTimes(1);
+      expect(TestWebSocket.instances.length).toBe(socketCount);
+    });
+
+    test("app-level unauthorized close (4401) is treated as auth-policy too", () => {
+      renderPage();
+      const socket = lastSocket();
+      act(() => socket.serverOpen());
+
+      act(() => socket.serverClose(4401, "unauthorized"));
+
+      expect(screen.getByTestId("voice-ws-status")).toHaveTextContent(
+        "Disconnected — reconnect",
+      );
+      expect(notifySessionExpiredMock).toHaveBeenCalledTimes(1);
+    });
+
+    test("exhausting all reconnect attempts shows an honest non-retrying state", () => {
+      vi.useFakeTimers();
+      try {
+        renderPage();
+
+        // Drive every transient (1006) close + its backoff timer until retries
+        // are spent. MAX_RECONNECT_ATTEMPTS is 10.
+        for (let i = 0; i < 12; i++) {
+          act(() => lastSocket().serverClose(1006, "abnormal"));
+          act(() => {
+            vi.runOnlyPendingTimers();
+          });
+        }
+
+        expect(screen.getByTestId("voice-ws-status")).toHaveTextContent(
+          "Disconnected — reconnect",
+        );
+        // Auth path was NOT triggered for plain network drops.
+        expect(notifySessionExpiredMock).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    test("manual reconnect button re-attempts the connection", () => {
+      vi.useFakeTimers();
+      try {
+        renderPage();
+
+        for (let i = 0; i < 12; i++) {
+          act(() => lastSocket().serverClose(1006, "abnormal"));
+          act(() => {
+            vi.runOnlyPendingTimers();
+          });
+        }
+
+        const before = TestWebSocket.instances.length;
+        act(() => fireEvent.click(screen.getByTestId("voice-ws-reconnect")));
+
+        // A fresh socket is created and the badge returns to "Connecting...".
+        expect(TestWebSocket.instances.length).toBe(before + 1);
+        expect(screen.getByTestId("voice-ws-status")).toHaveTextContent("Connecting...");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  test("renders the shared brand mark alongside the page heading", () => {
+    renderPage();
+    // The shared Logo exposes an aria-label only when non-decorative; here it is
+    // decorative, so we assert the heading still reads "Voice Test" and a single
+    // brand wordmark is not duplicated on the page.
+    expect(screen.getByRole("heading", { name: "Voice Test" })).toBeInTheDocument();
   });
 });

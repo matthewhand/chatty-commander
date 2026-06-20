@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, laz
 import { Link } from "react-router-dom";
 import { useWebSocket } from "../components/WebSocketProvider";
 import { useQuery } from "@tanstack/react-query";
-import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap, Mic, X, Rocket, PenLine, FlaskConical } from "lucide-react";
+import { Server, Clock, Terminal, Wifi, WifiOff, Send, Activity as AssessmentIcon, Pause, Play, Download, Zap, Mic, X, Rocket, PenLine, FlaskConical, RotateCw } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { fetchAgentStatus, Agent } from "../services/api";
 import { formatTimestamp } from "../utils/formatTime";
@@ -44,13 +44,143 @@ function persistOnboardingDismissed(): void {
 const TELEMETRY_INTERVAL_SECONDS = 5;
 const STALE_THRESHOLD_SECONDS = TELEMETRY_INTERVAL_SECONDS * 2;
 
+interface CommandConsoleProps {
+  messages: { id: number; text: string }[];
+  appendMessage: (text: string) => void;
+  isConnected: boolean;
+  reconnectExhausted: boolean;
+  onReconnect: () => void;
+}
+
+// Command input + live log, isolated into its own memoized component so that
+// typing in the input (local state) and appending log lines don't re-render the
+// chart and stat cards that live above it on the dashboard.
+const CommandConsole = React.memo(function CommandConsole({
+  messages,
+  appendMessage,
+  isConnected,
+  reconnectExhausted,
+  onReconnect,
+}: CommandConsoleProps) {
+  const [commandInput, setCommandInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSendCommand = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      const cmd = commandInput.trim();
+      if (!cmd) return;
+
+      setIsSending(true);
+      setCommandInput("");
+
+      // Optimistically add to log
+      const ts = formatTimestamp(new Date());
+      appendMessage(`[${ts}] > Executing: ${cmd}`);
+
+      try {
+        await apiService.executeCommand(cmd);
+      } catch (err: any) {
+        const errTs = formatTimestamp(new Date());
+        appendMessage(`[${errTs}] Error: ${err.message}`);
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [commandInput, appendMessage],
+  );
+
+  return (
+    <div className="card bg-base-100 shadow-xl border border-base-content/10">
+      <div className="card-body">
+        <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
+
+        <div
+          role="log"
+          aria-live="polite"
+          aria-label="Real-time command log"
+          className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1"
+        >
+          {messages.length > 0 ? (
+            messages.map((msg) => (
+              // Key on the stable monotonic id rather than the array index,
+              // which shifts as the ring buffer scrolls.
+              <div key={msg.id} className="text-base-content/80 leading-relaxed">{msg.text}</div>
+            ))
+          ) : (
+            <div className="p-4 text-base-content/50 italic text-center pt-24">
+              Waiting for commands...
+            </div>
+          )}
+        </div>
+
+        {/* Command execution is a REST call, so it works even when the WS
+            live feed is down — only disable while a request is in flight. */}
+        <form onSubmit={handleSendCommand} className="mt-4 flex gap-2">
+          <input
+            type="text"
+            placeholder="Type a command to execute..."
+            aria-label="Type and execute a command"
+            className="input input-bordered w-full focus:input-primary"
+            value={commandInput}
+            onChange={(e) => setCommandInput(e.target.value)}
+            disabled={isSending}
+          />
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={!commandInput.trim() || isSending}
+          >
+            {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
+            Execute
+          </button>
+        </form>
+        {!isConnected && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-base-content/60">
+            <span>
+              {reconnectExhausted
+                ? "Connection lost — live updates have stopped, but commands still run via the API."
+                : "Live updates are offline, but commands still run via the API."}
+            </span>
+            {reconnectExhausted && (
+              <button
+                type="button"
+                className="btn btn-xs btn-outline btn-error gap-1"
+                onClick={onReconnect}
+                data-testid="log-reconnect-button"
+              >
+                <RotateCw size={12} aria-hidden="true" />
+                Reconnect
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
 const DashboardPage = React.memo(() => {
   useEffect(() => {
     document.title = "Dashboard | ChattyCommander";
   }, []);
 
-  const { ws, isConnected, reconnectAttempt, lastMessageTime } = useWebSocket();
+  const {
+    ws,
+    isConnected,
+    reconnectAttempt,
+    lastMessageTime,
+    // These are exposed by the provider but older test stubs may omit them;
+    // default them so the page degrades gracefully.
+    reconnectExhausted = false,
+    reconnect,
+  } = useWebSocket();
   const isReconnecting = !isConnected && reconnectAttempt > 0;
+  // Manual reconnect handler, stable for memoized children. No-op when the
+  // provider didn't supply a reconnect() (e.g. minimal test stubs).
+  const handleReconnect = useCallback(() => {
+    reconnect?.();
+  }, [reconnect]);
   // Log entries carry a monotonic id (a counter) alongside their text so rows
   // can be keyed stably even as the ring buffer scrolls and timestamps repeat.
   const [messages, setMessages] = useState<{ id: number; text: string }[]>([]);
@@ -90,13 +220,18 @@ const DashboardPage = React.memo(() => {
   const isStale =
     isConnected && lastMsgSeconds !== null && lastMsgSeconds > STALE_THRESHOLD_SECONDS;
 
+  // When the socket is connected and pushing fresh telemetry, the WS feed is the
+  // source of truth for CPU/mem/mode — so we suspend the /health poll and rely on
+  // push. We only fall back to polling while the socket is offline or stale.
+  // (A connected socket that has never delivered a frame yet — lastMsgSeconds
+  // null — is treated as not-yet-fresh so we keep polling until push kicks in.)
+  const wsFresh = isConnected && lastMsgSeconds !== null && !isStale;
+
   // Memoize the recent messages slice to avoid inline allocation during frequent re-renders.
   const recentMessages = useMemo(() => {
     return messages.length > MAX_RECENT_MESSAGES ? messages.slice(-MAX_RECENT_MESSAGES) : messages;
   }, [messages]);
 
-  const [commandInput, setCommandInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const [history, setHistory] = useState<PerfMetric[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
@@ -126,28 +261,6 @@ const DashboardPage = React.memo(() => {
   // "unknown" rather than inventing a value.
   const [currentMode, setCurrentMode] = useState<string | null>(null);
 
-  const handleSendCommand = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commandInput.trim()) return;
-
-    setIsSending(true);
-    const cmd = commandInput;
-    setCommandInput("");
-
-    // Optimistically add to log
-    const ts = formatTimestamp(new Date());
-    appendMessage(`[${ts}] > Executing: ${cmd}`);
-
-    try {
-      await apiService.executeCommand(cmd);
-    } catch (err: any) {
-      const errTs = formatTimestamp(new Date());
-      appendMessage(`[${errTs}] Error: ${err.message}`);
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   const { data: initialSystemStatus, isLoading } = useQuery({
     queryKey: ["systemStatus"],
     queryFn: async () => {
@@ -163,7 +276,9 @@ const DashboardPage = React.memo(() => {
         memory: data.memory_usage ?? "N/A",
       };
     },
-    refetchInterval: 5000,
+    // Suspend polling while the WS push feed is connected and fresh; resume the
+    // 5s poll when the socket is offline or stale.
+    refetchInterval: wsFresh ? false : 5000,
   });
 
   const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
@@ -259,17 +374,23 @@ const DashboardPage = React.memo(() => {
     try {
       const msg = JSON.parse(event.data);
       if (msg.type === "telemetry" && msg.data) {
-        setRealtimeStatus((prev: any) => ({
-          ...prev,
-          cpu: msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu,
-          memory: msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory,
-        }));
+        setRealtimeStatus((prev: any) => {
+          const cpu = msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu;
+          const memory = msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory;
+          // Bail out of the update when nothing changed so we don't trigger a
+          // page-wide re-render on every identical telemetry frame.
+          if (prev && prev.cpu === cpu && prev.memory === memory) {
+            return prev;
+          }
+          return { ...prev, cpu, memory };
+        });
         return;
       }
       if (msg.type === "state_change" && msg.data) {
         const next = msg.data.new_state ?? msg.data.current_state;
         if (typeof next === "string") {
-          setCurrentMode(next);
+          // Skip the state update when the mode is unchanged.
+          setCurrentMode((prev) => (prev === next ? prev : next));
         }
         return;
       }
@@ -452,11 +573,13 @@ const DashboardPage = React.memo(() => {
             </div>
             <div className="stat-title">Voice Assistant</div>
             <div className="stat-value text-primary text-2xl capitalize">
-              {currentMode ?? "unknown"}
+              {currentMode ?? "Not detected"}
             </div>
             <div className="stat-desc">
-              {/* Mic-active state is not reported by the backend; show it honestly. */}
-              Mic: <span className="font-medium">unknown</span> · current mode
+              {/* Mic-active state is not reported by the backend; show a clean
+                  em-dash placeholder rather than leaking an "unknown" token. */}
+              Mic <span className="font-medium">—</span>
+              {currentMode ? <> · mode <span className="font-medium capitalize">{currentMode}</span></> : null}
             </div>
           </div>
         </div>
@@ -498,8 +621,12 @@ const DashboardPage = React.memo(() => {
           <div className="stat">
             <div className="stat-figure text-info">
               <div
-                className="radial-progress text-info"
-                style={{ "--value": Math.round(parseFloat(systemStatus?.cpu || "0")) } as any}
+                className="radial-progress text-info bg-base-300/60 border-4 border-base-300/60"
+                style={{
+                  "--value": Math.round(parseFloat(systemStatus?.cpu || "0")),
+                  "--size": "3.5rem",
+                  "--thickness": "5px",
+                } as any}
                 role="progressbar"
                 aria-label="CPU load"
                 aria-valuenow={Math.round(parseFloat(systemStatus?.cpu || "0"))}
@@ -523,8 +650,12 @@ const DashboardPage = React.memo(() => {
           <div className="stat">
             <div className="stat-figure text-warning">
               <div
-                className="radial-progress text-warning"
-                style={{ "--value": Math.round(parseFloat(systemStatus?.memory || "0")) } as any}
+                className="radial-progress text-warning bg-base-300/60 border-4 border-base-300/60"
+                style={{
+                  "--value": Math.round(parseFloat(systemStatus?.memory || "0")),
+                  "--size": "3.5rem",
+                  "--thickness": "5px",
+                } as any}
                 role="progressbar"
                 aria-label="Memory usage"
                 aria-valuenow={Math.round(parseFloat(systemStatus?.memory || "0"))}
@@ -545,9 +676,21 @@ const DashboardPage = React.memo(() => {
         </div>
 
         <div
-          className={`stats shadow bg-base-100 border ${isStale ? "border-warning/40" : "border-base-content/10"}`}
+          className={`stats shadow bg-base-100 border ${
+            reconnectExhausted ? "border-error/40" : isStale ? "border-warning/40" : "border-base-content/10"
+          }`}
           data-testid="websocket-card"
-          data-ws-state={!isConnected ? (isReconnecting ? "reconnecting" : "offline") : isStale ? "stale" : "connected"}
+          data-ws-state={
+            !isConnected
+              ? reconnectExhausted
+                ? "lost"
+                : isReconnecting
+                  ? "reconnecting"
+                  : "offline"
+              : isStale
+                ? "stale"
+                : "connected"
+          }
         >
           <div className="stat">
             <div className="stat-figure">
@@ -562,7 +705,13 @@ const DashboardPage = React.memo(() => {
             </div>
             <div className="stat-title">WebSocket</div>
             <div className={`stat-value text-2xl ${isConnected ? (isStale ? 'text-warning' : 'text-success') : isReconnecting ? 'text-warning animate-pulse' : 'text-error'}`}>
-              {isConnected ? (isStale ? "Stale" : "Connected") : isReconnecting ? `Reconnecting... (attempt ${reconnectAttempt})` : "Offline"}
+              {isConnected
+                ? (isStale ? "Stale" : "Connected")
+                : reconnectExhausted
+                  ? "Connection lost"
+                  : isReconnecting
+                    ? `Reconnecting... (attempt ${reconnectAttempt})`
+                    : "Offline"}
             </div>
             <div className="stat-desc flex items-center gap-1">
               <Zap size={14} className={isStale ? "text-warning" : "text-accent"} />
@@ -571,6 +720,20 @@ const DashboardPage = React.memo(() => {
                 {lastMsgAgo}
               </span>
             </div>
+            {/* Automatic reconnection has been exhausted — offer a manual retry. */}
+            {reconnectExhausted && (
+              <div className="stat-actions">
+                <button
+                  type="button"
+                  className="btn btn-xs btn-error gap-1"
+                  onClick={handleReconnect}
+                  data-testid="ws-reconnect-button"
+                >
+                  <RotateCw size={14} aria-hidden="true" />
+                  Reconnect
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -623,58 +786,15 @@ const DashboardPage = React.memo(() => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="card bg-base-100 shadow-xl border border-base-content/10">
-        <div className="card-body">
-          <h3 className="card-title text-xl mb-4">Real-time Command Log</h3>
-
-          <div
-            role="log"
-            aria-live="polite"
-            aria-label="Real-time command log"
-            className="bg-base-300 rounded-box h-[20rem] overflow-y-auto w-full custom-scrollbar p-4 font-mono text-xs space-y-1"
-          >
-            {recentMessages.length > 0 ? (
-              recentMessages.map((msg) => (
-                // Key on the stable monotonic id rather than the array index,
-                // which shifts as the ring buffer scrolls.
-                <div key={msg.id} className="text-base-content/80 leading-relaxed">{msg.text}</div>
-              ))
-            ) : (
-              <div className="p-4 text-base-content/50 italic text-center pt-24">
-                Waiting for commands...
-              </div>
-            )}
-          </div>
-
-          {/* Command execution is a REST call, so it works even when the WS
-              live feed is down — only disable while a request is in flight. */}
-          <form onSubmit={handleSendCommand} className="mt-4 flex gap-2">
-            <input
-              type="text"
-              placeholder="Type a command to execute..."
-              aria-label="Type and execute a command"
-              className="input input-bordered w-full focus:input-primary"
-              value={commandInput}
-              onChange={(e) => setCommandInput(e.target.value)}
-              disabled={isSending}
-            />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!commandInput.trim() || isSending}
-            >
-              {isSending ? <span className="loading loading-spinner"></span> : <Send size={18} />}
-              Execute
-            </button>
-          </form>
-          {!isConnected && (
-            <p className="mt-2 text-xs text-base-content/60">
-              Live updates are offline, but commands still run via the API.
-            </p>
-          )}
-        </div>
-      </div>
+      {/* Main Content — isolated into a memoized child so keystrokes/log frames
+          here don't re-render the chart and stat cards above. */}
+      <CommandConsole
+        messages={recentMessages}
+        appendMessage={appendMessage}
+        isConnected={isConnected}
+        reconnectExhausted={reconnectExhausted}
+        onReconnect={handleReconnect}
+      />
 
       {/* Agent Status Section */}
       <h3 className="text-2xl font-bold bg-gradient-to-r from-error to-warning bg-clip-text text-transparent mt-8 mb-4 flex items-center gap-2">

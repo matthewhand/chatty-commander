@@ -3,10 +3,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi } from "vitest";
 import ConfigurationPage from "./ConfigurationPage";
-import { ThemeProvider } from "../components/ThemeProvider";
+import { ThemeProvider, AVAILABLE_THEMES } from "../components/ThemeProvider";
 import { ToastProvider } from "../components/ToastProvider";
 import { playTestTone, runMicTest } from "../utils/audioTest";
-import { deleteVoiceModel, fetchVoiceModels } from "../services/api";
+import { deleteVoiceModel, fetchLLMModels, fetchVoiceModels } from "../services/api";
 
 vi.mock("../services/api", () => ({
   fetchLLMModels: vi.fn().mockResolvedValue([]),
@@ -25,6 +25,7 @@ vi.mock("../utils/audioTest", () => ({
 const runMicTestMock = vi.mocked(runMicTest);
 const playTestToneMock = vi.mocked(playTestTone);
 const fetchVoiceModelsMock = vi.mocked(fetchVoiceModels);
+const fetchLLMModelsMock = vi.mocked(fetchLLMModels);
 const deleteVoiceModelMock = vi.mocked(deleteVoiceModel);
 
 const jsonResponse = (data: unknown, ok = true, status = 200) => ({
@@ -330,5 +331,142 @@ describe("ConfigurationPage voice-model delete confirmation", () => {
     // React Query passes a context object as the 2nd arg, so assert on the 1st.
     await waitFor(() => expect(deleteVoiceModelMock).toHaveBeenCalled());
     expect(deleteVoiceModelMock.mock.calls[0][0]).toBe("hey_jarvis.onnx");
+  });
+});
+
+describe("ConfigurationPage theme select", () => {
+  test("lists exactly the themes enabled in the app (no dead options)", async () => {
+    renderPage();
+    const select = (await screen.findByLabelText("Theme")) as HTMLSelectElement;
+
+    const optionValues = Array.from(select.options).map((o) => o.value);
+    // Drives options from AVAILABLE_THEMES — every enabled theme is offered…
+    for (const theme of AVAILABLE_THEMES) {
+      expect(optionValues).toContain(theme);
+    }
+    // …and the removed themes are gone.
+    expect(optionValues).not.toContain("cyberpunk");
+    expect(optionValues).not.toContain("synthwave");
+  });
+
+  test("offers the real themes that replaced the removed ones", async () => {
+    renderPage();
+    await screen.findByLabelText("Theme");
+    // Spot-check a couple of the themes that were previously missing.
+    expect(screen.getByRole("option", { name: "Corporate" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Nord" })).toBeInTheDocument();
+  });
+
+  test("selecting a real theme marks the form dirty", async () => {
+    renderPage();
+    const select = (await screen.findByLabelText("Theme")) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "nord" } });
+    expect(select.value).toBe("nord");
+    expect(screen.getByTestId("save-button")).toBeEnabled();
+  });
+});
+
+describe("ConfigurationPage tab keyboard navigation (APG)", () => {
+  const tabNames = [/General/, /Audio/, /Voice Models/, /LLM/];
+
+  const getTabs = () => tabNames.map((n) => screen.getByRole("tab", { name: n }));
+
+  test("uses a roving tabindex: only the active tab is in the tab order", async () => {
+    renderPage();
+    await screen.findByRole("tab", { name: /General/ });
+    const [general, audio, models, llm] = getTabs();
+
+    expect(general).toHaveAttribute("tabindex", "0");
+    expect(audio).toHaveAttribute("tabindex", "-1");
+    expect(models).toHaveAttribute("tabindex", "-1");
+    expect(llm).toHaveAttribute("tabindex", "-1");
+  });
+
+  test("ArrowRight/ArrowLeft move (and wrap) the active tab", async () => {
+    renderPage();
+    const tablist = await screen.findByRole("tablist", { name: "Configuration sections" });
+
+    fireEvent.keyDown(tablist, { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: /Audio/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: /Audio/ })).toHaveAttribute("tabindex", "0");
+
+    // Wrap backwards from the first tab to the last.
+    fireEvent.keyDown(tablist, { key: "ArrowLeft" });
+    fireEvent.keyDown(tablist, { key: "ArrowLeft" });
+    expect(screen.getByRole("tab", { name: /LLM/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("Home and End jump to the first and last tab", async () => {
+    renderPage();
+    const tablist = await screen.findByRole("tablist", { name: "Configuration sections" });
+
+    fireEvent.keyDown(tablist, { key: "End" });
+    expect(screen.getByRole("tab", { name: /LLM/ })).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.keyDown(tablist, { key: "Home" });
+    expect(screen.getByRole("tab", { name: /General/ })).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+describe("ConfigurationPage fetch-models error handling", () => {
+  test("a failed model fetch surfaces an error toast and an inline message", async () => {
+    fetchLLMModelsMock.mockRejectedValueOnce(new Error("Failed to fetch (CORS)"));
+
+    renderPage();
+    await screen.findByRole("tab", { name: /LLM/ });
+    goToTab(/LLM/);
+
+    fireEvent.click(screen.getByRole("button", { name: /Fetch list/ }));
+
+    // Inline error + toast, instead of silently doing nothing.
+    await screen.findByTestId("model-fetch-error");
+    expect(screen.getByTestId("model-fetch-error")).toHaveTextContent("Failed to fetch (CORS)");
+    await screen.findByText(/Failed to fetch models: Failed to fetch \(CORS\)/);
+  });
+});
+
+describe("ConfigurationPage mic-test stream cleanup", () => {
+  const installMicStream = () => {
+    const track = { stop: vi.fn() };
+    const stream = { getTracks: () => [track] } as unknown as MediaStream;
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia },
+    });
+    return { track, stream, getUserMedia };
+  };
+
+  test("leaving the Audio tab stops an in-progress mic test stream", async () => {
+    // Capture the underlying spy: handleTestMic transiently wraps getUserMedia,
+    // so navigator.mediaDevices.getUserMedia is the wrapper while a test is in
+    // flight — assert on the original spy instead.
+    const { track, getUserMedia } = installMicStream();
+
+    // Keep the mic test pending so the stream is "in progress" when we leave.
+    let resolveMic!: (r: { peakLevel: number }) => void;
+    runMicTestMock.mockImplementation(async () => {
+      // Mirror runMicTest: acquire the stream via the (wrapped) getUserMedia so
+      // the page captures a handle to stop.
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      return new Promise((resolve) => {
+        resolveMic = resolve;
+      });
+    });
+
+    renderPage();
+    await screen.findByRole("tab", { name: /Audio/ });
+    goToTab(/Audio/);
+
+    fireEvent.click(screen.getByTestId("mic-test-button"));
+    // Wait until the (wrapped) getUserMedia has captured the stream handle.
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalled());
+
+    // Switch away from the Audio tab mid-test: the stream must be stopped.
+    goToTab(/General/);
+    expect(track.stop).toHaveBeenCalled();
+
+    // Resolve the lingering promise so React Query/act doesn't warn.
+    await act(async () => resolveMic({ peakLevel: 0 }));
   });
 });

@@ -83,6 +83,7 @@ function describeAction(config: CommandConfig): { label: string; detail: string 
 }
 
 type SortKey = 'name' | 'type';
+type SortDir = 'asc' | 'desc';
 
 interface PendingImport {
   parsed: Record<string, CommandConfig>;
@@ -100,7 +101,11 @@ export default function CommandsPage() {
   const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
-  const [sortKey, setSortKey] = useState<SortKey>('name');
+  // Sort key + direction are persisted in the URL alongside ?q= so they survive
+  // back/forward navigation and refresh. ?sort=name|type, ?dir=asc|desc.
+  const sortParam = searchParams.get('sort');
+  const sortKey: SortKey = sortParam === 'type' ? 'type' : 'name';
+  const sortDir: SortDir = searchParams.get('dir') === 'desc' ? 'desc' : 'asc';
   const [pendingDeleteCommand, setPendingDeleteCommand] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
@@ -109,19 +114,61 @@ export default function CommandsPage() {
   const importDialogRef = useRef<HTMLDialogElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
+  const { data: commands, isLoading, isFetching, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
   });
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value) {
-      setSearchParams({ q: value });
-    } else {
-      setSearchParams({});
-    }
+    // Preserve any active sort params while editing the search query.
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) {
+        next.set('q', value);
+      } else {
+        next.delete('q');
+      }
+      return next;
+    });
   };
+
+  // Persist the sort key/direction in the URL (alongside ?q=). Selecting the
+  // current key toggles direction; selecting a new key resets it to ascending.
+  const applySort = (key: SortKey) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      const nextDir: SortDir = key === sortKey && sortDir === 'asc' ? 'desc' : 'asc';
+      next.set('sort', key);
+      // 'name' + 'asc' is the default; omit params to keep the URL clean.
+      if (key === 'name') {
+        next.delete('sort');
+      }
+      if (nextDir === 'asc') {
+        next.delete('dir');
+      } else {
+        next.set('dir', nextDir);
+      }
+      return next;
+    });
+  };
+
+  // Mirror for the <select> control: always sets the key, resetting direction.
+  const handleSortSelect = (key: SortKey) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('sort', key);
+      if (key === 'name') {
+        next.delete('sort');
+      }
+      next.delete('dir');
+      return next;
+    });
+  };
+
+  // aria-sort value for a given column header.
+  const ariaSortFor = (key: SortKey): 'ascending' | 'descending' | 'none' =>
+    sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
 
   // Debounce the search query by 300ms so filtering is delayed while typing
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
@@ -283,14 +330,17 @@ export default function CommandsPage() {
         })
       : commandsList.slice();
     filtered.sort(([aName, aCfg], [bName, bCfg]) => {
+      let cmp = 0;
       if (sortKey === 'type') {
-        const typeCmp = getCommandType(aCfg).label.localeCompare(getCommandType(bCfg).label);
-        if (typeCmp !== 0) return typeCmp;
+        cmp = getCommandType(aCfg).label.localeCompare(getCommandType(bCfg).label);
       }
-      return aName.localeCompare(bName);
+      if (cmp === 0) {
+        cmp = aName.localeCompare(bName);
+      }
+      return sortDir === 'desc' ? -cmp : cmp;
     });
     return filtered;
-  }, [commandsList, debouncedSearch, sortKey]);
+  }, [commandsList, debouncedSearch, sortKey, sortDir]);
 
   if (isLoading) {
     return (
@@ -339,8 +389,9 @@ export default function CommandsPage() {
             onKeyDown={(e) => e.key === 'Enter' && refetch()}
             title="Refresh Commands"
             aria-label="Refresh Commands"
+            disabled={isFetching}
           >
-            <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+            <RefreshCw size={18} className={isFetching ? "animate-spin" : ""} />
           </button>
           <button
             className="btn btn-outline btn-sm"
@@ -420,106 +471,197 @@ export default function CommandsPage() {
             className="select select-bordered select-sm"
             aria-label="Sort commands"
             value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            onChange={(e) => handleSortSelect(e.target.value as SortKey)}
           >
             <option value="name">Name</option>
             <option value="type">Type</option>
           </select>
         </label>
         {searchQuery && (
-          <span className="text-sm text-base-content/60">
+          <span className="text-sm text-base-content/60" aria-live="polite">
             Showing {filteredCommands.length} of {commandsList.length} commands
           </span>
         )}
       </div>
 
-      {/* Commands Table */}
+      {/* Commands list */}
       {!isEmpty && filteredCommands.length > 0 && (
-        <div className="overflow-x-auto rounded-box border border-base-content/10">
-          <table className="table table-zebra">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Action</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {filteredCommands.map(([name, config], idx) => {
-                  const type = getCommandType(config);
-                  const { label, detail } = describeAction(config);
-                  const TypeIcon = type.Icon;
-                  return (
-                    <motion.tr
-                      key={name}
-                      data-reduced-motion={reduceMotion ? 'true' : 'false'}
-                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                      transition={
-                        reduceMotion
-                          ? undefined
-                          : { delay: Math.min(idx, MAX_STAGGER_INDEX) * STAGGER_STEP }
-                      }
-                      className="hover"
+        <>
+          {/* Mobile: stacked cards (the table's Actions column scrolls off-screen
+              at ~375px, so below md we render an equivalent card per command). */}
+          <ul className="md:hidden space-y-3" aria-label="Commands">
+            <AnimatePresence>
+              {filteredCommands.map(([name, config], idx) => {
+                const type = getCommandType(config);
+                const { label, detail } = describeAction(config);
+                const TypeIcon = type.Icon;
+                return (
+                  <motion.li
+                    key={name}
+                    data-reduced-motion={reduceMotion ? 'true' : 'false'}
+                    initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                    animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                    transition={
+                      reduceMotion
+                        ? undefined
+                        : { delay: Math.min(idx, MAX_STAGGER_INDEX) * STAGGER_STEP }
+                    }
+                    className="rounded-box border border-base-content/10 bg-base-100 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold break-all" title={name}>{name}</span>
+                      <span className={`badge ${type.badgeClass} gap-1 whitespace-nowrap shrink-0`}>
+                        <TypeIcon size={14} />
+                        {type.label}
+                      </span>
+                    </div>
+                    <div className="mt-2">
+                      <div className="text-xs uppercase tracking-wider text-base-content/50">{label}</div>
+                      <div className="text-sm font-mono break-all">{detail}</div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <Link
+                        to={`/commands/authoring?edit=${encodeURIComponent(name)}`}
+                        className="btn btn-ghost btn-sm flex-1 min-h-[40px] text-primary"
+                        aria-label={`Edit ${name}`}
+                        title="Edit"
+                      >
+                        <Edit3 size={16} />
+                        Edit
+                      </Link>
+                      <button
+                        className="btn btn-ghost btn-sm flex-1 min-h-[40px] text-error"
+                        aria-label={`Delete ${name}`}
+                        title="Delete"
+                        onClick={() => handleDeleteClick(name)}
+                      >
+                        <Trash2 size={16} />
+                        Delete
+                      </button>
+                      <Link
+                        to={`/voice-test?command=${encodeURIComponent(name)}`}
+                        className="btn btn-ghost btn-sm flex-1 min-h-[40px] text-success"
+                        aria-label={`Test ${name}`}
+                        title="Test this command"
+                      >
+                        <PlayCircle size={16} />
+                        Test
+                      </Link>
+                    </div>
+                  </motion.li>
+                );
+              })}
+            </AnimatePresence>
+          </ul>
+
+          {/* Desktop (md+): full table */}
+          <div className="hidden md:block overflow-x-auto rounded-box border border-base-content/10">
+            <table className="table table-zebra">
+              <caption className="sr-only">
+                Configured commands, sortable by name or type. {filteredCommands.length} of {commandsList.length} shown.
+              </caption>
+              <thead>
+                <tr>
+                  <th aria-sort={ariaSortFor('name')}>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 hover:text-primary"
+                      onClick={() => applySort('name')}
                     >
-                      <td className="font-semibold align-top max-w-[16rem]">
-                        <span className="truncate block" title={name}>{name}</span>
-                      </td>
-                      <td className="align-top">
-                        <span className={`badge ${type.badgeClass} gap-1 whitespace-nowrap`}>
-                          <TypeIcon size={14} />
-                          {type.label}
-                        </span>
-                      </td>
-                      <td className="align-top">
-                        <div className="text-xs uppercase tracking-wider text-base-content/50">{label}</div>
-                        <div className="text-sm font-mono break-all max-w-md">{detail}</div>
-                      </td>
-                      <td className="align-top">
-                        <div className="flex items-center justify-end gap-1">
-                          <Link
-                            to={`/commands/authoring?edit=${encodeURIComponent(name)}`}
-                            className="btn btn-ghost btn-xs btn-circle text-primary"
-                            aria-label={`Edit ${name}`}
-                            title="Edit"
-                          >
-                            <Edit3 size={16} />
-                          </Link>
-                          <button
-                            className="btn btn-ghost btn-xs btn-circle text-error"
-                            aria-label={`Delete ${name}`}
-                            title="Delete"
-                            onClick={() => handleDeleteClick(name)}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                          <DynamicDropdown
-                            buttonContent={
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                              </svg>
-                            }
-                            menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
-                            ariaLabel={`More options for ${name}`}
-                          >
-                            <li>
-                              <Link to={`/voice-test?command=${encodeURIComponent(name)}`} aria-label={`Test ${name}`}>
-                                <PlayCircle size={16} className="text-success" />
-                                Test this command
-                              </Link>
-                            </li>
-                          </DynamicDropdown>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </AnimatePresence>
-            </tbody>
-          </table>
-        </div>
+                      Name
+                      <ArrowUpDown size={14} className="opacity-50" aria-hidden="true" />
+                    </button>
+                  </th>
+                  <th aria-sort={ariaSortFor('type')}>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 hover:text-primary"
+                      onClick={() => applySort('type')}
+                    >
+                      Type
+                      <ArrowUpDown size={14} className="opacity-50" aria-hidden="true" />
+                    </button>
+                  </th>
+                  <th>Action</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence>
+                  {filteredCommands.map(([name, config], idx) => {
+                    const type = getCommandType(config);
+                    const { label, detail } = describeAction(config);
+                    const TypeIcon = type.Icon;
+                    return (
+                      <motion.tr
+                        key={name}
+                        data-reduced-motion={reduceMotion ? 'true' : 'false'}
+                        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                        animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                        transition={
+                          reduceMotion
+                            ? undefined
+                            : { delay: Math.min(idx, MAX_STAGGER_INDEX) * STAGGER_STEP }
+                        }
+                        className="hover"
+                      >
+                        <td className="font-semibold align-top max-w-[16rem]">
+                          <span className="truncate block" title={name}>{name}</span>
+                        </td>
+                        <td className="align-top">
+                          <span className={`badge ${type.badgeClass} gap-1 whitespace-nowrap`}>
+                            <TypeIcon size={14} />
+                            {type.label}
+                          </span>
+                        </td>
+                        <td className="align-top">
+                          <div className="text-xs uppercase tracking-wider text-base-content/50">{label}</div>
+                          <div className="text-sm font-mono break-all max-w-md">{detail}</div>
+                        </td>
+                        <td className="align-top">
+                          <div className="flex items-center justify-end gap-1">
+                            <Link
+                              to={`/commands/authoring?edit=${encodeURIComponent(name)}`}
+                              className="btn btn-ghost btn-xs btn-circle text-primary"
+                              aria-label={`Edit ${name}`}
+                              title="Edit"
+                            >
+                              <Edit3 size={16} />
+                            </Link>
+                            <button
+                              className="btn btn-ghost btn-xs btn-circle text-error"
+                              aria-label={`Delete ${name}`}
+                              title="Delete"
+                              onClick={() => handleDeleteClick(name)}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                            <DynamicDropdown
+                              buttonContent={
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                                </svg>
+                              }
+                              menuClassName="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-content/10"
+                              ariaLabel={`More options for ${name}`}
+                            >
+                              <li>
+                                <Link to={`/voice-test?command=${encodeURIComponent(name)}`} aria-label={`Test ${name}`}>
+                                  <PlayCircle size={16} className="text-success" />
+                                  Test this command
+                                </Link>
+                              </li>
+                            </DynamicDropdown>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {isEmpty && (

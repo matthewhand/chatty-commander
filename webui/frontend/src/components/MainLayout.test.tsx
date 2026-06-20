@@ -16,11 +16,22 @@ vi.mock("../hooks/useAuth", () => ({
   }),
 }));
 
+// Mirror the live AVAILABLE_THEMES from ThemeProvider so we can assert the
+// switcher renders human-readable labels for every real theme.
+const REAL_THEMES = [
+  "light",
+  "dark",
+  "corporate",
+  "business",
+  "emerald",
+  "nord",
+];
+
 vi.mock("./ThemeProvider", () => ({
   useTheme: () => ({
     theme: "dark",
     setTheme: vi.fn(),
-    availableThemes: ["light", "dark"],
+    availableThemes: REAL_THEMES,
   }),
 }));
 
@@ -35,7 +46,7 @@ function renderAt(path: string) {
 }
 
 describe("MainLayout", () => {
-  test("sticky desktop header shows the page title and breadcrumb", () => {
+  test("sticky desktop header hosts the breadcrumb but no page-title heading", () => {
     renderAt("/commands/authoring");
 
     // The persistent app bar is a sticky <header> in the scroll area.
@@ -47,13 +58,43 @@ describe("MainLayout", () => {
     const header = stickyHeader as HTMLElement;
     expect(header.className).toContain("top-0");
 
-    // Page title derived from the route.
-    expect(
-      within(header).getByRole("heading", { name: "Command Authoring" }),
-    ).toBeInTheDocument();
-
     // Breadcrumb is hosted in the header (deep route => parent crumb present).
     expect(within(header).getByText("Commands")).toBeInTheDocument();
+
+    // Regression: the header must NOT render its own page-title heading, which
+    // previously duplicated each page's hero title.
+    expect(
+      within(header).queryByRole("heading"),
+    ).not.toBeInTheDocument();
+  });
+
+  test("does not render a duplicate page-title heading from the layout", () => {
+    // The page body MainLayout renders ("page body") contains no heading; any
+    // heading would be a layout-injected duplicate of a page's own title.
+    renderAt("/commands/authoring");
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+  });
+
+  test("theme switcher renders human-readable labels for the real themes", () => {
+    renderAt("/dashboard");
+
+    const select = screen.getByRole("combobox", { name: "Select theme" });
+    const options = within(select).getAllByRole("option");
+    const labels = options.map((o) => o.textContent);
+
+    expect(labels).toEqual([
+      "Light",
+      "Dark",
+      "Corporate",
+      "Business",
+      "Emerald",
+      "Nord",
+    ]);
+
+    // None of the option labels should be a raw lowercase token.
+    for (const label of labels) {
+      expect(label).not.toMatch(/^[a-z]/);
+    }
   });
 
   test("renders the ChattyCommander logo in the sidebar", () => {
