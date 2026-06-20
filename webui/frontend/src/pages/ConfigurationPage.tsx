@@ -886,7 +886,7 @@ const ConfigurationPage: React.FC = () => {
                           <p className="text-xs opacity-70">Playback endpoint</p>
                         </div>
                         <button
-                          className="btn btn-sm btn-outline btn-secondary"
+                          className="btn btn-sm btn-outline btn-primary"
                           onClick={handleTestOutput}
                           disabled={outputTestStatus === "playing"}
                           aria-label={outputTestStatus === "playing" ? "Playing test tone" : "Play test tone"}
