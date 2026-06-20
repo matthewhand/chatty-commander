@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import time
 from unittest.mock import MagicMock
 
@@ -13,6 +14,7 @@ from chatty_commander.obs.metrics import (
     HistogramBuckets,
     MetricsRegistry,
     Timer,
+    create_metrics_router,
 )
 
 # ─── Counter ────────────────────────────────────────────────────────────────
@@ -331,3 +333,179 @@ class TestMetricsEndpoints:
         text = response.text
         assert "http_requests_total" in text
         assert "http_request_duration_seconds" in text
+
+
+# ─── Concurrency / reader-writer race regression ─────────────────────────────
+
+
+class TestMetricsConcurrency:
+    def test_scrape_during_concurrent_observes_no_exception(self):
+        """A /metrics scrape that reads while many threads mutate the metrics
+        must never raise 'dictionary changed size during iteration'.
+
+        Readers (samples/snapshot/to_json) must snapshot the underlying dicts
+        under the lock; this stresses that guarantee.
+        """
+        registry = MetricsRegistry()
+        counter = registry.counter("race_counter", "race counter")
+        gauge = registry.gauge("race_gauge", "race gauge")
+        hist = registry.histogram("race_hist", "race hist")
+
+        stop = threading.Event()
+        errors: list[BaseException] = []
+
+        def writer(n: int) -> None:
+            i = 0
+            try:
+                while not stop.is_set():
+                    # Use distinct label values to keep growing the dicts,
+                    # which is what triggers "changed size during iteration".
+                    labels = {"worker": str(n), "iter": str(i)}
+                    counter.inc(1, labels=labels)
+                    gauge.set(float(i), labels=labels)
+                    hist.observe(0.001 * (i % 50), labels=labels)
+                    i += 1
+            except BaseException as exc:  # pragma: no cover - failure path
+                errors.append(exc)
+
+        def reader() -> None:
+            try:
+                while not stop.is_set():
+                    # Exercise every reader path that iterates the dicts.
+                    counter.samples()
+                    counter.get({"worker": "0", "iter": "0"})
+                    gauge.samples()
+                    gauge.get({"worker": "0", "iter": "0"})
+                    hist.snapshot()
+                    registry.to_json()
+            except BaseException as exc:  # pragma: no cover - failure path
+                errors.append(exc)
+
+        threads = [threading.Thread(target=writer, args=(n,)) for n in range(6)]
+        threads += [threading.Thread(target=reader) for _ in range(4)]
+        for t in threads:
+            t.start()
+        time.sleep(0.5)
+        stop.set()
+        for t in threads:
+            t.join(timeout=5)
+
+        assert not errors, f"concurrent access raised: {errors!r}"
+
+
+# ─── Prometheus cumulative-histogram correctness ─────────────────────────────
+
+
+def _parse_prom_buckets(text: str, name: str) -> list[tuple[str, float]]:
+    """Return [(le, value), ...] for the given histogram metric name."""
+    out: list[tuple[str, float]] = []
+    prefix = f"{name}_bucket{{"
+    for line in text.splitlines():
+        if not line.startswith(prefix):
+            continue
+        labelpart, _, value = line.rpartition(" ")
+        # Extract le="..." label
+        le_idx = labelpart.find('le="')
+        le = labelpart[le_idx + len('le="') : labelpart.find('"', le_idx + len('le="'))]
+        out.append((le, float(value)))
+    return out
+
+
+class TestPrometheusHistogramCumulative:
+    def test_prom_histogram_is_valid_cumulative_with_inf_equals_count(self):
+        registry = MetricsRegistry()
+        buckets = HistogramBuckets([0.1, 0.5, 1.0])
+        hist = registry.histogram("lat", "latency", buckets=buckets)
+
+        # Observations spread across and beyond the buckets.
+        for v in [0.05, 0.05, 0.3, 0.7, 0.7, 5.0]:  # total 6
+            hist.observe(v)
+
+        router = create_metrics_router(registry=registry)
+        from fastapi import FastAPI
+
+        app = FastAPI()
+        app.include_router(router)
+        client = TestClient(app)
+
+        text = client.get("/metrics/prom").text
+        bkts = _parse_prom_buckets(text, "lat")
+        assert bkts, "expected histogram buckets in prom output"
+
+        by_le = dict(bkts)
+        # le="0.1": v<=0.1 -> the two 0.05 obs = 2
+        assert by_le["0.1"] == 2
+        # le="0.5": <=0.5 -> two 0.05 + one 0.3 = 3
+        assert by_le["0.5"] == 3
+        # le="1.0": <=1.0 -> + two 0.7 = 5
+        assert by_le["1.0"] == 5
+        # +Inf must equal the total observation count (6).
+        assert by_le["+Inf"] == 6
+
+        # Cumulative invariant: non-decreasing in bucket order, +Inf is max.
+        finite_in_order = [by_le["0.1"], by_le["0.5"], by_le["1.0"]]
+        assert finite_in_order == sorted(finite_in_order)
+        assert by_le["+Inf"] >= finite_in_order[-1]
+
+        # _count line must also equal +Inf bucket.
+        count_line = [
+            line for line in text.splitlines() if line.startswith("lat_count")
+        ]
+        assert count_line
+        assert float(count_line[0].rpartition(" ")[2]) == 6
+
+
+# ─── Duration histogram gets a real route label ──────────────────────────────
+
+
+def test_duration_histogram_uses_real_route_label():
+    """The http_request_duration_seconds histogram must be labeled with the
+    resolved route path (e.g. '/ping'), not the placeholder 'unknown'.
+    """
+    from fastapi import FastAPI
+
+    from chatty_commander.obs.metrics import RequestMetricsMiddleware
+
+    registry = MetricsRegistry()
+    app = FastAPI()
+    app.add_middleware(RequestMetricsMiddleware, registry=registry)
+    app.include_router(create_metrics_router(registry=registry))
+
+    @app.get("/ping")
+    async def ping():
+        return {"ok": True}
+
+    client = TestClient(app, raise_server_exceptions=False)
+    client.get("/ping")
+
+    snap = registry.histogram("http_request_duration_seconds").snapshot()
+    routes = {s["labels"].get("route") for s in snap["series"]}
+    assert "/ping" in routes, f"expected real route label, got {routes!r}"
+    assert "unknown" not in routes, "duration histogram still labeled 'unknown'"
+
+
+def test_request_counter_increments_on_handler_exception():
+    """If a downstream handler raises, the request counter must still be
+    incremented (try/finally guarantee) so errors are not undercounted.
+    """
+    from fastapi import FastAPI
+
+    from chatty_commander.obs.metrics import RequestMetricsMiddleware
+
+    registry = MetricsRegistry()
+    app = FastAPI()
+    app.add_middleware(RequestMetricsMiddleware, registry=registry)
+
+    @app.get("/boom")
+    async def boom():
+        raise RuntimeError("kaboom")
+
+    client = TestClient(app, raise_server_exceptions=False)
+    try:
+        client.get("/boom")
+    except Exception:
+        pass
+
+    counter = registry.counter("http_requests_total")
+    total = sum(value for _labels, value in counter.samples())
+    assert total > 0, "request counter must increment even when handler raises"
