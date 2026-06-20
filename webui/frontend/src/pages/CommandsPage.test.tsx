@@ -141,7 +141,7 @@ test("default sort is alphabetical by name", async () => {
   await screen.findAllByText("alpha");
   const rows = document.querySelectorAll("tbody tr");
   const names = Array.from(rows).map(
-    (r) => r.querySelector("td")?.textContent?.trim()
+    (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim()
   );
   expect(names).toEqual(["alpha", "zeta"]);
 });
@@ -160,7 +160,7 @@ test("sorting by type groups commands by their type", async () => {
   await waitFor(() => {
     const rows = document.querySelectorAll("tbody tr");
     const names = Array.from(rows).map(
-      (r) => r.querySelector("td")?.textContent?.trim()
+      (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim()
     );
     expect(names).toEqual(["bbb_key", "aaa_url"]);
   });
@@ -317,6 +317,149 @@ test("mobile card delete control opens the same confirm dialog", async () => {
   });
 });
 
+// --- Bulk operations -------------------------------------------------------
+
+test("the select-all checkbox selects every visible command and shows the bulk bar", async () => {
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  // No bulk bar before any selection.
+  expect(screen.queryByRole("region", { name: "Bulk actions" })).not.toBeInTheDocument();
+
+  // The table's select-all header checkbox selects all filtered commands.
+  const selectAll = within(getTable()).getByLabelText("Select all commands");
+  fireEvent.click(selectAll);
+
+  const bar = await screen.findByRole("region", { name: "Bulk actions" });
+  expect(within(bar).getByText("2 selected")).toBeInTheDocument();
+  // Both per-row checkboxes are now checked.
+  expect(
+    (within(getTable()).getByLabelText("Select take_screenshot") as HTMLInputElement).checked
+  ).toBe(true);
+  expect(
+    (within(getTable()).getByLabelText("Select open_docs") as HTMLInputElement).checked
+  ).toBe(true);
+});
+
+test("select-all header checkbox is indeterminate when only some are selected", async () => {
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  fireEvent.click(within(getTable()).getByLabelText("Select take_screenshot"));
+
+  const selectAll = within(getTable()).getByLabelText(
+    "Select all commands"
+  ) as HTMLInputElement;
+  expect(selectAll.indeterminate).toBe(true);
+  expect(selectAll.checked).toBe(false);
+});
+
+test("bulk delete confirms once then deletes all selected commands", async () => {
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  fireEvent.click(within(getTable()).getByLabelText("Select take_screenshot"));
+  fireEvent.click(within(getTable()).getByLabelText("Select open_docs"));
+
+  // Open the bulk bar and trigger the delete flow.
+  fireEvent.click(screen.getByLabelText("Delete selected commands"));
+  // A single confirm dialog listing the count.
+  const confirmBtn = screen.getByRole("button", { name: /Delete 2/ });
+  expect(confirmBtn).toBeInTheDocument();
+  fireEvent.click(confirmBtn);
+
+  await waitFor(() => {
+    expect(apiService.deleteCommand).toHaveBeenCalledWith("take_screenshot");
+    expect(apiService.deleteCommand).toHaveBeenCalledWith("open_docs");
+  });
+  expect(apiService.deleteCommand).toHaveBeenCalledTimes(2);
+
+  // Selection clears after a successful bulk action (the bar disappears).
+  await waitFor(() => {
+    expect(
+      screen.queryByRole("region", { name: "Bulk actions" })
+    ).not.toBeInTheDocument();
+  });
+});
+
+test("export selected downloads a JSON of only the selected commands", async () => {
+  // Capture the Blob the exporter hands to createObjectURL so we can read it.
+  const blobs: Blob[] = [];
+  const createUrl = vi
+    .spyOn(URL, "createObjectURL")
+    .mockImplementation((blob: Blob | MediaSource) => {
+      blobs.push(blob as Blob);
+      return "blob:mock";
+    });
+  const revokeUrl = vi
+    .spyOn(URL, "revokeObjectURL")
+    .mockImplementation(() => {});
+  const clickSpy = vi
+    .spyOn(HTMLAnchorElement.prototype, "click")
+    .mockImplementation(() => {});
+
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  // Select just one command.
+  fireEvent.click(within(getTable()).getByLabelText("Select open_docs"));
+  fireEvent.click(screen.getByLabelText("Export selected commands as JSON"));
+
+  expect(clickSpy).toHaveBeenCalled();
+  expect(blobs.length).toBe(1);
+  const text = await blobs[0].text();
+  const parsed = JSON.parse(text);
+  // Only the selected command is present.
+  expect(Object.keys(parsed)).toEqual(["open_docs"]);
+  expect(parsed.open_docs).toEqual({
+    action: "url",
+    url: "https://example.com/docs",
+  });
+
+  // Selection clears after export.
+  await waitFor(() => {
+    expect(
+      screen.queryByRole("region", { name: "Bulk actions" })
+    ).not.toBeInTheDocument();
+  });
+
+  createUrl.mockRestore();
+  revokeUrl.mockRestore();
+  clickSpy.mockRestore();
+});
+
+test("selection clears when the search filter changes", async () => {
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  fireEvent.click(within(getTable()).getByLabelText("Select take_screenshot"));
+  expect(
+    await screen.findByRole("region", { name: "Bulk actions" })
+  ).toBeInTheDocument();
+
+  // Changing the search filter resets the selection (bulk bar disappears once
+  // the debounced filter updates).
+  fireEvent.change(screen.getByLabelText("Search commands"), {
+    target: { value: "print_screen" },
+  });
+  await waitFor(() => {
+    expect(
+      screen.queryByRole("region", { name: "Bulk actions" })
+    ).not.toBeInTheDocument();
+  });
+});
+
+test("per-row checkboxes have accessible Select <name> labels", async () => {
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+  const table = within(getTable());
+  expect(table.getByLabelText("Select take_screenshot")).toBeInTheDocument();
+  expect(table.getByLabelText("Select open_docs")).toBeInTheDocument();
+  // Mobile cards expose the same labels.
+  const cards = within(getCardList());
+  expect(cards.getByLabelText("Select take_screenshot")).toBeInTheDocument();
+});
+
 // --- Sortable headers with aria-sort ---------------------------------------
 
 test("column headers expose aria-sort and toggle via header buttons", async () => {
@@ -344,7 +487,7 @@ test("column headers expose aria-sort and toggle via header buttons", async () =
   // Order should now be reversed (zeta-style: bbb before aaa).
   const rows = document.querySelectorAll("tbody tr");
   const names = Array.from(rows).map(
-    (r) => r.querySelector("td")?.textContent?.trim()
+    (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim()
   );
   expect(names).toEqual(["bbb_key", "aaa_url"]);
 
@@ -374,7 +517,7 @@ test("sort key is persisted in the URL search params", async () => {
   await waitFor(() => {
     const rows = document.querySelectorAll("tbody tr");
     const names = Array.from(rows).map(
-      (r) => r.querySelector("td")?.textContent?.trim()
+      (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim()
     );
     expect(names).toEqual(["bbb_key", "aaa_url"]);
   });

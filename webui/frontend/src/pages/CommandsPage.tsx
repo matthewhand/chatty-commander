@@ -110,8 +110,12 @@ export default function CommandsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  // Bulk selection is keyed on command name so it survives sort/re-render.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const importDialogRef = useRef<HTMLDialogElement>(null);
+  const bulkDeleteDialogRef = useRef<HTMLDialogElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { data: commands, isLoading, isFetching, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
@@ -309,6 +313,12 @@ export default function CommandsPage() {
     setPendingImport(null);
   };
 
+  // Clear the selection whenever the (debounced) search filter changes, so the
+  // selection never includes commands that are no longer visible/relevant.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [debouncedSearch]);
+
   // Memoize filtered + sorted commands. Search now covers the visible detail
   // (url/keys/cmd/message) in addition to name + action.
   const filteredCommands = useMemo(() => {
@@ -341,6 +351,110 @@ export default function CommandsPage() {
     });
     return filtered;
   }, [commandsList, debouncedSearch, sortKey, sortDir]);
+
+  // Names currently visible (post-filter) — the universe "select all" operates on.
+  const filteredNames = useMemo(
+    () => filteredCommands.map(([name]) => name),
+    [filteredCommands],
+  );
+  // How many of the visible commands are selected drives the header checkbox
+  // (checked = all, indeterminate = some, unchecked = none).
+  const selectedVisibleCount = useMemo(
+    () => filteredNames.filter((name) => selected.has(name)).length,
+    [filteredNames, selected],
+  );
+  const allVisibleSelected =
+    filteredNames.length > 0 && selectedVisibleCount === filteredNames.length;
+  const someVisibleSelected =
+    selectedVisibleCount > 0 && selectedVisibleCount < filteredNames.length;
+
+  // Reflect the indeterminate state on the header checkboxes (it can only be set
+  // imperatively on the DOM node, not via a prop/attribute).
+  const selectAllTableRef = useRef<HTMLInputElement>(null);
+  const selectAllCardRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (selectAllTableRef.current) selectAllTableRef.current.indeterminate = someVisibleSelected;
+    if (selectAllCardRef.current) selectAllCardRef.current.indeterminate = someVisibleSelected;
+  }, [someVisibleSelected]);
+
+  const toggleSelected = (name: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  };
+
+  // Select-all toggles only the currently-visible (filtered) commands.
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      if (filteredNames.every((name) => prev.has(name))) {
+        // All visible are selected -> clear them (keep any non-visible, though
+        // selection is cleared on search change so there generally are none).
+        const next = new Set(prev);
+        filteredNames.forEach((name) => next.delete(name));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredNames.forEach((name) => next.add(name));
+      return next;
+    });
+  };
+
+  const handleBulkDeleteClick = () => {
+    if (selected.size === 0) return;
+    bulkDeleteDialogRef.current?.showModal();
+  };
+
+  const handleBulkDeleteCancel = () => {
+    bulkDeleteDialogRef.current?.close();
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    if (selected.size === 0 || isBulkDeleting) return;
+    setIsBulkDeleting(true);
+    try {
+      // Delete each selected command via the existing per-command mechanism.
+      const names = Array.from(selected);
+      for (const name of names) {
+        await apiService.deleteCommand(name);
+      }
+      refetch();
+      bulkDeleteDialogRef.current?.close();
+      setSelected(new Set());
+      addToast(`Deleted ${names.length} command${names.length === 1 ? '' : 's'}.`, 'success');
+    } catch (err) {
+      addToast(
+        `Failed to delete commands: ${err instanceof Error ? err.message : String(err)}`,
+        'error',
+      );
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  // Export only the selected commands, reusing the same JSON export shape.
+  const handleExportSelected = () => {
+    if (selected.size === 0 || !commands) return;
+    const subset: Record<string, CommandConfig> = {};
+    for (const name of selected) {
+      if (name in commands) subset[name] = commands[name];
+    }
+    const blob = new Blob([JSON.stringify(subset, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'commands.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setSelected(new Set());
+  };
 
   if (isLoading) {
     return (
@@ -484,13 +598,57 @@ export default function CommandsPage() {
         )}
       </div>
 
+      {/* Bulk action bar — appears once at least one command is selected. */}
+      {selected.size > 0 && (
+        <div
+          role="region"
+          aria-label="Bulk actions"
+          aria-live="polite"
+          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-box border border-primary/30 bg-primary/5 p-3"
+        >
+          <span className="text-sm font-medium">
+            {selected.size} selected
+          </span>
+          <div className="flex gap-2 sm:ml-auto">
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={handleExportSelected}
+              aria-label="Export selected commands as JSON"
+            >
+              <Download size={16} />
+              Export selected
+            </button>
+            <button
+              className="btn btn-error btn-sm"
+              onClick={handleBulkDeleteClick}
+              aria-label="Delete selected commands"
+            >
+              <Trash2 size={16} />
+              Delete selected
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Commands list */}
       {!isEmpty && filteredCommands.length > 0 && (
         <>
           {/* Mobile: stacked cards (the table's Actions column scrolls off-screen
               at ~375px, so below md we render an equivalent card per command). */}
-          <ul className="md:hidden space-y-3" aria-label="Commands">
-            <AnimatePresence>
+          <div className="md:hidden space-y-3">
+            <label className="flex items-center gap-2 text-sm px-1">
+              <input
+                ref={selectAllCardRef}
+                type="checkbox"
+                className="checkbox checkbox-sm"
+                aria-label="Select all commands"
+                checked={allVisibleSelected}
+                onChange={toggleSelectAll}
+              />
+              <span className="text-base-content/60">Select all</span>
+            </label>
+            <ul className="space-y-3" aria-label="Commands">
+              <AnimatePresence>
               {filteredCommands.map(([name, config], idx) => {
                 const type = getCommandType(config);
                 const { label, detail } = describeAction(config);
@@ -509,7 +667,16 @@ export default function CommandsPage() {
                     className="rounded-box border border-base-content/10 bg-base-100 p-4"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-semibold break-all" title={name}>{name}</span>
+                      <span className="flex items-start gap-2 min-w-0">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-sm mt-1 shrink-0"
+                          aria-label={`Select ${name}`}
+                          checked={selected.has(name)}
+                          onChange={() => toggleSelected(name)}
+                        />
+                        <span className="font-semibold break-all" title={name}>{name}</span>
+                      </span>
                       <span className={`badge ${type.badgeClass} gap-1 whitespace-nowrap shrink-0`}>
                         <TypeIcon size={14} />
                         {type.label}
@@ -551,8 +718,9 @@ export default function CommandsPage() {
                   </motion.li>
                 );
               })}
-            </AnimatePresence>
-          </ul>
+              </AnimatePresence>
+            </ul>
+          </div>
 
           {/* Desktop (md+): full table */}
           <div className="hidden md:block overflow-x-auto rounded-box border border-base-content/10">
@@ -562,6 +730,16 @@ export default function CommandsPage() {
               </caption>
               <thead>
                 <tr>
+                  <th className="w-0">
+                    <input
+                      ref={selectAllTableRef}
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      aria-label="Select all commands"
+                      checked={allVisibleSelected}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
                   <th aria-sort={ariaSortFor('name')}>
                     <button
                       type="button"
@@ -605,6 +783,15 @@ export default function CommandsPage() {
                         }
                         className="hover"
                       >
+                        <td className="align-top">
+                          <input
+                            type="checkbox"
+                            className="checkbox checkbox-sm"
+                            aria-label={`Select ${name}`}
+                            checked={selected.has(name)}
+                            onChange={() => toggleSelected(name)}
+                          />
+                        </td>
                         <td className="font-semibold align-top max-w-[16rem]">
                           <span className="truncate block" title={name}>{name}</span>
                         </td>
@@ -705,6 +892,27 @@ export default function CommandsPage() {
         </div>
         <form method="dialog" className="modal-backdrop">
           <button onClick={handleDeleteCancel}>close</button>
+        </form>
+      </dialog>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <dialog ref={bulkDeleteDialogRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Confirm Deletion</h3>
+          <p className="py-4">
+            Are you sure you want to delete <strong>{selected.size}</strong>{' '}
+            selected command{selected.size === 1 ? '' : 's'}? This cannot be undone.
+          </p>
+          <div className="modal-action">
+            <button className="btn" onClick={handleBulkDeleteCancel} disabled={isBulkDeleting}>Cancel</button>
+            <button className="btn btn-error" onClick={handleBulkDeleteConfirm} disabled={isBulkDeleting}>
+              {isBulkDeleting ? <span className="loading loading-spinner loading-sm" aria-hidden="true"></span> : null}
+              Delete {selected.size}
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleBulkDeleteCancel}>close</button>
         </form>
       </dialog>
 
