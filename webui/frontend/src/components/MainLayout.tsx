@@ -45,7 +45,7 @@ const ThemeSwitcher: React.FC = () => {
     const { theme, setTheme, availableThemes } = useTheme();
     return (
         <label className="flex items-center gap-2 text-sm">
-            <PaletteIcon size={18} className="text-base-content/70 shrink-0" aria-hidden="true" />
+            <PaletteIcon size={20} className="text-base-content/70 shrink-0" aria-hidden="true" />
             <span className="sr-only">Theme</span>
             <select
                 className="select select-sm select-bordered flex-1 min-h-[44px]"

@@ -546,7 +546,7 @@ const VoiceTestPage: React.FC = () => {
                   : "badge-error"
             }`}
           >
-            {wsStatus === "connected" ? <Wifi size={14} /> : <WifiOff size={14} />}
+            {wsStatus === "connected" ? <Wifi size={16} /> : <WifiOff size={16} />}
             {wsStatus === "connected"
               ? "Connected"
               : wsStatus === "connecting"
@@ -562,7 +562,7 @@ const VoiceTestPage: React.FC = () => {
               onClick={reconnect}
               data-testid="voice-ws-reconnect"
             >
-              <RotateCw size={14} />
+              <RotateCw size={16} />
               Reconnect
             </button>
           )}
@@ -575,7 +575,7 @@ const VoiceTestPage: React.FC = () => {
           role="status"
           data-testid="voice-test-target-banner"
         >
-          <Target size={18} />
+          <Target size={20} />
           <span>
             Testing: <strong>{prefillCommand}</strong>
           </span>
@@ -583,7 +583,7 @@ const VoiceTestPage: React.FC = () => {
       )}
 
       <div className="alert alert-info" role="status" data-testid="dry-run-banner">
-        <Info size={18} />
+        <Info size={20} />
         <span>
           <strong>What to expect:</strong> dry-run mode — detected commands are reported, not
           executed. You will see stages for listening, wake word, transcript, command match and a
@@ -611,7 +611,7 @@ const VoiceTestPage: React.FC = () => {
 
           {micState === "denied" && (
             <div className="alert alert-error" role="alert" data-testid="mic-denied-alert">
-              <AlertTriangle size={18} />
+              <AlertTriangle size={20} />
               <span>
                 Microphone access was denied or is unavailable. Check your browser
                 permissions, then try again. You can still use the text simulation below.
@@ -622,7 +622,7 @@ const VoiceTestPage: React.FC = () => {
           {/* Honest warning: mic on but not actually streaming. */}
           {micActive && !streaming && (
             <div className="alert alert-warning" role="alert" data-testid="mic-stream-warning">
-              <AlertTriangle size={18} />
+              <AlertTriangle size={20} />
               <span>
                 {wsStatus !== "connected"
                   ? "Microphone is on, but the server connection is down — audio is not reaching the pipeline."
@@ -668,7 +668,7 @@ const VoiceTestPage: React.FC = () => {
               aria-label={micButtonLabel}
               data-testid="mic-toggle"
             >
-              {micState === "active" ? <MicOff size={18} /> : <Mic size={18} />}
+              {micState === "active" ? <MicOff size={20} /> : <Mic size={20} />}
               {micButtonLabel}
             </button>
             <span className="text-sm text-base-content/70" data-testid="mic-state">
@@ -755,7 +755,7 @@ const VoiceTestPage: React.FC = () => {
                 aria-label="Send simulated command"
                 data-testid="voice-simulate-send"
               >
-                <Send size={16} />
+                <Send size={20} />
                 Send
               </button>
             </span>
@@ -767,7 +767,7 @@ const VoiceTestPage: React.FC = () => {
       <div className="card bg-base-100 shadow" data-testid="voice-transcript-panel">
         <div className="card-body py-4">
           <h2 className="card-title text-base flex items-center gap-2">
-            <FileText size={18} /> Transcript
+            <FileText size={20} /> Transcript
           </h2>
           {transcriptionUnavailable ? (
             <div
@@ -775,7 +775,7 @@ const VoiceTestPage: React.FC = () => {
               role="status"
               data-testid="transcript-unavailable"
             >
-              <Info size={18} />
+              <Info size={20} />
               <span>
                 Speech-to-text isn't configured on the server — wake word + command matching
                 still work. Use the text simulation above to test the pipeline.
@@ -817,7 +817,7 @@ const VoiceTestPage: React.FC = () => {
               role="status"
               data-testid="wake-word-detected"
             >
-              <Radio size={18} />
+              <Radio size={20} />
               <span className="font-semibold">Wake word detected!</span>
             </div>
           )}
@@ -830,9 +830,9 @@ const VoiceTestPage: React.FC = () => {
               data-testid="voice-processing"
             >
               {processingStalled ? (
-                <AlertTriangle size={18} />
+                <AlertTriangle size={20} />
               ) : (
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={20} className="animate-spin" />
               )}
               <span>
                 {processingStalled
@@ -887,7 +887,7 @@ const VoiceTestPage: React.FC = () => {
                         className="badge badge-sm badge-primary gap-1 mt-0.5"
                         data-testid="wake-word-badge"
                       >
-                        <Radio size={12} />
+                        <Radio size={16} />
                         {STAGE_LABELS[event.stage] ?? event.stage}
                       </span>
                     ) : (
@@ -917,7 +917,7 @@ const VoiceTestPage: React.FC = () => {
       <div className="text-sm text-base-content/70">
         Want to change what these commands do?{" "}
         <Link to="/commands" className="link link-primary inline-flex items-center gap-1" data-testid="edit-commands-link">
-          Edit commands <ExternalLink size={14} />
+          Edit commands <ExternalLink size={16} />
         </Link>
       </div>
     </div>

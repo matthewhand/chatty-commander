@@ -336,15 +336,15 @@ cases, responsive, a11y+design-system, workflows+perf). Several P0s are
 - [ ] **No reusable Button/Card/Field primitives** — card/field/button class clusters are copy-pasted with drift; extract shared components ([`webui/frontend/src/components`](webui/frontend/src/components))
 - [x] **Multi-tab + background-poll auth desync** — expiry isn't broadcast across tabs (no `storage` listener); polling keeps running after logout and can force-expire a fresh login; reset latch on `getCurrentUser` success and cancel polls when unauthenticated ([`authService.ts`](webui/frontend/src/services/authService.ts), [`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#716)
 
-### P2 — polish (10/12)
+### P2 — polish (12/12)
 
 - [x] **Gradient `h1` + gradient buttons/badges everywhere** dilute emphasis — reserve the gradient for one hero; solid `text-base-content` for routine titles ([`index.css`](webui/frontend/src/index.css))  ✅ (#717)
 - [x] **Stat-card icons are a random rainbow** — standardize to a muted accent or status-driven color ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#717)
 - [x] **Voice Assistant card leaks placeholder strings** ("Mic: unknown · current mode") — render a real value or a clean "Not detected" ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#716)
 - [x] **Radial gauges read as broken arcs** — use a full-track radial-progress with centered label ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#716)
-- [ ] **Emoji section-icons mixed with lucide line icons** — unify on lucide ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), pages)
+- [x] **Emoji section-icons mixed with lucide line icons** — unify on lucide ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx), pages)  ✅ (#718)
 - [x] **Login double-branding** — big avatar mark + full Logo lockup (which includes the mark) shown together; keep one ([`LoginPage.tsx`](webui/frontend/src/pages/LoginPage.tsx))  ✅ (#717)
-- [ ] **Icon sizes ad-hoc (12–32)** — define sm/md/lg scale ([`webui/frontend/src`](webui/frontend/src))
+- [x] **Icon sizes ad-hoc (12–32)** — define sm/md/lg scale ([`webui/frontend/src`](webui/frontend/src))  ✅ (#718)
 - [x] **Shadows use raw `rgba(0,0,0,…)`** (too heavy on light themes) — token from `--bc`/`--b3` ([`index.css`](webui/frontend/src/index.css))  ✅ (#716)
 - [x] **Radius scale inconsistent** (`rounded` vs `-lg`/`-xl`/`-box` + raw rem) — standardize ([`index.css`](webui/frontend/src/index.css))  ✅ (#717)
 - [x] **No bulk ops on Commands** (select-all, multi-delete, export-selected) ([`CommandsPage.tsx`](webui/frontend/src/pages/CommandsPage.tsx))  ✅ (#717)

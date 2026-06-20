@@ -15,7 +15,8 @@ import {
   Search,
   Download,
   Upload,
-  ArrowUpDown
+  ArrowUpDown,
+  X
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/apiService';
@@ -505,7 +506,7 @@ export default function CommandsPage() {
             aria-label="Refresh Commands"
             disabled={isFetching}
           >
-            <RefreshCw size={18} className={isFetching ? "animate-spin" : ""} />
+            <RefreshCw size={20} className={isFetching ? "animate-spin" : ""} />
           </button>
           <button
             className="btn btn-outline btn-sm"
@@ -514,7 +515,7 @@ export default function CommandsPage() {
             aria-label="Export commands as JSON"
             disabled={!commands || commandsList.length === 0}
           >
-            <Download size={16} />
+            <Download size={20} />
             Export JSON
           </button>
           <input
@@ -530,11 +531,11 @@ export default function CommandsPage() {
             title="Import JSON"
             aria-label="Import commands from JSON"
           >
-            <Upload size={16} />
+            <Upload size={20} />
             Import JSON
           </button>
           <Link to="/commands/authoring" className="btn btn-primary btn-sm glass">
-            <Plus size={18} />
+            <Plus size={20} />
             New Command
           </Link>
         </div>
@@ -545,7 +546,7 @@ export default function CommandsPage() {
       {/* Page-level note: all commands are triggerable via the REST API. This
           replaces the identical per-row "REST API Trigger" block. */}
       <div className="alert alert-info/60 bg-info/5 border border-info/30 text-sm">
-        <Globe className="text-info shrink-0" size={18} />
+        <Globe className="text-info shrink-0" size={20} />
         <span>
           Every command can be triggered via the REST API:{' '}
           <code className="font-mono">POST /api/v1/command</code>.
@@ -555,7 +556,7 @@ export default function CommandsPage() {
       {/* Controls: search + sort */}
       <div className="flex flex-col md:flex-row md:items-center gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" size={16} />
           <input
             ref={searchInputRef}
             type="text"
@@ -574,7 +575,7 @@ export default function CommandsPage() {
               onClick={() => setSearchParams({})}
               aria-label="Clear search"
             >
-              ×
+              <X size={16} />
             </button>
           )}
         </div>
@@ -678,7 +679,7 @@ export default function CommandsPage() {
                         <span className="font-semibold break-all" title={name}>{name}</span>
                       </span>
                       <span className={`badge ${type.badgeClass} gap-1 whitespace-nowrap shrink-0`}>
-                        <TypeIcon size={14} />
+                        <TypeIcon size={16} />
                         {type.label}
                       </span>
                     </div>
@@ -747,7 +748,7 @@ export default function CommandsPage() {
                       onClick={() => applySort('name')}
                     >
                       Name
-                      <ArrowUpDown size={14} className="opacity-50" aria-hidden="true" />
+                      <ArrowUpDown size={16} className="opacity-50" aria-hidden="true" />
                     </button>
                   </th>
                   <th aria-sort={ariaSortFor('type')}>
@@ -757,7 +758,7 @@ export default function CommandsPage() {
                       onClick={() => applySort('type')}
                     >
                       Type
-                      <ArrowUpDown size={14} className="opacity-50" aria-hidden="true" />
+                      <ArrowUpDown size={16} className="opacity-50" aria-hidden="true" />
                     </button>
                   </th>
                   <th>Action</th>
@@ -797,7 +798,7 @@ export default function CommandsPage() {
                         </td>
                         <td className="align-top">
                           <span className={`badge ${type.badgeClass} gap-1 whitespace-nowrap`}>
-                            <TypeIcon size={14} />
+                            <TypeIcon size={16} />
                             {type.label}
                           </span>
                         </td>
@@ -859,7 +860,7 @@ export default function CommandsPage() {
             Get started by creating your first command to automate tasks and streamline your workflow.
           </p>
           <Link to="/commands/authoring" className="btn btn-primary">
-            <Plus size={18} />
+            <Plus size={20} />
             Create Command
           </Link>
         </div>
