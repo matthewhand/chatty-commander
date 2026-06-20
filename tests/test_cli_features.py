@@ -8,13 +8,38 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Patch sys.modules to mock openwakeword for imports
-sys.modules["openwakeword"] = types.ModuleType("openwakeword")
-_mock_model_mod = types.ModuleType("openwakeword.model")
-_mock_model_mod.Model = type("Model", (), {})
-sys.modules["openwakeword.model"] = _mock_model_mod
 
-from chatty_commander.cli.cli import cli_main  # noqa: E402
+def _build_openwakeword_stubs() -> dict[str, types.ModuleType]:
+    """Return fake ``openwakeword`` modules for stubbing ``sys.modules``."""
+    ow = types.ModuleType("openwakeword")
+    ow_model = types.ModuleType("openwakeword.model")
+    ow_model.Model = type("Model", (), {})
+    return {"openwakeword": ow, "openwakeword.model": ow_model}
+
+
+# Install the stubs just long enough to import the module under test, then
+# remove them again so they never leak into later-collected tests. The autouse
+# fixture below re-installs them (via monkeypatch.setitem, which auto-cleans)
+# for any test that needs them at runtime.
+_added_stub_keys: list[str] = []
+for _name, _mod in _build_openwakeword_stubs().items():
+    if _name not in sys.modules:
+        sys.modules[_name] = _mod
+        _added_stub_keys.append(_name)
+try:
+    from chatty_commander.cli.cli import cli_main  # noqa: E402
+finally:
+    for _name in _added_stub_keys:
+        sys.modules.pop(_name, None)
+
+
+@pytest.fixture(autouse=True)
+def _stub_openwakeword(monkeypatch):
+    """Provide fake ``openwakeword`` modules during each test, auto-cleaned by
+    ``monkeypatch.setitem`` so they never leak into later-collected tests."""
+    for name, mod in _build_openwakeword_stubs().items():
+        monkeypatch.setitem(sys.modules, name, mod)
+    yield
 
 # ── Helpers / fixtures ───────────────────────────────────────────────────
 
