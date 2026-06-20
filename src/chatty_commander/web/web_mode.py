@@ -920,6 +920,48 @@ class WebModeServer:
             return f"{days}d {hours}h {minutes}m {seconds_i}s"
         return f"{hours}h {minutes}m {seconds_i}s"
 
+    def _schedule_broadcast(self, message: WebSocketMessage) -> bool:
+        """Schedule a broadcast onto the running event loop, if any.
+
+        Tolerates a missing / closed / not-yet-running event loop: callers
+        such as ``on_command_detected`` and ``on_system_event`` may run from a
+        synchronous context (e.g. unit tests) where no usable loop exists, or
+        where a prior async test has already closed the loop. In that case we
+        degrade gracefully — log at debug and skip the live broadcast — rather
+        than raising (e.g. "Event loop is closed").
+
+        Returns True if the broadcast was scheduled, False if it was skipped.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop in this thread. Fall back to the thread's
+            # current event loop (if one is set and still open) so that a
+            # caller which created/installed a loop can still receive the
+            # broadcast.
+            try:
+                loop = asyncio.get_event_loop_policy().get_event_loop()
+            except Exception as e:  # noqa: BLE001
+                logger.debug("broadcast skipped: no usable event loop (%s)", e)
+                return False
+            if loop.is_closed() or not loop.is_running():
+                logger.debug(
+                    "broadcast skipped: event loop is closed or not running"
+                )
+                return False
+
+        if loop.is_closed():
+            logger.debug("broadcast skipped: event loop is closed")
+            return False
+
+        try:
+            loop.create_task(self._broadcast_message(message))
+            return True
+        except RuntimeError as e:
+            # e.g. the loop was closed between the checks above and here.
+            logger.debug("broadcast skipped: scheduling failed (%s)", e)
+            return False
+
     async def _broadcast_message(self, message: WebSocketMessage) -> None:
         payload = message.model_dump_json()
         for ws in list(self.active_connections):
@@ -1098,33 +1140,21 @@ class WebModeServer:
 
     # Optional convenience callbacks (exposed for tests)
     def on_command_detected(self, command: str, confidence: float) -> None:
+        # Synchronous bookkeeping always happens, regardless of whether a live
+        # broadcast can be scheduled (see _schedule_broadcast for loop handling).
         self.commands_executed += 1
         self.last_command = command
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        loop.create_task(
-            self._broadcast_message(
-                WebSocketMessage(
-                    type="command_detected",
-                    data={"command": command, "confidence": confidence},
-                )
+        self._schedule_broadcast(
+            WebSocketMessage(
+                type="command_detected",
+                data={"command": command, "confidence": confidence},
             )
         )
 
     def on_system_event(self, event_type: str, details: str | dict[str, Any]) -> None:
-        """On system event, broadcast to clients."""
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        loop.create_task(
-            self._broadcast_message(
-                WebSocketMessage(type=event_type, data={"message": details})
-            )
+        """On system event, broadcast to clients (tolerating no/closed loop)."""
+        self._schedule_broadcast(
+            WebSocketMessage(type=event_type, data={"message": details})
         )
 
 

@@ -180,18 +180,67 @@ class TestWebModeServerConstruction:
 
     def test_broadcast_and_on_hooks_use_event_loop(self, mocks):
         # Arrange
+        import asyncio
+
         with patch("chatty_commander.web.web_mode.AdvisorsService"), \
              patch.object(WebModeServer, "_create_app", return_value=Mock(spec=FastAPI)):
             server = WebModeServer(
                 mocks["config"], mocks["state"], mocks["model"], mocks["executor"], no_auth=True
             )
             server.active_connections = set()
-            # Act - should not raise even without real loop/ws
-            server.on_command_detected("cmd42", 0.9)
-            server.on_system_event("sys", {"d": 1})
-            # Assert - counters or last updated
+
+            # Make the test deterministic regardless of test ordering: a prior
+            # async test may have closed the thread's event loop. Install an
+            # explicitly closed loop so we exercise the graceful-skip path and
+            # prove the hooks never raise "Event loop is closed".
+            closed_loop = asyncio.new_event_loop()
+            closed_loop.close()
+            prev_loop = None
+            try:
+                prev_loop = asyncio.get_event_loop_policy().get_event_loop()
+            except Exception:
+                prev_loop = None
+            asyncio.set_event_loop(closed_loop)
+            try:
+                # Act - must not raise even with a closed/unusable loop.
+                server.on_command_detected("cmd42", 0.9)
+                server.on_system_event("sys", {"d": 1})
+            finally:
+                # Restore a usable loop for subsequent tests.
+                asyncio.set_event_loop(
+                    prev_loop
+                    if (prev_loop is not None and not prev_loop.is_closed())
+                    else asyncio.new_event_loop()
+                )
+
+            # Assert - synchronous bookkeeping still happened.
             assert server.last_command == "cmd42"
             assert server.commands_executed >= 1
+
+    def test_on_hooks_schedule_when_loop_running(self, mocks):
+        # Arrange - with a real running loop, the broadcast IS scheduled.
+        import asyncio
+
+        with patch("chatty_commander.web.web_mode.AdvisorsService"), \
+             patch.object(WebModeServer, "_create_app", return_value=Mock(spec=FastAPI)):
+            server = WebModeServer(
+                mocks["config"], mocks["state"], mocks["model"], mocks["executor"], no_auth=True
+            )
+            server.active_connections = set()
+
+            async def _run():
+                # Act - inside a running loop, scheduling must succeed.
+                scheduled = server._schedule_broadcast(
+                    WebSocketMessage(type="ping", data={})
+                )
+                # Let the scheduled broadcast task run to completion so we do
+                # not leave a pending task dangling at loop close.
+                await asyncio.sleep(0)
+                return scheduled
+
+            scheduled = asyncio.run(_run())
+            # Assert
+            assert scheduled is True
 
     def test_format_uptime(self, mocks):
         with patch("chatty_commander.web.web_mode.AdvisorsService"), \

@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 
@@ -394,11 +395,13 @@ def generate_markdown_docs() -> str:
     Note: This extracts the schema content from the previous APIDocumentationGenerator.generate_openapi_spec.
     It intentionally remains pure (no I/O, no logging) for ease of testing.
     """
-    docs = """
+    generated_on = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    header = f"""
 # ChattyCommander API Documentation
 
-*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
-
+*Generated on {generated_on}*
+"""
+    body = """
 ## Overview
 
 ChattyCommander provides a RESTful API and WebSocket interface for voice command automation. The API allows you to:
@@ -429,13 +432,13 @@ Returns the current system status including active state and loaded models.
 
 **Response Example:**
 ```json
-{{
+{
   "status": "running",
   "current_state": "idle",
   "active_models": ["hey_chat_tee", "hey_khum_puter"],
   "uptime": "2h 15m 30s",
   "version": "0.2.0"
-}}
+}
 ```
 
 ### Configuration Management
@@ -446,20 +449,20 @@ Retrieves the current system configuration.
 
 **Response Example:**
 ```json
-{{
+{
   "general_models_path": "./models-idle",
   "system_models_path": "./models-computer",
   "chat_models_path": "./models-chatty",
-  "model_actions": {{
-    "lights_on": {{
+  "model_actions": {
+    "lights_on": {
       "url": "http://192.168.1.100/api/lights/on"
-    }},
-    "screenshot": {{
+    },
+    "screenshot": {
       "keypress": "cmd+shift+4"
-    }}
-  }},
+    }
+  },
   "default_state": "idle"
-}}
+}
 ```
 
 #### PUT /api/v1/config
@@ -476,12 +479,12 @@ Returns the current operational state.
 
 **Response Example:**
 ```json
-{{
+{
   "current_state": "idle",
   "active_models": ["hey_chat_tee", "hey_khum_puter"],
   "last_command": "hey_chat_tee",
   "timestamp": "2024-01-15T10:30:00Z"
-}}
+}
 ```
 
 #### POST /api/v1/state
@@ -490,9 +493,9 @@ Manually changes the system state.
 
 **Request Body:**
 ```json
-{{
+{
   "state": "computer"
-}}
+}
 ```
 
 **Valid states:** `idle`, `computer`, `chatty`
@@ -505,21 +508,21 @@ Executes a voice command programmatically.
 
 **Request Body:**
 ```json
-{{
+{
   "command": "lights_on",
-  "parameters": {{
+  "parameters": {
     "brightness": 80
-  }}
-}}
+  }
+}
 ```
 
 **Response Example:**
 ```json
-{{
+{
   "success": true,
   "message": "Command executed successfully",
   "execution_time": 150
-}}
+}
 ```
 
 ## WebSocket Interface
@@ -538,38 +541,38 @@ The WebSocket sends JSON messages with the following types:
 
 #### State Change
 ```json
-{{
+{
   "type": "state_change",
-  "data": {{
+  "data": {
     "old_state": "idle",
     "new_state": "computer",
     "timestamp": "2024-01-15T10:30:00Z"
-  }}
-}}
+  }
+}
 ```
 
 #### Command Detection
 ```json
-{{
+{
   "type": "command_detected",
-  "data": {{
+  "data": {
     "command": "hey_chat_tee",
     "confidence": 0.95,
     "timestamp": "2024-01-15T10:30:00Z"
-  }}
-}}
+  }
+}
 ```
 
 #### System Event
 ```json
-{{
+{
   "type": "system_event",
-  "data": {{
+  "data": {
     "event": "model_loaded",
     "details": "Loaded 5 models for computer state",
     "timestamp": "2024-01-15T10:30:00Z"
-  }}
-}}
+  }
+}
 ```
 
 ## Error Handling
@@ -585,11 +588,11 @@ The API uses standard HTTP status codes:
 Error responses include a JSON body with details:
 
 ```json
-{{
+{
   "error": "Invalid command",
   "details": "Command 'invalid_command' not found in configuration",
   "timestamp": "2024-01-15T10:30:00Z"
-}}
+}
 ```
 
 ## Rate Limiting
@@ -611,13 +614,13 @@ import json
 # Basic API usage
 response = requests.get('http://localhost:8100/api/v1/status')
 status = response.json()
-print(f"System status: {{status['status']}}")
+print(f"System status: {status['status']}")
 
 # Execute a command
-command_data = {{"command": "lights_on"}}
+command_data = {"command": "lights_on"}
 response = requests.post('http://localhost:8100/api/v1/command', json=command_data)
 result = response.json()
-print(f"Command result: {{result['success']}}")
+print(f"Command result: {result['success']}")
 
 # WebSocket client
 async def websocket_client():
@@ -626,7 +629,7 @@ async def websocket_client():
         while True:
             message = await websocket.recv()
             data = json.loads(message)
-            print(f"Received: {{data['type']}} - {{data['data']}}")
+            print(f"Received: {data['type']} - {data['data']}")
 
 # Run WebSocket client
 # asyncio.run(websocket_client())
@@ -641,22 +644,22 @@ fetch('http://localhost:8100/api/v1/status')
   .then(data => console.log('Status:', data));
 
 // Execute command
-fetch('http://localhost:8100/api/v1/command', {{
+fetch('http://localhost:8100/api/v1/command', {
   method: 'POST',
-  headers: {{
+  headers: {
     'Content-Type': 'application/json',
-  }},
-  body: JSON.stringify({{command: 'lights_on'}})
-}})
+  },
+  body: JSON.stringify({command: 'lights_on'})
+})
 .then(response => response.json())
 .then(data => console.log('Command result:', data));
 
 // WebSocket connection
 const ws = new WebSocket('ws://localhost:8100/ws');
-ws.onmessage = function(event) {{
+ws.onmessage = function(event) {
   const data = JSON.parse(event.data);
   console.log('WebSocket message:', data);
-}};
+};
 ```
 
 ## Troubleshooting
@@ -697,4 +700,4 @@ curl http://localhost:8100/api/v1/status
 - Basic command execution
 - Configuration management
 """
-    return docs
+    return header.lstrip("\n") + body
