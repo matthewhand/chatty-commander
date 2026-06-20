@@ -426,6 +426,41 @@ plus stale docs. Fix backend correctness first.
 
 ---
 
+## Backlog — round 5 (from 2026-06-20 audit of CLI / voice / advisors)
+
+Reviewed the previously-uncritiqued backend subsystems. Found real security +
+correctness bugs. Fix security/correctness first; many P2 robustness items can
+land incrementally.
+
+### Security / correctness (0/9)
+
+- [ ] **`_execute_url` SSRF TOCTOU** — validates with `is_safe_url(url)` then fetches the original hostname (DNS-rebinding bypass `is_safe_url`'s own docstring warns about); switch to the repo's `resolve_safe_url()` + connect to the pinned IP with the original Host/SNI ([`app/command_executor.py`](src/chatty_commander/app/command_executor.py))
+- [ ] **`SWITCH_MODE:` state injection** — LLM output `SWITCH_MODE:<target>`/`target_mode` is passed to `StateManager.change_state()` with no allowlist, so a prompt-injected reply (e.g. via browser_analyst web content) can drive any mode; validate against `{idle, computer, chatty}` ([`advisors/service.py`](src/chatty_commander/advisors/service.py), [`ai/intelligence_core.py`](src/chatty_commander/ai/intelligence_core.py))
+- [ ] **dograh_place_call no phone validation** — LLM-supplied `phone_number`/`workflow_id` dialed with no E.164/type check (toll-fraud once the opt-in tool is enabled); validate before `initiate_call` ([`advisors/tools/dograh_call.py`](src/chatty_commander/advisors/tools/dograh_call.py))
+- [ ] **`is_available()` has paid/slow side effects** — `OpenAIBackend.is_available` fires a billed `chat.completions.create`; Ollama can trigger a 300s model *pull*; both run during `LLMManager` construction. Make availability a cheap credential/reachability check; never auto-pull during selection ([`llm/backends.py`](src/chatty_commander/llm/backends.py), [`llm/manager.py`](src/chatty_commander/llm/manager.py))
+- [ ] **Ollama generate path skips URL validation** — `is_safe_url` runs only in `is_available()` (cacheable/skippable), not before the `/api/generate`/`/api/pull` POSTs; validate immediately before each outbound request ([`llm/backends.py`](src/chatty_commander/llm/backends.py))
+- [ ] **`transcription._record_audio` ZeroDivisionError** — RMS over a zero-length chunk (PyAudio can return `b""`) divides by zero, breaking the record loop; `continue` on empty chunk (same in `enhanced_processor._energy_based_vad`) ([`voice/transcription.py`](src/chatty_commander/voice/transcription.py))
+- [ ] **wake-word detection race + unbounded threads** — `_on_wake_word_detected` does a non-atomic check-then-set on `_processing` and spawns an untracked daemon thread per detection; two rapid wake words spawn two recorders contending for the mic. Guard with a lock; set the flag inside it ([`voice/pipeline.py`](src/chatty_commander/voice/pipeline.py))
+- [ ] **wakeword `stop_listening` use-after-free** — sets `_running=False` then `join(timeout=1)`, but the loop can be blocked in a >1s `stream.read`; on timeout the stream is closed while the loop may still read it. Close under a lock / have the loop re-check `_running` ([`voice/wakeword.py`](src/chatty_commander/voice/wakeword.py))
+- [ ] **`service._generate_llm_response` reads `current_mode` off a dict via `getattr`** → always `"chatty"`; use `self.config.get("current_mode", "chatty")` ([`advisors/service.py`](src/chatty_commander/advisors/service.py))
+
+### Robustness / quality (0/12)
+
+- [ ] **enhanced_processor numpy import unguarded** — top-level `import numpy` crashes the module if numpy is absent (siblings guard it); wrap it ([`voice/enhanced_processor.py`](src/chatty_commander/voice/enhanced_processor.py))
+- [ ] **api_docs builder emits template literals** — `generate_markdown_docs()` returns a plain string with `{datetime.now()}` + `{{}}`; make the date header an f-string and single-brace the body (don't `.format()` the whole doc) ([`cli/api_docs/builder.py`](src/chatty_commander/cli/api_docs/builder.py))
+- [ ] **recurring event-loop test flake** — `test_broadcast_and_on_hooks_use_event_loop` ("Event loop is closed" under some orderings); make the broadcast path tolerate a missing/closed loop and isolate the test ([`web/web_mode.py`](src/chatty_commander/web/web_mode.py), [`tests/unit/test_web_mode_unit.py`](tests/unit/test_web_mode_unit.py))
+- [ ] **`save_config` returns None on failure** — callers (`set_model_action`, `_update_general_setting`) believe a write succeeded when the disk is full/read-only; return a bool/raise ([`app/config.py`](src/chatty_commander/app/config.py))
+- [ ] **keypress presses unmapped literal strings** — a `keys:"take_screenshot"` (no `+`, not a list) reaches `pyautogui.press("take_screenshot")` (invalid); validate against KEYBOARD_KEYS / resolve macros, `report_error` on unknown ([`app/command_executor.py`](src/chatty_commander/app/command_executor.py))
+- [ ] **memory/context unbounded on disk** — `MemoryStore` is append-only JSONL (grows forever, full replay on load); `ContextManager` never expires + re-serializes all contexts per message; compact + debounce ([`advisors/memory.py`](src/chatty_commander/advisors/memory.py), [`advisors/context.py`](src/chatty_commander/advisors/context.py))
+- [ ] **voice_test transcription blocks the event loop** — `finish_audio` runs sync Whisper inference inside the WS receive loop; `await asyncio.to_thread(...)` ([`web/routes/voice_test*`](src/chatty_commander/web/routes/voice.py))
+- [ ] **conversation_engine substring intent matching** — `"do" in text` / `"hi" in text` mis-fire on "window"/"this"; mirror the word-boundary regex from intelligence_core ([`advisors/conversation_engine.py`](src/chatty_commander/advisors/conversation_engine.py))
+- [ ] **dual drifting command matchers** — `pipeline` and `voice_test_pipeline` have separate word-boundary matchers/keyword tables that already diverged (play_music); extract one shared matcher ([`voice/pipeline.py`](src/chatty_commander/voice/pipeline.py))
+- [ ] **CLI `--advisors` dead flag + triple web-override + `not args.no_auth`** — `args.advisors` referenced but never defined; web host/port/auth applied in 3 places and `--web` recomputes `auth_enabled = not args.no_auth` (ignores config `auth_enabled:false`); consolidate ([`cli/cli.py`](src/chatty_commander/cli/cli.py), [`cli/main.py`](src/chatty_commander/cli/main.py))
+- [ ] **CLI port validation + `run_cli_mode` finally sys.exit(0)** — port only checked `<1024` under `--web` (no upper bound); `finally: sys.exit(0)` always reports success + swallows errors; validate `1..65535`, return instead of exit ([`cli/cli.py`](src/chatty_commander/cli/cli.py))
+- [ ] **config.py + main.py merge cruft** — duplicated `_load_config`/`from_dict`/`_build_model_actions` blocks; stale `run_gui_mode` fallback in main.py; dedupe + delegate ([`app/config.py`](src/chatty_commander/app/config.py), [`cli/main.py`](src/chatty_commander/cli/main.py))
+
+---
+
 ## Done (recent)
 
 2026-06-11 (continued):
