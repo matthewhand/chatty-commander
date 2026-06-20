@@ -23,6 +23,7 @@ import {
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme, AVAILABLE_THEMES } from "../components/ThemeProvider";
 import { useToast } from "../components/ToastProvider";
+import Collapse from "../components/Collapse";
 import { useAuth } from "../hooks/useAuth";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { runMicTest, playTestTone } from "../utils/audioTest";
@@ -1128,6 +1129,26 @@ const ConfigurationPage: React.FC = () => {
                     </label>
                   </div>
 
+                  {/* The base URL above is the one required field; tuck the
+                      credentials + model picker under a disclosure so a fresh
+                      install sees a calm "set an endpoint" screen, expandable
+                      when you need to enter a key or pick a model. Opens
+                      automatically when either is already set or env-locked. */}
+                  <Collapse
+                    title="Credentials & model"
+                    defaultOpen={
+                      !!config.apiKey ||
+                      !!config.llmModel ||
+                      config.envOverrides.apiKey ||
+                      config.envOverrides.model
+                    }
+                    badge={
+                      config.envOverrides.apiKey || config.envOverrides.model ? (
+                        <span className="badge badge-error badge-xs">LOCKED BY ENV</span>
+                      ) : null
+                    }
+                    data-testid="llm-credentials"
+                  >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="form-control w-full">
                       <label className="label" htmlFor="config-api-key">
@@ -1216,6 +1237,7 @@ const ConfigurationPage: React.FC = () => {
                       )}
                     </div>
                   </div>
+                  </Collapse>
                 </div>
               </div>
             </div>

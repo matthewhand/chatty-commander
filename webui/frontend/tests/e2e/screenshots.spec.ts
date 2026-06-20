@@ -313,6 +313,45 @@ test.describe("Documentation Screenshots", () => {
     });
   });
 
+  test("configuration-llm", async ({ page }) => {
+    await mockConfigurationAPIs(page);
+    // Fresh-install LLM config (no key/model) so the "Credentials & model"
+    // disclosure shows its decluttered, collapsed state over the base URL.
+    // Registered after mockConfigurationAPIs so it wins the route match.
+    await page.route("**/api/v1/config", (route) => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({
+          status: 200,
+          json: {
+            ...MOCK_CONFIG,
+            advisors: {
+              providers: {
+                api_key: "",
+                base_url: "http://localhost:11434/v1",
+                model: "",
+              },
+            },
+          },
+        });
+      }
+      return route.fulfill({ status: 200, json: { status: "ok" } });
+    });
+
+    await page.goto("/configuration");
+    await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
+
+    await page.getByRole("tab", { name: "LLM" }).click();
+    const llmHeading = page.getByText("LLM Endpoint", { exact: true });
+    await expect(llmHeading).toBeVisible();
+    await expect(page.getByText("Credentials & model")).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    await page.screenshot({
+      path: path.join(SCREENSHOTS_DIR, "configuration-llm.png"),
+      fullPage: true,
+    });
+  });
+
   test("commands", async ({ page }) => {
     await mockCommandsAPIs(page);
 
