@@ -823,6 +823,19 @@ class TestWebModeServer:
         assert data["message"] == "Configuration updated successfully"
         config.save_config.assert_called_once()
 
+    def test_update_config_accepts_advisors_and_services(self, test_client, mock_managers):
+        """The web Configuration page PUTs advisors + services; both must be allowed."""
+        config, _, _, _ = mock_managers
+        config.save_config = Mock()
+
+        new_config = {
+            "advisors": {"providers": {"base_url": "http://localhost:11434/v1", "model": "x"}},
+            "services": {"voiceCommands": True, "restApi": True},
+        }
+        response = test_client.put("/api/v1/config", json=new_config)
+        assert response.status_code == 200, response.text
+        config.save_config.assert_called_once()
+
     def test_update_config_failure(self, test_client, mock_managers):
         """Test update config endpoint failure when config saving fails."""
         config, _, _, _ = mock_managers
