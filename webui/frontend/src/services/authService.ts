@@ -69,6 +69,47 @@ export function hasStoredToken(): boolean {
   }
 }
 
+/**
+ * localStorage key under which we stash where the user was when their session
+ * expired, so the post-login flow can send them back instead of dumping them on
+ * a default landing page.
+ */
+export const RETURN_TO_KEY = "auth_return_to";
+
+/**
+ * Remember where the user currently is so a forced sign-out (session expiry)
+ * doesn't lose their place: after they sign back in, the app can read
+ * {@link consumeReturnTo} and navigate them back. SSR-safe (guards `window`).
+ *
+ * We deliberately stash only the in-app path (pathname + search + hash), never
+ * an absolute URL, and skip the login route itself so we never bounce a user
+ * back to /login.
+ */
+export function captureReturnTo(): void {
+  try {
+    if (typeof window === "undefined" || !window.location) return;
+    const { pathname, search, hash } = window.location;
+    if (!pathname || pathname.startsWith("/login")) return;
+    localStorage.setItem(RETURN_TO_KEY, `${pathname}${search}${hash}`);
+  } catch {
+    /* storage / window unavailable — returnTo is best-effort */
+  }
+}
+
+/**
+ * Read and clear the stashed return-to path (see {@link captureReturnTo}).
+ * Returns null when nothing was stashed.
+ */
+export function consumeReturnTo(): string | null {
+  try {
+    const value = localStorage.getItem(RETURN_TO_KEY);
+    if (value) localStorage.removeItem(RETURN_TO_KEY);
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 let sessionExpiryInFlight = false;
 
 /**
@@ -86,6 +127,12 @@ export function notifySessionExpired(
   if (!hasStoredToken()) return;
   if (sessionExpiryInFlight) return;
   sessionExpiryInFlight = true;
+
+  // Stash where the user was *before* we tear down their session, so the
+  // post-login redirect can restore their place. This is best-effort and runs
+  // ahead of clearing the token so a background-poll 401 mid-form doesn't strand
+  // the user on a default page after they sign back in.
+  captureReturnTo();
 
   try {
     localStorage.removeItem("auth_token");
@@ -217,6 +264,10 @@ class AuthService {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
+          // A fresh, valid session — re-arm the expiry latch so a *late* stale
+          // 401 from a background poll that started before this success can't
+          // force-expire the session we just confirmed.
+          resetSessionExpiry();
           return await response.json();
         }
         // The token was present but rejected by the backend. Log the reason so
@@ -235,6 +286,8 @@ class AuthService {
     try {
       const confRes = await fetch(`${this.baseUrl}/config`);
       if (confRes.ok) {
+        // No-auth mode is a valid session too; re-arm the latch for symmetry.
+        resetSessionExpiry();
         return { username: 'local_admin', roles: ['admin'], is_active: true, noAuth: true };
       }
     } catch (e) {
