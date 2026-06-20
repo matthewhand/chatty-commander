@@ -393,36 +393,36 @@ work). Fix highest-confidence bugs first.
 The backend hadn't been critiqued this session; this pass found real bugs there
 plus stale docs. Fix backend correctness first.
 
-### Backend — correctness/robustness (0/10)
+### Backend — correctness/robustness (10/10)
 
-- [ ] **Config PUT shallow-merges → data loss** — `PUT /api/v1/config` does `cfg.update(filtered_data)`, so a client sending one nested subkey replaces the whole top-level block (e.g. `{"advisors":{"providers":{"model":"x"}}}` drops `api_key`/`base_url`). Deep-merge allowed keys recursively ([`web/routes/core.py`](src/chatty_commander/web/routes/core.py))
-- [ ] **GET/PUT /config leak internals + 500** — both re-raise `HTTPException(500, detail=str(err))`, violating "degrade, never 500" + "no internals in client strings". GET should 200 with honest empty; PUT a generic message + log detail ([`web/routes/core.py`](src/chatty_commander/web/routes/core.py))
-- [ ] **SqliteRevocationStore writes on read + leaks connections** — `is_revoked` does a `DELETE`+`commit` (serializes auth under a write lock); a new store is built per `create_app` with no `close()`. Don't write in `is_revoked`; wire `close()` ([`web/revocation.py`](src/chatty_commander/web/revocation.py), [`web/server.py`](src/chatty_commander/web/server.py))
-- [ ] **dograh track/untrack not scope-gated** — state-changing POSTs lack `require_scope`; any valid key can start/stop the poller ([`web/routes/dograh.py`](src/chatty_commander/web/routes/dograh.py))
-- [ ] **models upload/delete not role-gated + unbounded upload** — destructive endpoints behind only the coarse key middleware; gate behind `require_role("admin")`; stream upload with a size cap (currently whole-file `await file.read()`) ([`web/routes/models.py`](src/chatty_commander/web/routes/models.py))
-- [ ] **get_dograh_workflows can 500** — `int(wf["id"])` outside the try/except 500s on a non-numeric id; guard malformed rows ([`web/routes/dograh.py`](src/chatty_commander/web/routes/dograh.py))
-- [ ] **AuthMiddleware 401 uses a non-standard body** — differs from the `{error,code,details,request_id}` envelope; emit the same shape ([`web/middleware/auth.py`](src/chatty_commander/web/middleware/auth.py))
-- [ ] **ws `on_message` callback unguarded** — a raising `on_message` tears down the /ws connection; wrap it ([`web/routes/ws.py`](src/chatty_commander/web/routes/ws.py))
-- [ ] **change_state maps all errors to 400 + str(err)** — don't return 400+internals for internal failures ([`web/routes/core.py`](src/chatty_commander/web/routes/core.py))
-- [ ] **Rate limiter disabled by ambient `PYTEST_CURRENT_TEST`** — gate on an explicit opt-out ([`web/routes/core.py`](src/chatty_commander/web/routes/core.py))
+- [x] **Config PUT shallow-merges → data loss** — `PUT /api/v1/config` does `cfg.update(filtered_data)`, so a client sending one nested subkey replaces the whole top-level block (e.g. `{"advisors":{"providers":{"model":"x"}}}` drops `api_key`/`base_url`). Deep-merge allowed keys recursively ([`web/routes/core.py`](src/chatty_commander/web/routes/core.py))  ✅ (#726)
+- [x] **GET/PUT /config leak internals + 500** — both re-raise `HTTPException(500, detail=str(err))`, violating "degrade, never 500" + "no internals in client strings". GET should 200 with honest empty; PUT a generic message + log detail ([`web/routes/core.py`](src/chatty_commander/web/routes/core.py))  ✅ (#726)
+- [x] **SqliteRevocationStore writes on read + leaks connections** — `is_revoked` does a `DELETE`+`commit` (serializes auth under a write lock); a new store is built per `create_app` with no `close()`. Don't write in `is_revoked`; wire `close()` ([`web/revocation.py`](src/chatty_commander/web/revocation.py), [`web/server.py`](src/chatty_commander/web/server.py))  ✅ (#726)
+- [x] **dograh track/untrack not scope-gated** — state-changing POSTs lack `require_scope`; any valid key can start/stop the poller ([`web/routes/dograh.py`](src/chatty_commander/web/routes/dograh.py))  ✅ (#726)
+- [x] **models upload/delete not role-gated + unbounded upload** — destructive endpoints behind only the coarse key middleware; gate behind `require_role("admin")`; stream upload with a size cap (currently whole-file `await file.read()`) ([`web/routes/models.py`](src/chatty_commander/web/routes/models.py))  ✅ (#726)
+- [x] **get_dograh_workflows can 500** — `int(wf["id"])` outside the try/except 500s on a non-numeric id; guard malformed rows ([`web/routes/dograh.py`](src/chatty_commander/web/routes/dograh.py))  ✅ (#726)
+- [x] **AuthMiddleware 401 uses a non-standard body** — differs from the `{error,code,details,request_id}` envelope; emit the same shape ([`web/middleware/auth.py`](src/chatty_commander/web/middleware/auth.py))  ✅ (#726)
+- [x] **ws `on_message` callback unguarded** — a raising `on_message` tears down the /ws connection; wrap it ([`web/routes/ws.py`](src/chatty_commander/web/routes/ws.py))  ✅ (#726)
+- [x] **change_state maps all errors to 400 + str(err)** — don't return 400+internals for internal failures ([`web/routes/core.py`](src/chatty_commander/web/routes/core.py))  ✅ (#726)
+- [x] **Rate limiter disabled by ambient `PYTEST_CURRENT_TEST`** — gate on an explicit opt-out ([`web/routes/core.py`](src/chatty_commander/web/routes/core.py))  ✅ (#726)
 
-### Docs — accuracy (0/8)
+### Docs — accuracy (8/8)
 
-- [ ] **docs/API.md is an unrendered template** — literal `{datetime.now()...}` + `{{...}}`; regenerate via the builder, fix the GET /config example + document `/api/v1/auth/*` + `chatty-commander --web` ([`docs/API.md`](docs/API.md))
-- [ ] **ARCHITECTURE.md theme list + facts wrong** — real themes light/dark/corporate/business/emerald/nord; rate-limit 100→60; add AuthZ rotation/revocation + dograh WS; vitest no longer "incomplete" ([`docs/developer/ARCHITECTURE.md`](docs/developer/ARCHITECTURE.md))
-- [ ] **README stale** — "vitest unconfigured" is false; Web-dashboard row omits Commands table/bulk-ops + theme switcher ([`README.md`](README.md))
-- [ ] **WEBUI_ISSUES.md stale** — 5 pages + "Partial/placeholder" caveats now resolved; app has 7 routed pages ([`docs/developer/WEBUI_ISSUES.md`](docs/developer/WEBUI_ISSUES.md))
-- [ ] **FEATURE_STATUS.md page count stale** — "Five SPA pages" → seven; note ErrorBoundary/SessionExpiredModal/theme persistence ([`FEATURE_STATUS.md`](FEATURE_STATUS.md))
-- [ ] **Guided tour references a deleted screenshot** — `tour-06-theme-synthwave.png` → `tour-06-theme-emerald.png` ([`docs/user-guide/00_GUIDED_TOUR.md`](docs/user-guide/00_GUIDED_TOUR.md))
-- [ ] **STRUCTURE.md root layout wrong** — references `config/` + `deploy/` dirs that don't exist ([`docs/developer/STRUCTURE.md`](docs/developer/STRUCTURE.md))
-- [ ] **CONTRIBUTING.md omits the unit suite** — add `npm run test` (vitest) ([`CONTRIBUTING.md`](CONTRIBUTING.md))
+- [x] **docs/API.md is an unrendered template** — literal `{datetime.now()...}` + `{{...}}`; regenerate via the builder, fix the GET /config example + document `/api/v1/auth/*` + `chatty-commander --web` ([`docs/API.md`](docs/API.md))  ✅ (#726)
+- [x] **ARCHITECTURE.md theme list + facts wrong** — real themes light/dark/corporate/business/emerald/nord; rate-limit 100→60; add AuthZ rotation/revocation + dograh WS; vitest no longer "incomplete" ([`docs/developer/ARCHITECTURE.md`](docs/developer/ARCHITECTURE.md))  ✅ (#726)
+- [x] **README stale** — "vitest unconfigured" is false; Web-dashboard row omits Commands table/bulk-ops + theme switcher ([`README.md`](README.md))  ✅ (#726)
+- [x] **WEBUI_ISSUES.md stale** — 5 pages + "Partial/placeholder" caveats now resolved; app has 7 routed pages ([`docs/developer/WEBUI_ISSUES.md`](docs/developer/WEBUI_ISSUES.md))  ✅ (#726)
+- [x] **FEATURE_STATUS.md page count stale** — "Five SPA pages" → seven; note ErrorBoundary/SessionExpiredModal/theme persistence ([`FEATURE_STATUS.md`](FEATURE_STATUS.md))  ✅ (#726)
+- [x] **Guided tour references a deleted screenshot** — `tour-06-theme-synthwave.png` → `tour-06-theme-emerald.png` ([`docs/user-guide/00_GUIDED_TOUR.md`](docs/user-guide/00_GUIDED_TOUR.md))  ✅ (#726)
+- [x] **STRUCTURE.md root layout wrong** — references `config/` + `deploy/` dirs that don't exist ([`docs/developer/STRUCTURE.md`](docs/developer/STRUCTURE.md))  ✅ (#726)
+- [x] **CONTRIBUTING.md omits the unit suite** — add `npm run test` (vitest) ([`CONTRIBUTING.md`](CONTRIBUTING.md))  ✅ (#726)
 
-### Visual (0/4)
+### Visual (4/4)
 
-- [ ] **VoiceTest sidebar brand inconsistent (recurring)** — still "Chatty / Voice Commander" instead of the shared Logo; root-cause + use `Logo` ([`VoiceTestPage.tsx`](webui/frontend/src/pages/VoiceTestPage.tsx))
-- [ ] **Radial gauges render flat grey** — no proportional themed fill; color-code by load threshold ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))
-- [ ] **Audio Input vs Output "Test" buttons different colors** — unify ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))
-- [ ] **Default seed data looks broken** — canonical `commands.png` shows commands named "0,1,2,3 / NO ACTION"; seed real named default commands ([`default_config`](src/chatty_commander/app/default_config.py))
+- [x] **VoiceTest sidebar brand inconsistent (recurring)** — still "Chatty / Voice Commander" instead of the shared Logo; root-cause + use `Logo` ([`VoiceTestPage.tsx`](webui/frontend/src/pages/VoiceTestPage.tsx))  ✅ (#726)
+- [x] **Radial gauges render flat grey** — no proportional themed fill; color-code by load threshold ([`DashboardPage.tsx`](webui/frontend/src/pages/DashboardPage.tsx))  ✅ (#726)
+- [x] **Audio Input vs Output "Test" buttons different colors** — unify ([`ConfigurationPage.tsx`](webui/frontend/src/pages/ConfigurationPage.tsx))  ✅ (#726)
+- [x] **Default seed data looks broken** — canonical `commands.png` shows commands named "0,1,2,3 / NO ACTION"; seed real named default commands ([`default_config`](src/chatty_commander/app/default_config.py))  ✅ (#726)
 
 ---
 
