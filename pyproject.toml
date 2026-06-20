@@ -11,7 +11,7 @@ packages = ["src/chatty_commander"]
 
 [project]
 name = "chatty-commander"
-version = "0.5.0"
+version = "0.6.0"
 description = "Advanced AI-powered voice command system with web interface and real-time communication"
 readme = "README.md"
 license = {text = "MIT"}

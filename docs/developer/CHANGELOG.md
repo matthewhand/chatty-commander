@@ -1,5 +1,64 @@
 # Changelog
 
+## \[0.6.0\] - 2026-06-20 — security hardening + packaging
+
+Rounds 6–7 of the deep audit (PRs #731, #733–#735) plus packaging fixes. Focus:
+close the auth/validation holes that earlier rounds fixed only partially, and
+make the build/version story honest.
+
+### Security
+
+- **Avatar config write now gated** — `PUT /avatar/config` required no auth (same
+  bypass as the previously-fixed `/avatar/launch`, registered outside `/api/`);
+  it is now behind `require_role("user")`.
+- **Preferences allow-list enforced on the real handler** — an `extra="allow"`
+  `PUT /api/preferences` handler in `preferences.py` shadowed the `system.py`
+  allow-list and won dispatch, leaving arbitrary config-write open; the
+  `ALLOWED_PREF_KEYS` filter now runs on the winning handler.
+- **WebSocket endpoints authenticated** — `/ws`, `/avatar/ws`, and the
+  state-changing `/ws/voice-test` bypassed `AuthMiddleware` entirely. They now
+  run `authorize_websocket` before `accept()`: open in no-auth/dev mode, and
+  requiring a valid JWT via `?token=` (matching the frontend) when auth is
+  active, closing with policy-violation `1008` otherwise.
+- **dograh phone validation centralized** — the E.164 guard lived only in the
+  LLM tool; it now lives in `DograhClient.initiate_call` (new
+  `DograhValidationError`, plus `workflow_id` int validation) so the
+  config/wake-word path is covered too.
+- **No billable health check** — `advisors/providers.health_check` no longer
+  issues a real `generate("Test")`; it's a cheap local readiness check.
+
+### Packaging / build
+
+- **Explicit build backend** — added a `[build-system]` (hatchling) block with
+  the wheel target pinned to the src-layout, so `uv build` / `python -m build`
+  produce a wheel + sdist instead of silently falling back to setuptools.
+- **Version drift reconciled to a single source of truth** — `pyproject`
+  (`0.2.0`→`0.6.0`) and `package.json` (`1.0.0`→`0.6.0`) realigned, and every
+  runtime version reporter (`core.py`, `web_mode.py`, `version.py`,
+  `api_docs.builder`) now reads `chatty_commander.__version__` (package
+  metadata) instead of a hardcoded literal.
+
+### Test infrastructure / CI
+
+- **`pytest.ini` consolidated** into `pyproject.toml` (it had been overriding the
+  documented `-q --no-cov` gate and dropping strict flags).
+- **Order-dependence eliminated** — moved leaking module-level `sys.modules`
+  stubs to autouse fixtures, de-flaked sleep-based WebSocket tests, and added
+  `pytest-randomly`; the random ordering immediately surfaced (and we fixed) an
+  isinstance-across-`importlib.reload` coupling in the advisor-provider tests.
+- **CI fixes** — `screenshots.yml` no longer double-binds `:8100`; perf-smoke /
+  screenshots disable the rate limiter; `@playwright/test` floor bumped to
+  `^1.58.0`.
+
+### Known deferrals
+
+- Auth middleware remains a prefix-allowlist for the legacy `X-API-Key`; the
+  exploitable exposure is closed (every mutating non-`/api/` route is now
+  individually gated, and `/bridge/event` keeps its own `X-Bridge-Token`), so a
+  blanket default-deny rewrite is deferred as net-negative.
+- Two frontend lockfiles (`package-lock.json` + `pnpm-lock.yaml`) remain;
+  consolidating needs a CI-workflow audit + green run.
+
 ## \[Unreleased\] - 2026-06-02
 
 Hardening, bug-fix, and feature-completion rounds (PRs #572–#588), grouped by area.
