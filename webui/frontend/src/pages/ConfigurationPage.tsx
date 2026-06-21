@@ -19,6 +19,7 @@ import {
   HelpCircle as HelpIcon,
   AlertTriangle as AlertTriangleIcon,
   RotateCcw as RotateCcwIcon,
+  Palette as PaletteIcon,
 } from "lucide-react";
 import { fetchLLMModels, fetchVoiceModels, uploadVoiceModel, deleteVoiceModel, ModelFileInfo } from "../services/api";
 import { useTheme, AVAILABLE_THEMES } from "../components/ThemeProvider";
@@ -718,6 +719,21 @@ const ConfigurationPage: React.FC = () => {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* Companion helper so the Theme row isn't a lone left-aligned
+                      control with an empty right half — and it tells the user
+                      the pick is live + global. */}
+                  <div className="rounded-xl bg-base-200/40 border border-base-content/10 p-4 flex items-start gap-3">
+                    <PaletteIcon className="w-5 h-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                    <div>
+                      <p className="font-medium text-sm">Appearance</p>
+                      <p className="text-xs text-base-content/60 mt-1">
+                        The theme applies across the whole web UI and takes effect
+                        immediately — no save needed. It mirrors the quick switcher
+                        in the sidebar.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
