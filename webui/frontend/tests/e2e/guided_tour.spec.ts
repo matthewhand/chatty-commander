@@ -245,10 +245,10 @@ test.describe("Guided Tour Screenshots", () => {
     // The sticky desktop app bar renders its own page-title <h1>, so the page's
     // own <h2> heading is the second match — scope to the first visible heading.
     await expect(page.getByRole("heading", { name: /configuration/i }).first()).toBeVisible();
-    // Configuration is now tabbed; voice models live under the "Voice Models"
-    // tab. Open it so the captured page shows the loaded ONNX models.
-    await page.getByRole("tab", { name: "Voice Models" }).click();
-    await expect(page.getByText("hey_jarvis_v0.1.onnx", { exact: true })).toBeVisible();
+    // Capture the General tab (the default landing) so this "configuration page"
+    // step shows the settings landing — not the Voice Models tab, which has its
+    // own dedicated configuration-voice-models.png and made the two redundant.
+    await expect(page.getByText("General Settings", { exact: true })).toBeVisible();
     await settle(page);
 
     await page.screenshot({ path: shot("tour-03-configuration.png"), fullPage: true });
