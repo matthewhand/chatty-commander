@@ -18,7 +18,32 @@ import {
   RefreshCw,
   Code,
   Shield,
+  Lightbulb,
 } from 'lucide-react';
+
+// Starter prompts for AI mode. They give a first-time user concrete ideas (and
+// fill what was otherwise an empty pre-generation screen); clicking one drops it
+// into the description box to tweak and generate.
+const AI_PROMPT_EXAMPLES: { title: string; prompt: string }[] = [
+  {
+    title: 'Start my workday',
+    prompt:
+      "When I say 'start my day', open my email, my code editor, and the project board.",
+  },
+  {
+    title: 'Take a screenshot',
+    prompt: "When I say 'take a screenshot', press the Print Screen key.",
+  },
+  {
+    title: 'Mute the microphone',
+    prompt: "When I say 'mute', toggle my microphone with ctrl+shift+m.",
+  },
+  {
+    title: 'Open a dashboard',
+    prompt:
+      "When I say 'open dashboard', open https://grafana.local in my browser.",
+  },
+];
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 import { useToast } from '../components/ToastProvider';
@@ -933,6 +958,38 @@ export default function CommandAuthoringPage() {
             </div>
           </div>
         </motion.div>
+      )}
+
+      {/* AI Mode: starter examples — shown before a command is generated so the
+          page leads a first-time user with concrete ideas instead of empty space. */}
+      {mode === 'ai' && !generatedCommand && (
+        <div className="card glass-card" data-testid="ai-prompt-examples">
+          <div className="card-body">
+            <h2 className="card-title text-base flex items-center gap-2">
+              <Lightbulb className="text-primary" size={18} />
+              Need ideas? Start from an example
+            </h2>
+            <p className="text-sm text-base-content/60">
+              Click one to drop it into the box above, then tweak it and generate.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+              {AI_PROMPT_EXAMPLES.map((ex) => (
+                <button
+                  key={ex.title}
+                  type="button"
+                  className="text-left p-4 rounded-xl bg-base-200/40 border border-base-content/10 hover:border-primary/40 hover:bg-base-200/70 transition-colors"
+                  onClick={() => setDescription(ex.prompt)}
+                >
+                  <p className="font-medium text-sm flex items-center gap-2">
+                    <Sparkles size={14} className="text-primary/70 shrink-0" />
+                    {ex.title}
+                  </p>
+                  <p className="text-xs text-base-content/60 mt-1">{ex.prompt}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Generated Command Preview */}
