@@ -47,11 +47,50 @@ export function DynamicDropdown({
     };
   }, [refs]);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+      refs.reference.current?.focus();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!isOpen) {
+        setIsOpen(true);
+        return;
+      }
+
+      if (!refs.floating.current) return;
+
+      const focusableElements = Array.from(
+        refs.floating.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+
+      if (focusableElements.length === 0) return;
+
+      const activeIndex = focusableElements.findIndex(el => el === document.activeElement);
+
+      let nextIndex = 0;
+      if (e.key === 'ArrowDown') {
+         nextIndex = activeIndex >= focusableElements.length - 1 ? 0 : activeIndex + 1;
+      } else {
+         nextIndex = activeIndex <= 0 ? focusableElements.length - 1 : activeIndex - 1;
+      }
+
+      focusableElements[nextIndex].focus();
+    } else if (e.key === 'Tab') {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    }
+  };
+
   return (
     <>
       <button
         ref={refs.setReference}
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
         className={buttonClassName}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -71,6 +110,9 @@ export function DynamicDropdown({
           }}
           className={menuClassName}
           onClick={() => setIsOpen(false)} // close on item click
+          onKeyDown={handleKeyDown}
+          role="menu"
+          tabIndex={-1}
         >
           {children}
         </div>

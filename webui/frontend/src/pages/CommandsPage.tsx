@@ -401,21 +401,26 @@ export default function CommandsPage() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <dialog ref={deleteDialogRef} className="modal">
-        <div className="modal-box">
+      <dialog ref={deleteDialogRef} className="modal" aria-label="Delete Command Dialog">
+        <div className="modal-box relative">
+          {isDeleting && (
+            <div className="absolute inset-0 bg-base-100/50 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-box">
+              <span className="loading loading-spinner loading-lg text-error" aria-hidden="true"></span>
+              <span className="mt-2 font-medium text-base-content" aria-live="polite">Deleting command...</span>
+            </div>
+          )}
           <h3 className="font-bold text-lg">Confirm Deletion</h3>
           <p className="py-4">Are you sure you want to delete <strong>{pendingDeleteCommand}</strong>?</p>
           <div className="modal-action">
             <button className="btn" onClick={handleDeleteCancel} disabled={isDeleting}>Cancel</button>
             <button className="btn btn-error" onClick={handleDeleteConfirm} disabled={isDeleting}>
-              {isDeleting ? <span className="loading loading-spinner loading-sm" aria-hidden="true"></span> : null}
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </button>
           </div>
         </div>
-        <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
-        </form>
+        <div className="modal-backdrop" onClick={handleDeleteCancel} aria-label="Close dialog">
+          <button className="sr-only" aria-label="Close dialog">close</button>
+        </div>
       </dialog>
     </div>
   );

@@ -3,17 +3,23 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, vi } from "vitest";
-// framer-motion caches the reduced-motion preference in this module-level
-// singleton (read once on first useReducedMotion() call). We reset it per-test
-// so a freshly-mocked matchMedia is re-read instead of a stale cached value.
-import { hasReducedMotionListener, prefersReducedMotion } from "motion-dom";
 import CommandsPage from "./CommandsPage";
 import { apiService } from "../services/apiService";
 
 // Force `prefers-reduced-motion: reduce` to report as active so framer-motion's
 // useReducedMotion() hook returns true. Other media queries keep the default
 // (matches: false) behaviour from setupTests.ts.
+let isReducedMotion = false;
+vi.mock("framer-motion", async () => {
+  const actual = await vi.importActual("framer-motion");
+  return {
+    ...actual as any,
+    useReducedMotion: () => isReducedMotion,
+  };
+});
+
 function mockReducedMotion(prefersReduced: boolean) {
+  isReducedMotion = prefersReduced;
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: prefersReduced && query.includes("prefers-reduced-motion"),
     media: query,
@@ -24,9 +30,6 @@ function mockReducedMotion(prefersReduced: boolean) {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })) as unknown as typeof window.matchMedia;
-  // Invalidate framer-motion's cache so the new matchMedia value is picked up.
-  hasReducedMotionListener.current = false;
-  prefersReducedMotion.current = null;
 }
 
 vi.mock("../services/apiService", () => ({
@@ -84,7 +87,7 @@ test("respects prefers-reduced-motion: reduce on the card cascade", async () => 
   // Wait for cards to render.
   await screen.findByText("take_screenshot");
 
-  const cards = document.querySelectorAll('[data-reduced-motion]');
+  const cards = screen.getAllByTestId('command-card');
   expect(cards.length).toBeGreaterThan(0);
 
   cards.forEach((card) => {
@@ -105,7 +108,7 @@ test("applies the staggered cascade when motion is allowed", async () => {
 
   await screen.findByText("take_screenshot");
 
-  const cards = document.querySelectorAll('[data-reduced-motion]');
+  const cards = screen.getAllByTestId('command-card');
   expect(cards.length).toBeGreaterThan(0);
   cards.forEach((card) => {
     expect(card.getAttribute("data-reduced-motion")).toBe("false");
