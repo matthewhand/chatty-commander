@@ -1,5 +1,5 @@
 import React from "react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from "recharts";
 
 export interface PerfMetric {
   time: string;
@@ -7,16 +7,16 @@ export interface PerfMetric {
   memory: number;
 }
 
-const CustomTooltip = React.memo(({ active, payload, label }: any) => {
+const CustomTooltip = React.memo(({ active, payload, label }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-base-300 border border-base-content/20 p-3 rounded-lg shadow-xl text-xs">
         <p className="font-mono mb-2 text-base-content/60">{label}</p>
-        {payload.map((entry: any) => (
+        {payload.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.stroke }} />
             <span className="font-semibold" style={{ color: entry.stroke }}>
-              {entry.name}: {entry.value.toFixed(1)}%
+              {entry.name}: {entry.value?.toFixed(1)}%
             </span>
           </div>
         ))}

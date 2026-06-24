@@ -11,6 +11,13 @@ export interface Agent {
   error?: string;
 }
 
+export interface AgentContextStats {
+  persona_id?: string;
+  platform?: string;
+  last_updated?: string;
+  context_key?: string;
+}
+
 export interface ModelFileInfo {
   name: string;
   path: string;
@@ -43,14 +50,17 @@ export const fetchAgentStatus = async (): Promise<Agent[]> => {
     const data = await res.json();
     // data is typically { contexts: { [key]: { persona_id, platform, ... } }, total: N }
     if (!data || !data.contexts) return [];
-    return Object.entries(data.contexts).map(([key, ctx]: [string, any]) => ({
-      id: key,
-      name: `${ctx.persona_id ?? "advisor"} @ ${key}`,
-      status: "online" as const,
-      lastMessageSent: ctx.last_updated ?? "-",
-      lastMessageReceived: ctx.last_updated ?? "-",
-      lastMessageContent: ctx.context_key ?? "-",
-    }));
+    return Object.entries(data.contexts).map(([key, ctx]: [string, any]) => {
+      const typedCtx = ctx as AgentContextStats;
+      return {
+        id: key,
+        name: `${typedCtx.persona_id ?? "advisor"} @ ${key}`,
+        status: "online" as const,
+        lastMessageSent: typedCtx.last_updated ?? "-",
+        lastMessageReceived: typedCtx.last_updated ?? "-",
+        lastMessageContent: typedCtx.context_key ?? "-",
+      };
+    });
   } catch {
     return [];
   }
@@ -72,7 +82,10 @@ export const fetchLLMModels = async (
     if (!res.ok) return [];
     const data = await res.json();
     if (data?.data && Array.isArray(data.data)) {
-      return data.data.map((m: any) => m.id ?? m.name ?? String(m));
+      return data.data.map((m: { id?: string; name?: string } | string) => {
+        if (typeof m === 'string') return m;
+        return m.id ?? m.name ?? String(m);
+      });
     }
     return [];
   } catch {

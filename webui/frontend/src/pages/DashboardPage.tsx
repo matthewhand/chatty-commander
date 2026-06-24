@@ -125,7 +125,7 @@ const DashboardPage = React.memo(() => {
     refetchInterval: 5000,
   });
 
-  const [realtimeStatus, setRealtimeStatus] = useState<any>(null);
+  const [realtimeStatus, setRealtimeStatus] = useState<{ cpu?: string; memory?: string } | null>(null);
   const systemStatus = useMemo(() => ({ ...initialSystemStatus, ...realtimeStatus }), [initialSystemStatus, realtimeStatus]);
 
   // Live Dograh call state. Seed from the cached snapshot on mount so the badge
@@ -218,7 +218,7 @@ const DashboardPage = React.memo(() => {
     try {
       const msg = JSON.parse(event.data);
       if (msg.type === "telemetry" && msg.data) {
-        setRealtimeStatus((prev: any) => ({
+        setRealtimeStatus((prev: { cpu?: string; memory?: string } | null) => ({
           ...prev,
           cpu: msg.data.cpu !== undefined ? `${Number(msg.data.cpu).toFixed(1)}` : prev?.cpu,
           memory: msg.data.memory !== undefined ? `${Number(msg.data.memory).toFixed(1)}` : prev?.memory,
@@ -403,7 +403,7 @@ const DashboardPage = React.memo(() => {
             <div className="stat-figure text-info">
               <div
                 className="radial-progress text-info"
-                style={{ "--value": Math.round(parseFloat(systemStatus?.cpu || "0")) } as any}
+                style={{ "--value": Math.round(parseFloat(systemStatus?.cpu || "0")) } as React.CSSProperties}
                 role="progressbar"
                 aria-label="CPU load"
                 aria-valuenow={Math.round(parseFloat(systemStatus?.cpu || "0"))}
@@ -428,7 +428,7 @@ const DashboardPage = React.memo(() => {
             <div className="stat-figure text-warning">
               <div
                 className="radial-progress text-warning"
-                style={{ "--value": Math.round(parseFloat(systemStatus?.memory || "0")) } as any}
+                style={{ "--value": Math.round(parseFloat(systemStatus?.memory || "0")) } as React.CSSProperties}
                 role="progressbar"
                 aria-label="Memory usage"
                 aria-valuenow={Math.round(parseFloat(systemStatus?.memory || "0"))}
@@ -594,6 +594,14 @@ const DashboardPage = React.memo(() => {
       {agentsLoading ? (
         <div className="flex justify-center p-8">
           <span className="loading loading-spinner text-primary"></span>
+        </div>
+      ) : agentData?.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-12 bg-base-200/50 rounded-box border border-base-content/10" role="status" aria-label="No agents configured">
+          <AssessmentIcon size={48} className="text-base-content/20 mb-4" />
+          <h3 className="text-lg font-semibold text-base-content/70">No agents configured</h3>
+          <p className="text-base-content/50 mt-2 max-w-md text-center">
+            Advisors and agents will appear here once they are configured and connect to the system.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

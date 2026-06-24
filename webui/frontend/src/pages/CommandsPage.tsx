@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -8,7 +8,6 @@ import {
   Plus,
   Edit3,
   Trash2,
-  FileAudio,
   RefreshCw,
   Search,
   Download,
@@ -49,6 +48,7 @@ export default function CommandsPage() {
   const [pendingDeleteCommand, setPendingDeleteCommand] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: commands, isLoading, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
     queryKey: ['commands'],
@@ -71,9 +71,16 @@ export default function CommandsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleDeleteClick = (commandName: string) => {
+  const handleDeleteClick = (commandName: string, currentTarget: HTMLButtonElement) => {
+    triggerRef.current = currentTarget;
     setPendingDeleteCommand(commandName);
     deleteDialogRef.current?.showModal();
+  };
+
+  const closeDialogAndRestoreFocus = () => {
+    deleteDialogRef.current?.close();
+    setPendingDeleteCommand(null);
+    triggerRef.current?.focus();
   };
 
   const handleDeleteConfirm = async () => {
@@ -84,8 +91,7 @@ export default function CommandsPage() {
       // Only refresh and close once the deletion actually succeeded, so the UI
       // never reports a deletion that didn't happen on the backend.
       refetch();
-      deleteDialogRef.current?.close();
-      setPendingDeleteCommand(null);
+      closeDialogAndRestoreFocus();
     } catch (err) {
       // Keep the dialog open and surface the failure instead of silently
       // closing and pretending the delete succeeded.
@@ -95,10 +101,23 @@ export default function CommandsPage() {
     }
   };
 
-  const handleDeleteCancel = () => {
-    deleteDialogRef.current?.close();
-    setPendingDeleteCommand(null);
-  };
+  const handleDeleteCancel = useCallback(() => {
+    closeDialogAndRestoreFocus();
+  }, []);
+
+  // Close on Escape key
+  useEffect(() => {
+    const dialog = deleteDialogRef.current;
+    if (!dialog) return;
+
+    const handleCancel = (e: Event) => {
+      e.preventDefault(); // Prevent default close so we can manage state/focus
+      handleDeleteCancel();
+    };
+
+    dialog.addEventListener('cancel', handleCancel);
+    return () => dialog.removeEventListener('cancel', handleCancel);
+  }, [handleDeleteCancel]);
 
   // Memoize the derived array to prevent expensive Object.entries() and array reallocation
   // on every render cycle, which improves performance on this page.
@@ -307,6 +326,7 @@ export default function CommandsPage() {
           {filteredCommands.map(([name, config], idx) => (
             <motion.div
               key={name}
+              data-testid="command-card-motion"
               data-reduced-motion={reduceMotion ? 'true' : 'false'}
               initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
               animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
@@ -338,7 +358,7 @@ export default function CommandsPage() {
                         </Link>
                       </li>
                       <li>
-                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} onClick={() => handleDeleteClick(name)}>
+                        <button className="text-error hover:bg-error/10 hover:text-error" aria-label={`Delete ${name}`} onClick={(e) => handleDeleteClick(name, e.currentTarget)}>
                           <Trash2 size={16} />
                           Delete Command
                         </button>
@@ -401,7 +421,11 @@ export default function CommandsPage() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <dialog ref={deleteDialogRef} className="modal">
+      <dialog
+        ref={deleteDialogRef}
+        className="modal"
+        aria-label="Confirm Deletion"
+      >
         <div className="modal-box">
           <h3 className="font-bold text-lg">Confirm Deletion</h3>
           <p className="py-4">Are you sure you want to delete <strong>{pendingDeleteCommand}</strong>?</p>
@@ -414,7 +438,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
+          <button onClick={handleDeleteCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
     </div>

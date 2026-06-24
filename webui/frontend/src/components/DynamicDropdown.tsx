@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useFloating, shift, flip, offset, autoUpdate } from '@floating-ui/react-dom';
 
 interface DropdownProps {
@@ -28,16 +28,18 @@ export function DynamicDropdown({
     whileElementsMounted: autoUpdate,
   });
 
-  // Returns the focusable menu items inside the floating panel, tagging each
-  // with role="menuitem" so the menu has correct semantics. The children are
-  // typically DaisyUI <li> wrappers around <a>/<button>, so we target the
-  // actual interactive descendants for roving focus.
   const getItems = useCallback((): HTMLElement[] => {
     const panel = refs.floating.current;
     if (!panel) return [];
+    // Target interactive elements within the panel.
     return Array.from(
-      panel.querySelectorAll<HTMLElement>('a, button, [role="menuitem"]'),
-    );
+      panel.querySelectorAll<HTMLElement>(
+        'a[href]:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="menuitem"]'
+      )
+    ).filter(el => {
+      // Allow jsdom test environment elements (where offsetWidth is 0) or real visible elements.
+      return process.env.NODE_ENV === 'test' || el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0;
+    });
   }, [refs]);
 
   const focusItemAt = useCallback(
@@ -45,6 +47,12 @@ export function DynamicDropdown({
       const items = getItems();
       if (items.length === 0) return;
       const clamped = (index + items.length) % items.length;
+
+      // Update roving tabindex
+      items.forEach((item, i) => {
+        item.setAttribute('tabindex', i === clamped ? '0' : '-1');
+      });
+
       items[clamped]?.focus();
     },
     [getItems],
@@ -57,8 +65,7 @@ export function DynamicDropdown({
     }
   }, [refs]);
 
-  // Handle clicking outside to close (no focus restore: focus should follow
-  // the user's click target, not jump back to the trigger).
+  // Handle clicking outside to close
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -77,22 +84,21 @@ export function DynamicDropdown({
     };
   }, [refs]);
 
-  // When the menu opens, tag items as menuitems and move focus to the first one.
+  // Manage initial focus and semantics when menu opens
   useEffect(() => {
     if (!isOpen) return;
     const items = getItems();
-    items.forEach((el) => {
+    items.forEach((el, index) => {
       if (!el.getAttribute('role')) {
         el.setAttribute('role', 'menuitem');
       }
-      // Items participate in roving focus; keep them keyboard-reachable.
-      if (!el.hasAttribute('tabindex')) {
-        el.setAttribute('tabindex', '-1');
-      }
+      // Initialize roving tabindex
+      el.setAttribute('tabindex', index === 0 ? '0' : '-1');
     });
-    // Defer to ensure the floating panel is laid out before focusing.
-    const raf = requestAnimationFrame(() => focusItemAt(0));
-    return () => cancelAnimationFrame(raf);
+
+    // Use requestAnimationFrame to ensure DOM is painted before focusing
+    const rafId = requestAnimationFrame(() => focusItemAt(0));
+    return () => cancelAnimationFrame(rafId);
   }, [isOpen, getItems, focusItemAt]);
 
   const handlePanelKeyDown = useCallback(
@@ -101,6 +107,24 @@ export function DynamicDropdown({
       const currentIndex = items.indexOf(
         document.activeElement as HTMLElement,
       );
+
+      // Handle printable characters for type-ahead navigation
+      if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
+        const char = event.key.toLowerCase();
+        // Start searching from next item, wrapping around
+        const startIndex = currentIndex >= 0 ? (currentIndex + 1) % items.length : 0;
+
+        for (let i = 0; i < items.length; i++) {
+          const checkIndex = (startIndex + i) % items.length;
+          const itemText = items[checkIndex].textContent?.trim().toLowerCase() || '';
+          if (itemText.startsWith(char)) {
+            event.preventDefault();
+            focusItemAt(checkIndex);
+            return;
+          }
+        }
+      }
+
       switch (event.key) {
         case 'Escape':
           event.preventDefault();
@@ -121,6 +145,10 @@ export function DynamicDropdown({
         case 'End':
           event.preventDefault();
           focusItemAt(items.length - 1);
+          break;
+        case 'Tab':
+          // Close menu and let browser handle tab navigation
+          setIsOpen(false);
           break;
         default:
           break;

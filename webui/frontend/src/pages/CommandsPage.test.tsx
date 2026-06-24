@@ -84,7 +84,7 @@ test("respects prefers-reduced-motion: reduce on the card cascade", async () => 
   // Wait for cards to render.
   await screen.findByText("take_screenshot");
 
-  const cards = document.querySelectorAll('[data-reduced-motion]');
+  const cards = screen.getAllByTestId('command-card-motion');
   expect(cards.length).toBeGreaterThan(0);
 
   cards.forEach((card) => {
@@ -92,7 +92,7 @@ test("respects prefers-reduced-motion: reduce on the card cascade", async () => 
     expect(card.getAttribute("data-reduced-motion")).toBe("true");
     // ...and no entrance transform/opacity should be applied inline, so the
     // final rendered state is shown immediately with no staggered delay.
-    const style = (card as HTMLElement).style;
+    const style = card.style;
     expect(style.transform === "" || style.transform === "none").toBe(true);
     expect(style.opacity === "" || style.opacity === "1").toBe(true);
     expect(style.transitionDelay).toBe("");
@@ -105,7 +105,7 @@ test("applies the staggered cascade when motion is allowed", async () => {
 
   await screen.findByText("take_screenshot");
 
-  const cards = document.querySelectorAll('[data-reduced-motion]');
+  const cards = screen.getAllByTestId('command-card-motion');
   expect(cards.length).toBeGreaterThan(0);
   cards.forEach((card) => {
     expect(card.getAttribute("data-reduced-motion")).toBe("false");
