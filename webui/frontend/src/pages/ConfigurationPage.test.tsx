@@ -56,7 +56,7 @@ const renderPage = () => {
   );
 };
 
-describe("ConfigurationPage audio device tests", () => {
+describe("ConfigurationPage audio tests", () => {
   test("test buttons are enabled without a server-side device selection", () => {
     renderPage();
     // The browser test uses the browser's default devices, so it must not

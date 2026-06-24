@@ -25,8 +25,8 @@ function mockReducedMotion(prefersReduced: boolean) {
     dispatchEvent: vi.fn(),
   })) as unknown as typeof window.matchMedia;
   // Invalidate framer-motion's cache so the new matchMedia value is picked up.
-  hasReducedMotionListener.current = false;
-  prefersReducedMotion.current = null;
+  if (hasReducedMotionListener) hasReducedMotionListener.current = false;
+  if (prefersReducedMotion) prefersReducedMotion.current = null;
 }
 
 vi.mock("../services/apiService", () => ({
@@ -84,6 +84,7 @@ test("respects prefers-reduced-motion: reduce on the card cascade", async () => 
   // Wait for cards to render.
   await screen.findByText("take_screenshot");
 
+  // eslint-disable-next-line testing-library/no-node-access
   const cards = document.querySelectorAll('[data-reduced-motion]');
   expect(cards.length).toBeGreaterThan(0);
 
@@ -105,6 +106,7 @@ test("applies the staggered cascade when motion is allowed", async () => {
 
   await screen.findByText("take_screenshot");
 
+  // eslint-disable-next-line testing-library/no-node-access
   const cards = document.querySelectorAll('[data-reduced-motion]');
   expect(cards.length).toBeGreaterThan(0);
   cards.forEach((card) => {
