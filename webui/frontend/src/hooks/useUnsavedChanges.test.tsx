@@ -39,15 +39,15 @@ describe("useUnsavedChanges", () => {
   });
 
   test("stays dirty while any one of several forms is dirty", () => {
-    const a = renderHook(() => useUnsavedChanges(true));
-    const b = renderHook(() => useUnsavedChanges(true));
+    const { unmount: unmountA } = renderHook(() => useUnsavedChanges(true));
+    const { unmount: unmountB } = renderHook(() => useUnsavedChanges(true));
     expect(hasUnsavedChanges()).toBe(true);
 
-    a.unmount();
+    unmountA();
     // Still dirty: the second form is registered.
     expect(hasUnsavedChanges()).toBe(true);
 
-    b.unmount();
+    unmountB();
     expect(hasUnsavedChanges()).toBe(false);
   });
 

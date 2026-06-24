@@ -264,7 +264,7 @@ describe("per-action validation a11y", () => {
     expect(keysInput).toHaveAttribute("aria-invalid", "true");
     const describedBy = keysInput.getAttribute("aria-describedby");
     expect(describedBy).toBeTruthy();
-    const errorEl = document.getElementById(describedBy as string);
+    const errorEl = document.getElementById(describedBy as string) /* eslint-disable-line testing-library/no-node-access */;
     expect(errorEl).not.toBeNull();
     expect(errorEl).toHaveAttribute("role", "alert");
 

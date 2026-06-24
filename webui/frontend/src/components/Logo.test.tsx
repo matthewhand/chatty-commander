@@ -19,14 +19,14 @@ describe("Logo", () => {
   });
 
   test("decorative removes the role/label so it is hidden from assistive tech", () => {
-    const { container } = render(<Logo decorative iconOnly />);
+    render(<Logo decorative iconOnly />);
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(document.querySelector("span")).toHaveAttribute("aria-hidden", "true"); // eslint-disable-line testing-library/no-node-access
   });
 
   test("mark strokes with currentColor so it is themeable", () => {
-    const { container } = render(<Logo iconClassName="text-secondary" />);
-    const svg = container.querySelector("svg");
+    render(<Logo iconClassName="text-secondary" />);
+    const svg = document.querySelector("svg"); // eslint-disable-line testing-library/no-node-access
     expect(svg).toHaveAttribute("stroke", "currentColor");
     expect(svg?.getAttribute("class")).toContain("text-secondary");
   });

@@ -97,7 +97,7 @@ describe("DograhStatusCard", () => {
     );
     expect(screen.getByText("v1.2.3")).toBeInTheDocument();
     // Workflows query is enabled only once available; it reports the count.
-    await waitFor(() => expect(screen.getByText("1 workflow")).toBeInTheDocument());
+    await screen.findByText("1 workflow");
   });
 
   test("pushed status overrides the seeded value (online -> offline)", async () => {

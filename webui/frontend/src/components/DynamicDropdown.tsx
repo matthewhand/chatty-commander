@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useFloating, shift, flip, offset, autoUpdate } from '@floating-ui/react-dom';
 
 interface DropdownProps {

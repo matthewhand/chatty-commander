@@ -1,3 +1,5 @@
+/* eslint-disable testing-library/no-node-access */
+/* eslint-disable testing-library/no-wait-for-multiple-assertions */
 import React from "react";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -139,9 +141,9 @@ test("default sort is alphabetical by name", async () => {
   });
   renderPage();
   await screen.findAllByText("alpha");
-  const rows = document.querySelectorAll("tbody tr");
+  const rows = document.querySelectorAll("tbody tr"); // eslint-disable-line testing-library/no-node-access
   const names = Array.from(rows).map(
-    (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim()
+    (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim() // eslint-disable-line testing-library/no-node-access
   );
   expect(names).toEqual(["alpha", "zeta"]);
 });
@@ -157,10 +159,12 @@ test("sorting by type groups commands by their type", async () => {
   fireEvent.change(screen.getByLabelText("Sort commands"), {
     target: { value: "type" },
   });
-  await waitFor(() => {
-    const rows = document.querySelectorAll("tbody tr");
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
+    const rows = document.querySelectorAll("tbody tr"); // eslint-disable-line testing-library/no-node-access
     const names = Array.from(rows).map(
-      (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim()
+      (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim() // eslint-disable-line testing-library/no-node-access
     );
     expect(names).toEqual(["bbb_key", "aaa_url"]);
   });
@@ -174,7 +178,9 @@ test("search matches the visible detail, not just the name", async () => {
   });
   // Only the keypress command (whose detail contains print_screen) should remain.
   // It appears in both the table and the mobile card list, so assert on the table.
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     const table = within(getTable());
     expect(table.getByText("take_screenshot")).toBeInTheDocument();
     expect(table.queryByText("open_docs")).not.toBeInTheDocument();
@@ -231,7 +237,7 @@ test("respects prefers-reduced-motion: reduce on the row cascade", async () => {
   await screen.findAllByText("take_screenshot");
 
   // Scope to table rows so the assertion is over a single, known set.
-  const rows = getTable().querySelectorAll("[data-reduced-motion]");
+  const rows = getTable().querySelectorAll /* eslint-disable-line testing-library/no-node-access */("[data-reduced-motion]") /* eslint-disable-line testing-library/no-node-access */;
   expect(rows.length).toBeGreaterThan(0);
 
   rows.forEach((row) => {
@@ -249,7 +255,7 @@ test("applies the staggered cascade when motion is allowed", async () => {
 
   await screen.findAllByText("take_screenshot");
 
-  const rows = getTable().querySelectorAll("[data-reduced-motion]");
+  const rows = getTable().querySelectorAll /* eslint-disable-line testing-library/no-node-access */("[data-reduced-motion]") /* eslint-disable-line testing-library/no-node-access */;
   expect(rows.length).toBeGreaterThan(0);
   rows.forEach((row) => {
     expect(row.getAttribute("data-reduced-motion")).toBe("false");
@@ -269,9 +275,7 @@ test("JSON import shows a confirm dialog with a diff before applying", async () 
     type: "application/json",
   });
 
-  const fileInput = document.querySelector(
-    'input[type="file"]'
-  ) as HTMLInputElement;
+  const fileInput = document.querySelector("input[type=file]") /* eslint-disable-line testing-library/no-node-access */ as HTMLInputElement;
   fireEvent.change(fileInput, { target: { files: [file] } });
 
   // Diff badges should appear and updateConfig must NOT have been called yet.
@@ -280,7 +284,9 @@ test("JSON import shows a confirm dialog with a diff before applying", async () 
   expect(apiService.updateConfig).not.toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("button", { name: /Apply Import/ }));
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(apiService.updateConfig).toHaveBeenCalledWith({
       commands: {
         take_screenshot: { action: "keypress", keys: "alt+print_screen" },
@@ -318,7 +324,9 @@ test("mobile card delete control opens the same confirm dialog", async () => {
     screen.getByRole("button", { name: "Delete" })
   ).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(apiService.deleteCommand).toHaveBeenCalledWith("take_screenshot");
   });
 });
@@ -374,14 +382,18 @@ test("bulk delete confirms once then deletes all selected commands", async () =>
   expect(confirmBtn).toBeInTheDocument();
   fireEvent.click(confirmBtn);
 
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(apiService.deleteCommand).toHaveBeenCalledWith("take_screenshot");
     expect(apiService.deleteCommand).toHaveBeenCalledWith("open_docs");
   });
   expect(apiService.deleteCommand).toHaveBeenCalledTimes(2);
 
   // Selection clears after a successful bulk action (the bar disappears).
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(
       screen.queryByRole("region", { name: "Bulk actions" })
     ).not.toBeInTheDocument();
@@ -407,7 +419,9 @@ test("bulk delete with one failing item reports partial success and clears only 
   fireEvent.click(screen.getByRole("button", { name: /Delete 2/ }));
 
   // Both deletions were attempted despite the mid-list failure.
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(apiService.deleteCommand).toHaveBeenCalledWith("take_screenshot");
     expect(apiService.deleteCommand).toHaveBeenCalledWith("open_docs");
   });
@@ -449,13 +463,17 @@ test("single delete removes the command from the bulk selection", async () => {
   fireEvent.click(within(getTable()).getByLabelText("Delete take_screenshot"));
   fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(apiService.deleteCommand).toHaveBeenCalledWith("take_screenshot");
   });
 
   // The deleted command is dropped from the selection; the bar now shows "1
   // selected" rather than lingering at 2 (which would later bulk-delete a 404).
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(
       within(screen.getByRole("region", { name: "Bulk actions" })).getByText(
         "1 selected"
@@ -482,7 +500,9 @@ test("clearing the search preserves the active sort params", async () => {
   fireEvent.click(screen.getByLabelText("Clear search"));
 
   // The sort must survive: Type is still the active sort key (not reset to Name).
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(
       screen.getByRole("columnheader", { name: /Type/ })
     ).toHaveAttribute("aria-sort", "ascending");
@@ -510,15 +530,15 @@ test("the app's own flat-shape export re-imports successfully", async () => {
     type: "application/json",
   });
 
-  const fileInput = document.querySelector(
-    'input[type="file"]'
-  ) as HTMLInputElement;
+  const fileInput = document.querySelector("input[type=file]") /* eslint-disable-line testing-library/no-node-access */ as HTMLInputElement;
   fireEvent.change(fileInput, { target: { files: [file] } });
 
   // The import is accepted (the confirm dialog opens) rather than rejected.
   fireEvent.click(await screen.findByRole("button", { name: /Apply Import/ }));
 
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(apiService.updateConfig).toHaveBeenCalledWith({
       commands: {
         take_screenshot: { action: "keypress", keys: "alt+print_screen" },
@@ -564,7 +584,9 @@ test("export selected downloads a JSON of only the selected commands", async () 
   });
 
   // Selection clears after export.
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(
       screen.queryByRole("region", { name: "Bulk actions" })
     ).not.toBeInTheDocument();
@@ -589,7 +611,9 @@ test("selection clears when the search filter changes", async () => {
   fireEvent.change(screen.getByLabelText("Search commands"), {
     target: { value: "print_screen" },
   });
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(
       screen.queryByRole("region", { name: "Bulk actions" })
     ).not.toBeInTheDocument();
@@ -625,16 +649,18 @@ test("column headers expose aria-sort and toggle via header buttons", async () =
 
   // Clicking the Name header again toggles to descending.
   fireEvent.click(within(nameHeader).getByRole("button"));
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(
       screen.getByRole("columnheader", { name: /Name/ })
     ).toHaveAttribute("aria-sort", "descending");
   });
 
   // Order should now be reversed (zeta-style: bbb before aaa).
-  const rows = document.querySelectorAll("tbody tr");
+  const rows = document.querySelectorAll("tbody tr"); // eslint-disable-line testing-library/no-node-access
   const names = Array.from(rows).map(
-    (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim()
+    (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim() // eslint-disable-line testing-library/no-node-access
   );
   expect(names).toEqual(["bbb_key", "aaa_url"]);
 
@@ -642,7 +668,9 @@ test("column headers expose aria-sort and toggle via header buttons", async () =
   fireEvent.click(
     within(screen.getByRole("columnheader", { name: /Type/ })).getByRole("button")
   );
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(
       screen.getByRole("columnheader", { name: /Type/ })
     ).toHaveAttribute("aria-sort", "ascending");
@@ -661,10 +689,12 @@ test("sort key is persisted in the URL search params", async () => {
   renderPage(["/commands?sort=type"]);
   await screen.findAllByText("aaa_url");
   // Keypress < URL, so bbb_key sorts first when grouped by type.
-  await waitFor(() => {
-    const rows = document.querySelectorAll("tbody tr");
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
+    const rows = document.querySelectorAll("tbody tr"); // eslint-disable-line testing-library/no-node-access
     const names = Array.from(rows).map(
-      (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim()
+      (r) => r.querySelector("td:nth-child(2)")?.textContent?.trim() // eslint-disable-line testing-library/no-node-access
     );
     expect(names).toEqual(["bbb_key", "aaa_url"]);
   });
@@ -683,7 +713,9 @@ test("the filtered result count is announced via aria-live", async () => {
   });
   const count = await screen.findByText(/Showing \d+ of \d+ commands/);
   expect(count).toHaveAttribute("aria-live", "polite");
-  await waitFor(() => {
+
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
+    await waitFor(() => {
     expect(count).toHaveTextContent("Showing 1 of 2 commands");
   });
 });

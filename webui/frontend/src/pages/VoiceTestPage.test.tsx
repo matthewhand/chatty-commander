@@ -1,3 +1,4 @@
+/* eslint-disable testing-library/no-unnecessary-act */
 import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -180,9 +181,7 @@ describe("VoiceTestPage", () => {
       const select = await screen.findByTestId("voice-device-select");
       expect(select).toBeInTheDocument();
       // System default + 2 audio inputs (the audiooutput is filtered out).
-      await waitFor(() =>
-        expect(screen.getByRole("option", { name: "Built-in Mic" })).toBeInTheDocument(),
-      );
+      await screen.findByRole("option", { name: "Built-in Mic" });
       expect(screen.getByRole("option", { name: "USB Headset" })).toBeInTheDocument();
       expect(screen.getByRole("option", { name: "System default" })).toBeInTheDocument();
       expect(screen.queryByRole("option", { name: "Speakers" })).not.toBeInTheDocument();
@@ -275,9 +274,7 @@ describe("VoiceTestPage", () => {
         renderPage();
         // Socket never opened.
         fireEvent.click(screen.getByTestId("mic-toggle"));
-        await waitFor(() =>
-          expect(screen.getByTestId("mic-stream-warning")).toBeInTheDocument(),
-        );
+        await screen.findByTestId("mic-stream-warning");
         expect(screen.getByTestId("mic-state")).toHaveTextContent("Microphone on — not streaming");
       } finally {
         delete (globalThis as any).MediaRecorder;
@@ -331,7 +328,8 @@ describe("VoiceTestPage", () => {
       expect(screen.getByTestId("voice-processing")).toBeInTheDocument();
 
       const base = 1717900000000; // realistic epoch-ms timestamp
-      act(() => {
+      // eslint-disable-next-line testing-library/no-unnecessary-act
+    act(() => {
         socket.serverEvent({ stage: "listening", data: {}, ts: base });
         socket.serverEvent({
           stage: "transcript",
@@ -379,7 +377,8 @@ describe("VoiceTestPage", () => {
       act(() => socket.serverOpen());
 
       const base = 1717900000000; // epoch-ms
-      act(() => {
+      // eslint-disable-next-line testing-library/no-unnecessary-act
+    act(() => {
         socket.serverEvent({ stage: "listening", data: {}, ts: base + 500 });
         // Out-of-order: this stage's ts is *earlier* than the previous one, which
         // would naively yield a negative delta.
@@ -400,7 +399,8 @@ describe("VoiceTestPage", () => {
       const socket = lastSocket();
       act(() => socket.serverOpen());
 
-      act(() => {
+      // eslint-disable-next-line testing-library/no-unnecessary-act
+    act(() => {
         socket.serverEvent({ stage: "listening", data: {}, ts: 1 });
         socket.serverEvent({ stage: "transcript", data: { text: "a" }, ts: 2 });
         socket.serverEvent({ stage: "match", data: { matched: true }, ts: 3 });
@@ -437,7 +437,8 @@ describe("VoiceTestPage", () => {
       const socket = lastSocket();
       act(() => socket.serverOpen());
 
-      act(() => {
+      // eslint-disable-next-line testing-library/no-unnecessary-act
+    act(() => {
         socket.serverEvent({ stage: "wakeword", data: { keyword: "hey chatty" }, ts: 1 });
       });
 
@@ -452,7 +453,8 @@ describe("VoiceTestPage", () => {
       const socket = lastSocket();
       act(() => socket.serverOpen());
 
-      act(() => {
+      // eslint-disable-next-line testing-library/no-unnecessary-act
+    act(() => {
         socket.serverEvent({
           stage: "listening",
           data: { transcription_available: false },
@@ -470,7 +472,8 @@ describe("VoiceTestPage", () => {
       const socket = lastSocket();
       act(() => socket.serverOpen());
 
-      act(() => {
+      // eslint-disable-next-line testing-library/no-unnecessary-act
+    act(() => {
         socket.serverEvent({
           stage: "match",
           data: { matched: false, text: "blah" },
@@ -623,7 +626,8 @@ describe("VoiceTestPage", () => {
         // are spent. MAX_RECONNECT_ATTEMPTS is 10.
         for (let i = 0; i < 12; i++) {
           act(() => lastSocket().serverClose(1006, "abnormal"));
-          act(() => {
+          // eslint-disable-next-line testing-library/no-unnecessary-act
+    act(() => {
             vi.runOnlyPendingTimers();
           });
         }
@@ -645,7 +649,8 @@ describe("VoiceTestPage", () => {
 
         for (let i = 0; i < 12; i++) {
           act(() => lastSocket().serverClose(1006, "abnormal"));
-          act(() => {
+          // eslint-disable-next-line testing-library/no-unnecessary-act
+    act(() => {
             vi.runOnlyPendingTimers();
           });
         }
