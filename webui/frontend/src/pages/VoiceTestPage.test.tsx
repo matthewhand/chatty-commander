@@ -180,9 +180,7 @@ describe("VoiceTestPage", () => {
       const select = await screen.findByTestId("voice-device-select");
       expect(select).toBeInTheDocument();
       // System default + 2 audio inputs (the audiooutput is filtered out).
-      await waitFor(() =>
-        expect(screen.getByRole("option", { name: "Built-in Mic" })).toBeInTheDocument(),
-      );
+      await screen.findByRole("option", { name: "Built-in Mic" });
       expect(screen.getByRole("option", { name: "USB Headset" })).toBeInTheDocument();
       expect(screen.getByRole("option", { name: "System default" })).toBeInTheDocument();
       expect(screen.queryByRole("option", { name: "Speakers" })).not.toBeInTheDocument();
@@ -275,9 +273,7 @@ describe("VoiceTestPage", () => {
         renderPage();
         // Socket never opened.
         fireEvent.click(screen.getByTestId("mic-toggle"));
-        await waitFor(() =>
-          expect(screen.getByTestId("mic-stream-warning")).toBeInTheDocument(),
-        );
+        await screen.findByTestId("mic-stream-warning");
         expect(screen.getByTestId("mic-state")).toHaveTextContent("Microphone on — not streaming");
       } finally {
         delete (globalThis as any).MediaRecorder;

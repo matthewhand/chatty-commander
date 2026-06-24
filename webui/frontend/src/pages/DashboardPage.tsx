@@ -328,11 +328,11 @@ const DashboardPage = React.memo(() => {
   // "unknown" rather than inventing a value.
   const [currentMode, setCurrentMode] = useState<string | null>(null);
 
-  const { data: initialSystemStatus, isLoading } = useQuery({
+  const { data: initialSystemStatus, isLoading, isError: systemStatusError } = useQuery({
     queryKey: ["systemStatus"],
     queryFn: async () => {
       const res = await fetch("/health");
-      if (!res.ok) return { status: "Unknown", uptime: "N/A", commandsExecuted: 0, cpu: "N/A", memory: "N/A" };
+      if (!res.ok) throw new Error("Health check failed");
       const data = await res.json();
       return {
         status: data.status === "healthy" ? "Healthy" : data.status ?? "Unknown",
@@ -516,6 +516,20 @@ const DashboardPage = React.memo(() => {
           {[1, 2, 3].map((i) => (
             <div key={i} className="card bg-base-100 shadow-xl border border-base-content/10 h-48 skeleton rounded-box"></div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (systemStatusError) {
+    return (
+      <div className="space-y-6">
+        <div className="alert alert-error shadow-lg" role="alert">
+          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div>
+            <h3 className="font-bold">Dashboard unavailable</h3>
+            <div className="text-xs">Failed to load core system status. Ensure the backend is running and accessible.</div>
+          </div>
         </div>
       </div>
     );

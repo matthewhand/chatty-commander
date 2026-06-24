@@ -1,0 +1,2 @@
+## 2024-05-24 | [Architectural Audit] | Insight: [Silent query failures in Configuration & Dashboard pages] | Protocol: [Enforce strict 4-state logic (Loading, Success, Error, Empty) on all useQuery hooks]
+## 2024-05-24 | [Architectural Audit] | Insight: [DaisyUI modal backdrops lacked screen reader context] | Protocol: [Always bind explicit aria-label="Close dialog" to visually hidden backdrop buttons]
