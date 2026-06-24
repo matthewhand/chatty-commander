@@ -11,7 +11,7 @@ import ScrollToTop from "./ScrollToTop";
 function renderWithMain(target: string = "#main-content") {
   return render(
     <>
-      <main id="main-content" />
+      <main id="main-content" role="main" />
       <ScrollToTop target={target} />
     </>,
   );
@@ -28,7 +28,7 @@ describe("ScrollToTop", () => {
 
   test("becomes visible when the <main> element scrolls down", () => {
     renderWithMain();
-    const main = document.getElementById("main-content") as HTMLElement;
+    const main = screen.getByRole("main");
     const button = screen.getByRole("button", { name: /scroll to top/i });
 
     // Simulate scrolling the main container (not the window).
@@ -41,7 +41,7 @@ describe("ScrollToTop", () => {
 
   test("hides again when scrolled back near the top", () => {
     renderWithMain();
-    const main = document.getElementById("main-content") as HTMLElement;
+    const main = screen.getByRole("main");
     const button = screen.getByRole("button", { name: /scroll to top/i });
 
     Object.defineProperty(main, "scrollTop", {
@@ -58,7 +58,7 @@ describe("ScrollToTop", () => {
 
   test("clicking scrolls the <main> element to the top", () => {
     renderWithMain();
-    const main = document.getElementById("main-content") as HTMLElement;
+    const main = screen.getByRole("main");
     const scrollToSpy = vi.fn();
     main.scrollTo = scrollToSpy as unknown as typeof main.scrollTo;
 

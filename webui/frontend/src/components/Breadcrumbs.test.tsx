@@ -13,8 +13,8 @@ function renderAt(path: string) {
 
 describe("Breadcrumbs", () => {
   test("renders nothing at the dashboard/home level (no duplicate Home)", () => {
-    const { container } = renderAt("/dashboard");
-    expect(container.firstChild).toBeNull();
+    renderAt("/dashboard");
+    expect(screen.queryByRole("navigation")).toBeNull();
   });
 
   test("does not duplicate Home when the first segment resolves to Home", () => {

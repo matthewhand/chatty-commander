@@ -1,6 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { useToast } from '../components/ToastProvider';
+import Collapse from '../components/Collapse';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Wand2,
@@ -44,10 +48,6 @@ const AI_PROMPT_EXAMPLES: { title: string; prompt: string }[] = [
       "When I say 'open dashboard', open https://grafana.local in my browser.",
   },
 ];
-import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
-import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
-import { useToast } from '../components/ToastProvider';
-import Collapse from '../components/Collapse';
 
 // --- TypeScript Interfaces ---
 

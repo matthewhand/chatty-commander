@@ -20,6 +20,7 @@ describe("logger", () => {
     });
 
     it("emits debug/info/warn", () => {
+      // eslint-disable-next-line testing-library/no-debugging-utils
       logger.debug("d");
       logger.info("i");
       logger.warn("w");
@@ -40,6 +41,7 @@ describe("logger", () => {
     });
 
     it("suppresses debug/info/warn", () => {
+      // eslint-disable-next-line testing-library/no-debugging-utils
       logger.debug("d");
       logger.info("i");
       logger.warn("w");
