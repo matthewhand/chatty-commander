@@ -172,7 +172,7 @@ const ConfigurationPage: React.FC = () => {
   });
 
   // Load config on mount
-  const { data: remoteConfig } = useQuery({
+  const { data: remoteConfig, isLoading, isError, error } = useQuery({
     queryKey: ["config"],
     queryFn: loadConfig,
   });
@@ -301,6 +301,30 @@ const ConfigurationPage: React.FC = () => {
       setOutputTestStatus("error");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading configuration">
+        <div className="h-12 w-64 skeleton rounded-lg mb-6"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-[400px] skeleton rounded-box"></div>
+          <div className="h-[400px] skeleton rounded-box"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="alert alert-error shadow-lg">
+        <SettingsIcon size={24} />
+        <div>
+          <h3 className="font-bold">Error loading configuration</h3>
+          <div className="text-sm">{(error as Error)?.message || "Check your backend connection"}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

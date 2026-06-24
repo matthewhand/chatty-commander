@@ -307,7 +307,7 @@ export default function CommandsPage() {
           {filteredCommands.map(([name, config], idx) => (
             <motion.div
               key={name}
-              data-reduced-motion={reduceMotion ? 'true' : 'false'}
+              data-reduced-motion={reduceMotion ? 'true' : 'false'} data-testid="command-card-motion"
               initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
               animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
               transition={reduceMotion ? undefined : { delay: idx * 0.05 }}
@@ -413,8 +413,8 @@ export default function CommandsPage() {
             </button>
           </div>
         </div>
-        <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
+        <form method="dialog" className="modal-backdrop" aria-label="Close dialog">
+          <button onClick={handleDeleteCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
     </div>

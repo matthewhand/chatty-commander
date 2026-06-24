@@ -556,8 +556,9 @@ export default function CommandAuthoringPage() {
             </p>
 
             <div className="form-control">
+              <label className="label" htmlFor="command-description"><span className="label-text">Command Description</span></label>
               <textarea
-                aria-label="Command Description"
+                id="command-description"
                 className="textarea textarea-bordered h-32 font-normal"
                 placeholder="When I say 'start my day', open my email client, my code editor, and the project management website..."
                 value={description}
