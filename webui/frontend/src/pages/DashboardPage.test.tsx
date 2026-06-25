@@ -27,11 +27,33 @@ const jsonResponse = (data: unknown) => ({
 
 // Mutable per-test override for the /api/v1/commands response so tests can
 // model both an empty install and one with authored commands.
+
 let commandsResponse: Record<string, unknown> = {};
+let agentStatsResponse: Record<string, unknown> = {
+  contexts: {
+    "discord:general:user1": {
+      persona_id: "philosophy_advisor",
+      last_updated: "2026-06-10T00:00:00Z",
+      context_key: "discord:general:user1",
+    },
+  },
+  total: 1,
+};
 
 beforeEach(() => {
   window.localStorage.clear();
   commandsResponse = {};
+  agentStatsResponse = {
+    contexts: {
+      "discord:general:user1": {
+        persona_id: "philosophy_advisor",
+        last_updated: "2026-06-10T00:00:00Z",
+        context_key: "discord:general:user1",
+      },
+    },
+    total: 1,
+  };
+
   global.fetch = vi.fn(async (input: any) => {
     const url = String(input);
     if (url.includes("/api/v1/commands")) {
@@ -47,18 +69,11 @@ beforeEach(() => {
         memory_usage: "33.1",
       });
     }
+
     if (url.includes("/advisors/context/stats")) {
-      return jsonResponse({
-        contexts: {
-          "discord:general:user1": {
-            persona_id: "philosophy_advisor",
-            last_updated: "2026-06-10T00:00:00Z",
-            context_key: "discord:general:user1",
-          },
-        },
-        total: 1,
-      });
+      return jsonResponse(agentStatsResponse);
     }
+
     if (url.includes("/api/v1/status")) {
       return jsonResponse({ status: "running", current_state: "idle", active_models: [], uptime: "1h" });
     }
@@ -114,6 +129,20 @@ describe("DashboardPage", () => {
     expect(
       screen.getByPlaceholderText("Type a command to execute..."),
     ).not.toBeDisabled();
+  });
+
+
+  test("shows explicit empty state when no agents are connected", async () => {
+    agentStatsResponse = { contexts: {}, total: 0 };
+    renderDashboard();
+
+    // Open the accordion
+    const agentSection = await screen.findByTestId("agent-status-section");
+    const summary = agentSection.querySelector("summary");
+    if (summary) fireEvent.click(summary);
+
+    expect(await screen.findByText("No Agents Connected")).toBeInTheDocument();
+    expect(screen.getByText(/There are currently no agents registered/i)).toBeInTheDocument();
   });
 
   test("surfaces a voice/listening status card seeded from the status endpoint", async () => {
