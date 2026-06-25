@@ -174,6 +174,7 @@ export default function CommandsPage() {
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const importDialogRef = useRef<HTMLDialogElement>(null);
   const bulkDeleteDialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { data: commands, isLoading, isFetching, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
@@ -255,6 +256,7 @@ export default function CommandsPage() {
 
   const handleDeleteClick = (commandName: string) => {
     setPendingDeleteCommand(commandName);
+    triggerRef.current = document.activeElement as HTMLElement | null;
     deleteDialogRef.current?.showModal();
   };
 
@@ -277,6 +279,7 @@ export default function CommandsPage() {
       });
       deleteDialogRef.current?.close();
       setPendingDeleteCommand(null);
+      triggerRef.current?.focus();
     } catch (err) {
       // Surface the failure via a toast (consistent with the rest of the app)
       // and keep the dialog open so the user can retry or cancel.
@@ -289,6 +292,7 @@ export default function CommandsPage() {
   const handleDeleteCancel = () => {
     deleteDialogRef.current?.close();
     setPendingDeleteCommand(null);
+    triggerRef.current?.focus();
   };
 
   // Memoize the derived array to prevent expensive Object.entries() and array reallocation
@@ -359,6 +363,7 @@ export default function CommandsPage() {
           (n) => n in current && JSON.stringify(current[n]) !== JSON.stringify(next[n]),
         );
         setPendingImport({ parsed: next, added, removed, changed });
+        triggerRef.current = document.activeElement as HTMLElement | null;
         importDialogRef.current?.showModal();
       } catch (err) {
         addToast(`Import failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
@@ -377,6 +382,7 @@ export default function CommandsPage() {
       refetch();
       importDialogRef.current?.close();
       setPendingImport(null);
+      triggerRef.current?.focus();
       addToast('Commands imported successfully.', 'success');
     } catch (err) {
       addToast(`Import failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
@@ -388,6 +394,7 @@ export default function CommandsPage() {
   const handleImportCancel = () => {
     importDialogRef.current?.close();
     setPendingImport(null);
+    triggerRef.current?.focus();
   };
 
   // Clear the selection whenever the (debounced) search filter changes, so the
@@ -484,11 +491,13 @@ export default function CommandsPage() {
 
   const handleBulkDeleteClick = () => {
     if (selected.size === 0) return;
+    triggerRef.current = document.activeElement as HTMLElement | null;
     bulkDeleteDialogRef.current?.showModal();
   };
 
   const handleBulkDeleteCancel = () => {
     bulkDeleteDialogRef.current?.close();
+    triggerRef.current?.focus();
   };
 
   const handleBulkDeleteConfirm = async () => {
@@ -519,6 +528,7 @@ export default function CommandsPage() {
 
       if (failedCount === 0) {
         bulkDeleteDialogRef.current?.close();
+        triggerRef.current?.focus();
         addToast(
           `Deleted ${succeeded.length} command${succeeded.length === 1 ? '' : 's'}.`,
           'success',
@@ -1004,7 +1014,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
+          <button onClick={handleDeleteCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
 
@@ -1025,7 +1035,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleBulkDeleteCancel}>close</button>
+          <button onClick={handleBulkDeleteCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
 
@@ -1052,7 +1062,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleImportCancel}>close</button>
+          <button onClick={handleImportCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
     </div>
