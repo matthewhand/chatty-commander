@@ -1,0 +1,1 @@
+## 2024-10-25 | [Architectural Audit] | Insight: Native HTML5 dialogs do not auto-restore focus to triggers, and DaisyUI modal backdrops hide close buttons from screen readers. | Protocol: Manually store and restore trigger element focus via useRef when managing native dialog states, and explicitly add aria-labels to visually hidden backdrop close buttons.

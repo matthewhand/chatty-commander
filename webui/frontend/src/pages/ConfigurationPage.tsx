@@ -1200,6 +1200,7 @@ const ConfigurationPage: React.FC = () => {
                           className="btn btn-xs btn-ghost gap-1"
                           onClick={handleFetchModels}
                           disabled={fetchingModels || !config.llmBaseUrl || config.envOverrides.baseUrl || config.envOverrides.model}
+                          aria-label={fetchingModels ? "Fetching models" : "Fetch available models from endpoint"}
                           title="Fetch available models from endpoint"
                         >
                           {fetchingModels ? <span className="loading loading-spinner loading-xs"></span> : <RefreshIcon size={16} />}

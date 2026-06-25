@@ -612,7 +612,7 @@ describe("ConfigurationPage fetch-models error handling", () => {
     await screen.findByRole("tab", { name: /LLM/ });
     goToTab(/LLM/);
 
-    fireEvent.click(screen.getByRole("button", { name: /Fetch list/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Fetch available models from endpoint/ }));
 
     // Inline error + toast, instead of silently doing nothing.
     await screen.findByTestId("model-fetch-error");
