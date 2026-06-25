@@ -325,6 +325,32 @@ test("mobile card delete control opens the same confirm dialog", async () => {
 
 // --- Bulk operations -------------------------------------------------------
 
+
+test("modal dialogs restore focus to their trigger elements upon closing", async () => {
+  renderPage();
+  await screen.findAllByText("take_screenshot");
+
+  // 1. Delete dialog focus restoration
+  const deleteTrigger = within(getTable()).getByLabelText("Delete take_screenshot");
+  deleteTrigger.focus();
+  fireEvent.click(deleteTrigger);
+  const deleteDialog = screen.getByRole("dialog");
+  fireEvent.click(within(deleteDialog).getByRole("button", { name: "Cancel" }));
+  expect(document.activeElement).toBe(deleteTrigger);
+
+  // 2. Bulk delete dialog focus restoration
+  const selectTakeScreenshot = within(getTable()).getByLabelText("Select take_screenshot");
+  fireEvent.click(selectTakeScreenshot);
+  const bulkDeleteTrigger = screen.getByLabelText("Delete selected commands");
+  bulkDeleteTrigger.focus();
+  fireEvent.click(bulkDeleteTrigger);
+  const bulkDeleteDialog = screen.getByRole("dialog");
+  fireEvent.click(within(bulkDeleteDialog).getByRole("button", { name: "Cancel" }));
+  expect(document.activeElement).toBe(bulkDeleteTrigger);
+  fireEvent.click(selectTakeScreenshot); // unselect
+});
+
+
 test("the select-all checkbox selects every visible command and shows the bulk bar", async () => {
   renderPage();
   await screen.findAllByText("take_screenshot");

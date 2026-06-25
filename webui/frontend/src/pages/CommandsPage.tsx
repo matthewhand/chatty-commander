@@ -176,6 +176,9 @@ export default function CommandsPage() {
   const bulkDeleteDialogRef = useRef<HTMLDialogElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const deleteTriggerRef = useRef<HTMLElement | null>(null);
+  const bulkDeleteTriggerRef = useRef<HTMLElement | null>(null);
+  const importTriggerRef = useRef<HTMLElement | null>(null);
   const { data: commands, isLoading, isFetching, isError, error, refetch } = useQuery<Record<string, CommandConfig>>({
     queryKey: ['commands'],
     queryFn: () => apiService.getCommands(),
@@ -254,6 +257,7 @@ export default function CommandsPage() {
   // register a duplicate handler here — both would fire on /commands.
 
   const handleDeleteClick = (commandName: string) => {
+    deleteTriggerRef.current = document.activeElement as HTMLElement | null;
     setPendingDeleteCommand(commandName);
     deleteDialogRef.current?.showModal();
   };
@@ -276,6 +280,7 @@ export default function CommandsPage() {
         return next;
       });
       deleteDialogRef.current?.close();
+      deleteTriggerRef.current?.focus();
       setPendingDeleteCommand(null);
     } catch (err) {
       // Surface the failure via a toast (consistent with the rest of the app)
@@ -288,6 +293,7 @@ export default function CommandsPage() {
 
   const handleDeleteCancel = () => {
     deleteDialogRef.current?.close();
+    deleteTriggerRef.current?.focus();
     setPendingDeleteCommand(null);
   };
 
@@ -359,6 +365,7 @@ export default function CommandsPage() {
           (n) => n in current && JSON.stringify(current[n]) !== JSON.stringify(next[n]),
         );
         setPendingImport({ parsed: next, added, removed, changed });
+        importTriggerRef.current = document.activeElement as HTMLElement | null;
         importDialogRef.current?.showModal();
       } catch (err) {
         addToast(`Import failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
@@ -376,6 +383,7 @@ export default function CommandsPage() {
       await apiService.updateConfig({ commands: pendingImport.parsed });
       refetch();
       importDialogRef.current?.close();
+      importTriggerRef.current?.focus();
       setPendingImport(null);
       addToast('Commands imported successfully.', 'success');
     } catch (err) {
@@ -387,6 +395,7 @@ export default function CommandsPage() {
 
   const handleImportCancel = () => {
     importDialogRef.current?.close();
+    importTriggerRef.current?.focus();
     setPendingImport(null);
   };
 
@@ -484,11 +493,13 @@ export default function CommandsPage() {
 
   const handleBulkDeleteClick = () => {
     if (selected.size === 0) return;
+    bulkDeleteTriggerRef.current = document.activeElement as HTMLElement | null;
     bulkDeleteDialogRef.current?.showModal();
   };
 
   const handleBulkDeleteCancel = () => {
     bulkDeleteDialogRef.current?.close();
+    bulkDeleteTriggerRef.current?.focus();
   };
 
   const handleBulkDeleteConfirm = async () => {
@@ -519,6 +530,7 @@ export default function CommandsPage() {
 
       if (failedCount === 0) {
         bulkDeleteDialogRef.current?.close();
+        bulkDeleteTriggerRef.current?.focus();
         addToast(
           `Deleted ${succeeded.length} command${succeeded.length === 1 ? '' : 's'}.`,
           'success',
@@ -1004,7 +1016,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
+          <button onClick={handleDeleteCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
 
@@ -1025,7 +1037,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleBulkDeleteCancel}>close</button>
+          <button onClick={handleBulkDeleteCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
 
@@ -1052,7 +1064,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleImportCancel}>close</button>
+          <button onClick={handleImportCancel} aria-label="Close dialog">close</button>
         </form>
       </dialog>
     </div>
