@@ -20,6 +20,10 @@ import {
   Shield,
   Lightbulb,
 } from 'lucide-react';
+import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { useToast } from '../components/ToastProvider';
+import Collapse from '../components/Collapse';
 
 // Starter prompts for AI mode. They give a first-time user concrete ideas (and
 // fill what was otherwise an empty pre-generation screen); clicking one drops it
@@ -44,10 +48,6 @@ const AI_PROMPT_EXAMPLES: { title: string; prompt: string }[] = [
       "When I say 'open dashboard', open https://grafana.local in my browser.",
   },
 ];
-import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
-import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
-import { useToast } from '../components/ToastProvider';
-import Collapse from '../components/Collapse';
 
 // --- TypeScript Interfaces ---
 
@@ -928,7 +928,11 @@ export default function CommandAuthoringPage() {
             </p>
 
             <div className="form-control">
+              <label className="label sr-only" htmlFor="command-description">
+                <span className="label-text">Command Description</span>
+              </label>
               <textarea
+                id="command-description"
                 aria-label="Command Description"
                 className="textarea textarea-bordered h-32 font-normal"
                 placeholder="When I say 'start my day', open my email client, my code editor, and the project management website..."
