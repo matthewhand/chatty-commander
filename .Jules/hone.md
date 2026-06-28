@@ -1,0 +1,1 @@
+## 2025-06-27 | [Architectural Audit] | Insight: Dynamic mapping and modal logic causes systemic regressions in screen reader accessibility. | Protocol: Refactor modals to use HTML5 dialog/DaisyUI modal-backdrop with explicit aria-labels, bind dynamic inputs with generated IDs, and ensure dropdowns natively handle Enter/Space.
