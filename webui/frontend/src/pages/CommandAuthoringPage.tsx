@@ -1,7 +1,13 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useReducedMotionPref } from "../hooks/useReducedMotionPref";
+import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
+import { useToast } from "../components/ToastProvider";
+import Collapse from "../components/Collapse";
+
+
 import {
   Wand2,
   Sparkles,
@@ -44,10 +50,6 @@ const AI_PROMPT_EXAMPLES: { title: string; prompt: string }[] = [
       "When I say 'open dashboard', open https://grafana.local in my browser.",
   },
 ];
-import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
-import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
-import { useToast } from '../components/ToastProvider';
-import Collapse from '../components/Collapse';
 
 // --- TypeScript Interfaces ---
 
@@ -928,7 +930,9 @@ export default function CommandAuthoringPage() {
             </p>
 
             <div className="form-control">
+              <label className="sr-only" htmlFor="command-description">Command Description</label>
               <textarea
+                id="command-description"
                 aria-label="Command Description"
                 className="textarea textarea-bordered h-32 font-normal"
                 placeholder="When I say 'start my day', open my email client, my code editor, and the project management website..."

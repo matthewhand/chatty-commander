@@ -897,6 +897,11 @@ const DashboardPage = React.memo(() => {
         <div className="flex justify-center p-8">
           <span className="loading loading-spinner text-primary"></span>
         </div>
+      ) : !agentData || agentData.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-8 text-base-content/50">
+          <AssessmentIcon size={48} className="mb-4 opacity-20" />
+          <p>No agents are currently registered or active.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {agentData?.map((agent) => (
