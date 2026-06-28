@@ -856,7 +856,13 @@ const DashboardPage = React.memo(() => {
                 </div>
               }
             >
-              <PerformanceChart history={history} />
+              {history.length === 0 ? (
+                <div className="h-full w-full flex items-center justify-center bg-base-200/50 rounded-box text-base-content/50 italic">
+                  Waiting for performance data...
+                </div>
+              ) : (
+                <PerformanceChart history={history} />
+              )}
             </Suspense>
           </div>
         </div>

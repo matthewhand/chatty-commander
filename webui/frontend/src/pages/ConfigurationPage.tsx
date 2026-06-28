@@ -1065,7 +1065,9 @@ const ConfigurationPage: React.FC = () => {
                     </div>
 
                     <div className="form-control w-full">
+                      <label htmlFor="voice-model-upload" className="sr-only">Upload voice model</label>
                       <input
+                        id="voice-model-upload"
                         type="file"
                         accept=".onnx"
                         aria-label="Select ONNX voice model file"

@@ -1,0 +1,1 @@
+## 2024-06-26 | [Architectural Audit] | Insight: [Systemic reliance on implicit label-input connections and missing modal labels] | Protocol: [Mandate unique `id`/`htmlFor` pairings for all dynamic list inputs and explicit `aria-label`s for visually hidden modal backdrops/close triggers.]
