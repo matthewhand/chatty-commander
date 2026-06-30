@@ -1004,7 +1004,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleDeleteCancel}>close</button>
+          <button aria-label="Close dialog" onClick={handleDeleteCancel}>close</button>
         </form>
       </dialog>
 
@@ -1025,7 +1025,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleBulkDeleteCancel}>close</button>
+          <button aria-label="Close dialog" onClick={handleBulkDeleteCancel}>close</button>
         </form>
       </dialog>
 
@@ -1052,7 +1052,7 @@ export default function CommandsPage() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleImportCancel}>close</button>
+          <button aria-label="Close dialog" onClick={handleImportCancel}>close</button>
         </form>
       </dialog>
     </div>

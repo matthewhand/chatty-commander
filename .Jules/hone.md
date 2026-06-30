@@ -1,0 +1,2 @@
+## 2024-05-18 | [Architectural Audit] | Insight: Missing deterministic empty states in async Dashboard components lead to blank UI areas. | Protocol: Enforce 4-state logic (Loading, Success, Error, Empty) on all network-dependent UI.
+## 2024-05-18 | [Architectural Audit] | Insight: Native HTML5 dialogs used with DaisyUI backdrops omit screen reader announcements for hidden close buttons. | Protocol: Mandate aria-label="Close dialog" on all modal-backdrop form buttons.

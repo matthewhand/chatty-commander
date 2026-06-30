@@ -249,7 +249,7 @@ const ConfigurationPage: React.FC = () => {
     queryFn: getAudioDevices,
   });
 
-  const { data: voiceModels, refetch: refetchVoiceModels } = useQuery({
+  const { data: voiceModels, isLoading: modelsLoading, isError: modelsError, refetch: refetchVoiceModels } = useQuery({
     queryKey: ["voiceModels"],
     queryFn: fetchVoiceModels,
   });
@@ -990,7 +990,19 @@ const ConfigurationPage: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {voiceModels && voiceModels.length > 0 ? (
+                          {modelsLoading ? (
+                            <tr>
+                              <td colSpan={4} className="text-center py-8">
+                                <span className="loading loading-spinner text-primary"></span>
+                              </td>
+                            </tr>
+                          ) : modelsError ? (
+                            <tr>
+                              <td colSpan={4} className="text-center py-8 text-error">
+                                Failed to load voice models.
+                              </td>
+                            </tr>
+                          ) : voiceModels && voiceModels.length > 0 ? (
                             voiceModels.map((model: ModelFileInfo) => (
                               <tr key={model.name} className="hover:bg-base-200/50">
                                 <td className="font-mono text-xs">{model.name}</td>
@@ -1354,12 +1366,13 @@ const ConfigurationPage: React.FC = () => {
               </button>
             </div>
           </div>
-          <button
-            type="button"
-            className="modal-backdrop"
-            aria-label="Close dialog"
-            onClick={() => setPendingDelete(null)}
-          />
+          <form method="dialog" className="modal-backdrop">
+            <button
+              type="button"
+              aria-label="Close dialog"
+              onClick={() => setPendingDelete(null)}
+            >close</button>
+          </form>
         </div>
       )}
       </>

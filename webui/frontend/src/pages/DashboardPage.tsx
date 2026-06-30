@@ -897,6 +897,14 @@ const DashboardPage = React.memo(() => {
         <div className="flex justify-center p-8">
           <span className="loading loading-spinner text-primary"></span>
         </div>
+      ) : agentData && agentData.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-8 bg-base-200/50 rounded-box border border-base-content/10">
+          <AssessmentIcon size={48} className="text-base-content/20 mb-4" />
+          <h3 className="text-lg font-semibold text-base-content/70">No agents connected.</h3>
+          <p className="text-base-content/50 mt-2 text-center">
+            Ensure your backend and voice models are running properly.
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {agentData?.map((agent) => (
