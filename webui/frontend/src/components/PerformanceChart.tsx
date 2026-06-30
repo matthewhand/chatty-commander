@@ -53,7 +53,7 @@ const PerformanceChart = React.memo(({ history }: PerformanceChartProps) => {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minHeight={0} minWidth={0}>
         <AreaChart data={history} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
