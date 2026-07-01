@@ -212,9 +212,9 @@ These exist in the tree and are honest about their state. They are inventory, no
 
 ---
 
-## Repo hygiene (0/2)
+## Repo hygiene (2/2)
 
-- [ ] **Delete 13 unmerged orphaned remote branches** — stale Aug-Sep 2025 bot experiments with no open PRs (verify with `git branch -r --no-merged main`). Owner to run:
+- [x] **Delete 13 unmerged orphaned remote branches** — stale Aug-Sep 2025 bot experiments with no open PRs (verify with `git branch -r --no-merged main`). Owner to run:
 
   ```bash
   git push origin --delete codex/add-opentelemetry-setup-in-telemetry.ts
@@ -232,7 +232,7 @@ These exist in the tree and are honest about their state. They are inventory, no
   git push origin --delete st00br-codex/add-environment-variable-checks-and-tests
   ```
 
-- [ ] **Delete 8 already-merged remote branches** — fully contained in `main` (verify with `git branch -r --merged main`), safe to remove:
+- [x] **Delete 8 already-merged remote branches** — fully contained in `main` (verify with `git branch -r --merged main`), safe to remove:
 
   ```bash
   git push origin --delete codex/replace-stub-with-streaming-events
